@@ -2,3 +2,4 @@ fastapi
 uvicorn[standard]
 pyreadstat
 pandas
+scipy>=1.11
