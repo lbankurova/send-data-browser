@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from routers.studies import init_studies, router as studies_router
+from routers.analyses import init_analysis_studies, router as analyses_router
 from services.study_discovery import discover_studies
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI):
     studies = discover_studies()
     print(f"Found {len(studies)} studies: {list(studies.keys())}")
     init_studies(studies)
+    init_analysis_studies(studies)
     print("Study metadata loaded.")
     yield
 
@@ -33,6 +35,7 @@ app.add_middleware(
 )
 
 app.include_router(studies_router)
+app.include_router(analyses_router)
 
 # Serve built React frontend if static/ directory exists
 if STATIC_DIR.is_dir():

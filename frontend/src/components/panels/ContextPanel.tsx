@@ -1,6 +1,7 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
+import { AdverseEffectsContextPanel } from "@/components/analysis/panes/AdverseEffectsContextPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function MetadataRow({
@@ -134,6 +135,16 @@ function StudyInspector({ studyId }: { studyId: string }) {
 
 export function ContextPanel() {
   const { selectedStudyId } = useSelection();
+  const location = useLocation();
+
+  // Check if we're on the adverse effects route
+  const isAdverseEffectsRoute = /\/studies\/[^/]+\/analyses\/adverse-effects/.test(
+    location.pathname
+  );
+
+  if (isAdverseEffectsRoute) {
+    return <AdverseEffectsContextPanel />;
+  }
 
   if (!selectedStudyId) {
     return (

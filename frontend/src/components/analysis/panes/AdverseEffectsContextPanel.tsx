@@ -1,0 +1,75 @@
+import { useParams } from "react-router-dom";
+import { useFindingSelection } from "@/contexts/FindingSelectionContext";
+import { useFindingContext } from "@/hooks/useFindingContext";
+import { CollapsiblePane } from "./CollapsiblePane";
+import { TreatmentRelatedSummaryPane } from "./TreatmentRelatedSummaryPane";
+import { StatisticsPane } from "./StatisticsPane";
+import { DoseResponsePane } from "./DoseResponsePane";
+import { CorrelationsPane } from "./CorrelationsPane";
+import { EffectSizePane } from "./EffectSizePane";
+import { Skeleton } from "@/components/ui/skeleton";
+
+export function AdverseEffectsContextPanel() {
+  const { studyId } = useParams<{ studyId: string }>();
+  const { selectedFindingId, selectedFinding } = useFindingSelection();
+  const { data: context, isLoading } = useFindingContext(
+    studyId,
+    selectedFindingId
+  );
+
+  if (!selectedFindingId || !selectedFinding) {
+    return (
+      <div className="p-4">
+        <h3 className="mb-2 text-sm font-semibold">Adverse Effects</h3>
+        <p className="text-xs text-muted-foreground">
+          Select a finding row to view detailed analysis.
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 p-4">
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+    );
+  }
+
+  if (!context) return null;
+
+  return (
+    <div>
+      <div className="border-b px-4 py-2">
+        <h3 className="text-sm font-semibold">{selectedFinding.finding}</h3>
+        <p className="text-[10px] text-muted-foreground">
+          {selectedFinding.domain} | {selectedFinding.sex} |{" "}
+          {selectedFinding.day != null ? `Day ${selectedFinding.day}` : "Terminal"}
+        </p>
+      </div>
+
+      <CollapsiblePane title="Treatment Summary" defaultOpen>
+        <TreatmentRelatedSummaryPane data={context.treatment_summary} />
+      </CollapsiblePane>
+
+      <CollapsiblePane title="Statistics" defaultOpen>
+        <StatisticsPane data={context.statistics} />
+      </CollapsiblePane>
+
+      <CollapsiblePane title="Dose Response">
+        <DoseResponsePane data={context.dose_response} />
+      </CollapsiblePane>
+
+      <CollapsiblePane title="Correlations" defaultOpen={false}>
+        <CorrelationsPane data={context.correlations} />
+      </CollapsiblePane>
+
+      <CollapsiblePane title="Effect Size" defaultOpen={false}>
+        <EffectSizePane data={context.effect_size} />
+      </CollapsiblePane>
+    </div>
+  );
+}

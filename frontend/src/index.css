@@ -39,6 +39,14 @@
   /* Subtle separator */
   --border-subtle: #e6e6e6;
 
+  /* Severity colors for analysis */
+  --adverse-bg: rgba(239, 68, 68, 0.08);
+  --adverse-text: #dc2626;
+  --warning-bg: rgba(245, 158, 11, 0.08);
+  --warning-text: #d97706;
+  --normal-bg: rgba(34, 197, 94, 0.08);
+  --normal-text: #16a34a;
+
   --sidebar-background: #ffffff;
   --sidebar-foreground: #1f1f1f;
   --sidebar-primary: #3a7bd5;
