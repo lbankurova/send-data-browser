@@ -1,0 +1,8 @@
+node_modules/
+backend/venv/
+backend/cache/
+backend/static/
+frontend/dist/
+.git/
+.gitignore
+*.md
