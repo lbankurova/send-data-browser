@@ -1,0 +1,25 @@
+node_modules/
+backend/venv/
+backend/cache/
+backend/static/
+frontend/dist/
+.env
+nul
+
+# Python
+__pycache__/
+*.pyc
+
+# Only include PointCross study data
+send/*
+!send/PointCross/
+
+# Design docs (not needed in repo)
+*.pdf
+*.docx
+*.doc
+*.png
+*.zip
+
+# Claude Code local settings
+.claude/
