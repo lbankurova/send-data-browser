@@ -10,8 +10,6 @@ import { NoaelDecisionViewWrapper } from "@/components/analysis/NoaelDecisionVie
 import { TargetOrgansViewWrapper } from "@/components/analysis/TargetOrgansViewWrapper";
 import { DoseResponseViewWrapper } from "@/components/analysis/DoseResponseViewWrapper";
 import { HistopathologyViewWrapper } from "@/components/analysis/HistopathologyViewWrapper";
-import { LoginPage } from "@/components/LoginPage";
-import { useAuth } from "@/contexts/AuthContext";
 
 const router = createBrowserRouter([
   {
@@ -56,11 +54,5 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  const { isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) {
-    return <LoginPage />;
-  }
-
   return <RouterProvider router={router} />;
 }
