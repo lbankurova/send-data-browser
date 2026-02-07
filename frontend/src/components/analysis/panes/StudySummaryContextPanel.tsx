@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { InsightsList } from "./InsightsList";
 import type {
   SignalSummaryRow,
   SignalSelection,
@@ -80,53 +81,11 @@ export function StudySummaryContextPanel({
 
       {/* Pane 1: Rule-based insights */}
       <CollapsiblePane title="Insights" defaultOpen>
-        {filteredRules.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">
-            No insights for this endpoint.
-          </p>
-        ) : (
-          <div className="space-y-1">
-            {filteredRules.map((rule, i) => {
-              const prefix =
-                rule.severity === "warning"
-                  ? "\u26a0"
-                  : rule.severity === "critical"
-                    ? "\u26d4"
-                    : "\u25cf";
-              const borderClass =
-                rule.severity === "warning"
-                  ? "border-l-amber-500"
-                  : rule.severity === "critical"
-                    ? "border-l-red-500"
-                    : "";
-
-              return (
-                <div
-                  key={`${rule.rule_id}-${i}`}
-                  className={`${borderClass ? `border-l-2 ${borderClass}` : ""} pl-2 text-[11px] leading-snug`}
-                >
-                  <span>{prefix} </span>
-                  <span
-                    className={
-                      borderClass ? "text-foreground" : "text-muted-foreground"
-                    }
-                  >
-                    {rule.output_text}
-                  </span>
-                  {rule.evidence_refs.length > 0 && (
-                    <div className="mt-0.5 text-[10px] text-muted-foreground/60">
-                      {rule.evidence_refs.join("; ")}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <InsightsList rules={filteredRules} />
       </CollapsiblePane>
 
       {/* Pane 2: Finding statistics */}
-      <CollapsiblePane title="Statistics" defaultOpen={false}>
+      <CollapsiblePane title="Statistics" defaultOpen>
         {selectedRow ? (
           <div className="space-y-1.5 text-[11px]">
             <div className="flex items-center justify-between">
@@ -187,7 +146,7 @@ export function StudySummaryContextPanel({
       </CollapsiblePane>
 
       {/* Pane 3: Cross-domain correlations */}
-      <CollapsiblePane title="Correlations" defaultOpen={false}>
+      <CollapsiblePane title="Correlations" defaultOpen>
         {correlatedFindings.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">
             No correlations in this organ system.
