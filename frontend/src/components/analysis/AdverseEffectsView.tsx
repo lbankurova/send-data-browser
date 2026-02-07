@@ -60,20 +60,20 @@ export function AdverseEffectsView() {
         <p className="text-sm text-muted-foreground">{studyId}</p>
       </div>
 
-      {/* Summary badges */}
+      {/* Summary counts */}
       {data && (
-        <div className="mb-4 flex items-center gap-3 text-xs">
-          <span className="rounded border border-red-200 bg-red-50 px-2 py-0.5 font-medium text-red-700">
+        <div className="mb-4 flex items-center gap-2 text-xs">
+          <span className="rounded-sm border border-red-200 bg-red-50 px-1.5 py-0.5 font-medium text-red-700">
             {data.summary.total_adverse} adverse
           </span>
-          <span className="rounded border border-amber-200 bg-amber-50 px-2 py-0.5 font-medium text-amber-700">
+          <span className="rounded-sm border border-amber-200 bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">
             {data.summary.total_warning} warning
           </span>
-          <span className="rounded border border-green-200 bg-green-50 px-2 py-0.5 font-medium text-green-700">
+          <span className="rounded-sm border border-green-200 bg-green-50 px-1.5 py-0.5 font-medium text-green-700">
             {data.summary.total_normal} normal
           </span>
-          <span className="text-muted-foreground">
-            {data.summary.total_findings} total findings
+          <span className="ml-1 text-muted-foreground">
+            {data.summary.total_findings} total
           </span>
         </div>
       )}

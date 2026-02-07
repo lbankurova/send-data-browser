@@ -13,3 +13,18 @@ export const ANALYSIS_TYPES: AnalysisType[] = [
   { key: "sex-differences", label: "Sex differences", icon: "Users", implemented: false },
   { key: "reversibility", label: "Reversibility", icon: "RotateCcw", implemented: false },
 ];
+
+export interface AnalysisView {
+  key: string;
+  label: string;
+  implemented: boolean;
+}
+
+export const ANALYSIS_VIEWS: AnalysisView[] = [
+  { key: "study-summary", label: "Study Summary", implemented: true },
+  { key: "dose-response", label: "Dose-response & causality", implemented: true },
+  { key: "target-organs", label: "Target organs & systems", implemented: true },
+  { key: "histopathology", label: "Histopathology review", implemented: true },
+  { key: "noael-decision", label: "NOAEL & decision", implemented: true },
+  { key: "validation", label: "Validation", implemented: true },
+];

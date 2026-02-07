@@ -9,26 +9,34 @@ import {
   Loader2,
   BarChart3,
   AlertTriangle,
-  Target,
+  TrendingUp,
   Crosshair,
-  CheckCircle,
-  Users,
-  RotateCcw,
+  Microscope,
+  Target,
+  ShieldCheck,
+  Minus,
 } from "lucide-react";
 import { useStudies } from "@/hooks/useStudies";
 import { useCategorizedDomains } from "@/hooks/useDomainsByStudy";
 import { getDomainDescription } from "@/lib/send-categories";
-import { ANALYSIS_TYPES } from "@/lib/analysis-definitions";
+import { ANALYSIS_VIEWS } from "@/lib/analysis-definitions";
 import { TreeNode } from "./TreeNode";
 
-const ANALYSIS_ICONS: Record<string, React.ReactNode> = {
-  AlertTriangle: <AlertTriangle className="h-4 w-4 text-muted-foreground" />,
-  Target: <Target className="h-4 w-4 text-muted-foreground" />,
-  Crosshair: <Crosshair className="h-4 w-4 text-muted-foreground" />,
-  CheckCircle: <CheckCircle className="h-4 w-4 text-muted-foreground" />,
-  Users: <Users className="h-4 w-4 text-muted-foreground" />,
-  RotateCcw: <RotateCcw className="h-4 w-4 text-muted-foreground" />,
+const VIEW_ICONS: Record<string, React.ReactNode> = {
+  "study-summary": <BarChart3 className="h-4 w-4 text-muted-foreground" />,
+  "dose-response": <TrendingUp className="h-4 w-4 text-muted-foreground" />,
+  "target-organs": <Crosshair className="h-4 w-4 text-muted-foreground" />,
+  histopathology: <Microscope className="h-4 w-4 text-muted-foreground" />,
+  "noael-decision": <Target className="h-4 w-4 text-muted-foreground" />,
+  validation: <ShieldCheck className="h-4 w-4 text-muted-foreground" />,
 };
+
+/** Map view key to route path segment */
+function viewRoute(studyId: string, viewKey: string): string {
+  const enc = encodeURIComponent(studyId);
+  if (viewKey === "study-summary") return `/studies/${enc}`;
+  return `/studies/${enc}/${viewKey}`;
+}
 
 function StudyBranch({
   studyId,
@@ -53,27 +61,30 @@ function StudyBranch({
     new Set()
   );
 
-  // Determine active analysis type from URL
-  const analysisMatch = location.pathname.match(
-    /\/studies\/[^/]+\/analyses\/([^/]+)/
-  );
-  const activeAnalysisType =
-    activeStudyId === studyId && analysisMatch ? analysisMatch[1] : undefined;
+  // Determine active view from URL
+  const getActiveView = (): string | undefined => {
+    if (activeStudyId !== studyId) return undefined;
+    const path = location.pathname;
+    const prefix = `/studies/${encodeURIComponent(studyId)}`;
+    if (path === prefix) return "study-summary";
+    for (const v of ANALYSIS_VIEWS) {
+      if (v.key !== "study-summary" && path === `${prefix}/${v.key}`) {
+        return v.key;
+      }
+    }
+    // Check old analyses routes
+    const analysisMatch = path.match(/\/analyses\/([^/]+)/);
+    if (analysisMatch) return `analyses-${analysisMatch[1]}`;
+    return undefined;
+  };
+  const activeView = getActiveView();
 
-  // Study node is active when on its landing page (not on a domain page or analysis)
-  const isStudyActive =
-    activeStudyId === studyId &&
-    !activeDomainName &&
-    !activeAnalysisType &&
-    location.pathname === `/studies/${encodeURIComponent(studyId)}`;
+  // Study node is active when on study summary
+  const isStudyActive = activeView === "study-summary";
 
-  // Auto-expand category containing active domain when data loads
+  // Auto-expand category containing active domain
   useEffect(() => {
-    if (
-      activeStudyId !== studyId ||
-      !activeDomainName ||
-      categories.length === 0
-    )
+    if (activeStudyId !== studyId || !activeDomainName || categories.length === 0)
       return;
     for (const cat of categories) {
       if (cat.domains.some((d) => d.name === activeDomainName)) {
@@ -88,17 +99,17 @@ function StudyBranch({
     }
   }, [activeStudyId, activeDomainName, studyId, categories]);
 
-  // Auto-expand analyses category when an analysis is active
+  // Auto-expand domains section when viewing a domain
   useEffect(() => {
-    if (activeAnalysisType) {
+    if (activeDomainName && activeStudyId === studyId) {
       setExpandedCategories((prev) => {
-        if (prev.has("analyses")) return prev;
+        if (prev.has("domains")) return prev;
         const next = new Set(prev);
-        next.add("analyses");
+        next.add("domains");
         return next;
       });
     }
-  }, [activeAnalysisType]);
+  }, [activeDomainName, activeStudyId, studyId]);
 
   const toggleCategory = useCallback((key: string) => {
     setExpandedCategories((prev) => {
@@ -114,12 +125,13 @@ function StudyBranch({
     if (!isExpanded) onToggle();
   }, [navigate, studyId, isExpanded, onToggle]);
 
-  const isAnalysesExpanded = expandedCategories.has("analyses");
+  const isDomainsExpanded = expandedCategories.has("domains");
 
   return (
     <>
+      {/* Study root node — click = Study Summary */}
       <TreeNode
-        label={studyId}
+        label={`Study: ${studyId}`}
         depth={1}
         icon={<FlaskConical className="h-4 w-4 text-muted-foreground" />}
         isExpanded={isExpanded}
@@ -128,90 +140,122 @@ function StudyBranch({
       />
       {isExpanded && (
         <>
-          {isLoading && (
-            <div
-              className="flex items-center gap-2 py-1"
-              style={{ paddingLeft: "56px" }}
-            >
-              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Loading...</span>
-            </div>
-          )}
-          {categories.map((cat) => {
-            const isCatExpanded = expandedCategories.has(cat.key);
-            return (
-              <div key={cat.key}>
-                <TreeNode
-                  label={`${cat.label} (${cat.domains.length})`}
-                  depth={2}
-                  icon={
-                    isCatExpanded ? (
-                      <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Folder className="h-4 w-4 text-muted-foreground" />
-                    )
-                  }
-                  isExpanded={isCatExpanded}
-                  onClick={() => toggleCategory(cat.key)}
-                />
-                {isCatExpanded &&
-                  cat.domains.map((domain) => {
-                    const isActive =
-                      activeStudyId === studyId &&
-                      activeDomainName === domain.name;
-                    return (
-                      <TreeNode
-                        key={domain.name}
-                        label={`${domain.name.toUpperCase()} — ${getDomainDescription(domain)}`}
-                        depth={3}
-                        icon={
-                          <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
-                        }
-                        isActive={isActive}
-                        onClick={() =>
-                          navigate(
-                            `/studies/${encodeURIComponent(studyId)}/domains/${encodeURIComponent(domain.name)}`
-                          )
-                        }
-                      />
-                    );
-                  })}
-              </div>
-            );
-          })}
-
-          {/* Analyses section */}
-          <TreeNode
-            label={`Analyses (${ANALYSIS_TYPES.length})`}
-            depth={2}
-            icon={
-              isAnalysesExpanded ? (
-                <FolderOpen className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              )
-            }
-            isExpanded={isAnalysesExpanded}
-            onClick={() => toggleCategory("analyses")}
-          />
-          {isAnalysesExpanded &&
-            ANALYSIS_TYPES.map((analysis) => {
-              const isActive = activeAnalysisType === analysis.key;
+          {/* Analysis views */}
+          {ANALYSIS_VIEWS.filter((v) => v.key !== "study-summary").map(
+            (view) => {
+              const isActive = activeView === view.key;
               return (
                 <TreeNode
-                  key={analysis.key}
-                  label={analysis.label}
-                  depth={3}
-                  icon={ANALYSIS_ICONS[analysis.icon]}
-                  isActive={isActive}
-                  onClick={() =>
-                    navigate(
-                      `/studies/${encodeURIComponent(studyId)}/analyses/${analysis.key}`
+                  key={view.key}
+                  label={view.label}
+                  depth={2}
+                  icon={
+                    VIEW_ICONS[view.key] ?? (
+                      <Minus className="h-4 w-4 text-muted-foreground" />
                     )
                   }
+                  isActive={isActive}
+                  onClick={() => {
+                    if (view.implemented) {
+                      navigate(viewRoute(studyId, view.key));
+                    } else {
+                      navigate(viewRoute(studyId, view.key));
+                    }
+                  }}
                 />
               );
-            })}
+            }
+          )}
+
+          {/* Separator */}
+          <div className="mx-4 my-1 border-t" />
+
+          {/* Domains section */}
+          <TreeNode
+            label={`Domains`}
+            depth={2}
+            icon={
+              isDomainsExpanded ? (
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Folder className="h-4 w-4 text-muted-foreground" />
+              )
+            }
+            isExpanded={isDomainsExpanded}
+            onClick={() => toggleCategory("domains")}
+          />
+
+          {isDomainsExpanded && (
+            <>
+              {isLoading && (
+                <div
+                  className="flex items-center gap-2 py-1"
+                  style={{ paddingLeft: "56px" }}
+                >
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    Loading...
+                  </span>
+                </div>
+              )}
+              {categories.map((cat) => {
+                const isCatExpanded = expandedCategories.has(cat.key);
+                return (
+                  <div key={cat.key}>
+                    <TreeNode
+                      label={`${cat.label} (${cat.domains.length})`}
+                      depth={3}
+                      icon={
+                        isCatExpanded ? (
+                          <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Folder className="h-4 w-4 text-muted-foreground" />
+                        )
+                      }
+                      isExpanded={isCatExpanded}
+                      onClick={() => toggleCategory(cat.key)}
+                    />
+                    {isCatExpanded &&
+                      cat.domains.map((domain) => {
+                        const isActive =
+                          activeStudyId === studyId &&
+                          activeDomainName === domain.name;
+                        return (
+                          <TreeNode
+                            key={domain.name}
+                            label={`${domain.name.toUpperCase()} \u2014 ${getDomainDescription(domain)}`}
+                            depth={4}
+                            icon={
+                              <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+                            }
+                            isActive={isActive}
+                            onClick={() =>
+                              navigate(
+                                `/studies/${encodeURIComponent(studyId)}/domains/${encodeURIComponent(domain.name)}`
+                              )
+                            }
+                          />
+                        );
+                      })}
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {/* Legacy analyses link */}
+          <div className="mx-4 my-1 border-t" />
+          <TreeNode
+            label="Adverse effects"
+            depth={2}
+            icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
+            isActive={activeView === "analyses-adverse-effects"}
+            onClick={() =>
+              navigate(
+                `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects`
+              )
+            }
+          />
         </>
       )}
     </>
