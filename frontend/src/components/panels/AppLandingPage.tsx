@@ -153,13 +153,13 @@ function StudyContextMenu({
   );
 }
 
-function ImportSection() {
-  const [open, setOpen] = useState(false);
+function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div className="border-b px-8 py-4">
       <button
-        className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+        className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-foreground hover:text-foreground"
         onClick={() => setOpen(!open)}
       >
         <ChevronRight
@@ -348,7 +348,7 @@ export function AppLandingPage() {
       </div>
 
       {/* Import section */}
-      <ImportSection />
+      <ImportSection defaultOpen={!isLoading && (studies ?? []).length === 0} />
 
       {/* Studies table */}
       <div className="px-8 py-6">
