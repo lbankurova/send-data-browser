@@ -114,6 +114,7 @@ cd C:/pg/pcc/frontend && npm run lint     # ESLint
 - `components/analysis/HistopathologyView.tsx` — View 4: Histopathology (severity heatmap, lesion grid)
 - `components/analysis/NoaelDecisionView.tsx` — View 5: NOAEL & Decision (banner, adversity matrix, grid)
 - `components/analysis/panes/*ContextPanel.tsx` — context panels for each view
+- `components/analysis/panes/InsightsList.tsx` — organ-grouped signal synthesis with tiered insights (Critical/Notable/Observed)
 
 ## TypeScript Conventions
 
@@ -178,6 +179,16 @@ Implemented in `lib/severity-colors.ts`.
 - **5c**: Landing Page Integration (context menu: Open Validation, Generate Report, Export; Generate Report button on Study Summary)
 - **5d**: Import Section Stub (collapsible "IMPORT NEW STUDY" on landing page — drop zone, metadata fields, validation checkboxes, disabled import button)
 - **5e**: Context Panel Actions (StudyInspector actions now live: Validation report, Generate report, Export)
+
+### InsightsList Synthesis
+The `InsightsList` component (`panes/InsightsList.tsx`) synthesizes raw rule_results into actionable organ-grouped signals:
+- **Grouping**: Rules grouped by `organ_system`, tiered as Critical / Notable / Observed based on rule_id combinations
+- **Synthesis**: Per-organ endpoint signals collapsed from R10/R04/R01 into compact lines (e.g., "ALT ↑ (d=2.23 F, 1.14 M), AST ↑ — adverse, dose-dependent")
+- **R09 counts**: Endpoint/domain counts parsed from R09 output_text, not counted from filtered rules
+- **R16 chips**: Correlation findings rendered as wrapped chips, not comma-separated text
+- **R14 NOAEL**: Consolidated when same dose across sexes ("NOAEL: Control for both sexes")
+- **Tier filter bar**: Clickable pills at top (Critical N / Notable N / Observed N) with opacity toggle
+- All parsing is heuristic-based on rule_id semantics and context_key format (`DOMAIN_TESTCODE_SEX`), not study-specific
 
 ### Data Nullability Notes
 - `lesion_severity_summary.json`: `avg_severity` is null for 550/728 rows — always null-guard with `?? 0`
