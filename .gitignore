@@ -4,6 +4,7 @@ backend/cache/
 backend/static/
 frontend/dist/
 .env
+!frontend/.env
 nul
 
 # Python
