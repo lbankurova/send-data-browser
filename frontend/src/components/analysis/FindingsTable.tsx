@@ -166,11 +166,11 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                   {formatEffectSize(f.max_effect_size)}
                 </td>
 
-                {/* Severity badge */}
+                {/* Severity */}
                 <td className="px-2 py-1 text-center">
                   <span
                     className={cn(
-                      "inline-block rounded px-1.5 py-0.5 text-[10px] font-medium",
+                      "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
                       getSeverityBadgeClasses(f.severity)
                     )}
                   >

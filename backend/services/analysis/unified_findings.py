@@ -111,14 +111,17 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     severity_counts = {"adverse": 0, "warning": 0, "normal": 0}
     target_organs = set()
     domains_with_findings = set()
+    treatment_related_count = 0
 
     for f in all_findings:
         sev = f.get("severity", "normal")
         severity_counts[sev] = severity_counts.get(sev, 0) + 1
         if f.get("severity") != "normal":
             domains_with_findings.add(f["domain"])
-        if f.get("treatment_related") and f.get("specimen"):
-            target_organs.add(f["specimen"])
+        if f.get("treatment_related"):
+            treatment_related_count += 1
+            if f.get("specimen"):
+                target_organs.add(f["specimen"])
 
     # Suggested NOAEL: highest dose where no adverse findings
     suggested_noael = None
@@ -147,6 +150,7 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
         "total_adverse": severity_counts["adverse"],
         "total_warning": severity_counts["warning"],
         "total_normal": severity_counts["normal"],
+        "total_treatment_related": treatment_related_count,
         "target_organs": sorted(target_organs),
         "domains_with_findings": sorted(domains_with_findings),
         "suggested_noael": suggested_noael,

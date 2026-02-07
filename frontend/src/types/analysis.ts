@@ -63,6 +63,7 @@ export interface AnalysisSummary {
   total_adverse: number;
   total_warning: number;
   total_normal: number;
+  total_treatment_related: number;
   target_organs: string[];
   domains_with_findings: string[];
   suggested_noael: {

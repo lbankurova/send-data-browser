@@ -1,5 +1,4 @@
-import { cn } from "@/lib/utils";
-import { getSeverityBadgeClasses } from "@/lib/severity-colors";
+import { getSeverityDotColor } from "@/lib/severity-colors";
 import type { FindingContext } from "@/types/analysis";
 import { InsightBlock } from "./InsightBlock";
 
@@ -12,28 +11,22 @@ export function TreatmentRelatedSummaryPane({ data }: Props) {
     <div className="space-y-3">
       <InsightBlock insights={data.insights} />
 
-      {/* Treatment-related badge */}
-      <div
-        className={cn(
-          "rounded-md px-3 py-2 text-xs",
-          data.treatment_related
-            ? "border border-red-200 bg-red-50 text-red-800"
-            : "border border-green-200 bg-green-50 text-green-800"
-        )}
-      >
-        <span className="font-semibold">
+      {/* Treatment-related status */}
+      <div className="flex items-center gap-2 text-xs">
+        <span
+          className="inline-block h-2 w-2 rounded-full"
+          style={{ background: data.treatment_related ? "#dc2626" : "#16a34a" }}
+        />
+        <span className="font-medium">
           {data.treatment_related ? "Treatment-related" : "Not treatment-related"}
         </span>
-        <span className="ml-2">
-          Severity:{" "}
+        <span className="text-muted-foreground">·</span>
+        <span className="inline-flex items-center gap-1 text-muted-foreground">
           <span
-            className={cn(
-              "inline-block rounded px-1 py-0.5 text-[10px] font-medium",
-              getSeverityBadgeClasses(data.severity)
-            )}
-          >
-            {data.severity}
-          </span>
+            className="inline-block h-1.5 w-1.5 rounded-full"
+            style={{ background: getSeverityDotColor(data.severity) }}
+          />
+          {data.severity}
         </span>
       </div>
 
@@ -42,14 +35,17 @@ export function TreatmentRelatedSummaryPane({ data }: Props) {
         <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Study-wide severity
         </div>
-        <div className="flex gap-2 text-xs">
-          <span className="rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-red-700">
+        <div className="flex gap-3 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#dc2626" }} />
             {data.severity_counts.adverse ?? 0} adverse
           </span>
-          <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-amber-700">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#d97706" }} />
             {data.severity_counts.warning ?? 0} warning
           </span>
-          <span className="rounded border border-green-200 bg-green-50 px-1.5 py-0.5 text-green-700">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#16a34a" }} />
             {data.severity_counts.normal ?? 0} normal
           </span>
         </div>
@@ -82,17 +78,16 @@ export function TreatmentRelatedSummaryPane({ data }: Props) {
           </div>
           <div className="space-y-0.5">
             {data.convergent_evidence.map((ce) => (
-              <div key={ce.finding_id} className="flex items-center gap-1 text-[11px]">
+              <div key={ce.finding_id} className="flex items-center gap-1.5 text-[11px]">
                 <span className="rounded bg-muted px-1 py-0.5 text-[9px] font-medium">
                   {ce.domain}
                 </span>
                 <span className="truncate">{ce.finding}</span>
-                <span
-                  className={cn(
-                    "ml-auto shrink-0 rounded px-1 py-0.5 text-[9px]",
-                    getSeverityBadgeClasses(ce.severity)
-                  )}
-                >
+                <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
+                  <span
+                    className="inline-block h-1.5 w-1.5 rounded-full"
+                    style={{ background: getSeverityDotColor(ce.severity) }}
+                  />
                   {ce.severity}
                 </span>
               </div>

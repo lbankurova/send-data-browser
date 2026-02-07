@@ -35,6 +35,19 @@ export function getSeverityBadgeClasses(severity: string): string {
   return `${c.bg} ${c.text} ${c.border} border`;
 }
 
+/** Returns just the CSS color for a severity dot. */
+export function getSeverityDotColor(severity: string): string {
+  switch (severity) {
+    case "adverse":
+      return "#dc2626"; // red-600
+    case "warning":
+      return "#d97706"; // amber-600
+    case "normal":
+    default:
+      return "#16a34a"; // green-600
+  }
+}
+
 export function getPValueColor(p: number | null | undefined): string {
   if (p == null) return "text-muted-foreground";
   if (p < 0.001) return "text-red-600 font-semibold";
@@ -109,4 +122,45 @@ export function getDomainBadgeColor(domain: string): {
     default:
       return { bg: "bg-gray-100", text: "text-gray-700" };
   }
+}
+
+/** Signal score to CSS background color (hex). */
+export function getSignalScoreColor(score: number): string {
+  if (score >= 0.7) return "#dc2626"; // red-600
+  if (score >= 0.5) return "#ea580c"; // orange-600
+  if (score >= 0.3) return "#d97706"; // amber-600
+  if (score >= 0.15) return "#ca8a04"; // yellow-600
+  return "#16a34a"; // green-600
+}
+
+/** Signal score to CSS background color with opacity for heatmap cells. */
+export function getSignalScoreHeatmapColor(score: number): string {
+  if (score >= 0.7) return "rgba(220,38,38,0.85)";
+  if (score >= 0.5) return "rgba(234,88,12,0.7)";
+  if (score >= 0.3) return "rgba(217,119,6,0.55)";
+  if (score >= 0.15) return "rgba(202,138,4,0.35)";
+  if (score > 0) return "rgba(22,163,74,0.2)";
+  return "rgba(0,0,0,0.03)";
+}
+
+/** Dose group color by level index. */
+export function getDoseGroupColor(level: number): string {
+  const colors = ["#6b7280", "#3b82f6", "#f59e0b", "#ef4444"];
+  return colors[level] ?? "#6b7280";
+}
+
+/** Sex color. */
+export function getSexColor(sex: string): string {
+  if (sex === "M") return "#3b82f6"; // blue-500
+  if (sex === "F") return "#ec4899"; // pink-500
+  return "#6b7280"; // gray-500
+}
+
+/** Significance stars from p-value. */
+export function getSignificanceStars(p: number | null): string {
+  if (p == null) return "";
+  if (p < 0.001) return "***";
+  if (p < 0.01) return "**";
+  if (p < 0.05) return "*";
+  return "ns";
 }

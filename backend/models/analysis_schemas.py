@@ -71,6 +71,7 @@ class AnalysisSummary(BaseModel):
     total_adverse: int
     total_warning: int
     total_normal: int
+    total_treatment_related: int = 0
     target_organs: list[str] = []
     domains_with_findings: list[str] = []
     suggested_noael: dict | None = None

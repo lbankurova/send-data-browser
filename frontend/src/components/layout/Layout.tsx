@@ -4,11 +4,15 @@ import { BrowsingTree } from "@/components/tree/BrowsingTree";
 import { ContextPanel } from "@/components/panels/ContextPanel";
 import { SelectionProvider } from "@/contexts/SelectionContext";
 import { FindingSelectionProvider } from "@/contexts/FindingSelectionContext";
+import { SignalSelectionProvider } from "@/contexts/SignalSelectionContext";
+import { ViewSelectionProvider } from "@/contexts/ViewSelectionContext";
 
 export function Layout() {
   return (
     <SelectionProvider>
       <FindingSelectionProvider>
+        <SignalSelectionProvider>
+        <ViewSelectionProvider>
         <div className="flex h-screen flex-col">
           <Header />
           <div className="flex min-h-0 flex-1">
@@ -23,6 +27,8 @@ export function Layout() {
             </aside>
           </div>
         </div>
+        </ViewSelectionProvider>
+        </SignalSelectionProvider>
       </FindingSelectionProvider>
     </SelectionProvider>
   );
