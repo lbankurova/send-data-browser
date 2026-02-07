@@ -90,6 +90,18 @@ export function StudySummaryFilters({ data, filters, onChange }: Props) {
           {filters.signal_score_min.toFixed(2)}
         </span>
       </label>
+
+      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={filters.significant_only}
+          onChange={(e) =>
+            onChange({ ...filters, significant_only: e.target.checked })
+          }
+          className="h-3.5 w-3.5 rounded border"
+        />
+        Significant only
+      </label>
     </div>
   );
 }
