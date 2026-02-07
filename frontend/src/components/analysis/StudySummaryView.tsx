@@ -27,6 +27,7 @@ export function StudySummaryView({ onSelectionChange }: StudySummaryViewProps) {
     organ_system: null,
     signal_score_min: 0,
     sex: null,
+    significant_only: false,
   });
 
   const [selection, setSelection] = useState<SignalSelection | null>(null);
@@ -58,6 +59,8 @@ export function StudySummaryView({ onSelectionChange }: StudySummaryViewProps) {
         return false;
       if (row.signal_score < filters.signal_score_min) return false;
       if (filters.sex && row.sex !== filters.sex) return false;
+      if (filters.significant_only && (row.p_value === null || row.p_value >= 0.05))
+        return false;
       return true;
     });
   }, [signalData, filters]);

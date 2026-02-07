@@ -52,6 +52,7 @@ export interface StudySummaryFilters {
   organ_system: string | null;
   signal_score_min: number;
   sex: string | null;
+  significant_only: boolean;
 }
 
 export interface SignalSelection {

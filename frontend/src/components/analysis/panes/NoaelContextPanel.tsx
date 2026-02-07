@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { InsightsList } from "./InsightsList";
 import {
   formatPValue,
   formatEffectSize,
@@ -62,33 +63,7 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection }:
       <div>
         {/* NOAEL narrative */}
         <CollapsiblePane title="NOAEL Narrative" defaultOpen>
-          {noaelRules.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground">No study-level insights available.</p>
-          ) : (
-            <div className="space-y-1">
-              {noaelRules.slice(0, 15).map((rule, i) => {
-                const borderClass =
-                  rule.severity === "warning"
-                    ? "border-l-amber-500"
-                    : rule.severity === "critical"
-                      ? "border-l-red-500"
-                      : "";
-                return (
-                  <div
-                    key={`${rule.rule_id}-${i}`}
-                    className={cn(
-                      borderClass ? `border-l-2 ${borderClass}` : "",
-                      "pl-2 text-[11px] leading-snug"
-                    )}
-                  >
-                    <span className={borderClass ? "text-foreground" : "text-muted-foreground"}>
-                      {rule.output_text}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <InsightsList rules={noaelRules} />
         </CollapsiblePane>
 
         {/* Confidence factors */}
@@ -155,33 +130,7 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection }:
 
       {/* Endpoint insights */}
       <CollapsiblePane title="Insights" defaultOpen>
-        {endpointRules.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No endpoint-specific insights.</p>
-        ) : (
-          <div className="space-y-1">
-            {endpointRules.slice(0, 10).map((rule, i) => {
-              const borderClass =
-                rule.severity === "warning"
-                  ? "border-l-amber-500"
-                  : rule.severity === "critical"
-                    ? "border-l-red-500"
-                    : "";
-              return (
-                <div
-                  key={`${rule.rule_id}-${i}`}
-                  className={cn(
-                    borderClass ? `border-l-2 ${borderClass}` : "",
-                    "pl-2 text-[11px] leading-snug"
-                  )}
-                >
-                  <span className={borderClass ? "text-foreground" : "text-muted-foreground"}>
-                    {rule.output_text}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <InsightsList rules={endpointRules} />
       </CollapsiblePane>
 
       {/* Cross-view links */}
