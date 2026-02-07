@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Loader2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
@@ -137,7 +137,7 @@ export function StudySummaryView({ onSelectionChange }: StudySummaryViewProps) {
       </div>
 
       {/* Tab content */}
-      {tab === "details" && <DetailsTab meta={meta} />}
+      {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} />}
       {tab === "signals" && (
         <div className="flex h-full flex-col overflow-hidden">
           {/* Filters */}
@@ -235,7 +235,7 @@ function formatSubjects(
 
 import type { StudyMetadata } from "@/types";
 
-function DetailsTab({ meta }: { meta: StudyMetadata | undefined }) {
+function DetailsTab({ meta, studyId }: { meta: StudyMetadata | undefined; studyId: string }) {
   if (!meta) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -300,12 +300,13 @@ function DetailsTab({ meta }: { meta: StudyMetadata | undefined }) {
         </h2>
         <div className="flex flex-wrap gap-2">
           {meta.domains.map((d) => (
-            <span
+            <Link
               key={d}
-              className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs"
+              to={`/studies/${studyId}/domains/${d}`}
+              className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs hover:bg-primary/20 transition-colors"
             >
               {d}
-            </span>
+            </Link>
           ))}
         </div>
       </section>
