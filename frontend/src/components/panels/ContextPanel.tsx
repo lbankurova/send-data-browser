@@ -419,5 +419,16 @@ export function ContextPanel() {
     );
   }
 
+  if (selectedStudyId !== "PointCross") {
+    return (
+      <div className="p-4">
+        <h3 className="mb-3 text-sm font-semibold">{selectedStudyId}</h3>
+        <p className="text-xs text-muted-foreground">
+          This is a demo entry. Select PointCross to explore full functionality.
+        </p>
+      </div>
+    );
+  }
+
   return <StudyInspector studyId={selectedStudyId} />;
 }
