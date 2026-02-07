@@ -16,13 +16,13 @@ const PATTERN_LABELS: Record<string, string> = {
   insufficient_data: "Insufficient data",
 };
 
-const PATTERN_COLORS: Record<string, string> = {
-  monotonic_increase: "bg-red-100 text-red-700 border-red-200",
-  monotonic_decrease: "bg-blue-100 text-blue-700 border-blue-200",
-  threshold: "bg-amber-100 text-amber-700 border-amber-200",
-  non_monotonic: "bg-purple-100 text-purple-700 border-purple-200",
-  flat: "bg-green-100 text-green-700 border-green-200",
-  insufficient_data: "bg-gray-100 text-gray-500 border-gray-200",
+const PATTERN_DOT_COLORS: Record<string, string> = {
+  monotonic_increase: "#dc2626",
+  monotonic_decrease: "#2563eb",
+  threshold: "#d97706",
+  non_monotonic: "#7c3aed",
+  flat: "#16a34a",
+  insufficient_data: "#9ca3af",
 };
 
 export function DoseResponsePane({ data }: Props) {
@@ -36,18 +36,17 @@ export function DoseResponsePane({ data }: Props) {
     <div className="space-y-3">
       <InsightBlock insights={data.insights} />
 
-      {/* Pattern badge */}
-      <div className="flex items-center gap-2">
+      {/* Pattern */}
+      <div className="flex items-center gap-2 text-xs">
         <span
-          className={cn(
-            "rounded border px-2 py-0.5 text-[10px] font-medium",
-            PATTERN_COLORS[data.pattern] ?? PATTERN_COLORS.insufficient_data
-          )}
-        >
+          className="inline-block h-2 w-2 rounded-full"
+          style={{ background: PATTERN_DOT_COLORS[data.pattern] ?? "#9ca3af" }}
+        />
+        <span className="font-medium">
           {PATTERN_LABELS[data.pattern] ?? data.pattern}
         </span>
         {data.direction && data.direction !== "none" && (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground">
             {data.direction === "up" ? "Increasing" : "Decreasing"}
           </span>
         )}

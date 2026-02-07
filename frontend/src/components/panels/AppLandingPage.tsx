@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FlaskConical, MoreVertical } from "lucide-react";
+import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload } from "lucide-react";
 import { useStudies } from "@/hooks/useStudies";
 import { useSelection } from "@/contexts/SelectionContext";
+import { generateStudyReport } from "@/lib/report-generator";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StudySummary } from "@/types";
 
@@ -12,37 +13,118 @@ function formatStandard(raw: string | null): string {
   return match ? `SEND ${match[1]}` : raw;
 }
 
-function StatusPill({ status }: { status: string }) {
-  const style =
-    status === "Complete"
-      ? { background: "#4caf5018", color: "#2e7d32" }
-      : status === "Failed" || status === "Invalid"
-        ? { background: "#e5393518", color: "#c62828" }
-        : { background: "#f0f0f0", color: "#5f5f5f" };
-  return (
-    <span
-      className="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
-      style={style}
-    >
-      {status}
-    </span>
-  );
-}
+const VAL_DISPLAY: Record<string, { icon: React.ReactNode; tooltip: string }> = {
+  Pass: { icon: <Check className="h-3.5 w-3.5" style={{ color: "#16a34a" }} />, tooltip: "SEND validation passed" },
+  Warnings: { icon: <TriangleAlert className="h-3.5 w-3.5" style={{ color: "#d97706" }} />, tooltip: "Passed with warnings" },
+  Fail: { icon: <X className="h-3.5 w-3.5" style={{ color: "#dc2626" }} />, tooltip: "SEND validation failed" },
+  "Not Run": { icon: <span className="text-xs text-muted-foreground">—</span>, tooltip: "Not validated" },
+};
+
+type DisplayStudy = StudySummary & { validation: string; demo?: boolean };
+
+const DEMO_STUDIES: DisplayStudy[] = [
+  {
+    study_id: "DART-2024-0091",
+    name: "DART-2024-0091",
+    domain_count: 22,
+    species: "Rat",
+    study_type: "Reproductive",
+    protocol: "DART-091-GLP",
+    standard: "SEND 3.1",
+    subjects: 240,
+    start_date: "2024-03-11",
+    end_date: "2024-09-28",
+    status: "Complete",
+    validation: "Pass",
+    demo: true,
+  },
+  {
+    study_id: "CARDIO-TX-1147",
+    name: "CARDIO-TX-1147",
+    domain_count: 18,
+    species: "Dog",
+    study_type: "Chronic",
+    protocol: "CRD-1147-28D",
+    standard: "SEND 3.1.1",
+    subjects: 32,
+    start_date: "2024-06-01",
+    end_date: "2024-12-15",
+    status: "Complete",
+    validation: "Warnings",
+    demo: true,
+  },
+  {
+    study_id: "ONCO-MTD-3382",
+    name: "ONCO-MTD-3382",
+    domain_count: 14,
+    species: "Mouse",
+    study_type: "Carcinogenicity",
+    protocol: "ONC-3382-MTD",
+    standard: "SEND 3.0",
+    subjects: 400,
+    start_date: "2023-11-20",
+    end_date: null,
+    status: "Ongoing",
+    validation: "Fail",
+    demo: true,
+  },
+  {
+    study_id: "NEURO-PK-0256",
+    name: "NEURO-PK-0256",
+    domain_count: 9,
+    species: "Rat",
+    study_type: "Neurotoxicity",
+    protocol: "NPK-256-7D",
+    standard: "SEND 3.1.1",
+    subjects: 60,
+    start_date: "2025-01-06",
+    end_date: null,
+    status: "Ongoing",
+    validation: "Not Run",
+    demo: true,
+  },
+];
 
 function StudyContextMenu({
   position,
+  study,
   onClose,
   onOpen,
 }: {
   position: { x: number; y: number };
+  study: DisplayStudy;
   onClose: () => void;
   onOpen: () => void;
 }) {
+  const navigate = useNavigate();
+  const isDemo = !!study.demo;
   const items: { label: string; action: () => void; disabled?: boolean; separator?: boolean }[] = [
-    { label: "Open Study", action: onOpen },
-    { label: "Open Validation Report", action: () => onClose(), disabled: true },
+    { label: "Open Study", action: onOpen, disabled: isDemo },
+    {
+      label: "Open Validation Report",
+      action: () => {
+        onClose();
+        navigate(`/studies/${encodeURIComponent(study.study_id)}/validation`);
+      },
+      disabled: isDemo,
+    },
+    {
+      label: "Generate Report",
+      action: () => {
+        onClose();
+        generateStudyReport(study.study_id);
+      },
+      disabled: isDemo,
+    },
     { label: "Share...", action: () => onClose(), disabled: true },
-    { label: "Export...", action: () => onClose(), disabled: true },
+    {
+      label: "Export...",
+      action: () => {
+        onClose();
+        if (!isDemo) alert("CSV/Excel export coming soon.");
+      },
+      disabled: isDemo,
+    },
     { label: "Re-validate SEND...", action: () => onClose(), disabled: true },
     { label: "Delete", action: () => onClose(), disabled: true, separator: true },
   ];
@@ -71,13 +153,115 @@ function StudyContextMenu({
   );
 }
 
+function ImportSection() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="border-b px-8 py-4">
+      <button
+        className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+        onClick={() => setOpen(!open)}
+      >
+        <ChevronRight
+          className="h-3 w-3 transition-transform"
+          style={{ transform: open ? "rotate(90deg)" : undefined }}
+        />
+        Import New Study
+      </button>
+
+      {open && (
+        <div className="mt-4 space-y-4">
+          {/* Drop zone */}
+          <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 py-8">
+            <Upload className="h-8 w-8 text-muted-foreground/50" />
+            <p className="text-sm text-muted-foreground">
+              Drop SEND study folder here
+            </p>
+            <button
+              className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
+              onClick={(e) => e.preventDefault()}
+            >
+              Browse...
+            </button>
+          </div>
+
+          {/* Metadata fields */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <label className="w-20 shrink-0 text-xs text-muted-foreground">Study ID</label>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <input type="checkbox" checked disabled className="h-3 w-3" />
+                Auto-detect
+              </label>
+              <input
+                type="text"
+                disabled
+                placeholder="Detected from DM domain"
+                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="w-20 shrink-0 text-xs text-muted-foreground">Protocol</label>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <input type="checkbox" checked disabled className="h-3 w-3" />
+                Auto-detect
+              </label>
+              <input
+                type="text"
+                disabled
+                placeholder="Detected from TS domain"
+                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="w-20 shrink-0 text-xs text-muted-foreground">Description</label>
+              <input
+                type="text"
+                disabled
+                placeholder="Optional description"
+                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
+              />
+            </div>
+          </div>
+
+          {/* Validation options */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <input type="checkbox" checked disabled className="h-3 w-3" />
+              Validate SEND compliance
+            </label>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <input type="checkbox" disabled className="h-3 w-3" />
+              Attempt automatic fixes
+            </label>
+          </div>
+
+          {/* Import button */}
+          <button
+            disabled
+            title="Import not available in prototype"
+            className="rounded-md bg-primary/50 px-4 py-2 text-xs font-medium text-primary-foreground/70 cursor-not-allowed"
+          >
+            Import Study
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AppLandingPage() {
   const { data: studies, isLoading } = useStudies();
   const navigate = useNavigate();
   const { selectedStudyId, selectStudy } = useSelection();
 
+  const allStudies: DisplayStudy[] = [
+    ...(studies ?? []).map((s) => ({ ...s, validation: "Pass" })),
+    ...DEMO_STUDIES,
+  ];
+
   const [contextMenu, setContextMenu] = useState<{
-    study: StudySummary;
+    study: DisplayStudy;
     x: number;
     y: number;
   } | null>(null);
@@ -85,7 +269,7 @@ export function AppLandingPage() {
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleClick = useCallback(
-    (study: StudySummary) => {
+    (study: DisplayStudy) => {
       if (clickTimerRef.current) {
         clearTimeout(clickTimerRef.current);
         clickTimerRef.current = null;
@@ -99,7 +283,8 @@ export function AppLandingPage() {
   );
 
   const handleDoubleClick = useCallback(
-    (study: StudySummary) => {
+    (study: DisplayStudy) => {
+      if (study.demo) return;
       if (clickTimerRef.current) {
         clearTimeout(clickTimerRef.current);
         clickTimerRef.current = null;
@@ -110,7 +295,7 @@ export function AppLandingPage() {
   );
 
   const handleContextMenu = useCallback(
-    (e: React.MouseEvent, study: StudySummary) => {
+    (e: React.MouseEvent, study: DisplayStudy) => {
       e.preventDefault();
       selectStudy(study.study_id);
       setContextMenu({ study, x: e.clientX, y: e.clientY });
@@ -119,7 +304,7 @@ export function AppLandingPage() {
   );
 
   const handleActionsClick = useCallback(
-    (e: React.MouseEvent, study: StudySummary) => {
+    (e: React.MouseEvent, study: DisplayStudy) => {
       e.stopPropagation();
       selectStudy(study.study_id);
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -132,9 +317,9 @@ export function AppLandingPage() {
     <div className="h-full overflow-y-auto">
       {/* Hero */}
       <div className="border-b bg-card px-8 py-8">
-        <div className="flex items-center gap-10">
-          <div className="flex shrink-0 items-center gap-4">
-            <FlaskConical className="h-12 w-12" style={{ color: "#3a7bd5" }} />
+        <div className="flex items-start gap-10">
+          <div className="flex shrink-0 items-start gap-4">
+            <FlaskConical className="mt-0.5 h-12 w-12" style={{ color: "#3a7bd5" }} />
             <div>
               <h1 className="text-xl font-semibold tracking-tight">Preclinical Case</h1>
               <p className="mt-0.5 text-sm text-muted-foreground">
@@ -162,10 +347,13 @@ export function AppLandingPage() {
         </div>
       </div>
 
+      {/* Import section */}
+      <ImportSection />
+
       {/* Studies table */}
       <div className="px-8 py-6">
         <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Studies ({studies?.length ?? 0})
+          Studies ({allStudies.length})
         </h2>
 
         {isLoading ? (
@@ -173,7 +361,7 @@ export function AppLandingPage() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
-        ) : studies && studies.length > 0 ? (
+        ) : allStudies.length > 0 ? (
           <div className="overflow-x-auto rounded-md border bg-card">
             <table className="w-full text-sm">
               <thead>
@@ -190,7 +378,7 @@ export function AppLandingPage() {
                 </tr>
               </thead>
               <tbody>
-                {studies.map((study) => {
+                {allStudies.map((study) => {
                   const isSelected = selectedStudyId === study.study_id;
                   return (
                     <tr
@@ -241,11 +429,17 @@ export function AppLandingPage() {
                       <td className="px-3 py-2 tabular-nums text-muted-foreground">
                         {study.end_date ?? "—"}
                       </td>
-                      <td className="px-3 py-2">
-                        <StatusPill status={study.status} />
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+                            style={{ background: study.status === "Complete" ? "#16a34a" : "transparent" }}
+                          />
+                          {study.status}
+                        </span>
                       </td>
-                      <td className="px-3 py-2 text-center text-muted-foreground">
-                        —
+                      <td className="px-3 py-2 text-center" title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}>
+                        {VAL_DISPLAY[study.validation]?.icon ?? <span className="text-xs text-muted-foreground">—</span>}
                       </td>
                     </tr>
                   );
@@ -268,6 +462,7 @@ export function AppLandingPage() {
       {contextMenu && (
         <StudyContextMenu
           position={{ x: contextMenu.x, y: contextMenu.y }}
+          study={contextMenu.study}
           onClose={() => setContextMenu(null)}
           onOpen={() => {
             setContextMenu(null);

@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 
 const ANALYSIS_LABELS: Record<string, string> = {
   noael: "NOAEL Determination",
@@ -6,6 +6,9 @@ const ANALYSIS_LABELS: Record<string, string> = {
   validation: "Data Validation",
   "sex-differences": "Sex Differences Analysis",
   reversibility: "Reversibility Assessment",
+  "dose-response": "Dose-response & Causality",
+  histopathology: "Histopathology Review",
+  "noael-decision": "NOAEL & Decision",
 };
 
 export function PlaceholderAnalysisView() {
@@ -13,8 +16,12 @@ export function PlaceholderAnalysisView() {
     studyId: string;
     analysisType: string;
   }>();
+  const location = useLocation();
 
-  const label = ANALYSIS_LABELS[analysisType ?? ""] ?? analysisType;
+  // Extract the view key from the path for the new-style routes
+  const pathParts = location.pathname.split("/");
+  const viewKey = analysisType ?? pathParts[pathParts.length - 1];
+  const label = ANALYSIS_LABELS[viewKey] ?? viewKey;
 
   return (
     <div className="flex flex-col items-center justify-center p-12 text-center">
