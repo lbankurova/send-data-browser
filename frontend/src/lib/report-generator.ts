@@ -17,8 +17,8 @@ import type {
   TargetOrganRow,
   NoaelSummaryRow,
   AdverseEffectSummaryRow,
-  RuleResult,
 } from "@/types/analysis-views";
+import { buildOrganGroups, type OrganGroup } from "@/lib/rule-synthesis";
 
 const BRAND = "#3a7bd5";
 
@@ -41,6 +41,17 @@ function severityBadge(sev: string): string {
   };
   const c = colors[sev] ?? colors.normal;
   return `<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;background:${c.bg};color:${c.text};border:1px solid ${c.border}">${escapeHtml(sev)}</span>`;
+}
+
+const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  Critical: { bg: "#FEE2E2", text: "#991B1B", border: "#FECACA" },
+  Notable: { bg: "#FEF3C7", text: "#92400E", border: "#FDE68A" },
+  Observed: { bg: "#F3F4F6", text: "#6B7280", border: "#E5E7EB" },
+};
+
+function tierBadge(tier: string): string {
+  const c = TIER_COLORS[tier] ?? TIER_COLORS.Observed;
+  return `<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:9px;font-weight:600;background:${c.bg};color:${c.text};border:1px solid ${c.border}">${escapeHtml(tier)}</span>`;
 }
 
 function formatDuration(iso: string | null): string {
@@ -182,7 +193,8 @@ function buildNoaelSection(noael: NoaelSummaryRow[]): string {
 
 function buildOrganSection(
   organs: TargetOrganRow[],
-  adverse: AdverseEffectSummaryRow[]
+  adverse: AdverseEffectSummaryRow[],
+  organGroups: OrganGroup[]
 ): string {
   const targetOrgans = organs
     .filter((o) => o.target_organ_flag)
@@ -196,12 +208,20 @@ function buildOrganSection(
     const organEffects = adverse.filter(
       (a) => a.organ_system === organ.organ_system
     );
+    // Find the synthesized group for this organ
+    const synthGroup = organGroups.find((g) => g.organ === organ.organ_system);
+    const signalLine = synthGroup?.synthLines.find((l) => l.isWarning)?.text ?? "";
+
     return `
       <div style="margin-top:16px;padding:12px;border:1px solid #e5e7eb;border-radius:6px">
-        <h3 style="font-size:14px;font-weight:600;color:#111827;margin:0">${escapeHtml(organ.organ_system)}</h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <h3 style="font-size:14px;font-weight:600;color:#111827;margin:0">${escapeHtml(organ.organ_system)}</h3>
+          ${synthGroup ? tierBadge(synthGroup.tier) : ""}
+        </div>
         <div style="font-size:11px;color:#6b7280;margin-top:2px">
           Evidence: ${organ.evidence_score.toFixed(2)} · ${organ.n_endpoints} endpoints across ${organ.n_domains} domain(s)
         </div>
+        ${signalLine ? `<div style="font-size:11px;color:#374151;margin-top:6px;padding:4px 8px;border-left:3px solid #F59E0B;background:#FFFBEB">${escapeHtml(signalLine)}</div>` : ""}
         ${organEffects.length > 0 ? `
         <table style="border-collapse:collapse;width:100%;margin-top:8px;font-size:11px">
           <tr style="background:#f3f4f6">
@@ -245,7 +265,7 @@ function buildMethodsSection(): string {
 function buildAppendicesSection(
   signals: SignalSummaryRow[],
   adverse: AdverseEffectSummaryRow[],
-  rules: RuleResult[]
+  organGroups: OrganGroup[]
 ): string {
   // Top 50 signals sorted by signal_score desc
   const topSignals = [...signals]
@@ -254,9 +274,6 @@ function buildAppendicesSection(
 
   // Top 50 adverse effects
   const topAdverse = adverse.slice(0, 50);
-
-  // Top 30 rules
-  const topRules = rules.slice(0, 30);
 
   return `
     <h2 style="color:${BRAND};border-bottom:2px solid ${BRAND};padding-bottom:4px;margin-top:32px;page-break-before:always">7. Appendices</h2>
@@ -299,17 +316,28 @@ function buildAppendicesSection(
         .join("")}
     </table>
 
-    <h3 style="font-size:13px;margin-top:24px;color:#374151;page-break-before:always">C. Rule-Based Insights (Top ${topRules.length})</h3>
-    <div style="margin-top:4px">
-      ${topRules
+    <h3 style="font-size:13px;margin-top:24px;color:#374151;page-break-before:always">C. Synthesized Insights by Organ System</h3>
+    <div style="margin-top:8px">
+      ${organGroups
         .map(
-          (r) => `
-        <div style="padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:11px">
-          <span style="font-family:monospace;color:#6b7280">${escapeHtml(r.rule_id)}</span>
-          <span style="margin-left:8px">${severityBadge(r.severity)}</span>
-          <span style="margin-left:8px;color:#6b7280">[${escapeHtml(r.scope)}]</span>
-          ${r.organ_system ? `<span style="margin-left:8px;color:#6b7280">${escapeHtml(r.organ_system)}</span>` : ""}
-          <div style="margin-top:2px;color:#374151">${escapeHtml(r.output_text)}</div>
+          (g) => `
+        <div style="margin-bottom:16px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:6px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            ${tierBadge(g.tier)}
+            <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#374151">${escapeHtml(g.displayName)}</span>
+          </div>
+          ${g.endpointCount > 0 ? `<div style="font-size:10px;color:#9ca3af;margin-bottom:6px">${g.endpointCount} endpoint${g.endpointCount !== 1 ? "s" : ""}${g.domainCount > 0 ? `, ${g.domainCount} domain${g.domainCount !== 1 ? "s" : ""}` : ""}</div>` : ""}
+          ${g.synthLines
+            .map((line) => {
+              if (line.chips) {
+                return `<div style="margin-top:4px"><div style="font-size:10px;color:#9ca3af;margin-bottom:3px">${escapeHtml(line.text)}</div><div style="display:flex;flex-wrap:wrap;gap:4px">${line.chips.map((c) => `<span style="display:inline-block;padding:2px 6px;border-radius:3px;font-size:10px;background:#f3f4f6;color:#6b7280">${escapeHtml(c)}</span>`).join("")}</div></div>`;
+              }
+              if (line.isWarning) {
+                return `<div style="font-size:11px;color:#374151;padding:3px 8px;border-left:3px solid #F59E0B;background:#FFFBEB;margin-top:4px">${escapeHtml(line.text)}</div>`;
+              }
+              return `<div style="font-size:11px;color:#6b7280;margin-top:4px">${escapeHtml(line.text)}</div>`;
+            })
+            .join("")}
         </div>
       `
         )
@@ -324,7 +352,7 @@ function buildHtml(
   organs: TargetOrganRow[],
   noael: NoaelSummaryRow[],
   adverse: AdverseEffectSummaryRow[],
-  rules: RuleResult[]
+  organGroups: OrganGroup[]
 ): string {
   const now = new Date().toLocaleString();
 
@@ -367,9 +395,9 @@ function buildHtml(
   ${buildDesignSection(meta, signals)}
   ${buildKeyFindingsSection(signals, organs, adverse)}
   ${buildNoaelSection(noael)}
-  ${buildOrganSection(organs, adverse)}
+  ${buildOrganSection(organs, adverse, organGroups)}
   ${buildMethodsSection()}
-  ${buildAppendicesSection(signals, adverse, rules)}
+  ${buildAppendicesSection(signals, adverse, organGroups)}
 
   <!-- Footer -->
   <div style="margin-top:48px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;text-align:center">
@@ -390,7 +418,8 @@ export async function generateStudyReport(studyId: string): Promise<void> {
     fetchRuleResults(studyId),
   ]);
 
-  const html = buildHtml(meta, signals, organs, noael, adverse, rules);
+  const organGroups = buildOrganGroups(rules);
+  const html = buildHtml(meta, signals, organs, noael, adverse, organGroups);
 
   // Open in new tab
   const win = window.open("", "_blank");
