@@ -122,9 +122,13 @@ The `ContextPanel` component (`components/panels/ContextPanel.tsx`) uses route-b
 
 Each wrapper function reads the shared `ViewSelectionContext`, casts the selection to the view-specific shape (guarded by `_view` tag), fetches the required data via hooks, and passes both to the view-specific context panel component.
 
-### Cross-View Navigation
+### Cross-View Navigation (GAP-03 resolved)
 
-Each analysis view's context panel includes "Related views" links that use `navigate()` to switch between views. These are simple route navigations -- they do not carry filter context across the boundary.
+Each analysis view's context panel includes "Related views" links that use `navigate()` with `location.state` to carry selection context across view boundaries. The receiving view reads `location.state` in a `useEffect` hook, applies the relevant filter/selection, then clears the state via `window.history.replaceState({}, "")` to prevent re-application on refresh.
+
+**State payloads passed via `navigate()`**:
+- `{ organ_system }` — received by Target Organs (sets selected organ), Histopathology (sets specimen filter), NOAEL & Decision (sets organ_system filter)
+- `{ endpoint_label, organ_system }` — received by Dose-Response (sets organ_system filter + endpoint search)
 
 **Cross-view link patterns (from context panel panes)**:
 
@@ -205,7 +209,6 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 **Limitations**:
 - No URL persistence of filter state -- navigating to a view always starts with default filters
 - No deep linking -- cannot share a URL that pre-selects a specific endpoint or organ
-- Cross-view links do not carry selection context -- navigating from Dose-Response to Target Organs does not pre-select the organ you were looking at
 - `ViewSelectionContext` uses `Record<string, any>` type -- no compile-time enforcement of selection shape per view (runtime `_view` tag check only)
 - Non-PointCross studies show a demo guard message instead of real data (P1.3)
 - `SelectionContext` tracks landing page study selection, but this state is not used once you navigate into a study route (route params take precedence)
@@ -240,7 +243,7 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 | `BrowsingTree` (left panel) | Toolbox accordion (`grok.shell.sidebar`) with `ui.tree()` for hierarchical navigation. Studies and domains would be tree nodes. Analysis views would be accordion sections or toolbar buttons. |
 | `ContextPanel` (right panel) | Info panels registered by semantic type. Datagrok natively shows info panels for selected cells/rows. Custom panels via `DG.JsViewer` or `@grok/InfoPanel` decorators. The route-based dispatch pattern maps to semantic-type-based panel registration. |
 | `Header` (top bar) | Datagrok ribbon. App name in the ribbon title area. Action buttons in ribbon groups. |
-| Cross-view links (`navigate()`) | `grok.shell.v = targetView` or raising an event that the target view listens for. Can pass filter context by setting DataFrame filters before switching. |
+| Cross-view links (`navigate()` with `location.state`) | `grok.shell.v = targetView` then set DataFrame filters before switching. The React Router `location.state` pattern maps to setting filter state on the target view's DataFrame. |
 | `pendingNavigation` pattern | Not needed -- Datagrok views can directly manipulate each other's state through shared DataFrame objects and events. |
 | Fixed panel widths (260px / 280px) | Datagrok panels are resizable by default. Similar fixed widths can be set via `DG.DockManager`. |
 

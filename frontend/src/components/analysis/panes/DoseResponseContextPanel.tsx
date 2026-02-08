@@ -123,7 +123,7 @@ export function DoseResponseContextPanel({ drData, ruleResults, selection, study
               style={{ color: "#3a7bd5" }}
               onClick={(e) => {
                 e.preventDefault();
-                if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`);
+                if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: selection.organ_system } });
               }}
             >
               View target organ: {selection.organ_system.replace(/_/g, " ")} &#x2192;
@@ -135,7 +135,7 @@ export function DoseResponseContextPanel({ drData, ruleResults, selection, study
             style={{ color: "#3a7bd5" }}
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`);
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: selection.organ_system } });
             }}
           >
             View histopathology &#x2192;
@@ -146,7 +146,7 @@ export function DoseResponseContextPanel({ drData, ruleResults, selection, study
             style={{ color: "#3a7bd5" }}
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`);
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: selection.organ_system } });
             }}
           >
             View NOAEL decision &#x2192;

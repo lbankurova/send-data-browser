@@ -16,6 +16,7 @@ from services.analysis.findings_om import compute_om_findings
 from services.analysis.findings_mi import compute_mi_findings
 from services.analysis.findings_ma import compute_ma_findings
 from services.analysis.findings_cl import compute_cl_findings
+from services.analysis.findings_ds import compute_ds_findings
 from services.analysis.classification import (
     classify_severity, classify_dose_response, determine_treatment_related,
 )
@@ -114,6 +115,7 @@ def compute_all_findings(study: StudyInfo) -> tuple[list[dict], dict]:
     all_findings.extend(compute_mi_findings(study, subjects))
     all_findings.extend(compute_ma_findings(study, subjects))
     all_findings.extend(compute_cl_findings(study, subjects))
+    all_findings.extend(compute_ds_findings(study, subjects))
 
     # Try FW domain (food/water consumption) — mirrors BW pattern
     if "fw" in study.xpt_files:
@@ -142,12 +144,27 @@ def compute_all_findings(study: StudyInfo) -> tuple[list[dict], dict]:
 
         # Enrich continuous findings with ANOVA, Dunnett's, JT
         if finding.get("data_type") == "continuous":
-            group_stats = finding.get("group_stats", [])
-            # We don't have raw values in the finding dict, but we have group-level
-            # stats. The ANOVA/Dunnett p-values are approximated from pairwise results.
-            # For the generator, we'll use the existing pairwise + trend as sufficient.
-            finding["anova_p"] = _safe_float(finding.get("min_p_adj"))
-            finding["jt_p"] = _safe_float(finding.get("trend_p"))
+            raw_values = finding.get("raw_values")
+            if raw_values and len(raw_values) >= 2:
+                # Compute ANOVA from actual per-subject data
+                finding["anova_p"] = _anova_p(raw_values)
+                # Dunnett's: first group is control, rest are treated
+                control = raw_values[0]
+                treated = raw_values[1:]
+                if len(control) >= 2 and treated:
+                    dunnett_pvals = _dunnett_p(control, treated)
+                    finding["dunnett_p"] = [_safe_float(p) for p in dunnett_pvals]
+                else:
+                    finding["dunnett_p"] = None
+                # JT trend from raw data
+                finding["jt_p"] = _jonckheere_terpstra_p(raw_values)
+            else:
+                # Fallback: approximate from pairwise results
+                finding["anova_p"] = _safe_float(finding.get("min_p_adj"))
+                finding["dunnett_p"] = None
+                finding["jt_p"] = _safe_float(finding.get("trend_p"))
+            # Drop raw_values before serialization (large numpy arrays)
+            finding.pop("raw_values", None)
         else:
             # Incidence domains: use existing Fisher's + Cochran-Armitage
             finding["anova_p"] = None
@@ -313,6 +330,7 @@ def _compute_fw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]
             "direction": direction,
             "max_effect_size": max_d,
             "min_p_adj": min_p,
+            "raw_values": dose_groups_values,
         })
 
     return findings

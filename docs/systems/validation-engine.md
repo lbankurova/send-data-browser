@@ -286,9 +286,9 @@ class ValidationSummaryResponse(BaseModel):
 ### What Each Rule Checks
 
 1. **SEND-VAL-001** -- For each loaded domain, checks that all variables marked `core: "Req"` in `sendig_31_variables.yaml` exist as columns and are not entirely null/empty.
-2. **SEND-VAL-002** -- Checks variable name length <= 8 chars and uppercase alphanumeric only. Findings domain prefix check is defined but currently skipped (`pass`).
+2. **SEND-VAL-002** -- Checks variable name length <= 8 chars and uppercase alphanumeric only. For findings domains (MI, MA, CL, LB, OM, BW, FW), checks that non-standard variables use the expected 2-character domain prefix. Validates against SENDIG metadata via `_get_domain_variables()` to avoid false positives on known standard variables.
 3. **SEND-VAL-003** -- Checks columns ending in STRESN, SEQ, DY, DOSE, VISITDY, VISITNUM contain numeric values. Reports each unique non-numeric value with its count.
-4. **SEND-VAL-004** -- Validates 10 CT check mappings: SEX, SPECIES, STRAIN (in DM); DOMAIN (all); MIRESCAT/MARESCAT; --BLFL; EXROUTE, EXDOSFRM, EXDOSFRQ (in EX). Uses `_find_suggestions()` for fuzzy matching.
+4. **SEND-VAL-004** -- Validates 10 CT check mappings: SEX, SPECIES, STRAIN (in DM); DOMAIN (all); MIRESCAT/MARESCAT; --BLFL; EXROUTE, EXDOSFRM, EXDOSFRQ (in EX). Uses `_find_suggestions()` for fuzzy matching. STRAIN validation is per-species: reads SPECIES from DM, builds valid terms from species-specific sublists in YAML. Uses `_classify_match()` to distinguish case/whitespace-only mismatches (emits `code-mapping` evidence) from real value errors (emits `value-correction`).
 5. **SEND-VAL-005** -- Checks all `--DTC` columns match ISO 8601 regex. Detects MM/DD/YYYY, DD-Mon-YYYY, DD.MM.YYYY formats. Attempts conversion to suggest fix.
 6. **SEND-VAL-006** -- Compares `--DY` values against calculated study day from `--DTC` and DM.RFSTDTC. Tolerance configurable (default +/-1 day).
 7. **SEND-VAL-007** -- Every USUBJID in non-DM domains must exist in DM.USUBJID.
@@ -399,7 +399,7 @@ export type RecordEvidence =
 |------|-----------|--------|-------------------|
 | `value-correction` | CT single match, STUDYID mismatch, date format, variable format, data type, baseline flag | `from`: actual value, `to`: corrected value | Shows `from -> to` with monospace, Tier 2 "APPLY FIX" button |
 | `value-correction-multi` | CT with multiple candidate matches | `from`: actual value, `candidates`: array of options | Radio buttons to pick from candidates, Tier 2 "APPLY FIX" |
-| `code-mapping` | Code-to-term mapping | `value`: display value, `code`: code value | Shows value-code pairing. **Not currently produced by any check handler** (defined in TypeScript union but unused by backend). |
+| `code-mapping` | Case/whitespace-only CT mismatch (e.g., "Male" vs "M", "Sprague Dawley" vs "SPRAGUE-DAWLEY") | `from`: actual value, `to`: corrected value | Shows `from -> to` with monospace. Produced by `_classify_match()` when the difference is only case or whitespace. |
 | `range-check` | Study day mismatch, BW/OM value range, EXDOSE range | `lines`: array of `{label, value}` pairs | Key-value table display, typically Tier 1 or 2 |
 | `missing-value` | Required variable missing/null, TS parameter missing | `variable`: variable name, `derivation?`: source context, `suggested?`: suggested value | Shows variable name with context, Tier 3 "Script fix" or Tier 1 "Accept" |
 | `metadata` | USUBJID integrity, SUPP integrity, duplicate detection, required domains, subject count, baseline multi-record | `lines`: array of `{label, value}` pairs | Key-value table display, typically Tier 1 or 3 |
@@ -475,7 +475,7 @@ Defines **14 codelists**:
 | NCOMPLT | Yes | 5 | FOUND DEAD, MORIBUND SACRIFICE, ... DOSING ERROR |
 | EUTHANASIA_REASON | Yes | 4 | SCHEDULED SACRIFICE, MORIBUND SACRIFICE, FOUND DEAD, INTERIM SACRIFICE |
 
-**Note**: The STRAIN codelist has `terms: []` at the top level. The controlled_terminology check compares against `valid_terms` built from `cl_info.get("terms", [])`, which is empty for STRAIN. This means STRAIN values will not be validated against the per-species sublists -- a known gap.
+**Note**: The STRAIN codelist has `terms: []` at the top level with species-specific sublists under `per_species`. The CT check handler builds `valid_terms` by reading SPECIES from the DM domain and collecting strains for those species. If no species match is found and the codelist is extensible, the check is skipped to avoid false positives.
 
 ---
 
@@ -496,10 +496,7 @@ Defines **14 codelists**:
 
 ### What is Stub or Missing
 
-- **STRAIN validation**: CT codelist for STRAIN has empty top-level `terms: []`; the per-species sublists exist in YAML but are not used by the check handler
 - **SPECIMEN CT check**: Commented out in `controlled_terminology.py` CT_CHECKS list with note: "SEND uses compound TYPE, SITE format... requires the full CDISC Library codelist"
-- **Findings domain prefix check**: Variable format check has the findings domain prefix logic but executes `pass` (skipped)
-- **code-mapping evidence type**: Defined in the TypeScript union but never produced by any backend check handler
 - **Visit day alignment (SEND-VAL-016)**: Not implemented
 - **Domain-specific findings checks (SEND-VAL-018)**: Not implemented
 - **Fix scripts do not write back**: Applying a "fix" only updates annotation status, no XPT modification
@@ -512,8 +509,7 @@ Defines **14 codelists**:
 2. **SENDIG metadata verification**: Verify variable core designations line-by-line against published standard
 3. **More rules**: Implement SEND-VAL-016, SEND-VAL-018, and additional domain-specific checks
 4. **Write-back capability**: Fix scripts currently only annotate; production needs actual data modification
-5. **STRAIN per-species validation**: Wire up the per_species sublists in the CT check
-6. **Multi-study testing**: Validate against 5-10 real SEND submissions, compare with Pinnacle 21/CDISC CORE output
+5. **Multi-study testing**: Validate against 5-10 real SEND submissions, compare with Pinnacle 21/CDISC CORE output
 7. **Performance profiling**: Test with large studies (millions of records)
 8. **Domain expert review**: Have SEND domain expert review every rule definition
 

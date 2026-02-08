@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api", tags=["annotations"])
 
 
 class AnnotationPayload(BaseModel, extra="allow"):
-    """Accepts arbitrary annotation fields; server adds reviewedBy + timestamp."""
+    """Accepts arbitrary annotation fields; server adds pathologist + timestamp."""
     pass
 
 
@@ -53,8 +53,8 @@ async def save_annotation(study_id: str, schema_type: str, entity_key: str, payl
 
     # Merge payload
     annotation = payload.model_dump()
-    annotation["reviewedBy"] = "User"
-    annotation["reviewedDate"] = datetime.now(timezone.utc).isoformat()
+    annotation["pathologist"] = "User"
+    annotation["reviewDate"] = datetime.now(timezone.utc).isoformat()
 
     data[entity_key] = annotation
 

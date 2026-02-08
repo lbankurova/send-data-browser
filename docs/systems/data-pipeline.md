@@ -12,7 +12,7 @@ The data pipeline loads SAS Transport (.XPT) files from a SEND-format preclinica
 
 **Pipeline 2 -- On-Demand (Adverse Effects).** Runs on first API request, then cached. Computes the same domain findings as Pipeline 1, adds deterministic IDs, cross-finding correlations, and per-finding context pane data. Served via `GET /api/studies/{id}/analyses/adverse-effects`.
 
-Both pipelines share the same core modules: `dose_groups.py`, `findings_lb.py`, `findings_bw.py`, `findings_om.py`, `findings_mi.py`, `findings_ma.py`, `findings_cl.py`, `statistics.py`, and `classification.py`. The generator additionally uses `view_dataframes.py`, `scores_and_rules.py`, `organ_map.py`, and `static_charts.py`. The on-demand pipeline additionally uses `correlations.py`, `context_panes.py`, and `insights.py`.
+Both pipelines share the same core modules: `dose_groups.py`, `findings_lb.py`, `findings_bw.py`, `findings_om.py`, `findings_mi.py`, `findings_ma.py`, `findings_cl.py`, `findings_ds.py`, `statistics.py`, and `classification.py`. The generator additionally uses `view_dataframes.py`, `scores_and_rules.py`, `organ_map.py`, and `static_charts.py`. The on-demand pipeline additionally uses `correlations.py`, `context_panes.py`, and `insights.py`.
 
 ### Pipeline Flow (Generator)
 
@@ -481,6 +481,27 @@ Mirrors the BW continuous pattern: Welch's t, Cohen's d, trend, Bonferroni. Uses
 Mean/sd rounded to 2 decimals. **test_code:** `str(testcd)` or `"FW"`. **test_name:** `"Food/Water ({testcd})"` or `"Food/Water Consumption"`.
 
 **NOTE:** FW is only processed in the generator pipeline (`domain_stats.py`), not in the on-demand adverse effects pipeline (`unified_findings.py`), because `unified_findings.py` only calls LB, BW, OM, MI, MA, CL.
+
+#### DS -- Disposition (Mortality)
+
+**File:** `services/analysis/findings_ds.py::compute_ds_findings(study, subjects)`
+
+**Analysis grain:** SEX (one finding per sex with any deaths)
+
+**Source column:** `DSDECOD` (decoded disposition term).
+
+**Death detection:** Matches against a set of known death/euthanasia terms:
+```python
+DEATH_TERMS = {"DEAD", "DEATH", "FOUND DEAD", "DIED", "EUTHANIZED", "EUTHANASIA",
+               "EUTHANIZED MORIBUND", "SACRIFICED MORIBUND", "MORIBUND SACRIFICE",
+               "MORIBUND", "TERMINAL SACRIFICE", "SCHEDULED EUTHANASIA"}
+```
+
+Follows the MI incidence pattern: counts unique USUBJID per dose group, Fisher's exact pairwise tests, Cochran-Armitage trend test. No Bonferroni correction.
+
+**Output fields:** `domain="DS"`, `test_code="MORTALITY"`, `data_type="incidence"`, `mortality_count=<int>`. No specimen, no avg_severity, no max_effect_size.
+
+**NOTE:** DS is processed in the generator pipeline (`domain_stats.py`) and included in the enrichment loop. The `organ_map.py` maps DS domain to `"general"` organ system by default.
 
 ### Phase 3: Classification & Enrichment
 
@@ -1020,11 +1041,12 @@ evidence_score = mean_signal * convergence_multiplier
 | Mann-Whitney U | `stats.mannwhitneyu(a1, a2, alternative="two-sided")` | Available but not used in main pipeline | -- | >= 1 per group | `{statistic: float, p_value: float}` |
 | Spearman correlation | `stats.spearmanr(x, y)` | Cross-finding correlations (on-demand pipeline) | NaN pair-removed; need >= 3 pairs | >= 3 non-null pairs | `{rho: float, p_value: float}` |
 
-**NOTE on ANOVA/Dunnett's in practice:** The generator's enrichment phase (`domain_stats.py`) defines `_anova_p()` and `_dunnett_p()` functions, but in the actual enrichment loop (lines 143-154), `anova_p` is approximated from `min_p_adj` rather than recomputed from raw data, because raw per-subject values are not retained in the finding dict by that point. Similarly, `jt_p` is simply copied from `trend_p`. The ANOVA and Dunnett functions exist for potential future use when raw values are available.
+**ANOVA/Dunnett's computation (BUG-04/SD-09 resolved):** The generator's enrichment phase (`domain_stats.py`) computes ANOVA, Dunnett's, and Jonckheere-Terpstra tests from raw per-subject values (`raw_values` key in finding dicts). All continuous domain findings modules (LB, BW, OM, FW) now pass `raw_values` — a list of numpy arrays, one per dose group. The enrichment loop uses these directly: `_anova_p(raw_values)`, `_dunnett_p(control, treated)`, `_jonckheere_terpstra_p(raw_values)`. A fallback approximation from `min_p_adj`/`trend_p` exists only for edge cases where raw values are unavailable. The `raw_values` key is popped from finding dicts before JSON serialization.
 
-**Bonferroni application scope:**
+**Bonferroni application scope (SD-11 resolved):**
 - Applied to continuous domain pairwise p-values (LB, BW, OM, FW): `n_tests` = number of treated dose groups in that finding.
-- **NOT** applied to incidence domain pairwise p-values (MI, MA, CL): `p_value_adj` is set equal to `p_value`.
+- **NOT** applied to incidence domain pairwise p-values (MI, MA, CL, DS): `p_value_adj` is set equal to `p_value`.
+- **Rationale**: For continuous endpoints, Bonferroni corrects for testing multiple endpoints simultaneously within a domain (e.g., 20 lab parameters). For incidence endpoints, each histopathological finding is a distinct biological observation, not part of a statistical test battery. FDA/EMA regulatory guidance does NOT require multiplicity adjustment for histopathology. Over-correction would miss real effects because incidence rates are low and studies are not powered for individual histopath findings.
 
 ---
 
@@ -1075,7 +1097,6 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 - Single study only (`ALLOWED_STUDIES = {"PointCross"}`)
 - No incremental recomputation -- full pipeline reruns on each generation
 - FW domain only in generator pipeline, not in on-demand adverse effects pipeline
-- ANOVA/Dunnett enrichment approximated (not computed from raw values)
 - No recovery arm analysis (recovery subjects excluded entirely)
 
 ---
@@ -1086,8 +1107,8 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 |------|-------------|---------------|
 | `generator/generate.py` | CLI entry point; orchestrates pipeline, writes JSON | `generate(study_id)`, `_sanitize(obj)`, `_write_json(path, data)` |
 | `generator/domain_stats.py` | Collects all domain findings, enriches with classification | `compute_all_findings(study)`, `_anova_p()`, `_dunnett_p()`, `_jonckheere_terpstra_p()`, `_kruskal_p()`, `_compute_fw_findings()`, `_classify_endpoint_type()` |
-| `generator/view_dataframes.py` | Assembles 7 view-specific JSON structures from findings | `build_study_signal_summary()`, `build_target_organ_summary()`, `build_dose_response_metrics()`, `build_organ_evidence_detail()`, `build_lesion_severity_summary()`, `build_adverse_effect_summary()`, `build_noael_summary()`, `_compute_signal_score()` |
-| `generator/scores_and_rules.py` | Evaluates 16 rules, emits structured results | `evaluate_rules(findings, target_organs, noael_summary, dose_groups)`, `_build_finding_context()`, `_emit()`, `_emit_organ()`, `_emit_study()` |
+| `generator/view_dataframes.py` | Assembles 7 view-specific JSON structures from findings | `build_study_signal_summary()`, `build_target_organ_summary()`, `build_dose_response_metrics()`, `build_organ_evidence_detail()`, `build_lesion_severity_summary()`, `build_adverse_effect_summary()`, `build_noael_summary()`, `_compute_signal_score()`, `_compute_noael_confidence()` |
+| `generator/scores_and_rules.py` | Evaluates 17 rules (R01-R17), emits structured results | `evaluate_rules(findings, target_organs, noael_summary, dose_groups)`, `_build_finding_context()`, `_emit()`, `_emit_organ()`, `_emit_study()` |
 | `generator/organ_map.py` | Organ system resolution (specimen/test_code/domain -> system) | `get_organ_system(specimen, test_code, domain)`, `get_organ_name(specimen, test_code)` |
 | `generator/static_charts.py` | HTML bar chart generation | `generate_target_organ_bar_chart(target_organs)` |
 | `services/xpt_processor.py` | XPT loading, CSV caching, TS metadata extraction | `read_xpt(xpt_path)`, `ensure_cached(study, domain)`, `extract_full_ts_metadata(study)` |
@@ -1098,6 +1119,7 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 | `services/analysis/findings_mi.py` | MI domain incidence + severity analysis | `compute_mi_findings(study, subjects)` |
 | `services/analysis/findings_ma.py` | MA domain incidence analysis | `compute_ma_findings(study, subjects)` |
 | `services/analysis/findings_cl.py` | CL domain incidence analysis | `compute_cl_findings(study, subjects)` |
+| `services/analysis/findings_ds.py` | DS domain mortality incidence analysis | `compute_ds_findings(study, subjects)` |
 | `services/analysis/statistics.py` | Pure function wrappers for all statistical tests | `welch_t_test()`, `fisher_exact_2x2()`, `trend_test()`, `trend_test_incidence()`, `cohens_d()`, `spearman_correlation()`, `bonferroni_correct()`, `mann_whitney_u()` |
 | `services/analysis/classification.py` | Finding classification (severity, pattern, treatment-related) | `classify_severity(finding)`, `classify_dose_response(group_stats, data_type)`, `determine_treatment_related(finding)` |
 | `services/analysis/send_knowledge.py` | Static SEND domain knowledge tables | `BIOMARKER_MAP`, `ORGAN_SYSTEM_MAP`, `THRESHOLDS`, `DOMAIN_EFFECT_THRESHOLDS` |

@@ -33,6 +33,7 @@ def get_organ_system(specimen: str | None, test_code: str | None = None,
         "MA": "general",
         "OM": "general",
         "CL": "general",
+        "DS": "general",
     }
     if domain:
         return domain_defaults.get(domain, "general")

@@ -182,7 +182,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
             style={{ color: "#3a7bd5" }}
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`);
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: selection.specimen } });
             }}
           >
             View target organs &#x2192;
@@ -193,7 +193,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
             style={{ color: "#3a7bd5" }}
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`);
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { specimen: selection.specimen } });
             }}
           >
             View dose-response &#x2192;
@@ -204,7 +204,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
             style={{ color: "#3a7bd5" }}
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`);
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: selection.specimen } });
             }}
           >
             View NOAEL decision &#x2192;

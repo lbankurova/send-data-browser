@@ -76,6 +76,7 @@ export interface NoaelSummaryRow {
   loael_label: string;
   n_adverse_at_loael: number;
   adverse_domains_at_loael: string[];
+  noael_confidence: number;
 }
 
 export interface AdverseEffectSummaryRow {

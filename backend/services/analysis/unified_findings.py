@@ -45,7 +45,7 @@ def _cache_path(study_id: str) -> Path:
 
 def _get_xpt_max_mtime(study: StudyInfo) -> float:
     """Get the most recent mtime across relevant XPT files."""
-    relevant = ["dm", "tx", "lb", "bw", "om", "mi", "ma", "cl"]
+    relevant = ["dm", "tx", "lb", "bw", "om", "mi", "ma", "cl", "ds"]
     mtimes = []
     for domain in relevant:
         if domain in study.xpt_files:

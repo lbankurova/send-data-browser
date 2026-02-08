@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Insights & Synthesis Engine converts raw statistical rule results (R01-R16) and derived analytical data into structured, organ-grouped signals for scientist consumption. It enables toxicologists to read deterministic conclusions rather than derive them manually from raw numbers. The system has two major subsystems: a backend **rule engine** that evaluates 16 canonical rules against computed statistics, and a frontend **signals/synthesis engine** that groups, merges, and prioritizes those rules into UI-ready structures for the Signals Panel and InsightsList context panel.
+The Insights & Synthesis Engine converts raw statistical rule results (R01-R17) and derived analytical data into structured, organ-grouped signals for scientist consumption. It enables toxicologists to read deterministic conclusions rather than derive them manually from raw numbers. The system has two major subsystems: a backend **rule engine** that evaluates 16 canonical rules against computed statistics, and a frontend **signals/synthesis engine** that groups, merges, and prioritizes those rules into UI-ready structures for the Signals Panel and InsightsList context panel.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ backend/generator/scores_and_rules.py
 
 | Layer | File | Consumes | Produces |
 |-------|------|----------|----------|
-| Backend rule engine | `scores_and_rules.py` | `findings`, `target_organs`, `noael_summary`, `dose_groups` | `rule_results[]` (R01-R16) |
+| Backend rule engine | `scores_and_rules.py` | `findings`, `target_organs`, `noael_summary`, `dose_groups` | `rule_results[]` (R01-R17) |
 | Backend scoring | `view_dataframes.py` | `findings` (derived from XPT) | `study_signal_summary`, `target_organ_summary`, `noael_summary` |
 | Frontend signals engine | `signals-panel-engine.ts` | `NoaelSummaryRow[]`, `TargetOrganRow[]`, `SignalSummaryRow[]` | `SignalsPanelData` (Decision Bar, organ blocks, modifiers, caveats, metrics) |
 | Frontend rule synthesis | `rule-synthesis.ts` | `RuleResult[]` | `OrganGroup[]` with tier, synthLines, endpoint signals |
@@ -50,7 +50,7 @@ The codebase has **two independent synthesis engines** serving different UI surf
 
 1. **`signals-panel-engine.ts`** -- serves the Signals tab center panel (Decision Bar + FindingsView). Derives rules directly from summary data (NOAEL rows, target organ rows, signal rows). Does NOT consume backend `rule_results.json` directly; it re-derives semantic rules from the summary JSON.
 
-2. **`rule-synthesis.ts`** -- serves the InsightsList context panel (right sidebar). Consumes backend `rule_results[]` directly, groups by organ, computes tiers, and synthesizes compact insight lines from R01-R16 output_text parsing.
+2. **`rule-synthesis.ts`** -- serves the InsightsList context panel (right sidebar). Consumes backend `rule_results[]` directly, groups by organ, computes tiers, and synthesizes compact insight lines from R01-R17 output_text parsing.
 
 ## Contracts
 
@@ -127,6 +127,7 @@ interface NoaelSummaryRow {
   loael_label: string;
   n_adverse_at_loael: number;
   adverse_domains_at_loael: string[];
+  noael_confidence: number;       // 0.0-1.0 confidence score
 }
 ```
 
@@ -236,7 +237,7 @@ function assignSection(priority: number): UISection {
 
 ## Rules
 
-### R01-R16 Reference Table
+### R01-R17 Reference Table (17 rules)
 
 | ID | Name | Scope | Severity | Condition | Template (abbreviated) | Output |
 |----|------|-------|----------|-----------|----------------------|--------|
@@ -256,6 +257,7 @@ function assignSection(priority: number): UISection {
 | R14 | NOAEL established | study | info | `noael_dose_level is not null` | "NOAEL established at {noael_label} ({noael_dose_value} {noael_dose_unit}) for {sex}." | Per sex |
 | R15 | NOAEL not established | study | warning | `noael_dose_level is null` | "NOAEL not established for {sex}: adverse effects observed at lowest dose tested." | Per sex |
 | R16 | Correlated findings | organ | info | `len(organ_findings) >= 2` | "Correlated findings in {organ_system}: {endpoint_labels} suggest convergent toxicity." | Per organ (top 5 labels) |
+| R17 | Mortality signal | study | critical | `domain=="DS" AND test_code=="MORTALITY" AND mortality_count > 0` | "Mortality observed: {count} deaths in {sex} with dose-dependent pattern." | Per sex with deaths |
 
 ### Rule Evaluation Logic (from scores_and_rules.py)
 
@@ -554,7 +556,7 @@ signal_score =
 | `flat` | 0.0 |
 | `insufficient_data` | 0.0 |
 
-**Note on spec vs. code divergence**: The original spec defined weights as `0.30 * w_stat + 0.30 * w_trend + 0.25 * w_effect + 0.15 * w_bio`, with `w_bio = 1 if endpoint contributes to target organ`. The actual implementation uses `0.35 * p_value + 0.20 * trend + 0.25 * effect_size + 0.20 * pattern` and uses continuous -log10 scaling instead of the spec's step-function thresholds. **The code is the source of truth.**
+**Design rationale (SD-01 resolved)**: Weights are `0.35 * p_value + 0.20 * trend + 0.25 * effect_size + 0.20 * pattern` using continuous -log10 scaling. The higher statistical weight (0.35) reflects that a significant pairwise comparison (Dunnett's) is more definitive than a trend test (JT). The higher pattern weight (0.20 vs. original spec's 0.15 bio) aligns with ICH regulatory practice where biological plausibility is a key criterion for causality assessment.
 
 ### Organ Evidence Score (actual implementation)
 
@@ -573,7 +575,7 @@ Where:
 - 3 domains: 1.4x
 - 4 domains: 1.6x
 
-**Note on spec vs. code**: The original spec defined multipliers as 1.0 / 1.2 / 1.5 (stepped). The code uses a continuous formula `1 + 0.2 * (n - 1)` which differs slightly at 3+ domains (1.4 vs 1.5). **The code is the source of truth.**
+**Design rationale (SD-02 resolved)**: Continuous formula is preferred over the stepped spec (1.0/1.2/1.5). Each additional domain providing convergent evidence IS incrementally informative — five-domain convergence is meaningfully stronger than three-domain convergence.
 
 ### Target Organ Flag
 
@@ -583,11 +585,29 @@ target_organ_flag = (evidence_score >= 0.3) and (n_significant >= 1)
 
 An organ is flagged as a target organ when its evidence score reaches 0.3 AND it has at least one statistically significant finding (p < 0.05).
 
+### NOAEL Confidence Score (MF-01)
+
+Computed per sex in `_compute_noael_confidence()` in `view_dataframes.py`.
+
+```
+NOAEL_Confidence = 1.0
+  - 0.2 * (single_endpoint)          # NOAEL based on ≤1 adverse endpoint
+  - 0.2 * (sex_inconsistency)        # M and F NOAEL at different dose levels
+  - 0.2 * (pathology_disagreement)   # Reserved — needs annotation data
+  - 0.2 * (large_effect_non_sig)     # |d| ≥ 1.0 but p ≥ 0.05
+```
+
+**Range**: 0.0 to 1.0 (clamped). Stored as `noael_confidence` in `noael_summary.json`.
+
+**Frontend display**: NOAEL Decision View banner shows confidence as percentage with color coding (green ≥ 80%, yellow ≥ 60%, red < 60%). The signals-panel-engine emits a `noael.low.confidence` rule (priority 930) when confidence < 0.6.
+
+**Note**: The `pathology_disagreement` penalty is reserved (always 0) because PathologyReview annotation data is not available at generation time. Production should compute this from annotation records.
+
 ## Current State
 
 ### What is real (full pipeline operational)
 
-- **XPT to rule evaluation**: Complete pipeline from SEND XPT files through statistical computation to R01-R16 rule emission. All 16 rules fire against real study data.
+- **XPT to rule evaluation**: Complete pipeline from SEND XPT files through statistical computation to R01-R17 rule emission. All 16 rules fire against real study data.
 - **Signal score computation**: Fully implemented with continuous scoring functions.
 - **Target organ identification**: Automated from evidence scores and domain convergence.
 - **NOAEL determination**: Derived from adverse effect analysis with per-sex computation.
@@ -615,24 +635,31 @@ An organ is flagged as a target organ when its evidence score reaches 0.3 AND it
 | R16 endpoint label limit | Top 5 | `scores_and_rules.py` line 149 | Hardcoded |
 | Tier: Critical | R08, or R04+R10+2 warnings | `rule-synthesis.ts:computeTier()` | Hardcoded |
 | Tier: Notable | R04 or R10, or R01 in 2+ endpoints | `rule-synthesis.ts:computeTier()` | Hardcoded |
-| Max banner findings | 6 | `insight-synthesis-engine.md` spec | Not yet in code |
+| Max banner findings | None (all shown) | Spec dropped (SD-04) | Typical studies have 3-5 study-scope statements; hiding findings risks oversight |
 
 ### Known limitations and TBD
 
-- **No NOAEL confidence score**: The spec defines `NOAEL_Confidence = 1.0 - 0.2*(single endpoint) - 0.2*(sex inconsistency) - 0.2*(pathology disagreement) - 0.2*(large effect non-significant)`. This is NOT implemented in the current codebase. Neither `noael.low.confidence` nor `noael_confidence` appears in the backend or frontend code.
-- **No mortality signal**: `study.mortality.signal` (priority 800) is defined in the spec but not implemented in either engine. No DS domain analysis exists.
-- **Banner cap not implemented**: The spec defines a 6-statement banner cap with "Show N more findings" toggle. The Signals Panel shows all statements in their respective sections without a global cap.
-- **Endpoint-scope rules not in Signals Panel**: The `signals-panel-engine.ts` does not consume backend `rule_results` at all. Endpoint-scope rules (R01-R07, R10-R13) only appear in the InsightsList context panel via `rule-synthesis.ts`.
-- **Template registry not implemented**: The `insight-synthesis-engine.md` spec defines a full template registry with merge_into, merge_field, compound_key, and slot interpolation. The actual code uses direct string construction in the derive functions rather than the template/merge pattern.
-- **No endpoint-to-banner promotion**: The spec defines three promotion rules (sex-specific organ pattern, widespread low power, organ-level dose-response summary). The code implements the equivalent logic but inline in `deriveSynthesisPromotions()` and `deriveOrganRules()`, not via a formal promotion pipeline.
-- **Convergence detail not merged**: The spec has `organ.convergent.evidence` merging into `organ.target.identification` with convergence_detail slot. In the code, domains are shown as chips on the organ card, not merged into the headline text.
+- **Pathology disagreement penalty not wired**: The NOAEL confidence score reserves a 0.2 penalty for pathology disagreement but cannot compute it at generation time (requires annotation data from PathologyReview records). Currently defaults to 0.
+- **No mortality priority override**: R17 mortality signals are emitted as study-scope rules but do not yet automatically force NOAEL downward. A death at any dose level should make that dose the LOAEL or higher — this requires pipeline-level integration, not just a rule emission.
+
+### Resolved spec divergences
+
+The following items were previously listed as spec divergences. All have been resolved — the code behavior is accepted as correct.
+
+- **(SD-01) Signal score weights**: Accepted as 0.35/0.20/0.25/0.20. See "Design rationale" note above.
+- **(SD-02) Convergence multiplier**: Accepted as continuous `1 + 0.2 * (n_domains - 1)`. Each additional domain providing convergent evidence is incrementally informative; the stepped formula arbitrarily capped the benefit.
+- **(SD-03) Template registry**: Direct string construction is accepted. At 17 rules, the template registry adds complexity without benefit. Revisit if rule count exceeds ~30.
+- **(SD-04) Banner cap**: Dropped. Typical studies generate 3-5 study-scope statements. Hiding findings behind a toggle risks oversight in regulatory review.
+- **(SD-05) Endpoint-scope rules not in Signals Panel**: Accepted architecture. The Signals Panel provides study-level synthesis (target organs, NOAEL, modifiers). The InsightsList provides endpoint-level detail on selection. This mirrors how toxicologists work: scan organs first, then drill into endpoints.
+- **(SD-06) Convergence detail as chips**: Accepted. Domain chips (`[LB] [OM] [MI]`) are instantly scannable and visually encode convergence strength by count. Inline text requires reading.
+- **(SD-07) Inline promotion**: Accepted. Promotion logic is implemented inline in `deriveSynthesisPromotions()` and `deriveOrganRules()` rather than via a formal promotion pipeline. Functionally equivalent at current complexity.
 
 ## Code Map
 
 | File | What it does | Key functions/exports |
 |------|-------------|----------------------|
-| `backend/generator/scores_and_rules.py` | Evaluates 16 canonical rules (R01-R16) against computed findings, target organs, and NOAEL data. Emits structured rule results with context keys and rendered template text. | `RULES` (rule definitions), `evaluate_rules()`, `_emit()`, `_emit_organ()`, `_emit_study()`, `_build_finding_context()` |
-| `backend/generator/view_dataframes.py` | Computes signal scores, builds summary dataframes (study_signal_summary, target_organ_summary, noael_summary). Contains the signal score formula and target organ threshold logic. | `build_study_signal_summary()`, `build_target_organ_summary()`, `_compute_signal_score()` |
+| `backend/generator/scores_and_rules.py` | Evaluates 17 canonical rules (R01-R17) against computed findings, target organs, and NOAEL data. R17 is the mortality signal from DS domain. Emits structured rule results with context keys and rendered template text. | `RULES` (rule definitions), `evaluate_rules()`, `_emit()`, `_emit_organ()`, `_emit_study()`, `_build_finding_context()` |
+| `backend/generator/view_dataframes.py` | Computes signal scores, builds summary dataframes (study_signal_summary, target_organ_summary, noael_summary). Contains the signal score formula, target organ threshold logic, and NOAEL confidence score. | `build_study_signal_summary()`, `build_target_organ_summary()`, `_compute_signal_score()`, `_compute_noael_confidence()` |
 | `frontend/src/lib/signals-panel-engine.ts` | Derives semantic rules from NOAEL/organ/signal summary data, assigns priority bands, builds organ blocks with compound merging, and produces the full SignalsPanelData structure for the Signals tab center panel. | `buildSignalsPanelData()`, `buildFilteredMetrics()`, `sexLabel()`, `organName()`, `assignSection()` + types: `SignalsPanelData`, `OrganBlock`, `PanelStatement`, `MetricsLine`, `UISection` |
 | `frontend/src/lib/rule-synthesis.ts` | Groups backend rule_results by organ, computes per-organ tiers (Critical/Notable/Observed), extracts per-endpoint signals from R10/R04/R01, and synthesizes compact display lines. Serves the InsightsList context panel. | `buildOrganGroups()`, `computeTier()`, `synthesize()`, `extractEndpointSignals()`, `parseContextKey()`, `cleanText()` + types: `OrganGroup`, `SynthLine`, `EndpointSignal`, `Tier` |
 | `frontend/src/components/analysis/panes/InsightsList.tsx` | React component that renders organ-grouped insights in the context panel. Shows tier filter bar (Critical/Notable/Observed pills), organ groups with synth lines, expandable raw rule detail. | `InsightsList` (component), `SynthLineItem`, `TierBadge` |
@@ -652,10 +679,8 @@ An organ is flagged as a target organ when its evidence score reaches 0.3 AND it
 
 - **Weight configurability**: Signal score weights (0.35/0.20/0.25/0.20) and all thresholds (target organ 0.3, large effect 1.0, etc.) should move to a configuration layer. These are currently hardcoded and will need tuning per study type / regulatory context.
 - **Priority band tuning**: The 900/800/600/400/200 boundaries may need adjustment based on real-world usage patterns. Should be configurable.
-- **NOAEL confidence score**: Needs implementation (spec exists, code does not).
-- **Mortality signal**: Requires DS (Disposition) domain analysis, currently not implemented.
 - **Multi-study support**: Current system processes one study at a time. Datagrok may need cross-study comparison of signal scores and rule results.
-- **Template registry pattern**: The spec's formal template registry with merge/slot/compound_key could improve maintainability for adding new rules. Current direct-construction approach works but is less extensible.
+- **Mortality NOAEL override**: R17 emits mortality signals but doesn't yet force NOAEL adjustment. Production should auto-set LOAEL at any dose with deaths.
 - **Audit trail**: The spec defines rule lifecycle states (inactive -> triggered -> emitted -> suppressed). Current implementation only has "emitted" (all results are emitted, no suppression tracking). Production should log all state transitions for regulatory audit.
 
 ## Changelog

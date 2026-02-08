@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -50,6 +50,7 @@ export function HistopathologyView({
   onSelectionChange?: (sel: HistopathSelection | null) => void;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
+  const location = useLocation();
   const { data: lesionData, isLoading, error } = useLesionSeveritySummary(studyId);
 
   const [filters, setFilters] = useState<Filters>({
@@ -59,6 +60,18 @@ export function HistopathologyView({
   });
   const [selection, setSelection] = useState<HistopathSelection | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
+
+  // Apply cross-view state from navigate()
+  useEffect(() => {
+    const state = location.state as { organ_system?: string; specimen?: string } | null;
+    if (state && lesionData) {
+      const specimenFilter = state.specimen ?? state.organ_system ?? null;
+      if (specimenFilter) {
+        setFilters((f) => ({ ...f, specimen: specimenFilter }));
+      }
+      window.history.replaceState({}, "");
+    }
+  }, [location.state, lesionData]);
 
   // Unique specimens
   const specimens = useMemo(() => {

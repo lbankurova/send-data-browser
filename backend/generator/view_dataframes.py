@@ -289,6 +289,11 @@ def build_noael_summary(findings: list[dict], dose_groups: list[dict]) -> list[d
                                 n_adverse_at_loael += 1
                                 adverse_domains.add(f.get("domain", ""))
 
+        # Compute NOAEL confidence score
+        confidence = _compute_noael_confidence(
+            sex_filter, sex_findings, findings, noael_level, n_adverse_at_loael,
+        )
+
         rows.append({
             "sex": sex_filter,
             "noael_dose_level": noael_level,
@@ -299,9 +304,60 @@ def build_noael_summary(findings: list[dict], dose_groups: list[dict]) -> list[d
             "loael_label": dose_label_map.get(loael_level, "N/A") if loael_level is not None else "N/A",
             "n_adverse_at_loael": n_adverse_at_loael,
             "adverse_domains_at_loael": sorted(adverse_domains),
+            "noael_confidence": confidence,
         })
 
     return rows
+
+
+def _compute_noael_confidence(
+    sex: str,
+    sex_findings: list[dict],
+    all_findings: list[dict],
+    noael_level: int | None,
+    n_adverse_at_loael: int,
+) -> float:
+    """Compute NOAEL confidence score (0.0 to 1.0).
+
+    Penalties:
+    - single_endpoint: NOAEL based on only 1 adverse endpoint (0.2)
+    - sex_inconsistency: M and F NOAEL differ for Combined (0.2)
+    - pathology_disagreement: reserved for annotation data (0.0)
+    - large_effect_non_significant: large effect size but not significant (0.2)
+    """
+    score = 1.0
+
+    # Penalty: NOAEL based on a single endpoint
+    if n_adverse_at_loael <= 1:
+        score -= 0.2
+
+    # Penalty: sex inconsistency (for M/F rows, check if opposite sex has different NOAEL)
+    if sex in ("M", "F"):
+        opposite = "F" if sex == "M" else "M"
+        opp_findings = [f for f in all_findings if f.get("sex") == opposite]
+        opp_adverse_levels = set()
+        for f in opp_findings:
+            if f.get("severity") == "adverse":
+                for pw in f.get("pairwise", []):
+                    p = pw.get("p_value_adj", pw.get("p_value"))
+                    if p is not None and p < 0.05:
+                        opp_adverse_levels.add(pw["dose_level"])
+        opp_loael = min(opp_adverse_levels) if opp_adverse_levels else None
+        opp_noael = (opp_loael - 1) if opp_loael is not None and opp_loael > 0 else None
+        if noael_level is not None and opp_noael is not None and noael_level != opp_noael:
+            score -= 0.2
+
+    # Penalty: pathology_disagreement — defaults to 0 (annotation data unavailable at generation time)
+
+    # Penalty: large effect size but not statistically significant
+    for f in sex_findings:
+        es = f.get("max_effect_size")
+        p = f.get("min_p_adj")
+        if es is not None and abs(es) >= 1.0 and (p is None or p >= 0.05):
+            score -= 0.2
+            break
+
+    return round(max(score, 0.0), 2)
 
 
 def _compute_signal_score(

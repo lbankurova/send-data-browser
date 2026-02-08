@@ -32,7 +32,7 @@ useAnnotations() refetches -> form re-renders with saved values
 - **Location**: `backend/annotations/{study_id}/` directory, one JSON file per schema type
 - **File format**: JSON object where keys are entity keys (e.g., endpoint label, rule ID, finding term, issue ID) and values are annotation objects
 - **No concurrency control**: plain file read/write, last-write-wins
-- **Server-injected fields**: `reviewedBy` (hardcoded `"User"`) and `reviewedDate` (UTC ISO timestamp) are added on every PUT
+- **Server-injected fields**: `pathologist` (hardcoded `"User"`) and `reviewDate` (UTC ISO timestamp) are added on every PUT (BUG-01 resolved: field names now align with frontend TypeScript types)
 
 ### Schema Types
 
@@ -52,7 +52,7 @@ Four annotation schemas, stored as four files per study:
 | Method | Path | Request | Response | Description |
 |--------|------|---------|----------|-------------|
 | GET | `/api/studies/{study_id}/annotations/{schema_type}` | -- | `Record<string, Annotation>` (JSON object keyed by entity) | Returns all annotations for a schema type. Returns `{}` if file does not exist. |
-| PUT | `/api/studies/{study_id}/annotations/{schema_type}/{entity_key}` | `AnnotationPayload` (arbitrary JSON body, `extra="allow"`) | `Annotation` (the saved object with server-injected fields) | Creates or updates a single annotation. Server adds `reviewedBy` and `reviewedDate`. Creates directory if needed. |
+| PUT | `/api/studies/{study_id}/annotations/{schema_type}/{entity_key}` | `AnnotationPayload` (arbitrary JSON body, `extra="allow"`) | `Annotation` (the saved object with server-injected fields) | Creates or updates a single annotation. Server adds `pathologist` and `reviewDate`. Creates directory if needed. |
 
 **Validation**:
 - `schema_type` must be one of: `validation-issues`, `tox-findings`, `pathology-reviews`, `validation-records`. Returns 400 otherwise.
@@ -97,8 +97,8 @@ Pathology peer review of microscopic findings.
 | `revisedSeverity` | string | `"Minimal"`, `"Mild"`, `"Moderate"`, `"Marked"`, `"Severe"`, `"N/A"` | `"N/A"` | User input |
 | `revisedDiagnosis` | string | free text | `""` | User input |
 | `comment` | string | free text | `""` | User input |
-| `pathologist` | string | -- | `"User"` | Server-injected (field name is `reviewedBy` on the wire, stored as `pathologist` in TypeScript type) |
-| `reviewDate` | string (ISO datetime) | -- | current UTC time | Server-injected (field name is `reviewedDate` on the wire, stored as `reviewDate` in TypeScript type) |
+| `pathologist` | string | -- | `"User"` | Server-injected |
+| `reviewDate` | string (ISO datetime) | -- | current UTC time | Server-injected |
 
 **Note on field naming**: The backend always injects `reviewedBy` and `reviewedDate`. The TypeScript `PathologyReview` interface uses `pathologist` and `reviewDate` instead. The form reads `existing.pathologist` and `existing.reviewDate`, which means the backend JSON field `reviewedBy` must be mapped to `pathologist` somewhere in the flow. In practice, the backend stores `reviewedBy`/`reviewedDate` in the JSON file, but the TypeScript type expects `pathologist`/`reviewDate`. This is a naming mismatch -- the form works because the save payload sends fields under the names the form uses, and the server re-injects `reviewedBy`/`reviewedDate` on top.
 
@@ -142,19 +142,19 @@ Per-record review status for individual affected records within a validation rul
 
 | Field | Type | Allowed Values | Default | Source |
 |-------|------|----------------|---------|--------|
-| `fixStatus` | string | `"Not fixed"`, `"Auto-fixed"`, `"Manually fixed"`, `"Accepted as-is"`, `"Flagged"` | -- | TypeScript type only (not used in form) |
-| `reviewStatus` | string | `"Not reviewed"`, `"Reviewed"`, `"Approved"` | `"Not reviewed"` | User input |
+| `fixStatus` | string | `"Not fixed"`, `"Auto-fixed"`, `"Manually fixed"`, `"Accepted as-is"`, `"Flagged"` | `"Not fixed"` | User input (dropdown) |
+| `reviewStatus` | string | `"Not reviewed"`, `"Reviewed"`, `"Approved"` | `"Not reviewed"` | User input (dropdown) |
 | `assignedTo` | string | free text | `""` | User input |
-| `justification` | string | free text | -- | TypeScript type only (not used in form) |
+| `justification` | string | free text | `""` | User input (textarea, placeholder: "Reason for accepting / flagging...") |
 | `comment` | string | free text | `""` | User input |
-| `reviewedBy` | string | -- | `"User"` | Server-injected |
-| `reviewedDate` | string (ISO datetime) | -- | current UTC time | Server-injected |
+| `pathologist` | string | -- | `"User"` | Server-injected |
+| `reviewDate` | string (ISO datetime) | -- | current UTC time | Server-injected |
 
 **Entity key**: Issue ID string (compound key identifying a specific affected record).
 
 **Form component**: `ValidationRecordForm` (`panes/ValidationRecordForm.tsx`)
 - Props: `studyId`, `issueId`, `defaultOpen?` (default `true`)
-- Behavior: Simple three-field form (review status, assigned to, comment). The TypeScript interface defines `fixStatus` and `justification` but the form does not expose them -- they exist for future use or are managed elsewhere.
+- Behavior: Five-field form (fix status, review status, justification, assigned to, comment). All fields are persisted via the annotation API. The form tracks dirty state across all five fields and shows "Reviewed by ... on ..." when existing annotations have a `pathologist` (with backward compatibility for legacy `reviewedBy` field).
 - Pane title: "Review"
 
 **Used in**: Validation context panel (Mode 2 -- issue detail)
@@ -206,17 +206,13 @@ Both use `/api` base path (proxied by Vite dev server to backend). Both throw on
 - **No authentication**: All endpoints are unprotected. Any client can read/write any study's annotations.
 - **Hardcoded reviewer**: `reviewedBy` is always `"User"` (line 56 in `annotations.py`). There is no way to identify the actual user.
 - **No concurrency control**: Simultaneous writes to the same file produce last-write-wins behavior. No optimistic locking, no ETags.
-- **No audit trail**: Only the most recent `reviewedBy`/`reviewedDate` is stored per annotation. Previous values are overwritten.
-- **Field naming mismatch**: PathologyReview TypeScript type uses `pathologist`/`reviewDate` but the backend injects `reviewedBy`/`reviewedDate`. The form reads the TypeScript field names.
-- **ValidationRecordReview partial form**: The TypeScript interface defines `fixStatus` and `justification` but the form does not expose them.
+- **No audit trail**: Only the most recent `pathologist`/`reviewDate` is stored per annotation. Previous values are overwritten.
 
 **Production needs**:
 - Database storage with proper transactions and concurrency (replace file I/O in `annotations.py`)
 - Authenticated user identity from Datagrok auth context (replace hardcoded `"User"`)
 - Audit trail with full history (not just latest reviewer)
 - Conflict resolution for concurrent edits (optimistic locking or merge strategy)
-- Field name alignment between backend and TypeScript types (especially PathologyReview)
-- Complete ValidationRecordReview form with fixStatus and justification fields
 
 ## Code Map
 
@@ -230,7 +226,7 @@ Both use `/api` base path (proxied by Vite dev server to backend). Both throw on
 | `frontend/src/components/analysis/panes/ToxFindingForm.tsx` | ToxFinding annotation form (treatment-related, adversity, comment) |
 | `frontend/src/components/analysis/panes/PathologyReviewForm.tsx` | PathologyReview annotation form (peer review status, revised severity/diagnosis) |
 | `frontend/src/components/analysis/panes/ValidationIssueForm.tsx` | ValidationIssue annotation form (status, assigned to, resolution, disposition) |
-| `frontend/src/components/analysis/panes/ValidationRecordForm.tsx` | ValidationRecordReview annotation form (review status, assigned to, comment) |
+| `frontend/src/components/analysis/panes/ValidationRecordForm.tsx` | ValidationRecordReview annotation form (fix status, review status, justification, assigned to, comment) |
 | `frontend/src/components/analysis/panes/CollapsiblePane.tsx` | Shared collapsible pane wrapper used by all annotation forms |
 
 ## Datagrok Notes
@@ -239,7 +235,7 @@ Both use `/api` base path (proxied by Vite dev server to backend). Both throw on
 |-------------------|---------------------|
 | JSON file storage (`backend/annotations/`) | Datagrok entity storage, database tables, or `DG.StickyMeta` for annotations that should travel with data. StickyMeta binds annotations to entity values (string matches) rather than row indices, making them portable across DataFrames. |
 | Hardcoded `"User"` identity | `grok.shell.user.name` or `grok.shell.user.login` from Datagrok auth context. All annotation saves should capture the authenticated user automatically. |
-| `reviewedBy` / `reviewedDate` server injection | Datagrok StickyMeta provides audit fields natively. If using custom storage, inject from `grok.shell.user` on the client side or from auth middleware on the server side. |
+| `pathologist` / `reviewDate` server injection | Datagrok StickyMeta provides audit fields natively. If using custom storage, inject from `grok.shell.user` on the client side or from auth middleware on the server side. |
 | React Query cache (`["annotations", studyId, schemaType]`) | Datagrok reactive bindings. Subscribe to StickyMeta change events or DataFrame column change events. When an annotation changes, affected columns and downstream computations update automatically. |
 | `PUT` per entity key | StickyMeta API: `DG.Meta.set(entity, schemaName, fieldName, value)`. Or batch save via custom API if using database storage. |
 | Conditional field enabling (resolution when resolved) | Same UX pattern in Datagrok forms. Use `ui.input.choice()` with `onChanged` handlers to enable/disable related inputs. |

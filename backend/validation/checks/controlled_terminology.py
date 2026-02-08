@@ -65,6 +65,20 @@ def check_controlled_terminology(
             if domain_filter and dc != domain_filter.upper():
                 continue
 
+            # STRAIN per-species: build valid_terms from species-specific strains
+            if codelist_name == "STRAIN" and not valid_terms:
+                per_species = cl_info.get("per_species", {})
+                if per_species and "DM" in {k.upper() for k in domains}:
+                    dm_key = next(k for k in domains if k.upper() == "DM")
+                    dm_df = domains[dm_key]
+                    if "SPECIES" in dm_df.columns:
+                        study_species = dm_df["SPECIES"].dropna().astype(str).str.strip().str.upper().unique()
+                        for sp in study_species:
+                            sp_strains = per_species.get(sp, [])
+                            valid_terms.update(str(s).upper() for s in sp_strains)
+                if not valid_terms and extensible:
+                    continue  # No species match and extensible — skip to avoid false positives
+
             col = _find_column(df, col_pattern, dc)
             if col is None:
                 continue
@@ -110,15 +124,18 @@ def check_controlled_terminology(
                 suggestions = _find_suggestions(str(bad_val), valid_terms)
                 fix_tier = 2 if suggestions else 1
 
+                # Classify match type: case/whitespace-only → code-mapping, else value-correction
+                evidence_type = _classify_match(str(bad_val), suggestions)
+
                 if len(suggestions) == 1:
                     evidence = {
-                        "type": "value-correction",
+                        "type": evidence_type,
                         "from": str(bad_val),
                         "to": suggestions[0],
                     }
                 elif len(suggestions) > 1:
                     evidence = {
-                        "type": "value-correction-multi",
+                        "type": "value-correction-multi" if evidence_type != "code-mapping" else "code-mapping",
                         "from": str(bad_val),
                         "candidates": suggestions[:5],
                     }
@@ -173,6 +190,18 @@ def check_controlled_terminology(
                     ))
 
     return results
+
+
+def _classify_match(value: str, suggestions: list[str]) -> str:
+    """Classify whether the difference is case/whitespace-only (code-mapping) or a real error."""
+    if not suggestions:
+        return "value-correction"
+    val_normalized = value.strip().upper().replace(" ", "")
+    for sug in suggestions:
+        sug_normalized = sug.strip().upper().replace(" ", "")
+        if val_normalized == sug_normalized:
+            return "code-mapping"
+    return "value-correction"
 
 
 def _find_suggestions(value: str, valid_terms: set[str], max_results: int = 3) -> list[str]:

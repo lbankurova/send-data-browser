@@ -45,7 +45,8 @@ def get_scripts() -> list[FixScriptDefinition]:
 
 def get_script(key: str) -> FixScriptDefinition | None:
     for s in SCRIPTS:
-        return s if s.key == key else None
+        if s.key == key:
+            return s
     return None
 
 

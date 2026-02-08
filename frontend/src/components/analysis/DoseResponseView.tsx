@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -55,6 +55,7 @@ export function DoseResponseView({
   onSelectionChange?: (sel: DoseResponseSelection | null) => void;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
+  const location = useLocation();
   const { data: drData, isLoading, error } = useDoseResponseMetrics(studyId);
 
   const [filters, setFilters] = useState<Filters>({
@@ -66,6 +67,20 @@ export function DoseResponseView({
   const [selection, setSelection] = useState<DoseResponseSelection | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [endpointSearch, setEndpointSearch] = useState("");
+
+  // Apply cross-view state from navigate()
+  useEffect(() => {
+    const state = location.state as { organ_system?: string; endpoint_label?: string } | null;
+    if (state && drData) {
+      if (state.organ_system) {
+        setFilters((f) => ({ ...f, organ_system: state.organ_system ?? null }));
+      }
+      if (state.endpoint_label) {
+        setEndpointSearch(state.endpoint_label);
+      }
+      window.history.replaceState({}, "");
+    }
+  }, [location.state, drData]);
 
   // Unique values
   const endpoints = useMemo(() => {
