@@ -6,14 +6,15 @@ import { CollapsiblePane } from "./CollapsiblePane";
 import { ValidationIssueForm } from "./ValidationIssueForm";
 import { cn } from "@/lib/utils";
 import {
-  RULE_DETAILS,
-  AFFECTED_RECORDS,
-  FIX_SCRIPTS,
   FIX_STATUS_STYLES,
   StatusBadge,
+  mapApiRecord,
+  extractRuleDetail,
 } from "@/components/analysis/ValidationView";
-import type { RuleDetail, AffectedRecord, FixScript } from "@/components/analysis/ValidationView";
+import type { RuleDetail, AffectedRecord } from "@/components/analysis/ValidationView";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
+import { useValidationResults } from "@/hooks/useValidationResults";
+import { useAffectedRecords } from "@/hooks/useAffectedRecords";
 import type { ValidationRecordReview } from "@/types/annotations";
 
 interface ValidationSelection {
@@ -153,7 +154,8 @@ function RuleReviewSummary({
   detail: RuleDetail | null;
   studyId?: string;
 }) {
-  const records = AFFECTED_RECORDS[selection.rule_id] ?? [];
+  const { data: affectedData } = useAffectedRecords(studyId, selection.rule_id);
+  const records = useMemo(() => (affectedData?.records ?? []).map(mapApiRecord), [affectedData]);
   const { data: recordAnnotations } = useAnnotations<ValidationRecordReview>(
     studyId,
     "validation-records"
@@ -305,20 +307,41 @@ function FixScriptDialog({
   onRun: (scriptKey: string, scope: "single" | "all") => void;
   recordAnnotations?: Record<string, ValidationRecordReview> | null;
 }) {
+  // Get scripts from validation results (React Query serves from cache)
+  const { data: validationData } = useValidationResults(studyId);
+  const { data: affectedData } = useAffectedRecords(studyId, ruleId);
+
+  const scripts = validationData?.scripts ?? [];
+  const allRecords = useMemo(() => (affectedData?.records ?? []).map(mapApiRecord), [affectedData]);
+
   // Find applicable scripts
   const applicableScripts = useMemo(() => {
-    return Object.entries(FIX_SCRIPTS).filter(([, s]) =>
-      s.applicableRules.includes(ruleId)
-    );
-  }, [ruleId]);
+    return scripts.filter(s => s.applicable_rules.includes(ruleId));
+  }, [scripts, ruleId]);
 
   const [selectedScript, setSelectedScript] = useState<string>(
-    record.scriptKey ?? applicableScripts[0]?.[0] ?? ""
+    record.scriptKey ?? applicableScripts[0]?.key ?? ""
   );
   const [scope, setScope] = useState<"single" | "all">("all");
+  const [preview, setPreview] = useState<{ subject: string; field: string; from_val: string; to_val: string }[]>([]);
 
-  const script: FixScript | undefined = FIX_SCRIPTS[selectedScript];
-  const allRecords = AFFECTED_RECORDS[ruleId] ?? [];
+  const script = applicableScripts.find(s => s.key === selectedScript);
+
+  // Fetch preview when script changes
+  useEffect(() => {
+    if (!selectedScript || !studyId) {
+      setPreview([]);
+      return;
+    }
+    fetch(`/api/studies/${encodeURIComponent(studyId)}/validation/scripts/${encodeURIComponent(selectedScript)}/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scope, rule_id: ruleId }),
+    })
+      .then(r => r.ok ? r.json() : { preview: [] })
+      .then(data => setPreview(data.preview ?? []))
+      .catch(() => setPreview([]));
+  }, [selectedScript, studyId, scope, ruleId]);
 
   // Count only unfixed records (skip Manually fixed, Accepted as-is)
   const unfixedRecords = useMemo(() => {
@@ -328,9 +351,6 @@ function FixScriptDialog({
       return status === "Not fixed" || status === "Flagged";
     });
   }, [allRecords, recordAnnotations]);
-
-  // Suppress unused var warning - studyId is passed for future use
-  void studyId;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -348,18 +368,22 @@ function FixScriptDialog({
 
         <div className="space-y-3 p-4">
           {/* Script selector */}
-          <div>
-            <label className="mb-0.5 block text-[11px] font-medium text-muted-foreground">Script</label>
-            <select
-              className="w-full rounded border bg-background px-2 py-1.5 text-[11px]"
-              value={selectedScript}
-              onChange={(e) => setSelectedScript(e.target.value)}
-            >
-              {applicableScripts.map(([key, s]) => (
-                <option key={key} value={key}>{s.name}</option>
-              ))}
-            </select>
-          </div>
+          {applicableScripts.length > 0 ? (
+            <div>
+              <label className="mb-0.5 block text-[11px] font-medium text-muted-foreground">Script</label>
+              <select
+                className="w-full rounded border bg-background px-2 py-1.5 text-[11px]"
+                value={selectedScript}
+                onChange={(e) => setSelectedScript(e.target.value)}
+              >
+                {applicableScripts.map((s) => (
+                  <option key={s.key} value={s.key}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">No fix scripts available for this rule.</p>
+          )}
 
           {/* Description */}
           {script && (
@@ -397,7 +421,7 @@ function FixScriptDialog({
           </div>
 
           {/* Preview table */}
-          {script && (
+          {preview.length > 0 && (
             <div>
               <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Preview</label>
               <div className="max-h-40 overflow-auto rounded border">
@@ -411,12 +435,12 @@ function FixScriptDialog({
                     </tr>
                   </thead>
                   <tbody>
-                    {script.mockPreview.map((row, i) => (
+                    {preview.map((row, i) => (
                       <tr key={i} className="border-b last:border-b-0">
                         <td className="px-2 py-1 font-mono">{row.subject}</td>
                         <td className="px-2 py-1 font-mono">{row.field}</td>
-                        <td className="px-2 py-1 text-red-600">{row.from}</td>
-                        <td className="px-2 py-1 text-green-700">{row.to}</td>
+                        <td className="px-2 py-1 text-red-600">{row.from_val}</td>
+                        <td className="px-2 py-1 text-green-700">{row.to_val}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -436,7 +460,7 @@ function FixScriptDialog({
           </button>
           <button
             className="rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            disabled={!selectedScript}
+            disabled={!selectedScript || applicableScripts.length === 0}
             onClick={() => onRun(selectedScript, scope)}
           >
             RUN
@@ -796,6 +820,9 @@ function FindingSection({
     studyId,
     "validation-records"
   );
+  const { data: validationData } = useValidationResults(studyId);
+  const { data: affectedData } = useAffectedRecords(studyId, record.rule_id);
+  const allRecordsForRule = useMemo(() => (affectedData?.records ?? []).map(mapApiRecord), [affectedData]);
 
   const currentFixStatus =
     recordAnnotations?.[record.issue_id]?.fixStatus ??
@@ -1088,12 +1115,11 @@ function FindingSection({
 
   // Handle script runs
   const handleScriptRun = (scriptKey: string, scope: "single" | "all") => {
-    const scriptName = FIX_SCRIPTS[scriptKey]?.name ?? scriptKey;
+    const scriptName = validationData?.scripts?.find(s => s.key === scriptKey)?.name ?? scriptKey;
     if (scope === "all") {
-      const allRecords = AFFECTED_RECORDS[record.rule_id] ?? [];
       // Only apply to unfixed records — skip already Manually fixed / Accepted as-is
       let applied = 0;
-      for (const rec of allRecords) {
+      for (const rec of allRecordsForRule) {
         const ann = recordAnnotations?.[rec.issue_id];
         const status = ann?.fixStatus ?? (rec.autoFixed ? "Auto-fixed" : "Not fixed");
         if (status === "Manually fixed" || status === "Accepted as-is") continue;
@@ -1106,7 +1132,7 @@ function FindingSection({
         });
         applied++;
       }
-      const skipped = allRecords.length - applied;
+      const skipped = allRecordsForRule.length - applied;
       setFixResult(
         `Script "${scriptName}" applied to ${applied} record${applied !== 1 ? "s" : ""}${skipped > 0 ? ` (${skipped} already fixed, skipped)` : ""}.`
       );
@@ -1375,13 +1401,20 @@ function IssueReview({
   selection: ValidationSelection;
   studyId?: string;
 }) {
-  // Look up the full record metadata from AFFECTED_RECORDS
-  const record = useMemo(() => {
-    const records = AFFECTED_RECORDS[selection.rule_id] ?? [];
-    return records.find((r) => r.issue_id === selection.issue_id) ?? null;
-  }, [selection.rule_id, selection.issue_id]);
+  // Look up the full record from API data
+  const { data: validationData } = useValidationResults(studyId);
+  const { data: affectedData } = useAffectedRecords(studyId, selection.rule_id);
 
-  const detail = RULE_DETAILS[selection.rule_id] ?? null;
+  const record = useMemo(() => {
+    if (!affectedData?.records) return null;
+    const apiRec = affectedData.records.find(r => r.issue_id === selection.issue_id);
+    return apiRec ? mapApiRecord(apiRec) : null;
+  }, [affectedData, selection.issue_id]);
+
+  const detail = useMemo(() => {
+    const rule = validationData?.rules?.find(r => r.rule_id === selection.rule_id);
+    return rule ? extractRuleDetail(rule) : null;
+  }, [validationData, selection.rule_id]);
 
   return (
     <div>
@@ -1466,10 +1499,12 @@ export function ValidationContextPanel({ selection, studyId, setSelection }: Pro
     setSelection({ ...next });
   };
 
-  const detail = useMemo(
-    () => (selection ? RULE_DETAILS[selection.rule_id] ?? null : null),
-    [selection]
-  );
+  const { data: validationData } = useValidationResults(studyId);
+  const detail = useMemo(() => {
+    if (!selection || !validationData?.rules) return null;
+    const rule = validationData.rules.find(r => r.rule_id === selection.rule_id);
+    return rule ? extractRuleDetail(rule) : null;
+  }, [selection, validationData]);
 
   if (!selection) {
     return (
