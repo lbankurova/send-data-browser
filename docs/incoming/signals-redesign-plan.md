@@ -45,7 +45,7 @@ These fixes are in `r01-r17-template-revisions.md`. The backend templates in `sc
 **Important:** If this agent starts before Stream B's agent finishes, coordinate via git — the same files are touched.
 
 ### Stream C — Signals Page Redesign (Major Effort)
-**Status: NOT STARTED**
+**Status: COMPLETED (this session)**
 
 This is the primary work from `signals-view-spec.md`. Eight implementation priorities:
 
