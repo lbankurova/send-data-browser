@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Loader2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -6,13 +6,14 @@ import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
-import { fetchStaticChart } from "@/lib/analysis-view-api";
 import { generateStudyReport } from "@/lib/report-generator";
 import { buildSignalsPanelData, buildFilteredMetrics } from "@/lib/signals-panel-engine";
+import type { MetricsLine, PanelStatement } from "@/lib/signals-panel-engine";
+import { FindingsView } from "./SignalsPanel";
+import { OrganGroupedHeatmap } from "./charts/OrganGroupedHeatmap";
+import type { PendingNavigation } from "./charts/OrganGroupedHeatmap";
 import { StudySummaryFilters } from "./StudySummaryFilters";
 import { StudySummaryGrid } from "./StudySummaryGrid";
-import { SignalHeatmap } from "./charts/SignalHeatmap";
-import { SignalsPanel } from "./SignalsPanel";
 import type {
   StudySummaryFilters as Filters,
   SignalSelection,
@@ -24,6 +25,7 @@ interface StudySummaryViewProps {
 }
 
 type Tab = "details" | "signals";
+type CenterPanelMode = "findings" | "heatmap";
 
 export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySummaryViewProps) {
   const { studyId } = useParams<{ studyId: string }>();
@@ -33,6 +35,7 @@ export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySumm
   const { data: meta } = useStudyMetadata(studyId!);
 
   const [tab, setTab] = useState<Tab>("details");
+  const [centerMode, setCenterMode] = useState<CenterPanelMode>("findings");
   const [filters, setFilters] = useState<Filters>({
     endpoint_type: null,
     organ_system: null,
@@ -42,19 +45,112 @@ export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySumm
   });
 
   const [selection, setSelection] = useState<SignalSelection | null>(null);
-  const [staticHtml, setStaticHtml] = useState<string>("");
+  const [organSelection, setOrganSelectionState] = useState<string | null>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation | null>(null);
+  const [showGrid, setShowGrid] = useState(false);
 
+  // Heatmap expanded organs — target organs start expanded
+  const [heatmapExpandedOrgans, setHeatmapExpandedOrgans] = useState<Set<string>>(new Set());
+
+  // Initialize expanded organs when targetOrgans data loads
   useEffect(() => {
-    if (!studyId) return;
-    fetchStaticChart(studyId, "target_organ_bar")
-      .then(setStaticHtml)
-      .catch(() => setStaticHtml(""));
-  }, [studyId]);
+    if (!targetOrgans) return;
+    const targets = targetOrgans
+      .filter((t) => t.target_organ_flag)
+      .map((t) => t.organ_system);
+    setHeatmapExpandedOrgans(new Set(targets));
+  }, [targetOrgans]);
 
+  // Propagate selection changes to parent (SignalSelectionContext)
   useEffect(() => {
     onSelectionChange?.(selection);
   }, [selection, onSelectionChange]);
 
+  useEffect(() => {
+    onOrganSelect?.(organSelection);
+  }, [organSelection, onOrganSelect]);
+
+  // Mutually exclusive selection
+  const handleSetSelection = useCallback((sel: SignalSelection | null) => {
+    setSelection(sel);
+    if (sel) setOrganSelectionState(null);
+  }, []);
+
+  const handleSetOrganSelection = useCallback((organ: string | null) => {
+    setOrganSelectionState(organ);
+    if (organ) setSelection(null);
+  }, []);
+
+  // Cross-mode navigation: organ click in Findings → switch to Heatmap
+  const handleOrganNavigate = useCallback((organKey: string) => {
+    handleSetOrganSelection(organKey);
+    setCenterMode("heatmap");
+    setPendingNavigation({ targetOrgan: organKey });
+  }, [handleSetOrganSelection]);
+
+  // Endpoint click in Decision Bar
+  const handleDecisionBarEndpointClick = useCallback((endpointLabel: string) => {
+    if (!signalData) return;
+    const match = signalData.find(
+      (s) => s.endpoint_label === endpointLabel
+    );
+    if (match) {
+      handleSetSelection({
+        endpoint_label: match.endpoint_label,
+        dose_level: match.dose_level,
+        sex: match.sex,
+        domain: match.domain,
+        test_code: match.test_code,
+        organ_system: match.organ_system,
+      });
+      // Per spec: if in Findings, stay in Findings. If in Heatmap, scroll to endpoint.
+      if (centerMode === "heatmap") {
+        setPendingNavigation({
+          targetOrgan: match.organ_system,
+          targetEndpoint: match.endpoint_label,
+        });
+      }
+    }
+  }, [signalData, centerMode, handleSetSelection]);
+
+  // Heatmap organ select
+  const handleHeatmapOrganSelect = useCallback((organKey: string) => {
+    handleSetOrganSelection(organKey);
+  }, [handleSetOrganSelection]);
+
+  const handleToggleOrgan = useCallback((organKey: string) => {
+    setHeatmapExpandedOrgans((prev) => {
+      const next = new Set(prev);
+      if (next.has(organKey)) next.delete(organKey);
+      else next.add(organKey);
+      return next;
+    });
+  }, []);
+
+  const handleNavigationConsumed = useCallback(() => {
+    setPendingNavigation(null);
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (tab !== "signals") return;
+        if (centerMode === "heatmap") {
+          // Return to Findings, preserve selection
+          setCenterMode("findings");
+        } else {
+          // Clear selection
+          setSelection(null);
+          setOrganSelectionState(null);
+        }
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [tab, centerMode]);
+
+  // Filter data
   const filteredData = useMemo(() => {
     if (!signalData) return [];
     return signalData.filter((row) => {
@@ -73,21 +169,17 @@ export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySumm
     });
   }, [signalData, filters]);
 
+  // Build panel data
   const panelData = useMemo(() => {
     if (!signalData || !targetOrgans || !noaelData) return null;
     return buildSignalsPanelData(noaelData, targetOrgans, signalData);
   }, [signalData, targetOrgans, noaelData]);
 
-  // Metrics line updates with filters; panel findings stay static
+  // Filter-responsive metrics
   const displayMetrics = useMemo(() => {
     if (!panelData) return null;
     return buildFilteredMetrics(panelData.metrics, filteredData);
   }, [panelData, filteredData]);
-
-  const handleOrganClick = (organSystem: string) => {
-    setSelection(null); // clear endpoint selection
-    onOrganSelect?.(organSystem);
-  };
 
   if (error) {
     return (
@@ -159,89 +251,220 @@ export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySumm
 
       {/* Tab content */}
       {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} />}
-      {tab === "signals" && (
-        <div className="flex h-full overflow-hidden">
-          {/* Signals panel — left side */}
-          {panelData && (
-            <div className="w-[280px] shrink-0">
-              <SignalsPanel
-                data={panelData}
-                filteredMetrics={displayMetrics ?? undefined}
-                onOrganClick={handleOrganClick}
-                onEndpointClick={(ep) => {
-                  // Find the signal row for this endpoint and select it
-                  const match = signalData?.find(
-                    (s) => s.endpoint_label === ep
-                  );
-                  if (match) {
-                    setSelection({
-                      endpoint_label: match.endpoint_label,
-                      dose_level: match.dose_level,
-                      sex: match.sex,
-                      domain: match.domain,
-                      test_code: match.test_code,
-                      organ_system: match.organ_system,
-                    });
-                  }
-                }}
+      {tab === "signals" && panelData && (
+        <div className="flex h-full flex-col overflow-hidden">
+          {/* Decision Bar — persistent */}
+          <DecisionBar
+            statements={panelData.decisionBar}
+            metrics={displayMetrics ?? panelData.metrics}
+            onEndpointClick={handleDecisionBarEndpointClick}
+          />
+
+          {/* Mode toggle + filter bar */}
+          <div className="flex items-center gap-3 border-b px-4 py-1.5">
+            {/* Segmented control */}
+            <div className="flex rounded-md border">
+              <button
+                className={cn(
+                  "px-3 py-1 text-xs font-medium transition-colors",
+                  centerMode === "findings"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setCenterMode("findings")}
+              >
+                Findings
+              </button>
+              <button
+                className={cn(
+                  "px-3 py-1 text-xs font-medium transition-colors",
+                  centerMode === "heatmap"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setCenterMode("heatmap")}
+              >
+                Heatmap
+              </button>
+            </div>
+
+            {/* Filters — visible in both modes, dimmed in Findings */}
+            <div
+              className={cn(
+                "flex-1 transition-opacity",
+                centerMode === "findings" && "pointer-events-none opacity-40"
+              )}
+              title={
+                centerMode === "findings"
+                  ? "Filters apply to Heatmap view"
+                  : undefined
+              }
+            >
+              <StudySummaryFilters
+                data={signalData}
+                filters={filters}
+                onChange={setFilters}
               />
             </div>
-          )}
+          </div>
 
-          {/* Main content — right side */}
-          <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Filters */}
-            <StudySummaryFilters
-              data={signalData}
-              filters={filters}
-              onChange={setFilters}
+          {/* Center content */}
+          {centerMode === "findings" ? (
+            <FindingsView
+              data={panelData}
+              organSelection={organSelection}
+              onOrganNavigate={handleOrganNavigate}
+              onOrganSelect={handleSetOrganSelection}
+              onEndpointClick={handleDecisionBarEndpointClick}
             />
-
-            {/* Scrollable content */}
+          ) : (
             <div className="flex-1 overflow-auto">
-              <div className="border-b p-4">
-                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Signal heatmap
-                </h2>
-                <SignalHeatmap
+              {targetOrgans && (
+                <OrganGroupedHeatmap
                   data={filteredData}
+                  targetOrgans={targetOrgans}
                   selection={selection}
-                  onSelect={setSelection}
+                  organSelection={organSelection}
+                  onSelect={handleSetSelection}
+                  onOrganSelect={handleHeatmapOrganSelect}
+                  expandedOrgans={heatmapExpandedOrgans}
+                  onToggleOrgan={handleToggleOrgan}
+                  pendingNavigation={pendingNavigation}
+                  onNavigationConsumed={handleNavigationConsumed}
                 />
-              </div>
+              )}
 
-              <div className="border-b">
-                <div className="flex items-center justify-between px-4 pt-3 pb-1">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Signal summary ({filteredData.length} rows)
-                  </h2>
-                </div>
-                <StudySummaryGrid
-                  data={filteredData}
-                  selection={selection}
-                  onSelect={setSelection}
-                />
+              {/* Toggle for signal table */}
+              <div className="border-t px-4 py-2">
+                <button
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowGrid((v) => !v)}
+                >
+                  {showGrid
+                    ? "Hide signal table"
+                    : `Show signal table (${filteredData.length} rows)`}
+                </button>
               </div>
-
-              {staticHtml && (
-                <div className="p-4">
-                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Target organ summary
-                    {targetOrgans && (
-                      <span className="ml-1 font-normal normal-case">
-                        ({targetOrgans.filter((o) => o.target_organ_flag).length}{" "}
-                        identified)
-                      </span>
-                    )}
-                  </h2>
-                  <div dangerouslySetInnerHTML={{ __html: staticHtml }} />
+              {showGrid && (
+                <div className="border-t">
+                  <StudySummaryGrid
+                    data={filteredData}
+                    selection={selection}
+                    onSelect={handleSetSelection}
+                  />
                 </div>
               )}
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Decision Bar — persistent across both modes
+// ---------------------------------------------------------------------------
+
+function DecisionBar({
+  statements,
+  metrics,
+  onEndpointClick,
+}: {
+  statements: PanelStatement[];
+  metrics: MetricsLine;
+  onEndpointClick?: (endpointLabel: string) => void;
+}) {
+  return (
+    <div className="shrink-0 border-b bg-muted/30 px-4 py-2.5">
+      {/* NOAEL statement(s) */}
+      <div className="space-y-0.5">
+        {statements.map((s, i) => (
+          <div key={i} className="flex items-start gap-2 text-sm leading-snug">
+            <span
+              className={cn(
+                "mt-0.5 shrink-0 text-[11px]",
+                s.icon === "warning" ? "text-amber-600" : "text-blue-600"
+              )}
+            >
+              {s.icon === "warning" ? "\u25B2" : "\u25CF"}
+            </span>
+            <span>
+              {s.clickEndpoint ? (
+                <DecisionBarClickableText
+                  text={s.text}
+                  clickEndpoint={s.clickEndpoint}
+                  onEndpointClick={onEndpointClick}
+                />
+              ) : (
+                s.text
+              )}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Metrics line */}
+      <div className="mt-1 flex flex-wrap gap-x-1.5 text-xs text-muted-foreground">
+        <span>
+          <span className="font-medium">NOAEL</span>{" "}
+          <span
+            className={cn(
+              "font-semibold",
+              metrics.noael === "Not established" || metrics.noael === "Control"
+                ? "text-amber-600"
+                : "text-foreground"
+            )}
+          >
+            {metrics.noael}
+          </span>
+          {metrics.noaelSex && (
+            <span className="text-muted-foreground"> ({metrics.noaelSex})</span>
+          )}
+        </span>
+        <span>&middot;</span>
+        <span>
+          {metrics.targets} target{metrics.targets !== 1 ? "s" : ""}
+        </span>
+        <span>&middot;</span>
+        <span>{metrics.significantRatio} significant</span>
+        <span>&middot;</span>
+        <span>{metrics.doseResponse} D-R</span>
+        <span>&middot;</span>
+        <span>
+          {metrics.domains} domain{metrics.domains !== 1 ? "s" : ""}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DecisionBarClickableText({
+  text,
+  clickEndpoint,
+  onEndpointClick,
+}: {
+  text: string;
+  clickEndpoint: string;
+  onEndpointClick?: (ep: string) => void;
+}) {
+  const idx = text.indexOf(clickEndpoint);
+  if (idx === -1) return <>{text}</>;
+
+  const before = text.slice(0, idx);
+  const after = text.slice(idx + clickEndpoint.length);
+
+  return (
+    <>
+      {before}
+      <button
+        className="font-semibold text-blue-600 hover:underline"
+        onClick={() => onEndpointClick?.(clickEndpoint)}
+      >
+        {clickEndpoint}
+      </button>
+      {after}
+    </>
   );
 }
 
