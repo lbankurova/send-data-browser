@@ -376,32 +376,45 @@ function DecisionBar({
   onEndpointClick?: (endpointLabel: string) => void;
 }) {
   return (
-    <div className="shrink-0 border-b bg-muted/30 px-4 py-2.5">
+    <div className="shrink-0 border-b px-4 py-2.5">
       {/* NOAEL statement(s) */}
       <div className="space-y-0.5">
-        {statements.map((s, i) => (
-          <div key={i} className="flex items-start gap-2 text-sm leading-snug">
-            <span
+        {statements.map((s, i) => {
+          const isAlert = s.icon === "warning" || s.icon === "review-flag";
+          const isMainLine = i === 0;
+          return (
+            <div
+              key={i}
               className={cn(
-                "mt-0.5 shrink-0 text-[11px]",
-                s.icon === "warning" ? "text-amber-600" : "text-blue-600"
+                "flex items-start gap-2 leading-snug",
+                isMainLine ? "text-sm font-medium" : "text-sm",
+                isAlert && "text-amber-700"
               )}
             >
-              {s.icon === "warning" ? "\u25B2" : "\u25CF"}
-            </span>
-            <span>
-              {s.clickEndpoint ? (
-                <DecisionBarClickableText
-                  text={s.text}
-                  clickEndpoint={s.clickEndpoint}
-                  onEndpointClick={onEndpointClick}
-                />
-              ) : (
-                s.text
-              )}
-            </span>
-          </div>
-        ))}
+              <span
+                className={cn(
+                  "shrink-0",
+                  isAlert
+                    ? "mt-0.5 text-[11px] text-amber-600"
+                    : "mt-[5px] text-[8px] text-blue-500"
+                )}
+              >
+                {isAlert ? "\u25B2" : "\u25CF"}
+              </span>
+              <span>
+                {s.clickEndpoint ? (
+                  <DecisionBarClickableText
+                    text={s.text}
+                    clickEndpoint={s.clickEndpoint}
+                    onEndpointClick={onEndpointClick}
+                  />
+                ) : (
+                  s.text
+                )}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Metrics line */}

@@ -3,7 +3,7 @@ import { StudySummaryView } from "./StudySummaryView";
 import { useSignalSelection } from "@/contexts/SignalSelectionContext";
 
 export function StudySummaryViewWrapper() {
-  const { setSelection, setOrganSelection } = useSignalSelection();
+  const { setSelection, setOrganSelection, clearSelection } = useSignalSelection();
 
   const handleSelectionChange = useCallback(
     (sel: Parameters<typeof setSelection>[0]) => {
@@ -14,9 +14,10 @@ export function StudySummaryViewWrapper() {
 
   const handleOrganSelect = useCallback(
     (organ: string | null) => {
-      setOrganSelection(organ);
+      if (organ) setOrganSelection(organ);
+      else clearSelection();
     },
-    [setOrganSelection]
+    [setOrganSelection, clearSelection]
   );
 
   return (

@@ -64,6 +64,12 @@ export interface SignalSelection {
   organ_system: string;
 }
 
+/** Unified selection state for Signals tab — discriminated union. */
+export type SignalViewSelection =
+  | { level: "none" }
+  | { level: "organ"; organSystem: string }
+  | { level: "endpoint"; endpoint: SignalSelection };
+
 // --- NOAEL & Decision (View 5) ---
 
 export interface NoaelSummaryRow {
