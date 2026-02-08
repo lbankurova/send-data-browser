@@ -166,7 +166,7 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
           className="h-3 w-3 transition-transform"
           style={{ transform: open ? "rotate(90deg)" : undefined }}
         />
-        Import New Study
+        Import new study
       </button>
 
       {open && (
@@ -179,7 +179,7 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
             </p>
             <button
               className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
-              onClick={(e) => e.preventDefault()}
+              onClick={() => alert("File browser is not available in this prototype. Drop a SEND folder above.")}
             >
               Browse...
             </button>
@@ -242,7 +242,7 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
             title="Import not available in prototype"
             className="rounded-md bg-primary/50 px-4 py-2 text-xs font-medium text-primary-foreground/70 cursor-not-allowed"
           >
-            Import Study
+            Import study
           </button>
         </div>
       )}
@@ -339,7 +339,10 @@ export function AppLandingPage() {
               href="#"
               className="mt-2 inline-block text-sm hover:underline"
               style={{ color: "#3a7bd5" }}
-              onClick={(e) => e.preventDefault()}
+              onClick={(e) => {
+                e.preventDefault();
+                alert("Documentation is not available in this prototype.");
+              }}
             >
               Learn more &#x2197;
             </a>

@@ -1,17 +1,24 @@
 import { useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { ValidationView } from "./ValidationView";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
-import type { ValidationIssue } from "./ValidationView";
 
 export function ValidationViewWrapper() {
-  const { setSelection } = useViewSelection();
+  const { studyId } = useParams<{ studyId: string }>();
+  const { selection: viewSelection, setSelection } = useViewSelection();
 
   const handleSelectionChange = useCallback(
-    (issue: ValidationIssue | null) => {
-      setSelection(issue ? { ...issue, _view: "validation" } : null);
+    (sel: Record<string, unknown> | null) => {
+      setSelection(sel);
     },
     [setSelection]
   );
 
-  return <ValidationView onSelectionChange={handleSelectionChange} />;
+  return (
+    <ValidationView
+      studyId={studyId}
+      onSelectionChange={handleSelectionChange}
+      viewSelection={viewSelection}
+    />
+  );
 }

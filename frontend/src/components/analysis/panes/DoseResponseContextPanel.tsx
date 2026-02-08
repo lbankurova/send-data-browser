@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { InsightsList } from "./InsightsList";
+import { ToxFindingForm } from "./ToxFindingForm";
 import { cn } from "@/lib/utils";
 import { formatPValue, formatEffectSize, getPValueColor } from "@/lib/severity-colors";
 import type { DoseResponseRow, RuleResult } from "@/types/analysis-views";
@@ -17,10 +18,12 @@ interface Props {
   drData: DoseResponseRow[];
   ruleResults: RuleResult[];
   selection: DoseResponseSelection | null;
+  studyId?: string;
 }
 
-export function DoseResponseContextPanel({ drData, ruleResults, selection }: Props) {
-  const { studyId } = useParams<{ studyId: string }>();
+export function DoseResponseContextPanel({ drData, ruleResults, selection, studyId: studyIdProp }: Props) {
+  const { studyId: studyIdParam } = useParams<{ studyId: string }>();
+  const studyId = studyIdProp ?? studyIdParam;
   const navigate = useNavigate();
 
   // Rules for selected endpoint
@@ -70,7 +73,7 @@ export function DoseResponseContextPanel({ drData, ruleResults, selection }: Pro
       </CollapsiblePane>
 
       {/* Pairwise detail */}
-      <CollapsiblePane title="Pairwise Detail" defaultOpen>
+      <CollapsiblePane title="Pairwise detail" defaultOpen>
         {pairwiseRows.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No pairwise data.</p>
         ) : (
@@ -105,8 +108,13 @@ export function DoseResponseContextPanel({ drData, ruleResults, selection }: Pro
         )}
       </CollapsiblePane>
 
+      {/* Tox Assessment */}
+      {studyId && (
+        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} defaultOpen />
+      )}
+
       {/* Cross-view links */}
-      <CollapsiblePane title="Related Views" defaultOpen={false}>
+      <CollapsiblePane title="Related views" defaultOpen={false}>
         <div className="space-y-1 text-[11px]">
           {selection.organ_system && (
             <a

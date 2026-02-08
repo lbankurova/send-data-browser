@@ -188,7 +188,7 @@ export function TargetOrgansView({
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
         <div className="mb-4 rounded-lg bg-red-50 p-6">
-          <h1 className="mb-2 text-xl font-semibold text-red-700">Analysis Data Not Available</h1>
+          <h1 className="mb-2 text-xl font-semibold text-red-700">Analysis data not available</h1>
           <p className="text-sm text-red-600">Run the generator to produce analysis data:</p>
           <code className="mt-2 block rounded bg-red-100 px-3 py-1.5 text-xs text-red-800">
             cd backend && python -m generator.generate {studyId}
@@ -212,7 +212,7 @@ export function TargetOrgansView({
       {/* Organ summary cards */}
       <div className="border-b p-4">
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Target Organ Systems ({sortedOrgans.length})
+          Target organ systems ({sortedOrgans.length})
         </h2>
         <div className="flex flex-wrap gap-2">
           {sortedOrgans.map((organ) => (

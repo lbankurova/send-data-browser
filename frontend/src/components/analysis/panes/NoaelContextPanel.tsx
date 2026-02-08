@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { InsightsList } from "./InsightsList";
+import { ToxFindingForm } from "./ToxFindingForm";
 import {
   formatPValue,
   formatEffectSize,
@@ -25,10 +26,12 @@ interface Props {
   aeData: AdverseEffectSummaryRow[];
   ruleResults: RuleResult[];
   selection: NoaelSelection | null;
+  studyId?: string;
 }
 
-export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection }: Props) {
-  const { studyId } = useParams<{ studyId: string }>();
+export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection, studyId: studyIdProp }: Props) {
+  const { studyId: studyIdParam } = useParams<{ studyId: string }>();
+  const studyId = studyIdProp ?? studyIdParam;
   const navigate = useNavigate();
 
   // NOAEL-related rules (scope=study)
@@ -62,7 +65,7 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection }:
     return (
       <div>
         {/* NOAEL narrative */}
-        <CollapsiblePane title="NOAEL Narrative" defaultOpen>
+        <CollapsiblePane title="NOAEL narrative" defaultOpen>
           <InsightsList rules={noaelRules} />
         </CollapsiblePane>
 
@@ -100,7 +103,7 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection }:
       </div>
 
       {/* Adversity rationale */}
-      <CollapsiblePane title="Adversity Rationale" defaultOpen>
+      <CollapsiblePane title="Adversity rationale" defaultOpen>
         {selectedRows.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No data for selected endpoint.</p>
         ) : (
@@ -134,7 +137,7 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection }:
       </CollapsiblePane>
 
       {/* Cross-view links */}
-      <CollapsiblePane title="Related Views" defaultOpen={false}>
+      <CollapsiblePane title="Related views" defaultOpen={false}>
         <div className="space-y-1 text-[11px]">
           <a
             href="#"
@@ -171,6 +174,11 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection }:
           </a>
         </div>
       </CollapsiblePane>
+
+      {/* Tox Assessment */}
+      {studyId && (
+        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
+      )}
     </div>
   );
 }

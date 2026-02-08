@@ -235,7 +235,7 @@ export function NoaelDecisionView({
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
         <div className="mb-4 rounded-lg bg-red-50 p-6">
-          <h1 className="mb-2 text-xl font-semibold text-red-700">Analysis Data Not Available</h1>
+          <h1 className="mb-2 text-xl font-semibold text-red-700">Analysis data not available</h1>
           <p className="text-sm text-red-600">Run the generator to produce analysis data:</p>
           <code className="mt-2 block rounded bg-red-100 px-3 py-1.5 text-xs text-red-800">
             cd backend && python -m generator.generate {studyId}
@@ -310,7 +310,7 @@ export function NoaelDecisionView({
         {matrixData.endpoints.length > 0 && (
           <div className="border-b p-4">
             <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Adversity Matrix ({matrixData.endpoints.length} endpoints)
+              Adversity matrix ({matrixData.endpoints.length} endpoints)
             </h2>
             <div className="overflow-x-auto">
               <div className="inline-block">
@@ -393,7 +393,7 @@ export function NoaelDecisionView({
         <div>
           <div className="flex items-center justify-between px-4 pt-3 pb-1">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Adverse Effect Summary ({filteredData.length} rows)
+              Adverse effect summary ({filteredData.length} rows)
             </h2>
           </div>
           <div className="overflow-x-auto">
@@ -455,7 +455,7 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
   return (
     <div className="border-b bg-muted/20 px-4 py-3">
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        NOAEL Determination
+        NOAEL determination
       </h2>
       <div className="flex flex-wrap gap-3">
         {[combined, males, females].filter(Boolean).map((row) => {
