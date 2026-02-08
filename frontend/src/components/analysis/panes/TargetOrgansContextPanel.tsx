@@ -87,7 +87,7 @@ export function TargetOrgansContextPanel({
           <div className="mt-1 flex items-center gap-2 text-[11px]">
             <span
               className="rounded px-1.5 py-0.5 font-medium text-white"
-              style={{ backgroundColor: getSignalScoreColor(selectedOrganSummary.evidence_score / 2) }}
+              style={{ backgroundColor: getSignalScoreColor(selectedOrganSummary.evidence_score) }}
             >
               Evidence: {selectedOrganSummary.evidence_score.toFixed(2)}
             </span>
