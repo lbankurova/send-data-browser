@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { organName } from "@/lib/signals-panel-engine";
 import type {
   SignalsPanelData,
   OrganBlock,
@@ -19,10 +19,8 @@ interface Props {
   onEndpointClick?: (endpointLabel: string) => void;
 }
 
-type ExpandableSection = "TargetOrgans" | "Modifiers" | "Caveats";
-
 // ---------------------------------------------------------------------------
-// Icon rendering
+// Shared sub-components
 // ---------------------------------------------------------------------------
 
 function StatementIcon({ icon }: { icon: PanelStatement["icon"] }) {
@@ -36,10 +34,6 @@ function StatementIcon({ icon }: { icon: PanelStatement["icon"] }) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Domain chip
-// ---------------------------------------------------------------------------
-
 function DomainChip({ domain }: { domain: string }) {
   return (
     <span className="inline-block rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
@@ -48,11 +42,68 @@ function DomainChip({ domain }: { domain: string }) {
   );
 }
 
+function SectionHeader({ title, count }: { title: string; count: number }) {
+  return (
+    <div className="mb-3 flex items-baseline justify-between border-b border-border pb-1.5">
+      <span className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+        {title}
+      </span>
+      <span className="text-sm text-muted-foreground">({count})</span>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
-// Clickable statement (endpoints in study statements)
+// Clickable organ name within text
 // ---------------------------------------------------------------------------
 
-function ClickableStatement({
+function ClickableOrganText({
+  text,
+  organKey,
+  onClick,
+}: {
+  text: string;
+  organKey: string;
+  onClick: () => void;
+}) {
+  const displayName = organName(organKey);
+  const idx = text.indexOf(displayName);
+  if (idx === -1) {
+    return (
+      <span
+        className="cursor-pointer text-blue-600 hover:underline"
+        onClick={onClick}
+      >
+        {text}
+      </span>
+    );
+  }
+
+  const before = text.slice(0, idx);
+  const after = text.slice(idx + displayName.length);
+
+  return (
+    <span>
+      {before}
+      <button
+        className="font-medium text-blue-600 hover:underline"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+      >
+        {displayName}
+      </button>
+      {after}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Clickable endpoint within text
+// ---------------------------------------------------------------------------
+
+function ClickableEndpointText({
   text,
   clickEndpoint,
   onEndpointClick,
@@ -95,13 +146,13 @@ function StudyStatementsSection({
   if (statements.length === 0) return null;
 
   return (
-    <div className="mb-4">
+    <div className="mb-6">
       {statements.map((s, i) => (
         <div key={i} className="flex items-start gap-2 text-sm leading-relaxed">
           <StatementIcon icon={s.icon} />
           <span>
             {s.clickEndpoint ? (
-              <ClickableStatement
+              <ClickableEndpointText
                 text={s.text}
                 clickEndpoint={s.clickEndpoint}
                 onEndpointClick={onEndpointClick}
@@ -117,73 +168,10 @@ function StudyStatementsSection({
 }
 
 // ---------------------------------------------------------------------------
-// Target Organs Section
+// Target Organ Card
 // ---------------------------------------------------------------------------
 
-function TargetOrgansSection({
-  blocks,
-  expanded,
-  onToggle,
-  organSelection,
-  onOrganNavigate,
-  onOrganSelect,
-}: {
-  blocks: OrganBlock[];
-  expanded: boolean;
-  onToggle: () => void;
-  organSelection?: string | null;
-  onOrganNavigate?: (organKey: string) => void;
-  onOrganSelect?: (organKey: string) => void;
-}) {
-  if (blocks.length === 0) return null;
-
-  const handleOrganClick = (e: React.MouseEvent, organKey: string) => {
-    if (e.ctrlKey || e.metaKey) {
-      // Ctrl+click: stay in findings, just set selection
-      onOrganSelect?.(organKey);
-    } else {
-      // Normal click: navigate to heatmap
-      onOrganNavigate?.(organKey);
-    }
-  };
-
-  return (
-    <div className="mb-4">
-      <button
-        className="mb-2 flex w-full items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-        onClick={onToggle}
-      >
-        <ChevronRight
-          className="h-3.5 w-3.5 transition-transform"
-          style={{ transform: expanded ? "rotate(90deg)" : undefined }}
-        />
-        Target organs
-      </button>
-
-      <div className="space-y-1">
-        {blocks.map((block) =>
-          expanded ? (
-            <ExpandedOrganBlock
-              key={block.organKey}
-              block={block}
-              isSelected={organSelection === block.organKey}
-              onOrganClick={handleOrganClick}
-            />
-          ) : (
-            <CompactOrganLine
-              key={block.organKey}
-              block={block}
-              isSelected={organSelection === block.organKey}
-              onOrganClick={handleOrganClick}
-            />
-          )
-        )}
-      </div>
-    </div>
-  );
-}
-
-function CompactOrganLine({
+function OrganCard({
   block,
   isSelected,
   onOrganClick,
@@ -195,59 +183,27 @@ function CompactOrganLine({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors",
-        isSelected && "bg-blue-50 dark:bg-blue-950/20"
+        "group cursor-pointer rounded-lg border p-4 transition-all",
+        isSelected
+          ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
+          : "border-border bg-background hover:border-blue-300 hover:shadow-sm"
       )}
+      onClick={(e) => onOrganClick(e, block.organKey)}
+      title="Click to view in heatmap · Ctrl+click to browse insights"
     >
-      <span className="shrink-0 text-[11px] text-blue-600">{"\u25CF"}</span>
-      <button
-        className="font-semibold text-blue-600 hover:underline"
-        onClick={(e) => onOrganClick(e, block.organKey)}
-        title="View in heatmap"
-      >
-        {block.organ}
-      </button>
-      <span className="text-muted-foreground">&mdash;</span>
-      <div className="flex flex-wrap gap-0.5">
-        {block.domains.map((d) => (
-          <DomainChip key={d} domain={d} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ExpandedOrganBlock({
-  block,
-  isSelected,
-  onOrganClick,
-}: {
-  block: OrganBlock;
-  isSelected: boolean;
-  onOrganClick: (e: React.MouseEvent, organKey: string) => void;
-}) {
-  return (
-    <div
-      className={cn(
-        "mb-2 rounded-md px-2 py-1.5 transition-colors",
-        isSelected && "bg-blue-50 dark:bg-blue-950/20"
-      )}
-    >
-      {/* Headline */}
-      <div className="group flex items-start gap-2 text-sm">
-        <span className="mt-0.5 shrink-0 text-[11px] text-blue-600">{"\u25CF"}</span>
-        <button
-          className="font-semibold text-blue-600 hover:underline"
-          onClick={(e) => onOrganClick(e, block.organKey)}
-          title="View in heatmap"
-        >
-          {block.organ}
-        </button>
-        <span className="text-muted-foreground">&mdash; target organ identified</span>
+      {/* Header: organ name + navigate icon */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-2">
+          <span className="mt-0.5 shrink-0 text-[11px] text-blue-600">
+            {"\u25CF"}
+          </span>
+          <span className="text-sm font-semibold">{block.organ}</span>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
       </div>
 
-      {/* Evidence sub-line: domains */}
-      <div className="ml-6 mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+      {/* Evidence: domain chips */}
+      <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
         <span>Evidence:</span>
         <div className="flex flex-wrap gap-0.5">
           {block.domains.map((d) => (
@@ -258,7 +214,7 @@ function ExpandedOrganBlock({
 
       {/* Dose-response sub-line */}
       {block.doseResponse && (
-        <div className="ml-6 mt-0.5 text-xs text-muted-foreground">
+        <div className="mt-1 text-xs text-muted-foreground">
           Dose-response: {block.doseResponse.nEndpoints} endpoints &middot;{" "}
           {block.doseResponse.topEndpoint} strongest
         </div>
@@ -268,118 +224,178 @@ function ExpandedOrganBlock({
 }
 
 // ---------------------------------------------------------------------------
-// Modifiers Section
+// Target Organs Section (card grid)
 // ---------------------------------------------------------------------------
 
-function ModifiersSection({
-  modifiers,
-  expanded,
-  onToggle,
+function TargetOrgansSection({
+  blocks,
+  organSelection,
   onOrganNavigate,
+  onOrganSelect,
 }: {
-  modifiers: PanelStatement[];
-  expanded: boolean;
-  onToggle: () => void;
+  blocks: OrganBlock[];
+  organSelection?: string | null;
   onOrganNavigate?: (organKey: string) => void;
+  onOrganSelect?: (organKey: string) => void;
 }) {
-  if (modifiers.length === 0) return null;
+  if (blocks.length === 0) return null;
+
+  const handleOrganClick = (e: React.MouseEvent, organKey: string) => {
+    if (e.ctrlKey || e.metaKey) {
+      onOrganSelect?.(organKey);
+    } else {
+      onOrganNavigate?.(organKey);
+    }
+  };
 
   return (
-    <div className="mb-4">
-      <button
-        className="flex w-full items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-        onClick={onToggle}
+    <div className="mb-8">
+      <SectionHeader title="Target organs" count={blocks.length} />
+      <div
+        className="grid gap-3"
+        style={{
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          alignItems: "start",
+        }}
       >
-        <ChevronRight
-          className="h-3.5 w-3.5 transition-transform"
-          style={{ transform: expanded ? "rotate(90deg)" : undefined }}
-        />
-        Modifiers ({modifiers.length})
-      </button>
-
-      {expanded && (
-        <div className="mt-1.5 space-y-1">
-          {modifiers.map((s, i) => (
-            <div key={i} className="flex items-start gap-2 text-sm leading-relaxed">
-              <StatementIcon icon={s.icon} />
-              <span
-                className={cn(
-                  "flex-1",
-                  s.clickOrgan &&
-                    "cursor-pointer text-blue-600 hover:underline"
-                )}
-                onClick={
-                  s.clickOrgan
-                    ? () => onOrganNavigate?.(s.clickOrgan!)
-                    : undefined
-                }
-              >
-                {s.text}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+        {blocks.map((block) => (
+          <OrganCard
+            key={block.organKey}
+            block={block}
+            isSelected={organSelection === block.organKey}
+            onOrganClick={handleOrganClick}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Caveats & Review Flags
+// Modifiers Section
 // ---------------------------------------------------------------------------
+
+/** Extract sex badge from modifier text */
+function extractSexBadge(text: string): string | null {
+  if (text.includes("females only")) return "F";
+  if (text.includes("males only")) return "M";
+  return null;
+}
+
+function ModifiersSection({
+  modifiers,
+  onOrganNavigate,
+}: {
+  modifiers: PanelStatement[];
+  onOrganNavigate?: (organKey: string) => void;
+}) {
+  if (modifiers.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <SectionHeader title="Modifiers" count={modifiers.length} />
+      <div className="space-y-1">
+        {modifiers.map((s, i) => {
+          const sexBadge = extractSexBadge(s.text);
+          return (
+            <div
+              key={i}
+              className="flex items-start gap-2 text-sm leading-relaxed"
+            >
+              <StatementIcon icon={s.icon} />
+              <span className="flex-1">
+                {s.clickOrgan ? (
+                  <ClickableOrganText
+                    text={s.text}
+                    organKey={s.clickOrgan}
+                    onClick={() => onOrganNavigate?.(s.clickOrgan!)}
+                  />
+                ) : (
+                  s.text
+                )}
+              </span>
+              {sexBadge && (
+                <span
+                  className={cn(
+                    "shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                    sexBadge === "F"
+                      ? "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400"
+                      : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400"
+                  )}
+                >
+                  {sexBadge}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Review Flags (Caveats) Section
+// ---------------------------------------------------------------------------
+
+/** Split caveat text into primary (bold) and detail (muted) at first ". " */
+function splitCaveatText(text: string): {
+  primary: string;
+  detail: string | null;
+} {
+  const idx = text.indexOf(". ");
+  if (idx === -1) return { primary: text, detail: null };
+  return {
+    primary: text.slice(0, idx + 1),
+    detail: text.slice(idx + 2),
+  };
+}
 
 function CaveatsSection({
   caveats,
-  expanded,
-  onToggle,
   onOrganNavigate,
 }: {
   caveats: PanelStatement[];
-  expanded: boolean;
-  onToggle: () => void;
   onOrganNavigate?: (organKey: string) => void;
 }) {
   if (caveats.length === 0) return null;
 
   return (
-    <div className="mb-4">
-      <button
-        className="flex w-full items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-        onClick={onToggle}
-      >
-        <ChevronRight
-          className="h-3.5 w-3.5 transition-transform"
-          style={{ transform: expanded ? "rotate(90deg)" : undefined }}
-        />
-        Review flags ({caveats.length})
-      </button>
-
-      {expanded && (
-        <div className="mt-1.5 space-y-1">
-          {caveats.map((s, i) => (
+    <div className="mb-8">
+      <SectionHeader title="Review flags" count={caveats.length} />
+      <div className="space-y-2">
+        {caveats.map((s, i) => {
+          const { primary, detail } = splitCaveatText(s.text);
+          return (
             <div
               key={i}
-              className="flex items-start gap-2 rounded bg-amber-50/50 px-2 py-1.5 text-sm leading-relaxed"
+              className="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/20"
             >
-              <StatementIcon icon={s.icon} />
-              <span
-                className={cn(
-                  "flex-1",
-                  s.clickOrgan &&
-                    "cursor-pointer text-blue-600 hover:underline"
-                )}
-                onClick={
-                  s.clickOrgan
-                    ? () => onOrganNavigate?.(s.clickOrgan!)
-                    : undefined
-                }
-              >
-                {s.text}
-              </span>
+              <div className="flex items-start gap-2">
+                <StatementIcon icon={s.icon} />
+                <div className="flex-1">
+                  {s.clickOrgan ? (
+                    <span className="text-sm font-medium">
+                      <ClickableOrganText
+                        text={primary}
+                        organKey={s.clickOrgan}
+                        onClick={() => onOrganNavigate?.(s.clickOrgan!)}
+                      />
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium">{primary}</span>
+                  )}
+                  {detail && (
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                      {detail}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -395,50 +411,31 @@ export function FindingsView({
   onOrganSelect,
   onEndpointClick,
 }: Props) {
-  const [expandedSections, setExpandedSections] = useState<
-    Set<ExpandableSection>
-  >(new Set());
-
-  const toggle = useCallback((section: ExpandableSection) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(section)) next.delete(section);
-      else next.add(section);
-      return next;
-    });
-  }, []);
-
   return (
     <div className="flex-1 overflow-auto px-6 py-4">
-      {/* Study-scope statements (e.g., treatment-related effects) */}
+      {/* Study-scope statements */}
       <StudyStatementsSection
         statements={data.studyStatements}
         onEndpointClick={onEndpointClick}
       />
 
-      {/* Target Organs */}
+      {/* Target Organs — card grid */}
       <TargetOrgansSection
         blocks={data.organBlocks}
-        expanded={expandedSections.has("TargetOrgans")}
-        onToggle={() => toggle("TargetOrgans")}
         organSelection={organSelection}
         onOrganNavigate={onOrganNavigate}
         onOrganSelect={onOrganSelect}
       />
 
-      {/* Modifiers */}
+      {/* Modifiers — always visible list */}
       <ModifiersSection
         modifiers={data.modifiers}
-        expanded={expandedSections.has("Modifiers")}
-        onToggle={() => toggle("Modifiers")}
         onOrganNavigate={onOrganNavigate}
       />
 
-      {/* Caveats */}
+      {/* Review Flags — always visible blocks */}
       <CaveatsSection
         caveats={data.caveats}
-        expanded={expandedSections.has("Caveats")}
-        onToggle={() => toggle("Caveats")}
         onOrganNavigate={onOrganNavigate}
       />
     </div>
