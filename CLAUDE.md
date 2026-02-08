@@ -77,6 +77,35 @@ This keeps the migration guide accurate as the codebase evolves. A developer pic
 
 **Minimum bar:** If you cannot update the asset yourself (e.g., time constraints), you MUST at minimum update MANIFEST.md to mark the affected assets as `STALE — <commit description>` so the next agent knows.
 
+## Agent Protocol — Incoming Spec Conflict Check
+
+**MANDATORY before starting any task AND before committing.** Check `docs/incoming/` for feature specs that may conflict with your work.
+
+### On session start or before beginning a new task:
+
+1. **List incoming specs**: `ls docs/incoming/*.md` (excluding README.md).
+2. **If any specs exist**, read each one. For each spec:
+   a. Check its **Integration points** section — which `systems/*.md` and `views/*.md` does it touch?
+   b. Compare against the files you plan to modify.
+   c. If there is overlap (same system, same view, same API endpoints, same data model), **STOP and ask the human** before proceeding. Report:
+      - Which incoming spec(s) you found
+      - Which of your planned changes overlap
+      - Whether the incoming spec should be implemented first, deferred, or merged with your task
+3. **If no specs exist or no overlap**, proceed normally.
+
+### Before committing:
+
+1. **Re-check `docs/incoming/`** — a colleague may have pushed a spec while you were working.
+2. **If a new incoming spec appeared** that touches the same files you modified:
+   a. **Do NOT commit yet.**
+   b. Report the conflict to the human: "Incoming spec `X` touches the same subsystem I just modified. How should we proceed?"
+   c. Options to present: commit as-is (spec author adapts), hold commit and integrate spec first, or split the commit.
+3. **If no conflict**, proceed with commit (and follow the other two commit protocols).
+
+### Why this matters
+
+Two contributors working on the same subsystem without coordination produce merge conflicts — not in git, but in design intent. An incoming spec represents a human's planned direction. If an agent modifies the same area without awareness, the spec may become stale or contradictory before it's even implemented. This check prevents that.
+
 ## Architecture
 
 ### Backend (`backend/`)
