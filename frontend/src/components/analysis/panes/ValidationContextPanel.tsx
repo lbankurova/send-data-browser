@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { CollapsiblePane } from "./CollapsiblePane";
@@ -1285,6 +1286,86 @@ function InlineReviewSection({
   );
 }
 
+// ── Rule detail popover (portal-based to escape overflow containers) ────
+
+function RulePopover({
+  ruleId,
+  domain,
+  category,
+  severity,
+  description,
+  detail,
+}: {
+  ruleId: string;
+  domain: string;
+  category: string;
+  severity: string;
+  description: string;
+  detail: RuleDetail | null;
+}) {
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const [show, setShow] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const handleEnter = useCallback(() => {
+    if (!detail || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    // Place above the trigger, aligned to left edge
+    setPos({ top: rect.top, left: rect.left });
+    setShow(true);
+  }, [detail]);
+
+  const handleLeave = useCallback(() => {
+    setShow(false);
+  }, []);
+
+  return (
+    <div
+      ref={triggerRef}
+      className="mt-1 inline-block text-xs"
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+    >
+      <span className="cursor-default font-medium text-muted-foreground underline decoration-dotted underline-offset-2">
+        Rule {ruleId}
+      </span>
+      <span className="mx-1 text-muted-foreground">&middot;</span>
+      <span className="text-muted-foreground">{domain} &middot; {category}</span>
+      {show && pos && detail && createPortal(
+        <div
+          className="fixed z-[9999] w-72 rounded border bg-background p-3 shadow-lg"
+          style={{ top: pos.top, left: pos.left, transform: "translateY(24px)" }}
+          onMouseEnter={handleEnter}
+          onMouseLeave={handleLeave}
+        >
+          <div className="space-y-1.5 text-[11px]">
+            <div>
+              <span className="font-medium text-muted-foreground">Standard: </span>
+              <span>{detail.standard}</span>
+            </div>
+            <div>
+              <span className="font-medium text-muted-foreground">Section: </span>
+              <span>{detail.section}</span>
+            </div>
+            <div className={cn("border-l-2 pl-2", SEVERITY_BORDER[severity])}>
+              {description}
+            </div>
+            <div>
+              <span className="font-medium text-muted-foreground">Rationale: </span>
+              <span>{detail.rationale}</span>
+            </div>
+            <div>
+              <span className="font-medium text-muted-foreground">How to fix: </span>
+              <span>{detail.howToFix}</span>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 // ── Mode 2: Issue Review ───────────────────────────────────────────────
 
 function IssueReview({
@@ -1320,38 +1401,7 @@ function IssueReview({
           </span>
         </div>
         {/* Rule ID with hover popover showing full rule detail */}
-        <div className="group/rule relative mt-1 inline-block text-xs">
-          <span className="cursor-default font-medium text-muted-foreground underline decoration-dotted underline-offset-2">
-            Rule {selection.rule_id}
-          </span>
-          <span className="mx-1 text-muted-foreground">&middot;</span>
-          <span className="text-muted-foreground">{selection.domain} &middot; {selection.category}</span>
-          {detail && (
-            <div className="invisible absolute right-full top-0 z-20 mr-2 w-72 rounded border bg-background p-3 shadow-lg group-hover/rule:visible">
-              <div className="space-y-1.5 text-[11px]">
-                <div>
-                  <span className="font-medium text-muted-foreground">Standard: </span>
-                  <span>{detail.standard}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-muted-foreground">Section: </span>
-                  <span>{detail.section}</span>
-                </div>
-                <div className={cn("border-l-2 pl-2", SEVERITY_BORDER[selection.severity])}>
-                  {selection.description}
-                </div>
-                <div>
-                  <span className="font-medium text-muted-foreground">Rationale: </span>
-                  <span>{detail.rationale}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-muted-foreground">How to fix: </span>
-                  <span>{detail.howToFix}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <RulePopover ruleId={selection.rule_id} domain={selection.domain} category={selection.category} severity={selection.severity} description={selection.description} detail={detail} />
       </div>
 
       {/* Record context — one-liner */}
