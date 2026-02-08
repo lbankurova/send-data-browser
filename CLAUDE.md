@@ -37,6 +37,17 @@ cd C:/pg/pcc/frontend && npm run lint     # ESLint
 - Run Python/pip via full venv path: `C:/pg/pcc/backend/venv/Scripts/python.exe`
 - When starting backend in PowerShell, set `$env:OPENBLAS_NUM_THREADS = 1` first
 
+## Agent Commit Protocol — Demo/Stub Tracking
+
+**MANDATORY for every commit.** Before committing, check whether your changes affect any item in the [Demo/Stub/Prototype Code — Production Migration Guide](#demostubprototype-code--production-migration-guide) section below. You must:
+
+1. **If you resolved a demo/stub item** (e.g., replaced hardcoded data with an API call, added auth, implemented a stub feature): update that item's entry — change its description to reflect the new state, or move it to the "Resolved" table at the bottom of the section. Update line numbers if code shifted.
+2. **If you introduced new demo/stub/hardcoded/prototype code** (e.g., added a placeholder, hardcoded a value, used `alert()` as a stub, added a `// TODO` for production): add a new entry under the appropriate priority tier with file path, line number, what it does, and what production change is needed.
+3. **If your changes shifted line numbers** in files referenced by the guide (e.g., you added 20 lines above a hardcoded array): update the affected line numbers so they stay accurate.
+4. **Update the summary table** at the bottom of the section if any item's status changed (Demo → Real, Stub → Implemented, Missing → Added).
+
+This keeps the migration guide accurate as the codebase evolves. A developer picking up this codebase for Datagrok production should be able to trust every file path and line number in the guide.
+
 ## Architecture
 
 ### Backend (`backend/`)
@@ -420,6 +431,23 @@ These are values baked into the code that should be configurable.
 | Authentication | **Missing** | No auth anywhere, hardcoded "User" identity |
 | Database storage | **Missing** | Annotations use JSON files on disk |
 | Multi-study support | **Blocked** | ALLOWED_STUDIES restricts to PointCross |
+
+### Resolved Items
+
+Items that have been addressed. Kept for audit trail.
+
+| Item | Resolved In | What Changed |
+|------|-------------|--------------|
+| *(none yet)* | | |
+
+### Maintenance Checklist (for agents)
+
+When updating this section, verify:
+- [ ] Every file path exists and points to the right code
+- [ ] Every line number matches the current file (re-check after any edit to a referenced file)
+- [ ] New stubs/demos/hardcoded items added in this session are documented
+- [ ] Resolved items are moved to the Resolved table with commit context
+- [ ] Summary table statuses are current
 
 ---
 
