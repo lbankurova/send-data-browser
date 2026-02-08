@@ -25,7 +25,7 @@ import type {
 // ---------------------------------------------------------------------------
 
 export type UISection =
-  | "DecisionSummary"
+  | "DecisionBar"
   | "TargetOrgansHeadline"
   | "TargetOrgansEvidence"
   | "Modifiers"
@@ -69,7 +69,8 @@ export interface MetricsLine {
 }
 
 export interface SignalsPanelData {
-  decisionSummary: PanelStatement[];
+  decisionBar: PanelStatement[];
+  studyStatements: PanelStatement[];
   organBlocks: OrganBlock[];
   modifiers: PanelStatement[];
   caveats: PanelStatement[];
@@ -100,7 +101,7 @@ function endpointFmt(label: string): string {
 }
 
 function assignSection(priority: number): UISection {
-  if (priority >= 900) return "DecisionSummary";
+  if (priority >= 900) return "DecisionBar";
   if (priority >= 800) return "TargetOrgansHeadline";
   if (priority >= 600) return "TargetOrgansEvidence";
   if (priority >= 400) return "Modifiers";
@@ -570,14 +571,19 @@ export function buildSignalsPanelData(
     clickOrgan: r.clickOrgan,
   }));
 
-  // Decision Summary: priority >= 900, plus study.treatment.related.signal
-  // (which falls in 600-799 band but renders in Decision Summary per spec)
-  const decisionSummary = statements
+  // Decision Bar: NOAEL-scope rules only (priority >= 900)
+  const decisionBar = statements
+    .filter((s) => s.section === "DecisionBar")
+    .sort((a, b) => b.priority - a.priority);
+
+  // Study-scope statements that land in the findings body (not in Decision Bar)
+  // study.treatment.related.signal (priority 750 or 650) and study.no.treatment.effect (740)
+  const studyStatements = statements
     .filter(
       (s) =>
-        s.section === "DecisionSummary" ||
-        s.id === "study.treatment.related.signal" ||
-        s.id === "study.no.treatment.effect"
+        (s.id === "study.treatment.related.signal" ||
+          s.id === "study.no.treatment.effect") &&
+        s.section !== "DecisionBar"
     )
     .sort((a, b) => b.priority - a.priority);
 
@@ -595,7 +601,8 @@ export function buildSignalsPanelData(
     .sort((a, b) => b.priority - a.priority);
 
   return {
-    decisionSummary,
+    decisionBar,
+    studyStatements,
     organBlocks,
     modifiers,
     caveats,

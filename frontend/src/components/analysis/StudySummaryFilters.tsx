@@ -18,7 +18,7 @@ export function StudySummaryFilters({ data, filters, onChange }: Props) {
   );
 
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b px-4 py-2">
+    <div className="flex flex-wrap items-center gap-3">
       <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
         Endpoint
         <select
