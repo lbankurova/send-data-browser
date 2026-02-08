@@ -1304,7 +1304,7 @@ function InlineReviewSection({
         {existing?.reviewedBy && (
           <p className="text-[10px] text-muted-foreground">
             Reviewed by {existing.reviewedBy} on{" "}
-            {new Date(existing.reviewedDate).toLocaleDateString()}
+            {existing.reviewedDate ? new Date(existing.reviewedDate).toLocaleDateString() : "unknown date"}
           </p>
         )}
       </div>
