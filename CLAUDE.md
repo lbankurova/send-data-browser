@@ -6,9 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SEND Data Browser — a web app for exploring pre-clinical regulatory study data (SEND format). Studies are stored as SAS Transport (.xpt) files in `send/` and served through a REST API to a React frontend.
 
-**Design spec:** `C:\pg\pcc-design\send-browser-prototype-prompt.md` — master build prompt with 5-step plan. Detailed specs in `send-browser-spec-p1,2.md` (§7: views), `send-browser-spec-p3.md` (§9-§12: schemas, rules, context panels, charts), `send-browser-spec-p4.md` (§13-§14: annotations, NOAEL config).
+**Documentation assets:** `docs/` — all system specs, view specs, portability guides, and design system docs live here. See `docs/MANIFEST.md` for a full inventory with code dependencies and staleness tracking.
 
-**Validation engine build prompt:** `C:\pg\pcc-design\validation-engine-build-prompt.md` — instructions for building a real SEND validation engine to replace the hardcoded validation rules/records. Covers backend engine (Python + YAML rules + SENDIG metadata), API endpoints, and frontend hook swap. 18 rules across 3 phases, annotation-only fix scripts.
+**System specs (authoritative — one doc per subsystem):**
+- `docs/systems/insights-engine.md` — rule engine (R01-R16), signal scoring, synthesis, Signals Panel
+- `docs/systems/validation-engine.md` — YAML rules, check functions, fix tiers, evidence rendering
+- `docs/systems/data-pipeline.md` — XPT loading, per-domain stats, classification, view assembly
+- `docs/systems/navigation-and-layout.md` — three-panel layout, routing, selection contexts, cross-view links
+- `docs/systems/annotations.md` — ToxFinding, PathologyReview, validation annotations, storage
+
+**View specs:** `docs/views/*.md` — one per view (8 files: landing, study summary, dose-response, target organs, histopathology, NOAEL, adverse effects, validation)
+
+**Portability:** `docs/portability/` — porting guide, implementation plan, pipeline spec, decisions log
+
+**External specs (in `C:\pg\pcc-design\`):** Original multi-part design spec (`send-browser-spec-p1,2.md` through `p5.md`). These are historical — the `docs/systems/` files are the current source of truth.
+
+**Colleague handoff:** Drop feature specs in `docs/incoming/` following the template in `docs/incoming/README.md`.
 
 ## Development Commands
 
@@ -50,6 +63,20 @@ cd C:/pg/pcc/frontend && npm run lint     # ESLint
 
 This keeps the migration guide accurate as the codebase evolves. A developer picking up this codebase for Datagrok production should be able to trust every file path and line number in the guide.
 
+## Agent Commit Protocol — Asset Maintenance
+
+**MANDATORY for every commit that changes behavior.** Before committing, check `docs/MANIFEST.md` to see which assets depend on the files you changed. You must:
+
+1. **Check staleness.** Look up every file you modified in the MANIFEST's "Depends on" columns. If a match exists, that asset may be stale.
+2. **Update affected system specs.** If your changes alter the architecture, contracts, rules, or behavior described in a `docs/systems/*.md` file, update that file to match the new code. The system spec must always reflect what the code actually does — not what it used to do or what the spec wishes it did.
+3. **Update affected view specs.** If your changes alter how a view works (layout, interactions, data displayed), update the corresponding `docs/views/*.md` file.
+4. **Update TODO.md.** If your changes resolve a TODO item, mark it done. If your changes introduce a new known issue or divergence, add it.
+5. **Update MANIFEST.md.** Set "Last validated" to today's date for any asset you updated. If you added new code files that an asset should track, add them to the "Depends on" column.
+
+**For major rewrites** (e.g., replacing a subsystem): rewrite the affected `docs/systems/*.md` file entirely rather than patching it. Read the current system spec first, then rewrite it to match the new code.
+
+**Minimum bar:** If you cannot update the asset yourself (e.g., time constraints), you MUST at minimum update MANIFEST.md to mark the affected assets as `STALE — <commit description>` so the next agent knows.
+
 ## Architecture
 
 ### Backend (`backend/`)
@@ -59,6 +86,15 @@ This keeps the migration guide accurate as the codebase evolves. A developer pic
   - `routers/studies.py` — domain browsing endpoints under `/api`
   - `routers/analyses.py` — dynamic adverse effects analysis under `/api/studies/{id}/analyses/`
   - `routers/analysis_views.py` — serves pre-generated JSON under `/api/studies/{id}/analysis/{view_name}`
+  - `routers/validation.py` — SEND validation engine endpoints under `/api`
+  - `routers/annotations.py` — annotations CRUD under `/api`
+- **Validation Engine**: `validation/` package — YAML-driven SEND conformance checking
+  - `validation/engine.py` — main ValidationEngine class (loads rules, evaluates checks, caches results)
+  - `validation/models.py` — Pydantic models (RuleDefinition, ValidationRuleResult, AffectedRecordResult, etc.)
+  - `validation/rules/*.yaml` — rule definitions (domain_level, cross_domain, completeness)
+  - `validation/metadata/` — SENDIG variable specs + controlled terminology codelists
+  - `validation/checks/` — check functions (required_variables, controlled_terminology, data_integrity, etc.)
+  - `validation/scripts/registry.py` — fix script definitions and preview computation
 - **Services**: `services/study_discovery.py`, `services/xpt_processor.py`, `services/analysis/` (statistical pipeline)
 - **Generator**: `generator/generate.py` — reads .XPT files, computes statistics, writes JSON to `generated/{study_id}/`
 - **Models**: `models/schemas.py`, `models/analysis_schemas.py`
@@ -76,6 +112,10 @@ This keeps the migration guide accurate as the codebase evolves. A developer pic
 | GET | `/api/studies/{study_id}/analyses/adverse-effects/summary` | Adverse effects summary counts |
 | GET | `/api/studies/{study_id}/analysis/{view_name}` | Pre-generated JSON (see view names below) |
 | GET | `/api/studies/{study_id}/analysis/static/{chart_name}` | Pre-generated HTML charts |
+| POST | `/api/studies/{study_id}/validate` | Run validation engine, cache results |
+| GET | `/api/studies/{study_id}/validation/results` | Cached validation results (rules + summary) |
+| GET | `/api/studies/{study_id}/validation/results/{rule_id}/records` | Paginated affected records for a rule |
+| POST | `/api/studies/{study_id}/validation/scripts/{script_key}/preview` | Fix script before/after preview |
 
 **Valid view names for `/analysis/{view_name}`:** study-signal-summary, target-organ-summary, dose-response-metrics, organ-evidence-detail, lesion-severity-summary, adverse-effect-summary, noael-summary, rule-results
 
@@ -117,6 +157,7 @@ This keeps the migration guide accurate as the codebase evolves. A developer pic
 - `hooks/useStudySignalSummary.ts`, `useTargetOrganSummary.ts`, `useRuleResults.ts` — hooks for generated data
 - `hooks/useNoaelSummary.ts`, `useAdverseEffectSummary.ts`, `useDoseResponseMetrics.ts`, `useOrganEvidenceDetail.ts`, `useLesionSeveritySummary.ts` — hooks for Views 2-5
 - `hooks/useAdverseEffects.ts`, `useAESummary.ts`, `useFindingContext.ts` — hooks for dynamic analysis
+- `hooks/useValidationResults.ts`, `useAffectedRecords.ts`, `useRunValidation.ts` — hooks for validation engine API
 - `types/analysis-views.ts` — TypeScript interfaces for all generated view data
 - `types/analysis.ts` — TypeScript interfaces for adverse effects
 - `contexts/SelectionContext.tsx` — study selection state
@@ -216,11 +257,30 @@ Implemented in `lib/severity-colors.ts`.
 - **Step 4**: Cross-view links (each context panel has navigate links to related views)
 
 ### Step 5: Polish (DONE)
-- **5a**: Validation View (8 hardcoded SEND compliance issues, TanStack table, context panel with rule detail/affected records)
+- **5a**: Validation View — now backed by real validation engine (see below)
 - **5b**: HTML Report Generator (`lib/report-generator.ts` — fetches all data, builds standalone HTML, opens in new tab)
 - **5c**: Landing Page Integration (context menu: Open Validation, Generate Report, Export; Generate Report button on Study Summary)
 - **5d**: Import Section Stub (collapsible "IMPORT NEW STUDY" on landing page — drop zone, metadata fields, validation checkboxes, disabled import button)
 - **5e**: Context Panel Actions (StudyInspector actions now live: Validation report, Generate report, Export)
+
+### Validation Engine
+Real SEND conformance validation engine replaces the original hardcoded rules/records.
+
+**Backend** (`validation/` package):
+- **18 rules** across 3 YAML files (domain_level, cross_domain, completeness)
+- **15 check types** mapped to handler functions via `CHECK_DISPATCH` dict in `engine.py`
+- **SENDIG metadata**: `sendig_31_variables.yaml` (required/expected variables per domain), `controlled_terms.yaml` (14 codelists)
+- **Results cached** as JSON in `generated/{study_id}/validation_results.json`
+- **Fix scripts**: 4 generic scripts (strip-whitespace, uppercase-ct, fix-domain-value, fix-date-format) with live preview from actual data
+- PointCross results: 7 rules fired, 22 affected records, ~1.2s
+
+**Frontend hooks** (replace hardcoded HARDCODED_RULES, RULE_DETAILS, AFFECTED_RECORDS, FIX_SCRIPTS):
+- `useValidationResults(studyId)` — fetches cached results (rules + scripts + summary)
+- `useAffectedRecords(studyId, ruleId)` — fetches paginated records for a rule
+- `useRunValidation(studyId)` — POST mutation to trigger validation run
+- `mapApiRecord()` / `extractRuleDetail()` — snake_case → camelCase mapping helpers
+
+**Data flow**: User clicks "RUN VALIDATION" → POST `/validate` → engine loads all XPT, runs rules → caches JSON → frontend fetches via GET. Context panel uses same React Query cache keys (no extra network calls).
 
 ### InsightsList Synthesis
 The `InsightsList` component (`panes/InsightsList.tsx`) synthesizes raw rule_results into actionable organ-grouped signals:
@@ -334,13 +394,8 @@ These are fake data entries that must be removed entirely.
 - **`AppLandingPage.tsx:259`** — All real studies get hardcoded `validation: "Pass"` regardless of actual validation state.
 - **Production change:** Delete DEMO_STUDIES array and all `isDemo` logic. Validation status should come from actual validation results via API.
 
-#### P2.2 — Hardcoded Validation Rules & Records
-- **`frontend/src/components/analysis/ValidationView.tsx:67-132`** — `HARDCODED_RULES`: 8 fake SEND compliance rules (SD1002, SD1019, SD0064, SD1035, SD0083, SD0021, SD0045, SD0092) with fabricated severity, domain, category, descriptions, record counts.
-- **`ValidationView.tsx:134-183`** — `RULE_DETAILS`: Detailed info per rule (standard version, section reference, rationale, howToFix). Content is realistic SEND guidance but not computed from actual data.
-- **`ValidationView.tsx:185-241`** — `AFFECTED_RECORDS`: 40+ fake affected records with fabricated subject IDs, visit names, domain variables, actual/expected values, fix tiers, and evidence objects.
-- **`ValidationView.tsx:245-274`** — `FIX_SCRIPTS`: 3 mock fix scripts with `mockPreview` arrays showing simulated before/after transformations.
-- **`frontend/src/components/analysis/panes/ValidationContextPanel.tsx:399-425`** — FixScriptDialog renders `mockPreview` as a table (Subject, Field, From, To).
-- **Production change:** Replace all hardcoded arrays with API calls to a real SEND validation engine. The UI structure (rules table, affected records, fix tiers, script dialog) is reusable — only the data source changes. **Build prompt:** `C:\pg\pcc-design\validation-engine-build-prompt.md` has full instructions for building the engine, API endpoints, and frontend hook swap.
+#### P2.2 — Hardcoded Validation Rules & Records — RESOLVED
+- **Resolved:** All hardcoded constants (`HARDCODED_RULES`, `RULE_DETAILS`, `AFFECTED_RECORDS`, `FIX_SCRIPTS`) have been removed from `ValidationView.tsx` and `ValidationContextPanel.tsx`. Replaced with real API hooks (`useValidationResults`, `useAffectedRecords`, `useRunValidation`) that fetch from the backend validation engine. See "Validation Engine" section below for details.
 
 ### Priority 3 — Stub Features (Implement or Remove)
 
@@ -426,7 +481,7 @@ These are values baked into the code that should be configurable.
 | Annotation API contract | **Real** | GET/PUT endpoints, 4 schema types — only storage backend needs changing |
 | React Query data hooks | **Real** | All hooks are production-ready, no mocking |
 | Landing page demo studies | **Demo** | 4 fake entries, remove entirely |
-| Validation rules & records | **Demo** | 8 hardcoded rules, 40+ fake records — replace with validation engine API |
+| Validation engine & rules | **Real** | 18 YAML rules, Python engine reads XPT data, API serves results via hooks |
 | Import section | **Stub** | Non-functional UI, all controls disabled |
 | Export (CSV/Excel) | **Stub** | alert() placeholder |
 | Share / Re-validate / Delete | **Stub** | Disabled menu items, no implementation |
@@ -440,7 +495,7 @@ Items that have been addressed. Kept for audit trail.
 
 | Item | Resolved In | What Changed |
 |------|-------------|--------------|
-| *(none yet)* | | |
+| P2.2 — Hardcoded Validation Rules & Records | Validation engine build | Removed `HARDCODED_RULES`, `RULE_DETAILS`, `AFFECTED_RECORDS`, `FIX_SCRIPTS` from frontend. Replaced with `useValidationResults`, `useAffectedRecords`, `useRunValidation` hooks calling real backend engine (18 YAML rules, 15 check types, reads actual XPT data). |
 
 ### Maintenance Checklist (for agents)
 
