@@ -202,7 +202,7 @@ export function DoseResponseView({
         ),
       }),
       col.accessor("trend_p", {
-        header: "Trend P",
+        header: "Trend p",
         cell: (info) => (
           <span className={cn("font-mono", getPValueColor(info.getValue()))}>
             {formatPValue(info.getValue())}
@@ -245,7 +245,7 @@ export function DoseResponseView({
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
         <div className="mb-4 rounded-lg bg-red-50 p-6">
-          <h1 className="mb-2 text-xl font-semibold text-red-700">Analysis Data Not Available</h1>
+          <h1 className="mb-2 text-xl font-semibold text-red-700">Analysis data not available</h1>
           <p className="text-sm text-red-600">Run the generator to produce analysis data:</p>
           <code className="mt-2 block rounded bg-red-100 px-3 py-1.5 text-xs text-red-800">
             cd backend && python -m generator.generate {studyId}
@@ -416,7 +416,7 @@ export function DoseResponseView({
         <div>
           <div className="flex items-center justify-between px-4 pt-3 pb-1">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Dose-Response Metrics ({filteredData.length} rows)
+              Dose-response metrics ({filteredData.length} rows)
             </h2>
           </div>
           <div className="overflow-x-auto">

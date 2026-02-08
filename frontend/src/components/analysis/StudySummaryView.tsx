@@ -4,12 +4,15 @@ import { Loader2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
+import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { fetchStaticChart } from "@/lib/analysis-view-api";
 import { generateStudyReport } from "@/lib/report-generator";
+import { buildSignalsPanelData, buildFilteredMetrics } from "@/lib/signals-panel-engine";
 import { StudySummaryFilters } from "./StudySummaryFilters";
 import { StudySummaryGrid } from "./StudySummaryGrid";
 import { SignalHeatmap } from "./charts/SignalHeatmap";
+import { SignalsPanel } from "./SignalsPanel";
 import type {
   StudySummaryFilters as Filters,
   SignalSelection,
@@ -17,14 +20,16 @@ import type {
 
 interface StudySummaryViewProps {
   onSelectionChange?: (selection: SignalSelection | null) => void;
+  onOrganSelect?: (organSystem: string | null) => void;
 }
 
 type Tab = "details" | "signals";
 
-export function StudySummaryView({ onSelectionChange }: StudySummaryViewProps) {
+export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySummaryViewProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { data: signalData, isLoading, error } = useStudySignalSummary(studyId);
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
+  const { data: noaelData } = useNoaelSummary(studyId);
   const { data: meta } = useStudyMetadata(studyId!);
 
   const [tab, setTab] = useState<Tab>("details");
@@ -68,12 +73,28 @@ export function StudySummaryView({ onSelectionChange }: StudySummaryViewProps) {
     });
   }, [signalData, filters]);
 
+  const panelData = useMemo(() => {
+    if (!signalData || !targetOrgans || !noaelData) return null;
+    return buildSignalsPanelData(noaelData, targetOrgans, signalData);
+  }, [signalData, targetOrgans, noaelData]);
+
+  // Metrics line updates with filters; panel findings stay static
+  const displayMetrics = useMemo(() => {
+    if (!panelData) return null;
+    return buildFilteredMetrics(panelData.metrics, filteredData);
+  }, [panelData, filteredData]);
+
+  const handleOrganClick = (organSystem: string) => {
+    setSelection(null); // clear endpoint selection
+    onOrganSelect?.(organSystem);
+  };
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
         <div className="mb-4 rounded-lg bg-red-50 p-6">
           <h1 className="mb-2 text-xl font-semibold text-red-700">
-            Analysis Data Not Available
+            Analysis data not available
           </h1>
           <p className="text-sm text-red-600">
             Run the generator to produce analysis data:
@@ -105,7 +126,7 @@ export function StudySummaryView({ onSelectionChange }: StudySummaryViewProps) {
       <div className="flex items-center border-b">
         <div className="flex">
           {([
-            { key: "details" as Tab, label: "Study Details" },
+            { key: "details" as Tab, label: "Study details" },
             { key: "signals" as Tab, label: "Signals" },
           ]).map(({ key, label }) => (
             <button
@@ -131,7 +152,7 @@ export function StudySummaryView({ onSelectionChange }: StudySummaryViewProps) {
             onClick={() => studyId && generateStudyReport(studyId)}
           >
             <FileText className="h-3.5 w-3.5" />
-            Generate Report
+            Generate report
           </button>
         </div>
       </div>
@@ -139,54 +160,84 @@ export function StudySummaryView({ onSelectionChange }: StudySummaryViewProps) {
       {/* Tab content */}
       {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} />}
       {tab === "signals" && (
-        <div className="flex h-full flex-col overflow-hidden">
-          {/* Filters */}
-          <StudySummaryFilters
-            data={signalData}
-            filters={filters}
-            onChange={setFilters}
-          />
-
-          {/* Main content */}
-          <div className="flex-1 overflow-auto">
-            <div className="border-b p-4">
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Signal Heatmap
-              </h2>
-              <SignalHeatmap
-                data={filteredData}
-                selection={selection}
-                onSelect={setSelection}
+        <div className="flex h-full overflow-hidden">
+          {/* Signals panel — left side */}
+          {panelData && (
+            <div className="w-[280px] shrink-0">
+              <SignalsPanel
+                data={panelData}
+                filteredMetrics={displayMetrics ?? undefined}
+                onOrganClick={handleOrganClick}
+                onEndpointClick={(ep) => {
+                  // Find the signal row for this endpoint and select it
+                  const match = signalData?.find(
+                    (s) => s.endpoint_label === ep
+                  );
+                  if (match) {
+                    setSelection({
+                      endpoint_label: match.endpoint_label,
+                      dose_level: match.dose_level,
+                      sex: match.sex,
+                      domain: match.domain,
+                      test_code: match.test_code,
+                      organ_system: match.organ_system,
+                    });
+                  }
+                }}
               />
             </div>
+          )}
 
-            <div className="border-b">
-              <div className="flex items-center justify-between px-4 pt-3 pb-1">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Signal Summary ({filteredData.length} rows)
-                </h2>
-              </div>
-              <StudySummaryGrid
-                data={filteredData}
-                selection={selection}
-                onSelect={setSelection}
-              />
-            </div>
+          {/* Main content — right side */}
+          <div className="flex flex-1 flex-col overflow-hidden">
+            {/* Filters */}
+            <StudySummaryFilters
+              data={signalData}
+              filters={filters}
+              onChange={setFilters}
+            />
 
-            {staticHtml && (
-              <div className="p-4">
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-auto">
+              <div className="border-b p-4">
                 <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Target Organ Summary
-                  {targetOrgans && (
-                    <span className="ml-1 font-normal normal-case">
-                      ({targetOrgans.filter((o) => o.target_organ_flag).length}{" "}
-                      identified)
-                    </span>
-                  )}
+                  Signal heatmap
                 </h2>
-                <div dangerouslySetInnerHTML={{ __html: staticHtml }} />
+                <SignalHeatmap
+                  data={filteredData}
+                  selection={selection}
+                  onSelect={setSelection}
+                />
               </div>
-            )}
+
+              <div className="border-b">
+                <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Signal summary ({filteredData.length} rows)
+                  </h2>
+                </div>
+                <StudySummaryGrid
+                  data={filteredData}
+                  selection={selection}
+                  onSelect={setSelection}
+                />
+              </div>
+
+              {staticHtml && (
+                <div className="p-4">
+                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Target organ summary
+                    {targetOrgans && (
+                      <span className="ml-1 font-normal normal-case">
+                        ({targetOrgans.filter((o) => o.target_organ_flag).length}{" "}
+                        identified)
+                      </span>
+                    )}
+                  </h2>
+                  <div dangerouslySetInnerHTML={{ __html: staticHtml }} />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

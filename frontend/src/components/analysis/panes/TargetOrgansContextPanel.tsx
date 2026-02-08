@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { InsightsList } from "./InsightsList";
+import { ToxFindingForm } from "./ToxFindingForm";
 import { cn } from "@/lib/utils";
 import { getDomainBadgeColor, getSignalScoreColor } from "@/lib/severity-colors";
 import type {
@@ -21,6 +22,7 @@ interface Props {
   evidenceData: OrganEvidenceRow[];
   ruleResults: RuleResult[];
   selection: OrganSelection | null;
+  studyId?: string;
 }
 
 export function TargetOrgansContextPanel({
@@ -28,8 +30,10 @@ export function TargetOrgansContextPanel({
   evidenceData,
   ruleResults,
   selection,
+  studyId: studyIdProp,
 }: Props) {
-  const { studyId } = useParams<{ studyId: string }>();
+  const { studyId: studyIdParam } = useParams<{ studyId: string }>();
+  const studyId = studyIdProp ?? studyIdParam;
   const navigate = useNavigate();
 
   const selectedOrganSummary = useMemo(() => {
@@ -122,7 +126,7 @@ export function TargetOrgansContextPanel({
       </CollapsiblePane>
 
       {/* Cross-view links */}
-      <CollapsiblePane title="Related Views" defaultOpen={false}>
+      <CollapsiblePane title="Related views" defaultOpen={false}>
         <div className="space-y-1 text-[11px]">
           <a
             href="#"
@@ -159,6 +163,11 @@ export function TargetOrgansContextPanel({
           </a>
         </div>
       </CollapsiblePane>
+
+      {/* Tox Assessment */}
+      {studyId && selection.endpoint_label && (
+        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
+      )}
     </div>
   );
 }

@@ -51,7 +51,7 @@ export function AdverseEffectsContextPanel() {
         </p>
       </div>
 
-      <CollapsiblePane title="Treatment Summary" defaultOpen>
+      <CollapsiblePane title="Treatment summary" defaultOpen>
         <TreatmentRelatedSummaryPane data={context.treatment_summary} />
       </CollapsiblePane>
 
@@ -59,7 +59,7 @@ export function AdverseEffectsContextPanel() {
         <StatisticsPane data={context.statistics} />
       </CollapsiblePane>
 
-      <CollapsiblePane title="Dose Response">
+      <CollapsiblePane title="Dose response">
         <DoseResponsePane data={context.dose_response} />
       </CollapsiblePane>
 
@@ -67,7 +67,7 @@ export function AdverseEffectsContextPanel() {
         <CorrelationsPane data={context.correlations} />
       </CollapsiblePane>
 
-      <CollapsiblePane title="Effect Size" defaultOpen={false}>
+      <CollapsiblePane title="Effect size" defaultOpen={false}>
         <EffectSizePane data={context.effect_size} />
       </CollapsiblePane>
     </div>
