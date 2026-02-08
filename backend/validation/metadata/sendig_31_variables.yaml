@@ -1,0 +1,327 @@
+# SENDIG 3.1 Domain Variable Definitions
+# Standard for Exchange of Nonclinical Data Implementation Guide v3.1
+#
+# Core designations:
+#   Req  - Required: must be present in every dataset submission
+#   Exp  - Expected: should be present; omission requires justification
+#   Perm - Permissible: may be included when applicable
+#
+# Types: Char (character), Num (numeric)
+
+domains:
+
+  # ---------------------------------------------------------------------------
+  # Special Purpose Domains
+  # ---------------------------------------------------------------------------
+
+  DM:
+    label: "Demographics"
+    class: "Special Purpose"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      SUBJID:   { label: "Subject Identifier for the Study",     type: "Char", core: "Req" }
+      RFSTDTC:  { label: "Subject Reference Start Date/Time",    type: "Char", core: "Req" }
+      RFENDTC:  { label: "Subject Reference End Date/Time",      type: "Char", core: "Req" }
+      SITEID:   { label: "Study Site Identifier",                type: "Char", core: "Req" }
+      SPECIES:  { label: "Species",                              type: "Char", core: "Req" }
+      STRAIN:   { label: "Strain/Substrain",                     type: "Char", core: "Req" }
+      SBSTRAIN: { label: "Substrain/Details",                    type: "Char", core: "Req" }
+      SEX:      { label: "Sex",                                  type: "Char", core: "Req" }
+      ARMCD:    { label: "Planned Arm Code",                     type: "Char", core: "Req" }
+      ARM:      { label: "Description of Planned Arm",           type: "Char", core: "Req" }
+      SETCD:    { label: "Set Code",                             type: "Char", core: "Req" }
+      RFXSTDTC: { label: "Date/Time of First Study Treatment",   type: "Char", core: "Exp" }
+      RFXENDTC: { label: "Date/Time of Last Study Treatment",    type: "Char", core: "Exp" }
+      BRTHDTC:  { label: "Date/Time of Birth",                   type: "Char", core: "Exp" }
+      AGE:      { label: "Age",                                  type: "Num",  core: "Exp" }
+      AGSEX:    { label: "Age at Sex Determination",             type: "Char", core: "Exp" }
+      DTHDT:    { label: "Date of Death",                        type: "Char", core: "Exp" }
+
+  TS:
+    label: "Trial Summary"
+    class: "Special Purpose"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      TSSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      TSGRPID:  { label: "Group Identifier",                     type: "Char", core: "Req" }
+      TSPARMCD: { label: "Trial Summary Parameter Short Name",   type: "Char", core: "Req" }
+      TSPARM:   { label: "Trial Summary Parameter",              type: "Char", core: "Req" }
+      TSVAL:    { label: "Parameter Value",                      type: "Char", core: "Req" }
+
+  TA:
+    label: "Trial Arms"
+    class: "Special Purpose"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      ARMCD:    { label: "Planned Arm Code",                     type: "Char", core: "Req" }
+      ARM:      { label: "Description of Planned Arm",           type: "Char", core: "Req" }
+      TAETORD:  { label: "Planned Order of Element within Arm",  type: "Num",  core: "Req" }
+      ETCD:     { label: "Element Code",                         type: "Char", core: "Req" }
+      ELEMENT:  { label: "Description of Element",               type: "Char", core: "Req" }
+
+  TE:
+    label: "Trial Elements"
+    class: "Special Purpose"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      ETCD:     { label: "Element Code",                         type: "Char", core: "Req" }
+      ELEMENT:  { label: "Description of Element",               type: "Char", core: "Req" }
+      TESTRL:   { label: "Rule for Start of Element",            type: "Char", core: "Req" }
+
+  TX:
+    label: "Trial Sets"
+    class: "Special Purpose"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      SETCD:    { label: "Set Code",                             type: "Char", core: "Req" }
+      SET:      { label: "Set Description",                      type: "Char", core: "Req" }
+      TXSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      TXPARMCD: { label: "Trial Set Parameter Short Name",       type: "Char", core: "Req" }
+      TXPARM:   { label: "Trial Set Parameter",                  type: "Char", core: "Req" }
+      TXVAL:    { label: "Parameter Value",                      type: "Char", core: "Req" }
+
+  SE:
+    label: "Subject Elements"
+    class: "Special Purpose"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      SESEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      ETCD:     { label: "Element Code",                         type: "Char", core: "Req" }
+      SESTDTC:  { label: "Start Date/Time of Element",           type: "Char", core: "Req" }
+      SEENDTC:  { label: "End Date/Time of Element",             type: "Char", core: "Exp" }
+      TAETORD:  { label: "Planned Order of Element within Arm",  type: "Num",  core: "Exp" }
+
+  # ---------------------------------------------------------------------------
+  # Interventions Domains
+  # ---------------------------------------------------------------------------
+
+  EX:
+    label: "Exposure"
+    class: "Interventions"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      EXSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      EXTRT:    { label: "Name of Treatment",                    type: "Char", core: "Req" }
+      EXDOSE:   { label: "Dose",                                 type: "Num",  core: "Req" }
+      EXDOSU:   { label: "Dose Units",                           type: "Char", core: "Req" }
+      EXSTDTC:  { label: "Start Date/Time of Treatment",         type: "Char", core: "Req" }
+      EXENDTC:  { label: "End Date/Time of Treatment",           type: "Char", core: "Exp" }
+      EXROUTE:  { label: "Route of Administration",              type: "Char", core: "Exp" }
+      EXLOT:    { label: "Lot Number",                           type: "Char", core: "Exp" }
+      EXDOSFRM: { label: "Dose Form",                            type: "Char", core: "Exp" }
+      EXDOSFRQ: { label: "Dosing Frequency per Interval",        type: "Char", core: "Exp" }
+
+  # ---------------------------------------------------------------------------
+  # Events Domains
+  # ---------------------------------------------------------------------------
+
+  DS:
+    label: "Disposition"
+    class: "Events"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      DSSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      DSTERM:   { label: "Reported Term for the Disposition Event", type: "Char", core: "Req" }
+      DSDECOD:  { label: "Standardized Disposition Term",        type: "Char", core: "Req" }
+      DSSTDTC:  { label: "Start Date/Time of Disposition Event", type: "Char", core: "Exp" }
+      DSDY:     { label: "Study Day of Disposition Event",       type: "Num",  core: "Exp" }
+
+  # ---------------------------------------------------------------------------
+  # Findings Domains
+  # ---------------------------------------------------------------------------
+
+  LB:
+    label: "Laboratory Test Results"
+    class: "Findings"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      LBSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      LBTESTCD: { label: "Lab Test Short Name",                  type: "Char", core: "Req" }
+      LBTEST:   { label: "Lab Test Name",                        type: "Char", core: "Req" }
+      LBORRES:  { label: "Result or Finding in Original Units",  type: "Char", core: "Req" }
+      LBORRESU: { label: "Original Units",                       type: "Char", core: "Req" }
+      LBSTRESC: { label: "Character Result/Finding in Std Format", type: "Char", core: "Req" }
+      LBSTRESN: { label: "Numeric Result/Finding in Std Units",  type: "Num",  core: "Req" }
+      LBSTRESU: { label: "Standard Units",                       type: "Char", core: "Req" }
+      LBSPEC:   { label: "Specimen Material Type",               type: "Char", core: "Req" }
+      LBBLFL:   { label: "Baseline Flag",                        type: "Char", core: "Exp" }
+      LBNRIND:  { label: "Reference Range Indicator",            type: "Char", core: "Exp" }
+      LBSTAT:   { label: "Completion Status",                    type: "Char", core: "Exp" }
+      LBREASND: { label: "Reason Not Done",                      type: "Char", core: "Exp" }
+      VISITDY:  { label: "Planned Study Day of Visit",           type: "Num",  core: "Exp" }
+      LBDY:     { label: "Study Day of Finding",                 type: "Num",  core: "Exp" }
+
+  BW:
+    label: "Body Weights"
+    class: "Findings"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      BWSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      BWTESTCD: { label: "Body Weight Test Short Name",          type: "Char", core: "Req" }
+      BWTEST:   { label: "Body Weight Test Name",                type: "Char", core: "Req" }
+      BWORRES:  { label: "Result or Finding in Original Units",  type: "Char", core: "Req" }
+      BWORRESU: { label: "Original Units",                       type: "Char", core: "Req" }
+      BWSTRESC: { label: "Character Result/Finding in Std Format", type: "Char", core: "Req" }
+      BWSTRESN: { label: "Numeric Result/Finding in Std Units",  type: "Num",  core: "Req" }
+      BWSTRESU: { label: "Standard Units",                       type: "Char", core: "Req" }
+      BWBLFL:   { label: "Baseline Flag",                        type: "Char", core: "Exp" }
+      VISITDY:  { label: "Planned Study Day of Visit",           type: "Num",  core: "Exp" }
+      BWDY:     { label: "Study Day of Finding",                 type: "Num",  core: "Exp" }
+
+  MI:
+    label: "Microscopic Findings"
+    class: "Findings"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      MISEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      MITERM:   { label: "Reported Term for the Finding",        type: "Char", core: "Req" }
+      MISTRESC: { label: "Character Result/Finding in Std Format", type: "Char", core: "Req" }
+      MISPEC:   { label: "Specimen Material Type",               type: "Char", core: "Req" }
+      MIRESCAT: { label: "Result Category",                      type: "Char", core: "Req" }
+      MIORRES:  { label: "Result or Finding in Original Units",  type: "Char", core: "Exp" }
+      MISTAT:   { label: "Completion Status",                    type: "Char", core: "Exp" }
+      MIDY:     { label: "Study Day of Finding",                 type: "Num",  core: "Exp" }
+      MISEV:    { label: "Severity",                             type: "Char", core: "Exp" }
+
+  MA:
+    label: "Macroscopic Findings"
+    class: "Findings"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      MASEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      MATERM:   { label: "Reported Term for the Finding",        type: "Char", core: "Req" }
+      MASTRESC: { label: "Character Result/Finding in Std Format", type: "Char", core: "Req" }
+      MASPEC:   { label: "Specimen Material Type",               type: "Char", core: "Req" }
+      MAORRES:  { label: "Result or Finding in Original Units",  type: "Char", core: "Exp" }
+      MASTAT:   { label: "Completion Status",                    type: "Char", core: "Exp" }
+      MADY:     { label: "Study Day of Finding",                 type: "Num",  core: "Exp" }
+      MARESCAT: { label: "Result Category",                      type: "Char", core: "Exp" }
+
+  OM:
+    label: "Organ Measurements"
+    class: "Findings"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      OMSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      OMTESTCD: { label: "Organ Measurement Test Short Name",    type: "Char", core: "Req" }
+      OMTEST:   { label: "Organ Measurement Test Name",          type: "Char", core: "Req" }
+      OMORRES:  { label: "Result or Finding in Original Units",  type: "Char", core: "Req" }
+      OMORRESU: { label: "Original Units",                       type: "Char", core: "Req" }
+      OMSTRESC: { label: "Character Result/Finding in Std Format", type: "Char", core: "Req" }
+      OMSTRESN: { label: "Numeric Result/Finding in Std Units",  type: "Num",  core: "Req" }
+      OMSTRESU: { label: "Standard Units",                       type: "Char", core: "Req" }
+      OMSPEC:   { label: "Specimen Material Type",               type: "Char", core: "Req" }
+      OMBLFL:   { label: "Baseline Flag",                        type: "Char", core: "Exp" }
+      OMDY:     { label: "Study Day of Finding",                 type: "Num",  core: "Exp" }
+
+  CL:
+    label: "Clinical Observations"
+    class: "Findings"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      CLSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      CLTESTCD: { label: "Clinical Observation Test Short Name", type: "Char", core: "Req" }
+      CLTEST:   { label: "Clinical Observation Test Name",       type: "Char", core: "Req" }
+      CLORRES:  { label: "Result or Finding in Original Units",  type: "Char", core: "Req" }
+      CLORRESU: { label: "Original Units",                       type: "Char", core: "Req" }
+      CLSTRESC: { label: "Character Result/Finding in Std Format", type: "Char", core: "Req" }
+      CLSTRESN: { label: "Numeric Result/Finding in Std Units",  type: "Num",  core: "Req" }
+      CLSTRESU: { label: "Standard Units",                       type: "Char", core: "Req" }
+      CLSPEC:   { label: "Specimen Material Type",               type: "Char", core: "Req" }
+      CLBLFL:   { label: "Baseline Flag",                        type: "Char", core: "Exp" }
+      CLDY:     { label: "Study Day of Finding",                 type: "Num",  core: "Exp" }
+
+  FW:
+    label: "Food and Water Consumption"
+    class: "Findings"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      FWSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      FWTESTCD: { label: "Food/Water Test Short Name",           type: "Char", core: "Req" }
+      FWTEST:   { label: "Food/Water Test Name",                 type: "Char", core: "Req" }
+      FWORRES:  { label: "Result or Finding in Original Units",  type: "Char", core: "Req" }
+      FWORRESU: { label: "Original Units",                       type: "Char", core: "Req" }
+      FWSTRESC: { label: "Character Result/Finding in Std Format", type: "Char", core: "Req" }
+      FWSTRESN: { label: "Numeric Result/Finding in Std Units",  type: "Num",  core: "Req" }
+      FWSTRESU: { label: "Standard Units",                       type: "Char", core: "Req" }
+      FWBLFL:   { label: "Baseline Flag",                        type: "Char", core: "Exp" }
+      FWDY:     { label: "Study Day of Finding",                 type: "Num",  core: "Exp" }
+
+  EG:
+    label: "ECG Test Results"
+    class: "Findings"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      EGSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      EGTESTCD: { label: "ECG Test Short Name",                  type: "Char", core: "Req" }
+      EGTEST:   { label: "ECG Test Name",                        type: "Char", core: "Req" }
+      EGORRES:  { label: "Result or Finding in Original Units",  type: "Char", core: "Req" }
+      EGORRESU: { label: "Original Units",                       type: "Char", core: "Req" }
+      EGSTRESC: { label: "Character Result/Finding in Std Format", type: "Char", core: "Req" }
+      EGSTRESN: { label: "Numeric Result/Finding in Std Units",  type: "Num",  core: "Req" }
+      EGSTRESU: { label: "Standard Units",                       type: "Char", core: "Req" }
+      EGBLFL:   { label: "Baseline Flag",                        type: "Char", core: "Exp" }
+      EGDY:     { label: "Study Day of Finding",                 type: "Num",  core: "Exp" }
+
+  PC:
+    label: "Pharmacokinetics Concentrations"
+    class: "Findings"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      PCSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      PCTESTCD: { label: "PK Concentration Test Short Name",     type: "Char", core: "Req" }
+      PCTEST:   { label: "PK Concentration Test Name",           type: "Char", core: "Req" }
+      PCORRES:  { label: "Result or Finding in Original Units",  type: "Char", core: "Req" }
+      PCORRESU: { label: "Original Units",                       type: "Char", core: "Req" }
+      PCSTRESC: { label: "Character Result/Finding in Std Format", type: "Char", core: "Req" }
+      PCSTRESN: { label: "Numeric Result/Finding in Std Units",  type: "Num",  core: "Req" }
+      PCSTRESU: { label: "Standard Units",                       type: "Char", core: "Req" }
+      PCSPEC:   { label: "Specimen Material Type",               type: "Char", core: "Req" }
+      PCBLFL:   { label: "Baseline Flag",                        type: "Char", core: "Exp" }
+      PCDY:     { label: "Study Day of Finding",                 type: "Num",  core: "Exp" }
+
+  PP:
+    label: "Pharmacokinetics Parameters"
+    class: "Findings"
+    variables:
+      STUDYID:  { label: "Study Identifier",                    type: "Char", core: "Req" }
+      DOMAIN:   { label: "Domain Abbreviation",                  type: "Char", core: "Req" }
+      USUBJID:  { label: "Unique Subject Identifier",            type: "Char", core: "Req" }
+      PPSEQ:    { label: "Sequence Number",                      type: "Num",  core: "Req" }
+      PPTESTCD: { label: "PK Parameter Test Short Name",         type: "Char", core: "Req" }
+      PPTEST:   { label: "PK Parameter Test Name",               type: "Char", core: "Req" }
+      PPORRES:  { label: "Result or Finding in Original Units",  type: "Char", core: "Req" }
+      PPORRESU: { label: "Original Units",                       type: "Char", core: "Req" }
+      PPSTRESC: { label: "Character Result/Finding in Std Format", type: "Char", core: "Req" }
+      PPSTRESN: { label: "Numeric Result/Finding in Std Units",  type: "Num",  core: "Req" }
+      PPSTRESU: { label: "Standard Units",                       type: "Char", core: "Req" }
