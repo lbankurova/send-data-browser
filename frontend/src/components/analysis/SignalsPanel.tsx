@@ -36,7 +36,7 @@ function StatementIcon({ icon }: { icon: PanelStatement["icon"] }) {
 
 function DomainChip({ domain }: { domain: string }) {
   return (
-    <span className="inline-block rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+    <span className="inline-block font-mono text-[10px] text-muted-foreground">
       {domain}
     </span>
   );
@@ -44,11 +44,11 @@ function DomainChip({ domain }: { domain: string }) {
 
 function SectionHeader({ title, count }: { title: string; count: number }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between border-b border-border pb-1.5">
-      <span className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="mb-2 flex items-baseline justify-between border-b border-border pb-1">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {title}
       </span>
-      <span className="text-sm text-muted-foreground">({count})</span>
+      <span className="text-xs text-muted-foreground">({count})</span>
     </div>
   );
 }
@@ -133,7 +133,7 @@ function ClickableEndpointText({
 }
 
 // ---------------------------------------------------------------------------
-// Study Statements
+// Study Statements (above organ rows)
 // ---------------------------------------------------------------------------
 
 function StudyStatementsSection({
@@ -146,7 +146,7 @@ function StudyStatementsSection({
   if (statements.length === 0) return null;
 
   return (
-    <div className="mb-6">
+    <div className="mb-4">
       {statements.map((s, i) => (
         <div key={i} className="flex items-start gap-2 text-sm leading-relaxed">
           <StatementIcon icon={s.icon} />
@@ -168,240 +168,252 @@ function StudyStatementsSection({
 }
 
 // ---------------------------------------------------------------------------
-// Target Organ Card
+// Target Organ Row (tabular — replaces card)
 // ---------------------------------------------------------------------------
 
-function OrganCard({
+function OrganRow({
   block,
   isSelected,
   onOrganClick,
+  onOrganNavigate,
 }: {
   block: OrganBlock;
   isSelected: boolean;
-  onOrganClick: (e: React.MouseEvent, organKey: string) => void;
+  onOrganClick: (organKey: string) => void;
+  onOrganNavigate?: (organKey: string) => void;
 }) {
   return (
     <div
       className={cn(
-        "group cursor-pointer rounded-lg border p-4 transition-all",
+        "group flex cursor-pointer items-baseline gap-3 border-b border-border/50 px-2 py-2 transition-colors",
         isSelected
-          ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
-          : "border-border bg-background hover:border-blue-300 hover:shadow-sm"
+          ? "border-l-2 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
+          : "border-l-2 border-l-transparent hover:bg-accent/30"
       )}
-      onClick={(e) => onOrganClick(e, block.organKey)}
-      title="Click to view in heatmap · Ctrl+click to browse insights"
+      onClick={() => onOrganClick(block.organKey)}
+      title="Click to select · View in heatmap from selected row"
     >
-      {/* Header: organ name + navigate icon */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-2">
-          <span className="mt-0.5 shrink-0 text-[11px] text-blue-600">
-            {"\u25CF"}
+      {/* Organ name — bold */}
+      <span className="min-w-[140px] shrink-0 text-sm font-semibold">
+        {block.organ}
+      </span>
+
+      {/* Domain chips — muted, middot-separated */}
+      <span className="flex flex-wrap gap-1 text-muted-foreground">
+        {block.domains.map((d, i) => (
+          <span key={d} className="inline-flex items-center gap-1">
+            {i > 0 && <span className="text-[10px]">&middot;</span>}
+            <DomainChip domain={d} />
           </span>
-          <span className="text-sm font-semibold">{block.organ}</span>
-        </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-      </div>
+        ))}
+      </span>
 
-      {/* Evidence: domain chips */}
-      <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-        <span>Evidence:</span>
-        <div className="flex flex-wrap gap-0.5">
-          {block.domains.map((d) => (
-            <DomainChip key={d} domain={d} />
-          ))}
-        </div>
-      </div>
-
-      {/* Dose-response sub-line */}
+      {/* Dose-response — cool accent */}
       {block.doseResponse && (
-        <div className="mt-1 text-xs text-muted-foreground">
-          Dose-response: {block.doseResponse.nEndpoints} endpoints &middot;{" "}
-          {block.doseResponse.topEndpoint} strongest
-        </div>
+        <span className="ml-auto shrink-0 text-xs text-blue-600/80">
+          D-R: {block.doseResponse.nEndpoints} ({block.doseResponse.topEndpoint})
+        </span>
+      )}
+
+      {/* "View in heatmap" — only on selected row */}
+      {isSelected && onOrganNavigate && (
+        <button
+          className="ml-2 inline-flex shrink-0 items-center gap-0.5 text-xs text-blue-600 hover:underline"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOrganNavigate(block.organKey);
+          }}
+        >
+          View in heatmap
+          <ChevronRight className="h-3 w-3" />
+        </button>
       )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Target Organs Section (card grid)
+// Left Column: Target Organs (tabular rows)
 // ---------------------------------------------------------------------------
 
-function TargetOrgansSection({
+function TargetOrgansColumn({
+  statements,
   blocks,
   organSelection,
-  onOrganNavigate,
   onOrganSelect,
+  onOrganNavigate,
+  onEndpointClick,
 }: {
+  statements: PanelStatement[];
   blocks: OrganBlock[];
   organSelection?: string | null;
-  onOrganNavigate?: (organKey: string) => void;
   onOrganSelect?: (organKey: string) => void;
+  onOrganNavigate?: (organKey: string) => void;
+  onEndpointClick?: (ep: string) => void;
 }) {
-  if (blocks.length === 0) return null;
-
-  const handleOrganClick = (e: React.MouseEvent, organKey: string) => {
-    if (e.ctrlKey || e.metaKey) {
-      onOrganSelect?.(organKey);
-    } else {
-      onOrganNavigate?.(organKey);
-    }
-  };
-
   return (
-    <div className="mb-8">
-      <SectionHeader title="Target organs" count={blocks.length} />
-      <div
-        className="grid gap-3"
-        style={{
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          alignItems: "start",
-        }}
-      >
-        {blocks.map((block) => (
-          <OrganCard
-            key={block.organKey}
-            block={block}
-            isSelected={organSelection === block.organKey}
-            onOrganClick={handleOrganClick}
-          />
-        ))}
-      </div>
+    <div className="min-w-0 flex-1">
+      {/* Study-scope statement */}
+      <StudyStatementsSection
+        statements={statements}
+        onEndpointClick={onEndpointClick}
+      />
+
+      {/* Target organs */}
+      {blocks.length > 0 && (
+        <div>
+          <SectionHeader title="Target organs" count={blocks.length} />
+          <div>
+            {blocks.map((block) => (
+              <OrganRow
+                key={block.organKey}
+                block={block}
+                isSelected={organSelection === block.organKey}
+                onOrganClick={(key) => onOrganSelect?.(key)}
+                onOrganNavigate={onOrganNavigate}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Modifiers Section
+// Right Column: Conditions Rail (Modifiers + Review Flags)
 // ---------------------------------------------------------------------------
 
-/** Extract sex badge from modifier text */
-function extractSexBadge(text: string): string | null {
-  if (text.includes("females only")) return "F";
-  if (text.includes("males only")) return "M";
+/** Extract sex + organ from modifier text for compact rendering */
+function parseModifier(text: string): { organ: string; condition: string } | null {
+  // Pattern: "Organ Name changes in males/females only."
+  const match = text.match(/^(.+?)\s+changes?\s+in\s+(males|females)\s+only\.?$/i);
+  if (match) return { organ: match[1], condition: match[2] };
   return null;
 }
 
-function ModifiersSection({
-  modifiers,
-  onOrganNavigate,
-}: {
-  modifiers: PanelStatement[];
-  onOrganNavigate?: (organKey: string) => void;
-}) {
-  if (modifiers.length === 0) return null;
-
-  return (
-    <div className="mb-8">
-      <SectionHeader title="Modifiers" count={modifiers.length} />
-      <div className="space-y-1">
-        {modifiers.map((s, i) => {
-          const sexBadge = extractSexBadge(s.text);
-          return (
-            <div
-              key={i}
-              className="flex items-start gap-2 text-sm leading-relaxed"
-            >
-              <StatementIcon icon={s.icon} />
-              <span className="flex-1">
-                {s.clickOrgan ? (
-                  <ClickableOrganText
-                    text={s.text}
-                    organKey={s.clickOrgan}
-                    onClick={() => onOrganNavigate?.(s.clickOrgan!)}
-                  />
-                ) : (
-                  s.text
-                )}
-              </span>
-              {sexBadge && (
-                <span
-                  className={cn(
-                    "shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium",
-                    sexBadge === "F"
-                      ? "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400"
-                      : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400"
-                  )}
-                >
-                  {sexBadge}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Review Flags (Caveats) Section
-// ---------------------------------------------------------------------------
-
-/** Split caveat text into primary (bold) and detail (muted) at first ". " */
+/** Split caveat text into primary (bold) and detail (muted) at first ". " or " — " */
 function splitCaveatText(text: string): {
   primary: string;
   detail: string | null;
 } {
-  const idx = text.indexOf(". ");
-  if (idx === -1) return { primary: text, detail: null };
+  const dashIdx = text.indexOf(" — ");
+  if (dashIdx !== -1) {
+    return { primary: text.slice(0, dashIdx + 3), detail: text.slice(dashIdx + 3) };
+  }
+  const dotIdx = text.indexOf(". ");
+  if (dotIdx === -1) return { primary: text, detail: null };
   return {
-    primary: text.slice(0, idx + 1),
-    detail: text.slice(idx + 2),
+    primary: text.slice(0, dotIdx + 1),
+    detail: text.slice(dotIdx + 2),
   };
 }
 
-function CaveatsSection({
+function ConditionsRail({
+  modifiers,
   caveats,
-  onOrganNavigate,
+  onOrganSelect,
 }: {
+  modifiers: PanelStatement[];
   caveats: PanelStatement[];
-  onOrganNavigate?: (organKey: string) => void;
+  onOrganSelect?: (organKey: string) => void;
 }) {
-  if (caveats.length === 0) return null;
+  if (modifiers.length === 0 && caveats.length === 0) return null;
 
   return (
-    <div className="mb-8">
-      <SectionHeader title="Review flags" count={caveats.length} />
-      <div className="space-y-2">
-        {caveats.map((s, i) => {
-          const { primary, detail } = splitCaveatText(s.text);
-          return (
-            <div
-              key={i}
-              className="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/20"
-            >
-              <div className="flex items-start gap-2">
-                <StatementIcon icon={s.icon} />
-                <div className="flex-1">
-                  {s.clickOrgan ? (
-                    <span className="text-sm font-medium">
+    <div className="w-[280px] shrink-0 overflow-y-auto border-l border-border/50 pl-4">
+      {/* Modifiers */}
+      {modifiers.length > 0 && (
+        <div className="mb-4">
+          <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-amber-700">
+            <span className="text-[10px]">{"\u25B2"}</span>
+            Modifiers
+            <span className="font-normal text-amber-600/70">({modifiers.length})</span>
+          </div>
+          <div className="space-y-0.5">
+            {modifiers.map((s, i) => {
+              const parsed = parseModifier(s.text);
+              return (
+                <div key={i} className="text-xs leading-relaxed text-amber-800 dark:text-amber-300">
+                  {parsed ? (
+                    <span>
+                      {s.clickOrgan ? (
+                        <button
+                          className="font-medium hover:underline"
+                          onClick={() => onOrganSelect?.(s.clickOrgan!)}
+                        >
+                          {parsed.organ}
+                        </button>
+                      ) : (
+                        <span className="font-medium">{parsed.organ}</span>
+                      )}
+                      {" — "}
+                      {parsed.condition}
+                    </span>
+                  ) : (
+                    <span>
+                      {s.clickOrgan ? (
+                        <ClickableOrganText
+                          text={s.text}
+                          organKey={s.clickOrgan}
+                          onClick={() => onOrganSelect?.(s.clickOrgan!)}
+                        />
+                      ) : (
+                        s.text
+                      )}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Review Flags */}
+      {caveats.length > 0 && (
+        <div>
+          <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-orange-700">
+            <span className="text-[10px]">{"\u26A0"}</span>
+            Review flags
+            <span className="font-normal text-orange-600/70">({caveats.length})</span>
+          </div>
+          <div className="space-y-2">
+            {caveats.map((s, i) => {
+              const { primary, detail } = splitCaveatText(s.text);
+              return (
+                <div
+                  key={i}
+                  className="rounded border border-orange-200 bg-orange-50/50 p-2 dark:border-orange-800 dark:bg-orange-950/20"
+                >
+                  <div className="text-xs font-medium leading-snug text-orange-900 dark:text-orange-200">
+                    {s.clickOrgan ? (
                       <ClickableOrganText
                         text={primary}
                         organKey={s.clickOrgan}
-                        onClick={() => onOrganNavigate?.(s.clickOrgan!)}
+                        onClick={() => onOrganSelect?.(s.clickOrgan!)}
                       />
-                    </span>
-                  ) : (
-                    <span className="text-sm font-medium">{primary}</span>
-                  )}
+                    ) : (
+                      primary
+                    )}
+                  </div>
                   {detail && (
-                    <p className="mt-0.5 text-sm text-muted-foreground">
+                    <div className="mt-0.5 text-[11px] leading-snug text-orange-700/80 dark:text-orange-400/80">
                       {detail}
-                    </p>
+                    </div>
                   )}
                 </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Main Component — FindingsView (full-width center panel content)
+// Main Component — FindingsView (two-column signal landscape)
 // ---------------------------------------------------------------------------
 
 export function FindingsView({
@@ -412,32 +424,31 @@ export function FindingsView({
   onEndpointClick,
 }: Props) {
   return (
-    <div className="flex-1 overflow-auto px-6 py-4">
-      {/* Study-scope statements */}
-      <StudyStatementsSection
-        statements={data.studyStatements}
-        onEndpointClick={onEndpointClick}
-      />
+    <div className="flex flex-1 gap-0 overflow-hidden">
+      {/* Two-column layout: left (findings) + right (conditions rail) */}
+      {/* Responsive: side-by-side at >=1440px center width, stacked below */}
+      <div className="findings-landscape flex min-h-0 flex-1 overflow-auto">
+        <div className="flex min-h-0 w-full flex-col px-4 py-3 min-[1440px]:flex-row min-[1440px]:gap-0">
+          {/* Left column: study statements + organ rows */}
+          <TargetOrgansColumn
+            statements={data.studyStatements}
+            blocks={data.organBlocks}
+            organSelection={organSelection}
+            onOrganSelect={onOrganSelect}
+            onOrganNavigate={onOrganNavigate}
+            onEndpointClick={onEndpointClick}
+          />
 
-      {/* Target Organs — card grid */}
-      <TargetOrgansSection
-        blocks={data.organBlocks}
-        organSelection={organSelection}
-        onOrganNavigate={onOrganNavigate}
-        onOrganSelect={onOrganSelect}
-      />
-
-      {/* Modifiers — always visible list */}
-      <ModifiersSection
-        modifiers={data.modifiers}
-        onOrganNavigate={onOrganNavigate}
-      />
-
-      {/* Review Flags — always visible blocks */}
-      <CaveatsSection
-        caveats={data.caveats}
-        onOrganNavigate={onOrganNavigate}
-      />
+          {/* Right column: conditions rail */}
+          <div className="mt-6 min-[1440px]:mt-0">
+            <ConditionsRail
+              modifiers={data.modifiers}
+              caveats={data.caveats}
+              onOrganSelect={onOrganSelect}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -45,6 +45,8 @@ interface OrganGroup {
   domains: string[];
   isTarget: boolean;
   endpoints: EndpointRow[];
+  /** Max signal score per dose level — for sparkline rendering */
+  sparkline: number[];
 }
 
 interface EndpointRow {
@@ -106,6 +108,15 @@ function buildOrganGroups(
       }))
       .sort((a, b) => b.maxScore - a.maxScore);
 
+    // Sparkline: max signal_score per dose level across all endpoints
+    const doseLevels = [...new Set(signals.map((s) => s.dose_level))].sort(
+      (a, b) => a - b
+    );
+    const sparkline = doseLevels.map((dl) => {
+      const atDose = signals.filter((s) => s.dose_level === dl);
+      return Math.max(0, ...atDose.map((s) => s.signal_score));
+    });
+
     groups.push({
       organKey,
       displayName: organName(organKey),
@@ -113,6 +124,7 @@ function buildOrganGroups(
       domains: toRow?.domains ?? [],
       isTarget: toRow?.target_organ_flag ?? false,
       endpoints,
+      sparkline,
     });
   }
 
@@ -134,6 +146,34 @@ function DomainChip({ domain }: { domain: string }) {
     <span className="inline-block rounded bg-muted px-1 py-0.5 font-mono text-[9px] text-muted-foreground">
       {domain}
     </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sparkline — inline SVG dose-response shape
+// ---------------------------------------------------------------------------
+
+function Sparkline({ data }: { data: number[] }) {
+  if (data.length < 2) return null;
+  const w = 60;
+  const h = 16;
+  const maxVal = Math.max(...data, 0.01); // avoid division by zero
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - (v / maxVal) * (h - 2) - 1;
+    return `${x},${y}`;
+  });
+  return (
+    <svg width={w} height={h} className="shrink-0 opacity-60" aria-hidden>
+      <polyline
+        points={points.join(" ")}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -275,6 +315,7 @@ export function OrganGroupedHeatmap({
                   {"\u2605"}
                 </span>
               )}
+              <Sparkline data={group.sparkline} />
               <span className="ml-auto text-[10px] text-muted-foreground">
                 {group.endpoints.length} endpoints
               </span>
