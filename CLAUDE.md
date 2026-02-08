@@ -91,7 +91,7 @@ cd C:/pg/pcc/frontend && npm run lint     # ESLint
 | `/studies/:studyId/target-organs` | TargetOrgansViewWrapper | Done |
 | `/studies/:studyId/histopathology` | HistopathologyViewWrapper | Done |
 | `/studies/:studyId/noael-decision` | NoaelDecisionViewWrapper | Done |
-| `/studies/:studyId/validation` | PlaceholderAnalysisView | **TODO** |
+| `/studies/:studyId/validation` | ValidationViewWrapper | Done |
 
 **Key frontend modules:**
 - `lib/api.ts` — fetch wrapper for domain browsing (`/api` base, proxied by Vite)
@@ -99,6 +99,8 @@ cd C:/pg/pcc/frontend && npm run lint     # ESLint
 - `lib/analysis-view-api.ts` — fetch functions for all pre-generated JSON views (signal, target organ, dose-response, organ evidence, lesion severity, NOAEL, adverse effect, rule results)
 - `lib/analysis-definitions.ts` — `ANALYSIS_VIEWS` array (key, label, implemented flag)
 - `lib/severity-colors.ts` — color functions for p-values, signal scores, severity, domains, sex
+- `lib/signals-panel-engine.ts` — Signals Panel engine (derives semantic rules from NOAEL/organ/signal data, priority-band section assignment, compound merge)
+- `lib/rule-synthesis.ts` — organ-grouped rule synthesis for InsightsList context panel (parses R01-R16 rule_results)
 - `hooks/useStudySignalSummary.ts`, `useTargetOrganSummary.ts`, `useRuleResults.ts` — hooks for generated data
 - `hooks/useNoaelSummary.ts`, `useAdverseEffectSummary.ts`, `useDoseResponseMetrics.ts`, `useOrganEvidenceDetail.ts`, `useLesionSeveritySummary.ts` — hooks for Views 2-5
 - `hooks/useAdverseEffects.ts`, `useAESummary.ts`, `useFindingContext.ts` — hooks for dynamic analysis
@@ -106,15 +108,39 @@ cd C:/pg/pcc/frontend && npm run lint     # ESLint
 - `types/analysis.ts` — TypeScript interfaces for adverse effects
 - `contexts/SelectionContext.tsx` — study selection state
 - `contexts/FindingSelectionContext.tsx` — adverse effects finding selection
-- `contexts/SignalSelectionContext.tsx` — study summary signal selection
+- `contexts/SignalSelectionContext.tsx` — study summary signal + organ selection (mutually exclusive)
 - `contexts/ViewSelectionContext.tsx` — shared selection state for Views 2-5 (NOAEL, Target Organs, Dose-Response, Histopathology)
-- `components/analysis/StudySummaryView.tsx` — View 1: Study Summary (heatmap, grid, target organ bar)
+- `components/analysis/StudySummaryView.tsx` — View 1: Study Summary (two tabs: Details + Signals; Signals tab has side-by-side SignalsPanel + heatmap/grid)
+- `components/analysis/SignalsPanel.tsx` — vertical signals panel with expandable sections (Decision Summary, Target Organs, Modifiers, Caveats, Metrics footer)
 - `components/analysis/DoseResponseView.tsx` — View 2: Dose-Response (recharts charts, metrics grid)
 - `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (organ cards, evidence grid)
 - `components/analysis/HistopathologyView.tsx` — View 4: Histopathology (severity heatmap, lesion grid)
 - `components/analysis/NoaelDecisionView.tsx` — View 5: NOAEL & Decision (banner, adversity matrix, grid)
 - `components/analysis/panes/*ContextPanel.tsx` — context panels for each view
 - `components/analysis/panes/InsightsList.tsx` — organ-grouped signal synthesis with tiered insights (Critical/Notable/Observed)
+
+## Design Decisions
+
+- **No breadcrumb navigation in context panel panes.** Use `< >` icon buttons at the top of the context panel for back/forward navigation between pane modes. This mirrors Datagrok's native context panel behavior. If breadcrumbs are added later, update this section and the implementation accordingly.
+
+## UI Casing Conventions
+
+- **Sentence case** for all UI text by default: labels, descriptions, tooltips, column headers, section headers (L2+), status text, placeholder text, dropdown options, error messages, notifications
+- **UPPER CASE** for button labels ≤12 characters including spaces (e.g., "SAVE", "APPLY FIX", "DISMISS"). For labels >12 characters, use sentence case (e.g., "Flag for review", "Generate report")
+- **Title Case** for L1 page/view headers, dialog headers/titles, and context action labels in right-click context menus
+- **Never use Title Case** for section headers within panes, table column headers, filter labels, or form field labels
+
+**Examples:**
+```
+Button (≤12 chars): SAVE, APPLY FIX, DISMISS, REVERT, ACCEPT, RUN
+Button (>12 chars): Flag for review, Generate report, Generate validation report
+L1 header:          SEND Validation, Study: PointCross
+Dialog header:      Export Settings, Confirm Deletion
+Section header:     Rule detail, Review progress, Suggested fix
+Column header:      Issue ID, Review status, Assigned to
+Dropdown option:    Not reviewed, Accept all, Mapping applied
+Context menu:       Export to CSV, Copy Issue ID, Open in Domain Viewer
+```
 
 ## TypeScript Conventions
 
@@ -190,5 +216,78 @@ The `InsightsList` component (`panes/InsightsList.tsx`) synthesizes raw rule_res
 - **Tier filter bar**: Clickable pills at top (Critical N / Notable N / Observed N) with opacity toggle
 - All parsing is heuristic-based on rule_id semantics and context_key format (`DOMAIN_TESTCODE_SEX`), not study-specific
 
+### Signals Panel (Study Summary — Signals Tab)
+The `SignalsPanel` component (`components/analysis/SignalsPanel.tsx`) renders a 280px vertical panel on the left side of the Signals tab. The engine (`lib/signals-panel-engine.ts`) derives semantic rules from structured data (NOAEL, target organs, signal summary) — no LLM or rule_results parsing needed.
+
+**Rule derivation (by scope):**
+- **NOAEL**: `noael.assignment` (normal), `noael.all.doses.adverse` (NOAEL=Control), `noael.no.adverse.effects` (clean study), `noael.sex.difference`
+- **Organ**: `organ.target.identification` (with convergence + D-R detail merged inline), `organ.single.domain.only` (priority 350 → Caveats)
+- **Study**: `study.treatment.related.signal` (demoted -100 when ≥ 2 target organs), `study.no.treatment.effect`
+- **Synthesis promotions**: `synthesis.organ.sex.specific` (priority 450 → Modifiers), `synthesis.study.low.power` (priority 300 → Caveats)
+
+**Priority-band section assignment:**
+- 900+ → Decision Summary (always visible, shaded card)
+- 800–899 → Target Organs headline (compound-merged with D-R sub-lines into `OrganBlock`)
+- 600–799 → Target Organs sub-lines (merged into organ blocks, not standalone)
+- 400–599 → Modifiers (collapsed count, expandable)
+- 200–399 → Caveats (collapsed count, expandable, amber-tinted)
+
+**Compound merge**: `buildOrganBlocks()` groups `organ.target.identification` headlines with `synthesis.organ.dose.response` sub-lines into `OrganBlock` objects with organ name, domains, and dose-response detail.
+
+**Metrics footer** (always visible): `NOAEL {dose} ({sex}) · {n} targets · {sig}/{total} significant · {dr} D-R · {dom} domains` — sig/D-R/domain counts update when filters change; NOAEL and target count stay static.
+
+**Panel interaction:**
+- **Organ names**: clickable (text-blue-600) → sets `organSelection` in `SignalSelectionContext` → context panel switches to organ mode
+- **Endpoint links**: clickable in Decision Summary statements → finds matching signal row and sets full `selection`
+- **Section toggles**: chevron buttons expand/collapse Target Organs, Modifiers, Caveats
+
+**Context panel — three states** (`StudySummaryContextPanel`):
+- **Empty**: instructional text ("Click an organ group or signal cell to see insights")
+- **Organ mode** (from panel click): organ insights (InsightsList), contributing endpoints table, evidence breakdown, navigation links
+- **Endpoint mode** (from heatmap/grid click): insights, statistics, correlations, tox assessment
+
+`SignalSelectionContext` manages both `selection` (endpoint-level) and `organSelection` (organ-level) — mutually exclusive (setting one clears the other).
+
+### Validation View — Fix Tier System
+
+The validation view is a **triage and dispatch tool**, not a data editor. The system auto-validates
+on import, applying trivial fixes. What the user sees is what's left:
+- Auto-fixed items needing **confirmation** (review + approve)
+- Items that could NOT be auto-fixed needing **human attention**
+
+**Three fix tiers:**
+- **Tier 1 — Accept as-is**: Value is non-standard but intentional. User provides justification.
+- **Tier 2 — Simple correction**: Fix is known (CT mapping). Single suggestion or pick from candidates.
+- **Tier 3 — Script fix**: Requires batch logic or derived calculation. Opens script dialog.
+
+**Two independent status tracks:**
+- **Fix status**: Not fixed → Auto-fixed / Manually fixed / Accepted as-is / Flagged
+- **Review status**: Not reviewed → Reviewed → Approved
+
+Fix status tracks what happened to the data. Review status tracks human sign-off. Independent.
+
+**Finding section (Mode 2 context panel)** uses category-based evidence rendering:
+- Each `AffectedRecord` carries a `RecordEvidence` discriminated union (`type` field) and a `diagnosis` string
+- 6 evidence templates: `value-correction`, `value-correction-multi`, `code-mapping`, `range-check`, `missing-value`, `metadata`
+- The Finding section dispatches by `evidence.type` — no instructional prose, just data + action buttons
+- Button logic: auto-fixed → REVERT; has suggestion → APPLY FIX / DISMISS; no suggestion → Fix dropdown / ACCEPT
+
 ### Data Nullability Notes
 - `lesion_severity_summary.json`: `avg_severity` is null for 550/728 rows — always null-guard with `?? 0`
+
+---
+
+## Interactivity Rule
+
+**Every UI element must be interactive and produce a visible result.** Users click through this prototype to evaluate the design. If something looks clickable, it must do something.
+
+- **Dropdowns**: Every option must be selectable and produce a visible state change. Selecting "Accepted" in a status dropdown must update the status badge in the table with the correct color. Selecting a resolution must persist and display.
+- **Buttons**: Clicking SAVE must show visual feedback (brief success flash or state change). Clicking APPLY FIX must update the relevant fields (status, resolution, comment) as specified.
+- **Filters**: Selecting a filter value must actually filter the table rows.
+- **Tables**: Row clicks must trigger the correct pane mode switch and highlight the row.
+- **Text inputs**: Values entered in Assigned To, Comment, Value fields must persist within the session.
+- **Empty states**: When no data matches (e.g., filter returns zero results, no rule selected), show meaningful placeholder text — never a blank area.
+
+**Exception**: Features requiring backend architecture we are not reimplementing (e.g., writing corrected values back to SEND datasets). For these, **simulate the result**: update UI state as if the fix was applied (change status, populate fields, show confirmation), but don't build real data transformation logic.
+
+**Rule of thumb**: If a user can interact with it, it must respond. If it can't respond meaningfully, show an appropriate empty state or confirmation message. No dead clicks, no unresponsive controls, no orphaned UI elements.

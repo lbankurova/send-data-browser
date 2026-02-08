@@ -265,7 +265,7 @@ function StudyInspector({ studyId }: { studyId: string }) {
 }
 
 function StudySummaryContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection } = useSignalSelection();
+  const { selection, organSelection } = useSignalSelection();
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
 
@@ -274,6 +274,8 @@ function StudySummaryContextPanelWrapper({ studyId }: { studyId: string }) {
       signalData={signalData ?? []}
       ruleResults={ruleResults ?? []}
       selection={selection}
+      organSelection={organSelection}
+      studyId={studyId}
     />
   );
 }
@@ -292,6 +294,7 @@ function NoaelContextPanelWrapper({ studyId }: { studyId: string }) {
       aeData={aeData ?? []}
       ruleResults={ruleResults ?? []}
       selection={sel}
+      studyId={studyId}
     />
   );
 }
@@ -310,6 +313,7 @@ function TargetOrgansContextPanelWrapper({ studyId }: { studyId: string }) {
       evidenceData={evidenceData ?? []}
       ruleResults={ruleResults ?? []}
       selection={sel}
+      studyId={studyId}
     />
   );
 }
@@ -326,23 +330,32 @@ function DoseResponseContextPanelWrapper({ studyId }: { studyId: string }) {
       drData={drData ?? []}
       ruleResults={ruleResults ?? []}
       selection={sel}
+      studyId={studyId}
     />
   );
 }
 
-function ValidationContextPanelWrapper({ studyId: _studyId }: { studyId: string }) {
-  const { selection } = useViewSelection();
+function ValidationContextPanelWrapper({ studyId }: { studyId: string }) {
+  const { selection, setSelection } = useViewSelection();
 
   const sel = selection?._view === "validation" ? selection as {
+    _view: string;
+    mode: "rule" | "issue";
     rule_id: string;
     severity: "Error" | "Warning" | "Info";
     domain: string;
     category: string;
     description: string;
     records_affected: number;
+    issue_id?: string;
+    subject_id?: string;
+    visit?: string;
+    variable?: string;
+    actual_value?: string;
+    expected_value?: string;
   } : null;
 
-  return <ValidationContextPanel selection={sel} />;
+  return <ValidationContextPanel selection={sel} studyId={studyId} setSelection={setSelection} />;
 }
 
 function HistopathologyContextPanelWrapper({ studyId }: { studyId: string }) {
@@ -357,6 +370,7 @@ function HistopathologyContextPanelWrapper({ studyId }: { studyId: string }) {
       lesionData={lesionData ?? []}
       ruleResults={ruleResults ?? []}
       selection={sel}
+      studyId={studyId}
     />
   );
 }

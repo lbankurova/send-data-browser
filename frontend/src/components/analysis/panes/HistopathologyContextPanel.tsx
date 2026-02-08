@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { InsightsList } from "./InsightsList";
+import { PathologyReviewForm } from "./PathologyReviewForm";
+import { ToxFindingForm } from "./ToxFindingForm";
 import { cn } from "@/lib/utils";
 import { getSeverityBadgeClasses } from "@/lib/severity-colors";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
@@ -16,6 +18,7 @@ interface Props {
   lesionData: LesionSeverityRow[];
   ruleResults: RuleResult[];
   selection: HistopathSelection | null;
+  studyId?: string;
 }
 
 /** Severity color scale */
@@ -27,8 +30,9 @@ function getSeverityHeatColor(avgSev: number): string {
   return "#FFF9C4";
 }
 
-export function HistopathologyContextPanel({ lesionData, ruleResults, selection }: Props) {
-  const { studyId } = useParams<{ studyId: string }>();
+export function HistopathologyContextPanel({ lesionData, ruleResults, selection, studyId: studyIdProp }: Props) {
+  const { studyId: studyIdParam } = useParams<{ studyId: string }>();
+  const studyId = studyIdProp ?? studyIdParam;
   const navigate = useNavigate();
 
   // Dose-level detail for selected finding
@@ -88,8 +92,13 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection 
         <p className="text-xs text-muted-foreground">{selection.specimen}</p>
       </div>
 
+      {/* Pathology Review */}
+      {studyId && (
+        <PathologyReviewForm studyId={studyId} finding={selection.finding} defaultOpen />
+      )}
+
       {/* Finding detail */}
-      <CollapsiblePane title="Dose Detail" defaultOpen>
+      <CollapsiblePane title="Dose detail" defaultOpen>
         {findingRows.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No data.</p>
         ) : (
@@ -142,7 +151,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection 
       </CollapsiblePane>
 
       {/* Correlating evidence */}
-      <CollapsiblePane title="Correlating Evidence" defaultOpen={false}>
+      <CollapsiblePane title="Correlating evidence" defaultOpen={false}>
         {correlating.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No other findings in this specimen.</p>
         ) : (
@@ -165,7 +174,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection 
       </CollapsiblePane>
 
       {/* Cross-view links */}
-      <CollapsiblePane title="Related Views" defaultOpen={false}>
+      <CollapsiblePane title="Related views" defaultOpen={false}>
         <div className="space-y-1 text-[11px]">
           <a
             href="#"
@@ -202,6 +211,11 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection 
           </a>
         </div>
       </CollapsiblePane>
+
+      {/* Tox Assessment */}
+      {studyId && (
+        <ToxFindingForm studyId={studyId} endpointLabel={selection.finding} />
+      )}
     </div>
   );
 }
