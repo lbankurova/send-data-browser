@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
 import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
@@ -97,6 +98,7 @@ function StudyContextMenu({
   onOpen: () => void;
 }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isDemo = !!study.demo;
   const items: { label: string; action: () => void; disabled?: boolean; separator?: boolean }[] = [
     { label: "Open Study", action: onOpen, disabled: isDemo },
@@ -125,7 +127,20 @@ function StudyContextMenu({
       },
       disabled: isDemo,
     },
-    { label: "Re-validate SEND...", action: () => onClose(), disabled: true },
+    {
+      label: "Re-validate SEND...",
+      action: () => {
+        onClose();
+        navigate(`/studies/${encodeURIComponent(study.study_id)}/validation`);
+        // Fire-and-forget: re-run validation in background, then refresh the view
+        fetch(`/api/studies/${encodeURIComponent(study.study_id)}/validate`, { method: "POST" })
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ["validation-results", study.study_id] });
+            queryClient.invalidateQueries({ queryKey: ["affected-records", study.study_id] });
+          });
+      },
+      disabled: isDemo,
+    },
     { label: "Delete", action: () => onClose(), disabled: true, separator: true },
   ];
 

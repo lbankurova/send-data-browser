@@ -1,0 +1,54 @@
+# Completeness validation rules (SEND-VAL-011 through SEND-VAL-013)
+# These rules check that the study dataset is complete with all required domains,
+# parameters, and expected subject coverage.
+
+rules:
+  - id: "SEND-VAL-011"
+    core_ref: null
+    name: "Required domains present"
+    description: "Checks that all required SEND domains are present in the study dataset. Required domains include DM, TS, TA, TE, TX, and EX. Recommended domains (SE, DS) are also checked. At least one findings domain must be present."
+    severity: "Error"
+    category: "Completeness"
+    applicable_domains: ["STUDY"]
+    check_type: "required_domains"
+    parameters:
+      required: ["DM", "TS", "TA", "TE", "TX", "EX"]
+      recommended: ["SE", "DS"]
+      findings_required: true
+    fix_guidance: "Add missing required domains to the study dataset"
+    auto_fixable: false
+    default_fix_tier: 3
+    evidence_type: "metadata"
+    cdisc_reference: "SENDIG 3.1, Section 3"
+
+  - id: "SEND-VAL-012"
+    core_ref: null
+    name: "TS required parameters"
+    description: "Validates that the Trial Summary (TS) domain contains all required parameters as defined by SENDIG. Required parameters include study identification, dates, SEND version, species, strain, and route of administration. Recommended parameters are also checked."
+    severity: "Error"
+    category: "Completeness"
+    applicable_domains: ["TS"]
+    check_type: "ts_required_params"
+    parameters:
+      required: ["STUDYID", "SSTDTC", "SENDTC", "SENDVER", "SPECIES", "STRAIN", "ROUTE"]
+      recommended: ["SSESSION", "SDESIGN", "TRT", "TRTV", "SPONSOR"]
+    fix_guidance: "Add missing required TS parameters"
+    auto_fixable: false
+    default_fix_tier: 3
+    evidence_type: "missing-value"
+    cdisc_reference: "SENDIG 3.1, Section 3.1"
+
+  - id: "SEND-VAL-013"
+    core_ref: null
+    name: "Subject count consistency across domains"
+    description: "Compares the number of unique subjects (USUBJID) in each domain against the Demographics (DM) domain. Flags domains where the subject count is unexpectedly low or high, which may indicate missing data or data loading issues."
+    severity: "Info"
+    category: "Completeness"
+    applicable_domains: ["ALL"]
+    check_type: "subject_count"
+    parameters: {}
+    fix_guidance: "Review domains with unexpected subject counts. May indicate missing data or data loading issues."
+    auto_fixable: false
+    default_fix_tier: 1
+    evidence_type: "metadata"
+    cdisc_reference: "SENDIG 3.1"

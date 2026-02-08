@@ -1,0 +1,313 @@
+# CDISC Controlled Terminology Codelists for SEND Validation
+# Reference: CDISC SEND Controlled Terminology
+# Each codelist has:
+#   extensible: whether sponsor-defined terms are allowed
+#   terms: list of valid coded values
+#   (optional) per_species: species-specific sub-terms (for STRAIN)
+
+codelists:
+
+  # ----------------------------------------------------------------------
+  # SEX — Subject sex
+  # ----------------------------------------------------------------------
+  SEX:
+    extensible: false
+    terms:
+      - "M"
+      - "F"
+      - "U"
+
+  # ----------------------------------------------------------------------
+  # SPECIES — Test species
+  # ----------------------------------------------------------------------
+  SPECIES:
+    extensible: true
+    terms:
+      - "RAT"
+      - "MOUSE"
+      - "DOG"
+      - "RABBIT"
+      - "MONKEY"
+      - "MINIPIG"
+      - "HAMSTER"
+      - "GUINEA PIG"
+      - "PIG"
+      - "FERRET"
+      - "SHEEP"
+      - "GOAT"
+      - "CAT"
+      - "HORSE"
+      - "CATTLE"
+      - "WOODCHUCK"
+      - "MARMOSET"
+      - "NONHUMAN PRIMATE"
+
+  # ----------------------------------------------------------------------
+  # STRAIN — Animal strain (species-specific)
+  # ----------------------------------------------------------------------
+  STRAIN:
+    extensible: true
+    terms: []
+    per_species:
+      RAT:
+        - "SPRAGUE-DAWLEY"
+        - "WISTAR"
+        - "FISCHER 344"
+        - "LONG-EVANS"
+        - "LEWIS"
+        - "ZUCKER"
+        - "WISTAR HAN"
+      MOUSE:
+        - "CD-1"
+        - "C57BL/6"
+        - "BALB/C"
+        - "ICR"
+        - "SWISS WEBSTER"
+        - "NUDE"
+        - "B6C3F1"
+        - "DBA/2"
+      DOG:
+        - "BEAGLE"
+        - "MARSHALL BEAGLE"
+      RABBIT:
+        - "NEW ZEALAND WHITE"
+        - "DUTCH BELTED"
+      MONKEY:
+        - "CYNOMOLGUS"
+        - "RHESUS"
+      MINIPIG:
+        - "GOTTINGEN"
+        - "YUCATAN"
+        - "SINCLAIR"
+
+  # ----------------------------------------------------------------------
+  # ROUTE — Route of administration
+  # ----------------------------------------------------------------------
+  ROUTE:
+    extensible: true
+    terms:
+      - "ORAL"
+      - "ORAL GAVAGE"
+      - "INTRAVENOUS"
+      - "INTRAVENOUS BOLUS"
+      - "INTRAVENOUS INFUSION"
+      - "SUBCUTANEOUS"
+      - "INTRAMUSCULAR"
+      - "INTRAPERITONEAL"
+      - "DERMAL"
+      - "TOPICAL"
+      - "INHALATION"
+      - "INTRANASAL"
+      - "INTRATHECAL"
+      - "INTRAOCULAR"
+      - "DIETARY"
+      - "DRINKING WATER"
+      - "RECTAL"
+      - "INTRAVAGINAL"
+      - "INTRA-ARTICULAR"
+      - "TRANSDERMAL"
+
+  # ----------------------------------------------------------------------
+  # DOSE_FORM — Dosage form
+  # ----------------------------------------------------------------------
+  DOSE_FORM:
+    extensible: true
+    terms:
+      - "SOLUTION"
+      - "SUSPENSION"
+      - "CAPSULE"
+      - "TABLET"
+      - "POWDER"
+      - "EMULSION"
+      - "GEL"
+      - "CREAM"
+      - "OINTMENT"
+      - "IMPLANT"
+      - "AEROSOL"
+      - "SPRAY"
+
+  # ----------------------------------------------------------------------
+  # DOSE_FREQ — Dosing frequency
+  # ----------------------------------------------------------------------
+  DOSE_FREQ:
+    extensible: true
+    terms:
+      - "QD"
+      - "BID"
+      - "TID"
+      - "QID"
+      - "Q12H"
+      - "Q8H"
+      - "Q6H"
+      - "Q4H"
+      - "QW"
+      - "BIW"
+      - "TIW"
+      - "QOD"
+      - "ONCE"
+      - "CONTINUOUS"
+
+  # ----------------------------------------------------------------------
+  # SPECIMEN — Tissue / specimen type for pathology and lab domains
+  # ----------------------------------------------------------------------
+  SPECIMEN:
+    extensible: true
+    terms:
+      - "LIVER"
+      - "KIDNEY"
+      - "HEART"
+      - "LUNG"
+      - "BRAIN"
+      - "SPLEEN"
+      - "ADRENAL GLAND"
+      - "THYMUS"
+      - "THYROID"
+      - "PANCREAS"
+      - "STOMACH"
+      - "SMALL INTESTINE"
+      - "LARGE INTESTINE"
+      - "DUODENUM"
+      - "JEJUNUM"
+      - "ILEUM"
+      - "CECUM"
+      - "COLON"
+      - "RECTUM"
+      - "TESTES"
+      - "OVARY"
+      - "UTERUS"
+      - "PROSTATE"
+      - "EPIDIDYMIS"
+      - "SEMINAL VESICLE"
+      - "MAMMARY GLAND"
+      - "SKIN"
+      - "SKELETAL MUSCLE"
+      - "BONE"
+      - "BONE MARROW"
+      - "LYMPH NODE"
+      - "MESENTERIC LYMPH NODE"
+      - "MANDIBULAR LYMPH NODE"
+      - "EYE"
+      - "OPTIC NERVE"
+      - "SCIATIC NERVE"
+      - "PITUITARY GLAND"
+      - "URINARY BLADDER"
+      - "ESOPHAGUS"
+      - "TRACHEA"
+      - "AORTA"
+      - "SALIVARY GLAND"
+      - "HARDERIAN GLAND"
+      - "STERNUM"
+      - "FEMUR"
+      - "INJECTION SITE"
+      - "WHOLE BLOOD"
+      - "SERUM"
+      - "PLASMA"
+      - "URINE"
+
+  # ----------------------------------------------------------------------
+  # BASELINE_FLAG — Baseline record indicator
+  # Note: Only "Y" is valid. Null is acceptable (meaning not baseline).
+  #       "N" is NOT a valid value per CDISC convention.
+  # ----------------------------------------------------------------------
+  BASELINE_FLAG:
+    extensible: false
+    terms:
+      - "Y"
+
+  # ----------------------------------------------------------------------
+  # RESULT_CATEGORY — Result categorization
+  # ----------------------------------------------------------------------
+  RESULT_CATEGORY:
+    extensible: true
+    terms:
+      - "ABNORMAL"
+      - "NORMAL"
+
+  # ----------------------------------------------------------------------
+  # DOMAIN_CODES — SEND domain abbreviations
+  # ----------------------------------------------------------------------
+  DOMAIN_CODES:
+    extensible: false
+    terms:
+      # Interventions
+      - "DM"
+      - "EX"
+      - "DS"
+      - "SE"
+      # Trial Design
+      - "TA"
+      - "TE"
+      - "TS"
+      - "TX"
+      # Findings
+      - "BW"
+      - "CL"
+      - "DD"
+      - "EG"
+      - "FW"
+      - "LB"
+      - "MA"
+      - "MI"
+      - "OM"
+      - "PC"
+      - "PP"
+      - "TF"
+      - "VS"
+      # Additional Findings
+      - "CO"
+      - "PM"
+      # Special Purpose
+      - "BG"
+      - "CV"
+      - "RE"
+      - "SC"
+      - "SR"
+      - "TK"
+
+  # ----------------------------------------------------------------------
+  # STUDY_DESIGN — Study design type
+  # ----------------------------------------------------------------------
+  STUDY_DESIGN:
+    extensible: true
+    terms:
+      - "PARALLEL"
+      - "CROSSOVER"
+      - "COMPLETE CROSSOVER"
+      - "DOSE ESCALATION"
+      - "FACTORIAL"
+      - "LATIN SQUARE"
+
+  # ----------------------------------------------------------------------
+  # SEVERITY — Severity grade for microscopic findings (MI domain)
+  # ----------------------------------------------------------------------
+  SEVERITY:
+    extensible: true
+    terms:
+      - "MINIMAL"
+      - "MILD"
+      - "MODERATE"
+      - "MARKED"
+      - "SEVERE"
+
+  # ----------------------------------------------------------------------
+  # NCOMPLT — Non-completion reason (DS domain, DSDECOD)
+  # ----------------------------------------------------------------------
+  NCOMPLT:
+    extensible: true
+    terms:
+      - "FOUND DEAD"
+      - "MORIBUND SACRIFICE"
+      - "TERMINAL SACRIFICE"
+      - "ACCIDENTAL DEATH"
+      - "DOSING ERROR"
+
+  # ----------------------------------------------------------------------
+  # EUTHANASIA_REASON — Reason for euthanasia / sacrifice
+  # ----------------------------------------------------------------------
+  EUTHANASIA_REASON:
+    extensible: true
+    terms:
+      - "SCHEDULED SACRIFICE"
+      - "MORIBUND SACRIFICE"
+      - "FOUND DEAD"
+      - "INTERIM SACRIFICE"
