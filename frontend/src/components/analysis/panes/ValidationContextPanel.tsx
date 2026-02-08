@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { ValidationIssueForm } from "./ValidationIssueForm";
@@ -59,6 +60,51 @@ const REVIEW_COUNT_COLOR: Record<string, string> = {
   "Reviewed": "text-blue-700",
   "Approved": "text-green-700",
 };
+
+// ── Domain link helper ────────────────────────────────────────────────
+
+const SEND_DOMAINS = new Set([
+  "BG", "BW", "CL", "CO", "DD", "DM", "DS", "EG", "EX", "FW",
+  "LB", "MA", "MI", "OM", "PC", "PM", "PP", "SC", "SE", "TA",
+  "TE", "TF", "TS", "TX", "VS",
+  "SUPPMA", "SUPPMI",
+]);
+
+/** Infer the SEND domain from a variable name (e.g., EXSTDTC → EX) */
+function inferDomain(variable: string): string | null {
+  const upper = variable.toUpperCase();
+  // Check 6-char prefix first (SUPPMI, SUPPMA)
+  if (upper.length > 4 && SEND_DOMAINS.has(upper.slice(0, 6))) return upper.slice(0, 6);
+  // Standard 2-char prefix
+  const prefix = upper.slice(0, 2);
+  if (SEND_DOMAINS.has(prefix)) return prefix;
+  return null;
+}
+
+function DomainLink({
+  domain,
+  label,
+  studyId,
+}: {
+  domain: string;
+  label: string;
+  studyId: string;
+}) {
+  const navigate = useNavigate();
+  return (
+    <button
+      className="font-mono text-blue-600 hover:underline"
+      onClick={() =>
+        navigate(
+          `/studies/${encodeURIComponent(studyId)}/domains/${encodeURIComponent(domain)}`
+        )
+      }
+      title={`View ${domain} domain`}
+    >
+      {label}
+    </button>
+  );
+}
 
 // ── Navigation bar ─────────────────────────────────────────────────────
 
@@ -249,12 +295,14 @@ function FixScriptDialog({
   studyId,
   onClose,
   onRun,
+  recordAnnotations,
 }: {
   record: AffectedRecord;
   ruleId: string;
   studyId: string;
   onClose: () => void;
   onRun: (scriptKey: string, scope: "single" | "all") => void;
+  recordAnnotations?: Record<string, ValidationRecordReview> | null;
 }) {
   // Find applicable scripts
   const applicableScripts = useMemo(() => {
@@ -270,6 +318,15 @@ function FixScriptDialog({
 
   const script: FixScript | undefined = FIX_SCRIPTS[selectedScript];
   const allRecords = AFFECTED_RECORDS[ruleId] ?? [];
+
+  // Count only unfixed records (skip Manually fixed, Accepted as-is)
+  const unfixedRecords = useMemo(() => {
+    return allRecords.filter((rec) => {
+      const ann = recordAnnotations?.[rec.issue_id];
+      const status = ann?.fixStatus ?? (rec.autoFixed ? "Auto-fixed" : "Not fixed");
+      return status === "Not fixed" || status === "Flagged";
+    });
+  }, [allRecords, recordAnnotations]);
 
   // Suppress unused var warning - studyId is passed for future use
   void studyId;
@@ -329,8 +386,11 @@ function FixScriptDialog({
                   checked={scope === "all"}
                   onChange={() => setScope("all")}
                   className="h-3 w-3"
+                  disabled={unfixedRecords.length === 0}
                 />
-                All {allRecords.length} records for {ruleId}
+                {unfixedRecords.length === allRecords.length
+                  ? `All ${allRecords.length} records for ${ruleId}`
+                  : `${unfixedRecords.length} unfixed records for ${ruleId} (${allRecords.length - unfixedRecords.length} already fixed)`}
               </label>
             </div>
           </div>
@@ -582,40 +642,120 @@ function RangeCheckEvidence({ lines }: { lines: { label: string; value: string }
   );
 }
 
+/** Render text with SEND variable names linkified to their domain tables */
+function LinkifiedText({
+  text,
+  studyId,
+  className,
+}: {
+  text: string;
+  studyId?: string;
+  className?: string;
+}) {
+  if (!studyId) return <span className={className}>{text}</span>;
+
+  // Match uppercase SEND variable names (2-char domain prefix + 3+ more uppercase chars/digits)
+  const parts = text.split(/\b([A-Z]{2}[A-Z0-9]{2,})\b/);
+  return (
+    <span className={className}>
+      {parts.map((part, i) => {
+        if (i % 2 === 1) {
+          const domain = inferDomain(part);
+          if (domain) {
+            return (
+              <DomainLink key={i} domain={domain} label={part} studyId={studyId} />
+            );
+          }
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </span>
+  );
+}
+
+/** Render text with "DOMAIN.VAR" patterns (e.g. "SUPPMI.QNAM") linkified */
+function LinkifiedDomainRef({
+  text,
+  studyId,
+  className,
+}: {
+  text: string;
+  studyId?: string;
+  className?: string;
+}) {
+  if (!studyId) return <span className={className}>{text}</span>;
+
+  // Match DOMAIN.VARIABLE patterns (e.g., SUPPMI.QNAM, MI.MISEV)
+  const parts = text.split(/\b((?:SUPP)?[A-Z]{2,4}\.[A-Z][A-Z0-9]*)\b/);
+  return (
+    <span className={className}>
+      {parts.map((part, i) => {
+        if (i % 2 === 1) {
+          const dotIdx = part.indexOf(".");
+          const domain = part.slice(0, dotIdx);
+          if (SEND_DOMAINS.has(domain)) {
+            return (
+              <DomainLink key={i} domain={domain} label={part} studyId={studyId} />
+            );
+          }
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </span>
+  );
+}
+
 function MissingValueEvidence({
   variable,
   derivation,
   suggested,
+  studyId,
 }: {
   variable: string;
   derivation?: string;
   suggested?: string;
+  studyId?: string;
 }) {
+  if (suggested) {
+    const source = derivation
+      ? ` (${derivation.replace(/^Derivable from\s+/i, "from ")})`
+      : "";
+    return (
+      <div className="text-[11px]">
+        <span className="text-muted-foreground">Suggested: </span>
+        <span className="font-mono">{suggested}</span>
+        {source && (
+          <LinkifiedText
+            text={source}
+            studyId={studyId}
+            className="text-muted-foreground"
+          />
+        )}
+      </div>
+    );
+  }
   return (
-    <div className="space-y-1 text-[11px]">
-      {derivation && <p className="text-muted-foreground">{derivation}</p>}
-      {suggested && (
-        <div className="flex gap-2">
-          <span className="text-muted-foreground">Suggested:</span>
-          <span className="font-mono">{suggested}</span>
-        </div>
-      )}
-      {!derivation && !suggested && (
-        <div className="font-mono text-muted-foreground/70">{variable}: (empty)</div>
-      )}
-    </div>
+    <div className="font-mono text-[11px] text-muted-foreground/70">{variable}: (empty)</div>
   );
 }
 
-function MetadataEvidence({ lines }: { lines: { label: string; value: string }[] }) {
+function MetadataEvidence({
+  lines,
+  studyId,
+}: {
+  lines: { label: string; value: string }[];
+  studyId?: string;
+}) {
   return (
     <div className="space-y-0.5 text-[11px]">
       {lines.map((line, i) => (
         <div key={i} className="flex gap-2">
           <span className="text-muted-foreground">{line.label}:</span>
-          <span className={i === 0 ? "font-mono text-muted-foreground/70" : "font-mono"}>
-            {line.value}
-          </span>
+          <LinkifiedDomainRef
+            text={line.value}
+            studyId={studyId}
+            className={i === 0 ? "font-mono text-muted-foreground/70" : "font-mono"}
+          />
         </div>
       ))}
     </div>
@@ -633,7 +773,6 @@ function FindingSection({
   selection: ValidationSelection;
   studyId: string;
 }) {
-  const [dismissed, setDismissed] = useState(false);
   const [fixResult, setFixResult] = useState<string | null>(null);
   const [justification, setJustification] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<string>(
@@ -642,7 +781,9 @@ function FindingSection({
       : record.suggestions?.[0] ?? ""
   );
   const [showScriptDialog, setShowScriptDialog] = useState(false);
-  const [showAcceptFallback, setShowAcceptFallback] = useState(false);
+  const [showAcceptView, setShowAcceptView] = useState(false);
+  const [showEnterValue, setShowEnterValue] = useState(false);
+  const [manualValue, setManualValue] = useState("");
   const [fixDropdownOpen, setFixDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -661,7 +802,6 @@ function FindingSection({
 
   // Reset state when record changes
   useEffect(() => {
-    setDismissed(false);
     setFixResult(null);
     setJustification("");
     setSelectedCandidate(
@@ -670,7 +810,9 @@ function FindingSection({
         : record.suggestions?.[0] ?? ""
     );
     setShowScriptDialog(false);
-    setShowAcceptFallback(false);
+    setShowAcceptView(false);
+    setShowEnterValue(false);
+    setManualValue("");
     setFixDropdownOpen(false);
   }, [record.issue_id, record.suggestions, record.evidence]);
 
@@ -688,8 +830,6 @@ function FindingSection({
 
   const diagnosis = record.diagnosis;
   const evidence = record.evidence;
-
-  if (dismissed) return null;
 
   // Status badge
   const statusBadge = (
@@ -716,8 +856,8 @@ function FindingSection({
     );
   }
 
-  // ── Accept-as-is sub-view (for Fix ▾ → Accept fallback) ──
-  if (showAcceptFallback) {
+  // ── Accept-as-is sub-view ──
+  if (showAcceptView) {
     return (
       <CollapsiblePane title="Finding" defaultOpen>
         <div className="space-y-2 text-[11px]">
@@ -748,11 +888,11 @@ function FindingSection({
                 setFixResult("Accepted as-is — justification recorded.");
               }}
             >
-              ACCEPT
+              Accept
             </button>
             <button
               className="rounded border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50"
-              onClick={() => setShowAcceptFallback(false)}
+              onClick={() => setShowAcceptView(false)}
             >
               Back
             </button>
@@ -787,11 +927,60 @@ function FindingSection({
             variable={evidence.variable}
             derivation={evidence.derivation}
             suggested={evidence.suggested}
+            studyId={studyId}
           />
         );
       case "metadata":
-        return <MetadataEvidence lines={evidence.lines} />;
+        return <MetadataEvidence lines={evidence.lines} studyId={studyId} />;
     }
+  };
+
+  // ── Apply suggestion helper ──
+  const applySuggestion = () => {
+    let chosen: string;
+    if (evidence?.type === "value-correction") {
+      chosen = evidence.to;
+    } else if (evidence?.type === "code-mapping") {
+      chosen = evidence.code;
+    } else if (evidence?.type === "missing-value" && evidence.suggested) {
+      chosen = evidence.suggested;
+    } else if (record.suggestions?.length === 1) {
+      chosen = record.suggestions[0];
+    } else {
+      chosen = "";
+    }
+    save({
+      entityKey: record.issue_id,
+      data: {
+        fixStatus: "Manually fixed",
+        comment: `Fix applied: ${selection.variable} → '${chosen}'`,
+      },
+    });
+    setFixResult(`Fix applied — ${selection.variable} set to '${chosen}'.`);
+  };
+
+  // ── Apply selected candidate helper ──
+  const applySelected = () => {
+    save({
+      entityKey: record.issue_id,
+      data: {
+        fixStatus: "Manually fixed",
+        comment: `Fix applied: ${selection.variable} → '${selectedCandidate}'`,
+      },
+    });
+    setFixResult(`Fix applied — ${selection.variable} set to '${selectedCandidate}'.`);
+  };
+
+  // ── Apply manual value helper ──
+  const applyManualValue = () => {
+    save({
+      entityKey: record.issue_id,
+      data: {
+        fixStatus: "Manually fixed",
+        comment: `Manual value entered: ${selection.variable} → '${manualValue}'`,
+      },
+    });
+    setFixResult(`Fix applied — ${selection.variable} set to '${manualValue}'.`);
   };
 
   // ── Determine buttons based on fix status + record properties ──
@@ -809,111 +998,88 @@ function FindingSection({
             setFixResult("Reverted — fix status set to Not fixed.");
           }}
         >
-          REVERT
+          Revert
         </button>
       );
     }
 
-    // Has suggestion(s) → Apply fix + Dismiss
-    const hasSuggestion =
-      evidence?.type === "value-correction" ||
-      evidence?.type === "value-correction-multi" ||
-      evidence?.type === "code-mapping" ||
-      (evidence?.type === "missing-value" && evidence.suggested) ||
-      (evidence?.type === "metadata" && record.suggestions?.length);
-
-    if (hasSuggestion) {
+    // Already resolved (Manually fixed / Accepted as-is) → show undo option
+    if (currentFixStatus === "Manually fixed" || currentFixStatus === "Accepted as-is") {
       return (
-        <div className="flex items-center gap-2">
-          <button
-            className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90"
-            onClick={() => {
-              let chosen: string;
-              if (evidence?.type === "value-correction-multi") {
-                chosen = selectedCandidate;
-              } else if (evidence?.type === "value-correction") {
-                chosen = evidence.to;
-              } else if (evidence?.type === "code-mapping") {
-                chosen = evidence.code;
-              } else if (evidence?.type === "missing-value" && evidence.suggested) {
-                chosen = evidence.suggested;
-              } else if (record.suggestions?.length) {
-                chosen = record.suggestions.length === 1 ? record.suggestions[0] : selectedCandidate;
-              } else {
-                chosen = "";
-              }
-              save({
-                entityKey: record.issue_id,
-                data: {
-                  fixStatus: "Manually fixed",
-                  comment: `Fix applied: ${selection.variable} → '${chosen}'`,
-                },
-              });
-              setFixResult(`Fix applied — ${selection.variable} set to '${chosen}'.`);
-            }}
-          >
-            APPLY FIX
-          </button>
-          <button
-            className="rounded border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50"
-            onClick={() => setDismissed(true)}
-          >
-            DISMISS
-          </button>
-        </div>
+        <button
+          className="rounded border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50"
+          onClick={() => {
+            save({
+              entityKey: record.issue_id,
+              data: { fixStatus: "Not fixed", comment: `Reverted from ${currentFixStatus}` },
+            });
+            setFixResult("Reverted — fix status set to Not fixed.");
+          }}
+        >
+          Undo fix
+        </button>
       );
     }
 
-    // No suggestion → Fix ▾ (with script) + Accept
+    // Not fixed / Flagged → adaptive Fix ▾ + Accept
+    const hasSingleSuggestion =
+      evidence?.type === "value-correction" ||
+      evidence?.type === "code-mapping" ||
+      (evidence?.type === "missing-value" && evidence.suggested) ||
+      (evidence?.type === "metadata" && record.suggestions?.length === 1);
+
+    const hasMultipleCandidates = evidence?.type === "value-correction-multi";
+
+    // Build Fix ▾ dropdown options
+    const fixOptions: { label: string; action: () => void }[] = [];
+    if (hasSingleSuggestion) {
+      fixOptions.push({ label: "Apply suggestion", action: applySuggestion });
+    }
+    if (hasMultipleCandidates) {
+      fixOptions.push({ label: "Apply selected", action: applySelected });
+    }
+    fixOptions.push({
+      label: "Enter value\u2026",
+      action: () => setShowEnterValue(true),
+    });
+    if (record.scriptKey) {
+      fixOptions.push({
+        label: "Run script\u2026",
+        action: () => setShowScriptDialog(true),
+      });
+    }
+
     return (
       <div className="flex items-center gap-2">
-        {record.scriptKey ? (
-          <div className="relative" ref={dropdownRef}>
-            <button
-              className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90"
-              onClick={() => setFixDropdownOpen(!fixDropdownOpen)}
-            >
-              Fix ▾
-            </button>
-            {fixDropdownOpen && (
-              <div className="absolute left-0 top-full z-10 mt-1 min-w-[160px] rounded border bg-background shadow-lg">
+        <div className="relative" ref={dropdownRef}>
+          <button
+            className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90"
+            onClick={() => setFixDropdownOpen(!fixDropdownOpen)}
+          >
+            Fix ▾
+          </button>
+          {fixDropdownOpen && (
+            <div className="absolute left-0 top-full z-10 mt-1 min-w-[160px] rounded border bg-background shadow-lg">
+              {fixOptions.map((opt) => (
                 <button
+                  key={opt.label}
                   className="w-full px-3 py-1.5 text-left text-[10px] hover:bg-muted/50"
                   onClick={() => {
                     setFixDropdownOpen(false);
-                    setShowScriptDialog(true);
+                    opt.action();
                   }}
                 >
-                  Run script…
+                  {opt.label}
                 </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="relative" ref={dropdownRef}>
-            <button
-              className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90"
-              onClick={() => setFixDropdownOpen(!fixDropdownOpen)}
-            >
-              Fix ▾
-            </button>
-            {fixDropdownOpen && (
-              <div className="absolute left-0 top-full z-10 mt-1 min-w-[160px] rounded border bg-background shadow-lg">
-                <button
-                  className="w-full px-3 py-1.5 text-left text-[10px] text-muted-foreground"
-                  disabled
-                >
-                  No scripts available
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
         <button
           className="rounded border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50"
-          onClick={() => setShowAcceptFallback(true)}
+          onClick={() => setShowAcceptView(true)}
         >
-          ACCEPT
+          Accept
         </button>
       </div>
     );
@@ -924,7 +1090,12 @@ function FindingSection({
     const scriptName = FIX_SCRIPTS[scriptKey]?.name ?? scriptKey;
     if (scope === "all") {
       const allRecords = AFFECTED_RECORDS[record.rule_id] ?? [];
+      // Only apply to unfixed records — skip already Manually fixed / Accepted as-is
+      let applied = 0;
       for (const rec of allRecords) {
+        const ann = recordAnnotations?.[rec.issue_id];
+        const status = ann?.fixStatus ?? (rec.autoFixed ? "Auto-fixed" : "Not fixed");
+        if (status === "Manually fixed" || status === "Accepted as-is") continue;
         save({
           entityKey: rec.issue_id,
           data: {
@@ -932,9 +1103,11 @@ function FindingSection({
             comment: `Script applied: ${scriptName}`,
           },
         });
+        applied++;
       }
+      const skipped = allRecords.length - applied;
       setFixResult(
-        `Script "${scriptName}" applied to all ${(AFFECTED_RECORDS[record.rule_id] ?? []).length} records.`
+        `Script "${scriptName}" applied to ${applied} record${applied !== 1 ? "s" : ""}${skipped > 0 ? ` (${skipped} already fixed, skipped)` : ""}.`
       );
     } else {
       save({
@@ -956,7 +1129,37 @@ function FindingSection({
           {statusBadge}
           <p className="text-muted-foreground">{diagnosis}</p>
           {renderEvidence()}
-          {renderButtons()}
+          {/* Inline enter-value field */}
+          {showEnterValue && (
+            <div className="space-y-1.5">
+              <input
+                className="w-full rounded border bg-background px-2 py-1 font-mono text-[11px]"
+                value={manualValue}
+                onChange={(e) => setManualValue(e.target.value)}
+                placeholder={`Enter ${selection.variable} value...`}
+                autoFocus
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  disabled={!manualValue}
+                  onClick={applyManualValue}
+                >
+                  Apply
+                </button>
+                <button
+                  className="rounded border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50"
+                  onClick={() => {
+                    setShowEnterValue(false);
+                    setManualValue("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          {!showEnterValue && renderButtons()}
         </div>
       </CollapsiblePane>
       {showScriptDialog && (
@@ -966,6 +1169,7 @@ function FindingSection({
           studyId={studyId}
           onClose={() => setShowScriptDialog(false)}
           onRun={handleScriptRun}
+          recordAnnotations={recordAnnotations}
         />
       )}
     </>
@@ -1096,6 +1300,8 @@ function IssueReview({
     return records.find((r) => r.issue_id === selection.issue_id) ?? null;
   }, [selection.rule_id, selection.issue_id]);
 
+  const detail = RULE_DETAILS[selection.rule_id] ?? null;
+
   return (
     <div>
       {/* Header */}
@@ -1113,32 +1319,45 @@ function IssueReview({
             {selection.severity}
           </span>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Rule {selection.rule_id}
-        </p>
+        {/* Rule ID with hover popover showing full rule detail */}
+        <div className="group/rule relative mt-1 inline-block text-xs">
+          <span className="cursor-default font-medium text-muted-foreground underline decoration-dotted underline-offset-2">
+            Rule {selection.rule_id}
+          </span>
+          <span className="mx-1 text-muted-foreground">&middot;</span>
+          <span className="text-muted-foreground">{selection.domain} &middot; {selection.category}</span>
+          {detail && (
+            <div className="invisible absolute right-full top-0 z-20 mr-2 w-72 rounded border bg-background p-3 shadow-lg group-hover/rule:visible">
+              <div className="space-y-1.5 text-[11px]">
+                <div>
+                  <span className="font-medium text-muted-foreground">Standard: </span>
+                  <span>{detail.standard}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-muted-foreground">Section: </span>
+                  <span>{detail.section}</span>
+                </div>
+                <div className={cn("border-l-2 pl-2", SEVERITY_BORDER[selection.severity])}>
+                  {selection.description}
+                </div>
+                <div>
+                  <span className="font-medium text-muted-foreground">Rationale: </span>
+                  <span>{detail.rationale}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-muted-foreground">How to fix: </span>
+                  <span>{detail.howToFix}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Record context */}
-      <CollapsiblePane title="Record context" defaultOpen>
-        <div className="space-y-1 text-[11px]">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Subject ID</span>
-            <span className="font-mono">{selection.subject_id}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Visit</span>
-            <span>{selection.visit}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Domain</span>
-            <span className="font-mono">{selection.domain}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Variable</span>
-            <span className="font-mono">{selection.variable}</span>
-          </div>
-        </div>
-      </CollapsiblePane>
+      {/* Record context — one-liner */}
+      <div className="border-b px-4 py-2 text-xs text-muted-foreground">
+        {selection.subject_id} &middot; {selection.visit} &middot; {selection.domain}
+      </div>
 
       {/* Finding (merged — diagnosis + diff + action) */}
       {studyId && record && (
@@ -1149,7 +1368,7 @@ function IssueReview({
         />
       )}
 
-      {/* Inline review */}
+      {/* Review */}
       {studyId && selection.issue_id && (
         <InlineReviewSection studyId={studyId} issueId={selection.issue_id} />
       )}

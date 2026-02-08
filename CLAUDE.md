@@ -123,18 +123,20 @@ cd C:/pg/pcc/frontend && npm run lint     # ESLint
 ## Design Decisions
 
 - **No breadcrumb navigation in context panel panes.** Use `< >` icon buttons at the top of the context panel for back/forward navigation between pane modes. This mirrors Datagrok's native context panel behavior. If breadcrumbs are added later, update this section and the implementation accordingly.
+- **Mode 2 (issue pane) never recreates rule context.** No rationale, no "how to fix" guidance, no standard references. Those belong in Mode 1. The issue pane shows only: record identity, finding evidence, action buttons, and review form. The rule ID is a clickable link back to Mode 1, with a one-line summary from "how to fix" for quick reference.
 
 ## UI Casing Conventions
 
 - **Sentence case** for all UI text by default: labels, descriptions, tooltips, column headers, section headers (L2+), status text, placeholder text, dropdown options, error messages, notifications
-- **UPPER CASE** for button labels ≤12 characters including spaces (e.g., "SAVE", "APPLY FIX", "DISMISS"). For labels >12 characters, use sentence case (e.g., "Flag for review", "Generate report")
+- **Sentence case** for all buttons. Exceptions: OK, SAVE, RUN
 - **Title Case** for L1 page/view headers, dialog headers/titles, and context action labels in right-click context menus
 - **Never use Title Case** for section headers within panes, table column headers, filter labels, or form field labels
 
 **Examples:**
 ```
-Button (≤12 chars): SAVE, APPLY FIX, DISMISS, REVERT, ACCEPT, RUN
-Button (>12 chars): Flag for review, Generate report, Generate validation report
+Button:             Revert, Apply fix, Accept, Fix ▾, Apply suggestion, Flag
+Button (exception): OK, SAVE, RUN
+Button (long):      Flag for review, Generate report, Generate validation report
 L1 header:          SEND Validation, Study: PointCross
 Dialog header:      Export Settings, Confirm Deletion
 Section header:     Rule detail, Review progress, Suggested fix
@@ -226,18 +228,25 @@ The Signals tab uses a **dual-mode center panel** with a persistent Decision Bar
 - **Center content**: FindingsView OR OrganGroupedHeatmap (mutually exclusive).
 - **Context panel** (right sidebar): reacts to organ or endpoint selection from either mode.
 
-**Engine** (`lib/signals-panel-engine.ts`): derives semantic rules from NOAEL/organ/signal data. Output: `decisionBar` (NOAEL rules), `studyStatements` (study-scope facts), `organBlocks`, `modifiers`, `caveats`, `metrics`.
+**Engine** (`lib/signals-panel-engine.ts`): derives semantic rules from NOAEL/organ/signal data. Output: `decisionBar` (NOAEL rules), `studyStatements` (study-scope facts), `organBlocks` (with `evidenceScore`), `modifiers`, `caveats`, `metrics`.
 
 **Priority-band → UI zone mapping:**
 - 900+ → Decision Bar (persistent across modes)
 - 800–899 → Findings: Target Organs headline (compound-merged with D-R sub-lines into `OrganBlock`)
 - 600–799 → Findings: Target Organs sub-lines / study-scope statements
-- 400–599 → Findings: Modifiers (collapsed, expandable)
-- 200–399 → Findings: Caveats (collapsed, expandable, amber-tinted)
+- 400–599 → Findings: Modifiers (always visible, sex badges `[F]`/`[M]` right-aligned)
+- 200–399 → Findings: Review Flags (always visible, amber block cards with primary/detail split)
+
+**Findings mode layout — no content is hidden or collapsed:**
+- Study-scope statement (e.g., "Treatment-related effects are present...")
+- TARGET ORGANS section header + responsive card grid (`repeat(auto-fill, minmax(280px, 1fr))`), sorted by `evidenceScore` desc. Each card shows organ name, `[▸]` hover icon, domain chips, D-R summary. Card states: default / hover (border-blue-300 shadow-sm) / selected (border-blue-500 bg-blue-50/50).
+- MODIFIERS section header + always-visible list with inline organ name links and `[F]`/`[M]` sex badges.
+- REVIEW FLAGS section header + always-visible amber block cards (`bg-amber-50 border-amber-200 rounded-md p-3`) with bold primary statement, muted detail line.
 
 **Cross-mode navigation:**
-- Organ click in Findings → switches to Heatmap + expands organ + scrolls to it (via `pendingNavigation` state)
-- Ctrl+click organ in Findings → stays in Findings, sets organ selection (context panel updates)
+- Organ card click in Findings → switches to Heatmap + expands organ + scrolls to it (via `pendingNavigation` state)
+- Ctrl+click organ card in Findings → stays in Findings, sets organ selection (context panel updates)
+- Organ name in modifier/caveat → same as card click (transition to Heatmap)
 - Escape in Heatmap → returns to Findings (selection preserved)
 - Escape in Findings → clears selection
 - Decision Bar endpoint click → sets endpoint selection, stays in current mode (scrolls if in Heatmap)
@@ -272,6 +281,145 @@ Fix status tracks what happened to the data. Review status tracks human sign-off
 
 ### Data Nullability Notes
 - `lesion_severity_summary.json`: `avg_severity` is null for 550/728 rows — always null-guard with `?? 0`
+
+---
+
+## Demo/Stub/Prototype Code — Production Migration Guide
+
+This section catalogs all code that exists purely for demonstration, stubbing, or prototype purposes. When building the production app on Datagrok, each item must be addressed. Items are grouped by migration priority.
+
+### Priority 1 — Infrastructure Dependencies
+
+These are foundational changes that most other items depend on.
+
+#### P1.1 — Authentication & Authorization
+- **`backend/main.py:32-37`** — CORS middleware uses `allow_origins=["*"]`, `allow_methods=["*"]`, `allow_headers=["*"]`. No authentication middleware exists anywhere.
+- **`backend/routers/annotations.py:33-66`** — All annotation endpoints (GET/PUT) have no auth checks. Any client can read/write any study's annotations.
+- **`backend/routers/annotations.py:56`** — Reviewer identity is hardcoded: `annotation["reviewedBy"] = "User"`. Must be replaced with authenticated user identity.
+- **Production change:** Add Datagrok auth middleware. All API endpoints must validate user tokens. Reviewer identity must come from auth context.
+
+#### P1.2 — Database for Annotations
+- **`backend/routers/annotations.py:10`** — Annotations stored as JSON files on disk: `ANNOTATIONS_DIR = Path(__file__).parent.parent / "annotations"`. Storage path: `backend/annotations/{study_id}/{schema_type}.json`.
+- **`backend/routers/annotations.py:62-64`** — Writes via `json.dump()` to flat files. No concurrency control, no transactions, no backup.
+- **4 schema types stored:** `tox-findings.json`, `pathology-reviews.json`, `validation-issues.json`, `validation-records.json`
+- **Frontend hooks are migration-safe:** `useAnnotations()` and `useSaveAnnotation()` use React Query + REST API. Swapping the backend storage from files to database requires **zero frontend changes** — the API contract (GET/PUT with JSON payloads) stays the same.
+- **Production change:** Replace file I/O in `annotations.py` with database operations. Schema types map to database tables. Add proper error handling, concurrency, audit trail.
+
+#### P1.3 — Multi-Study Support
+- **`backend/config.py:15`** — `ALLOWED_STUDIES = {"PointCross"}` restricts the entire app to one study.
+- **`backend/services/study_discovery.py:37-38`** — Filter applied at startup: `if ALLOWED_STUDIES: studies = {k: v for k, v in studies.items() if k in ALLOWED_STUDIES}`.
+- **`frontend/src/components/panels/ContextPanel.tsx:436`** — Hardcoded check: `if (selectedStudyId !== "PointCross")` shows "This is a demo entry" message for any non-PointCross study.
+- **Production change:** Remove ALLOWED_STUDIES filter entirely. Remove PointCross guard in ContextPanel. Studies should come from Datagrok's study management system.
+
+### Priority 2 — Hardcoded Demo Data (Remove)
+
+These are fake data entries that must be removed entirely.
+
+#### P2.1 — Demo Studies on Landing Page
+- **`frontend/src/components/panels/AppLandingPage.tsx:25-86`** — `DEMO_STUDIES` array contains 4 hardcoded fake studies: DART-2024-0091, CARDIO-TX-1147, ONCO-MTD-3382, NEURO-PK-0256. Each has fabricated metadata (protocol, standard, subjects, dates, validation status).
+- **`AppLandingPage.tsx:100`** — `const isDemo = !!study.demo` guard used at lines 102, 109, 117, 126 to disable context menu actions for demo entries.
+- **`AppLandingPage.tsx:259`** — All real studies get hardcoded `validation: "Pass"` regardless of actual validation state.
+- **Production change:** Delete DEMO_STUDIES array and all `isDemo` logic. Validation status should come from actual validation results via API.
+
+#### P2.2 — Hardcoded Validation Rules & Records
+- **`frontend/src/components/analysis/ValidationView.tsx:67-132`** — `HARDCODED_RULES`: 8 fake SEND compliance rules (SD1002, SD1019, SD0064, SD1035, SD0083, SD0021, SD0045, SD0092) with fabricated severity, domain, category, descriptions, record counts.
+- **`ValidationView.tsx:134-183`** — `RULE_DETAILS`: Detailed info per rule (standard version, section reference, rationale, howToFix). Content is realistic SEND guidance but not computed from actual data.
+- **`ValidationView.tsx:185-241`** — `AFFECTED_RECORDS`: 40+ fake affected records with fabricated subject IDs, visit names, domain variables, actual/expected values, fix tiers, and evidence objects.
+- **`ValidationView.tsx:245-274`** — `FIX_SCRIPTS`: 3 mock fix scripts with `mockPreview` arrays showing simulated before/after transformations.
+- **`frontend/src/components/analysis/panes/ValidationContextPanel.tsx:399-425`** — FixScriptDialog renders `mockPreview` as a table (Subject, Field, From, To).
+- **Production change:** Replace all hardcoded arrays with API calls to Datagrok's SEND validation engine. The UI structure (rules table, affected records, fix tiers, script dialog) is reusable — only the data source changes.
+
+### Priority 3 — Stub Features (Implement or Remove)
+
+These are UI elements that show but don't function.
+
+#### P3.1 — Import Section
+- **`AppLandingPage.tsx:156-251`** — Entire `ImportSection` component is a non-functional stub:
+  - Drop zone doesn't accept drops
+  - Browse button shows `alert()` at line 182
+  - All metadata inputs (Study ID, Protocol, Description) are `disabled`
+  - Checkboxes ("Validate SEND compliance", "Attempt automatic fixes") are `disabled` with hardcoded states
+  - Import button (line 240-246) is `disabled` with `cursor-not-allowed` and tooltip "Import not available in prototype"
+- **Production change:** Replace with Datagrok's study import workflow, or implement real file upload → XPT parsing → study registration pipeline.
+
+#### P3.2 — Export Functionality
+- **`AppLandingPage.tsx:124`** — `alert("CSV/Excel export coming soon.")` in context menu Export action.
+- **`ContextPanel.tsx:256`** — `alert("CSV/Excel export coming soon.")` in StudyInspector Export link.
+- **Production change:** Implement actual CSV/Excel export for study data, analysis results, and reports.
+
+#### P3.3 — Disabled Context Menu Actions
+- **`AppLandingPage.tsx:128-129`** — "Share..." and "Re-validate SEND..." are always disabled (no implementation planned in prototype).
+- **`AppLandingPage.tsx:131`** — "Delete" is always disabled (no confirmation UX or delete logic).
+- **Production change:** Implement sharing, re-validation trigger, and study deletion with proper confirmation dialogs and backend support.
+
+#### P3.4 — Documentation Link
+- **`AppLandingPage.tsx:344`** — "Learn more" link calls `alert("Documentation is not available in this prototype.")`.
+- **Production change:** Link to actual product documentation.
+
+#### P3.5 — Feature Flags
+- **`frontend/src/lib/analysis-definitions.ts:8-15`** — `ANALYSIS_TYPES` array has `implemented` boolean flags. Only `adverse-effects` is `true`; `noael`, `target-organs`, `validation`, `sex-differences`, `reversibility` are `false`.
+- **`analysis-definitions.ts:23-30`** — `ANALYSIS_VIEWS` array also has `implemented` flags (most are `true` now).
+- **`frontend/src/components/analysis/PlaceholderAnalysisView.tsx:1-39`** — Catch-all placeholder for unimplemented analysis types, shows "This analysis type is not yet implemented."
+- **Production change:** Remove `implemented` flags (all views should be implemented). Remove PlaceholderAnalysisView. Or keep as a gating mechanism if Datagrok has staged rollout.
+
+### Priority 4 — Pre-Generated Static Data (Architecture Decision)
+
+The prototype pre-computes analysis data via a CLI generator. Production may keep this pattern or compute on-demand.
+
+#### P4.1 — Generator Pipeline
+- **`backend/generator/generate.py`** — CLI tool reads .XPT files, computes statistics, writes 8 JSON files + 1 HTML chart to `backend/generated/{study_id}/`.
+- **`backend/routers/analysis_views.py:47-63`** — Serves these JSON files directly via `json.load()` from disk.
+- **`backend/routers/analysis_views.py:29-44`** — Serves pre-generated HTML charts from `generated/{study_id}/static/`.
+- **`backend/generator/static_charts.py:10-73`** — Generates self-contained HTML bar chart with inline CSS. Hardcoded threshold `0.3` for target organ designation.
+- **Production decision:** Either (a) keep the generator pattern and run it on study import, or (b) compute views on-demand with caching. The frontend doesn't care — it fetches from the same API endpoints either way.
+
+#### P4.2 — File-Based Caching
+- **`backend/services/xpt_processor.py:22-48`** — XPT domains cached as CSV files in `backend/cache/{study_id}/{domain}.csv`. Freshness checked against XPT file mtime.
+- **`backend/services/analysis/unified_findings.py:40-74, 167-169`** — Adverse effects analysis cached as JSON in `backend/cache/{study_id}/adverse_effects.json`. Freshness checked against source XPT mtimes.
+- **Production change:** Replace file-based caching with Datagrok's data infrastructure or a proper cache layer (Redis, database materialized views).
+
+### Priority 5 — Hardcoded Configuration (Parameterize)
+
+These are values baked into the code that should be configurable.
+
+#### P5.1 — Dose Group Mapping
+- **`backend/services/analysis/dose_groups.py:10`** — `ARMCD_TO_DOSE_LEVEL = {"1": 0, "2": 1, "3": 2, "4": 3}` — Maps arm codes to dose levels. Only works for studies with ARMCD values "1"-"4".
+- **`dose_groups.py:13`** — `RECOVERY_ARMCDS = {"1R", "2R", "3R", "4R"}` — Hardcoded recovery arm codes.
+- **Production change:** Derive dose level mapping dynamically from study TX/DM domains, or make it configurable per study.
+
+#### P5.2 — Skip Folders
+- **`backend/config.py:9-12`** — `SKIP_FOLDERS = {"JSON-CBER-POC-Pilot-Study3-Gene-Therapy", "SENDIG3.1.1excel"}` — Specific folder names excluded from study scan.
+- **Production change:** Not needed if study discovery is replaced by Datagrok's study management.
+
+#### P5.3 — Data Directory
+- **`backend/config.py:4`** — `SEND_DATA_DIR` defaults to `r"C:\pg\pcc\send"` (env-overridable via `SEND_DATA_DIR`).
+- **Production change:** Will use Datagrok's file storage system.
+
+#### P5.4 — Domain Defaults in Generator
+- **`backend/generator/organ_map.py`** — Contains hardcoded `domain_defaults` mapping domains to default organ systems (e.g., BW→Body, LB→Blood).
+- **`backend/services/analysis/unified_findings.py:48`** — Hardcoded list of relevant XPT domains: `["dm", "tx", "lb", "bw", "om", "mi", "ma", "cl"]`.
+- **Production change:** Make domain-organ mappings configurable. Consider SEND controlled terminology for domain discovery.
+
+### Summary: What's Real vs. Demo
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Statistical analysis pipeline (generator/) | **Real** | Computes actual statistics from XPT data |
+| Signal scoring & rule engine | **Real** | Rules R01-R16 derive from actual data patterns |
+| HTML report generator (frontend) | **Real** | Fetches live data, builds complete standalone report |
+| All 8 analysis views (UI) | **Real** | Fully interactive, data-driven UI components |
+| Context panels & insights synthesis | **Real** | Rule synthesis, organ grouping, tier classification |
+| ToxFinding / PathologyReview forms | **Real** | Functional forms, persist via API (storage is file-based) |
+| Annotation API contract | **Real** | GET/PUT endpoints, 4 schema types — only storage backend needs changing |
+| React Query data hooks | **Real** | All hooks are production-ready, no mocking |
+| Landing page demo studies | **Demo** | 4 fake entries, remove entirely |
+| Validation rules & records | **Demo** | 8 hardcoded rules, 40+ fake records — replace with validation engine API |
+| Import section | **Stub** | Non-functional UI, all controls disabled |
+| Export (CSV/Excel) | **Stub** | alert() placeholder |
+| Share / Re-validate / Delete | **Stub** | Disabled menu items, no implementation |
+| Authentication | **Missing** | No auth anywhere, hardcoded "User" identity |
+| Database storage | **Missing** | Annotations use JSON files on disk |
+| Multi-study support | **Blocked** | ALLOWED_STUDIES restricts to PointCross |
 
 ---
 

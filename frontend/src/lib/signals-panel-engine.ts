@@ -51,6 +51,7 @@ export interface OrganBlock {
   organ: string;
   organKey: string;
   domains: string[];
+  evidenceScore: number;
   headline: PanelStatement;
   evidenceLines: PanelStatement[];
   doseResponse: {
@@ -426,7 +427,7 @@ function deriveSynthesisPromotions(
 // Compound merge + section assignment
 // ---------------------------------------------------------------------------
 
-function buildOrganBlocks(rules: DerivedRule[]): OrganBlock[] {
+function buildOrganBlocks(rules: DerivedRule[], targetOrgans: TargetOrganRow[]): OrganBlock[] {
   // Group by organ_system
   const organMap = new Map<string, {
     headline: DerivedRule | null;
@@ -456,10 +457,12 @@ function buildOrganBlocks(rules: DerivedRule[]): OrganBlock[] {
   const blocks: OrganBlock[] = [];
   for (const [key, data] of organMap) {
     if (!data.headline) continue;
+    const target = targetOrgans.find((t) => t.organ_system === key);
     blocks.push({
       organ: organName(key),
       organKey: key,
       domains: data.headline.domains ?? [],
+      evidenceScore: target?.evidence_score ?? 0,
       headline: {
         id: data.headline.id,
         priority: data.headline.priority,
@@ -484,8 +487,8 @@ function buildOrganBlocks(rules: DerivedRule[]): OrganBlock[] {
     });
   }
 
-  // Sort by evidence score (priority of headline desc)
-  blocks.sort((a, b) => b.headline.priority - a.headline.priority);
+  // Sort by evidence score descending
+  blocks.sort((a, b) => b.evidenceScore - a.evidenceScore);
   return blocks;
 }
 
@@ -588,7 +591,7 @@ export function buildSignalsPanelData(
     .sort((a, b) => b.priority - a.priority);
 
   // Build organ blocks from organ-scope rules (merging headline + evidence + dose-response)
-  const organBlocks = buildOrganBlocks(allRules);
+  const organBlocks = buildOrganBlocks(allRules, targetOrgans);
 
   // Modifiers
   const modifiers = statements
