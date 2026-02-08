@@ -479,7 +479,7 @@ function OrganPanel({
               onClick={() =>
                 navigate(
                   `/studies/${encodeURIComponent(studyId)}/target-organs`,
-                  { state: { organ_system: organSelection } }
+                  { state: { organ_system: organSystem } }
                 )
               }
             >
@@ -490,7 +490,7 @@ function OrganPanel({
               onClick={() =>
                 navigate(
                   `/studies/${encodeURIComponent(studyId)}/histopathology`,
-                  { state: { organ_system: organSelection } }
+                  { state: { organ_system: organSystem } }
                 )
               }
             >
@@ -501,7 +501,7 @@ function OrganPanel({
               onClick={() =>
                 navigate(
                   `/studies/${encodeURIComponent(studyId)}/dose-response`,
-                  { state: { organ_system: organSelection } }
+                  { state: { organ_system: organSystem } }
                 )
               }
             >
