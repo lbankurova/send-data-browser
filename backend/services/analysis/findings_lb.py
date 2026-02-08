@@ -74,6 +74,7 @@ def compute_lb_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
                 dose_groups_values.append(np.array([]))
                 continue
 
+            # 4-decimal precision: LB values from analytical instruments (chemistry analyzers)
             group_stats.append({
                 "dose_level": int(dose_level),
                 "n": int(len(vals)),
@@ -155,6 +156,7 @@ def compute_lb_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
             "direction": direction,
             "max_effect_size": max_d,
             "min_p_adj": min_p,
+            "raw_values": dose_groups_values,
         })
 
     return findings

@@ -85,11 +85,38 @@ def check_variable_format(
                     diagnosis=f"Variable name '{cn}' contains non-uppercase characters.",
                 ))
 
-            # Check findings domain prefix
+            # Check findings domain prefix: non-standard vars must start with 2-char domain code
             if dc in FINDINGS_DOMAINS and len(cn) > 2:
                 expected_prefix = dc[:2]
                 if not cn.startswith(expected_prefix) and cn not in STANDARD_VARS:
-                    # Only flag if it doesn't match any known pattern
-                    pass  # Many valid exceptions exist; skip this for now
+                    # Check against SENDIG metadata for known variables
+                    domain_vars = _get_domain_variables(metadata, dc)
+                    if cn not in domain_vars:
+                        results.append(AffectedRecordResult(
+                            issue_id="",
+                            rule_id=f"{rule_id_prefix}-{dc}",
+                            subject_id="--",
+                            visit="--",
+                            domain=dc,
+                            variable=cn,
+                            actual_value=cn,
+                            expected_value=f"{expected_prefix}* prefix",
+                            fix_tier=1,
+                            auto_fixed=False,
+                            evidence={
+                                "type": "value-correction",
+                                "from": cn,
+                                "to": f"{expected_prefix}{cn[2:] if len(cn) > 2 else cn}",
+                            },
+                            diagnosis=f"Variable '{cn}' in findings domain {dc} does not use the expected '{expected_prefix}' prefix and is not a standard SENDIG variable.",
+                        ))
 
     return results
+
+
+def _get_domain_variables(metadata: dict, domain_code: str) -> set[str]:
+    """Get valid variable names for a domain from SENDIG metadata."""
+    domains = metadata.get("domains", {})
+    domain_def = domains.get(domain_code, {})
+    variables = domain_def.get("variables", {})
+    return {v.upper() for v in variables}

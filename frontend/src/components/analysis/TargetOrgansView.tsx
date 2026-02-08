@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -39,6 +39,7 @@ export function TargetOrgansView({
   onSelectionChange?: (sel: OrganSelection | null) => void;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
+  const location = useLocation();
   const { data: organData, isLoading: organLoading, error: organError } = useTargetOrganSummary(studyId);
   const { data: evidenceData, isLoading: evidLoading, error: evidError } = useOrganEvidenceDetail(studyId);
 
@@ -47,6 +48,15 @@ export function TargetOrgansView({
   const [domainFilter, setDomainFilter] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedRow, setSelectedRow] = useState<OrganSelection | null>(null);
+
+  // Apply cross-view state from navigate()
+  useEffect(() => {
+    const state = location.state as { organ_system?: string } | null;
+    if (state?.organ_system && organData) {
+      setSelectedOrgan(state.organ_system);
+      window.history.replaceState({}, "");
+    }
+  }, [location.state, organData]);
 
   // Sorted organs by evidence score
   const sortedOrgans = useMemo(() => {

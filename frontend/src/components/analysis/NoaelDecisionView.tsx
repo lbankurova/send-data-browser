@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -49,6 +49,7 @@ export function NoaelDecisionView({
   onSelectionChange?: (sel: NoaelSelection | null) => void;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
+  const location = useLocation();
   const { data: noaelData, isLoading: noaelLoading, error: noaelError } = useNoaelSummary(studyId);
   const { data: aeData, isLoading: aeLoading, error: aeError } = useAdverseEffectSummary(studyId);
 
@@ -60,6 +61,15 @@ export function NoaelDecisionView({
   });
   const [selection, setSelection] = useState<NoaelSelection | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
+
+  // Apply cross-view state from navigate()
+  useEffect(() => {
+    const state = location.state as { organ_system?: string } | null;
+    if (state?.organ_system && aeData) {
+      setFilters((f) => ({ ...f, organ_system: state.organ_system ?? null }));
+      window.history.replaceState({}, "");
+    }
+  }, [location.state, aeData]);
 
   // Unique filter values
   const organSystems = useMemo(() => {
@@ -497,6 +507,21 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
                   <span className="text-muted-foreground">Adverse at LOAEL</span>
                   <span className="font-medium">{r.n_adverse_at_loael}</span>
                 </div>
+                {r.noael_confidence != null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Confidence</span>
+                    <span
+                      className={cn(
+                        "font-medium",
+                        r.noael_confidence >= 0.8 ? "text-green-700" :
+                        r.noael_confidence >= 0.6 ? "text-yellow-700" :
+                        "text-red-700"
+                      )}
+                    >
+                      {Math.round(r.noael_confidence * 100)}%
+                    </span>
+                  </div>
+                )}
                 {r.adverse_domains_at_loael.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
                     {r.adverse_domains_at_loael.map((d) => {
