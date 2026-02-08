@@ -8,6 +8,8 @@ SEND Data Browser — a web app for exploring pre-clinical regulatory study data
 
 **Design spec:** `C:\pg\pcc-design\send-browser-prototype-prompt.md` — master build prompt with 5-step plan. Detailed specs in `send-browser-spec-p1,2.md` (§7: views), `send-browser-spec-p3.md` (§9-§12: schemas, rules, context panels, charts), `send-browser-spec-p4.md` (§13-§14: annotations, NOAEL config).
 
+**Validation engine build prompt:** `C:\pg\pcc-design\validation-engine-build-prompt.md` — instructions for building a real SEND validation engine to replace the hardcoded validation rules/records. Covers backend engine (Python + YAML rules + SENDIG metadata), API endpoints, and frontend hook swap. 18 rules across 3 phases, annotation-only fix scripts.
+
 ## Development Commands
 
 ### Backend (FastAPI + Python)
@@ -338,7 +340,7 @@ These are fake data entries that must be removed entirely.
 - **`ValidationView.tsx:185-241`** — `AFFECTED_RECORDS`: 40+ fake affected records with fabricated subject IDs, visit names, domain variables, actual/expected values, fix tiers, and evidence objects.
 - **`ValidationView.tsx:245-274`** — `FIX_SCRIPTS`: 3 mock fix scripts with `mockPreview` arrays showing simulated before/after transformations.
 - **`frontend/src/components/analysis/panes/ValidationContextPanel.tsx:399-425`** — FixScriptDialog renders `mockPreview` as a table (Subject, Field, From, To).
-- **Production change:** Replace all hardcoded arrays with API calls to Datagrok's SEND validation engine. The UI structure (rules table, affected records, fix tiers, script dialog) is reusable — only the data source changes.
+- **Production change:** Replace all hardcoded arrays with API calls to a real SEND validation engine. The UI structure (rules table, affected records, fix tiers, script dialog) is reusable — only the data source changes. **Build prompt:** `C:\pg\pcc-design\validation-engine-build-prompt.md` has full instructions for building the engine, API endpoints, and frontend hook swap.
 
 ### Priority 3 — Stub Features (Implement or Remove)
 
