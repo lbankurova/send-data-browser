@@ -52,11 +52,11 @@ export function StudySummaryContextPanel({
     return (
       <div className="p-4 text-xs text-muted-foreground">
         <p className="mb-2">
-          Click an organ group or signal cell to see insights.
+          Click an organ or signal to see insights.
         </p>
         <p className="text-muted-foreground/60">
-          Tip: Click a finding in the Key Findings banner to see organ-level
-          detail, or select a cell in the heatmap for endpoint statistics.
+          Tip: Click an organ name in Findings view for organ-level detail,
+          or select a heatmap cell for endpoint statistics.
         </p>
       </div>
     );
