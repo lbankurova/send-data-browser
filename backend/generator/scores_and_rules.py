@@ -3,7 +3,10 @@
 Evaluates 16 canonical rules and emits structured rule results.
 """
 
+import logging
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 
 RULES = [
@@ -68,6 +71,11 @@ RULES = [
     {"id": "R16", "scope": "organ", "severity": "info",
      "condition": "correlated_findings",
      "template": "Correlated findings in {organ_system}: {endpoint_labels} suggest convergent toxicity."},
+
+    # Mortality rule
+    {"id": "R17", "scope": "study", "severity": "critical",
+     "condition": "mortality_signal",
+     "template": "Mortality observed: {count} deaths in {sex} with dose-dependent pattern."},
 ]
 
 
@@ -164,6 +172,16 @@ def evaluate_rules(
         else:
             results.append(_emit_study(RULES[14], {"sex": sex}))
 
+    # R17: Mortality signal (DS domain)
+    for finding in findings:
+        if finding.get("domain") == "DS" and finding.get("test_code") == "MORTALITY":
+            count = finding.get("mortality_count", 0)
+            if count > 0:
+                results.append(_emit_study(RULES[16], {
+                    "sex": finding.get("sex", ""),
+                    "count": count,
+                }))
+
     return results
 
 
@@ -190,7 +208,8 @@ def _emit(rule: dict, ctx: dict, finding: dict) -> dict:
     """Emit a rule result for an endpoint-scoped rule."""
     try:
         text = rule["template"].format(**ctx)
-    except (KeyError, ValueError):
+    except (KeyError, ValueError) as e:
+        logger.warning("Template error in rule %s: %s", rule["id"], e)
         text = rule["template"]
 
     return {
@@ -210,7 +229,8 @@ def _emit_organ(rule: dict, ctx: dict) -> dict:
     """Emit a rule result for an organ-scoped rule."""
     try:
         text = rule["template"].format(**ctx)
-    except (KeyError, ValueError):
+    except (KeyError, ValueError) as e:
+        logger.warning("Template error in rule %s: %s", rule["id"], e)
         text = rule["template"]
 
     return {
@@ -228,7 +248,8 @@ def _emit_study(rule: dict, ctx: dict) -> dict:
     """Emit a rule result for a study-scoped rule."""
     try:
         text = rule["template"].format(**ctx)
-    except (KeyError, ValueError):
+    except (KeyError, ValueError) as e:
+        logger.warning("Template error in rule %s: %s", rule["id"], e)
         text = rule["template"]
 
     return {

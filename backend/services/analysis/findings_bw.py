@@ -75,6 +75,7 @@ def compute_bw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
                 dose_groups_values.append(np.array([]))
                 continue
 
+            # 2-decimal precision: BW from balance measurement (grams)
             group_stats.append({
                 "dose_level": int(dose_level),
                 "n": int(len(vals)),
@@ -150,6 +151,7 @@ def compute_bw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
             "direction": direction,
             "max_effect_size": max_d,
             "min_p_adj": min_p,
+            "raw_values": dose_groups_values,
         })
 
     return findings

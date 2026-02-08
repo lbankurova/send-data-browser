@@ -14,8 +14,12 @@ export interface ValidationRecordReview {
   assignedTo: string;
   justification: string;
   comment: string;
-  reviewedBy: string;
-  reviewedDate: string;
+  pathologist: string;
+  reviewDate: string;
+  /** @deprecated Use pathologist */
+  reviewedBy?: string;
+  /** @deprecated Use reviewDate */
+  reviewedDate?: string;
 }
 
 export interface ToxFinding {

@@ -225,7 +225,8 @@ function EndpointPanel({
                     onClick={() => {
                       if (studyId) {
                         navigate(
-                          `/studies/${encodeURIComponent(studyId)}/dose-response`
+                          `/studies/${encodeURIComponent(studyId)}/dose-response`,
+                          { state: { endpoint_label: f.endpoint_label, organ_system: f.organ_system } }
                         );
                       }
                     }}
@@ -386,7 +387,8 @@ function OrganPanel({
                   onClick={() => {
                     if (studyId) {
                       navigate(
-                        `/studies/${encodeURIComponent(studyId)}/target-organs`
+                        `/studies/${encodeURIComponent(studyId)}/target-organs`,
+                        { state: { organ_system: ep.organ_system } }
                       );
                     }
                   }}
@@ -476,7 +478,8 @@ function OrganPanel({
               className="block w-full text-left text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
               onClick={() =>
                 navigate(
-                  `/studies/${encodeURIComponent(studyId)}/target-organs`
+                  `/studies/${encodeURIComponent(studyId)}/target-organs`,
+                  { state: { organ_system: organSelection } }
                 )
               }
             >
@@ -486,7 +489,8 @@ function OrganPanel({
               className="block w-full text-left text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
               onClick={() =>
                 navigate(
-                  `/studies/${encodeURIComponent(studyId)}/histopathology`
+                  `/studies/${encodeURIComponent(studyId)}/histopathology`,
+                  { state: { organ_system: organSelection } }
                 )
               }
             >
@@ -496,7 +500,8 @@ function OrganPanel({
               className="block w-full text-left text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
               onClick={() =>
                 navigate(
-                  `/studies/${encodeURIComponent(studyId)}/dose-response`
+                  `/studies/${encodeURIComponent(studyId)}/dose-response`,
+                  { state: { organ_system: organSelection } }
                 )
               }
             >

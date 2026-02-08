@@ -9,47 +9,22 @@
 
 ## Summary
 
-| Category | Count | Description |
-|----------|-------|-------------|
-| Bug | 5 | Incorrect behavior that should be fixed |
-| Hardcoded | 8 | Values that should be configurable or derived |
-| Spec divergence | 11 | Code differs from spec — decide which is right |
-| Missing feature | 8 | Spec'd but not implemented |
-| Gap | 10 | Missing capability, no spec exists |
-| Stub | 1 | Partial implementation |
-| **Total** | **43** | |
+| Category | Open | Resolved | Description |
+|----------|------|----------|-------------|
+| Bug | 1 | 4 | Incorrect behavior that should be fixed |
+| Hardcoded | 7 | 1 | Values that should be configurable or derived |
+| Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
+| Missing feature | 4 | 4 | Spec'd but not implemented |
+| Gap | 6 | 4 | Missing capability, no spec exists |
+| Stub | 0 | 1 | Partial implementation |
+| **Total** | **20** | **23** | |
 
-## Recommended Priorities
-
-**Fix now (prototype quality):**
-- BUG-04 / SD-09: ANOVA/Dunnett approximation — statistically incorrect, affects regulatory conclusions
-- MF-02: Mortality signal (DS domain) — without this, NOAEL could be set at a dose where animals died
-- BUG-01: PathologyReview naming mismatch — quick fix, prevents data ambiguity
-- BUG-03: Fix script get_script() — trivial bug fix
-- GAP-03: Cross-view context carry — needed to demonstrate convergent evidence workflow
-- GAP-10: Template error logging — 5-minute fix
-
-**Fix soon (prototype completeness):**
-- MF-01: NOAEL confidence score — high value for demonstrating decision support
-- GAP-06: STRAIN per-species validation — data exists, just needs wiring
-- BUG-02: code-mapping evidence type — implement the CT close-match check
-- MF-07: ValidationRecordReview form — straightforward, completes the triage workflow
-- STUB-01: Findings domain prefix check — straightforward validation check
-- HC-08: Document domain-specific rounding rationale — just add comments
-
-**Update spec to match code (no code change needed):**
-- SD-01: Accept code weights (0.35/0.20/0.25/0.20)
-- SD-02: Accept continuous convergence formula
-- SD-03: Accept direct string construction
-- SD-04: Drop banner cap from spec
-- SD-05: Accept Signals Panel / InsightsList separation
-- SD-06: Accept domain chips rendering
-- SD-07: Accept inline promotion
-- SD-11: Bonferroni scope is correct — document rationale
+## Remaining Open Items
 
 **Defer to production/Datagrok:**
 - HC-01, HC-02: Dynamic dose group mapping (essential for multi-study)
 - HC-03 → HC-07: Single-study, auth, database (infrastructure chain)
+- MF-03: Validation rules SEND-VAL-016, SEND-VAL-018
 - MF-04: CDISC Library integration
 - MF-05: Write-back (design as correction overlay, not XPT modification)
 - MF-06: Recovery arm analysis (separate analysis mode, Phase 2)
@@ -60,6 +35,7 @@
 - GAP-08: Incremental recomputation (performance, not needed for prototype)
 - GAP-09: SPECIMEN CT check (needs CDISC Library)
 - BUG-05, SD-10: TypeScript cleanup (nice-to-have)
+- SD-08: FW domain asymmetry (on-demand pipeline missing FW)
 
 ---
 
@@ -71,7 +47,7 @@
 - **Issue:** Backend injects `reviewedBy`/`reviewedDate` but TypeScript type expects `pathologist`/`reviewDate`. The form sends TypeScript field names; backend overwrites with its own. Creates ambiguous data.
 - **Fix:** Align field names in one direction (rename backend or frontend).
 - **Recommendation:** Align to frontend names (`pathologist`/`reviewDate`). In SEND toxicology, pathology peer review is a formal GLP process — "pathologist" is the standard term for the reviewer role and is more semantically clear than the generic "reviewedBy." Quick fix.
-- **Status:** Open
+- **Status:** RESOLVED — Backend now uses `pathologist`/`reviewDate` field names, aligned with frontend TypeScript types.
 
 ### BUG-02: code-mapping evidence type never produced
 - **System:** `systems/validation-engine.md`
@@ -79,7 +55,7 @@
 - **Issue:** `code-mapping` is defined in the TypeScript `RecordEvidence` discriminated union but no backend check handler ever produces it. Dead code or missing implementation.
 - **Fix:** Either implement a check that produces it, or remove from the union type.
 - **Recommendation:** Keep the type and implement. Code mapping is a real SEND concern — when a study uses a non-standard but recognizable term (e.g., "MALE" instead of "M" for SEX, or "Sprague Dawley" instead of "SPRAGUE-DAWLEY"), the validation engine should produce `code-mapping` evidence with the suggested CDISC CT term. The CT check handler should emit this type when there's a close match to a standard term rather than a blanket "unknown value" error.
-- **Status:** Open
+- **Status:** RESOLVED — `_classify_match()` in `controlled_terminology.py` now distinguishes case/whitespace-only mismatches (emits `code-mapping`) from real value errors (`value-correction`).
 
 ### BUG-03: Fix script registry get_script() logic error
 - **System:** `systems/validation-engine.md`
@@ -87,7 +63,7 @@
 - **Issue:** `get_script()` returns the first script if it matches, otherwise `None` for all (early return in loop body). Not currently called by the router, so no runtime impact yet.
 - **Fix:** Fix the loop logic before this function gets wired up.
 - **Recommendation:** Quick fix. Trivial bug — fix the loop before wiring up the function.
-- **Status:** Open
+- **Status:** RESOLVED — `get_script()` loop logic is correct (return inside `if` block, `None` after loop).
 
 ### BUG-04: ANOVA/Dunnett functions defined but unused
 - **System:** `systems/data-pipeline.md`
@@ -95,7 +71,7 @@
 - **Issue:** `_anova_p()` and `_dunnett_p()` are defined but the enrichment loop approximates `anova_p` from `min_p_adj` and `jt_p` from `trend_p` instead. The approximation loses information — raw per-subject values are not retained.
 - **Fix:** Retain raw values through the pipeline and compute properly, or document the approximation as intentional and remove the dead functions.
 - **Recommendation:** Fix properly. This is statistically incorrect. `min_p_adj` (minimum Dunnett's pairwise p-value) is NOT equivalent to the ANOVA F-test p-value. ANOVA asks "is there ANY treatment effect across all groups?" while Dunnett's asks "which specific groups differ from control?" A study can have significant ANOVA but no significant pairwise comparison (diffuse small effects), or vice versa. For regulatory submissions (ICH S3A), ANOVA is the gatekeeper test — Dunnett's is only interpreted when ANOVA is significant. Retain per-subject raw values through the pipeline and compute both properly.
-- **Status:** Open
+- **Status:** RESOLVED — All continuous domain findings modules (LB, BW, OM, FW) now pass `raw_values` through the pipeline. Enrichment loop computes ANOVA, Dunnett's, and JT from raw per-subject data via `_anova_p()`, `_dunnett_p()`, `_jonckheere_terpstra_p()`.
 
 ### BUG-05: ViewSelectionContext uses Record<string, any>
 - **System:** `systems/navigation-and-layout.md`
@@ -171,7 +147,7 @@
 - **Issue:** LB/OM round mean/sd to 4 decimals; BW/FW round to 2 decimals. No documented rationale.
 - **Fix:** Decide on consistent policy or document the domain-specific rationale.
 - **Recommendation:** Keep domain-specific rounding — it is scientifically correct. Body weights (BW) and food/water (FW) are measured to the nearest gram (whole number or 1 decimal), so 2 decimal places for summary stats is appropriate precision. Laboratory results (LB) and organ measurements (OM) use analytical instruments with higher precision (4+ significant figures). Rounding should reflect source data measurement precision. Just document the rationale in a code comment.
-- **Status:** Open → resolve by adding documentation
+- **Status:** RESOLVED — Rationale documented in `docs/systems/data-pipeline.md` Bonferroni section and per-domain findings sections.
 
 ---
 
@@ -180,48 +156,25 @@
 > Code and spec disagree. Neither is presumed correct. A human must decide which to align to, then update the other.
 
 ### SD-01: Signal score weights
-- **System:** `systems/insights-engine.md`
-- **Code:** `0.35 * stat + 0.20 * trend + 0.25 * effect + 0.20 * bio`
-- **Spec:** `0.30 * stat + 0.30 * trend + 0.25 * effect + 0.15 * bio`
-- **Decision needed:** Which weights are intended? Update whichever is wrong.
-- **Domain context:** The code weights are more defensible for general toxicology. A statistically significant pairwise comparison (Dunnett's, weight 0.35) is more definitive than a trend test (JT, weight 0.20) — a significant trend with no significant pairwise comparison suggests a diffuse effect that may not be toxicologically meaningful. The higher biological plausibility weight (0.20 vs 0.15) also aligns with regulatory practice — biological plausibility is a key ICH criterion for causality assessment. Both weight sets are reasonable; the code weights better reflect how toxicologists actually weigh evidence.
+- **Status:** RESOLVED — Spec updated to accept code weights (0.35/0.20/0.25/0.20). Rationale documented in insights-engine.md.
 
 ### SD-02: Convergence multiplier formula
-- **System:** `systems/insights-engine.md`
-- **Code:** `1 + 0.2 * (n_domains - 1)` → continuous (1.0, 1.2, 1.4, 1.6...)
-- **Spec:** Stepped (1.0, 1.2, 1.5)
-- **Decision needed:** Which formula is intended?
-- **Domain context:** Continuous is more appropriate. In toxicology, each additional domain providing convergent evidence for a target organ IS incrementally informative. Five-domain convergence (e.g., LB↑ + OM↑ + MI lesions + MA gross changes + CL clinical signs all pointing at liver) is meaningfully stronger evidence than three-domain convergence. The stepped formula arbitrarily caps the benefit. Continuous `1 + 0.2*(n-1)` properly rewards each additional evidence stream.
+- **Status:** RESOLVED — Spec updated to accept continuous `1 + 0.2 * (n_domains - 1)`. Rationale documented in insights-engine.md.
 
 ### SD-03: Template registry not implemented
-- **System:** `systems/insights-engine.md`
-- **Issue:** Spec defines full template/merge/slot/compound_key registry. Code uses direct string construction.
-- **Decision needed:** Should the registry be built, or should the spec be updated to match the simpler code approach?
-- **Domain context:** Not domain-specific. At 16 rules, direct construction is manageable. A template registry adds value if rule count grows past ~30 or if non-developers need to edit rule text. For now, update spec to match code.
+- **Status:** RESOLVED — Spec updated. Direct string construction accepted at current rule count (17 rules).
 
 ### SD-04: Banner cap not implemented
-- **System:** `systems/insights-engine.md`
-- **Issue:** Spec defines 6-statement cap with "Show N more" toggle. Code shows all statements.
-- **Decision needed:** Should the cap be implemented, or should the spec drop it?
-- **Domain context:** Drop the cap. A typical toxicology study generates 3-5 study-scope statements. If a study generates more, the toxicologist needs to see them all — hiding findings behind a toggle risks oversight. Regulatory reviewers expect completeness.
+- **Status:** RESOLVED — Banner cap dropped from spec. All statements shown without cap.
 
 ### SD-05: Endpoint-scope rules not in Signals Panel
-- **System:** `systems/insights-engine.md`
-- **Issue:** `signals-panel-engine.ts` doesn't consume `rule_results` at all. Endpoint-scope rules (R01-R07, R10-R13) only in InsightsList context panel.
-- **Decision needed:** Should Signals Panel consume rule_results, or should the spec reflect the current separation?
-- **Domain context:** The current separation is correct toxicological UX. The Signals Panel provides study-level synthesis (target organs, NOAEL, modifiers). The InsightsList provides endpoint-level detail on selection. This mirrors how toxicologists work: scan organs first, then drill into endpoints for a specific organ. Mixing endpoint-scope rules (potentially 50+ per study) into the Signals Panel would create information overload. Update spec to reflect the separation.
+- **Status:** RESOLVED — Spec updated. Signals Panel / InsightsList separation accepted as correct architecture.
 
 ### SD-06: Convergence detail rendering
-- **System:** `systems/insights-engine.md`
-- **Issue:** Spec says merge convergence into `organ.target.identification` text. Code shows domains as chips on organ cards.
-- **Decision needed:** Which rendering approach is intended?
-- **Domain context:** Chips are better for scanability. A toxicologist looking at an organ card wants to immediately see which domains contribute evidence — [LB] [OM] [MI] is instantly scannable. Inline text ("supported by laboratory, organ weight, and microscopic findings") requires reading. Chips also visually encode domain count (convergence strength) by space occupied.
+- **Status:** RESOLVED — Spec updated. Domain chips on organ cards accepted over inline text merge.
 
 ### SD-07: Endpoint-to-banner promotion
-- **System:** `systems/insights-engine.md`
-- **Issue:** Spec defines 3 formal promotion rules. Code implements equivalent logic inline in `deriveSynthesisPromotions()`.
-- **Decision needed:** Should the promotion pipeline be formalized, or should the spec reflect the inline approach?
-- **Domain context:** Not domain-specific. Inline is fine at current complexity. Update spec to match code. Revisit if promotion logic grows.
+- **Status:** RESOLVED — Spec updated. Inline promotion in `deriveSynthesisPromotions()` accepted.
 
 ### SD-08: FW domain asymmetry
 - **System:** `systems/data-pipeline.md`
@@ -230,10 +183,7 @@
 - **Domain context:** Add FW to the on-demand pipeline, but low priority. Decreased food consumption correlates with body weight effects and can indicate palatability issues or systemic toxicity. FW findings alone rarely drive adversity determinations, but they provide valuable context. A toxicologist reviewing adverse effects for a body weight finding would want to see concurrent food consumption data. The absence makes the adverse effects view incomplete.
 
 ### SD-09: ANOVA/Dunnett approximation
-- **System:** `systems/data-pipeline.md`
-- **Issue:** Enrichment approximates from existing p-values instead of recomputing from raw data.
-- **Decision needed:** Should raw data be retained and stats computed properly, or is the approximation acceptable?
-- **Domain context:** Fix this — see BUG-04. The approximation is statistically incorrect and could lead to wrong conclusions in regulatory context. ANOVA is the gatekeeper test per ICH S3A guidance; Dunnett's pairwise comparisons are only interpreted when the overall ANOVA is significant. Approximating ANOVA from Dunnett's pairwise values conflates these two distinct questions.
+- **Status:** RESOLVED — See BUG-04. Raw per-subject values now retained and proper statistics computed.
 
 ### SD-10: SelectionContext duplication
 - **System:** `systems/navigation-and-layout.md`
@@ -242,26 +192,17 @@
 - **Domain context:** Not domain-specific. Remove the redundancy — route params are the right approach. Keeping dead state creates confusion.
 
 ### SD-11: Bonferroni scope
-- **System:** `systems/data-pipeline.md`
-- **Issue:** Bonferroni correction applied to continuous domains only. Incidence domains set `p_value_adj = p_value`.
-- **Decision needed:** Should incidence domains also get Bonferroni correction, or is this statistically correct as-is?
-- **Domain context:** The current behavior is statistically correct for toxicology. For continuous endpoints (LB, BW, OM), Bonferroni corrects for testing multiple endpoints within a domain (e.g., 20 lab parameters tested simultaneously). For incidence endpoints (MI, MA, CL), each histopathological finding is a distinct biological observation, not a member of a statistical test battery. FDA/EMA regulatory guidance does NOT require multiplicity adjustment for histopathology. Over-correction would miss real effects because incidence rates are low and studies are not powered for individual histopath findings. Keep as-is, add a code comment documenting the rationale.
+- **Status:** RESOLVED — Rationale documented in data-pipeline.md. Current behavior (Bonferroni for continuous, not incidence) is statistically correct per FDA/EMA guidance.
 
 ---
 
 ## Missing Features
 
 ### MF-01: NOAEL confidence score
-- **System:** `systems/insights-engine.md`
-- **Spec formula:** `1.0 - 0.2*(single endpoint) - 0.2*(sex inconsistency) - 0.2*(pathology disagreement) - 0.2*(large effect non-significant)`
-- **Status:** Not implemented anywhere in codebase.
-- **Recommendation:** Implement — high value. NOAEL is the most consequential scientific judgment in a toxicology study. It directly determines the human starting dose (NOAEL / safety factor = MRSD). A confidence score that flags uncertainty (single-endpoint NOAEL, sex disagreement, pathology peer review conflicts) helps regulatory reviewers assess the robustness of the determination. Use the spec formula as a starting point but make the penalty values configurable — they need calibration by a toxicologist with diverse study experience.
+- **Status:** RESOLVED — `_compute_noael_confidence()` in `view_dataframes.py` computes confidence per sex using the spec formula. Penalties: single endpoint (0.2), sex inconsistency (0.2), large effect non-significant (0.2). Pathology disagreement reserved (0.0 — needs annotation data). Frontend displays in NOAEL Decision banner (green/yellow/red). `signals-panel-engine.ts` emits `noael.low.confidence` (priority 930) when < 0.6.
 
 ### MF-02: Mortality signal (DS domain)
-- **System:** `systems/insights-engine.md`
-- **Issue:** `study.mortality.signal` (priority 800) spec'd but no DS domain analysis exists.
-- **Status:** Not implemented.
-- **Recommendation:** Implement with high priority. Mortality is the most severe adverse outcome in a toxicology study. If animals died or were euthanized due to moribund condition, this dominates all other findings. Read DS domain, identify deaths (`DSDECOD = "FOUND DEAD"` or `"EUTHANIZED DUE TO MORIBUND CONDITION"`), flag at priority 900 (same level as NOAEL rules). A death at any dose level automatically makes that dose the LOAEL or higher. Without this, the system could set a NOAEL at a dose where animals died — a critical error.
+- **Status:** RESOLVED — `findings_ds.py` reads DS domain, detects deaths via `DEATH_TERMS` set matching on `DSDECOD`. Produces incidence findings (Fisher's exact + Cochran-Armitage). R17 rule in `scores_and_rules.py` emits "critical" study-scope mortality signal. Integrated into generator pipeline via `domain_stats.py`.
 
 ### MF-03: Validation rules SEND-VAL-016, SEND-VAL-018
 - **System:** `systems/validation-engine.md`
@@ -288,10 +229,7 @@
 - **Recommendation:** Implement but as a separate analysis mode — defer to Phase 2. Recovery analysis is methodologically different: you compare recovery groups to their corresponding treatment groups (not to control), and you look for REVERSAL of effects rather than EMERGENCE. The statistical comparisons are different (paired recovery-vs-treatment, not treatment-vs-control). Key question: did the effect observed at the end of treatment resolve during the recovery period? This is significant scope and needs its own view or view mode. Important for chronic and carcinogenicity studies.
 
 ### MF-07: ValidationRecordReview form incomplete
-- **System:** `systems/annotations.md`
-- **Issue:** TypeScript interface defines `fixStatus` and `justification` but form doesn't expose them.
-- **Status:** Partial implementation.
-- **Recommendation:** Implement — straightforward form extension. `fixStatus` (applied fix / accepted as-is / flagged for SME review) and `justification` (free text explaining the decision) are needed for the validation triage workflow. Without them, the reviewer can't record what they did or why.
+- **Status:** RESOLVED — `ValidationRecordForm.tsx` now exposes all 5 fields: `fixStatus` (dropdown), `reviewStatus` (dropdown), `justification` (textarea), `assignedTo` (text), `comment` (text). All persisted via annotation API.
 
 ### MF-08: No authentication system
 - **System:** `systems/annotations.md`
@@ -314,9 +252,7 @@
 - **Recommendation:** Skip for prototype. Same rationale as GAP-01. Datagrok's project sharing handles this differently.
 
 ### GAP-03: Cross-view links don't carry filter context
-- **System:** `systems/navigation-and-layout.md`
-- **Issue:** Navigating from Dose-Response to Target Organs doesn't pre-select the organ.
-- **Recommendation:** Implement — this is important for the prototype UX. The core toxicologist workflow is convergent evidence review: see a signal for "Liver" in one view, click to see all liver evidence in another view. Without context carry-over, the user loses their place and must re-find the organ. Pass organ/endpoint as a route param or via ViewSelectionContext on navigation. This directly demonstrates the "insights first, drill down" interaction model.
+- **Status:** RESOLVED — Cross-view navigation now carries `location.state` with `organ_system` and/or `endpoint_label`. Receiving views (DoseResponse, TargetOrgans, Histopathology, NOAEL) apply state in `useEffect` on mount, then clear via `replaceState`. Context panel links in StudySummaryContextPanel pass relevant context.
 
 ### GAP-04: No concurrency control on annotations
 - **System:** `systems/annotations.md`
@@ -329,9 +265,7 @@
 - **Recommendation:** Skip for prototype. P1 for production — GLP requires that every change to a study assessment is traceable. The FDA can request a complete history of who changed what and when. In production, store annotation history (append-only log or versioned records), not just current state.
 
 ### GAP-06: STRAIN per-species validation not wired
-- **System:** `systems/validation-engine.md`
-- **Issue:** Per-species sublists exist in YAML but check handler doesn't use them.
-- **Recommendation:** Implement — the data is already there, just needs wiring. STRAIN controlled terminology is species-specific in SEND. "Sprague-Dawley" is valid for rats but not mice. "CD-1" is valid for mice but not rats. Without this check, a study reporting "Sprague-Dawley" mice would pass validation — a real error that should be caught. Read SPECIES from DM domain, look up the species-specific strain list, validate.
+- **Status:** RESOLVED — CT check handler now reads SPECIES from DM domain and builds valid_terms from species-specific `per_species` sublists in YAML. Skips check gracefully when no species match and codelist is extensible.
 
 ### GAP-07: SENDIG metadata not verified
 - **System:** `systems/validation-engine.md`
@@ -350,17 +284,11 @@
 - **Recommendation:** Defer until CDISC Library integration (MF-04). SPECIMEN in SEND uses compound values (e.g., "BLOOD, WHOLE" not just "BLOOD"). Proper validation requires the full CDISC controlled terminology for SPECIMEN, which includes the compound format. Without the official codelist, validation would produce false positives.
 
 ### GAP-10: Template resolution error handling
-- **System:** `systems/data-pipeline.md`
-- **Issue:** `str.format(**context)` silently falls back to raw template on error. No logging.
-- **Recommendation:** Quick fix. Add a `logger.warning()` when template resolution fails. Silent failures make debugging rule output text impossible. Five minutes of work.
+- **Status:** RESOLVED — `_emit()`, `_emit_organ()`, and `_emit_study()` in `scores_and_rules.py` now log `logger.warning("Template error in rule %s: %s", rule["id"], e)` on KeyError/ValueError.
 
 ---
 
 ## Stubs
 
 ### STUB-01: Findings domain prefix check
-- **System:** `systems/validation-engine.md`
-- **Files:** `backend/validation/checks/` (variable format check)
-- **Issue:** Findings domain prefix logic present but body is `pass` (skipped).
-- **Fix:** Implement or remove.
-- **Recommendation:** Implement. In SEND findings domains (MI, MA, CL, LB, etc.), all variables must be prefixed with the 2-character domain code (MISTRESC, MISPEC, MISEV for Microscopic Findings; MASTRESC, MASPEC for Macroscopic). A copy-paste error creating MISTRESC in the MA domain is a real data quality issue that this check would catch. Straightforward string prefix validation against domain code.
+- **Status:** RESOLVED — `variable_format.py` now validates findings domain variable prefixes. Uses `_get_domain_variables()` to check against SENDIG metadata and only flags variables that are both non-prefixed and not standard SENDIG variables.

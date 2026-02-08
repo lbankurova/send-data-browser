@@ -224,6 +224,19 @@ function deriveNoaelRules(
     });
   }
 
+  // Low-confidence caveat
+  if (combined.noael_confidence != null && combined.noael_confidence < 0.6) {
+    rules.push({
+      id: "noael.low.confidence",
+      priority: 930,
+      icon: "review-flag",
+      text: `NOAEL confidence is low (${Math.round(combined.noael_confidence * 100)}%). Review may be warranted — limited endpoints, sex inconsistency, or borderline significance.`,
+      organSystem: null,
+      clickEndpoint: null,
+      clickOrgan: null,
+    });
+  }
+
   return rules;
 }
 
