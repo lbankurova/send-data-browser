@@ -1039,7 +1039,7 @@ function ChartOverviewContent({
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 z-10">
+              <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/50">
                   <th className="px-2 py-1.5 text-left font-medium">Dose</th>
                   <th className="px-2 py-1.5 text-left font-medium">Sex</th>
@@ -1164,7 +1164,7 @@ function MetricsTableContent({
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
-          <thead className="sticky top-0 z-10">
+          <thead className="sticky top-0 z-10 bg-background">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b bg-muted/50">
                 {hg.headers.map((header) => (

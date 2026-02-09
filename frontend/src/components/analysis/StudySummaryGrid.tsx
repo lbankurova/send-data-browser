@@ -191,7 +191,7 @@ export function StudySummaryGrid({ data, selection, onSelect }: Props) {
   return (
     <div className="overflow-auto">
       <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
-        <thead>
+        <thead className="sticky top-0 z-10 bg-background">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} className="border-b bg-muted/50">
               {headerGroup.headers.map((header) => (

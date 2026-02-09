@@ -544,7 +544,7 @@ function EvidenceTableTab({
       {/* Table */}
       <div className="flex-1 overflow-auto">
         <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
-          <thead>
+          <thead className="sticky top-0 z-10 bg-background">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b bg-muted/50">
                 {hg.headers.map((header) => (
