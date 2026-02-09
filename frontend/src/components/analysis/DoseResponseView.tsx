@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { Loader2, ChevronDown, ChevronRight, Search } from "lucide-react";
 import {
@@ -249,8 +249,6 @@ export function DoseResponseView({
     organ_system: string | null;
   }>({ sex: null, data_type: null, organ_system: null });
   const [sorting, setSorting] = useState<SortingState>([]);
-
-  const railRef = useRef<HTMLDivElement>(null);
 
   // ── Derived data ──────────────────────────────────────
 
@@ -568,11 +566,10 @@ export function DoseResponseView({
   const totalEndpoints = endpointSummaries.length;
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full overflow-hidden max-[1200px]:flex-col">
       {/* ───── Endpoint Rail (left) ───── */}
       <div
-        ref={railRef}
-        className="flex w-[320px] shrink-0 flex-col border-r bg-muted/20"
+        className="flex w-[300px] shrink-0 flex-col border-r max-[1200px]:h-[180px] max-[1200px]:w-full max-[1200px]:border-b"
       >
         {/* Rail header */}
         <div className="shrink-0 border-b px-3 py-2">
@@ -692,7 +689,7 @@ export function DoseResponseView({
       </div>
 
       {/* ───── Evidence Panel (right) ───── */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Summary header */}
         {selectedSummary ? (
           <div className="shrink-0 border-b px-4 py-3">

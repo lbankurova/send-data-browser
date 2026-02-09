@@ -196,8 +196,8 @@ Two contributors working on the same subsystem without coordination produce merg
 - `components/analysis/StudySummaryView.tsx` — View 1: Study Summary (two tabs: Details + Signals; Signals tab has dual-mode center panel with persistent Decision Bar)
 - `components/analysis/SignalsPanel.tsx` — `FindingsView` component: full-width structured synthesis (study statements, Target Organs, Modifiers, Caveats)
 - `components/analysis/charts/OrganGroupedHeatmap.tsx` — organ-grouped collapsible signal matrix with cross-mode navigation support
-- `components/analysis/DoseResponseView.tsx` — View 2: Dose-Response (recharts charts, metrics grid)
-- `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (organ cards, evidence grid)
+- `components/analysis/DoseResponseView.tsx` — View 2: Dose-Response (two-panel: organ-grouped endpoint rail + evidence panel with chart/metrics tabs)
+- `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (two-panel: organ rail + evidence panel with overview/table tabs)
 - `components/analysis/HistopathologyView.tsx` — View 4: Histopathology (severity heatmap, lesion grid)
 - `components/analysis/NoaelDecisionView.tsx` — View 5: NOAEL & Decision (banner, adversity matrix, grid)
 - `components/analysis/panes/*ContextPanel.tsx` — context panels for each view
@@ -410,7 +410,7 @@ These are foundational changes that most other items depend on.
 #### P1.3 — Multi-Study Support
 - **`backend/config.py:15`** — `ALLOWED_STUDIES = {"PointCross"}` restricts the entire app to one study.
 - **`backend/services/study_discovery.py:37-38`** — Filter applied at startup: `if ALLOWED_STUDIES: studies = {k: v for k, v in studies.items() if k in ALLOWED_STUDIES}`.
-- **`frontend/src/components/panels/ContextPanel.tsx:436`** — Hardcoded check: `if (selectedStudyId !== "PointCross")` shows "This is a demo entry" message for any non-PointCross study.
+- **`frontend/src/components/panels/ContextPanel.tsx:433`** — Hardcoded check: `if (selectedStudyId !== "PointCross")` shows "This is a demo entry" message for any non-PointCross study.
 - **Production change:** Remove ALLOWED_STUDIES filter entirely. Remove PointCross guard in ContextPanel. Studies should come from Datagrok's study management system.
 
 ### Priority 2 — Hardcoded Demo Data (Remove)
@@ -441,7 +441,7 @@ These are UI elements that show but don't function.
 
 #### P3.2 — Export Functionality
 - **`AppLandingPage.tsx:124`** — `alert("CSV/Excel export coming soon.")` in context menu Export action.
-- **`ContextPanel.tsx:256`** — `alert("CSV/Excel export coming soon.")` in StudyInspector Export link.
+- **`ContextPanel.tsx:255`** — `alert("CSV/Excel export coming soon.")` in StudyInspector Export link.
 - **Production change:** Implement actual CSV/Excel export for study data, analysis results, and reports.
 
 #### P3.3 — Disabled Context Menu Actions

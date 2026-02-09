@@ -23,14 +23,17 @@ export function DoseResponseContextPanel({ ruleResults, selection, studyId: stud
   const studyId = studyIdProp ?? studyIdParam;
   const navigate = useNavigate();
 
-  // Rules for selected endpoint
+  // Rules for selected endpoint — filter by organ system + domain prefix
   const endpointRules = useMemo(() => {
     if (!selection) return [];
-    return ruleResults.filter(
-      (r) =>
-        r.context_key.includes(selection.domain ?? "") ||
-        r.output_text.toLowerCase().includes(selection.endpoint_label.toLowerCase().slice(0, 20))
-    );
+    const domainPrefix = selection.domain ? selection.domain + "_" : null;
+    return ruleResults.filter((r) => {
+      // Organ-level or study-level rules for this organ
+      if (selection.organ_system && r.organ_system === selection.organ_system) return true;
+      // Endpoint-scope rules in the same domain
+      if (domainPrefix && r.scope === "endpoint" && r.context_key.startsWith(domainPrefix)) return true;
+      return false;
+    });
   }, [ruleResults, selection]);
 
   if (!selection) {
