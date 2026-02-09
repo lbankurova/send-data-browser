@@ -47,7 +47,6 @@ interface NoaelSelection {
 interface OrganSummary {
   organ_system: string;
   adverseCount: number;
-  warningCount: number;
   totalEndpoints: number;
   trCount: number;
   maxEffectSize: number;
@@ -105,17 +104,14 @@ function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSummary[] {
   const summaries: OrganSummary[] = [];
   for (const [organ, entry] of map) {
     let adverseCount = 0;
-    let warningCount = 0;
     let trCount = 0;
     for (const ep of entry.endpoints.values()) {
       if (ep.severity === "adverse") adverseCount++;
-      else if (ep.severity === "warning") warningCount++;
       if (ep.tr) trCount++;
     }
     summaries.push({
       organ_system: organ,
       adverseCount,
-      warningCount,
       totalEndpoints: entry.endpoints.size,
       trCount,
       maxEffectSize: entry.maxEffect,
@@ -258,7 +254,7 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
                       className={cn(
                         "font-medium",
                         r.noael_confidence >= 0.8 ? "text-green-700" :
-                        r.noael_confidence >= 0.6 ? "text-yellow-700" :
+                        r.noael_confidence >= 0.6 ? "text-amber-700" :
                         "text-red-700"
                       )}
                     >
@@ -434,7 +430,7 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
         )}
       </div>
 
-      <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
         {summary.totalEndpoints} {summary.totalEndpoints === 1 ? "endpoint" : "endpoints"} across{" "}
         {summary.domains.length === 1 ? "1 domain" : `${summary.domains.length} domains`},{" "}
         {summary.adverseCount} adverse, {summary.trCount} treatment-related.
@@ -458,10 +454,6 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
           )}>
             {formatPValue(summary.minPValue)}
           </span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Endpoints: </span>
-          <span className="font-medium">{summary.totalEndpoints}</span>
         </div>
       </div>
     </div>
@@ -515,6 +507,7 @@ function OverviewTab({
           <div className="space-y-1">
             {endpointSummaries.map((ep) => {
               const isSelected = selection?.endpoint_label === ep.endpoint_label;
+              const domainColor = getDomainBadgeColor(ep.domain);
               return (
                 <button
                   key={ep.endpoint_label}
@@ -524,6 +517,9 @@ function OverviewTab({
                   )}
                   onClick={() => onEndpointClick(ep.endpoint_label)}
                 >
+                  <span className={cn("shrink-0 text-[9px] font-semibold", domainColor.text)}>
+                    {ep.domain}
+                  </span>
                   <span className="min-w-0 flex-1 truncate font-medium" title={ep.endpoint_label}>
                     {ep.endpoint_label.length > 35 ? ep.endpoint_label.slice(0, 35) + "\u2026" : ep.endpoint_label}
                   </span>
@@ -854,7 +850,7 @@ function AdversityMatrixTab({
                       const cell = matrixData.cells.get(`${ep}|${dl}`);
                       let bg = "#e5e7eb";
                       if (cell) {
-                        if (cell.severity === "adverse" && cell.treatment_related) bg = "#ef4444";
+                        if (cell.severity === "adverse" && cell.treatment_related) bg = "#DC2626";
                         else if (cell.severity === "warning") bg = "#fbbf24";
                         else bg = "#4ade80";
                       }
@@ -876,7 +872,7 @@ function AdversityMatrixTab({
             </div>
             <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
               {[
-                { label: "Adverse", color: "#ef4444" },
+                { label: "Adverse", color: "#DC2626" },
                 { label: "Warning", color: "#fbbf24" },
                 { label: "Normal", color: "#4ade80" },
                 { label: "N/A", color: "#e5e7eb" },
