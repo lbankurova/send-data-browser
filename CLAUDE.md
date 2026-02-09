@@ -173,6 +173,7 @@ Two contributors working on the same subsystem without coordination produce merg
 | `/studies/:studyId/target-organs` | TargetOrgansViewWrapper | Done |
 | `/studies/:studyId/histopathology` | HistopathologyViewWrapper | Done |
 | `/studies/:studyId/noael-decision` | NoaelDecisionViewWrapper | Done |
+| `/studies/:studyId/clinical-observations` | ClinicalObservationsViewWrapper | Done |
 | `/studies/:studyId/validation` | ValidationViewWrapper | Done |
 
 **Key frontend modules:**
@@ -192,7 +193,7 @@ Two contributors working on the same subsystem without coordination produce merg
 - `contexts/SelectionContext.tsx` — study selection state
 - `contexts/FindingSelectionContext.tsx` — adverse effects finding selection
 - `contexts/SignalSelectionContext.tsx` — study summary signal + organ selection (mutually exclusive)
-- `contexts/ViewSelectionContext.tsx` — shared selection state for Views 2-5 (NOAEL, Target Organs, Dose-Response, Histopathology)
+- `contexts/ViewSelectionContext.tsx` — shared selection state for Views 2-6 (NOAEL, Target Organs, Dose-Response, Histopathology, Clinical Observations)
 - `components/analysis/StudySummaryView.tsx` — View 1: Study Summary (two tabs: Details + Signals; Signals tab has dual-mode center panel with persistent Decision Bar)
 - `components/analysis/SignalsPanel.tsx` — Signals tab two-panel components: `SignalsOrganRail` (organ navigation), `SignalsEvidencePanel` (organ header + Overview/Matrix tabs), `StudyStatementsBar` (study-level statements)
 - `components/analysis/charts/OrganGroupedHeatmap.tsx` — organ-grouped collapsible signal matrix with `singleOrganMode` prop for organ-scoped rendering
@@ -200,6 +201,8 @@ Two contributors working on the same subsystem without coordination produce merg
 - `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (two-panel: organ rail with signal metrics + evidence panel with Evidence/Hypotheses/Metrics tabs, 5 organ-level tools)
 - `components/analysis/HistopathologyView.tsx` — View 4: Histopathology (two-panel: specimen rail + evidence panel with overview/severity matrix tabs)
 - `components/analysis/NoaelDecisionView.tsx` — View 5: NOAEL & Decision (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
+- `components/analysis/ClinicalObservationsView.tsx` — View 6: Clinical Observations (two-panel: observation rail sorted by frequency + evidence panel with sex-faceted bar chart and timeline table)
+- `hooks/useClinicalObservations.ts` — hook for CL timecourse data from temporal API
 - `components/analysis/panes/*ContextPanel.tsx` — context panels for each view
 - `components/analysis/panes/InsightsList.tsx` — organ-grouped signal synthesis with tiered insights (Critical/Notable/Observed)
 
@@ -403,7 +406,7 @@ These are foundational changes that most other items depend on.
 #### P1.3 — Multi-Study Support
 - **`backend/config.py:15`** — `ALLOWED_STUDIES = {"PointCross"}` restricts the entire app to one study.
 - **`backend/services/study_discovery.py:37-38`** — Filter applied at startup: `if ALLOWED_STUDIES: studies = {k: v for k, v in studies.items() if k in ALLOWED_STUDIES}`.
-- **`frontend/src/components/panels/ContextPanel.tsx:433`** — Hardcoded check: `if (selectedStudyId !== "PointCross")` shows "This is a demo entry" message for any non-PointCross study.
+- **`frontend/src/components/panels/ContextPanel.tsx:584`** — Hardcoded check: `if (selectedStudyId !== "PointCross")` shows "This is a demo entry" message for any non-PointCross study.
 - **Production change:** Remove ALLOWED_STUDIES filter entirely. Remove PointCross guard in ContextPanel. Studies should come from Datagrok's study management system.
 
 ### Priority 2 — Hardcoded Demo Data (Remove)
@@ -411,9 +414,9 @@ These are foundational changes that most other items depend on.
 These are fake data entries that must be removed entirely.
 
 #### P2.1 — Demo Studies on Landing Page
-- **`frontend/src/components/panels/AppLandingPage.tsx:25-86`** — `DEMO_STUDIES` array contains 4 hardcoded fake studies: DART-2024-0091, CARDIO-TX-1147, ONCO-MTD-3382, NEURO-PK-0256. Each has fabricated metadata (protocol, standard, subjects, dates, validation status).
-- **`AppLandingPage.tsx:100`** — `const isDemo = !!study.demo` guard used at lines 102, 109, 117, 126 to disable context menu actions for demo entries.
-- **`AppLandingPage.tsx:259`** — All real studies get hardcoded `validation: "Pass"` regardless of actual validation state.
+- **`frontend/src/components/panels/AppLandingPage.tsx:27-88`** — `DEMO_STUDIES` array contains 4 hardcoded fake studies: DART-2024-0091, CARDIO-TX-1147, ONCO-MTD-3382, NEURO-PK-0256. Each has fabricated metadata (protocol, standard, subjects, dates, validation status).
+- **`AppLandingPage.tsx:103`** — `const isDemo = !!study.demo` guard used at lines 105, 112, 120, 129, 143 to disable context menu actions for demo entries.
+- **`AppLandingPage.tsx:278`** — All real studies get hardcoded `validation: "Pass"` regardless of actual validation state.
 - **Production change:** Delete DEMO_STUDIES array and all `isDemo` logic. Validation status should come from actual validation results via API.
 
 #### P2.2 — Hardcoded Validation Rules & Records — RESOLVED
@@ -424,31 +427,32 @@ These are fake data entries that must be removed entirely.
 These are UI elements that show but don't function.
 
 #### P3.1 — Import Section
-- **`AppLandingPage.tsx:156-251`** — Entire `ImportSection` component is a non-functional stub:
+- **`AppLandingPage.tsx:172-266`** — Entire `ImportSection` component is a non-functional stub:
   - Drop zone doesn't accept drops
-  - Browse button shows `alert()` at line 182
+  - Browse button shows `alert()` at line 198
   - All metadata inputs (Study ID, Protocol, Description) are `disabled`
   - Checkboxes ("Validate SEND compliance", "Attempt automatic fixes") are `disabled` with hardcoded states
-  - Import button (line 240-246) is `disabled` with `cursor-not-allowed` and tooltip "Import not available in prototype"
+  - Import button (line 258-261) is `disabled` with `cursor-not-allowed` and tooltip "Import not available in prototype"
 - **Production change:** Replace with Datagrok's study import workflow, or implement real file upload → XPT parsing → study registration pipeline.
 
 #### P3.2 — Export Functionality
-- **`AppLandingPage.tsx:124`** — `alert("CSV/Excel export coming soon.")` in context menu Export action.
-- **`ContextPanel.tsx:255`** — `alert("CSV/Excel export coming soon.")` in StudyInspector Export link.
+- **`AppLandingPage.tsx:127`** — `alert("CSV/Excel export coming soon.")` in context menu Export action.
+- **`ContextPanel.tsx:228`** — `alert("CSV/Excel export coming soon.")` in StudyInspector Export link.
 - **Production change:** Implement actual CSV/Excel export for study data, analysis results, and reports.
 
 #### P3.3 — Disabled Context Menu Actions
-- **`AppLandingPage.tsx:128-129`** — "Share..." and "Re-validate SEND..." are always disabled (no implementation planned in prototype).
-- **`AppLandingPage.tsx:131`** — "Delete" is always disabled (no confirmation UX or delete logic).
-- **Production change:** Implement sharing, re-validation trigger, and study deletion with proper confirmation dialogs and backend support.
+- **`AppLandingPage.tsx:122`** — "Share..." is always disabled (no implementation planned in prototype).
+- **`AppLandingPage.tsx:145`** — "Delete" is always disabled (no confirmation UX or delete logic).
+- Note: "Re-validate SEND..." is functional for real studies (navigates to validation + fires POST /validate).
+- **Production change:** Implement sharing and study deletion with proper confirmation dialogs and backend support.
 
 #### P3.4 — Documentation Link
-- **`AppLandingPage.tsx:344`** — "Learn more" link calls `alert("Documentation is not available in this prototype.")`.
+- **`AppLandingPage.tsx:363`** — "Learn more" link calls `alert("Documentation is not available in this prototype.")`.
 - **Production change:** Link to actual product documentation.
 
 #### P3.5 — Feature Flags
 - **`frontend/src/lib/analysis-definitions.ts:8-15`** — `ANALYSIS_TYPES` array has `implemented` boolean flags. Only `adverse-effects` is `true`; `noael`, `target-organs`, `validation`, `sex-differences`, `reversibility` are `false`.
-- **`analysis-definitions.ts:23-30`** — `ANALYSIS_VIEWS` array also has `implemented` flags (most are `true` now).
+- **`analysis-definitions.ts:23-31`** — `ANALYSIS_VIEWS` array also has `implemented` flags (most are `true` now).
 - **`frontend/src/components/analysis/PlaceholderAnalysisView.tsx:1-39`** — Catch-all placeholder for unimplemented analysis types, shows "This analysis type is not yet implemented."
 - **Production change:** Remove `implemented` flags (all views should be implemented). Remove PlaceholderAnalysisView. Or keep as a gating mechanism if Datagrok has staged rollout.
 

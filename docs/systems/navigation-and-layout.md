@@ -89,6 +89,7 @@ Center panel components write to the appropriate context on user interaction (ro
 | `/studies/:studyId/target-organs` | `TargetOrgansViewWrapper` | View 3: organ cards + evidence grid | `ViewSelectionContext` (`_view: "target-organs"`) |
 | `/studies/:studyId/histopathology` | `HistopathologyViewWrapper` | View 4: severity heatmap + lesion grid | `ViewSelectionContext` (`_view: "histopathology"`) |
 | `/studies/:studyId/noael-decision` | `NoaelDecisionViewWrapper` | View 5: NOAEL banner + adversity matrix | `ViewSelectionContext` (`_view: "noael"`) |
+| `/studies/:studyId/clinical-observations` | `ClinicalObservationsViewWrapper` | View 6: CL domain timecourse bar charts | `ViewSelectionContext` (`_view: "clinical-observations"`) |
 | `/studies/:studyId/validation` | `ValidationViewWrapper` | Validation rules + affected records | `ViewSelectionContext` (`_view: "validation"`) |
 | `/studies/:studyId/analyses/:analysisType` | `PlaceholderAnalysisView` | Catch-all for unimplemented analysis types | None |
 
@@ -145,11 +146,12 @@ The `ContextPanel` component (`components/panels/ContextPanel.tsx`) uses route-b
 3. `/studies/:id/target-organs` -- renders `TargetOrgansContextPanelWrapper`
 4. `/studies/:id/dose-response` -- renders `DoseResponseContextPanelWrapper`
 5. `/studies/:id/histopathology` -- renders `HistopathologyContextPanelWrapper`
-6. `/studies/:id/validation` -- renders `ValidationContextPanelWrapper`
-7. `/studies/:id` (exact) -- renders `StudySummaryContextPanelWrapper` (reads `SignalSelectionContext`)
-8. No study selected -- renders "Select a study to view details."
-9. Non-PointCross study selected -- renders demo guard message
-10. PointCross selected (fallback) -- renders `StudyInspector` (study metadata, adverse findings summary, action links)
+6. `/studies/:id/clinical-observations` -- renders `ClinicalObsContextPanelWrapper` (reads `ViewSelectionContext`, filters for `_view === "clinical-observations"`, fetches CL timecourse data for statistics + dose relationship)
+7. `/studies/:id/validation` -- renders `ValidationContextPanelWrapper`
+8. `/studies/:id` (exact) -- renders `StudySummaryContextPanelWrapper` (reads `SignalSelectionContext`)
+9. No study selected -- renders "Select a study to view details."
+10. Non-PointCross study selected -- renders demo guard message
+11. PointCross selected (fallback) -- renders `StudyInspector` (study metadata, study health one-liner, review progress, action links)
 
 Each wrapper function reads the shared `ViewSelectionContext`, casts the selection to the view-specific shape (guarded by `_view` tag), fetches the required data via hooks, and passes both to the view-specific context panel component.
 
@@ -198,7 +200,7 @@ Left sidebar navigation tree. Structure:
 - **Home** node (depth 0) -- navigates to `/`
 - **Studies** section header (uppercase label)
   - **Study: {studyId}** node (depth 1) -- click navigates to `/studies/:studyId` and expands subtree
-    - Analysis view nodes (depth 2): Dose-response, Target organs, Histopathology, NOAEL & decision, Validation (from `ANALYSIS_VIEWS` array, excluding `study-summary`)
+    - Analysis view nodes (depth 2): Dose-response, Target organs, Histopathology, NOAEL & decision, Clinical observations, Validation (from `ANALYSIS_VIEWS` array, excluding `study-summary`)
     - Separator
     - **Domains** folder node (depth 2) -- toggle expands domain categories
       - Category nodes (depth 3): e.g., "Clinical observations (3)" -- toggle expands individual domains
@@ -218,7 +220,7 @@ Left sidebar navigation tree. Structure:
 
 Right sidebar inspector. Route-aware component that renders different content based on pathname. Contains:
 
-- **StudyInspector** (default for selected study): collapsible sections for Study Details (metadata from `useStudyMetadata`), Adverse Findings (summary from `useAESummary`), and Actions (links: Open study, Validation report, Generate report, Export).
+- **StudyInspector** (default for selected study): collapsible sections for Study Details (metadata from `useStudyMetadata`), Study Health (one-liner from `useAESummary`), Review Progress (annotation counts from `useAnnotations` + validation counts from `useValidationResults`), and Actions (links: Open study, Validation report, Generate report, Export).
 - **View-specific context panel wrappers**: Each fetches data via hooks, casts shared selection to typed shape, and delegates to the view's context panel component.
 - **Empty states**: "Select a study to view details" when no study is selected. Demo guard message for non-PointCross studies.
 

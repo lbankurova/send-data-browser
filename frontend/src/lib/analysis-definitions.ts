@@ -26,5 +26,6 @@ export const ANALYSIS_VIEWS: AnalysisView[] = [
   { key: "target-organs", label: "Target organs & systems", implemented: true },
   { key: "histopathology", label: "Histopathology review", implemented: true },
   { key: "noael-decision", label: "NOAEL & decision", implemented: true },
+  { key: "clinical-observations", label: "Clinical observations", implemented: true },
   { key: "validation", label: "Validation", implemented: true },
 ];
