@@ -61,7 +61,7 @@ Each `SpecimenRailItem` is a `<button>` with:
 
 **Row 2:** Severity bar — max avg_severity normalized to global max, colored with `getSeverityHeatColor(maxSev)` (not neutral gray). Bar: `h-1.5 flex-1 rounded-full bg-muted/50` with inner colored fill. Numeric value: `shrink-0 text-[10px]`, font-semibold for >=3, font-medium for >=2.
 
-**Row 3:** Stats line — `{N} findings · {M} adverse` + domain chips (outline style: `rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70`).
+**Row 3:** Stats line — `{N} findings · {M} adverse` + domain chips (outline+dot style matching other views: `rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70` with colored dot via `getDomainBadgeColor`).
 
 ### Sorting
 
@@ -175,7 +175,7 @@ TanStack React Table, `w-full text-xs`, client-side sorting. Scoped to selected 
 | Column | Header | Cell Rendering |
 |--------|--------|----------------|
 | finding | Finding | Truncated at 25 chars with ellipsis, `title` tooltip |
-| domain | Domain | Plain text |
+| domain | Domain | Colored badge via `getDomainBadgeColor` (`rounded px-1 py-0.5 text-[10px] font-semibold`) |
 | dose_level | Dose | `text-muted-foreground`, shows `dose_label.split(",")[0]` |
 | sex | Sex | Plain text |
 | n | N | Plain number |

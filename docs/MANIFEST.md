@@ -2,7 +2,7 @@
 
 > **Purpose:** Registry of all documentation assets with code dependencies for staleness detection.
 > **How to use:** After any commit, check which code files changed. Look up those files in the "Depends on" column. Any matching asset needs review.
-> **Last full audit:** 2026-02-08
+> **Last full audit:** 2026-02-09
 
 ---
 
@@ -10,24 +10,24 @@
 
 | Asset | Depends on (code files) | Last validated | Status |
 |-------|------------------------|----------------|--------|
-| `systems/insights-engine.md` | `frontend/src/lib/signals-panel-engine.ts`, `frontend/src/lib/rule-synthesis.ts`, `frontend/src/components/analysis/panes/InsightsList.tsx`, `frontend/src/components/analysis/SignalsPanel.tsx`, `backend/generator/scores_and_rules.py`, `backend/generator/view_dataframes.py` | 2026-02-08 | Current — updated for template prefix removal |
+| `systems/insights-engine.md` | `frontend/src/lib/signals-panel-engine.ts`, `frontend/src/lib/rule-synthesis.ts`, `frontend/src/components/analysis/panes/InsightsList.tsx`, `frontend/src/components/analysis/SignalsPanel.tsx`, `backend/generator/scores_and_rules.py`, `backend/generator/view_dataframes.py` | 2026-02-09 | STALE — missing `computeTierCounts`, `SynthEndpoint` exports and `tierFilter` prop on InsightsList |
 | `systems/validation-engine.md` | `backend/validation/engine.py`, `backend/validation/models.py`, `backend/validation/rules/*.yaml`, `backend/validation/checks/*.py`, `backend/validation/scripts/registry.py`, `backend/routers/validation.py`, `frontend/src/hooks/useValidationResults.ts`, `frontend/src/hooks/useAffectedRecords.ts`, `frontend/src/components/analysis/ValidationView.tsx` | 2026-02-08 | Current — updated for STUB-01, GAP-06, BUG-02 |
 | `systems/data-pipeline.md` | `backend/generator/generate.py`, `backend/generator/domain_stats.py`, `backend/generator/view_dataframes.py`, `backend/generator/scores_and_rules.py`, `backend/generator/organ_map.py`, `backend/services/xpt_processor.py`, `backend/services/analysis/*.py` | 2026-02-08 | Current — updated for BUG-04/SD-09, SD-11, DS domain |
-| `systems/navigation-and-layout.md` | `frontend/src/App.tsx`, `frontend/src/components/panels/BrowsingTree.tsx`, `frontend/src/components/panels/ContextPanel.tsx`, `frontend/src/components/panels/Layout.tsx`, `frontend/src/contexts/*.tsx`, `frontend/src/components/analysis/*View.tsx` | 2026-02-08 | Current — updated for GAP-03 |
+| `systems/navigation-and-layout.md` | `frontend/src/App.tsx`, `frontend/src/components/panels/BrowsingTree.tsx`, `frontend/src/components/panels/ContextPanel.tsx`, `frontend/src/components/panels/Layout.tsx`, `frontend/src/contexts/*.tsx`, `frontend/src/components/analysis/*View.tsx`, `frontend/src/hooks/useResizePanel.ts`, `frontend/src/components/ui/PanelResizeHandle.tsx` | 2026-02-09 | STALE — missing resizable panel system (useResizePanel, PanelResizeHandle) used by Views 2-5 |
 | `systems/annotations.md` | `backend/routers/annotations.py`, `frontend/src/hooks/useAnnotations.ts`, `frontend/src/hooks/useSaveAnnotation.ts`, `frontend/src/components/analysis/panes/ValidationRecordForm.tsx` | 2026-02-08 | Current — updated for BUG-01, MF-07 |
 
 ## View Specs
 
 | Asset | Depends on (code files) | Last validated | Status |
 |-------|------------------------|----------------|--------|
-| `views/study-summary.md` | `frontend/src/components/analysis/StudySummaryView.tsx`, `frontend/src/components/analysis/SignalsPanel.tsx`, `frontend/src/components/analysis/charts/OrganGroupedHeatmap.tsx`, `frontend/src/components/analysis/panes/StudySummaryContextPanel.tsx` | 2026-02-08 | Current — rewritten for two-panel master-detail Signals tab |
-| `views/dose-response.md` | `frontend/src/components/analysis/DoseResponseView.tsx`, `frontend/src/components/analysis/panes/DoseResponseContextPanel.tsx`, `frontend/src/hooks/useDoseResponseMetrics.ts` | 2026-02-08 | Current — rewritten for two-panel organ-grouped endpoint explorer |
-| `views/target-organs.md` | `frontend/src/components/analysis/TargetOrgansView.tsx`, `frontend/src/components/analysis/panes/TargetOrgansContextPanel.tsx`, `frontend/src/hooks/useTargetOrganSummary.ts` | 2026-02-08 | STALE — evidence bar neutralized, domain chips restyled to outline+dot |
-| `views/histopathology.md` | `frontend/src/components/analysis/HistopathologyView.tsx`, `frontend/src/components/analysis/panes/HistopathologyContextPanel.tsx`, `frontend/src/hooks/useLesionSeveritySummary.ts`, `frontend/src/hooks/useRuleResults.ts` | 2026-02-08 | Current — rewritten for two-panel master-detail layout |
-| `views/noael-decision.md` | `frontend/src/components/analysis/NoaelDecisionView.tsx`, `frontend/src/components/analysis/panes/NoaelDecisionContextPanel.tsx`, `frontend/src/hooks/useNoaelSummary.ts`, `frontend/src/hooks/useAdverseEffectSummary.ts`, `frontend/src/hooks/useRuleResults.ts` | 2026-02-08 | Current — rewritten for two-panel master-detail layout |
-| `views/adverse-effects.md` | `frontend/src/components/analysis/AdverseEffectsView.tsx`, `frontend/src/hooks/useAdverseEffects.ts`, `frontend/src/hooks/useAESummary.ts`, `backend/routers/analyses.py`, `backend/services/analysis/*.py` | 2026-02-08 | Current |
-| `views/validation.md` | `frontend/src/components/analysis/ValidationView.tsx`, `frontend/src/components/analysis/panes/ValidationContextPanel.tsx`, `backend/validation/engine.py` | 2026-02-08 | Current |
-| `views/app-landing.md` | `frontend/src/components/panels/AppLandingPage.tsx`, `frontend/src/components/panels/ContextPanel.tsx` | 2026-02-08 | Current |
+| `views/study-summary.md` | `frontend/src/components/analysis/StudySummaryView.tsx`, `frontend/src/components/analysis/SignalsPanel.tsx`, `frontend/src/components/analysis/charts/OrganGroupedHeatmap.tsx`, `frontend/src/components/analysis/panes/StudySummaryContextPanel.tsx` | 2026-02-09 | STALE — default tab is now "signals", spec says "details" |
+| `views/dose-response.md` | `frontend/src/components/analysis/DoseResponseView.tsx`, `frontend/src/components/analysis/panes/DoseResponseContextPanel.tsx`, `frontend/src/hooks/useDoseResponseMetrics.ts` | 2026-02-09 | STALE — rail now resizable, column resizing added, titleCase for organs |
+| `views/target-organs.md` | `frontend/src/components/analysis/TargetOrgansView.tsx`, `frontend/src/components/analysis/TargetOrgansViewWrapper.tsx`, `frontend/src/components/analysis/panes/TargetOrgansContextPanel.tsx`, `frontend/src/hooks/useTargetOrganSummary.ts`, `frontend/src/hooks/useOrganEvidenceDetail.ts`, `frontend/src/hooks/useRuleResults.ts` | 2026-02-09 | Current |
+| `views/histopathology.md` | `frontend/src/components/analysis/HistopathologyView.tsx`, `frontend/src/components/analysis/panes/HistopathologyContextPanel.tsx`, `frontend/src/hooks/useLesionSeveritySummary.ts`, `frontend/src/hooks/useRuleResults.ts`, `frontend/src/lib/severity-colors.ts` | 2026-02-09 | Current |
+| `views/noael-decision.md` | `frontend/src/components/analysis/NoaelDecisionView.tsx`, `frontend/src/components/analysis/panes/NoaelDecisionContextPanel.tsx`, `frontend/src/hooks/useNoaelSummary.ts`, `frontend/src/hooks/useAdverseEffectSummary.ts`, `frontend/src/hooks/useRuleResults.ts` | 2026-02-09 | STALE — rail now resizable, column resizing added, titleCase for organs |
+| `views/adverse-effects.md` | `frontend/src/components/analysis/AdverseEffectsView.tsx`, `frontend/src/hooks/useAdverseEffects.ts`, `frontend/src/hooks/useAESummary.ts`, `backend/routers/analyses.py`, `backend/services/analysis/*.py` | 2026-02-09 | Current |
+| `views/validation.md` | `frontend/src/components/analysis/ValidationView.tsx`, `frontend/src/components/analysis/panes/ValidationContextPanel.tsx`, `frontend/src/components/analysis/panes/ValidationIssueForm.tsx`, `frontend/src/hooks/useValidationResults.ts`, `frontend/src/hooks/useAffectedRecords.ts`, `frontend/src/hooks/useRunValidation.ts`, `backend/validation/engine.py`, `backend/routers/validation.py` | 2026-02-09 | Current — rewritten to match real API-driven validation engine |
+| `views/app-landing.md` | `frontend/src/components/panels/AppLandingPage.tsx`, `frontend/src/components/panels/ContextPanel.tsx` | 2026-02-09 | Current |
 
 ## Portability Assets
 
@@ -90,3 +90,5 @@ After a commit that changes code files:
 | `backend/routers/annotations.py` | `systems/annotations.md` |
 | `frontend/src/App.tsx` | `systems/navigation-and-layout.md` |
 | `frontend/src/lib/severity-colors.ts` | `design-system/datagrok-visual-design-guide.md` |
+| `frontend/src/hooks/useResizePanel.ts` | `systems/navigation-and-layout.md` |
+| `frontend/src/components/ui/PanelResizeHandle.tsx` | `systems/navigation-and-layout.md` |

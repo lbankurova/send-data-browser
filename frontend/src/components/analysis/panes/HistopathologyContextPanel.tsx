@@ -7,7 +7,7 @@ import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { cn } from "@/lib/utils";
-import { getSeverityBadgeClasses } from "@/lib/severity-colors";
+import { getSeverityBadgeClasses, getSeverityHeatColor } from "@/lib/severity-colors";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 
 interface HistopathSelection {
@@ -21,15 +21,6 @@ interface Props {
   ruleResults: RuleResult[];
   selection: HistopathSelection | null;
   studyId?: string;
-}
-
-/** Severity color scale */
-function getSeverityHeatColor(avgSev: number): string {
-  if (avgSev >= 4) return "#E57373";
-  if (avgSev >= 3) return "#FF8A65";
-  if (avgSev >= 2) return "#FFB74D";
-  if (avgSev >= 1) return "#FFE0B2";
-  return "#FFF9C4";
 }
 
 export function HistopathologyContextPanel({ lesionData, ruleResults, selection, studyId: studyIdProp }: Props) {
