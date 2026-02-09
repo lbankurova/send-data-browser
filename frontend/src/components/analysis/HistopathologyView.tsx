@@ -11,12 +11,14 @@ import {
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
+import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { cn } from "@/lib/utils";
-import { getDomainBadgeColor } from "@/lib/severity-colors";
+import { getDomainBadgeColor, getDoseGroupColor } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
+import type { SubjectHistopathEntry } from "@/types/timecourse";
 
 // ─── Neutral heat color (§6.1 evidence tier) ─────────────
 function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
@@ -576,6 +578,300 @@ function OverviewTab({
   );
 }
 
+// ─── SubjectHeatmap ──────────────────────────────────────
+// Subject-level severity matrix: one column per subject, grouped by dose group.
+// Cells show severity grade (1-5) color-coded with getNeutralHeatColor().
+
+const SEV_LABELS: Record<number, string> = { 1: "MINIMAL", 2: "MILD", 3: "MODERATE", 4: "MARKED", 5: "SEVERE" };
+
+function SubjectHeatmap({
+  subjData,
+  isLoading,
+  sexFilter,
+  minSeverity,
+  selection,
+  onHeatmapClick,
+  onSubjectClick,
+}: {
+  subjData: SubjectHistopathEntry[] | null;
+  isLoading: boolean;
+  sexFilter: string | null;
+  minSeverity: number;
+  selection: HistopathSelection | null;
+  onHeatmapClick: (finding: string) => void;
+  onSubjectClick?: (usubjid: string) => void;
+}) {
+  // Selected subject for column highlight
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+
+  // Filter subjects by sex
+  const subjects = useMemo(() => {
+    if (!subjData) return [];
+    let filtered = subjData;
+    if (sexFilter) filtered = filtered.filter((s) => s.sex === sexFilter);
+    // Sort: by dose_level asc, then sex (F, M), then usubjid asc
+    return [...filtered].sort(
+      (a, b) =>
+        a.dose_level - b.dose_level ||
+        a.sex.localeCompare(b.sex) ||
+        a.usubjid.localeCompare(b.usubjid)
+    );
+  }, [subjData, sexFilter]);
+
+  // All unique findings (rows) — filter by minSeverity
+  const findings = useMemo(() => {
+    if (!subjects.length) return [];
+    const findingMaxSev = new Map<string, number>();
+    for (const subj of subjects) {
+      for (const [finding, val] of Object.entries(subj.findings)) {
+        const sev = val.severity_num;
+        const existing = findingMaxSev.get(finding) ?? 0;
+        if (sev > existing) findingMaxSev.set(finding, sev);
+      }
+    }
+    return [...findingMaxSev.entries()]
+      .filter(([, maxSev]) => maxSev >= minSeverity)
+      .sort((a, b) => b[1] - a[1])
+      .map(([f]) => f);
+  }, [subjects, minSeverity]);
+
+  // Group subjects by dose level
+  const doseGroups = useMemo(() => {
+    const groups: { doseLevel: number; doseLabel: string; subjects: typeof subjects }[] = [];
+    let currentDL = -999;
+    for (const subj of subjects) {
+      if (subj.dose_level !== currentDL) {
+        currentDL = subj.dose_level;
+        groups.push({ doseLevel: subj.dose_level, doseLabel: subj.dose_label, subjects: [] });
+      }
+      groups[groups.length - 1].subjects.push(subj);
+    }
+    return groups;
+  }, [subjects]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Loading subject data\u2026</span>
+      </div>
+    );
+  }
+
+  if (!subjData || subjects.length === 0) {
+    return (
+      <div className="p-4 text-center text-xs text-muted-foreground">
+        Subject-level data not available for this specimen.
+      </div>
+    );
+  }
+
+  if (findings.length === 0) {
+    return (
+      <div className="p-4 text-center text-xs text-muted-foreground">
+        No findings match the current severity filter.
+      </div>
+    );
+  }
+
+  const shortId = (id: string) => {
+    const parts = id.split("-");
+    return parts[parts.length - 1] || id.slice(-4);
+  };
+
+  return (
+    <div className="border-b p-4">
+      {/* Subject count */}
+      <div className="mb-2 flex items-center gap-2">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Subject-level matrix ({findings.length} findings)
+        </h2>
+        <span className="text-[10px] text-muted-foreground">
+          {subjects.length} subjects across {doseGroups.length} dose groups &middot; Scroll horizontally &rarr;
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <div className="inline-block">
+          {/* Tier 1: Dose group headers */}
+          <div className="flex">
+            <div className="w-52 shrink-0" /> {/* Finding label column spacer */}
+            {doseGroups.map((dg, gi) => (
+              <div
+                key={dg.doseLevel}
+                className={cn(
+                  "flex-shrink-0 text-center border-b",
+                  gi > 0 && "border-l-2 border-border"
+                )}
+                style={{ width: dg.subjects.length * 32 }}
+              >
+                <div
+                  className="h-0.5"
+                  style={{ backgroundColor: getDoseGroupColor(dg.doseLevel) }}
+                />
+                <div className="px-1 py-0.5 text-[10px] font-semibold">
+                  {dg.doseLabel} ({dg.subjects.length})
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tier 2: Subject IDs */}
+          <div className="flex">
+            <div className="w-52 shrink-0" />
+            {doseGroups.map((dg, gi) => (
+              <div key={dg.doseLevel} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
+                {dg.subjects.map((subj) => (
+                  <button
+                    key={subj.usubjid}
+                    className={cn(
+                      "w-8 shrink-0 py-0.5 text-center font-mono text-[9px] text-muted-foreground hover:bg-accent/30",
+                      selectedSubject === subj.usubjid && "bg-blue-50/50"
+                    )}
+                    title={subj.usubjid}
+                    onClick={() => {
+                      const next = selectedSubject === subj.usubjid ? null : subj.usubjid;
+                      setSelectedSubject(next);
+                      if (next) onSubjectClick?.(next);
+                    }}
+                  >
+                    {shortId(subj.usubjid)}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {/* Sex indicator row */}
+          {!sexFilter && (
+            <div className="flex">
+              <div className="w-52 shrink-0 py-0.5 text-right pr-2 text-[8px] font-semibold text-muted-foreground">
+                Sex
+              </div>
+              {doseGroups.map((dg, gi) => (
+                <div key={dg.doseLevel} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
+                  {dg.subjects.map((subj) => (
+                    <div
+                      key={subj.usubjid}
+                      className={cn(
+                        "flex h-4 w-8 shrink-0 items-center justify-center text-[8px] font-semibold",
+                        selectedSubject === subj.usubjid && "bg-blue-50/50",
+                        subj.sex === "M" ? "text-blue-600" : "text-red-600"
+                      )}
+                    >
+                      {subj.sex}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Examined row */}
+          <div className="flex border-b bg-muted/20">
+            <div className="w-52 shrink-0 py-0.5 text-right pr-2 text-[9px] text-muted-foreground">
+              Examined
+            </div>
+            {doseGroups.map((dg, gi) => (
+              <div key={dg.doseLevel} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
+                {dg.subjects.map((subj) => {
+                  const hasAny = Object.keys(subj.findings).length > 0;
+                  return (
+                    <div
+                      key={subj.usubjid}
+                      className={cn(
+                        "flex h-4 w-8 shrink-0 items-center justify-center text-[9px] text-muted-foreground",
+                        selectedSubject === subj.usubjid && "bg-blue-50/50"
+                      )}
+                    >
+                      {hasAny ? "E" : ""}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Data rows — one per finding */}
+          {findings.map((finding) => (
+            <div
+              key={finding}
+              className={cn(
+                "flex cursor-pointer border-t hover:bg-accent/20",
+                selection?.finding === finding && "ring-1 ring-primary"
+              )}
+              onClick={() => onHeatmapClick(finding)}
+            >
+              {/* Finding label — sticky */}
+              <div
+                className="sticky left-0 z-10 w-52 shrink-0 truncate bg-background py-1 pr-2 text-[10px]"
+                title={finding}
+              >
+                {finding.length > 40 ? finding.slice(0, 40) + "\u2026" : finding}
+              </div>
+              {/* Cells per dose group */}
+              {doseGroups.map((dg, gi) => (
+                <div key={dg.doseLevel} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
+                  {dg.subjects.map((subj) => {
+                    const entry = subj.findings[finding];
+                    const sevNum = entry?.severity_num ?? 0;
+                    const hasEntry = !!entry;
+                    const colors = sevNum > 0 ? getNeutralHeatColor(sevNum) : null;
+
+                    return (
+                      <div
+                        key={subj.usubjid}
+                        className={cn(
+                          "flex h-6 w-8 shrink-0 items-center justify-center",
+                          selectedSubject === subj.usubjid && "bg-blue-50/50"
+                        )}
+                        title={
+                          hasEntry
+                            ? `${subj.usubjid}: ${finding} \u2014 ${entry.severity ?? SEV_LABELS[sevNum] ?? "N/A"}`
+                            : `${subj.usubjid}: not observed`
+                        }
+                      >
+                        {sevNum > 0 ? (
+                          <div
+                            className="flex h-5 w-6 items-center justify-center rounded-sm font-mono text-[9px]"
+                            style={{ backgroundColor: colors!.bg, color: colors!.text }}
+                          >
+                            {sevNum}
+                          </div>
+                        ) : hasEntry ? (
+                          <span className="text-[9px] text-muted-foreground">&mdash;</span>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
+        <span>Severity:</span>
+        {[
+          { label: "1 Minimal", color: "#E5E7EB" },
+          { label: "2 Mild", color: "#D1D5DB" },
+          { label: "3 Moderate", color: "#9CA3AF" },
+          { label: "4 Marked", color: "#6B7280" },
+          { label: "5 Severe", color: "#4B5563" },
+        ].map(({ label, color }) => (
+          <span key={label} className="flex items-center gap-0.5">
+            <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
+            {label}
+          </span>
+        ))}
+        <span className="ml-2">&mdash; = examined, no finding</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── SeverityMatrixTab ─────────────────────────────────────
 
 const col = createColumnHelper<LesionSeverityRow>();
@@ -589,6 +885,9 @@ function SeverityMatrixTab({
   setSexFilter,
   minSeverity,
   setMinSeverity,
+  studyId,
+  specimen,
+  onSubjectClick,
 }: {
   specimenData: LesionSeverityRow[];
   selection: HistopathSelection | null;
@@ -598,9 +897,19 @@ function SeverityMatrixTab({
   setSexFilter: (v: string | null) => void;
   minSeverity: number;
   setMinSeverity: (v: number) => void;
+  studyId?: string;
+  specimen?: string | null;
+  onSubjectClick?: (usubjid: string) => void;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [matrixMode, setMatrixMode] = useState<"group" | "subject">("group");
+
+  // Subject-level data (only fetch when in subject mode)
+  const { data: subjData, isLoading: subjLoading } = useHistopathSubjects(
+    matrixMode === "subject" ? studyId : undefined,
+    matrixMode === "subject" ? (specimen ?? null) : null,
+  );
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -743,15 +1052,42 @@ function SeverityMatrixTab({
           <option value={2}>Min severity: 2+</option>
           <option value={3}>Min severity: 3+</option>
         </select>
-        <span className="ml-auto text-[10px] text-muted-foreground">
-          {filteredData.length} of {specimenData.length} rows
-        </span>
+        {/* Group / Subject segmented control */}
+        <div className="ml-auto flex items-center gap-0.5">
+          {(["group", "subject"] as const).map((mode) => (
+            <button
+              key={mode}
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                matrixMode === mode
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-accent/50"
+              )}
+              onClick={() => setMatrixMode(mode)}
+            >
+              {mode === "group" ? "Group" : "Subject"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Main content */}
       <div className="flex-1 overflow-auto">
-        {/* Severity Heatmap */}
-        {heatmapData && heatmapData.findings.length > 0 && (
+        {/* Subject-level heatmap */}
+        {matrixMode === "subject" && (
+          <SubjectHeatmap
+            subjData={subjData?.subjects ?? null}
+            isLoading={subjLoading}
+            sexFilter={sexFilter}
+            minSeverity={minSeverity}
+            selection={selection}
+            onHeatmapClick={onHeatmapClick}
+            onSubjectClick={onSubjectClick}
+          />
+        )}
+
+        {/* Group-level severity heatmap */}
+        {matrixMode === "group" && heatmapData && heatmapData.findings.length > 0 && (
           <div className="border-b p-4">
             <div className="mb-2 flex items-center gap-2">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -920,8 +1256,10 @@ type EvidenceTab = "overview" | "matrix";
 
 export function HistopathologyView({
   onSelectionChange,
+  onSubjectClick,
 }: {
   onSelectionChange?: (sel: HistopathSelection | null) => void;
+  onSubjectClick?: (usubjid: string) => void;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
@@ -1154,6 +1492,9 @@ export function HistopathologyView({
                 setSexFilter={setSexFilter}
                 minSeverity={minSeverity}
                 setMinSeverity={setMinSeverity}
+                studyId={studyId}
+                specimen={selectedSpecimen}
+                onSubjectClick={onSubjectClick}
               />
             )}
           </>
