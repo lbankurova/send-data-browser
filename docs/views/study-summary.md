@@ -37,7 +37,7 @@ The Study Summary View itself is split into two tabs with a shared tab bar:
 ## Tab Bar
 
 - **Position:** Top of the view, full width, `border-b`
-- **Tabs:** "Study Details" (default active) and "Signals"
+- **Tabs:** "Study Details" and "Signals" (default active)
 - **Active indicator:** `h-0.5 bg-primary` underline at bottom of active tab
 - **Tab text:** `text-xs font-medium`. Active = `text-foreground`. Inactive = `text-muted-foreground`
 - **Generate Report button:** Right-aligned in tab bar. Border, `text-xs`, icon `FileText` (3.5x3.5) + "Generate Report" label. Opens HTML report in new tab.
@@ -121,7 +121,7 @@ Responsive: `max-[1200px]:flex-col` — stacks vertically on narrow screens.
 
 ### Decision Bar
 
-Persistent across the Signals tab. `shrink-0 border-b px-4 py-2.5`.
+Persistent across the Signals tab. Visual anchor with blue accent: `shrink-0 border-b border-l-2 border-l-blue-500 bg-blue-50/30 px-4 py-2.5 dark:bg-blue-950/10`.
 
 **NOAEL statements:** From `panelData.decisionBar` (priority 900+ rules). Each as:
 - `flex items-start gap-2 leading-snug`
@@ -140,33 +140,36 @@ Shows study-level statements, modifiers, and caveats from `panelData`. Only rend
 - **Study modifiers:** `text-xs text-amber-800` with amber triangle icon. Only includes modifiers where `organSystem` is falsy.
 - **Study caveats:** `text-xs text-orange-700` with warning icon. Only includes caveats where `organSystem` is falsy.
 
-### Organ Rail (left panel, 300px)
+### Organ Rail (left panel, resizable 180-500px, default 300px)
 
 **Component:** `SignalsOrganRail` (from `SignalsPanel.tsx`)
+**Resizable:** Uses `useResizePanel(300, 180, 500)` with `PanelResizeHandle` between rail and evidence panel. Handle hidden at `max-[1200px]` (stacked layout).
 
 Header: "ORGAN SYSTEMS ({count})" + search input (`text-xs`).
 
 Each rail item (`SignalsOrganRailItem`):
+- **Tier indication dot** (leftmost, before organ name): Critical = red `#DC2626`, Notable = amber `#D97706`, Observed = no dot. Computed via `computeTier()` from `rule-synthesis.ts`.
 - Target organs: red left border (`border-l-2 border-l-[#DC2626]`), "TARGET" badge
 - Non-targets: transparent left border
 - Selected: `bg-blue-50/60 dark:bg-blue-950/20`
 - Not selected: `hover:bg-accent/30`
-- Evidence score bar: normalized to max across all organs, `h-1.5 rounded-full bg-foreground/25`
+- Evidence score bar: normalized to max across all organs, `h-1.5 rounded-full bg-[#D1D5DB]` (neutral gray). On hover, evidence score number turns red (`group-hover/rail:text-[#DC2626]`).
 - Stats line: `{n_significant} sig · {n_treatment_related} TR · {n_domains} domains`
 - Domain chips: outline style with colored dot (`rounded border border-border px-1 py-0.5 text-[9px]`)
 - Dose-response summary (if available from OrganBlock): `D-R: {nEndpoints} ({topEndpoint})`
 
-**Sorted by:** `evidence_score` descending.
+**Target/non-target separator:** A subtle divider label ("Other organs") appears between the last target organ and the first non-target organ. Style: `text-[9px] uppercase tracking-wider text-muted-foreground/50 px-3 py-1.5 border-b`.
+
+**Sorted by:** Targets first, then by `evidence_score` descending within each group.
 **Auto-select:** Highest-evidence organ is auto-selected when data loads and no organ is selected.
 
 ### Evidence Panel (right panel, flex-1)
 
 **Component:** `SignalsEvidencePanel` (from `SignalsPanel.tsx`)
 
-#### Organ Header
-- Organ name: `text-sm font-semibold` + "TARGET ORGAN" badge (if applicable)
-- Summary text: "Convergent|Evidence from N domains: X/Y endpoints significant (Z%), W treatment-related."
-- Compact metrics: max signal, evidence score, endpoint count
+#### Organ Header (compact, 2-line format)
+- Line 1: Organ name `text-sm font-semibold` + "TARGET" badge (if applicable)
+- Line 2: Merged summary+metrics in `text-[11px] text-muted-foreground tabular-nums`: `{n_domains} domains · {n_significant}/{n_endpoints} sig ({pct}%) · {n_treatment_related} TR · Max {max_signal} · Evidence {evidence_score}`
 
 #### Tab Bar
 Two tabs: "Overview" and "Signal matrix"
@@ -181,7 +184,8 @@ Scrollable content (`overflow-y-auto px-4 py-3`):
 3. **Review flags** — Orange bordered cards (`rounded border border-orange-200 bg-orange-50/50 p-2`) with primary/detail text split. Organ names are clickable links.
 4. **Domain breakdown** — Table with columns: Domain (colored badge), Endpoints, Significant, TR. Sorted by significant count desc.
 5. **Top findings** — Up to 8 findings sorted by `|effect_size|` desc. Each row shows: endpoint name, direction arrow, effect size (mono), p-value (mono), severity badge, TR flag, sex + dose label.
-6. **Cross-view links** — "View in Target Organs →", "View dose-response →", "View histopathology →". Navigate with `{ state: { organ_system } }`.
+
+**Cross-view links (pinned footer):** Pinned below the scrollable content area as a persistent footer strip (`shrink-0 border-t px-4 py-2 flex gap-3`). Links: "Target Organs →", "Dose-response →", "Histopathology →". Navigate with `{ state: { organ_system } }`.
 
 #### Signal Matrix Tab (`SignalsMatrixTab`)
 
@@ -198,6 +202,8 @@ Scrollable content (`overflow-y-auto px-4 py-3`):
 - Only endpoint rows and dose column headers render
 
 **Normal mode (multi-organ):** Used by other views. Organs grouped and sorted by evidence_score desc, target organs first. Collapsible with chevron. Organ header shows: name, evidence score badge, domain chips, target star, sparkline, endpoint count.
+
+**Neutral-at-rest rendering:** Heatmap cells use neutral gray backgrounds at rest (`rgba(0,0,0,0.04)` for data cells, `rgba(0,0,0,0.02)` for empty). On hover, the cell fills with the signal score color. Text uses `tabular-nums` for number alignment. See design guide §1.3 and §1.11 for details.
 
 ---
 
@@ -251,7 +257,7 @@ Key-value pairs, `text-[11px]`:
 
 | State | Scope | Managed By |
 |-------|-------|-----------|
-| Active tab | Local | `useState<"details" \| "signals">` — defaults to "details" |
+| Active tab | Local | `useState<"details" \| "signals">` — defaults to "signals" |
 | Selected organ | Local | `useState<string \| null>` — auto-selects top organ |
 | Selection | Shared via context | `SignalSelectionContext` — syncs heatmap cells and context panel |
 | Signal data | Server | `useStudySignalSummary` hook (React Query, 5min stale) |

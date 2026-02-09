@@ -82,10 +82,14 @@ A five-stop scale for composite scores on a 0.0-1.0 range. Use for signal scores
 - Text: white (`#FFFFFF`) when score >= 0.5, dark gray (`#374151`) when score < 0.5.
 - Format: `{score.toFixed(2)}` plus significance stars if applicable (`***` / `**` / `*`, omit "ns").
 
-**Usage in heatmap cells:**
+**Neutral-at-rest rendering:**
+- Heatmap cells render with neutral gray backgrounds at rest (`rgba(0,0,0,0.04)` for data, `rgba(0,0,0,0.02)` for empty)
+- Text color at rest: `#1F2937` (gray-800). Number alignment: `tabular-nums`
+- On hover: cell fills with the signal score color from the table above
+- On hover with score >= 0.5: text flips to white (`#FFFFFF`)
 - Cell outline default: `1px solid rgba(0,0,0,0.05)`
 - Cell outline selected: `2px solid #3b82f6` (blue-500)
-- Cell hover: `opacity-80`
+- This follows the color philosophy: "Conclusions speak in color; evidence whispers in text." Evidence-strength colors appear only on interaction.
 
 ---
 
@@ -151,9 +155,29 @@ Use for domain badges in grids. Each scientific domain gets a distinct hue.
 | MI (Microscopic) | `bg-rose-100` | `text-rose-700` |
 | MA (Macroscopic) | `bg-orange-100` | `text-orange-700` |
 | CL (Clinical Observations) | `bg-cyan-100` | `text-cyan-700` |
+| DS (Disposition) | `bg-indigo-100` | `text-indigo-700` |
+| FW (Food/Water) | `bg-teal-100` | `text-teal-700` |
 | Other / fallback | `bg-gray-100` | `text-gray-700` |
 
 Badge class: `rounded px-1.5 py-0.5 text-[10px] font-medium`
+
+**Dot-only rendering (preferred in rails and compact layouts):**
+
+Use `getDomainDotColor()` from `severity-colors.ts` for a small colored identity dot.
+
+| Domain | Dot hex |
+|--------|---------|
+| BW | `#10B981` |
+| LB | `#3B82F6` |
+| MA | `#F59E0B` |
+| MI | `#EC4899` |
+| OM | `#8B5CF6` |
+| CL | `#22C55E` |
+| DS | `#6366F1` |
+| FW | `#14B8A6` |
+| fallback | `#9CA3AF` |
+
+Dot+outline badge class: `inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70` with `<span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getDomainDotColor(d) }} />`
 
 ---
 
@@ -201,6 +225,21 @@ Status count text colors (in progress bars):
 - Accepted: `text-green-700`
 - Flagged: `text-red-700`
 - Resolved: `text-blue-700`
+
+---
+
+### 1.11 Color Philosophy — Signal-First Rendering
+
+> **"Color is punctuation, not prose. Conclusions speak in color; evidence whispers in text."**
+
+Six rules govern color usage in the SEND Data Browser:
+
+1. **Conclusions in color, evidence in text.** NOAEL banners, target organ badges, and tier dots use color at rest. Heatmap cells, p-values, and effect sizes use color only on hover or selection.
+2. **Neutral at rest.** Heatmap cells, evidence bars, and domain badges are neutral gray at rest. Color appears on interaction (hover, click) to avoid visual overload.
+3. **Interaction-only evidence colors.** Signal score colors (§1.3) fill cells only on hover. Stars and numbers stay visible in neutral text. Selected cells get a blue outline, not a color fill.
+4. **Tier dots for severity.** Organ rail items show a small dot for Critical (red `#DC2626`) or Notable (amber `#D97706`). Observed tier gets no dot — absence of color is signal.
+5. **Domain identity dots, not filled badges.** In rails and compact layouts, domains use a 1.5px colored dot + outline border, not a filled background badge. See §1.7 "Dot-only rendering".
+6. **Decision Bar is the visual anchor.** The NOAEL Decision Bar uses `border-l-2 border-l-blue-500 bg-blue-50/30` to draw the eye. It is the only element with a persistent color accent at rest in the Signals tab.
 
 ---
 
