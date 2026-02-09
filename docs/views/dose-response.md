@@ -50,9 +50,9 @@ Container: `shrink-0 flex-col` with `style={{ width: railWidth }}` where `railWi
 
 **Label:** `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Endpoints ({N})" where N is the total number of unique endpoints.
 
-**Search input:** Relative-positioned wrapper with Search icon overlay.
-- Icon: `absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground`
-- Input: `w-full rounded border bg-background py-1 pl-7 pr-2 text-xs`, placeholder "Search endpoints..."
+**Search input:** Inline flex layout with Search icon (consistent with all view rails).
+- Icon: `Search h-3 w-3 shrink-0 text-muted-foreground`
+- Input: `w-full bg-transparent py-1 text-xs focus:outline-none`, placeholder "Search endpoints..."
 - Filters by `endpoint_label` or `organ_system` (case-insensitive substring match)
 
 ### Rail Body
@@ -87,30 +87,19 @@ Selected: `bg-accent`
 
 **Row 1:** `flex items-center gap-1`
 - Endpoint name: `flex-1 truncate text-xs`, `font-semibold` when selected, `font-medium` otherwise. Full name shown as `title` tooltip.
-- Direction arrow (right-aligned): `text-xs font-semibold`
+- Direction arrow (right-aligned): `text-xs`, neutral gray (`text-[#9CA3AF]`). Color encodes signal strength, not direction meaning — arrows are categorical identity, so they stay neutral.
 
-| Direction | Arrow | Color |
-|-----------|-------|-------|
-| up | `↑` | `text-red-500` |
-| down | `↓` | `text-blue-500` |
-| mixed | `↕` | `text-muted-foreground` |
-| null | (none) | — |
+| Direction | Arrow |
+|-----------|-------|
+| up | `↑` |
+| down | `↓` |
+| mixed | `↕` |
+| null | (none) |
 
 **Row 2:** `mt-0.5 flex items-center gap-1.5`
-- Pattern badge: first word of the pattern label, `rounded px-1 py-0.5 text-[9px] font-medium leading-tight` with pattern-specific colors (see table below)
-- Trend p-value: `text-[10px] font-mono` with p-value color — "p={value}"
-- Max effect size: `text-[10px] font-mono` with effect size color — "|d|={value}" (1 decimal place), shown only when non-null
-
-### Pattern Badge Colors
-
-| Pattern | Classes |
-|---------|---------|
-| monotonic_increase | `bg-red-100 text-red-700` |
-| monotonic_decrease | `bg-blue-100 text-blue-700` |
-| threshold | `bg-amber-100 text-amber-700` |
-| non_monotonic | `bg-purple-100 text-purple-700` |
-| flat | `bg-green-100 text-green-700` |
-| insufficient_data | `bg-gray-100 text-gray-500` |
+- Pattern badge: first word of the pattern label, `rounded px-1 py-0.5 text-[9px] font-medium leading-tight`. **Neutral gray for all patterns** (`bg-gray-100 text-gray-600`, `text-gray-500` for flat, `text-gray-400` for insufficient). Pattern-specific colors were removed: the pattern text communicates the category; signal strength is encoded by p-value and effect size in the same row. Color for categorical identity (which pattern?) violates the signal-not-meaning principle.
+- Trend p-value: `text-[10px] font-mono` with interaction-driven color (neutral at rest, `#DC2626` on hover/selection via `.ev` CSS class) — "p={value}"
+- Max effect size: `text-[10px] font-mono` with interaction-driven color — "|d|={value}" (1 decimal place), shown only when non-null
 
 ### Endpoint Item Interaction
 
@@ -131,7 +120,7 @@ Container: `flex min-w-0 flex-1 flex-col overflow-hidden`
 
 **Title row:** `flex items-start justify-between gap-2`
 - Left: endpoint label (`text-sm font-semibold`) + subtitle on next line
-- Right: full pattern badge (`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium` with pattern-specific colors)
+- Right: full pattern badge (`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium` with neutral gray — same `bg-gray-100 text-gray-600` as rail badges)
 
 **Subtitle:** `text-[11px] text-muted-foreground`
 - Format: "{domain} &middot; {titleCase(organ_system)}"
@@ -178,42 +167,50 @@ When no endpoint is selected: "Select an endpoint to view chart and overview." �
 
 ### Chart Area
 
-Container: `border-b p-4`
+Container: `flex border-b` — two charts side-by-side with a `PanelResizeHandle` between them.
 
-**Chart layout:** `flex gap-4` — one chart per sex, side-by-side with `flex-1` each.
+**Layout:** Combined dose-response chart (left, resizable) + effect size bar chart (right, flex-1). Both sexes overlaid on each chart (not per-sex split). Overlaying sexes makes comparison immediate — divergence/convergence is visible at a glance. The effect size chart provides magnitude context alongside the main dose-response curve.
 
-**Per-sex label:** `mb-1 text-center text-[10px] font-medium`, colored by sex:
-- Males: `#3b82f6` (blue-500)
-- Females: `#ec4899` (pink-500)
+**Design decision:** Per-sex split charts were considered but rejected. With overlaid sex lines, the user sees sex differences without eye movement. The effect size chart (Cohen's d by dose) adds a dimension that per-sex splitting would not provide.
+
+**Chart split:** Default 50/50, resizable via pointer drag (20%-80% range). The resize handle uses the shared `PanelResizeHandle` component. Effect size chart only appears when effect data exists.
 
 #### Continuous Data: Line Chart (Recharts `<LineChart>`)
 
-- Container: `<ResponsiveContainer width="100%" height={280}>`
+- Header: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` — "Mean ± SD by dose"
+- Container: `<ResponsiveContainer width="100%" height={260}>`
 - Grid: `<CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb">`
 - X-axis: dose labels (first part before comma), tick fontSize 10
 - Y-axis: auto-scaled, tick fontSize 10
-- Tooltip: `contentStyle={{ fontSize: 11 }}`, shows "Mean: {value.toFixed(2)}"
-- Line: `type="monotone"`, dataKey="mean", sex-colored stroke, `strokeWidth={2}`, `connectNulls`
-- Error bars: `<ErrorBar dataKey="sd">`, width 4, strokeWidth 1, sex-colored stroke
+- Tooltip: `contentStyle={{ fontSize: 11 }}`, shows "Mean ({sex}): {value.toFixed(2)}"
+- Line: `type="monotone"`, dataKey="mean_{sex}", sex-colored stroke, `strokeWidth={2}`, `connectNulls`
+- Error bars: `<ErrorBar dataKey="sd_{sex}">`, width 4, strokeWidth 1, sex-colored stroke
 - Dots: significance-aware custom rendering:
-  - p < 0.05: r=6, fill `#dc2626` (red-600), strokeWidth 2
-  - p >= 0.05 or null: r=4, sex-colored fill, strokeWidth 1
+  - p < 0.05: r=6, fill `#dc2626` (red-600), stroke `#dc2626`, strokeWidth 2
+  - p >= 0.05 or null: r=4, sex-colored fill, sex-colored stroke, strokeWidth 1
 
 #### Categorical Data: Bar Chart (Recharts `<BarChart>`)
 
-- Container: `<ResponsiveContainer width="100%" height={280}>`
+- Container: `<ResponsiveContainer width="100%" height={260}>`
 - Grid: `<CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb">`
 - X-axis: dose labels, tick fontSize 10
 - Y-axis: domain `[0, 1]`, tick fontSize 10
 - Tooltip: shows incidence as percentage `{(value * 100).toFixed(0)}%`
-- Bar: dataKey="incidence", custom shape with `rx={2}` rounded corners
-  - Significance-aware fill: p < 0.05 → `#dc2626` (red-600), otherwise sex-colored
+- Bar: dataKey="incidence_{sex}", custom shape with `rx={2}` rounded corners
+  - Fill: sex-colored (`#3b82f6` M, `#ec4899` F). Significant bars (p < 0.05) get a dark stroke outline (`stroke="#1F2937"`, `strokeWidth=1.5`) rather than red fill — this preserves sex identity encoding while marking significance via a non-color channel.
+
+#### Effect Size Bar Chart (right panel)
+
+- Header: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` — "Effect size (Cohen's d)"
+- Container: `<ResponsiveContainer width="100%" height={260}>`
+- Reference lines: dashed lines at d=0.5, d=0.8, d=-0.5, d=-0.8 (Cohen's thresholds)
+- Bar: dataKey="effect_{sex}", sex-colored fill, opacity 0.8
 
 #### Chart Legend
 
-Below charts, centered: `mt-1 flex items-center justify-center gap-4 text-[10px] text-muted-foreground`
-- Significant (p<0.05): red dot (`h-2.5 w-2.5 rounded-full bg-red-600`)
-- Not significant: gray dot (`h-2 w-2 rounded-full bg-gray-400`)
+Below each chart, centered: `mt-1 flex items-center justify-center gap-3 text-[10px] text-muted-foreground`
+- Sex legend: colored squares (`h-2.5 w-2.5 rounded-sm`) per sex
+- Significance legend (continuous chart only): red dot (`h-2.5 w-2.5 rounded-full bg-red-600`) for p<0.05, gray dot (`h-2 w-2 rounded-full bg-gray-400`) for NS
 
 ### Sex Colors
 
@@ -234,13 +231,13 @@ Below chart area, `p-4`.
 
 | Column | Header | Alignment | Cell Rendering |
 |--------|--------|-----------|----------------|
-| Dose | Dose | Left | Dose-level colored badge: `rounded px-1.5 py-0.5 text-[10px] font-medium text-white` with `backgroundColor: getDoseGroupColor(dose_level)`. Shows `dose_label.split(",")[0]`. |
+| Dose | Dose | Left | `font-mono text-[11px]` — plain text, `dose_label.split(",")[0]`. No colored badge (color encodes signal, not categorical identity). |
 | Sex | Sex | Left | Plain text |
 | Mean | Mean | Right | `font-mono`, 2 decimal places, em dash if null |
 | SD | SD | Right | `font-mono text-muted-foreground`, 2 decimal places, em dash if null |
 | N | N | Right | Plain text, em dash if null |
-| p-value | p-value | Right | `font-mono` with p-value color, formatted via `formatPValue` |
-| Effect | Effect | Right | `font-mono` with effect size color, formatted via `formatEffectSize` |
+| p-value | p-value | Right | `font-mono` with always-on p-value color via `getPValueColor()`, formatted via `formatPValue` |
+| Effect | Effect | Right | `font-mono` with always-on effect size color via `getEffectSizeColor()`, formatted via `formatEffectSize` |
 | Pattern | Pattern | Left | `text-muted-foreground`, underscores replaced with spaces |
 
 **Data rows:** `border-b border-dashed`, cells `px-2 py-1`
@@ -285,16 +282,16 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 | Column | Header | Cell Rendering |
 |--------|--------|----------------|
 | endpoint_label | Endpoint | Truncated at 25 chars with ellipsis, `title` tooltip for full name |
-| domain | Domain | Colored badge: `rounded px-1.5 py-0.5 text-[10px] font-medium` with domain-specific bg/text colors |
-| dose_level | Dose | Colored badge: `rounded px-1.5 py-0.5 text-[10px] font-medium text-white` with dose-level color |
+| domain | Domain | Colored text only: `text-[9px] font-semibold` with `getDomainBadgeColor(domain).text`. No background badge. |
+| dose_level | Dose | `font-mono text-[11px]` — plain text, `dose_label.split(",")[0]`. No colored badge (color encodes signal, not categorical identity). |
 | sex | Sex | Plain text |
 | mean | Mean | `font-mono`, 2 decimal places, em dash if null |
 | sd | SD | `font-mono text-muted-foreground`, 2 decimal places, em dash if null |
 | n | N | Plain text, em dash if null |
 | incidence | Incid. | `font-mono`, displayed as percentage `{(value * 100).toFixed(0)}%`, em dash if null |
-| p_value | P-value | `font-mono`, p-value color coded, formatted via `formatPValue` |
-| effect_size | Effect | `font-mono`, effect size color coded, formatted via `formatEffectSize` |
-| trend_p | Trend p | `font-mono`, p-value color coded, formatted via `formatPValue` |
+| p_value | P-value | `font-mono`, always-on p-value color via `getPValueColor()`, formatted via `formatPValue`. **Design decision (pending user testing):** always-on color was chosen over sort-triggered color to aid visual scanning in dense tables. May be revised after user testing. |
+| effect_size | Effect | `font-mono`, always-on effect size color via `getEffectSizeColor()`, formatted via `formatEffectSize` |
+| trend_p | Trend p | `font-mono`, always-on p-value color via `getPValueColor()`, formatted via `formatPValue` |
 | dose_response_pattern | Pattern | `text-muted-foreground`, underscores replaced with spaces |
 
 **Row interactions:**
@@ -308,26 +305,13 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 
 **Empty state:** "No rows match the current filters." — `p-4 text-center text-xs text-muted-foreground`
 
-### Domain Badge Colors
+### Domain Rendering
 
-| Domain | Background | Text |
-|--------|-----------|------|
-| LB | `bg-blue-100` | `text-blue-700` |
-| BW | `bg-emerald-100` | `text-emerald-700` |
-| OM | `bg-purple-100` | `text-purple-700` |
-| MI | `bg-rose-100` | `text-rose-700` |
-| MA | `bg-orange-100` | `text-orange-700` |
-| CL | `bg-cyan-100` | `text-cyan-700` |
-| Other | `bg-gray-100` | `text-gray-700` |
+Domain codes use colored-text-only rendering per the project-wide design rule (see CLAUDE.md "Domain labels — colored text only"). Colors come from `getDomainBadgeColor()` in `severity-colors.ts`. No background badges.
 
-### Dose Group Colors
+### Dose Group Rendering
 
-| Level | Color | Meaning |
-|-------|-------|---------|
-| 0 | `#6b7280` (gray) | Control |
-| 1 | `#3b82f6` (blue) | Low |
-| 2 | `#f59e0b` (amber) | Mid |
-| 3 | `#ef4444` (red) | High |
+Dose groups use plain `font-mono` text (dose label). No colored badges — color in tables encodes signal strength, not categorical identity. Dose group colors are reserved for chart series only.
 
 ### P-value Color Scale (text classes)
 
@@ -376,7 +360,7 @@ Route-detected: when pathname matches `/studies/{studyId}/dose-response`, shows 
 
 - `border-b px-4 py-3`
 - Endpoint label: `text-sm font-semibold`
-- Subtitle: `text-xs text-muted-foreground` — "{domain} &middot; {organ_system}" (underscores replaced with spaces), optionally " &middot; {sex}" if sex is set in the selection
+- Subtitle: `text-xs text-muted-foreground` — "{domain} &middot; {titleCase(organ_system)}", optionally " &middot; {sex}" if sex is set in the selection
 
 #### Pane 1: Insights (default open)
 
@@ -577,8 +561,9 @@ rounded-full px-2.5 py-1 text-[11px] font-medium flex items-center gap-1
 | State | Classes |
 |-------|---------|
 | Active | `bg-foreground text-background` |
-| Inactive + available | `text-muted-foreground hover:bg-accent/50` |
-| Inactive + unavailable | `opacity-40 text-muted-foreground` (not clickable) |
+| Inactive | `text-muted-foreground hover:bg-accent hover:text-foreground` |
+
+All tools are fully clickable regardless of implementation status. The `available` flag on tool definitions is metadata for future use — it does not affect interactivity. Tools that are currently stub/placeholder implementations render their ViewerPlaceholder + configuration card like any other tool. The placeholders ARE the feature for the prototype.
 
 Icon: `h-3.5 w-3.5` inline before label text.
 
@@ -590,7 +575,7 @@ Icon: `h-3.5 w-3.5` inline before label text.
 |--------|-------|------|-----------|-------------|
 | `shape` | Shape | `TrendingUp` | Yes | Interactive dose-response curve with zoom, pan, overlays |
 | `model` | Model fit | `GitBranch` | No | Fit dose-response models (linear, sigmoid, polynomial) |
-| `pareto` | Pareto | `ScatterChart` | Yes | Scatter plot of endpoints by effect size vs. p-value |
+| `pareto` | Pareto front | `ScatterChart` | Yes | Scatter plot of endpoints by effect size vs. p-value |
 | `correlation` | Correlation | `Link2` | No | Correlation matrix or scatter of related endpoints |
 | `outliers` | Outliers | `BoxSelect` | No | Box plots, distribution views, outlier detection |
 
@@ -704,3 +689,22 @@ All Hypotheses tab state is session-scoped:
 ### General
 - No keyboard navigation (arrow keys in grid or between rail items)
 - No export option for chart or grid data
+
+---
+
+## Changelog
+
+### 2026-02-09 — Design audit alignment
+
+- **View name:** Renamed from "Dose-response & causality" to "Dose-Response" in browsing tree
+- **Chart layout:** Updated spec to document actual combined layout (dose-response + effect size charts with resize handle, both sexes overlaid) instead of per-sex split
+- **Pattern badges:** Documented neutral gray as intentional (signal-not-meaning principle)
+- **Direction arrows:** Documented neutral gray as intentional (categorical identity, not signal)
+- **Dose columns:** Removed colored badge specs from pairwise and metrics tables. Plain `font-mono` text — color encodes signal, not categorical identity. Added standing rule to CLAUDE.md.
+- **Domain column:** Updated to colored-text-only (matches project-wide rule)
+- **Chart dots:** Spec now matches code — r=6 red fill for significant, r=4 sex-colored for NS
+- **Categorical bars:** Updated to document stroke-for-significance (preserves sex color identity in combined chart)
+- **P-value/effect columns:** Pairwise table uses always-on color via `getPValueColor()`/`getEffectSizeColor()`. Metrics table uses always-on p-value color (design decision pending user testing).
+- **Rail search:** Updated to inline flex pattern (consistent with all view rails)
+- **Context panel subtitle:** Updated to `titleCase(organ_system)` (matches code and project convention)
+- **Hypotheses tools:** All tools fully interactive regardless of `available` flag; removed unavailable/not-clickable distinction. Updated Pareto label to "Pareto front".

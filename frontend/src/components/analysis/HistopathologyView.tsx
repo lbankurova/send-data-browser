@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -445,7 +445,6 @@ function OverviewTab({
   specimenRules,
   allRuleResults,
   specimen,
-  studyId,
   selection,
   onFindingClick,
 }: {
@@ -454,11 +453,9 @@ function OverviewTab({
   specimenRules: RuleResult[];
   allRuleResults: RuleResult[];
   specimen: string;
-  studyId: string | undefined;
   selection: HistopathSelection | null;
   onFindingClick: (finding: string) => void;
 }) {
-  const navigate = useNavigate();
 
   // Cross-organ coherence: R16 rules matching this specimen
   const coherenceHints = useMemo(() => {
@@ -569,48 +566,6 @@ function OverviewTab({
           <InsightsList rules={specimenRules} />
         </div>
       )}
-
-      {/* Cross-view links */}
-      <div>
-        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Related views
-        </h4>
-        <div className="space-y-1 text-[11px]">
-          <a
-            href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: specimen } });
-            }}
-          >
-            View in Target Organs &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: specimen } });
-            }}
-          >
-            View dose-response &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: specimen } });
-            }}
-          >
-            View NOAEL decision &#x2192;
-          </a>
-        </div>
-      </div>
 
       {specimenData.length === 0 && findingSummaries.length === 0 && (
         <div className="py-8 text-center text-xs text-muted-foreground">
@@ -1186,7 +1141,6 @@ export function HistopathologyView({
                 specimenRules={specimenRules}
                 allRuleResults={ruleResults ?? []}
                 specimen={selectedSpecimen!}
-                studyId={studyId}
                 selection={selection}
                 onFindingClick={handleFindingClick}
               />
