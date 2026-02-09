@@ -33,8 +33,8 @@
 | Gap | 8 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 3 | 1 | Center view / context panel data overlap |
-| **Incoming feature** | **1** | **7** | **7 done (FEAT-01–07), 1 remaining (FEAT-08)** |
-| **Total** | **31** | **26** | |
+| **Incoming feature** | **0** | **8** | **All 8 done (FEAT-01–08)** |
+| **Total** | **30** | **27** | |
 
 ## Remaining Open Items
 
@@ -45,7 +45,7 @@
 - FEAT-05: Endpoint bookmarks — **DONE** (star toggle, filter pill, annotations backend)
 - FEAT-06: Subject-level histopath matrix — **DONE** (by-subject severity toggle)
 - FEAT-07: Clinical observations view — **DONE** (two-panel layout, observation rail, bar chart, timeline table, context panel with statistics + dose relationship)
-- FEAT-08: Causal inference tool (UX design done — ready for frontend-dev implementation + backend schema type)
+- FEAT-08: Causal inference tool — **DONE** (CausalityWorksheet in DoseResponseView: 5 auto-populated + 4 expert Bradford Hill criteria, dot gauge, override mechanism, overall assessment, causal-assessment annotations persistence)
 
 **Defer to production/Datagrok:**
 - HC-01, HC-02: Dynamic dose group mapping (essential for multi-study)
