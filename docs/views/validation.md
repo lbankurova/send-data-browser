@@ -159,9 +159,9 @@ interface FixScriptDef {
 TanStack React Table, `text-sm`, client-side sorting. Column resizing enabled (`enableColumnResizing: true`, `columnResizeMode: "onChange"`). Table width set to `ruleTable.getCenterTotalSize()` with `tableLayout: "fixed"`.
 
 ### Header Row
-`sticky top-0 z-10`, background `#f8f8f8`
+`sticky top-0 z-10`, `border-b bg-muted/50` (Tailwind class, consistent with other views)
 
-Headers: `relative cursor-pointer select-none border-b px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground`
+Headers: `relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-xs font-medium text-muted-foreground hover:text-foreground`
 
 Sort indicators: ` (up arrow)` asc / ` (down arrow)` desc
 
@@ -187,11 +187,11 @@ Column resize handle: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize
 | Info | `bg-blue-100 text-blue-800 border-blue-200` |
 
 ### Row Interactions
-- Hover: CSS variable `var(--hover-bg)` applied via inline `onMouseEnter`/`onMouseLeave`
-- Selected: CSS variable `var(--selection-bg)` background
+- Hover: `hover:bg-accent/50` (Tailwind class, consistent with other views)
+- Selected: `bg-accent` (Tailwind class)
 - Click: selects rule (passes rule details to context panel via `onSelectionChange`). Click again to deselect.
 - Deselect clears selected rule, selected issue, and record filters.
-- Cells: `px-3 py-2 text-xs`
+- Cells: `px-2 py-1 text-xs`
 
 ---
 
@@ -201,9 +201,9 @@ Only shown when a rule is selected.
 
 `flex items-center gap-2 border-b bg-muted/30 px-4 py-2`
 
-- Left: `text-xs font-medium` -- "{N} record(s) for `{rule_id}` -- {category}"
+- Left: `text-xs font-medium` -- "{N} records for `{rule_id}` -- {category}" (unfiltered) or "{N} of {M} records for `{rule_id}` -- {category}" (when any record filter is active)
 - Right: `ml-auto flex items-center gap-1.5`
-  - **Fix status filter**: `<select>` with `rounded-full border bg-background px-2.5 py-0.5 text-[10px]`
+  - **Fix status filter**: `<select>` with `rounded border bg-background px-2 py-1 text-xs` (consistent with other views)
     - Options: "Fix status" (all) / Not fixed / Auto-fixed / Manually fixed / Accepted as-is / Flagged
   - **Review status filter**: `<select>` same styling
     - Options: "Review status" (all) / Not reviewed / Reviewed / Approved
@@ -219,7 +219,7 @@ Only shown when a rule is selected.
 Only shown when a rule is selected. TanStack React Table, `text-sm`. Column resizing enabled (same pattern as rules table).
 
 ### Header Row
-Same styling as rules table: `sticky top-0 z-10`, background `#f8f8f8`. Column resize handles present.
+Same styling as rules table: `sticky top-0 z-10`, `border-b bg-muted/50`. Column resize handles present.
 
 ### Columns
 
@@ -266,10 +266,10 @@ Shared between both status columns: `inline-block rounded-sm border px-1.5 py-0.
 Records are enriched with live annotation data (`fixStatus`, `reviewStatus`, `assignedTo`) from `useAnnotations<ValidationRecordReview>(studyId, "validation-records")`.
 
 ### Row Interactions
-- Same hover/selected styling as rules table (CSS variables)
+- Same hover/selected styling as rules table (`hover:bg-accent/50`, `bg-accent` when selected)
 - Click: selects record, updates context panel to "issue" mode (sends full record data via `onSelectionChange`)
 - Issue ID column click also selects the record (with `e.stopPropagation()` to avoid double-fire)
-- Cells: `px-3 py-2 text-xs`
+- Cells: `px-2 py-1 text-xs`
 
 ### Empty State
 "No records match the current filters." -- `px-4 py-6 text-center text-xs text-muted-foreground`
@@ -530,8 +530,9 @@ No keyboard shortcuts currently implemented (no Escape handler, no keyboard navi
 | State | Display |
 |-------|---------|
 | Loading (results fetching) | Summary header shown, flex-1 area shows "Loading validation results..." centered in `text-xs text-muted-foreground` |
-| No results (404 or null) | Summary header shown, flex-1 area shows "No validation results available for this study." centered |
-| Results loaded but zero rules | Summary header with counts, flex-1 area shows "No validation issues found. Dataset passed all checks." centered |
+| No results (404 or null) | Summary header with RUN VALIDATION button shown, flex-1 area shows "No validation results available for this study." centered |
+| Results loaded but zero rules (no severity filter) | Summary header with counts, flex-1 area shows "No validation issues found. Dataset passed all checks." centered |
+| Results loaded but zero rules (severity filter active) | Summary header with counts, flex-1 area shows "No {severity} rules found." with a "Show all" button to clear the filter |
 | No rule selected | Rules table visible, bottom 60% shows "Select a rule above to view affected records" centered |
 | No matching records (after filter) | Bottom table shows "No records match the current filters." in colspan cell |
 | No rule detail | Context panel Rule Detail pane shows "No detail available for this rule." |
@@ -556,10 +557,8 @@ The `fixTier` value is assigned by the backend validation engine based on the ch
 ## Current Improvement Opportunities
 
 ### Rules Table
-- Uses CSS variables (`var(--hover-bg)`, `var(--selection-bg)`) for styling -- different pattern from other views which use Tailwind classes
 - Description column at 400px is very wide -- may truncate on smaller screens
 - No column visibility toggle
-- No severity filter on the rules table itself
 
 ### Records Table
 - Issue ID is a clickable link that changes context panel mode -- interaction not visually indicated beyond the blue color
@@ -577,4 +576,3 @@ The `fixTier` value is assigned by the backend validation engine based on the ch
 - No export option for validation results
 - Review progress uses green progress bar -- could show red/amber for incomplete reviews
 - No connection to the analysis views (e.g., clicking a finding in MI validation does not navigate to histopathology view)
-- RUN VALIDATION button exists in the landing page context menu but not directly in this view
