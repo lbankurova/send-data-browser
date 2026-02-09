@@ -236,8 +236,8 @@ Below chart area, `p-4`.
 | Mean | Mean | Right | `font-mono`, 2 decimal places, em dash if null |
 | SD | SD | Right | `font-mono text-muted-foreground`, 2 decimal places, em dash if null |
 | N | N | Right | Plain text, em dash if null |
-| p-value | p-value | Right | `font-mono` with always-on p-value color via `getPValueColor()`, formatted via `formatPValue` |
-| Effect | Effect | Right | `font-mono` with always-on effect size color via `getEffectSizeColor()`, formatted via `formatEffectSize` |
+| p-value | p-value | Right | `ev font-mono` — neutral at rest, `#DC2626` on row hover (interaction-driven evidence). `td` has `data-evidence=""`. Formatted via `formatPValue`. |
+| Effect | Effect | Right | `ev font-mono` — same interaction-driven evidence pattern. Formatted via `formatEffectSize`. |
 | Pattern | Pattern | Left | `text-muted-foreground`, underscores replaced with spaces |
 
 **Data rows:** `border-b border-dashed`, cells `px-2 py-1`
@@ -245,6 +245,8 @@ Below chart area, `p-4`.
 Shows all rows for the selected endpoint sorted by `dose_level` ascending, then `sex` ascending.
 
 Hidden when no endpoint is selected (table only renders when `pairwiseRows.length > 0`).
+
+> **Stub: user-togglable color coding.** In production, Datagrok grids expose color coding via the grid hamburger menu (☰ > Color coding). The prototype pairwise table uses interaction-driven evidence color (neutral at rest, color on hover). A future production feature should add a hamburger icon (☰) at the table header that opens a context menu with a "Color code" toggle. When enabled, cells switch from `ev` class to always-on `getPValueColor()`/`getEffectSizeColor()`. See Datagrok Pattern #23 (`grid.onCellPrepare()`) in `docs/platform/datagrok-patterns.ts:690`. Same applies to the Metrics Table below.
 
 ---
 
@@ -704,7 +706,7 @@ All Hypotheses tab state is session-scoped:
 - **Domain column:** Updated to colored-text-only (matches project-wide rule)
 - **Chart dots:** Spec now matches code — r=6 red fill for significant, r=4 sex-colored for NS
 - **Categorical bars:** Updated to document stroke-for-significance (preserves sex color identity in combined chart)
-- **P-value/effect columns:** Pairwise table uses always-on color via `getPValueColor()`/`getEffectSizeColor()`. Metrics table uses always-on p-value color (design decision pending user testing).
+- **P-value/effect columns:** Pairwise table reverted to interaction-driven `ev` class (neutral at rest, `#DC2626` on row hover) — follows evidence-whispers-in-text philosophy. Metrics table uses always-on p-value color (design decision pending user testing). Documented stub for user-togglable color coding via hamburger menu (Datagrok Pattern #23).
 - **Rail search:** Updated to inline flex pattern (consistent with all view rails)
 - **Context panel subtitle:** Updated to `titleCase(organ_system)` (matches code and project convention)
 - **Hypotheses tools:** All tools fully interactive regardless of `available` flag; removed unavailable/not-clickable distinction. Updated Pareto label to "Pareto front".

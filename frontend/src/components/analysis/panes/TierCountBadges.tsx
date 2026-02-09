@@ -7,6 +7,12 @@ const TIER_COLOR: Record<Tier, string> = {
   Observed: "text-muted-foreground",
 };
 
+const TIER_TOOLTIP: Record<Tier, string> = {
+  Critical: "High-confidence adverse signals requiring attention",
+  Notable: "Moderate signals worth investigating",
+  Observed: "Low-level observations for completeness",
+};
+
 interface Props {
   counts: Record<Tier, number>;
   activeTier?: Tier | null;
@@ -21,16 +27,17 @@ export function TierCountBadges({ counts, activeTier, onTierClick }: Props) {
 
   return (
     <>
+      <span className="text-muted-foreground/60">Insights: </span>
       {tiers.map((tier, i) => (
         <span key={tier}>
           {i > 0 && <span className="text-muted-foreground/40"> · </span>}
           <button
             className={cn(
               TIER_COLOR[tier],
-              onTierClick && "hover:underline",
               activeTier === tier && "underline underline-offset-2",
               activeTier != null && activeTier !== tier && "opacity-30"
             )}
+            title={`${TIER_TOOLTIP[tier]}. Click to filter.`}
             onClick={(e) => {
               e.stopPropagation();
               onTierClick?.(activeTier === tier ? null : tier);
