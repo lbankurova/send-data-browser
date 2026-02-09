@@ -360,7 +360,7 @@ function OrganRail({
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       <div className="border-b px-3 py-2">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Organ systems ({organs.length})
         </span>
         <input
@@ -472,7 +472,7 @@ function OverviewTab({
     <div className="flex-1 overflow-y-auto px-4 py-3">
       {/* Endpoint summary */}
       <div className="mb-4">
-        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Endpoint summary
         </h4>
         {endpointSummaries.length === 0 ? (
@@ -522,7 +522,7 @@ function OverviewTab({
       {/* Insights */}
       {organRules.length > 0 && (
         <div className="mb-4">
-          <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Insights
           </h4>
           <InsightsList rules={organRules} />
@@ -816,7 +816,7 @@ function AdversityMatrixTab({
                     {hg.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="relative cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                        className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                         style={{ width: header.getSize() }}
                         onClick={header.column.getToggleSortingHandler()}
                       >

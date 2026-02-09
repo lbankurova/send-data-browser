@@ -25,14 +25,14 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
       <table className="w-full text-xs">
         <thead className="sticky top-0 z-10 bg-background">
           <tr className="border-b bg-muted/50">
-            <th className="px-2 py-1.5 text-left font-medium">Domain</th>
-            <th className="px-2 py-1.5 text-left font-medium">Finding</th>
-            <th className="px-2 py-1.5 text-left font-medium">Sex</th>
-            <th className="px-2 py-1.5 text-left font-medium">Day</th>
+            <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Domain</th>
+            <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Finding</th>
+            <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Sex</th>
+            <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Day</th>
             {doseGroups.map((dg) => (
               <th
                 key={dg.dose_level}
-                className="px-2 py-1.5 text-right font-medium"
+                className="px-2 py-1.5 text-right font-medium text-muted-foreground"
                 title={dg.label}
               >
                 {dg.dose_value != null
@@ -40,11 +40,11 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                   : dg.label}
               </th>
             ))}
-            <th className="px-2 py-1.5 text-right font-medium">p-value</th>
-            <th className="px-2 py-1.5 text-right font-medium">Trend</th>
-            <th className="px-2 py-1.5 text-center font-medium">Dir</th>
-            <th className="px-2 py-1.5 text-right font-medium">Effect</th>
-            <th className="px-2 py-1.5 text-center font-medium">Severity</th>
+            <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">p-value</th>
+            <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">Trend</th>
+            <th className="px-2 py-1.5 text-center font-medium text-muted-foreground">Dir</th>
+            <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">Effect</th>
+            <th className="px-2 py-1.5 text-center font-medium text-muted-foreground">Severity</th>
           </tr>
         </thead>
         <tbody>
@@ -61,15 +61,9 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                 )}
                 onClick={() => selectFinding(isSelected ? null : f)}
               >
-                {/* Domain badge */}
+                {/* Domain label — colored text only per design rule */}
                 <td className="px-2 py-1">
-                  <span
-                    className={cn(
-                      "inline-block rounded px-1.5 py-0.5 text-[10px] font-medium",
-                      domainColor.bg,
-                      domainColor.text
-                    )}
-                  >
+                  <span className={cn("text-[9px] font-semibold", domainColor.text)}>
                     {f.domain}
                   </span>
                 </td>
@@ -170,7 +164,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                 <td className="px-2 py-1 text-center">
                   <span
                     className={cn(
-                      "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
+                      "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-semibold",
                       getSeverityBadgeClasses(f.severity)
                     )}
                   >
