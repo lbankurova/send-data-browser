@@ -519,11 +519,11 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
             <table className="text-sm" style={{ width: ruleTable.getCenterTotalSize(), tableLayout: "fixed" }}>
               <thead className="sticky top-0 z-10 bg-background">
                 {ruleTable.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="border-b" style={{ backgroundColor: "#f8f8f8" }}>
+                  <tr key={headerGroup.id} className="border-b bg-muted/50">
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
+                        className="relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
                         style={{ width: header.getSize() }}
                         onClick={header.column.getToggleSortingHandler()}
                       >
@@ -626,11 +626,11 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
               <table className="text-sm" style={{ width: recordTable.getCenterTotalSize(), tableLayout: "fixed" }}>
                 <thead className="sticky top-0 z-10 bg-background">
                   {recordTable.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id} className="border-b" style={{ backgroundColor: "#f8f8f8" }}>
+                    <tr key={headerGroup.id} className="border-b bg-muted/50">
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className="relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
+                          className="relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
                           style={{ width: header.getSize() }}
                           onClick={header.column.getToggleSortingHandler()}
                         >

@@ -1303,7 +1303,7 @@ function InlineReviewSection({
         {/* Save */}
         <button
           className={cn(
-            "rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50",
+            "rounded px-3 py-1.5 text-[11px] font-semibold disabled:opacity-50",
             isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"
           )}
           onClick={handleSave}
