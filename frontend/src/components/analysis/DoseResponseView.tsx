@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 import {
   formatPValue,
   formatEffectSize,
+  getPValueColor,
+  getEffectSizeColor,
   getDomainBadgeColor,
   titleCase,
 } from "@/lib/severity-colors";
@@ -374,7 +376,7 @@ export function DoseResponseView({
       col.accessor("dose_level", {
         header: "Dose",
         cell: (info) => (
-          <span className="text-[11px]">
+          <span className="font-mono text-[11px]">
             {info.row.original.dose_label.split(",")[0]}
           </span>
         ),
@@ -408,57 +410,27 @@ export function DoseResponseView({
       }),
       col.accessor("p_value", {
         header: "P-value",
-        cell: (info) => {
-          const p = info.getValue();
-          const sorted = !!info.column.getIsSorted();
-          return (
-            <span className={cn(
-              "font-mono",
-              p != null ? "ev" : "text-muted-foreground",
-              p != null && p < 0.001 ? "font-semibold" :
-              p != null && p < 0.01 ? "font-medium" : "",
-              sorted && p != null && p < 0.05 ? "text-[#DC2626]" : ""
-            )}>
-              {formatPValue(p)}
-            </span>
-          );
-        },
+        cell: (info) => (
+          <span className={cn("font-mono", getPValueColor(info.getValue()))}>
+            {formatPValue(info.getValue())}
+          </span>
+        ),
       }),
       col.accessor("effect_size", {
         header: "Effect",
-        cell: (info) => {
-          const d = info.getValue();
-          const sorted = !!info.column.getIsSorted();
-          return (
-            <span className={cn(
-              "font-mono",
-              d != null ? "ev" : "text-muted-foreground",
-              d != null && Math.abs(d) >= 0.8 ? "font-semibold" :
-              d != null && Math.abs(d) >= 0.5 ? "font-medium" : "",
-              sorted && d != null && Math.abs(d) >= 0.5 ? "text-[#DC2626]" : ""
-            )}>
-              {formatEffectSize(d)}
-            </span>
-          );
-        },
+        cell: (info) => (
+          <span className={cn("font-mono", getEffectSizeColor(info.getValue()))}>
+            {formatEffectSize(info.getValue())}
+          </span>
+        ),
       }),
       col.accessor("trend_p", {
         header: "Trend p",
-        cell: (info) => {
-          const p = info.getValue();
-          const sorted = !!info.column.getIsSorted();
-          return (
-            <span className={cn(
-              "font-mono",
-              p != null ? "ev" : "text-muted-foreground",
-              p != null && p < 0.001 ? "font-semibold" :
-              p != null && p < 0.01 ? "font-medium" : "",
-              sorted && p != null && p < 0.05 ? "text-[#DC2626]" : ""
-            )}>
-              {formatPValue(p)}
-            </span>
-          );
-        },
+        cell: (info) => (
+          <span className={cn("font-mono", getPValueColor(info.getValue()))}>
+            {formatPValue(info.getValue())}
+          </span>
+        ),
       }),
       col.accessor("dose_response_pattern", {
         header: "Pattern",
@@ -992,10 +964,10 @@ function ChartOverviewContent({
                           key={`${sex}-${cx}-${cy}`}
                           cx={cx}
                           cy={cy}
-                          r={sig ? 5 : 3}
-                          fill={sig ? color : "#fff"}
-                          stroke={color}
-                          strokeWidth={sig ? 2 : 1.5}
+                          r={sig ? 6 : 4}
+                          fill={sig ? "#dc2626" : color}
+                          stroke={sig ? "#dc2626" : color}
+                          strokeWidth={sig ? 2 : 1}
                         />
                       );
                     }}
@@ -1064,11 +1036,11 @@ function ChartOverviewContent({
             {chartData.dataType === "continuous" && (
               <>
                 <span className="flex items-center gap-1">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-gray-500 bg-gray-500" />
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-600" />
                   p&lt;0.05
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="inline-block h-2 w-2 rounded-full border-[1.5px] border-gray-400 bg-white" />
+                  <span className="inline-block h-2 w-2 rounded-full bg-gray-400" />
                   NS
                 </span>
               </>
@@ -1151,7 +1123,7 @@ function ChartOverviewContent({
               <tbody>
                 {pairwiseRows.map((row, i) => (
                   <tr key={i} className="border-b border-dashed">
-                    <td className="px-2 py-1 text-[11px]">
+                    <td className="px-2 py-1 font-mono text-[11px]">
                       {row.dose_label.split(",")[0]}
                     </td>
                     <td className="px-2 py-1">{row.sex}</td>
@@ -1162,23 +1134,13 @@ function ChartOverviewContent({
                       {row.sd != null ? row.sd.toFixed(2) : "\u2014"}
                     </td>
                     <td className="px-2 py-1 text-right">{row.n ?? "\u2014"}</td>
-                    <td className="px-2 py-1 text-right" data-evidence>
-                      <span className={cn(
-                        "font-mono",
-                        row.p_value != null ? "ev" : "text-muted-foreground",
-                        row.p_value != null && row.p_value < 0.001 ? "font-semibold" :
-                        row.p_value != null && row.p_value < 0.01 ? "font-medium" : ""
-                      )}>
+                    <td className="px-2 py-1 text-right">
+                      <span className={cn("font-mono", getPValueColor(row.p_value))}>
                         {formatPValue(row.p_value)}
                       </span>
                     </td>
-                    <td className="px-2 py-1 text-right" data-evidence>
-                      <span className={cn(
-                        "font-mono",
-                        row.effect_size != null ? "ev" : "text-muted-foreground",
-                        row.effect_size != null && Math.abs(row.effect_size) >= 0.8 ? "font-semibold" :
-                        row.effect_size != null && Math.abs(row.effect_size) >= 0.5 ? "font-medium" : ""
-                      )}>
+                    <td className="px-2 py-1 text-right">
+                      <span className={cn("font-mono", getEffectSizeColor(row.effect_size))}>
                         {formatEffectSize(row.effect_size)}
                       </span>
                     </td>
@@ -1302,14 +1264,11 @@ function MetricsTableContent({
                   data-selected={isSelected || undefined}
                   onClick={() => handleRowClick(orig)}
                 >
-                  {row.getVisibleCells().map((cell) => {
-                    const isEvidence = cell.column.id === "p_value" || cell.column.id === "effect_size" || cell.column.id === "trend_p";
-                    return (
-                      <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }} data-evidence={isEvidence || undefined}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    );
-                  })}
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
                 </tr>
               );
             })}

@@ -22,7 +22,7 @@ export interface AnalysisView {
 
 export const ANALYSIS_VIEWS: AnalysisView[] = [
   { key: "study-summary", label: "Study Summary", implemented: true },
-  { key: "dose-response", label: "Dose-response & causality", implemented: true },
+  { key: "dose-response", label: "Dose-Response", implemented: true },
   { key: "target-organs", label: "Target organs & systems", implemented: true },
   { key: "histopathology", label: "Histopathology review", implemented: true },
   { key: "noael-decision", label: "NOAEL & decision", implemented: true },

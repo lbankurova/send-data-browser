@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -444,7 +444,6 @@ function OverviewTab({
   endpointSummaries,
   ruleResults,
   organ,
-  studyId,
   selection,
   onEndpointClick,
 }: {
@@ -452,11 +451,9 @@ function OverviewTab({
   endpointSummaries: EndpointSummary[];
   ruleResults: RuleResult[];
   organ: string;
-  studyId: string | undefined;
   selection: NoaelSelection | null;
   onEndpointClick: (endpoint: string) => void;
 }) {
-  const navigate = useNavigate();
 
   // Filter rule results to this organ
   const organRules = useMemo(() => {
@@ -531,48 +528,6 @@ function OverviewTab({
           <InsightsList rules={organRules} />
         </div>
       )}
-
-      {/* Cross-view links */}
-      <div>
-        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Related views
-        </h4>
-        <div className="space-y-1 text-[11px]">
-          <a
-            href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: organ } });
-            }}
-          >
-            View in Target Organs &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
-            }}
-          >
-            View dose-response &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: organ } });
-            }}
-          >
-            View histopathology &#x2192;
-          </a>
-        </div>
-      </div>
 
       {organData.length === 0 && endpointSummaries.length === 0 && (
         <div className="py-8 text-center text-xs text-muted-foreground">
@@ -1134,7 +1089,6 @@ export function NoaelDecisionView({
                   endpointSummaries={endpointSummaries}
                   ruleResults={ruleResults ?? []}
                   organ={selectedOrgan!}
-                  studyId={studyId}
                   selection={selection}
                   onEndpointClick={handleEndpointClick}
                 />
