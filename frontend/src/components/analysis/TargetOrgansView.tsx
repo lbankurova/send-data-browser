@@ -218,28 +218,23 @@ function OrganListItem({
         <div className="mt-1 flex items-center gap-2 text-[10px]">
           {stats.minPValue !== null && (
             <span className={cn(
-              "font-mono",
-              stats.minPValue < 0.001 ? "font-semibold text-[#DC2626]" :
-              stats.minPValue < 0.01 ? "font-medium" : "text-muted-foreground"
+              "font-mono text-muted-foreground",
+              stats.minPValue < 0.001 ? "font-semibold" :
+              stats.minPValue < 0.01 ? "font-medium" : ""
             )}>
               p={formatPValue(stats.minPValue)}
             </span>
           )}
           {stats.maxEffectSize !== null && (
             <span className={cn(
-              "font-mono",
+              "font-mono text-muted-foreground",
               stats.maxEffectSize >= 0.8 ? "font-semibold" :
-              stats.maxEffectSize >= 0.5 ? "font-medium" : "text-muted-foreground"
+              stats.maxEffectSize >= 0.5 ? "font-medium" : ""
             )}>
               |d|={stats.maxEffectSize.toFixed(2)}
             </span>
           )}
-          <span className={cn(
-            "rounded px-1 py-0.5 text-[9px]",
-            stats.doseConsistency === "Strong" ? "bg-green-100 text-green-700" :
-            stats.doseConsistency === "Moderate" ? "bg-amber-100 text-amber-700" :
-            "bg-gray-100 text-gray-500"
-          )}>
+          <span className="text-[9px] text-muted-foreground">
             {stats.doseConsistency}
           </span>
         </div>
@@ -383,7 +378,7 @@ function OrganSummaryHeader({
       </p>
 
       {/* 1-line conclusion */}
-      <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
         {conclusion}
       </p>
 
@@ -392,8 +387,8 @@ function OrganSummaryHeader({
         <span>
           <span className="text-muted-foreground">Max signal: </span>
           <span className={cn(
-            "font-mono font-medium",
-            organ.max_signal_score >= 0.8 && "text-[#DC2626]"
+            "font-mono",
+            organ.max_signal_score >= 0.8 ? "font-semibold" : "font-medium"
           )}>
             {organ.max_signal_score.toFixed(2)}
           </span>
@@ -402,7 +397,6 @@ function OrganSummaryHeader({
           <span className="text-muted-foreground">Evidence: </span>
           <span className={cn(
             "font-mono",
-            organ.evidence_score >= 0.7 ? "font-semibold text-[#DC2626]" :
             organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium"
           )}>
             {organ.evidence_score.toFixed(2)}
@@ -412,8 +406,7 @@ function OrganSummaryHeader({
           <span className="text-muted-foreground">Min p: </span>
           <span className={cn(
             "font-mono",
-            localStats.minPValue != null && localStats.minPValue < 0.001 ? "font-semibold text-[#DC2626]" :
-            localStats.minPValue != null && localStats.minPValue < 0.01 ? "font-medium" : ""
+            localStats.minPValue != null && localStats.minPValue < 0.01 ? "font-semibold" : "font-medium"
           )}>
             {formatPValue(localStats.minPValue)}
           </span>
@@ -422,8 +415,7 @@ function OrganSummaryHeader({
           <span className="text-muted-foreground">Max |d|: </span>
           <span className={cn(
             "font-mono",
-            localStats.maxEffectSize != null && localStats.maxEffectSize >= 0.8 ? "font-semibold text-[#DC2626]" :
-            localStats.maxEffectSize != null && localStats.maxEffectSize >= 0.5 ? "font-medium" : ""
+            localStats.maxEffectSize != null && localStats.maxEffectSize >= 0.8 ? "font-semibold" : "font-medium"
           )}>
             {localStats.maxEffectSize != null ? localStats.maxEffectSize.toFixed(2) : "—"}
           </span>
@@ -434,11 +426,7 @@ function OrganSummaryHeader({
         </span>
         <span>
           <span className="text-muted-foreground">Dose consistency: </span>
-          <span className={cn(
-            "font-medium",
-            localStats.doseConsistency === "Strong" ? "text-green-700" :
-            localStats.doseConsistency === "Moderate" ? "text-amber-700" : ""
-          )}>
+          <span className="font-medium">
             {localStats.doseConsistency}
           </span>
         </span>
@@ -610,13 +598,13 @@ function OverviewTab({
                   {getDirectionSymbol(row.direction)}
                 </span>
                 <span className={cn(
-                  "shrink-0 font-mono group-hover/finding:text-[#DC2626]",
+                  "shrink-0 font-mono",
                   Math.abs(row.effect_size ?? 0) >= 0.8 ? "font-semibold" : "font-normal"
                 )}>
                   {formatEffectSize(row.effect_size)}
                 </span>
                 <span className={cn(
-                  "shrink-0 font-mono group-hover/finding:text-[#DC2626]",
+                  "shrink-0 font-mono",
                   row.p_value != null && row.p_value < 0.001 ? "font-semibold" :
                   row.p_value != null && row.p_value < 0.01 ? "font-medium" : "font-normal"
                 )}>
@@ -740,14 +728,12 @@ function EvidenceTableTab({
         header: "P-value",
         cell: (info) => {
           const p = info.getValue();
-          const sorted = !!info.column.getIsSorted();
           return (
             <span className={cn(
               "font-mono",
               p == null && "text-muted-foreground",
               p != null && p < 0.001 ? "font-semibold" :
               p != null && p < 0.01 ? "font-medium" : "",
-              sorted && p != null && p < 0.05 ? "text-[#DC2626]" : ""
             )}>
               {formatPValue(p)}
             </span>
@@ -758,14 +744,12 @@ function EvidenceTableTab({
         header: "Effect",
         cell: (info) => {
           const d = info.getValue();
-          const sorted = !!info.column.getIsSorted();
           return (
             <span className={cn(
               "font-mono",
               d == null && "text-muted-foreground",
               d != null && Math.abs(d) >= 0.8 ? "font-semibold" :
               d != null && Math.abs(d) >= 0.5 ? "font-medium" : "",
-              sorted && d != null && Math.abs(d) >= 0.5 ? "text-[#DC2626]" : ""
             )}>
               {formatEffectSize(d)}
             </span>
