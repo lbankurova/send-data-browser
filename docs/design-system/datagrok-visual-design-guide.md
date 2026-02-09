@@ -2,6 +2,8 @@
 
 Comprehensive visual design system for Datagrok applications. Structural tokens (buttons, badges, typography, spacing, surfaces) are codified in `frontend/src/lib/design-tokens.ts`. Color-scale functions are in `frontend/src/lib/severity-colors.ts`. This document is the hex-value and rule reference.
 
+> **Condensed 2026-02-09.** Full original: `datagrok-visual-design-guide-original.md`. Restore by copying it over this file if agent performance degrades.
+
 ---
 
 ## 1. Color System

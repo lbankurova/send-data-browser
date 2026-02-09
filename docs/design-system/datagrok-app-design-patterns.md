@@ -2,6 +2,8 @@
 
 Generalized pattern library for Datagrok applications. Patterns extracted from the SEND Data Browser prototype. References the canonical API file (`datagrok-patterns.ts`) by number.
 
+> **Condensed 2026-02-09.** Full original: `datagrok-app-design-patterns-original.md`. Personas full narrative: `user-personas-and-view-analysis-original.md`. Restore by copying originals over active files if agent performance degrades.
+
 ---
 
 ## 1. User Personas

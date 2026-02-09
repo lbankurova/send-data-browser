@@ -38,6 +38,8 @@
 | `design-system/datagrok-llm-development-guide.md` | None (meta-guide) | 2026-02-09 | Current — condensed |
 | `design-system/user-personas-and-view-analysis.md` | — | 2026-02-09 | Redirect → `datagrok-app-design-patterns.md` §1 |
 
+> **Rollback:** All 4 design system docs were condensed 2026-02-09 (2,333→490 lines). Full originals preserved as `*-original.md` in the same directory. To restore: `cp docs/design-system/{name}-original.md docs/design-system/{name}.md` for each file.
+
 ## Reference (not actively tracked — refresh on demand)
 
 | Asset | Notes |
