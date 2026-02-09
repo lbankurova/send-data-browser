@@ -16,10 +16,9 @@ import type {
 import {
   formatPValue,
   getSignalScoreColor,
-  getDomainBadgeColor,
+  getDomainDotColor,
   titleCase,
 } from "@/lib/severity-colors";
-import { cn } from "@/lib/utils";
 
 interface Props {
   signalData: SignalSummaryRow[];
@@ -58,11 +57,10 @@ export function StudySummaryContextPanel({
     return (
       <div className="p-4 text-xs text-muted-foreground">
         <p className="mb-2">
-          Click an organ or signal to see insights.
+          Select a signal from the heatmap or grid to view details.
         </p>
         <p className="text-muted-foreground/60">
-          Tip: Click an organ name in Findings view for organ-level detail,
-          or select a heatmap cell for endpoint statistics.
+          Tip: Click an organ in the rail for organ-level insights, or select a heatmap cell for endpoint statistics.
         </p>
       </div>
     );
@@ -156,7 +154,7 @@ function EndpointPanel({
 
       <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {selectedRow ? (
-          <div className="space-y-1.5 text-[11px]">
+          <div className="space-y-1.5 text-[11px] tabular-nums">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Signal score</span>
               <span
@@ -227,7 +225,7 @@ function EndpointPanel({
                 {titleCase(selection.organ_system)}
               </span>
             </p>
-            <table className="w-full text-[10px]">
+            <table className="w-full text-[10px] tabular-nums">
               <thead>
                 <tr className="border-b text-muted-foreground">
                   <th className="pb-0.5 text-left font-medium">Endpoint</th>
@@ -401,7 +399,7 @@ function OrganPanel({
             No endpoints for this organ.
           </p>
         ) : (
-          <table className="w-full text-[10px]">
+          <table className="w-full text-[10px] tabular-nums">
             <thead>
               <tr className="border-b text-muted-foreground">
                 <th className="pb-0.5 text-left font-medium">Endpoint</th>
@@ -450,21 +448,15 @@ function OrganPanel({
           <div>
             <span className="text-muted-foreground">Domains: </span>
             <span className="inline-flex flex-wrap gap-1">
-              {evidence.domains.map((d) => {
-                const dc = getDomainBadgeColor(d);
-                return (
-                  <span
-                    key={d}
-                    className={cn(
-                      "rounded px-1 py-0.5 text-[9px] font-medium",
-                      dc.bg,
-                      dc.text
-                    )}
-                  >
-                    {d}
-                  </span>
-                );
-              })}
+              {evidence.domains.map((d) => (
+                <span
+                  key={d}
+                  className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70"
+                >
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: getDomainDotColor(d) }} />
+                  {d}
+                </span>
+              ))}
             </span>
           </div>
           {/* Counts */}
