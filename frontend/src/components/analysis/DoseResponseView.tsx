@@ -786,10 +786,6 @@ export function DoseResponseView({
                 </span>
               )}
               <span>
-                <span className="text-muted-foreground">Sexes: </span>
-                <span className="font-mono">{selectedSummary.sexes.join(", ")}</span>
-              </span>
-              <span>
                 <span className="text-muted-foreground">Data: </span>
                 <span>{selectedSummary.data_type}</span>
               </span>
@@ -1134,13 +1130,13 @@ function ChartOverviewContent({
                       {row.sd != null ? row.sd.toFixed(2) : "\u2014"}
                     </td>
                     <td className="px-2 py-1 text-right">{row.n ?? "\u2014"}</td>
-                    <td className="px-2 py-1 text-right">
-                      <span className={cn("font-mono", getPValueColor(row.p_value))}>
+                    <td className="px-2 py-1 text-right" data-evidence="">
+                      <span className="ev font-mono">
                         {formatPValue(row.p_value)}
                       </span>
                     </td>
-                    <td className="px-2 py-1 text-right">
-                      <span className={cn("font-mono", getEffectSizeColor(row.effect_size))}>
+                    <td className="px-2 py-1 text-right" data-evidence="">
+                      <span className="ev font-mono">
                         {formatEffectSize(row.effect_size)}
                       </span>
                     </td>

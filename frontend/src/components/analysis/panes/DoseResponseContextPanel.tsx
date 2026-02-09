@@ -9,7 +9,6 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import {
   titleCase,
   formatPValue,
-  formatEffectSize,
   getDomainBadgeColor,
 } from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
@@ -128,7 +127,7 @@ export function DoseResponseContextPanel({
         <InsightsList rules={endpointRules} tierFilter={tierFilter} />
       </CollapsiblePane>
 
-      {/* 2. Statistics */}
+      {/* 2. Statistics — only items NOT already in the evidence panel header */}
       <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {selectedSignalRow ? (
           <div className="space-y-1.5 text-[11px] tabular-nums">
@@ -141,30 +140,12 @@ export function DoseResponseContextPanel({
               <span>{selectedSignalRow.direction ?? "\u2014"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Best p-value</span>
-              <span className="font-mono">{formatPValue(selectedSignalRow.p_value)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Trend p-value</span>
-              <span className="font-mono">{formatPValue(selectedSignalRow.trend_p)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Effect size</span>
-              <span className="font-mono">
-                {formatEffectSize(selectedSignalRow.effect_size)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Dose-response</span>
-              <span>{selectedSignalRow.dose_response_pattern.replace(/_/g, " ")}</span>
-            </div>
-            <div className="flex justify-between">
               <span className="text-muted-foreground">Severity</span>
               <span>{selectedSignalRow.severity}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Treatment-related</span>
-              <span>{selectedSignalRow.treatment_related ? "Yes" : "No"}</span>
+              <span>{selectedSignalRow.treatment_related ? "yes" : "no"}</span>
             </div>
           </div>
         ) : (
