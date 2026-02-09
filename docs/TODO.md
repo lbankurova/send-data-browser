@@ -1,9 +1,23 @@
 # Technical Debt & Open Issues
 
 > **Source:** Extracted from `docs/systems/*.md` during consolidation audit (2026-02-08).
-> **Purpose:** Shared backlog. Either contributor can pick up items and push fixes or incoming specs.
+> **Purpose:** Shared backlog across all agent roles. This is the single source of truth for what needs doing.
 > **Process:** Pick an item → implement or write a spec in `docs/incoming/` → mark done here → update the relevant `docs/systems/*.md`.
 > **Recommendations added:** 2026-02-08. Domain-informed suggestions for each item. These are advisory — human decides.
+
+## Agent Protocol
+
+**Every agent reads this file at session start.** When you finish a task:
+1. Check this file for the next open item relevant to your role
+2. Suggest it to the user as the next action
+3. If you discover new issues during your work, add them here with: category, ID (next in sequence), description, affected files, and suggested owner role
+
+**Role ownership hints:**
+- `BUG`, `SD`, `RED` items touching frontend → **frontend-dev** or **ux-designer**
+- `BUG`, `HC`, `MF`, `GAP` items touching backend → **backend-dev**
+- `GAP-11`, `GAP-12`, `RED` items (design) → **ux-designer**
+- Spec divergences needing doc updates → **docs-agent**
+- Code quality (dead code, bundle, duplication) → **review**
 
 ---
 
@@ -17,7 +31,8 @@
 | Missing feature | 4 | 4 | Spec'd but not implemented |
 | Gap | 8 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
-| **Total** | **22** | **23** | |
+| UI redundancy | 3 | 1 | Center view / context panel data overlap |
+| **Total** | **25** | **24** | |
 
 ## Remaining Open Items
 
@@ -309,6 +324,40 @@
   3. Design controls and view layouts from scratch based on the workflows — not by picking a Datagrok viewer and wrapping it.
   4. Icon and label choices (GAP-11) follow naturally from the redesigned workflows.
 - **Recommendation:** Treat as a design task, not a code task. Produce an incoming spec (`docs/incoming/hypotheses-tab-redesign.md`) before writing code. The current placeholder implementation is sufficient for the prototype — this is a production design concern.
+- **Status:** Open
+
+---
+
+## UI Redundancy
+
+> Center view vs. context panel data overlap identified during redundancy audit (2026-02-09).
+> Fix #3 (cross-view links in center Overview tabs) resolved same session.
+
+### RED-01: InsightsList duplicated in Target Organs center + context panel
+- **View:** Target Organs
+- **Files:** `frontend/src/components/analysis/TargetOrgansView.tsx` (Hypotheses tab → `InsightsList`), `frontend/src/components/analysis/panes/TargetOrgansContextPanel.tsx` (Convergence pane → `InsightsList`)
+- **Issue:** Both render `InsightsList` with the identical organ-scoped `ruleResults`. Fully redundant when Hypotheses tab is active.
+- **Fix:** Remove `InsightsList` from the context panel's Convergence pane. Replace with a brief organ-level summary (e.g., tier count + 1-line conclusion) that doesn't duplicate the center content.
+- **Status:** Open
+
+### RED-02: NOAEL banner data duplicated in context panel no-selection state
+- **View:** NOAEL Decision
+- **Files:** `frontend/src/components/analysis/NoaelDecisionView.tsx` (NoaelBanner), `frontend/src/components/analysis/panes/NoaelContextPanel.tsx` (NOAEL summary + Confidence factors panes)
+- **Issue:** The persistent NoaelBanner shows sex × NOAEL × LOAEL × confidence × adverse-at-LOAEL × domains. The context panel's no-selection state repeats all of this in "NOAEL summary" table + "Confidence factors" pane. Both visible simultaneously.
+- **Fix:** Remove "NOAEL summary" and "Confidence factors" from context panel no-selection state. Keep only "NOAEL narrative" (InsightsList of study-scope rules) — that adds interpretive value the banner doesn't. Replace the rest with a prompt: "Select an endpoint to view adversity rationale."
+- **Status:** Open
+
+### RED-03: Cross-view links in center Overview tabs (RESOLVED)
+- **Views:** Histopathology, NOAEL Decision
+- **Issue:** Center Overview tabs had "Related views" link sections duplicating the context panel's Related views pane.
+- **Fix:** Removed cross-view links from center Overview tabs. Context panel is the canonical location for navigation links.
+- **Status:** RESOLVED (2026-02-09)
+
+### RED-04: Target Organs context panel Endpoints list duplicates Evidence tab
+- **View:** Target Organs
+- **Files:** `frontend/src/components/analysis/panes/TargetOrgansContextPanel.tsx` (Endpoints pane)
+- **Issue:** Context panel lists contributing endpoints (endpoint, domain, count) which is a simplified duplicate of the Evidence tab grid.
+- **Fix:** Replace with a domain-count summary (e.g., "LB: 8 endpoints, MI: 3 endpoints") instead of listing individual endpoints.
 - **Status:** Open
 
 ---
