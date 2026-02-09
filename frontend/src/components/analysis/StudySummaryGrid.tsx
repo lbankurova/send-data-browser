@@ -6,8 +6,9 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
-import type { SortingState } from "@tanstack/react-table";
+import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import type { SignalSummaryRow, SignalSelection } from "@/types/analysis-views";
 import {
   getSignalScoreColor,
@@ -30,6 +31,7 @@ export function StudySummaryGrid({ data, selection, onSelect }: Props) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "signal_score", desc: true },
   ]);
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   const columns = useMemo(
     () => [
@@ -177,22 +179,25 @@ export function StudySummaryGrid({ data, selection, onSelect }: Props) {
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    state: { sorting, columnSizing },
     onSortingChange: setSorting,
+    onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
   });
 
   return (
     <div className="overflow-auto">
-      <table className="w-full border-collapse text-xs">
+      <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} className="border-b bg-muted/50">
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                  className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
                   style={{ width: header.getSize() }}
                   onClick={header.column.getToggleSortingHandler()}
                 >
@@ -202,6 +207,14 @@ export function StudySummaryGrid({ data, selection, onSelect }: Props) {
                   )}
                   {header.column.getIsSorted() === "asc" && " \u25b2"}
                   {header.column.getIsSorted() === "desc" && " \u25bc"}
+                  <div
+                    onMouseDown={header.getResizeHandler()}
+                    onTouchStart={header.getResizeHandler()}
+                    className={cn(
+                      "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
+                      header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                    )}
+                  />
                 </th>
               ))}
             </tr>
@@ -238,7 +251,7 @@ export function StudySummaryGrid({ data, selection, onSelect }: Props) {
                 }}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-2 py-1">
+                  <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}

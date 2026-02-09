@@ -6,21 +6,15 @@ import {
   type ColumnDef,
   type VisibilityState,
 } from "@tanstack/react-table";
+import type { ColumnSizingState } from "@tanstack/react-table";
 import { Columns3, Search, Eye, EyeOff } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import type { ColumnInfo } from "@/types";
 
 interface DataTableProps {
@@ -30,6 +24,7 @@ interface DataTableProps {
 
 export function DataTable({ columns, rows }: DataTableProps) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [search, setSearch] = useState("");
 
   const tableColumns: ColumnDef<Record<string, string | null>>[] = columns.map(
@@ -59,9 +54,12 @@ export function DataTable({ columns, rows }: DataTableProps) {
   const table = useReactTable({
     data: rows,
     columns: tableColumns,
-    state: { columnVisibility },
+    state: { columnVisibility, columnSizing },
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
   });
 
   const visibleCount = table.getVisibleLeafColumns().length;
@@ -181,44 +179,58 @@ export function DataTable({ columns, rows }: DataTableProps) {
           </PopoverContent>
         </Popover>
       </div>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="whitespace-nowrap">
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="whitespace-nowrap">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
+      <div className="relative w-full overflow-x-auto">
+        <table className="text-sm" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id} className="border-b">
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="relative h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground"
+                    style={{ width: header.getSize() }}
+                  >
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
+                      className={cn(
+                        "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
+                        header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                      )}
+                    />
+                  </th>
                 ))}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell
-                colSpan={table.getVisibleLeafColumns().length || 1}
-                className="h-24 text-center"
-              >
-                No data.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.length ? (
+              table.getRowModel().rows.map((row) => (
+                <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="p-2 align-middle whitespace-nowrap" style={{ width: cell.column.getSize() }}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={table.getVisibleLeafColumns().length || 1}
+                  className="h-24 text-center"
+                >
+                  No data.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
