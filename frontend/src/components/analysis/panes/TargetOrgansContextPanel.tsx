@@ -7,7 +7,11 @@ import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { cn } from "@/lib/utils";
-import { getDomainBadgeColor, titleCase } from "@/lib/severity-colors";
+import {
+  getDomainBadgeColor,
+  titleCase,
+  formatPValue,
+} from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import type {
@@ -56,23 +60,62 @@ export function TargetOrgansContextPanel({
     );
   }, [ruleResults, selection]);
 
-  // Contributing endpoints for selected organ
+  // All evidence rows for this organ
+  const organEvidence = useMemo(() => {
+    if (!selection) return [];
+    return evidenceData.filter((r) => r.organ_system === selection.organ_system);
+  }, [evidenceData, selection]);
+
+  // Contributing endpoints: unique endpoints with best p-value and max effect size
   const endpoints = useMemo(() => {
     if (!selection) return [];
-    const matching = evidenceData.filter((r) => r.organ_system === selection.organ_system);
-    const unique = new Map<string, { domain: string; count: number }>();
-    for (const r of matching) {
-      const existing = unique.get(r.endpoint_label);
+    const map = new Map<string, { domain: string; minP: number | null; maxD: number | null }>();
+    for (const r of organEvidence) {
+      const existing = map.get(r.endpoint_label);
       if (existing) {
-        existing.count++;
+        if (r.p_value !== null && (existing.minP === null || r.p_value < existing.minP)) {
+          existing.minP = r.p_value;
+        }
+        if (r.effect_size !== null && (existing.maxD === null || Math.abs(r.effect_size) > existing.maxD)) {
+          existing.maxD = Math.abs(r.effect_size);
+        }
       } else {
-        unique.set(r.endpoint_label, { domain: r.domain, count: 1 });
+        map.set(r.endpoint_label, {
+          domain: r.domain,
+          minP: r.p_value,
+          maxD: r.effect_size !== null ? Math.abs(r.effect_size) : null,
+        });
       }
     }
-    return [...unique.entries()]
-      .sort((a, b) => b[1].count - a[1].count)
+    return [...map.entries()]
+      .sort((a, b) => (b[1].maxD ?? 0) - (a[1].maxD ?? 0))
       .slice(0, 15);
-  }, [evidenceData, selection]);
+  }, [organEvidence, selection]);
+
+  // Evidence breakdown statistics
+  const evidence = useMemo(() => {
+    const domains = [...new Set(organEvidence.map((r) => r.domain))].sort();
+    const nSignificant = organEvidence.filter(
+      (r) => r.p_value !== null && r.p_value < 0.05
+    ).length;
+    const nTR = organEvidence.filter((r) => r.treatment_related).length;
+    const nAdverse = organEvidence.filter((r) => r.severity === "adverse").length;
+    const maleRows = organEvidence.filter((r) => r.sex === "M");
+    const femaleRows = organEvidence.filter((r) => r.sex === "F");
+    const maleSig = maleRows.filter((r) => r.p_value !== null && r.p_value < 0.05).length;
+    const femaleSig = femaleRows.filter((r) => r.p_value !== null && r.p_value < 0.05).length;
+    return {
+      total: organEvidence.length,
+      domains,
+      nSignificant,
+      nTR,
+      nAdverse,
+      maleTotal: maleRows.length,
+      maleSig,
+      femaleTotal: femaleRows.length,
+      femaleSig,
+    };
+  }, [organEvidence]);
 
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
@@ -121,7 +164,7 @@ export function TargetOrgansContextPanel({
         </div>
       </div>
 
-      {/* Organ convergence */}
+      {/* 1. Convergence insights */}
       <CollapsiblePane
         title="Convergence"
         defaultOpen
@@ -131,27 +174,107 @@ export function TargetOrgansContextPanel({
         <InsightsList rules={organRules} tierFilter={tierFilter} />
       </CollapsiblePane>
 
-      {/* Contributing endpoints */}
-      <CollapsiblePane title="Endpoints" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-0.5">
-          {endpoints.map(([label, info]) => {
-            const dc = getDomainBadgeColor(info.domain);
-            return (
-              <div key={label} className="flex items-center gap-1 text-[11px]">
-                <span className={cn("text-[9px] font-semibold", dc.text)}>
-                  {info.domain}
+      {/* 2. Contributing endpoints (tabular) */}
+      <CollapsiblePane
+        title={`Endpoints (${endpoints.length})`}
+        defaultOpen
+        expandAll={expandGen}
+        collapseAll={collapseGen}
+      >
+        {endpoints.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">No endpoints for this organ.</p>
+        ) : (
+          <table className="w-full text-[10px] tabular-nums">
+            <thead>
+              <tr className="border-b text-muted-foreground">
+                <th className="pb-0.5 text-left font-medium">Endpoint</th>
+                <th className="pb-0.5 text-left font-medium">Dom</th>
+                <th className="pb-0.5 text-right font-medium">|d|</th>
+                <th className="pb-0.5 text-right font-medium">p</th>
+              </tr>
+            </thead>
+            <tbody>
+              {endpoints.map(([label, info]) => {
+                const dc = getDomainBadgeColor(info.domain);
+                return (
+                  <tr
+                    key={label}
+                    className="cursor-pointer border-b border-dashed hover:bg-accent/30"
+                    onClick={() => {
+                      if (studyId) {
+                        navigate(
+                          `/studies/${encodeURIComponent(studyId)}/dose-response`,
+                          { state: { endpoint_label: label, organ_system: selection.organ_system } }
+                        );
+                      }
+                    }}
+                  >
+                    <td className="truncate py-0.5" title={label}>
+                      {label.length > 22 ? label.slice(0, 22) + "\u2026" : label}
+                    </td>
+                    <td className={`py-0.5 text-[9px] font-semibold ${dc.text}`}>
+                      {info.domain}
+                    </td>
+                    <td className="py-0.5 text-right font-mono">
+                      {info.maxD !== null ? info.maxD.toFixed(2) : "\u2014"}
+                    </td>
+                    <td className="py-0.5 text-right font-mono">
+                      {formatPValue(info.minP)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </CollapsiblePane>
+
+      {/* 3. Evidence breakdown */}
+      <CollapsiblePane title="Evidence breakdown" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <div className="space-y-2 text-[11px]">
+          {/* Domains */}
+          <div>
+            <span className="text-muted-foreground">Domains: </span>
+            <span className="inline-flex flex-wrap gap-1">
+              {evidence.domains.map((d) => (
+                <span
+                  key={d}
+                  className={`text-[9px] font-semibold ${getDomainBadgeColor(d).text}`}
+                >
+                  {d}
                 </span>
-                <span className="truncate" title={label}>
-                  {label.length > 28 ? label.slice(0, 28) + "\u2026" : label}
-                </span>
-                <span className="ml-auto text-muted-foreground">({info.count})</span>
-              </div>
-            );
-          })}
+              ))}
+            </span>
+          </div>
+          {/* Counts */}
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Significant</span>
+            <span>{evidence.nSignificant} / {evidence.total}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Treatment-related</span>
+            <span>{evidence.nTR}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Adverse</span>
+            <span>{evidence.nAdverse}</span>
+          </div>
+          {/* Sex comparison */}
+          <div className="mt-1 border-t pt-1">
+            <div className="mb-0.5 text-[10px] text-muted-foreground">Sex comparison</div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Males</span>
+              <span>{evidence.maleSig} sig / {evidence.maleTotal} total</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Females</span>
+              <span>{evidence.femaleSig} sig / {evidence.femaleTotal} total</span>
+            </div>
+          </div>
         </div>
       </CollapsiblePane>
 
-      {/* Cross-view links */}
+      {/* 4. Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
           <a
@@ -190,7 +313,7 @@ export function TargetOrgansContextPanel({
         </div>
       </CollapsiblePane>
 
-      {/* Tox Assessment */}
+      {/* 5. Tox Assessment (only when endpoint selected) */}
       {studyId && selection.endpoint_label && (
         <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
       )}
