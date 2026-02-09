@@ -39,6 +39,7 @@
 | `portability/datagrok-implementation-plan.md` | `platform/datagrok-patterns.ts`, all system specs | 2026-02-08 | Current |
 | `portability/datagrok-viewer-config.md` | `frontend/src/components/analysis/DoseResponseView.tsx`, `docs/views/dose-response.md` | 2026-02-09 | Current — Dose-Response viewer migration configs (Evidence + Hypotheses) |
 | `portability/clinical-case-handoff.md` | All system specs, all view specs, `CLAUDE.md`, all `docs/design-system/*.md`, all `docs/scaffold/*.md` | 2026-02-09 | Current — Self-contained handoff for SDTM Clinical Case sister app |
+| `portability/design-decisions.md` | All view code, `docs/portability/porting-guide.md` | 2026-02-09 | Current — DG consultation decision log (managed by Review Agent) |
 
 ## Platform Reference
 
