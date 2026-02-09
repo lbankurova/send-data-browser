@@ -376,7 +376,7 @@ function OrganSummaryHeader({
       </div>
 
       {/* 1-line conclusion */}
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-1 text-xs leading-relaxed text-foreground/80">
         {conclusion}
       </p>
 
@@ -723,7 +723,7 @@ function EvidenceTableTab({
           const p = info.getValue();
           return (
             <span className={cn(
-              "font-mono",
+              "ev font-mono",
               p == null && "text-muted-foreground",
               p != null && p < 0.001 ? "font-semibold" :
               p != null && p < 0.01 ? "font-medium" : "",
@@ -739,7 +739,7 @@ function EvidenceTableTab({
           const d = info.getValue();
           return (
             <span className={cn(
-              "font-mono",
+              "ev font-mono",
               d == null && "text-muted-foreground",
               d != null && Math.abs(d) >= 0.8 ? "font-semibold" :
               d != null && Math.abs(d) >= 0.5 ? "font-medium" : "",
@@ -865,7 +865,7 @@ function EvidenceTableTab({
                   {row.getVisibleCells().map((cell) => {
                     const isEvidence = cell.column.id === "p_value" || cell.column.id === "effect_size";
                     return (
-                      <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }} data-evidence={isEvidence || undefined}>
+                      <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }} data-evidence={isEvidence ? "" : undefined}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     );

@@ -310,22 +310,7 @@ function DoseResponseContextPanelWrapper({ studyId }: { studyId: string }) {
 function ValidationContextPanelWrapper({ studyId }: { studyId: string }) {
   const { selection, setSelection } = useViewSelection();
 
-  const sel = selection?._view === "validation" ? selection as {
-    _view: string;
-    mode: "rule" | "issue";
-    rule_id: string;
-    severity: "Error" | "Warning" | "Info";
-    domain: string;
-    category: string;
-    description: string;
-    records_affected: number;
-    issue_id?: string;
-    subject_id?: string;
-    visit?: string;
-    variable?: string;
-    actual_value?: string;
-    expected_value?: string;
-  } : null;
+  const sel = selection?._view === "validation" ? selection : null;
 
   return <ValidationContextPanel selection={sel} studyId={studyId} setSelection={setSelection} />;
 }

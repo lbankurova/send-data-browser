@@ -18,29 +18,12 @@ import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useAffectedRecords } from "@/hooks/useAffectedRecords";
 import type { ValidationRecordReview } from "@/types/annotations";
-
-interface ValidationSelection {
-  _view: string;
-  mode: "rule" | "issue";
-  rule_id: string;
-  severity: "Error" | "Warning" | "Info";
-  domain: string;
-  category: string;
-  description: string;
-  records_affected: number;
-  // Issue-mode fields
-  issue_id?: string;
-  subject_id?: string;
-  visit?: string;
-  variable?: string;
-  actual_value?: string;
-  expected_value?: string;
-}
+import type { ValidationViewSelection, ValidationIssueViewSelection } from "@/contexts/ViewSelectionContext";
 
 interface Props {
-  selection: ValidationSelection | null;
+  selection: ValidationViewSelection | null;
   studyId?: string;
-  setSelection?: (sel: Record<string, unknown> | null) => void;
+  setSelection?: (sel: ValidationViewSelection | null) => void;
 }
 
 const SEVERITY_BORDER: Record<string, string> = {
@@ -153,10 +136,10 @@ function RuleReviewSummary({
   studyId,
   setSelection,
 }: {
-  selection: ValidationSelection;
+  selection: ValidationViewSelection;
   detail: RuleDetail | null;
   studyId?: string;
-  setSelection?: (sel: Record<string, unknown> | null) => void;
+  setSelection?: (sel: ValidationViewSelection | null) => void;
 }) {
   const { data: affectedData } = useAffectedRecords(studyId, selection.rule_id);
   const records = useMemo(() => (affectedData?.records ?? []).map(mapApiRecord), [affectedData]);
@@ -276,7 +259,6 @@ function RuleReviewSummary({
                   className={cn("font-medium hover:underline", REVIEW_COUNT_COLOR[status])}
                   onClick={() => setSelection?.({
                     ...selection,
-                    _view: "validation",
                     recordReviewStatusFilter: status,
                   })}
                   title={`Filter records by "${status}"`}
@@ -296,7 +278,6 @@ function RuleReviewSummary({
                   className={cn("font-medium hover:underline", FIX_COUNT_COLOR[status])}
                   onClick={() => setSelection?.({
                     ...selection,
-                    _view: "validation",
                     recordFixStatusFilter: status,
                   })}
                   title={`Filter records by "${status}"`}
@@ -822,7 +803,7 @@ function FindingSection({
   studyId,
 }: {
   record: AffectedRecord;
-  selection: ValidationSelection;
+  selection: ValidationIssueViewSelection;
   studyId: string;
 }) {
   const [fixResult, setFixResult] = useState<string | null>(null);
@@ -1425,7 +1406,7 @@ function IssueReview({
   selection,
   studyId,
 }: {
-  selection: ValidationSelection;
+  selection: ValidationIssueViewSelection;
   studyId?: string;
 }) {
   // Look up the full record from API data
@@ -1507,17 +1488,19 @@ function IssueReview({
 
 export function ValidationContextPanel({ selection, studyId, setSelection }: Props) {
   // Navigation history for < > buttons
-  const [history, setHistory] = useState<ValidationSelection[]>([]);
+  const [history, setHistory] = useState<ValidationViewSelection[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Track selection changes to build history
-  const currentKey = selection ? `${selection.mode}:${selection.rule_id}:${selection.issue_id ?? ""}` : "";
+  const issueId = selection?.mode === "issue" ? selection.issue_id : "";
+  const currentKey = selection ? `${selection.mode}:${selection.rule_id}:${issueId}` : "";
 
   // Push to history when selection changes (not from nav buttons)
   useMemo(() => {
     if (!selection) return;
     const lastEntry = history[historyIndex];
-    const lastKey = lastEntry ? `${lastEntry.mode}:${lastEntry.rule_id}:${lastEntry.issue_id ?? ""}` : "";
+    const lastIssueId = lastEntry?.mode === "issue" ? lastEntry.issue_id : "";
+    const lastKey = lastEntry ? `${lastEntry.mode}:${lastEntry.rule_id}:${lastIssueId}` : "";
     if (currentKey !== lastKey) {
       const newHistory = [...history.slice(0, historyIndex + 1), selection];
       setHistory(newHistory);
