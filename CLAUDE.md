@@ -199,7 +199,7 @@ Two contributors working on the same subsystem without coordination produce merg
 - `components/analysis/DoseResponseView.tsx` — View 2: Dose-Response (two-panel: organ-grouped endpoint rail + evidence panel with chart/metrics tabs)
 - `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (two-panel: organ rail + evidence panel with overview/table tabs)
 - `components/analysis/HistopathologyView.tsx` — View 4: Histopathology (two-panel: specimen rail + evidence panel with overview/severity matrix tabs)
-- `components/analysis/NoaelDecisionView.tsx` — View 5: NOAEL & Decision (banner, adversity matrix, grid)
+- `components/analysis/NoaelDecisionView.tsx` — View 5: NOAEL & Decision (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
 - `components/analysis/panes/*ContextPanel.tsx` — context panels for each view
 - `components/analysis/panes/InsightsList.tsx` — organ-grouped signal synthesis with tiered insights (Critical/Notable/Observed)
 
@@ -282,7 +282,7 @@ Implemented in `lib/severity-colors.ts`.
   - View 2: Dose-Response (Recharts line/bar charts, metrics grid, endpoint search)
   - View 3: Target Organs (organ cards, evidence detail grid)
   - View 4: Histopathology (two-panel: specimen rail, overview + severity matrix tabs)
-  - View 5: NOAEL & Decision (banner, adversity matrix, adverse effect grid)
+  - View 5: NOAEL & Decision (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
 - **Step 4**: Cross-view links (each context panel has navigate links to related views)
 
 ### Step 5: Polish (DONE)

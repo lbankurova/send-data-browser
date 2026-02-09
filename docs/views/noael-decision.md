@@ -3,7 +3,7 @@
 **Route:** `/studies/:studyId/noael-decision`
 **Component:** `NoaelDecisionView.tsx` (wrapped by `NoaelDecisionViewWrapper.tsx`)
 **Scientific question:** "What is the NOAEL and what are the dose-limiting adverse findings?"
-**Role:** Decision-level summary. NOAEL determination banner, adversity matrix of endpoints x doses, and adverse effect detail grid.
+**Role:** Decision-level summary. Two-panel master-detail layout with persistent NOAEL banner, organ rail, and evidence panel (Overview + Adversity matrix tabs).
 
 ---
 
@@ -20,33 +20,33 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a single scrollable column with four sections:
+The view itself is a flex column: persistent NOAEL Banner at top, then a two-panel master-detail layout below (matching Target Organs, Dose-Response, Signals, and Histopathology views):
 
 ```
 +-----------------------------------------------------------+
-|  NOAEL Determination                                       |
+|  NOAEL Determination (persistent, non-scrolling)           |
 |  [Combined card] [Males card] [Females card]               |
-+-----------------------------------------------------------+  <-- border-b, bg-muted/20
-|  [Severity v] [Organ v] [Sex v] [TR v]   {N of M}        |  <-- filter bar
-+-----------------------------------------------------------+
-|                                                           |
-|  Adversity Matrix ({N} endpoints)                         |
-|  Endpoint labels (w-48) x dose columns (w-16 each)       |
-|  [Legend: Adverse | Warning | Normal | N/A]               |
-|                                                           |
-+-----------------------------------------------------------+  <-- border-b
-|                                                           |
-|  Adverse Effect Summary ({N} rows)                        |
-|  TanStack table, 11 columns, all rows rendered            |
-|                                                           |
-+-----------------------------------------------------------+
++--[300px]--+---------------------------------------[flex-1]-+
+|            | OrganHeader                                    |
+| Organ      |  organ name, adverse count, summary text,     |
+| Rail       |  compact metrics (max |d|, min p, endpoints)  |
+|            +------------------------------------------------+
+| search     | [Overview] [Adversity matrix]  <── tab bar     |
+| organ 1    +------------------------------------------------+
+| organ 2    | Tab content:                                    |
+| organ 3    |  Overview: endpoint summary, insights, links    |
+| ...        |  Adversity matrix: filters, matrix, grid        |
+|            |                                                  |
++------------+------------------------------------------------+
 ```
+
+Responsive: stacks vertically below 1200px (`max-[1200px]:flex-col`). Rail becomes horizontal 180px tall strip.
 
 ---
 
-## NOAEL Banner
+## NOAEL Banner (persistent, non-scrolling)
 
-Container: `border-b bg-muted/20 px-4 py-3`
+Container: `shrink-0 border-b bg-muted/20 px-4 py-3`
 
 **Section header:** `text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2` — "NOAEL determination"
 
@@ -72,68 +72,138 @@ Outer: `rounded-lg border p-3`
 - NOAEL: label `text-muted-foreground`, value `font-medium` — "{dose_value} {dose_unit}"
 - LOAEL: label `text-muted-foreground`, value `font-medium` — loael_label (first part before comma)
 - Adverse at LOAEL: label `text-muted-foreground`, value `font-medium` — count
+- Confidence (if `noael_confidence != null`): label `text-muted-foreground`, value `font-medium` with color (green >= 80%, yellow >= 60%, red < 60%) — percentage
 
 **Row 3 (conditional):** Only rendered if `adverse_domains_at_loael` is not empty. `mt-1 flex flex-wrap gap-1`
-- Domain badges: `rounded px-1 py-0.5 text-[9px] font-medium` with domain-specific colors
-
-### Domain Badge Colors
-
-| Domain | Background | Text |
-|--------|-----------|------|
-| LB | `bg-blue-100` | `text-blue-700` |
-| BW | `bg-emerald-100` | `text-emerald-700` |
-| OM | `bg-purple-100` | `text-purple-700` |
-| MI | `bg-rose-100` | `text-rose-700` |
-| MA | `bg-orange-100` | `text-orange-700` |
-| CL | `bg-cyan-100` | `text-cyan-700` |
-| Other | `bg-gray-100` | `text-gray-700` |
+- Domain badges: `rounded px-1 py-0.5 text-[9px] font-medium` with `getDomainBadgeColor()` — bg + text color
 
 ---
 
-## Filter Bar
+## Organ Rail (left panel, 300px)
 
-`flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2`
+`flex w-[300px] shrink-0 flex-col overflow-hidden border-r`
+
+### Header
+- Label: `text-xs font-medium uppercase tracking-wider text-muted-foreground` — "Organ systems ({N})"
+- Search input: `mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs` with placeholder "Search organs..."
+
+### Rail Items
+
+Each `OrganRailItem` is a `<button>` with:
+- Container: `w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors`
+- Selected: `bg-blue-50/60 dark:bg-blue-950/20`
+- Not selected: `hover:bg-accent/30`
+- Left border: `border-l-2 border-l-[#DC2626]` for organs with adverse findings, `border-l-transparent` otherwise
+
+**Row 1:** Organ name (`text-xs font-semibold`, underscores replaced with spaces) + adverse count badge (`text-[9px] font-semibold uppercase text-[#DC2626]` — "N ADV")
+
+**Row 2:** Adverse bar — adverse count normalized to max across all organs, `#DC2626/60` fill. Bar: `h-1.5 flex-1 rounded-full bg-muted/50` with inner colored fill. Fraction: `shrink-0 text-[10px] text-muted-foreground` — "adverse/total".
+
+**Row 3:** Stats line — `{N} endpoints · {M} TR` + domain chips (outline style: `rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70` with colored dot).
+
+### Sorting
+
+Organs sorted by: `adverseCount` desc → `trCount` desc → `maxEffectSize` desc.
+
+### Auto-Select
+
+On data load, auto-selects the top organ (highest adverse count).
+
+### Search
+
+Filters organs by name (case-insensitive substring match, underscores treated as spaces). Empty state: "No matches for '{search}'".
+
+---
+
+## Organ Header
+
+`shrink-0 border-b px-4 py-3`
+
+- Organ name: `text-sm font-semibold` (underscores replaced with spaces)
+- Adverse badge (if adverseCount > 0): `text-[10px] font-semibold uppercase text-[#DC2626]` — "{N} ADVERSE"
+- Summary text: `mt-1 text-xs leading-relaxed text-muted-foreground` — "{N} endpoints across {D} domains, {M} adverse, {T} treatment-related."
+- Compact metrics: `mt-2 flex flex-wrap gap-3 text-[11px]` — max |d| (colored if >= 0.8), min p (colored if < 0.01), endpoint count
+
+---
+
+## Tab Bar
+
+`flex shrink-0 items-center gap-0 border-b px-4`
+
+Two tabs: **Overview** and **Adversity matrix**
+
+Active tab: `border-b-2 border-primary text-primary`
+Inactive tab: `border-transparent text-muted-foreground hover:text-foreground`
+All tabs: `px-3 py-2 text-xs font-medium transition-colors`
+
+---
+
+## Overview Tab
+
+`flex-1 overflow-y-auto px-4 py-3` — scrollable content.
+
+### Endpoint Summary
+
+Section header: `text-xs font-medium uppercase tracking-wide text-muted-foreground` — "Endpoint summary"
+
+Each endpoint is a clickable `<button>` row:
+- Container: `flex w-full items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-left text-[11px] hover:bg-accent/30`
+- Selected: `bg-accent ring-1 ring-primary`
+- Endpoint name: truncated at 35 chars, `min-w-0 flex-1 truncate font-medium`
+- Direction symbol: `shrink-0 text-sm`, colored (red for up, blue for down)
+- Max effect size: `shrink-0 font-mono text-[10px]` with effect size color
+- Severity badge: `shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-medium` with `getSeverityBadgeClasses`
+- TR badge (if treatment-related): `shrink-0 text-[9px] font-medium text-red-600` — "TR"
+
+Sorted by: severity (adverse first) → treatment-related → max effect size desc. Click sets endpoint-level selection (finds representative row, updates context panel). Click again to deselect.
+
+### Insights
+
+Only shown when organ-scoped rule results exist. Section header: "Insights". Uses `InsightsList` component with rules filtered to the selected organ (matches on `organ_system`, `output_text` containing organ name, or `context_key` containing organ key).
+
+### Cross-View Links
+
+Section header: "Related views". Three navigation links:
+- "View in Target Organs" → `/studies/{studyId}/target-organs` with `{ state: { organ_system: organ } }`
+- "View dose-response" → `/studies/{studyId}/dose-response` with `{ state: { organ_system: organ } }`
+- "View histopathology" → `/studies/{studyId}/histopathology` with `{ state: { organ_system: organ } }`
+- All links: `block hover:underline`, color `#3a7bd5`, arrow suffix
+
+---
+
+## Adversity Matrix Tab
+
+Two zones: filter bar + scrollable content (adversity matrix + adverse effect grid), scoped to the selected organ.
+
+### Filter Bar
+
+`flex items-center gap-2 border-b bg-muted/30 px-4 py-2`
 
 | Filter | Type | Control | Default |
 |--------|------|---------|---------|
-| Severity | Dropdown | `<select>` with "All severities" / Adverse / Warning / Normal | All |
-| Organ system | Dropdown | `<select>` with "All organs" + unique organ_system values (underscores replaced with spaces) | All |
 | Sex | Dropdown | `<select>` with "All sexes" / Male / Female | All |
 | Treatment related | Dropdown | `<select>` with "TR: Any" / "Treatment-related" / "Not treatment-related" | Any |
 
-**Row count indicator:** Right-aligned `ml-auto`, `text-[10px] text-muted-foreground`, shows "{filtered} of {total} findings".
+No organ dropdown (organ already selected via rail). Row count indicator: right-aligned `ml-auto text-[10px] text-muted-foreground`, "{filtered} of {total} findings".
 
-### All Controls Styling
+### Adversity Matrix
 
-All controls: `rounded border bg-background px-2 py-1 text-xs`
+Only shown when `matrixData.endpoints.length > 0`. Container: `border-b p-4`.
 
----
+Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Adversity matrix ({N} endpoints)"
 
-## Adversity Matrix
+**Structure:** `overflow-x-auto` > `inline-block` — horizontal scrollable flex layout.
 
-Only shown when `matrixData.endpoints.length > 0`.
+**Header row:** Endpoint label column `w-48 shrink-0` + dose columns each `w-16 shrink-0 text-center text-[10px] font-medium text-muted-foreground`. Dose headers show actual dose labels (from allAeData), falling back to "Dose {level}".
 
-Container: `border-b p-4`
+**Data rows:** Only endpoints with at least one adverse + treatment_related finding. Sort: first adverse dose level ascending, then alphabetically by endpoint label.
+- Each `flex border-t` row
+- Endpoint label: `w-48 shrink-0 truncate py-0.5 pr-2 text-[10px]`, truncated at 35 chars
+- Cells: `flex h-5 w-16 shrink-0 items-center justify-center` with severity-colored inner box (`h-4 w-12 rounded-sm`)
 
-### Section Header
+**Aggregation:** Takes worst severity per endpoint × dose across sexes.
 
-`text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2` — "Adversity matrix ({N} endpoints)"
-
-### Matrix Structure
-
-`overflow-x-auto` > `inline-block` — flex-based grid.
-
-**Header row:** `flex`
-- Endpoint label column: `w-48 shrink-0` (empty placeholder)
-- Dose columns: each `w-16 shrink-0 text-center text-[10px] font-medium text-muted-foreground`, shows "Dose {level}"
-
-**Data rows:** Each endpoint is a `flex border-t` row.
-- Endpoint label: `w-48 shrink-0 truncate py-0.5 pr-2 text-[10px]`, `title` tooltip for full name, truncated at 35 characters
-- Data cells: each `flex h-5 w-16 shrink-0 items-center justify-center`
-  - Inner block: `h-4 w-12 rounded-sm` with severity color fill
-  - No text inside cells — color-only blocks
-
-### Severity Cell Colors
+**Severity cell colors:**
 
 | Condition | Color |
 |-----------|-------|
@@ -142,122 +212,28 @@ Container: `border-b p-4`
 | Normal / other | `#4ade80` (green) |
 | No data | `#e5e7eb` (gray) |
 
-### Endpoint Selection Logic
+**Legend:** 4 color swatches with labels (Adverse, Warning, Normal, N/A).
 
-- Only shows endpoints that have at least one adverse + treatment_related finding
-- Sort order: first adverse dose level ascending, then alphabetically by endpoint label
+### Adverse Effect Grid
 
-### Aggregation
-
-Takes worst severity per endpoint x dose across sexes.
-
-### Endpoint Cap
-
-First 30 endpoints shown. If more exist, shows: "+{remaining} more endpoints..." in `py-1 text-[10px] text-muted-foreground`.
-
-### Legend
-
-`mt-2 flex gap-3 text-[10px] text-muted-foreground`
-
-Four items, each: `flex items-center gap-1` with `inline-block h-3 w-3 rounded-sm` color swatch + label text.
-
-| Label | Swatch Color |
-|-------|-------------|
-| Adverse | `#ef4444` |
-| Warning | `#fbbf24` |
-| Normal | `#4ade80` |
-| N/A | `#e5e7eb` |
-
----
-
-## Adverse Effect Grid
-
-### Section Header
-
-`flex items-center justify-between px-4 pt-3 pb-1`
-- Title: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Adverse effect summary ({N} rows)"
-
-### Table
-
-TanStack React Table, `w-full text-xs`, client-side sorting.
-
-**Header row:** `border-b bg-muted/50`
-- Headers: `cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50`
-- Clickable for sorting (shows triangle arrow: `▲` asc / `▼` desc)
+TanStack React Table, `w-full text-xs`, client-side sorting. Scoped to selected organ.
 
 **Columns:**
 
 | Column | Header | Cell Rendering |
 |--------|--------|----------------|
-| endpoint_label | Endpoint | Truncated at 30 chars with ellipsis, `title` tooltip for full name |
-| endpoint_type | Type | `text-muted-foreground`, underscores replaced with spaces |
-| organ_system | Organ | Underscores replaced with spaces |
-| dose_level | Dose | Colored badge: `rounded px-1.5 py-0.5 text-[10px] font-medium text-white` with dose group color |
+| endpoint_label | Endpoint | Truncated at 30 chars with ellipsis, `title` tooltip |
+| domain | Domain | Domain chip with outline+dot style |
+| dose_level | Dose | Colored badge with dose group color, shows dose_label |
 | sex | Sex | Plain text |
-| p_value | P-value | `font-mono`, p-value color coded (red/amber/muted), formatted via `formatPValue` |
-| effect_size | Effect | `font-mono`, effect size color coded, formatted via `formatEffectSize` (2 decimals) |
-| direction | Dir | `text-sm`, direction symbol with color |
-| severity | Severity | `rounded-sm px-1.5 py-0.5 text-[10px] font-medium` badge with severity classes |
+| p_value | P-value | `font-mono`, p-value color coded |
+| effect_size | Effect | `font-mono`, effect size color coded |
+| direction | Dir | Direction symbol with color |
+| severity | Severity | Badge with severity classes |
 | treatment_related | TR | "Yes" in `font-medium text-red-600` or "No" in `text-muted-foreground` |
 | dose_response_pattern | Pattern | `text-muted-foreground`, underscores replaced with spaces |
 
-### Dose Group Colors
-
-| Level | Color | Meaning |
-|-------|-------|---------|
-| 0 | `#6b7280` (gray) | Control |
-| 1 | `#3b82f6` (blue) | Low |
-| 2 | `#f59e0b` (amber) | Mid |
-| 3 | `#ef4444` (red) | High |
-
-### P-value Color Scale (text classes)
-
-| Threshold | Class |
-|-----------|-------|
-| p < 0.001 | `text-red-600 font-semibold` |
-| p < 0.01 | `text-red-500 font-medium` |
-| p < 0.05 | `text-amber-600 font-medium` |
-| p < 0.1 | `text-amber-500` |
-| p >= 0.1 | `text-muted-foreground` |
-
-### P-value Formatting
-
-| Range | Format |
-|-------|--------|
-| p < 0.0001 | "<0.0001" |
-| p < 0.001 | 4 decimal places |
-| p < 0.01 | 3 decimal places |
-| p >= 0.01 | 2 decimal places |
-| null | em dash |
-
-### Effect Size Color Scale
-
-| Threshold | Class |
-|-----------|-------|
-| |d| >= 1.2 | `text-red-600 font-semibold` |
-| |d| >= 0.8 | `text-red-500 font-medium` |
-| |d| >= 0.5 | `text-amber-600` |
-| |d| >= 0.2 | `text-amber-500` |
-| |d| < 0.2 | `text-muted-foreground` |
-
-### Direction Symbols and Colors
-
-| Direction | Symbol | Color |
-|-----------|--------|-------|
-| up | `↑` | `text-red-500` |
-| down | `↓` | `text-blue-500` |
-| none / null | `—` | `text-muted-foreground` |
-
-### Row Interactions
-
-- Hover: `hover:bg-accent/50`
-- Selected: `bg-accent` (matched on `endpoint_label` + `dose_level` + `sex`)
-- Click: sets selection. Click again to deselect.
-- Row cells: `px-2 py-1`
-
-**No row cap** — all filtered rows are rendered.
-
-**Empty state:** No explicit empty state — grid shows zero rows with just headers.
+Row cap: 200 rows with message. Row interactions: click to select/deselect, hover highlight.
 
 ---
 
@@ -265,54 +241,22 @@ TanStack React Table, `w-full text-xs`, client-side sorting.
 
 Route-detected: when pathname matches `/studies/{studyId}/noael-decision`, shows `NoaelContextPanel`.
 
-### No Selection State (default view)
+**No changes to context panel.** The `NoaelContextPanelWrapper` in `ContextPanel.tsx` already fetches `noaelData`, `aeData`, and `ruleResults` via hooks and passes as props. Selection flows from `ViewSelectionContext`.
 
-Shows study-level NOAEL information even without a row selected.
+### No Selection State
 
-**Pane 1: NOAEL narrative (default open)**
-`CollapsiblePane` with `InsightsList` showing rules where `scope === "study"`.
-
-**Pane 2: Confidence (default closed)**
-For each NOAEL row (Combined, M, F): shows "{sex}: {n_adverse_at_loael} adverse at LOAEL ({domains})" in `text-[11px]`.
-
-**Footer message:** "Select a row to view adversity rationale." in `px-4 py-2 text-xs text-muted-foreground`.
+Panes (unchanged):
+1. **NOAEL narrative** (default open) — `InsightsList` with rules where `scope === "study"`
+2. **Confidence** (default closed) — adverse at LOAEL per sex
+3. Footer: "Select a row to view adversity rationale."
 
 ### With Selection
 
-#### Header
-- `border-b px-4 py-3`
-- Endpoint label: `text-sm font-semibold`
-- Subtitle: "{sex} . Dose {dose_level}" in `text-xs text-muted-foreground`
-
-#### Pane 1: Adversity Rationale (default open)
-Shows all rows for the selected endpoint + sex across dose levels.
-
-Each row: `flex items-center justify-between text-[11px]`
-- Left: "Dose {dose_level} ({sex})" in `text-muted-foreground`
-- Right: `flex items-center gap-2`
-  - P-value: `font-mono`, formatted
-  - Effect size: `font-mono`, formatted
-  - Severity badge: `rounded-sm px-1 py-0.5 text-[10px] font-medium` with severity classes
-
-Empty state: "No data for selected endpoint." in `text-[11px] text-muted-foreground`
-
-#### Pane 2: Insights (default open)
-`InsightsList` component.
-
-Rules filtered to those where:
-- `context_key` includes the endpoint label, OR
-- `scope === "endpoint"` AND `output_text` includes the endpoint label
-
-#### Pane 3: Related Views (default closed)
-Cross-view navigation links in `text-[11px]`:
-- "View dose-response" — navigates to `/studies/{studyId}/dose-response`
-- "View target organs" — navigates to `/studies/{studyId}/target-organs`
-- "View histopathology" — navigates to `/studies/{studyId}/histopathology`
-
-All links: `block hover:underline`, color `#3a7bd5`, arrow suffix.
-
-#### Pane 4: Tox Assessment (default closed)
-Standard `ToxFindingForm` component, keyed by `selection.endpoint_label`.
+Panes (unchanged):
+1. **Adversity rationale** (default open) — dose-level rows for selected endpoint + sex
+2. **Insights** (default open) — `InsightsList` with endpoint-scoped rules
+3. **Related views** (default closed) — cross-view navigation links
+4. **Tox Assessment** (default closed) — `ToxFindingForm`
 
 ---
 
@@ -320,12 +264,15 @@ Standard `ToxFindingForm` component, keyed by `selection.endpoint_label`.
 
 | State | Scope | Managed By |
 |-------|-------|------------|
-| Filters | Local | `useState<Filters>` — severity, organ_system, sex, treatment_related |
-| Selection | Shared via context | `ViewSelectionContext` with `_view: "noael"` tag |
-| Sorting | Local | `useState<SortingState>` — TanStack sorting state |
+| Selected organ | Local | `useState<string \| null>` — which organ is active in the rail |
+| Active tab | Local | `useState<EvidenceTab>` — "overview" or "matrix" |
+| Selection (endpoint) | Shared via context | `ViewSelectionContext` with `_view: "noael"` tag |
+| Sex filter | Local | `useState<string \| null>` — for Adversity matrix tab |
+| TR filter | Local | `useState<string \| null>` — for Adversity matrix tab |
+| Sorting | Local | `useState<SortingState>` — TanStack sorting state (in AdversityMatrixTab) |
 | NOAEL summary data | Server | `useNoaelSummary` hook (React Query, 5min stale) |
 | Adverse effect data | Server | `useAdverseEffectSummary` hook (React Query, 5min stale) |
-| Rule results | Server | `useRuleResults` hook (consumed by context panel) |
+| Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
 
 ---
 
@@ -334,29 +281,50 @@ Standard `ToxFindingForm` component, keyed by `selection.endpoint_label`.
 ```
 useNoaelSummary(studyId)          ──> noaelData (3 rows: M/F/Combined)
 useAdverseEffectSummary(studyId)  ──> aeData (357 rows)
+useRuleResults(studyId)           ──> ruleResults (shared React Query cache)
                                           |
-                                     [client-side filter]
+                              deriveOrganSummaries() → OrganSummary[]
                                           |
-                                     filteredData
-                                      /    |      \
-                               Banner  Matrix   Grid
-                                      \    |      /
-                                   NoaelSelection (shared)
+                                  OrganRail (sorted by adverseCount desc)
                                           |
-                                  NoaelContextPanel
-                                   /     |      \
-                          Narrative  Rationale  Insights
+                              [selectedOrgan] → filter aeData
+                                          |
+                                  organData → deriveEndpointSummaries()
+                                     /              \
+                            OverviewTab          AdversityMatrixTab
+                            (endpoints,          (matrix + grid,
+                             insights,            sex/TR filter)
+                             cross-view)               |
+                                  \              /
+                              NoaelSelection (shared)
+                                          |
+                                NoaelContextPanel
+                                  /    |     |      \
+                           Narrative  Dose  Insights  Tox
 ```
 
 ---
 
 ## Cross-View Navigation
 
-| From | Action | Navigates To |
-|------|--------|-------------|
-| Context > Related views | Click "View dose-response" | `/studies/{studyId}/dose-response` |
-| Context > Related views | Click "View target organs" | `/studies/{studyId}/target-organs` |
-| Context > Related views | Click "View histopathology" | `/studies/{studyId}/histopathology` |
+### Inbound
+- From other views with `location.state`: `{ organ_system: string }` — auto-selects matching organ in rail (case-insensitive).
+
+### Outbound (Overview tab)
+| Action | Navigates To | State Passed |
+|--------|-------------|-------------|
+| "View in Target Organs" | `/studies/{studyId}/target-organs` | `{ organ_system: organ }` |
+| "View dose-response" | `/studies/{studyId}/dose-response` | `{ organ_system: organ }` |
+| "View histopathology" | `/studies/{studyId}/histopathology` | `{ organ_system: organ }` |
+
+### Outbound (Context panel — unchanged)
+Same three links in the "Related views" pane.
+
+---
+
+## Keyboard
+
+- **Escape**: clears endpoint-level selection (via `keydown` listener on `window`)
 
 ---
 
@@ -366,42 +334,9 @@ useAdverseEffectSummary(studyId)  ──> aeData (357 rows)
 |-------|---------|
 | Loading | Centered spinner `Loader2` (animate-spin) + "Loading NOAEL data..." |
 | Error (no generated data) | Red box with instructions to run generator command |
-| No adverse endpoints | Adversity matrix section not rendered |
-
----
-
-## Current Issues / Improvement Opportunities
-
-### NOAEL Banner
-- Cards are `flex-1` — if only 1 or 2 NOAEL rows exist, cards stretch too wide
-- No visual prominence difference between established/not-established beyond color — consider larger text or icon
-- LOAEL label truncated at first comma — may lose route/dose info
-
-### Adversity Matrix
-- Only shows endpoints with adverse + treatment_related findings — excludes "warning" level
-- Matrix cells are just colored blocks with no text — hard to assess at a glance without tooltips
-- No tooltip on matrix cells
-- Capped at 30 endpoints — no way to see the rest
-- Column headers show "Dose {level}" instead of actual dose labels
-- No click interaction on matrix cells — can't select from matrix
-
-### Adverse Effect Grid
-- No row cap — could be slow with many rows
-- No pagination
-- No column visibility toggle
-- No grouping by organ or endpoint
-- Filters don't affect the adversity matrix (matrix always shows all data)
-- Treatment related filter uses "yes"/"no" strings compared with boolean — works but fragile
-
-### Context Panel
-- No-selection state shows NOAEL narrative and confidence — good default
-- Adversity rationale shows rows filtered by endpoint + sex but not by dose_level — could show all doses
-- InsightsList rule matching is loose (text search)
-- Related views default-closed
-- No link to study summary from NOAEL view
-
-### General
-- No keyboard navigation
-- No export option
-- No comparison between sexes in the adversity rationale
-- Filter state not synced between matrix and grid
+| No organ selected (but data exists) | "Select an organ system to view adverse effect details." |
+| No data at all | "No adverse effect data available." |
+| Empty search results (rail) | "No matches for '{search}'" |
+| No endpoints for organ (overview) | "No endpoints for this organ." |
+| No rows after filter (matrix) | "No rows match the current filters." |
+| >200 filtered rows (grid) | Truncation message below grid |
