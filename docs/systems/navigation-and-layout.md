@@ -89,7 +89,6 @@ Center panel components write to the appropriate context on user interaction (ro
 | `/studies/:studyId/target-organs` | `TargetOrgansViewWrapper` | View 3: organ cards + evidence grid | `ViewSelectionContext` (`_view: "target-organs"`) |
 | `/studies/:studyId/histopathology` | `HistopathologyViewWrapper` | View 4: severity heatmap + lesion grid | `ViewSelectionContext` (`_view: "histopathology"`) |
 | `/studies/:studyId/noael-decision` | `NoaelDecisionViewWrapper` | View 5: NOAEL banner + adversity matrix | `ViewSelectionContext` (`_view: "noael"`) |
-| `/studies/:studyId/clinical-observations` | `ClinicalObservationsViewWrapper` | View 6: CL domain timecourse bar charts | `ViewSelectionContext` (`_view: "clinical-observations"`) |
 | `/studies/:studyId/validation` | `ValidationViewWrapper` | Validation rules + affected records | `ViewSelectionContext` (`_view: "validation"`) |
 | `/studies/:studyId/analyses/:analysisType` | `PlaceholderAnalysisView` | Catch-all for unimplemented analysis types | None |
 
@@ -117,7 +116,7 @@ Center panel components write to the appropriate context on user interaction (ro
 #### ViewSelectionContext
 
 - **File**: `contexts/ViewSelectionContext.tsx`
-- **State**: `{ selection: ViewSelection | null }` — discriminated union type (`DoseResponseViewSelection | TargetOrgansViewSelection | HistopathologyViewSelection | NoaelViewSelection | ClinicalObsViewSelection | ValidationViewSelection`)
+- **State**: `{ selection: ViewSelection | null }` — discriminated union type (`DoseResponseViewSelection | TargetOrgansViewSelection | HistopathologyViewSelection | NoaelViewSelection | ValidationViewSelection`)
 - **Actions**: `setSelection(sel)`
 - **Used by**: Views 2-6 and Validation. Each view tags its selection with `_view` to prevent cross-view interference. Compile-time type safety via discriminated union on `_view`.
 - **Selection shapes by view**:
@@ -125,7 +124,6 @@ Center panel components write to the appropriate context on user interaction (ro
   - `TargetOrgansViewSelection` (`_view: "target-organs"`) -- `{ organ_system, endpoint_label?, sex? }`
   - `HistopathologyViewSelection` (`_view: "histopathology"`) -- `{ finding, specimen, sex? }`
   - `NoaelViewSelection` (`_view: "noael"`) -- `{ endpoint_label, dose_level, sex }`
-  - `ClinicalObsViewSelection` (`_view: "clinical-observations"`) -- `{ finding, category? }`
   - `ValidationViewSelection` (`_view: "validation"`) -- union of `ValidationRuleViewSelection` (`mode: "rule"`) and `ValidationIssueViewSelection` (`mode: "issue"`, adds `issue_id`, `subject_id?`, `visit?`, `variable?`, `actual_value?`, `expected_value?`). Both share `rule_id`, `severity`, `domain`, `category`, `description`, `records_affected`, `recordFixStatusFilter?`, `recordReviewStatusFilter?`.
 - **Key pattern**: `ContextPanel` wrapper functions narrow `selection` via `selection?._view === "..."` discriminant check. TypeScript narrows the type automatically — no casting needed. This prevents stale selections from a previous view leaking into the current context panel.
 
@@ -147,12 +145,11 @@ The `ContextPanel` component (`components/panels/ContextPanel.tsx`) uses route-b
 3. `/studies/:id/target-organs` -- renders `TargetOrgansContextPanelWrapper`
 4. `/studies/:id/dose-response` -- renders `DoseResponseContextPanelWrapper`
 5. `/studies/:id/histopathology` -- renders `HistopathologyContextPanelWrapper`
-6. `/studies/:id/clinical-observations` -- renders `ClinicalObsContextPanelWrapper` (reads `ViewSelectionContext`, filters for `_view === "clinical-observations"`, fetches CL timecourse data for statistics + dose relationship)
-7. `/studies/:id/validation` -- renders `ValidationContextPanelWrapper`
-8. `/studies/:id` (exact) -- renders `StudySummaryContextPanelWrapper` (reads `SignalSelectionContext`)
-9. No study selected -- renders "Select a study to view details."
-10. Non-PointCross study selected -- renders demo guard message
-11. PointCross selected (fallback) -- renders `StudyInspector` (study metadata, study health one-liner, review progress, action links)
+6. `/studies/:id/validation` -- renders `ValidationContextPanelWrapper`
+7. `/studies/:id` (exact) -- renders `StudySummaryContextPanelWrapper` (reads `SignalSelectionContext`)
+8. No study selected -- renders "Select a study to view details."
+9. Non-PointCross study selected -- renders demo guard message
+10. PointCross selected (fallback) -- renders `StudyInspector` (study metadata, study health one-liner, review progress, action links)
 
 Each wrapper function reads the shared `ViewSelectionContext`, casts the selection to the view-specific shape (guarded by `_view` tag), fetches the required data via hooks, and passes both to the view-specific context panel component.
 
@@ -201,7 +198,7 @@ Left sidebar navigation tree. Structure:
 - **Home** node (depth 0) -- navigates to `/`
 - **Studies** section header (uppercase label)
   - **Study: {studyId}** node (depth 1) -- click navigates to `/studies/:studyId` and expands subtree
-    - Analysis view nodes (depth 2): Dose-response, Target organs, Histopathology, NOAEL & decision, Clinical observations, Validation (from `ANALYSIS_VIEWS` array, excluding `study-summary`)
+    - Analysis view nodes (depth 2): Dose-response, Target organs, Histopathology, NOAEL & decision, Validation (from `ANALYSIS_VIEWS` array, excluding `study-summary`)
     - Separator
     - **Domains** folder node (depth 2) -- toggle expands domain categories
       - Category nodes (depth 3): e.g., "Clinical observations (3)" -- toggle expands individual domains

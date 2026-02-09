@@ -10,7 +10,6 @@ import { NoaelDecisionViewWrapper } from "@/components/analysis/NoaelDecisionVie
 import { TargetOrgansViewWrapper } from "@/components/analysis/TargetOrgansViewWrapper";
 import { DoseResponseViewWrapper } from "@/components/analysis/DoseResponseViewWrapper";
 import { HistopathologyViewWrapper } from "@/components/analysis/HistopathologyViewWrapper";
-import { ClinicalObservationsViewWrapper } from "@/components/analysis/ClinicalObservationsViewWrapper";
 
 const router = createBrowserRouter([
   {
@@ -41,10 +40,6 @@ const router = createBrowserRouter([
       {
         path: "/studies/:studyId/noael-decision",
         element: <NoaelDecisionViewWrapper />,
-      },
-      {
-        path: "/studies/:studyId/clinical-observations",
-        element: <ClinicalObservationsViewWrapper />,
       },
       {
         path: "/studies/:studyId/validation",

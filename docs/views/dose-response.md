@@ -249,6 +249,44 @@ Hidden when no endpoint is selected (table only renders when `pairwiseRows.lengt
 
 > **Stub: user-togglable color coding.** In production, Datagrok grids expose color coding via the grid hamburger menu (☰ > Color coding). The prototype pairwise table uses interaction-driven evidence color (neutral at rest, color on hover). A future production feature should add a hamburger icon (☰) at the table header that opens a context menu with a "Color code" toggle. When enabled, cells switch from `ev` class to always-on `getPValueColor()`/`getEffectSizeColor()`. See Datagrok Pattern #23 (`grid.onCellPrepare()`) in `docs/platform/datagrok-patterns.ts:690`. Same applies to the Metrics Table below.
 
+### Time-course Toggle Section
+
+Below the pairwise comparison table, a collapsible toggle section shows time-course data for the selected endpoint. Default state: **collapsed**. This replaces the former standalone Time-course tab (consolidated from 4→3 tabs).
+
+**Toggle button:** `flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer`
+- Chevron: `ChevronRight` (collapsed) or `ChevronDown` (expanded), `h-3 w-3`
+- Label: "Time-course"
+
+**Behavior:**
+- `expanded` state persists within session (local `useState`, default `false`)
+- Data is fetched **only when expanded** (lazy loading)
+- Renders conditionally based on endpoint `data_type` and `domain`:
+
+| Condition | Rendering |
+|-----------|-----------|
+| `data_type === "continuous"` | Continuous time-course charts (group mean ± SD over study days, sex-faceted Recharts `LineChart`) with Y-axis mode pills and "Show subjects" toggle |
+| `domain === "CL"` | CL temporal bar charts via `CLTimecourseCharts` component (see below) |
+| Other categorical | Disabled toggle with explanatory text: "Time-course visualization is not available for this endpoint type." |
+
+#### CL Temporal Bar Charts (`CLTimecourseCharts`)
+
+For CL (Clinical observations) endpoints, time-course data comes from the CL temporal API (`useClinicalObservations` hook).
+
+**Layout:** One Recharts `BarChart` per sex, vertically stacked.
+
+**Per-sex chart:**
+- Header: `text-[11px] font-semibold text-muted-foreground` — sex label
+- Container: `<ResponsiveContainer width="100%" height={220}>`
+- X-axis: study day, tick fontSize 10
+- Y-axis: count (integer), tick fontSize 10
+- Grid: `<CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb">`
+- Bars: one `<Bar>` per dose level, fill from dose group colors (`#1976D2` control, `#66BB6A` low, `#FFA726` mid, `#EF5350` high)
+- Tooltip: shows count/total (incidence%), USUBJID list on hover
+
+**Dose legend:** Below charts, centered. Colored squares (`h-2.5 w-2.5 rounded-sm`) per dose level with dose label text.
+
+**Data source:** `CLTimecourseResponse` from `/api/studies/{studyId}/timecourse/cl?finding={finding}`. Each timepoint has day, counts array with dose_level, sex, findings Record, subjects Record.
+
 ---
 
 ## Metrics Table Tab
@@ -966,3 +1004,12 @@ All Hypotheses tab state is session-scoped:
 - **Rail search:** Updated to inline flex pattern (consistent with all view rails)
 - **Context panel subtitle:** Updated to `titleCase(organ_system)` (matches code and project convention)
 - **Hypotheses tools:** All tools fully interactive regardless of `available` flag; removed unavailable/not-clickable distinction. Updated Pareto label to "Pareto front".
+
+### 2026-02-09 — CL consolidation into Dose-Response
+
+- **Tab bar:** Reduced from 4 tabs (Evidence, Time-course, Hypotheses, Metrics) to 3 tabs (Evidence, Hypotheses, Metrics). Time-course content moved to collapsible toggle section in Evidence tab.
+- **Time-course toggle:** Added below pairwise comparison table. Default collapsed. Lazy-loads data on expand. Supports continuous (line chart with spaghetti overlay), CL temporal (bar charts), and shows disabled message for other categorical.
+- **CL endpoints:** Clinical observation endpoints now appear in the D-R endpoint rail under "General" organ group (already in `dose_response_metrics.json`). CL-specific time-course uses `CLTimecourseCharts` component with sex-faceted bar charts showing incidence counts over study days.
+- **Standalone CL view deleted:** `ClinicalObservationsView.tsx` and `ClinicalObservationsViewWrapper.tsx` removed. Route, browsing tree entry, context panel mode, and `analysis-definitions.ts` entry all removed.
+- **State management:** Tab state type reduced to `"evidence" | "hypotheses" | "metrics"`. Time-course expanded state is local `useState<boolean>(false)`.
+- **Spec:** Implemented per `docs/incoming/09-dr-cl-consolidation.md`.

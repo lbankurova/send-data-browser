@@ -173,7 +173,6 @@ Two contributors working on the same subsystem without coordination produce merg
 | `/studies/:studyId/target-organs` | TargetOrgansViewWrapper | Done |
 | `/studies/:studyId/histopathology` | HistopathologyViewWrapper | Done |
 | `/studies/:studyId/noael-decision` | NoaelDecisionViewWrapper | Done |
-| `/studies/:studyId/clinical-observations` | ClinicalObservationsViewWrapper | Done |
 | `/studies/:studyId/validation` | ValidationViewWrapper | Done |
 
 **Key frontend modules:**
@@ -193,16 +192,15 @@ Two contributors working on the same subsystem without coordination produce merg
 - `contexts/SelectionContext.tsx` — study selection state
 - `contexts/FindingSelectionContext.tsx` — adverse effects finding selection
 - `contexts/SignalSelectionContext.tsx` — study summary signal + organ selection (mutually exclusive)
-- `contexts/ViewSelectionContext.tsx` — shared selection state for Views 2-6 (NOAEL, Target Organs, Dose-Response, Histopathology, Clinical Observations)
+- `contexts/ViewSelectionContext.tsx` — shared selection state for Views 2-5 (NOAEL, Target Organs, Dose-Response, Histopathology)
 - `components/analysis/StudySummaryView.tsx` — View 1: Study Summary (two tabs: Details + Signals; Signals tab has dual-mode center panel with persistent Decision Bar)
 - `components/analysis/SignalsPanel.tsx` — Signals tab two-panel components: `SignalsOrganRail` (organ navigation), `SignalsEvidencePanel` (organ header + Overview/Matrix tabs), `StudyStatementsBar` (study-level statements)
 - `components/analysis/charts/OrganGroupedHeatmap.tsx` — organ-grouped collapsible signal matrix with `singleOrganMode` prop for organ-scoped rendering
-- `components/analysis/DoseResponseView.tsx` — View 2: Dose-Response (two-panel: organ-grouped endpoint rail + evidence panel with chart/metrics tabs)
+- `components/analysis/DoseResponseView.tsx` — View 2: Dose-Response (two-panel: organ-grouped endpoint rail + evidence panel with evidence/hypotheses/metrics tabs; time-course toggle in evidence tab)
 - `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (two-panel: organ rail with signal metrics + evidence panel with Evidence/Hypotheses/Metrics tabs, 5 organ-level tools)
 - `components/analysis/HistopathologyView.tsx` — View 4: Histopathology (two-panel: specimen rail + evidence panel with overview/severity matrix tabs)
 - `components/analysis/NoaelDecisionView.tsx` — View 5: NOAEL & Decision (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
-- `components/analysis/ClinicalObservationsView.tsx` — View 6: Clinical Observations (two-panel: observation rail sorted by frequency + evidence panel with sex-faceted bar chart and timeline table)
-- `hooks/useClinicalObservations.ts` — hook for CL timecourse data from temporal API
+- `hooks/useClinicalObservations.ts` — hook for CL timecourse data from temporal API (used by Dose-Response time-course toggle for CL endpoints)
 - `components/analysis/panes/*ContextPanel.tsx` — context panels for each view
 - `components/analysis/panes/InsightsList.tsx` — organ-grouped signal synthesis with tiered insights (Critical/Notable/Observed)
 
@@ -285,7 +283,7 @@ Implemented in `lib/severity-colors.ts`.
 - **Step 2**: View 1 — Study Summary (signal heatmap, grid, target organ bar, filters, context panel)
 - **Bonus**: Adverse Effects view (paginated table, filters, context panel)
 - **Step 3**: Views 2-5 all implemented:
-  - View 2: Dose-Response (Recharts line/bar charts, metrics grid, endpoint search)
+  - View 2: Dose-Response (Recharts line/bar charts, metrics grid, endpoint search, time-course toggle in evidence tab, CL temporal bar charts)
   - View 3: Target Organs (three-tab model view: Evidence/Hypotheses/Metrics, enriched rail + header, 5 organ-level tools)
   - View 4: Histopathology (two-panel: specimen rail, overview + severity matrix tabs)
   - View 5: NOAEL & Decision (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
@@ -437,7 +435,7 @@ These are UI elements that show but don't function.
 
 #### P3.2 — Export Functionality
 - **`AppLandingPage.tsx:127`** — `alert("CSV/Excel export coming soon.")` in context menu Export action.
-- **`ContextPanel.tsx:228`** — `alert("CSV/Excel export coming soon.")` in StudyInspector Export link.
+- **`ContextPanel.tsx:225`** — `alert("CSV/Excel export coming soon.")` in StudyInspector Export link.
 - **Production change:** Implement actual CSV/Excel export for study data, analysis results, and reports.
 
 #### P3.3 — Disabled Context Menu Actions
