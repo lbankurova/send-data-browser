@@ -25,6 +25,7 @@ import {
 } from "recharts";
 import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import { useTimecourseGroup, useTimecourseSubject } from "@/hooks/useTimecourse";
+import { useClinicalObservations } from "@/hooks/useClinicalObservations";
 import { useEndpointBookmarks, useToggleBookmark } from "@/hooks/useEndpointBookmarks";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
@@ -254,7 +255,7 @@ export function DoseResponseView({
 
   // State
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"evidence" | "timecourse" | "hypotheses" | "metrics">("evidence");
+  const [activeTab, setActiveTab] = useState<"evidence" | "hypotheses" | "metrics">("evidence");
   const [railSearch, setRailSearch] = useState("");
   const [expandedOrgans, setExpandedOrgans] = useState<Set<string>>(new Set());
   const [selection, setSelection] = useState<DoseResponseSelection | null>(null);
@@ -859,7 +860,7 @@ export function DoseResponseView({
 
         {/* Tab bar */}
         <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
-          {(["evidence", "timecourse", "hypotheses", "metrics"] as const).map((tab) => (
+          {(["evidence", "hypotheses", "metrics"] as const).map((tab) => (
             <button
               key={tab}
               className={cn(
@@ -870,7 +871,7 @@ export function DoseResponseView({
               )}
               onClick={() => setActiveTab(tab)}
             >
-              {{ evidence: "Evidence", timecourse: "Time-course", hypotheses: "Hypotheses", metrics: "Metrics" }[tab]}
+              {{ evidence: "Evidence", hypotheses: "Hypotheses", metrics: "Metrics" }[tab]}
             </button>
           ))}
           {activeTab === "metrics" && (
@@ -888,11 +889,7 @@ export function DoseResponseView({
               selectedEndpoint={selectedEndpoint}
               pairwiseRows={pairwiseRows}
               sexColors={sexColors}
-            />
-          ) : activeTab === "timecourse" ? (
-            <TimecourseTabContent
               studyId={studyId}
-              selectedEndpoint={selectedEndpoint}
               selectedSummary={selectedSummary}
               onSubjectClick={onSubjectClick}
             />
@@ -934,6 +931,9 @@ interface ChartOverviewProps {
   selectedEndpoint: string | null;
   pairwiseRows: DoseResponseRow[];
   sexColors: Record<string, string>;
+  studyId: string | undefined;
+  selectedSummary: EndpointSummary | null;
+  onSubjectClick?: (usubjid: string) => void;
 }
 
 function ChartOverviewContent({
@@ -941,6 +941,9 @@ function ChartOverviewContent({
   selectedEndpoint,
   pairwiseRows,
   sexColors,
+  studyId,
+  selectedSummary,
+  onSubjectClick,
 }: ChartOverviewProps) {
   const chartRowRef = useRef<HTMLDivElement>(null);
   const [splitPct, setSplitPct] = useState(50); // default 50/50
@@ -1218,133 +1221,305 @@ function ChartOverviewContent({
           </div>
         </div>
       )}
+
+      {/* Time-course toggle section */}
+      {selectedEndpoint && selectedSummary && (
+        <TimecourseSection
+          studyId={studyId}
+          selectedEndpoint={selectedEndpoint}
+          selectedSummary={selectedSummary}
+          onSubjectClick={onSubjectClick}
+        />
+      )}
     </div>
   );
 }
 
-// ─── Time-course tab ──────────────────────────────────────
+// ─── Time-course section (collapsible, inside Evidence tab) ──
 
 type YAxisMode = "absolute" | "pct_change" | "pct_vs_control";
 
-interface TimecourseTabProps {
+interface TimecourseSectionProps {
   studyId: string | undefined;
-  selectedEndpoint: string | null;
-  selectedSummary: EndpointSummary | null;
+  selectedEndpoint: string;
+  selectedSummary: EndpointSummary;
   onSubjectClick?: (usubjid: string) => void;
 }
 
-function TimecourseTabContent({ studyId, selectedEndpoint, selectedSummary, onSubjectClick }: TimecourseTabProps) {
+function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubjectClick }: TimecourseSectionProps) {
+  const [expanded, setExpanded] = useState(false);
   const [yAxisMode, setYAxisMode] = useState<YAxisMode>("absolute");
   const [showSubjects, setShowSubjects] = useState(false);
 
-  const domain = selectedSummary?.domain;
-  const testCode = selectedSummary?.test_code;
-  const isContinuous = selectedSummary?.data_type === "continuous";
+  const domain = selectedSummary.domain;
+  const testCode = selectedSummary.test_code;
+  const isContinuous = selectedSummary.data_type === "continuous";
+  const isCL = domain === "CL";
 
-  const { data: tcData, isLoading, error } = useTimecourseGroup(
-    studyId,
-    domain,
-    testCode,
+  // Continuous temporal data — only fetch when expanded and continuous
+  const { data: tcData, isLoading: tcLoading, error: tcError } = useTimecourseGroup(
+    expanded && isContinuous ? studyId : undefined,
+    expanded && isContinuous ? domain : undefined,
+    expanded && isContinuous ? testCode : undefined,
   );
 
-  // Subject data: only fetch when toggle is ON and we have group data
+  // Subject data: only fetch when toggle is ON and continuous
   const { data: subjData, isLoading: subjLoading } = useTimecourseSubject(
-    showSubjects && isContinuous ? studyId : undefined,
-    showSubjects && isContinuous ? domain : undefined,
-    showSubjects && isContinuous ? testCode : undefined,
+    expanded && showSubjects && isContinuous ? studyId : undefined,
+    expanded && showSubjects && isContinuous ? domain : undefined,
+    expanded && showSubjects && isContinuous ? testCode : undefined,
   );
 
-  if (!selectedEndpoint || !selectedSummary) {
-    return (
-      <div className="flex items-center justify-center p-12 text-xs text-muted-foreground">
-        Select an endpoint to view the time-course.
-      </div>
-    );
-  }
+  // CL temporal data — only fetch when expanded and CL domain
+  const { data: clData, isLoading: clLoading } = useClinicalObservations(
+    expanded && isCL ? studyId : undefined,
+    expanded && isCL ? selectedEndpoint : undefined,
+  );
 
-  // Categorical endpoints don't have time-course data
-  if (!isContinuous) {
-    return (
-      <div className="flex items-center justify-center p-12 text-center">
-        <div>
-          <p className="text-xs text-muted-foreground">
-            Time-course is available for continuous endpoints only.
-          </p>
-          <p className="mt-1 text-[11px] text-muted-foreground/60">
-            This endpoint uses categorical (incidence) data.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Non-CL categorical endpoints have no temporal data
+  const hasTimecourse = isContinuous || isCL;
 
-  if (isLoading) {
+  if (!hasTimecourse) {
     return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Loading time-course...</span>
-      </div>
-    );
-  }
-
-  if (error || !tcData) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <div className="rounded-lg bg-red-50 p-4 text-center">
-          <p className="text-xs text-red-600">Time-course data not available for this endpoint.</p>
-        </div>
+      <div className="border-t px-4 py-3">
+        <button
+          className="flex cursor-not-allowed items-center gap-1.5 text-xs font-medium text-muted-foreground/50"
+          disabled
+        >
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          Time-course
+          <span className="ml-1 text-[10px] font-normal">
+            (not available for {domain} categorical endpoints)
+          </span>
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto">
-      {/* Y-axis toggle + Show subjects toggle */}
-      <div className="flex shrink-0 items-center justify-between px-4 pt-3">
-        <div className="flex items-center gap-1">
-          {(["absolute", "pct_change", "pct_vs_control"] as const).map((mode) => (
-            <button
-              key={mode}
-              className={cn(
-                "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
-                yAxisMode === mode
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:bg-accent/50"
-              )}
-              onClick={() => setYAxisMode(mode)}
-            >
-              {{ absolute: "Absolute", pct_change: "% change", pct_vs_control: "% vs control" }[mode]}
-            </button>
-          ))}
-        </div>
+    <div className="border-t">
+      {/* Toggle bar */}
+      <div className="flex items-center justify-between px-4 py-2">
         <button
-          className={cn(
-            "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-            showSubjects
-              ? "bg-foreground text-background border-foreground"
-              : "text-muted-foreground border-border hover:bg-accent/50"
-          )}
-          onClick={() => setShowSubjects(!showSubjects)}
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          onClick={() => setExpanded(!expanded)}
         >
-          {subjLoading ? (
-            <span className="flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Loading...
-            </span>
-          ) : (
-            "Show subjects"
-          )}
+          {expanded
+            ? <ChevronDown className="h-3 w-3 shrink-0" />
+            : <ChevronRight className="h-3 w-3 shrink-0" />}
+          Time-course
         </button>
+
+        {expanded && (
+          <div className="flex items-center gap-2">
+            {/* Y-axis mode pills — continuous only */}
+            {isContinuous && (
+              <div className="flex items-center gap-1">
+                {(["absolute", "pct_change", "pct_vs_control"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    className={cn(
+                      "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                      yAxisMode === mode
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:bg-accent/50"
+                    )}
+                    onClick={() => setYAxisMode(mode)}
+                  >
+                    {{ absolute: "Absolute", pct_change: "% change", pct_vs_control: "% vs control" }[mode]}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Show subjects toggle — continuous only */}
+            {isContinuous && (
+              <button
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  showSubjects
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border text-muted-foreground hover:bg-accent/50"
+                )}
+                onClick={() => setShowSubjects(!showSubjects)}
+              >
+                {subjLoading ? (
+                  <span className="flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Loading...
+                  </span>
+                ) : (
+                  "Show subjects"
+                )}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Sex-faceted charts */}
-      <TimecourseCharts
-        tcData={tcData}
-        yAxisMode={yAxisMode}
-        showSubjects={showSubjects}
-        subjData={subjData ?? null}
-        onSubjectClick={onSubjectClick}
-      />
+      {/* Expanded content */}
+      {expanded && (
+        <div>
+          {/* Continuous time-course */}
+          {isContinuous && (
+            <>
+              {tcLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Loading time-course...</span>
+                </div>
+              ) : tcError || !tcData ? (
+                <div className="p-6 text-center text-xs text-muted-foreground">
+                  Time-course data not available for this endpoint.
+                </div>
+              ) : (
+                <>
+                  <TimecourseCharts
+                    tcData={tcData}
+                    yAxisMode={yAxisMode}
+                    showSubjects={showSubjects}
+                    subjData={subjData ?? null}
+                    onSubjectClick={onSubjectClick}
+                  />
+                </>
+              )}
+            </>
+          )}
+
+          {/* CL time-course */}
+          {isCL && (
+            <>
+              {clLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Loading time-course...</span>
+                </div>
+              ) : !clData || clData.timecourse.length === 0 ? (
+                <div className="p-6 text-center text-xs text-muted-foreground">
+                  No temporal data available for this finding.
+                </div>
+              ) : (
+                <CLTimecourseCharts
+                  clData={clData}
+                  finding={selectedEndpoint}
+                />
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Renders sex-faceted CL finding count bar charts from temporal data. */
+function CLTimecourseCharts({
+  clData,
+  finding,
+}: {
+  clData: import("@/types/timecourse").CLTimecourseResponse;
+  finding: string;
+}) {
+  // Determine sexes and dose levels
+  const sexes = useMemo(() => {
+    const s = new Set<string>();
+    for (const tp of clData.timecourse) {
+      for (const gc of tp.counts) s.add(gc.sex);
+    }
+    return [...s].sort();
+  }, [clData]);
+
+  const doseLevels = useMemo(() => {
+    const d = new Map<number, string>();
+    for (const tp of clData.timecourse) {
+      for (const gc of tp.counts) {
+        if (!d.has(gc.dose_level)) d.set(gc.dose_level, gc.dose_label);
+      }
+    }
+    return [...d.entries()].sort((a, b) => a[0] - b[0]);
+  }, [clData]);
+
+  // Build chart data per sex: array of { day, dose_0, dose_1, ... }
+  const chartsBySex = useMemo(() => {
+    return sexes.map((sex) => {
+      const points = clData.timecourse.map((tp) => {
+        const point: Record<string, unknown> = { day: tp.day };
+        for (const gc of tp.counts) {
+          if (gc.sex !== sex) continue;
+          const count = gc.findings[finding] ?? 0;
+          const subjects = gc.subjects?.[finding] ?? [];
+          point[`dose_${gc.dose_level}`] = count;
+          point[`dose_${gc.dose_level}_total`] = gc.total_subjects;
+          point[`dose_${gc.dose_level}_subjects`] = subjects.join(", ");
+          point[`dose_${gc.dose_level}_label`] = gc.dose_label;
+        }
+        return point;
+      });
+      return { sex, points };
+    });
+  }, [sexes, clData, finding]);
+
+  const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
+
+  return (
+    <div>
+      <div className="flex gap-4 border-b p-4">
+        {chartsBySex.map(({ sex, points }) => (
+          <div key={sex} className="flex-1 min-w-[300px]">
+            <p className="mb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {sexLabels[sex] ?? sex}
+            </p>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={points} margin={{ top: 5, right: 10, bottom: 25, left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="day"
+                  tick={{ fontSize: 10 }}
+                  label={{ value: "Study day", position: "insideBottom", offset: -15, fontSize: 10, fill: "#9CA3AF" }}
+                />
+                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{ fontSize: 11, borderRadius: 6 }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  formatter={(value: any, name: any, _props: any, _idx: any, payload: any) => {
+                    const n = String(name ?? "");
+                    const item = payload?.[0]?.payload ?? {};
+                    const total = item[`${n}_total`] ?? "?";
+                    const subjectList = item[`${n}_subjects`] ?? "";
+                    const doseLabel = item[`${n}_label`] ?? n;
+                    const incPct = total > 0 ? ((Number(value) / Number(total)) * 100).toFixed(0) : "0";
+                    const tip = `${value}/${total} (${incPct}%)`;
+                    return [subjectList ? `${tip}\n${subjectList}` : tip, String(doseLabel)];
+                  }}
+                  labelFormatter={(label) => `Day ${label}`}
+                />
+                {doseLevels.map(([dl]) => (
+                  <Bar
+                    key={dl}
+                    dataKey={`dose_${dl}`}
+                    fill={getDoseGroupColor(dl)}
+                    name={`dose_${dl}`}
+                    radius={[2, 2, 0, 0]}
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-3 px-4 py-2 text-[10px] text-muted-foreground">
+        {doseLevels.map(([dl, label]) => (
+          <span key={dl} className="flex items-center gap-1">
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-sm"
+              style={{ backgroundColor: getDoseGroupColor(dl) }}
+            />
+            {label.split(",")[0]}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
