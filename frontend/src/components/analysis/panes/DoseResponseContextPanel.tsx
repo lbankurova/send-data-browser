@@ -8,6 +8,10 @@ import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import type { RuleResult } from "@/types/analysis-views";
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
 interface DoseResponseSelection {
   endpoint_label: string;
   sex?: string;
@@ -21,25 +25,30 @@ interface Props {
   studyId?: string;
 }
 
-export function DoseResponseContextPanel({ ruleResults, selection, studyId: studyIdProp }: Props) {
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function DoseResponseContextPanel({
+  ruleResults,
+  selection,
+  studyId: studyIdProp,
+}: Props) {
   const { studyId: studyIdParam } = useParams<{ studyId: string }>();
   const studyId = studyIdProp ?? studyIdParam;
   const navigate = useNavigate();
+  const [tierFilter, setTierFilter] = useState<Tier | null>(null);
 
   // Rules for selected endpoint — filter by organ system + domain prefix
   const endpointRules = useMemo(() => {
     if (!selection) return [];
     const domainPrefix = selection.domain ? selection.domain + "_" : null;
     return ruleResults.filter((r) => {
-      // Organ-level or study-level rules for this organ
       if (selection.organ_system && r.organ_system === selection.organ_system) return true;
-      // Endpoint-scope rules in the same domain
       if (domainPrefix && r.scope === "endpoint" && r.context_key.startsWith(domainPrefix)) return true;
       return false;
     });
   }, [ruleResults, selection]);
-
-  const [tierFilter, setTierFilter] = useState<Tier | null>(null);
 
   if (!selection) {
     return (
@@ -52,26 +61,26 @@ export function DoseResponseContextPanel({ ruleResults, selection, studyId: stud
   return (
     <div>
       {/* Header */}
-      <div className="border-b px-4 py-3">
+      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
-        <p className="text-xs text-muted-foreground">
-          {selection.domain} &middot; {selection.organ_system?.replace(/_/g, " ")}
-          {selection.sex && <> &middot; {selection.sex}</>}
-        </p>
+        <div className="mt-1 flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            {selection.domain} &middot; {selection.organ_system?.replace(/_/g, " ")}
+            {selection.sex && <> &middot; {selection.sex}</>}
+          </p>
+          <span className="text-xs">
+            <TierCountBadges
+              counts={computeTierCounts(endpointRules)}
+              activeTier={tierFilter}
+              onTierClick={setTierFilter}
+            />
+          </span>
+        </div>
+
       </div>
 
       {/* Endpoint insights */}
-      <CollapsiblePane
-        title="Insights"
-        defaultOpen
-        headerRight={
-          <TierCountBadges
-            counts={computeTierCounts(endpointRules)}
-            activeTier={tierFilter}
-            onTierClick={setTierFilter}
-          />
-        }
-      >
+      <CollapsiblePane title="Insights" defaultOpen>
         <InsightsList rules={endpointRules} tierFilter={tierFilter} />
       </CollapsiblePane>
 

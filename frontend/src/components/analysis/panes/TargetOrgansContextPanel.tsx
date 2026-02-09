@@ -83,37 +83,41 @@ export function TargetOrgansContextPanel({
   return (
     <div>
       {/* Header */}
-      <div className="border-b px-4 py-3">
+      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <h3 className="text-sm font-semibold">
           {selection.organ_system.replace(/_/g, " ")}
         </h3>
-        {selectedOrganSummary && (
-          <div className="mt-1 flex items-center gap-2 text-[11px]">
-            <span className={cn(
-              selectedOrganSummary.evidence_score >= 0.5 ? "font-semibold" : "font-medium"
-            )}>
-              Evidence: {selectedOrganSummary.evidence_score.toFixed(2)}
-            </span>
-            {selectedOrganSummary.target_organ_flag && (
-              <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
-                TARGET ORGAN
-              </span>
+        <div className="mt-1 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[11px]">
+            {selectedOrganSummary && (
+              <>
+                <span className={cn(
+                  selectedOrganSummary.evidence_score >= 0.5 ? "font-semibold" : "font-medium"
+                )}>
+                  Evidence: {selectedOrganSummary.evidence_score.toFixed(2)}
+                </span>
+                {selectedOrganSummary.target_organ_flag && (
+                  <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
+                    TARGET ORGAN
+                  </span>
+                )}
+              </>
             )}
           </div>
-        )}
+          <span className="text-xs">
+            <TierCountBadges
+              counts={computeTierCounts(organRules)}
+              activeTier={tierFilter}
+              onTierClick={setTierFilter}
+            />
+          </span>
+        </div>
       </div>
 
       {/* Organ convergence */}
       <CollapsiblePane
         title="Convergence"
         defaultOpen
-        headerRight={
-          <TierCountBadges
-            counts={computeTierCounts(organRules)}
-            activeTier={tierFilter}
-            onTierClick={setTierFilter}
-          />
-        }
       >
         <InsightsList rules={organRules} tierFilter={tierFilter} />
       </CollapsiblePane>

@@ -95,7 +95,7 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection, s
   return (
     <div>
       {/* Header */}
-      <div className="border-b px-4 py-3">
+      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
         <p className="text-xs text-muted-foreground">
           {selection.sex} &middot; Dose {selection.dose_level}

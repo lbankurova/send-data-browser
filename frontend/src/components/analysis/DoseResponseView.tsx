@@ -27,6 +27,7 @@ import {
   formatPValue,
   formatEffectSize,
   getDomainBadgeColor,
+  titleCase,
 } from "@/lib/severity-colors";
 import type { DoseResponseRow } from "@/types/analysis-views";
 
@@ -339,11 +340,14 @@ export function DoseResponseView({
     () => [
       col.accessor("endpoint_label", {
         header: "Endpoint",
-        cell: (info) => (
-          <span className="truncate" title={info.getValue()}>
-            {info.getValue().length > 25 ? info.getValue().slice(0, 25) + "\u2026" : info.getValue()}
-          </span>
-        ),
+        cell: (info) => {
+          const tc = titleCase(info.getValue());
+          return (
+            <span className="truncate" title={tc}>
+              {tc.length > 25 ? tc.slice(0, 25) + "\u2026" : tc}
+            </span>
+          );
+        },
       }),
       col.accessor("domain", {
         header: "Domain",
@@ -639,7 +643,7 @@ export function DoseResponseView({
                   ) : (
                     <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
                   )}
-                  <span className="flex-1 truncate">{group.organ_system.replace(/_/g, " ")}</span>
+                  <span className="flex-1 truncate">{titleCase(group.organ_system)}</span>
                   <span className="text-[10px] font-normal text-muted-foreground">
                     {group.endpoints.length}
                   </span>
@@ -656,7 +660,8 @@ export function DoseResponseView({
                           "w-full border-b border-dashed px-3 py-1.5 text-left transition-colors hover:bg-accent/50",
                           isSelected && "bg-accent"
                         )}
-                        data-rail-item
+                        data-rail-item=""
+                        data-selected={isSelected || undefined}
                         onClick={() => selectEndpoint(ep.endpoint_label)}
                       >
                         {/* Row 1: name + direction */}
@@ -668,7 +673,7 @@ export function DoseResponseView({
                             )}
                             title={ep.endpoint_label}
                           >
-                            {ep.endpoint_label}
+                            {titleCase(ep.endpoint_label)}
                           </span>
                           {ep.direction && (
                             <span className="text-xs text-[#9CA3AF]">
@@ -718,9 +723,9 @@ export function DoseResponseView({
           <div className="shrink-0 border-b px-4 py-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h2 className="text-sm font-semibold">{selectedSummary.endpoint_label}</h2>
+                <h2 className="text-sm font-semibold">{titleCase(selectedSummary.endpoint_label)}</h2>
                 <p className="text-[11px] text-muted-foreground">
-                  {selectedSummary.domain} &middot; {selectedSummary.organ_system.replace(/_/g, " ")}
+                  {selectedSummary.domain} &middot; {titleCase(selectedSummary.organ_system)}
                   {selectedSummary.data_type === "categorical" && " &middot; Categorical"}
                 </p>
               </div>

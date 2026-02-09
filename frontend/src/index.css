@@ -130,7 +130,8 @@ tr[data-selected] td[data-evidence] .ev {
 tr:hover td[data-evidence] .ev {
   color: #DC2626;
 }
-/* Rail endpoint items: hover activates evidence values */
-button[data-rail-item]:hover .ev {
+/* Rail endpoint items: hover and selection activate evidence values */
+button[data-rail-item]:hover .ev,
+button[data-rail-item][data-selected] .ev {
   color: #DC2626;
 }
