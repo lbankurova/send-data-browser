@@ -12,7 +12,6 @@ import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { generateStudyReport } from "@/lib/report-generator";
 import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
 import type { MetricsLine, PanelStatement, OrganBlock } from "@/lib/signals-panel-engine";
-import { getDomainBadgeColor } from "@/lib/severity-colors";
 import {
   SignalsOrganRail,
   SignalsEvidencePanel,
@@ -65,18 +64,6 @@ export function StudySummaryView({
     []
   );
 
-  // Keyboard: Escape clears selection
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && tab === "signals") {
-        setSelection(null);
-        setSelectedOrganState(null);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [tab]);
-
   // Build panel data
   const panelData = useMemo(() => {
     if (!signalData || !targetOrgans || !noaelData) return null;
@@ -94,6 +81,33 @@ export function StudySummaryView({
       return b.evidence_score - a.evidence_score;
     });
   }, [targetOrgans]);
+
+  // Keyboard: Escape clears selection, ↑/↓ navigates organ rail
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (tab !== "signals") return;
+      if (e.key === "Escape") {
+        setSelection(null);
+        setSelectedOrganState(null);
+        return;
+      }
+      if ((e.key === "ArrowUp" || e.key === "ArrowDown") && sortedOrgans.length > 0) {
+        e.preventDefault();
+        const currentIdx = selectedOrgan
+          ? sortedOrgans.findIndex((o) => o.organ_system === selectedOrgan)
+          : -1;
+        let nextIdx: number;
+        if (e.key === "ArrowDown") {
+          nextIdx = currentIdx < sortedOrgans.length - 1 ? currentIdx + 1 : 0;
+        } else {
+          nextIdx = currentIdx > 0 ? currentIdx - 1 : sortedOrgans.length - 1;
+        }
+        handleOrganClick(sortedOrgans[nextIdx].organ_system);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [tab, selectedOrgan, sortedOrgans, handleOrganClick]);
 
   // Max evidence score (for rail bar normalization)
   const maxEvidenceScore = useMemo(
@@ -169,8 +183,8 @@ export function StudySummaryView({
       <div className="flex items-center border-b">
         <div className="flex">
           {([
+            { key: "details" as Tab, label: "Study Details" },
             { key: "signals" as Tab, label: "Signals" },
-            { key: "details" as Tab, label: "Study details" },
           ]).map(({ key, label }) => (
             <button
               key={key}
@@ -195,7 +209,7 @@ export function StudySummaryView({
             onClick={() => studyId && generateStudyReport(studyId)}
           >
             <FileText className="h-3.5 w-3.5" />
-            Generate report
+            Generate Report
           </button>
         </div>
       </div>
@@ -261,93 +275,97 @@ function DecisionBar({
   statements: PanelStatement[];
   metrics: MetricsLine;
 }) {
+  // Separate the main NOAEL fact (first priority 990+ fact) from alerts/warnings
+  const alertStatements = statements.filter(
+    (s) => s.icon === "warning" || s.icon === "review-flag"
+  );
+
   return (
-    <div className="shrink-0 border-b border-l-2 border-l-blue-500 bg-blue-50/30 px-4 py-2.5 dark:bg-blue-950/10">
-      {/* NOAEL statement(s) */}
-      <div className="space-y-0.5">
-        {statements.map((s, i) => {
-          const isAlert = s.icon === "warning" || s.icon === "review-flag";
-          const isMainLine = i === 0;
-          return (
-            <div
-              key={i}
+    <div className="shrink-0 border-b border-l-2 border-l-blue-500 bg-blue-50/30 px-4 py-3 dark:bg-blue-950/10">
+      {/* Structured NOAEL / LOAEL row */}
+      <div className="flex items-start gap-8">
+        <div>
+          <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            NOAEL
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span
               className={cn(
-                "flex items-start gap-2 leading-snug",
-                isMainLine ? "text-sm font-medium" : "text-sm",
-                isAlert && "text-amber-700"
+                "text-3xl font-bold",
+                metrics.noael === "Not established"
+                  ? "text-amber-600"
+                  : "text-foreground"
               )}
             >
+              {metrics.noael}
+            </span>
+            {metrics.noaelSex && (
+              <span className="text-xl text-muted-foreground">
+                ({metrics.noaelSex})
+              </span>
+            )}
+            {metrics.noaelConfidence != null && (
               <span
                 className={cn(
-                  "shrink-0",
-                  isAlert
-                    ? "mt-0.5 text-[11px] text-amber-600"
-                    : "mt-[5px] text-[8px] text-blue-500"
+                  "rounded px-1.5 py-0.5 text-[10px] font-semibold",
+                  metrics.noaelConfidence >= 0.8
+                    ? "bg-green-100 text-green-700"
+                    : metrics.noaelConfidence >= 0.6
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-red-100 text-red-700"
                 )}
               >
-                {isAlert ? "\u25B2" : "\u25CF"}
+                {Math.round(metrics.noaelConfidence * 100)}%
+              </span>
+            )}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            LOAEL
+          </div>
+          <span className="text-3xl font-bold text-foreground">
+            {metrics.loael}
+          </span>
+        </div>
+      </div>
+
+      {/* Driver row */}
+      {metrics.driver && (
+        <div className="mt-1">
+          <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            Driver
+          </span>{" "}
+          <span className="text-lg font-medium text-blue-600">
+            {metrics.driver}
+          </span>
+        </div>
+      )}
+
+      {/* Alert/warning statements */}
+      {alertStatements.length > 0 && (
+        <div className="mt-1.5 space-y-0.5">
+          {alertStatements.map((s, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-2 text-sm leading-snug text-amber-700"
+            >
+              <span className="mt-0.5 shrink-0 text-[11px] text-amber-600">
+                {s.icon === "review-flag" ? "\u26A0" : "\u25B2"}
               </span>
               <span>{s.text}</span>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Metrics line */}
-      <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-        <span>
-          <span className="font-medium">NOAEL</span>{" "}
-          <span
-            className={cn(
-              "font-semibold",
-              metrics.noael === "Not established" ||
-                metrics.noael === "Control"
-                ? "text-amber-600"
-                : "text-foreground"
-            )}
-          >
-            {metrics.noael}
-          </span>
-          {metrics.noaelSex && (
-            <span className="text-muted-foreground">
-              {" "}
-              ({metrics.noaelSex})
-            </span>
-          )}
-        </span>
-        {metrics.noaelConfidence != null && (
-          <>
-            <span
-              className={cn(
-                "rounded px-1 py-0.5 text-[10px] font-semibold",
-                metrics.noaelConfidence >= 0.8
-                  ? "bg-green-100 text-green-700"
-                  : metrics.noaelConfidence >= 0.6
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-red-100 text-red-700"
-              )}
-            >
-              {Math.round(metrics.noaelConfidence * 100)}%
-            </span>
-          </>
-        )}
-        <span>&middot;</span>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
         <span>
           {metrics.targets} target{metrics.targets !== 1 ? "s" : ""}
         </span>
         <span>&middot;</span>
-        <span className={cn(metrics.nAdverseAtLoael >= 5 && "font-semibold text-red-600")}>
-          {metrics.nAdverseAtLoael} adverse at LOAEL
-        </span>
-        {metrics.adverseDomainsAtLoael.length > 0 && (
-          <span className="flex items-center gap-0.5">
-            {metrics.adverseDomainsAtLoael.map((d) => (
-              <span key={d} className={cn("text-[10px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
-            ))}
-          </span>
-        )}
-        <span>&middot;</span>
-        <span>{metrics.significantRatio} significant</span>
+        <span>{metrics.significantRatio} sig</span>
         <span>&middot;</span>
         <span>{metrics.doseResponse} D-R</span>
         <span>&middot;</span>

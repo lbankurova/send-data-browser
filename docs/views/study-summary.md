@@ -37,9 +37,9 @@ The Study Summary View itself is split into two tabs with a shared tab bar:
 ## Tab Bar
 
 - **Position:** Top of the view, full width, `border-b`
-- **Tabs:** "Study Details" and "Signals" (default active)
+- **Tabs:** "Study Details" (first) and "Signals" (second, default active)
 - **Active indicator:** `h-0.5 bg-primary` underline at bottom of active tab
-- **Tab text:** `text-xs font-medium`. Active = `text-foreground`. Inactive = `text-muted-foreground`
+- **Tab text:** `text-xs font-medium`. Active = `text-foreground`. Inactive = `text-muted-foreground`. Title Case for all tab labels.
 - **Generate Report button:** Right-aligned in tab bar. Border, `text-xs`, icon `FileText` (3.5x3.5) + "Generate Report" label. Opens HTML report in new tab.
 
 ---
@@ -121,16 +121,23 @@ Responsive: `max-[1200px]:flex-col` — stacks vertically on narrow screens.
 
 ### Decision Bar
 
-Persistent across the Signals tab. Visual anchor with blue accent: `shrink-0 border-b border-l-2 border-l-blue-500 bg-blue-50/30 px-4 py-2.5 dark:bg-blue-950/10`.
+Persistent across the Signals tab. Visual anchor with blue accent: `shrink-0 border-b border-l-2 border-l-blue-500 bg-blue-50/30 px-4 py-3 dark:bg-blue-950/10`.
 
-**NOAEL statements:** From `panelData.decisionBar` (priority 900+ rules). Each as:
-- `flex items-start gap-2 leading-snug`
-- First line: `text-sm font-medium`; subsequent lines: `text-sm`
-- Alert icon (`▲`) for warning/review-flag statements, blue dot (`●`) for facts
+**Structured layout (top to bottom):**
 
-**Metrics line:** `mt-1 flex flex-wrap gap-x-1.5 text-xs text-muted-foreground`
-- NOAEL value (amber-600 if "Not established" or "Control", foreground otherwise)
-- N targets · significant ratio · D-R count · N domains
+1. **NOAEL / LOAEL row** — side by side (`flex items-start gap-8`):
+   - Each: label (`text-xs font-medium uppercase tracking-widest text-muted-foreground`) + value (`text-3xl font-bold text-foreground`)
+   - NOAEL value: amber-600 only if "Not established"; all other values (including "Control") use `text-foreground`
+   - NOAEL sex qualifier: `text-xl text-muted-foreground` inline after value
+   - NOAEL confidence badge (if present): colored pill (`text-[10px] font-semibold`) — green ≥80%, amber ≥60%, red <60%
+
+2. **Driver row** (if a driving endpoint exists): "Driver" label (`text-xs font-medium uppercase tracking-widest text-muted-foreground`) + endpoint name (`text-lg font-medium text-blue-600`)
+
+3. **Alert/warning statements** (if any from `panelData.decisionBar` with warning/review-flag icons): `text-sm leading-snug text-amber-700` with triangle/warning icon
+
+4. **Metrics line:** `mt-1.5 flex flex-wrap gap-x-1.5 text-xs text-muted-foreground` — N targets · sig ratio · D-R count · N domains
+
+**Data source:** NOAEL, LOAEL, and driver values come from `MetricsLine` (computed in `signals-panel-engine.ts` from NOAEL summary + signal data). Alert statements from `panelData.decisionBar` (priority 900+ rules, filtered to warning/review-flag icons).
 
 ### Study Statements Bar
 
@@ -169,7 +176,8 @@ Each rail item (`SignalsOrganRailItem`):
 
 #### Organ Header (compact, 2-line format)
 - Line 1: Organ name `text-sm font-semibold` + "TARGET" badge (if applicable)
-- Line 2: Merged summary+metrics in `text-[11px] text-muted-foreground tabular-nums`: `{n_domains} domains · {n_significant}/{n_endpoints} sig ({pct}%) · {n_treatment_related} TR · Max {max_signal} · Evidence {evidence_score}`
+- Line 2: Metrics in `text-[11px] text-muted-foreground tabular-nums`: `{n_domains} domains · {n_significant}/{n_endpoints} sig ({pct}%) · {n_treatment_related} TR · Max {max_signal} · Evidence {evidence_score} · |d| {maxAbsEffectSize} · trend p {minTrendP}`
+- No conclusion sentence — all relevant information is conveyed by the metrics line
 
 #### Tab Bar
 Two tabs: "Overview" and "Signal matrix"
@@ -304,6 +312,7 @@ SignalsOrganRail                    SignalsEvidencePanel
 | Key | Action |
 |-----|--------|
 | Escape | Clears both organ selection and endpoint selection |
+| ↑ / ↓ | Navigates between organs in the organ rail (wraps at boundaries). Only active when Signals tab is focused. |
 
 ---
 
