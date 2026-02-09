@@ -13,11 +13,11 @@ import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 import {
   formatPValue,
   formatEffectSize,
   getDirectionSymbol,
-  getDomainBadgeColor,
   titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -258,7 +258,7 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
                 {r.adverse_domains_at_loael.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
                     {r.adverse_domains_at_loael.map((d) => (
-                      <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
+                      <DomainLabel key={d} domain={d} />
                     ))}
                   </div>
                 )}
@@ -329,7 +329,7 @@ function OrganRailItem({
         <span>&middot;</span>
         <span>{summary.trCount} TR</span>
         {summary.domains.map((d) => (
-          <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
+          <DomainLabel key={d} domain={d} />
         ))}
       </div>
     </button>
@@ -625,14 +625,7 @@ function AdversityMatrixTab({
       }),
       col.accessor("domain", {
         header: "Domain",
-        cell: (info) => {
-          const dc = getDomainBadgeColor(info.getValue());
-          return (
-            <span className={cn("text-[9px] font-semibold", dc.text)}>
-              {info.getValue()}
-            </span>
-          );
-        },
+        cell: (info) => <DomainLabel domain={info.getValue()} />,
       }),
       col.accessor("dose_level", {
         header: "Dose",

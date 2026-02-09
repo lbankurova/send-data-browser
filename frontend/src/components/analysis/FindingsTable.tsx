@@ -7,8 +7,8 @@ import {
   formatEffectSize,
   getDirectionSymbol,
   getDirectionColor,
-  getDomainBadgeColor,
 } from "@/lib/severity-colors";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
@@ -50,7 +50,6 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
         <tbody>
           {findings.map((f) => {
             const isSelected = selectedFindingId === f.id;
-            const domainColor = getDomainBadgeColor(f.domain);
 
             return (
               <tr
@@ -63,9 +62,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
               >
                 {/* Domain label — colored text only per design rule */}
                 <td className="px-2 py-1">
-                  <span className={cn("text-[9px] font-semibold", domainColor.text)}>
-                    {f.domain}
-                  </span>
+                  <DomainLabel domain={f.domain} />
                 </td>
 
                 {/* Finding name */}

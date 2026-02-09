@@ -9,7 +9,7 @@ import {
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
 import { cn } from "@/lib/utils";
-import { getDomainBadgeColor } from "@/lib/severity-colors";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import type { ValidationRuleResult } from "@/hooks/useValidationResults";
@@ -157,7 +157,7 @@ const ruleColumns = [
     size: 70,
     cell: (info) => {
       const d = info.getValue();
-      return <span className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>;
+      return <DomainLabel domain={d} />;
     },
   }),
   ruleColumnHelper.accessor("category", {
