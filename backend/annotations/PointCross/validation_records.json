@@ -44,10 +44,10 @@
     "reviewedDate": "2026-02-08T22:44:18.604440+00:00"
   },
   "SEND-VAL-004-MI-004": {
-    "fixStatus": "Not fixed",
-    "comment": "Reverted from Manually fixed",
+    "fixStatus": "Manually fixed",
+    "comment": "Fix applied: MIRESCAT \u2192 '(valid RESULT_CATEGORY term)'",
     "reviewedBy": "User",
-    "reviewedDate": "2026-02-08T22:44:21.049187+00:00"
+    "reviewedDate": "2026-02-09T12:43:08.697158+00:00"
   },
   "SEND-VAL-004-MI-005": {
     "fixStatus": "Not fixed",
