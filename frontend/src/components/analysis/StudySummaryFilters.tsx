@@ -12,10 +12,6 @@ export function StudySummaryFilters({ data, filters, onChange }: Props) {
     () => [...new Set(data.map((r) => r.endpoint_type))].sort(),
     [data]
   );
-  const organSystems = useMemo(
-    () => [...new Set(data.map((r) => r.organ_system))].sort(),
-    [data]
-  );
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -32,24 +28,6 @@ export function StudySummaryFilters({ data, filters, onChange }: Props) {
           {endpointTypes.map((t) => (
             <option key={t} value={t}>
               {t.replace(/_/g, " ")}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        Organ
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.organ_system ?? ""}
-          onChange={(e) =>
-            onChange({ ...filters, organ_system: e.target.value || null })
-          }
-        >
-          <option value="">All</option>
-          {organSystems.map((o) => (
-            <option key={o} value={o}>
-              {o.replace(/_/g, " ")}
             </option>
           ))}
         </select>
