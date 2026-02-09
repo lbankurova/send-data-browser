@@ -141,6 +141,100 @@ function deriveFindingSummaries(rows: LesionSeverityRow[]): FindingSummary[] {
   return summaries.sort((a, b) => b.maxSeverity - a.maxSeverity);
 }
 
+// ─── Specimen-level intelligence helpers ─────────────────────
+
+function deriveSexLabel(rows: LesionSeverityRow[]): string {
+  const sexes = new Set(rows.map((r) => r.sex));
+  if (sexes.size === 1) {
+    const s = [...sexes][0];
+    return s === "M" ? "Male only" : s === "F" ? "Female only" : `${s} only`;
+  }
+  return "Both sexes";
+}
+
+function getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderate" | "Strong" {
+  // Group by finding, then check dose-incidence monotonicity
+  const byFinding = new Map<string, Map<number, { affected: number; n: number }>>();
+  for (const r of rows) {
+    let findingMap = byFinding.get(r.finding);
+    if (!findingMap) {
+      findingMap = new Map();
+      byFinding.set(r.finding, findingMap);
+    }
+    const existing = findingMap.get(r.dose_level);
+    if (existing) {
+      existing.affected += r.affected;
+      existing.n += r.n;
+    } else {
+      findingMap.set(r.dose_level, { affected: r.affected, n: r.n });
+    }
+  }
+
+  let monotonic = 0;
+  let doseGroupsAffected = new Set<number>();
+  for (const [, doseMap] of byFinding) {
+    const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
+    const incidences = sorted.map(([, v]) => (v.n > 0 ? v.affected / v.n : 0));
+    // Check if incidence is non-decreasing (monotonic)
+    let isMonotonic = true;
+    for (let i = 1; i < incidences.length; i++) {
+      if (incidences[i] < incidences[i - 1] - 0.001) {
+        isMonotonic = false;
+        break;
+      }
+    }
+    if (isMonotonic) monotonic++;
+    for (const [dl, v] of sorted) {
+      if (v.affected > 0) doseGroupsAffected.add(dl);
+    }
+  }
+
+  const totalFindings = byFinding.size;
+  if (totalFindings === 0) return "Weak";
+
+  const monotonePct = monotonic / totalFindings;
+  if (monotonePct > 0.5 && doseGroupsAffected.size >= 3) return "Strong";
+  if (monotonePct > 0 || doseGroupsAffected.size >= 2) return "Moderate";
+  return "Weak";
+}
+
+function deriveSpecimenConclusion(
+  summary: SpecimenSummary,
+  specimenData: LesionSeverityRow[],
+  specimenRules: RuleResult[]
+): string {
+  const maxIncidencePct = summary.totalN > 0
+    ? ((summary.totalAffected / summary.totalN) * 100).toFixed(0)
+    : "0";
+
+  // Incidence characterization
+  const incidenceDesc = Number(maxIncidencePct) > 50
+    ? "high-incidence" : Number(maxIncidencePct) > 20
+    ? "moderate-incidence" : "low-incidence";
+
+  // Severity characterization
+  const sevDesc = summary.adverseCount > 0
+    ? `max severity ${summary.maxSeverity.toFixed(1)}`
+    : "non-adverse";
+
+  // Sex
+  const sexDesc = deriveSexLabel(specimenData).toLowerCase();
+
+  // Dose relationship: check for R01/R04 presence or compute dose consistency
+  const hasDoseRule = specimenRules.some((r) => r.rule_id === "R01" || r.rule_id === "R04");
+  let doseDesc: string;
+  if (hasDoseRule) {
+    doseDesc = "with dose-related increase";
+  } else {
+    const consistency = getDoseConsistency(specimenData);
+    doseDesc = consistency === "Strong"
+      ? "with dose-related trend"
+      : "without dose-related increase";
+  }
+
+  return `${incidenceDesc}, ${sevDesc}, ${sexDesc}, ${doseDesc}.`;
+}
+
 // ─── SpecimenRailItem ──────────────────────────────────────
 
 function SpecimenRailItem({
@@ -264,14 +358,24 @@ function SpecimenRail({
 
 // ─── SpecimenHeader ────────────────────────────────────────
 
-function SpecimenHeader({ summary }: { summary: SpecimenSummary }) {
-  const maxIncidencePct = summary.totalN > 0
-    ? ((summary.totalAffected / summary.totalN) * 100).toFixed(0)
-    : "0";
+function SpecimenHeader({
+  summary,
+  specimenData,
+  specimenRules,
+}: {
+  summary: SpecimenSummary;
+  specimenData: LesionSeverityRow[];
+  specimenRules: RuleResult[];
+}) {
+  const sexLabel = useMemo(() => deriveSexLabel(specimenData), [specimenData]);
+  const conclusion = useMemo(
+    () => deriveSpecimenConclusion(summary, specimenData, specimenRules),
+    [summary, specimenData, specimenRules]
+  );
 
   return (
     <div className="shrink-0 border-b px-4 py-3">
-      {/* Title */}
+      {/* Title + badges */}
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold">
           {summary.specimen.replace(/_/g, " ")}
@@ -281,13 +385,18 @@ function SpecimenHeader({ summary }: { summary: SpecimenSummary }) {
             {summary.adverseCount} adverse
           </span>
         )}
+        <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
+          {sexLabel}
+        </span>
+        {/* TODO: Derive from useAnnotations<PathologyReview> — aggregate peerReviewStatus across specimen findings */}
+        <span className="rounded border border-border/50 px-1 text-[10px] text-muted-foreground/60">
+          Preliminary
+        </span>
       </div>
 
-      {/* Conclusion text */}
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-        {summary.findingCount} {summary.findingCount === 1 ? "finding" : "findings"} across{" "}
-        {summary.domains.length === 1 ? "1 domain" : `${summary.domains.length} domains`},{" "}
-        {summary.adverseCount} with adverse severity, incidence up to {maxIncidencePct}%.
+      {/* 1-line conclusion */}
+      <p className="mt-1 text-[11px] italic leading-relaxed text-muted-foreground">
+        {conclusion}
       </p>
 
       {/* Compact metrics */}
@@ -316,7 +425,7 @@ function SpecimenHeader({ summary }: { summary: SpecimenSummary }) {
 function OverviewTab({
   specimenData,
   findingSummaries,
-  ruleResults,
+  specimenRules,
   specimen,
   studyId,
   selection,
@@ -324,26 +433,13 @@ function OverviewTab({
 }: {
   specimenData: LesionSeverityRow[];
   findingSummaries: FindingSummary[];
-  ruleResults: RuleResult[];
+  specimenRules: RuleResult[];
   specimen: string;
   studyId: string | undefined;
   selection: HistopathSelection | null;
   onFindingClick: (finding: string) => void;
 }) {
   const navigate = useNavigate();
-
-  // Filter rule results to this specimen
-  const specimenRules = useMemo(() => {
-    if (!ruleResults.length) return [];
-    const specLower = specimen.toLowerCase();
-    const specKey = specLower.replace(/[, ]+/g, "_");
-    return ruleResults.filter(
-      (r) =>
-        r.output_text.toLowerCase().includes(specLower) ||
-        r.context_key.toLowerCase().includes(specKey) ||
-        r.organ_system.toLowerCase() === specLower
-    );
-  }, [ruleResults, specimen]);
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-3">
@@ -624,9 +720,14 @@ function SeverityMatrixTab({
         {/* Severity Heatmap */}
         {heatmapData && heatmapData.findings.length > 0 && (
           <div className="border-b p-4">
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Severity heatmap ({heatmapData.findings.length} findings)
-            </h2>
+            <div className="mb-2 flex items-center gap-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Severity heatmap ({heatmapData.findings.length} findings)
+              </h2>
+              <span className="text-[10px] text-muted-foreground">
+                Dose consistency: {getDoseConsistency(specimenData)}
+              </span>
+            </div>
             <div className="overflow-x-auto">
               <div className="inline-block">
                 {/* Header row */}
@@ -829,6 +930,19 @@ export function HistopathologyView({
     return specimenSummaries.find((s) => s.specimen === selectedSpecimen) ?? null;
   }, [specimenSummaries, selectedSpecimen]);
 
+  // Rules scoped to selected specimen (shared with SpecimenHeader and OverviewTab)
+  const specimenRules = useMemo(() => {
+    if (!ruleResults?.length || !selectedSpecimen) return [];
+    const specLower = selectedSpecimen.toLowerCase();
+    const specKey = specLower.replace(/[, ]+/g, "_");
+    return ruleResults.filter(
+      (r) =>
+        r.output_text.toLowerCase().includes(specLower) ||
+        r.context_key.toLowerCase().includes(specKey) ||
+        r.organ_system.toLowerCase() === specLower
+    );
+  }, [ruleResults, selectedSpecimen]);
+
   // Auto-select top specimen on load
   useEffect(() => {
     if (specimenSummaries.length > 0 && selectedSpecimen === null) {
@@ -958,7 +1072,7 @@ export function HistopathologyView({
         {selectedSummary && (
           <>
             {/* Summary header */}
-            <SpecimenHeader summary={selectedSummary} />
+            <SpecimenHeader summary={selectedSummary} specimenData={specimenData} specimenRules={specimenRules} />
 
             {/* Tab bar */}
             <div className="flex shrink-0 items-center gap-0 border-b px-4">
@@ -991,7 +1105,7 @@ export function HistopathologyView({
               <OverviewTab
                 specimenData={specimenData}
                 findingSummaries={findingSummaries}
-                ruleResults={ruleResults ?? []}
+                specimenRules={specimenRules}
                 specimen={selectedSpecimen!}
                 studyId={studyId}
                 selection={selection}
