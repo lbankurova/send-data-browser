@@ -31,9 +31,10 @@ function parseEffectSize(text: string): number | null {
   return m ? parseFloat(m[1]) : null;
 }
 
-/** Extract endpoint name from rule output_text prefixed patterns */
+/** Extract endpoint name from rule output_text.
+ *  New templates: "ENDPOINT: ..." or "ENDPOINT classified ..." */
 function parseEndpointName(text: string): string | null {
-  const m = text.match(/^[^:]+:\s+(.+?)\s+(?:shows|classified|monotonic)/);
+  const m = text.match(/^(.+?)(?::\s|\s+classified\b)/);
   return m ? m[1] : null;
 }
 
@@ -54,6 +55,7 @@ export function capitalize(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Study-Level";
 }
 
+/** Legacy prefixes — kept as safety net for cached old-format data */
 const STRIP_PREFIXES = [
   "Treatment-related: ",
   "Adverse finding: ",
@@ -64,6 +66,9 @@ const STRIP_PREFIXES = [
   "Threshold effect: ",
   "Histopathology: ",
   "Severity grade increase: ",
+  "Mortality observed: ",
+  "Correlated findings in ",
+  "Multi-domain evidence for ",
 ];
 
 export function cleanText(text: string): string {
@@ -201,11 +206,10 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
     lines.push({ text: line, isWarning: true });
   }
 
-  // 2. R08: target organ
+  // 2. R08: target organ — text no longer has "Target organ:" prefix
   const r08 = rules.find((r) => r.rule_id === "R08");
   if (r08) {
-    const text = r08.output_text.replace(/^Target organ:\s*/, "");
-    lines.push({ text: `Target organ: ${text}`, isWarning: true });
+    lines.push({ text: r08.output_text, isWarning: true });
   }
 
   // 3. R12/R13: histopath — collapse into one line
@@ -226,7 +230,8 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
           findingMap.set(key, set);
         }
       } else {
-        const m = r.output_text.match(/:\s*(.+?)\s+shows/);
+        // R13: "{finding} in {specimen}: dose-dependent severity increase."
+        const m = r.output_text.match(/^(.+?):\s+dose-dependent/);
         if (m) {
           const key = m[1];
           const set = findingMap.get(key) ?? new Set();
@@ -247,9 +252,10 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
   }
 
   // 4. R16: correlation — parse endpoint names into chips
+  //    New template: "{endpoint_labels} show convergent pattern."
   const r16 = rules.find((r) => r.rule_id === "R16");
   if (r16) {
-    const m = r16.output_text.match(/:\s*(.+?)\s+suggest/);
+    const m = r16.output_text.match(/^(.+?)\s+show\b/);
     if (m) {
       const items = m[1]
         .split(",")
@@ -258,10 +264,7 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
       lines.push({ text: "Correlated findings", isWarning: false, chips: items });
     } else {
       lines.push({
-        text: r16.output_text.replace(
-          /^Correlated findings in \w+:\s*/,
-          "Correlated: "
-        ),
+        text: r16.output_text,
         isWarning: false,
       });
     }

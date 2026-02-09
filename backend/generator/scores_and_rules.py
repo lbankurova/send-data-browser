@@ -13,7 +13,7 @@ RULES = [
     # Treatment-related rules
     {"id": "R01", "scope": "endpoint", "severity": "info",
      "condition": "treatment_related",
-     "template": "Treatment-related: {endpoint_label} shows statistically significant dose-dependent change ({direction}) in {sex} ({pattern})."},
+     "template": "{endpoint_label}: significant dose-dependent {direction} in {sex} ({pattern})."},
     {"id": "R02", "scope": "endpoint", "severity": "info",
      "condition": "significant_pairwise",
      "template": "Significant pairwise difference at {dose_label} (p={p_value:.4f}, d={effect_size:.2f})."},
@@ -22,60 +22,60 @@ RULES = [
      "template": "Significant dose-response trend (p={trend_p:.4f})."},
     {"id": "R04", "scope": "endpoint", "severity": "warning",
      "condition": "adverse_severity",
-     "template": "Adverse finding: {endpoint_label} classified as adverse in {sex} (p={p_value:.4f})."},
+     "template": "{endpoint_label} classified as adverse in {sex} (p={p_value:.4f})."},
 
     # Dose-response pattern rules
     {"id": "R05", "scope": "endpoint", "severity": "info",
      "condition": "monotonic_pattern",
-     "template": "Monotonic dose-response: {endpoint_label} shows {pattern} across dose groups in {sex}."},
+     "template": "{endpoint_label}: {pattern} across dose groups in {sex}."},
     {"id": "R06", "scope": "endpoint", "severity": "info",
      "condition": "threshold_pattern",
-     "template": "Threshold effect: {endpoint_label} shows threshold pattern in {sex} — effect begins at higher doses."},
+     "template": "{endpoint_label}: threshold pattern in {sex}."},
     {"id": "R07", "scope": "endpoint", "severity": "info",
      "condition": "non_monotonic",
-     "template": "Non-monotonic: {endpoint_label} shows inconsistent dose-response in {sex}. Consider biological plausibility."},
+     "template": "{endpoint_label}: inconsistent dose-response in {sex}."},
 
     # Target organ rules
     {"id": "R08", "scope": "organ", "severity": "warning",
      "condition": "target_organ",
-     "template": "Target organ: {organ_system} identified with convergent evidence from {n_domains} domains ({domains})."},
+     "template": "Convergent evidence from {n_domains} domains ({domains})."},
     {"id": "R09", "scope": "organ", "severity": "info",
      "condition": "multi_domain_evidence",
-     "template": "Multi-domain evidence for {organ_system}: {n_endpoints} endpoints across {domains}."},
+     "template": "{n_endpoints} endpoints across {domains}."},
 
     # Effect magnitude rules
     {"id": "R10", "scope": "endpoint", "severity": "warning",
      "condition": "large_effect",
-     "template": "Large effect: {endpoint_label} shows Cohen's d = {effect_size:.2f} at high dose in {sex}."},
+     "template": "{endpoint_label}: Cohen's d = {effect_size:.2f} at high dose in {sex}."},
     {"id": "R11", "scope": "endpoint", "severity": "info",
      "condition": "moderate_effect",
-     "template": "Moderate effect: {endpoint_label} shows Cohen's d = {effect_size:.2f} at high dose."},
+     "template": "{endpoint_label}: Cohen's d = {effect_size:.2f} at high dose."},
 
     # Histopathology rules
     {"id": "R12", "scope": "endpoint", "severity": "warning",
      "condition": "histo_incidence_increase",
-     "template": "Histopathology: increased incidence of {finding} in {specimen} at high dose ({sex})."},
+     "template": "Increased incidence of {finding} in {specimen} at high dose ({sex})."},
     {"id": "R13", "scope": "endpoint", "severity": "info",
      "condition": "severity_grade_increase",
-     "template": "Severity grade increase: {finding} in {specimen} shows dose-dependent severity increase."},
+     "template": "{finding} in {specimen}: dose-dependent severity increase."},
 
     # NOAEL rules
     {"id": "R14", "scope": "study", "severity": "info",
      "condition": "noael_established",
-     "template": "NOAEL established at {noael_label} ({noael_dose_value} {noael_dose_unit}) for {sex}."},
+     "template": "NOAEL at {noael_label} ({noael_dose_value} {noael_dose_unit}) for {sex}."},
     {"id": "R15", "scope": "study", "severity": "warning",
      "condition": "noael_not_established",
-     "template": "NOAEL not established for {sex}: adverse effects observed at lowest dose tested."},
+     "template": "NOAEL not established for {sex} \u2014 adverse effects at lowest dose tested."},
 
     # Correlation rules
     {"id": "R16", "scope": "organ", "severity": "info",
      "condition": "correlated_findings",
-     "template": "Correlated findings in {organ_system}: {endpoint_labels} suggest convergent toxicity."},
+     "template": "{endpoint_labels} show convergent pattern."},
 
     # Mortality rule
     {"id": "R17", "scope": "study", "severity": "critical",
      "condition": "mortality_signal",
-     "template": "Mortality observed: {count} deaths in {sex} with dose-dependent pattern."},
+     "template": "{count} deaths in {sex}, dose-dependent pattern."},
 ]
 
 
