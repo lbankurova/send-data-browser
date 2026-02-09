@@ -390,7 +390,7 @@ export function AppLandingPage() {
                   <th className="px-3 py-2.5 text-right text-xs font-medium text-muted-foreground">Subjects</th>
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">Start</th>
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">End</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">Status</th>
+                  <th className="pl-5 pr-3 py-2.5 text-left text-xs font-medium text-muted-foreground">Status</th>
                   <th className="px-3 py-2.5 text-center text-xs font-medium text-muted-foreground">Val</th>
                 </tr>
               </thead>
