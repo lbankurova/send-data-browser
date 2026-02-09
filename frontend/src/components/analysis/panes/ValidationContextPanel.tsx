@@ -151,10 +151,12 @@ function RuleReviewSummary({
   selection,
   detail,
   studyId,
+  setSelection,
 }: {
   selection: ValidationSelection;
   detail: RuleDetail | null;
   studyId?: string;
+  setSelection?: (sel: Record<string, unknown> | null) => void;
 }) {
   const { data: affectedData } = useAffectedRecords(studyId, selection.rule_id);
   const records = useMemo(() => (affectedData?.records ?? []).map(mapApiRecord), [affectedData]);
@@ -256,7 +258,10 @@ function RuleReviewSummary({
             </div>
             <div className="h-1 w-full overflow-hidden rounded-full bg-gray-200">
               <div
-                className="h-full rounded-full bg-green-500 transition-all"
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  progressPct >= 70 ? "bg-green-500" : progressPct >= 30 ? "bg-amber-500" : "bg-red-500"
+                )}
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -267,9 +272,17 @@ function RuleReviewSummary({
               <span key={status}>
                 {i > 0 && <span className="mx-1">&middot;</span>}
                 {status}{" "}
-                <span className={cn("font-medium", REVIEW_COUNT_COLOR[status])}>
+                <button
+                  className={cn("font-medium hover:underline", REVIEW_COUNT_COLOR[status])}
+                  onClick={() => setSelection?.({
+                    ...selection,
+                    _view: "validation",
+                    recordReviewStatusFilter: status,
+                  })}
+                  title={`Filter records by "${status}"`}
+                >
                   {count}
-                </span>
+                </button>
               </span>
             ))}
           </div>
@@ -279,9 +292,17 @@ function RuleReviewSummary({
               <span key={status}>
                 {i > 0 && <span className="mx-1">&middot;</span>}
                 {status}{" "}
-                <span className={cn("font-medium", FIX_COUNT_COLOR[status])}>
+                <button
+                  className={cn("font-medium hover:underline", FIX_COUNT_COLOR[status])}
+                  onClick={() => setSelection?.({
+                    ...selection,
+                    _view: "validation",
+                    recordFixStatusFilter: status,
+                  })}
+                  title={`Filter records by "${status}"`}
+                >
                   {count}
-                </span>
+                </button>
               </span>
             ))}
           </div>
@@ -1581,6 +1602,7 @@ export function ValidationContextPanel({ selection, studyId, setSelection }: Pro
           selection={selection}
           detail={detail}
           studyId={studyId}
+          setSelection={setSelection}
         />
       )}
     </div>
