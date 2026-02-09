@@ -12,6 +12,7 @@ import { useAnnotations } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import type { ValidationRuleResult } from "@/hooks/useValidationResults";
 import { useAffectedRecords } from "@/hooks/useAffectedRecords";
+import { useRunValidation } from "@/hooks/useRunValidation";
 import type { AffectedRecordData } from "@/hooks/useAffectedRecords";
 import type { ValidationRecordReview } from "@/types/annotations";
 
@@ -189,12 +190,15 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const [selectedRule, setSelectedRule] = useState<ValidationRuleResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>({ fixStatus: "", reviewStatus: "", subjectId: "" });
+  const [severityFilter, setSeverityFilter] = useState<"" | "Error" | "Warning" | "Info">("");
 
   // API hooks
   const { data: validationData, isLoading: resultsLoading } = useValidationResults(studyId);
   const { data: affectedData } = useAffectedRecords(studyId, selectedRule?.rule_id);
+  const { mutate: runValidation, isPending: isValidating } = useRunValidation(studyId);
 
-  const rules = validationData?.rules ?? [];
+  const allRules = validationData?.rules ?? [];
+  const rules = severityFilter ? allRules.filter((r) => r.severity === severityFilter) : allRules;
 
   // Load record annotations
   const { data: recordAnnotations } = useAnnotations<ValidationRecordReview>(studyId, "validation-records");
@@ -426,27 +430,58 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
       <div className="flex items-center gap-4 border-b px-4 py-3">
         <h2 className="text-sm font-semibold">SEND Validation</h2>
         <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1">
+          <button
+            className={cn(
+              "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
+              severityFilter === "Error" && "ring-1 ring-red-300 bg-red-50",
+              severityFilter && severityFilter !== "Error" && "opacity-40"
+            )}
+            onClick={() => setSeverityFilter((prev) => (prev === "Error" ? "" : "Error"))}
+            title="Filter by errors"
+          >
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#dc2626" }} />
             <span className="font-medium">{counts.errors}</span>
             <span className="text-muted-foreground">errors</span>
-          </span>
-          <span className="flex items-center gap-1">
+          </button>
+          <button
+            className={cn(
+              "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
+              severityFilter === "Warning" && "ring-1 ring-amber-300 bg-amber-50",
+              severityFilter && severityFilter !== "Warning" && "opacity-40"
+            )}
+            onClick={() => setSeverityFilter((prev) => (prev === "Warning" ? "" : "Warning"))}
+            title="Filter by warnings"
+          >
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#d97706" }} />
             <span className="font-medium">{counts.warnings}</span>
             <span className="text-muted-foreground">warnings</span>
-          </span>
-          <span className="flex items-center gap-1">
+          </button>
+          <button
+            className={cn(
+              "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
+              severityFilter === "Info" && "ring-1 ring-blue-300 bg-blue-50",
+              severityFilter && severityFilter !== "Info" && "opacity-40"
+            )}
+            onClick={() => setSeverityFilter((prev) => (prev === "Info" ? "" : "Info"))}
+            title="Filter by info"
+          >
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#2563eb" }} />
             <span className="font-medium">{counts.info}</span>
             <span className="text-muted-foreground">info</span>
-          </span>
+          </button>
           {validationData.summary.elapsed_seconds != null && (
             <span className="text-muted-foreground">
               ({validationData.summary.elapsed_seconds}s)
             </span>
           )}
         </div>
+        <button
+          className="ml-auto rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          disabled={isValidating}
+          onClick={() => runValidation()}
+        >
+          {isValidating ? "RUNNING..." : "RUN VALIDATION"}
+        </button>
       </div>
 
       {rules.length === 0 ? (
