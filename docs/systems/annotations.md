@@ -44,6 +44,8 @@ Four annotation schemas, stored as four files per study:
 | `pathology-reviews` | `pathology_reviews.json` | Finding term string (MITERM) | View 4 (Histopathology) | Pathology peer review of microscopic findings |
 | `validation-issues` | `validation_issues.json` | Rule ID string | Validation view | Validation rule disposition and tracking |
 | `validation-records` | `validation_records.json` | Issue ID string | Validation view (Mode 2) | Per-record review status for affected records |
+| `endpoint-bookmarks` | `endpoint_bookmarks.json` | Endpoint label string | View 2 (Dose-Response) | Star-toggle bookmarks for endpoints of interest |
+| `causal-assessment` | `causal_assessment.json` | Endpoint label string | View 2 (Dose-Response) Hypotheses tab | Bradford Hill causality worksheet: overrides, expert criteria, overall assessment |
 
 ## Contracts
 
@@ -55,7 +57,7 @@ Four annotation schemas, stored as four files per study:
 | PUT | `/api/studies/{study_id}/annotations/{schema_type}/{entity_key}` | `AnnotationPayload` (arbitrary JSON body, `extra="allow"`) | `Annotation` (the saved object with server-injected fields) | Creates or updates a single annotation. Server adds `pathologist` and `reviewDate`. Creates directory if needed. |
 
 **Validation**:
-- `schema_type` must be one of: `validation-issues`, `tox-findings`, `pathology-reviews`, `validation-records`. Returns 400 otherwise.
+- `schema_type` must be one of: `validation-issues`, `tox-findings`, `pathology-reviews`, `validation-records`, `endpoint-bookmarks`, `causal-assessment`. Returns 400 otherwise.
 - `study_id` must not contain `/`, `\`, or `..`. Returns 400 otherwise.
 - No auth checks on any endpoint.
 
