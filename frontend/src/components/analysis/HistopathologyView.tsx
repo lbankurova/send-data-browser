@@ -12,15 +12,19 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
-import {
-  getSeverityBadgeClasses,
-  getSeverityHeatColor,
-  getIncidenceColor,
-} from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
+
+// ─── Neutral heat color (§6.1 evidence tier) ─────────────
+function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
+  if (avgSev >= 4) return { bg: "#4B5563", text: "white" };
+  if (avgSev >= 3) return { bg: "#6B7280", text: "white" };
+  if (avgSev >= 2) return { bg: "#9CA3AF", text: "var(--foreground)" };
+  if (avgSev >= 1) return { bg: "#D1D5DB", text: "var(--foreground)" };
+  return { bg: "#E5E7EB", text: "var(--foreground)" };
+}
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -158,14 +162,11 @@ function SpecimenRailItem({
     <button
       className={cn(
         "w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors",
-        summary.adverseCount > 0
-          ? "border-l-2"
-          : "border-l-2 border-l-transparent",
+        "border-l-2 border-l-transparent",
         isSelected
           ? "bg-blue-50/60 dark:bg-blue-950/20"
           : "hover:bg-accent/30"
       )}
-      style={summary.adverseCount > 0 ? { borderLeftColor: getSeverityHeatColor(summary.maxSeverity) } : undefined}
       onClick={onClick}
     >
       {/* Row 1: specimen name + finding count */}
@@ -178,23 +179,15 @@ function SpecimenRailItem({
         </span>
       </div>
 
-      {/* Row 2: severity bar (colored) */}
+      {/* Row 2: severity bar (neutral) */}
       <div className="mt-1.5 flex items-center gap-2">
-        <div className="h-1.5 flex-1 rounded-full bg-muted/50">
+        <div className="h-1.5 flex-1 rounded-full bg-[#E5E7EB]">
           <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${barWidth}%`,
-              backgroundColor: getSeverityHeatColor(summary.maxSeverity),
-            }}
+            className="h-full rounded-full bg-[#D1D5DB] transition-all"
+            style={{ width: `${barWidth}%` }}
           />
         </div>
-        <span
-          className={cn(
-            "shrink-0 text-[10px]",
-            summary.maxSeverity >= 3 ? "font-semibold" : summary.maxSeverity >= 2 ? "font-medium" : ""
-          )}
-        >
+        <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
           {summary.maxSeverity.toFixed(1)}
         </span>
       </div>
@@ -284,8 +277,8 @@ function SpecimenHeader({ summary }: { summary: SpecimenSummary }) {
           {summary.specimen.replace(/_/g, " ")}
         </h3>
         {summary.adverseCount > 0 && (
-          <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
-            {summary.adverseCount} ADVERSE
+          <span className="rounded border border-border px-1 text-[10px] font-medium uppercase text-muted-foreground">
+            {summary.adverseCount} adverse
           </span>
         )}
       </div>
@@ -301,10 +294,7 @@ function SpecimenHeader({ summary }: { summary: SpecimenSummary }) {
       <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
         <div>
           <span className="text-muted-foreground">Max severity: </span>
-          <span
-            className="inline-block rounded px-1 font-mono text-[10px] font-medium"
-            style={{ backgroundColor: getSeverityHeatColor(summary.maxSeverity) }}
-          >
+          <span className="font-mono text-[10px] font-medium">
             {summary.maxSeverity.toFixed(1)}
           </span>
         </div>
@@ -360,7 +350,7 @@ function OverviewTab({
       {/* Finding summary */}
       <div className="mb-4">
         <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Finding summary
+          Observed findings
         </h4>
         {findingSummaries.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No findings for this specimen.</p>
@@ -380,21 +370,13 @@ function OverviewTab({
                   <span className="min-w-0 flex-1 truncate font-medium" title={fs.finding}>
                     {fs.finding.length > 40 ? fs.finding.slice(0, 40) + "\u2026" : fs.finding}
                   </span>
-                  <span
-                    className="shrink-0 rounded px-1 font-mono text-[9px]"
-                    style={{ backgroundColor: getSeverityHeatColor(fs.maxSeverity) }}
-                  >
+                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                     {fs.maxSeverity.toFixed(1)}
                   </span>
                   <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                     {fs.totalAffected}/{fs.totalN}
                   </span>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-medium",
-                      getSeverityBadgeClasses(fs.severity)
-                    )}
-                  >
+                  <span className="shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
                     {fs.severity}
                   </span>
                 </button>
@@ -567,10 +549,7 @@ function SeverityMatrixTab({
         cell: (info) => {
           const v = info.getValue();
           return (
-            <span
-              className="rounded px-1 font-mono"
-              style={{ backgroundColor: getIncidenceColor(v ?? 0) }}
-            >
+            <span className="font-mono">
               {v != null ? (v * 100).toFixed(0) + "%" : "\u2014"}
             </span>
           );
@@ -582,10 +561,7 @@ function SeverityMatrixTab({
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground">{"\u2014"}</span>;
           return (
-            <span
-              className="rounded px-1.5 py-0.5 font-mono text-[10px]"
-              style={{ backgroundColor: getSeverityHeatColor(v) }}
-            >
+            <span className="font-mono text-[10px]">
               {v.toFixed(1)}
             </span>
           );
@@ -594,12 +570,7 @@ function SeverityMatrixTab({
       col.accessor("severity", {
         header: "Severity",
         cell: (info) => (
-          <span
-            className={cn(
-              "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
-              getSeverityBadgeClasses(info.getValue())
-            )}
-          >
+          <span className="inline-block rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             {info.getValue()}
           </span>
         ),
@@ -696,7 +667,10 @@ function SeverityMatrixTab({
                           {cell ? (
                             <div
                               className="flex h-5 w-16 items-center justify-center rounded-sm text-[9px] font-medium"
-                              style={{ backgroundColor: getSeverityHeatColor(cell.avg_severity ?? 0) }}
+                              style={{
+                                backgroundColor: getNeutralHeatColor(cell.avg_severity ?? 0).bg,
+                                color: getNeutralHeatColor(cell.avg_severity ?? 0).text,
+                              }}
                               title={`Severity: ${cell.avg_severity != null ? cell.avg_severity.toFixed(1) : "N/A"}, Incidence: ${cell.affected}/${cell.n}`}
                             >
                               {cell.affected}/{cell.n}
@@ -715,11 +689,11 @@ function SeverityMatrixTab({
             <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
               <span>Severity:</span>
               {[
-                { label: "Minimal", color: "#FFF9C4" },
-                { label: "Mild", color: "#FFE0B2" },
-                { label: "Moderate", color: "#FFB74D" },
-                { label: "Marked", color: "#FF8A65" },
-                { label: "Severe", color: "#E57373" },
+                { label: "Minimal", color: "#E5E7EB" },
+                { label: "Mild", color: "#D1D5DB" },
+                { label: "Moderate", color: "#9CA3AF" },
+                { label: "Marked", color: "#6B7280" },
+                { label: "Severe", color: "#4B5563" },
               ].map(({ label, color }) => (
                 <span key={label} className="flex items-center gap-0.5">
                   <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
@@ -730,13 +704,14 @@ function SeverityMatrixTab({
           </div>
         )}
 
-        {/* Grid */}
-        <div>
-          <div className="flex items-center justify-between px-4 pt-3 pb-1">
+        {/* Grid — collapsible */}
+        <details className="group">
+          <summary className="flex cursor-pointer items-center justify-between px-4 pt-3 pb-1 list-none [&::-webkit-details-marker]:hidden">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Lesion severity summary ({filteredData.length} rows)
+              Details ({filteredData.length} rows)
             </h2>
-          </div>
+            <span className="text-[10px] text-muted-foreground transition-transform group-open:rotate-90">&#x25B6;</span>
+          </summary>
           <div className="overflow-x-auto">
             <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
               <thead className="sticky top-0 z-10 bg-background">
@@ -799,7 +774,7 @@ function SeverityMatrixTab({
               </div>
             )}
           </div>
-        </div>
+        </details>
       </div>
     </div>
   );
@@ -979,7 +954,7 @@ export function HistopathologyView({
       </div>
 
       {/* Right: Evidence panel */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
         {selectedSummary && (
           <>
             {/* Summary header */}
