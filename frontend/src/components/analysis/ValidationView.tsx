@@ -261,7 +261,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
       size: 170,
       cell: (info) => (
         <button
-          className="font-mono text-xs text-blue-500 hover:underline"
+          className="font-mono text-xs text-[#3a7bd5] hover:underline"
           onClick={(e) => {
             e.stopPropagation();
             if (!selectedRule) return;

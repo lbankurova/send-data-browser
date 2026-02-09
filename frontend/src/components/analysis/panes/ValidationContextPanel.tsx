@@ -80,7 +80,7 @@ function DomainLink({
   const navigate = useNavigate();
   return (
     <button
-      className="font-mono text-blue-500 hover:underline"
+      className="font-mono text-[#3a7bd5] hover:underline"
       onClick={() =>
         navigate(
           `/studies/${encodeURIComponent(studyId)}/domains/${encodeURIComponent(domain)}`

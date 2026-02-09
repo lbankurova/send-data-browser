@@ -228,7 +228,7 @@ Same styling as rules table: `sticky top-0 z-10`, `border-b`, `backgroundColor: 
 
 | Column | Header | Size | Cell Rendering |
 |--------|--------|------|----------------|
-| issue_id | Issue ID | 170px | Clickable `font-mono text-xs text-blue-500 hover:underline`. Click navigates context panel to "issue" mode. |
+| issue_id | Issue ID | 170px | Clickable `font-mono text-xs text-[#3a7bd5] hover:underline`. Click navigates context panel to "issue" mode. |
 | subject_id | Subject | 110px | `font-mono text-xs` |
 | visit | Visit | 90px | Plain text |
 | actual_value | Key value | 200px | `text-xs` |
@@ -348,12 +348,12 @@ Status count colors:
 
 #### Pane 3: Rule disposition (default open)
 `ValidationIssueForm` component -- rule-level annotation form with:
-- Status dropdown: Not Reviewed / In Progress / Resolved / Exception / Won't Fix
+- Status dropdown: Not reviewed / In progress / Resolved / Exception / Won't fix
 - Assigned to: text input
-- Resolution dropdown (enabled only when status is Resolved or Exception): (none) / Fixed in Source / Auto-Fixed / Documented Exception / Not Applicable
-- Disposition dropdown: (none) / Accept All / Needs Fix / Partial Fix / Not Applicable
+- Resolution dropdown (enabled only when status is Resolved or Exception): (none) / Fixed in source / Auto-fixed / Documented exception / Not applicable
+- Disposition dropdown: (none) / Accept all / Needs fix / Partial fix / Not applicable
 - Comment: textarea
-- SAVE button with success flash ("SAVING..." -> "SAVED" -> "SAVE")
+- SAVE button with success flash ("SAVING..." -> "SAVED" -> "SAVE"), uses `cn()` for conditional classes
 - Stored via `useAnnotations(studyId, "validation-issues")`
 
 ### Mode 2: Issue Review (when a specific record is selected)
@@ -517,7 +517,7 @@ The Validation view has **bidirectional communication** between the center panel
 ## Cross-View Navigation
 
 ### Outbound (from context panel)
-SEND variable names and DOMAIN.VAR references in evidence rendering are linkified. Clicking navigates to the domain table view: `/studies/{studyId}/domains/{domain}`.
+SEND variable names and DOMAIN.VAR references in evidence rendering are linkified (`font-mono text-[#3a7bd5] hover:underline`). Clicking navigates to the domain table view: `/studies/{studyId}/domains/{domain}`.
 
 No other direct cross-view links from this view.
 

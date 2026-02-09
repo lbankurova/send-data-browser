@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { cn } from "@/lib/utils";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import type { ValidationIssue } from "@/types/annotations";
 
-const STATUS_OPTIONS = ["Not Reviewed", "In Progress", "Resolved", "Exception", "Won't Fix"] as const;
-const RESOLUTION_OPTIONS = ["", "Fixed in Source", "Auto-Fixed", "Documented Exception", "Not Applicable"] as const;
-const DISPOSITION_OPTIONS = ["", "Accept All", "Needs Fix", "Partial Fix", "Not Applicable"] as const;
+const STATUS_OPTIONS = ["Not reviewed", "In progress", "Resolved", "Exception", "Won't fix"] as const;
+const RESOLUTION_OPTIONS = ["", "Fixed in source", "Auto-fixed", "Documented exception", "Not applicable"] as const;
+const DISPOSITION_OPTIONS = ["", "Accept all", "Needs fix", "Partial fix", "Not applicable"] as const;
 
 interface Props {
   studyId: string;
@@ -26,7 +27,7 @@ export function ValidationIssueForm({ studyId, ruleId }: Props) {
 
   const existing = annotations?.[ruleId];
 
-  const [status, setStatus] = useState<ValidationIssue["status"]>("Not Reviewed");
+  const [status, setStatus] = useState<ValidationIssue["status"]>("Not reviewed");
   const [assignedTo, setAssignedTo] = useState("");
   const [resolution, setResolution] = useState<ValidationIssue["resolution"]>("");
   const [disposition, setDisposition] = useState<ValidationIssue["disposition"]>("");
@@ -41,7 +42,7 @@ export function ValidationIssueForm({ studyId, ruleId }: Props) {
       setDisposition(existing.disposition ?? "");
       setComment(existing.comment ?? "");
     } else {
-      setStatus("Not Reviewed");
+      setStatus("Not reviewed");
       setAssignedTo("");
       setResolution("");
       setDisposition("");
@@ -65,7 +66,7 @@ export function ValidationIssueForm({ studyId, ruleId }: Props) {
   };
 
   const dirty =
-    status !== (existing?.status ?? "Not Reviewed") ||
+    status !== (existing?.status ?? "Not reviewed") ||
     assignedTo !== (existing?.assignedTo ?? "") ||
     resolution !== (existing?.resolution ?? "") ||
     disposition !== (existing?.disposition ?? "") ||
@@ -142,7 +143,10 @@ export function ValidationIssueForm({ studyId, ruleId }: Props) {
 
         {/* Save button */}
         <button
-          className={`rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50 ${isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+          className={cn(
+            "rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50",
+            isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"
+          )}
           onClick={handleSave}
           disabled={!dirty || isPending || isSuccess}
         >
