@@ -611,7 +611,7 @@ export function DoseResponseView({
       >
         {/* Rail header */}
         <div className="shrink-0 border-b px-3 py-2">
-          <div className="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-0.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <span>Endpoints ({totalEndpoints})</span>
             <CollapseAllButtons
               onExpandAll={() =>
@@ -622,12 +622,13 @@ export function DoseResponseView({
               onCollapseAll={() => setExpandedOrgans(new Set())}
             />
           </div>
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+          <p className="mb-1.5 text-[10px] text-muted-foreground/60">by signal strength</p>
+          <div className="flex items-center gap-1.5">
+            <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search endpoints..."
-              className="w-full rounded border bg-background py-1 pl-7 pr-2 text-xs"
+              className="w-full bg-transparent py-1 text-xs focus:outline-none"
               value={railSearch}
               onChange={(e) => setRailSearch(e.target.value)}
             />
