@@ -960,9 +960,9 @@ function ChartOverviewContent({
                           key={`${sex}-${cx}-${cy}`}
                           cx={cx}
                           cy={cy}
-                          r={sig ? 6 : 4}
-                          fill={sig ? "#dc2626" : color}
-                          stroke={sig ? "#dc2626" : color}
+                          r={sig ? 5 : 3}
+                          fill={color}
+                          stroke={sig ? "#374151" : color}
                           strokeWidth={sig ? 2 : 1}
                         />
                       );
@@ -1032,7 +1032,7 @@ function ChartOverviewContent({
             {chartData.dataType === "continuous" && (
               <>
                 <span className="flex items-center gap-1">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-600" />
+                  <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-gray-700 bg-gray-400" />
                   p&lt;0.05
                 </span>
                 <span className="flex items-center gap-1">
