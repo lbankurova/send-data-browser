@@ -33,8 +33,8 @@
 | Gap | 8 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 3 | 1 | Center view / context panel data overlap |
-| **Incoming feature** | **0** | **8** | **All 8 done (FEAT-01–08)** |
-| **Total** | **30** | **27** | |
+| **Incoming feature** | **0** | **9** | **All 9 done (FEAT-01–09)** |
+| **Total** | **30** | **28** | |
 
 ## Remaining Open Items
 
@@ -46,6 +46,7 @@
 - FEAT-06: Subject-level histopath matrix — **DONE** (by-subject severity toggle)
 - FEAT-07: Clinical observations view — **DONE** (two-panel layout, observation rail, bar chart, timeline table, context panel with statistics + dose relationship)
 - FEAT-08: Causal inference tool — **DONE** (CausalityWorksheet in DoseResponseView: 5 auto-populated + 4 expert Bradford Hill criteria, dot gauge, override mechanism, overall assessment, causal-assessment annotations persistence)
+- **FEAT-09: CL consolidation into Dose-Response** — **DONE** (standalone CL view deleted, CL endpoints appear in D-R endpoint rail, time-course toggle in Evidence tab with CL bar charts, tabs 4→3)
 
 **Defer to production/Datagrok:**
 - HC-01, HC-02: Dynamic dose group mapping (essential for multi-study)
@@ -161,7 +162,7 @@
 
 ### HC-07: Non-PointCross demo guard
 - **System:** `systems/navigation-and-layout.md`
-- **Files:** `frontend/src/components/panels/ContextPanel.tsx:592`
+- **Files:** `frontend/src/components/panels/ContextPanel.tsx:402`
 - **Issue:** Shows "demo entry" message for any non-PointCross study.
 - **Fix:** Remove guard when multi-study support lands.
 - **Recommendation:** Remove when HC-03 is resolved. Trivial change.
@@ -387,12 +388,12 @@
 - **Owner:** backend-dev
 - **Blocks:** FEAT-02, FEAT-03, FEAT-04, FEAT-06, FEAT-07
 
-### FEAT-02: Time-Course Tab in Dose-Response (spec 02) — DONE
+### FEAT-02: Time-Course Tab in Dose-Response (spec 02) — DONE (then consolidated)
 - **Spec:** `docs/incoming/02-timecourse-tab.md`
 - **Files:** `frontend/src/components/analysis/DoseResponseView.tsx`
-- **Scope:** New "Time-course" tab in evidence panel — Recharts line chart of group mean ± SD over study days, sex-faceted, with Y-axis toggle (Absolute / % change / % vs control). Significant timepoints marked with red dots.
-- **Status:** DONE — implemented + UX design audit (tooltip enrichment, overflow fix, unicode fix)
-- **Owner:** frontend-dev + ux-designer (audit)
+- **Scope:** Time-course charts for continuous endpoints (group mean ± SD over study days, sex-faceted, Y-axis mode toggle).
+- **Status:** DONE — originally a separate tab, then consolidated into Evidence tab as a collapsible toggle section per `docs/incoming/09-dr-cl-consolidation.md`. Tab bar reduced from 4→3 tabs.
+- **Owner:** frontend-dev + ux-designer (consolidation design)
 - **Blocked by:** FEAT-01
 - **Blocks:** FEAT-03
 
@@ -428,19 +429,18 @@
 - **Owner:** frontend-dev
 - **Blocked by:** FEAT-01, FEAT-04
 
-### FEAT-07: Clinical Observations Timecourse View (spec 07)
-- **Spec:** `docs/incoming/07-clinical-observations-view.md`
-- **Files:** New route + component + tree item + context panel variant
-- **Scope:** New analysis view for CL domain. Two-panel layout: observation rail + evidence panel (grouped bar chart by study day, faceted by sex). Context panel shows incidence statistics and dose-relationship assessment.
-- **Status:** Not started
-- **Owner:** frontend-dev
-- **Blocked by:** FEAT-01
+### FEAT-07/09: Clinical Observations → D-R Consolidation — DONE
+- **Spec:** `docs/incoming/09-dr-cl-consolidation.md` (supersedes `07-clinical-observations-view.md`)
+- **Original scope:** Standalone CL analysis view with two-panel layout.
+- **Consolidation scope:** Absorbed CL view into Dose-Response (View 2). Tab bar reduced 4→3 (time-course merged into Evidence tab as collapsible toggle). CL endpoints in D-R endpoint rail under "General" organ group. Deleted: `ClinicalObservationsView.tsx`, `ClinicalObservationsViewWrapper.tsx`, CL route, browsing tree entry, `ClinicalObsContextPanelWrapper`. Kept: `useClinicalObservations.ts` (reused by D-R time-course for CL endpoints).
+- **Status:** DONE — standalone CL view built (FEAT-07), then consolidated into D-R per spec 09. Build passes (1,261 KB), lint clean.
+- **Owner:** ux-designer (design decision) + frontend-dev (implementation)
 
-### FEAT-08: Causal Inference Tool — Bradford Hill Worksheet (spec 08)
+### FEAT-08: Causal Inference Tool — Bradford Hill Worksheet (spec 08) — DONE
 - **Spec:** `docs/incoming/08-causal-inference-tool.md` + full UX spec in `docs/views/dose-response.md` (Intent: Causality section)
 - **Files:** `frontend/src/components/analysis/DoseResponseView.tsx` (Hypotheses tab), `backend/routers/annotations.py` (add `causal-assessment` to `VALID_SCHEMA_TYPES`), `docs/systems/annotations.md`
 - **Scope:** New "Causality" tool in Hypotheses tab. Structured worksheet with 5 auto-populated Bradford Hill criteria (neutral dot gauge, override mechanism) + 4 expert-input criteria (strength selector + rationale textarea) + overall assessment radio buttons + SAVE. Persists via annotations API as `causal-assessment` schema type.
-- **Status:** UX design done. Ready for implementation (frontend-dev + backend-dev for schema type).
+- **Status:** DONE — CausalityWorksheet in DoseResponseView: 5 auto-populated + 4 expert Bradford Hill criteria, dot gauge, override mechanism, overall assessment, causal-assessment annotations persistence
 - **Owner:** frontend-dev (implementation) + backend-dev (add schema type to whitelist)
 - **Blocked by:** None (uses existing rule_results and signal data)
 - **Design decisions:** Scale icon, neutral dot gauge, persistence exception for regulatory documentation, auto-populated score overrides with justification. See `docs/views/dose-response.md` Intent: Causality section.

@@ -23,11 +23,8 @@ import { HistopathologyContextPanel } from "@/components/analysis/panes/Histopat
 import { ValidationContextPanel } from "@/components/analysis/panes/ValidationContextPanel";
 import { SubjectProfilePanel } from "@/components/analysis/panes/SubjectProfilePanel";
 import { useValidationResults } from "@/hooks/useValidationResults";
-import { useClinicalObservations } from "@/hooks/useClinicalObservations";
 import { useAnnotations } from "@/hooks/useAnnotations";
-import { getDoseGroupColor } from "@/lib/severity-colors";
 import type { ToxFinding, PathologyReview, ValidationRecordReview } from "@/types/annotations";
-import type { CLTimecourseResponse } from "@/types/timecourse";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function CollapsibleSection({
@@ -332,188 +329,6 @@ function HistopathologyContextPanelWrapper({ studyId }: { studyId: string }) {
   );
 }
 
-function deriveCLStats(data: CLTimecourseResponse, finding: string) {
-  let totalOccurrences = 0;
-  const uniqueSubjects = new Set<string>();
-  let firstDay = Infinity;
-  let lastDay = -Infinity;
-  let peakDay = 0;
-  let peakCount = 0;
-  const doseGroupTotals = new Map<number, { count: number; total: number; label: string }>();
-
-  for (const tp of data.timecourse) {
-    let dayCount = 0;
-    for (const gc of tp.counts) {
-      const count = gc.findings[finding] ?? 0;
-      if (count > 0) {
-        totalOccurrences += count;
-        dayCount += count;
-        const ids = gc.subjects?.[finding];
-        if (ids) for (const id of ids) uniqueSubjects.add(id);
-      }
-      const existing = doseGroupTotals.get(gc.dose_level);
-      if (existing) {
-        existing.count += count;
-        existing.total = Math.max(existing.total, gc.total_subjects);
-      } else {
-        doseGroupTotals.set(gc.dose_level, { count, total: gc.total_subjects, label: gc.dose_label });
-      }
-    }
-    if (dayCount > 0) {
-      if (tp.day < firstDay) firstDay = tp.day;
-      if (tp.day > lastDay) lastDay = tp.day;
-      if (dayCount > peakCount) { peakCount = dayCount; peakDay = tp.day; }
-    }
-  }
-
-  // Sex distribution: unique subjects per sex
-  const sexCounts: Record<string, number> = {};
-  for (const tp of data.timecourse) {
-    for (const gc of tp.counts) {
-      const ids = gc.subjects?.[finding];
-      if (ids && ids.length > 0) {
-        if (!sexCounts[gc.sex]) sexCounts[gc.sex] = 0;
-        // Use Set to avoid double-counting across days (handled by uniqueSubjects above)
-        // But per-sex we need a separate set
-      }
-    }
-  }
-  // Recalculate sex distribution properly with per-sex unique subject sets
-  const sexSubjects: Record<string, Set<string>> = {};
-  for (const tp of data.timecourse) {
-    for (const gc of tp.counts) {
-      const ids = gc.subjects?.[finding];
-      if (ids) {
-        if (!sexSubjects[gc.sex]) sexSubjects[gc.sex] = new Set();
-        for (const id of ids) sexSubjects[gc.sex].add(id);
-      }
-    }
-  }
-  for (const [sex, set] of Object.entries(sexSubjects)) {
-    sexCounts[sex] = set.size;
-  }
-
-  // Dose-response pattern
-  const sorted = [...doseGroupTotals.entries()].sort((a, b) => a[0] - b[0]);
-  let dosePattern = "No clear dose relationship";
-  const nonZero = sorted.filter(([, v]) => v.count > 0);
-  if (nonZero.length === 0) {
-    dosePattern = "Not observed";
-  } else if (nonZero.length === 1 && nonZero[0][0] === sorted[sorted.length - 1][0]) {
-    dosePattern = "Present in high dose only";
-  } else {
-    let increasing = true;
-    for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i][1].count < sorted[i - 1][1].count) { increasing = false; break; }
-    }
-    const controlCount = sorted[0]?.[1].count ?? 0;
-    if (increasing && sorted[sorted.length - 1][1].count > controlCount * 2) {
-      dosePattern = "Increasing with dose";
-    } else if (nonZero.length === sorted.length) {
-      dosePattern = "Present across all groups";
-    }
-  }
-
-  return {
-    totalOccurrences,
-    subjectsAffected: uniqueSubjects.size,
-    firstDay: firstDay === Infinity ? null : firstDay,
-    lastDay: lastDay === -Infinity ? null : lastDay,
-    peakDay,
-    peakCount,
-    sexCounts,
-    doseGroupTotals: sorted,
-    dosePattern,
-  };
-}
-
-function ClinicalObsContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection } = useViewSelection();
-  const navigate = useNavigate();
-  const { data: clData, isLoading } = useClinicalObservations(studyId);
-
-  const sel = selection?._view === "clinical-observations"
-    ? (selection as { finding: string })
-    : null;
-
-  if (!sel) {
-    return (
-      <div className="p-4 text-xs text-muted-foreground">
-        Select an observation to view details.
-      </div>
-    );
-  }
-
-  if (isLoading || !clData) {
-    return (
-      <div className="p-4">
-        <h3 className="mb-3 text-sm font-semibold">{sel.finding}</h3>
-        <Skeleton className="h-4 w-full" />
-      </div>
-    );
-  }
-
-  const stats = deriveCLStats(clData, sel.finding);
-  const sexKeys = Object.keys(stats.sexCounts).sort();
-  const sexDistribution = sexKeys.length > 1
-    ? sexKeys.map((s) => `${s}: ${stats.sexCounts[s]}`).join(", ")
-    : sexKeys.length === 1
-      ? `${sexKeys[0]} only (${stats.sexCounts[sexKeys[0]]})`
-      : "\u2014";
-
-  return (
-    <div className="p-4">
-      <h3 className="mb-3 text-sm font-semibold">{sel.finding}</h3>
-
-      <CollapsibleSection title="Statistics" defaultOpen>
-        <MetadataRow label="Total occurrences" value={String(stats.totalOccurrences)} />
-        <MetadataRow label="Subjects affected" value={String(stats.subjectsAffected)} />
-        <MetadataRow label="First observed" value={stats.firstDay != null ? `Day ${stats.firstDay}` : "\u2014"} />
-        <MetadataRow label="Last observed" value={stats.lastDay != null ? `Day ${stats.lastDay}` : "\u2014"} />
-        <MetadataRow label="Peak day" value={`Day ${stats.peakDay} (${stats.peakCount} obs)`} />
-        <MetadataRow label="Sex distribution" value={sexDistribution} />
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Dose relationship" defaultOpen>
-        <p className="mb-1.5 text-xs font-medium">{stats.dosePattern}</p>
-        <div className="space-y-0.5">
-          {stats.doseGroupTotals.map(([dl, { count, total, label }]) => (
-            <div key={dl} className="flex items-center justify-between gap-2 py-0.5 text-xs">
-              <span style={{ color: getDoseGroupColor(dl) }}>{label.split(",")[0]}</span>
-              <span className="font-mono text-muted-foreground">
-                {count}/{total}
-              </span>
-            </div>
-          ))}
-        </div>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Related views">
-        <div className="space-y-1">
-          {[
-            { label: "Dose-response", path: "dose-response" },
-            { label: "NOAEL decision", path: "noael-decision" },
-            { label: "Histopathology", path: "histopathology" },
-          ].map(({ label, path }) => (
-            <a
-              key={path}
-              href="#"
-              className="block text-xs hover:underline"
-              style={{ color: "#3a7bd5" }}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate(`/studies/${encodeURIComponent(studyId)}/${path}`);
-              }}
-            >
-              View {label} &rarr;
-            </a>
-          ))}
-        </div>
-      </CollapsibleSection>
-    </div>
-  );
-}
-
 export function ContextPanel() {
   const { selectedStudyId } = useSelection();
   const { studyId } = useParams<{ studyId: string }>();
@@ -545,7 +360,6 @@ export function ContextPanel() {
   const isDoseResponseRoute = /\/studies\/[^/]+\/dose-response/.test(location.pathname);
   const isHistopathologyRoute = /\/studies\/[^/]+\/histopathology/.test(location.pathname);
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);
-  const isClinicalObsRoute = /\/studies\/[^/]+\/clinical-observations/.test(location.pathname);
 
   if (isAdverseEffectsRoute) {
     return <AdverseEffectsContextPanel />;
@@ -565,10 +379,6 @@ export function ContextPanel() {
 
   if (isHistopathologyRoute && activeStudyId) {
     return <HistopathologyContextPanelWrapper studyId={activeStudyId} />;
-  }
-
-  if (isClinicalObsRoute && activeStudyId) {
-    return <ClinicalObsContextPanelWrapper studyId={activeStudyId} />;
   }
 
   if (isValidationRoute && activeStudyId) {
