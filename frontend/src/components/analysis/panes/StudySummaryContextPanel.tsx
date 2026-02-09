@@ -268,6 +268,67 @@ function EndpointPanel({
         )}
       </CollapsiblePane>
 
+      {/* Related views */}
+      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <div className="space-y-1 text-[11px]">
+          {selection.organ_system && (
+            <a
+              href="#"
+              className="block hover:underline"
+              style={{ color: "#3a7bd5" }}
+              onClick={(e) => {
+                e.preventDefault();
+                if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: selection.organ_system } });
+              }}
+            >
+              View target organ: {titleCase(selection.organ_system)} &#x2192;
+            </a>
+          )}
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, {
+                state: {
+                  endpoint_label: selection.endpoint_label,
+                  ...(selection.organ_system && { organ_system: selection.organ_system }),
+                },
+              });
+            }}
+          >
+            View dose-response &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, {
+                state: selection.organ_system ? { organ_system: selection.organ_system } : undefined,
+              });
+            }}
+          >
+            View histopathology &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, {
+                state: selection.organ_system ? { organ_system: selection.organ_system } : undefined,
+              });
+            }}
+          >
+            View NOAEL decision &#x2192;
+          </a>
+        </div>
+      </CollapsiblePane>
+
       {studyId && (
         <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
       )}
@@ -489,6 +550,56 @@ function OrganPanel({
               </span>
             </div>
           </div>
+        </div>
+      </CollapsiblePane>
+
+      {/* Pane 4: Related views */}
+      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <div className="space-y-1 text-[11px]">
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: organSystem } });
+            }}
+          >
+            View target organ: {displayName} &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organSystem } });
+            }}
+          >
+            View dose-response &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: organSystem } });
+            }}
+          >
+            View histopathology &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: organSystem } });
+            }}
+          >
+            View NOAEL decision &#x2192;
+          </a>
         </div>
       </CollapsiblePane>
 

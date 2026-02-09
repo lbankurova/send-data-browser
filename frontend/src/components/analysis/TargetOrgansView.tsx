@@ -104,7 +104,7 @@ function deriveOrganConclusion(
 
   // Convergence characterization
   const convergenceDesc = organ.target_organ_flag
-    ? "convergent evidence" : "evidence";
+    ? "Convergent evidence" : "Evidence";
 
   // Domain spread
   const domainDesc = organ.n_domains === 1
@@ -744,7 +744,7 @@ function EvidenceTableTab({
           return (
             <span className={cn(
               "font-mono",
-              p != null ? "ev" : "text-muted-foreground",
+              p == null && "text-muted-foreground",
               p != null && p < 0.001 ? "font-semibold" :
               p != null && p < 0.01 ? "font-medium" : "",
               sorted && p != null && p < 0.05 ? "text-[#DC2626]" : ""
@@ -762,7 +762,7 @@ function EvidenceTableTab({
           return (
             <span className={cn(
               "font-mono",
-              d != null ? "ev" : "text-muted-foreground",
+              d == null && "text-muted-foreground",
               d != null && Math.abs(d) >= 0.8 ? "font-semibold" :
               d != null && Math.abs(d) >= 0.5 ? "font-medium" : "",
               sorted && d != null && Math.abs(d) >= 0.5 ? "text-[#DC2626]" : ""

@@ -207,6 +207,8 @@ Only shown when a rule is selected.
     - Options: "Fix status" (all) / Not fixed / Auto-fixed / Manually fixed / Accepted as-is / Flagged
   - **Review status filter**: `<select>` same styling
     - Options: "Review status" (all) / Not reviewed / Reviewed / Approved
+  - **Subject filter**: `<select>` same styling
+    - Options: "Subject" (all) + unique subject_id values from current rule's records, sorted alphabetically
 
 ---
 
@@ -226,11 +228,11 @@ Same styling as rules table: `sticky top-0 z-10`, background `#f8f8f8`. Column r
 | issue_id | Issue ID | 170px | Clickable `font-mono text-xs` link (color `#3a7bd5`, `hover:underline`). Click navigates context panel to "issue" mode. |
 | subject_id | Subject | 110px | `font-mono text-xs` |
 | visit | Visit | 90px | Plain text |
-| actual_value | Key value | 180px | `text-xs` |
-| expected_value | Expected | 180px | `text-xs text-muted-foreground` |
+| actual_value | Key value | 200px | `text-xs` |
+| expected_value | Expected | 200px | `text-xs text-muted-foreground` |
 | fixStatus | Fix status | 110px | `StatusBadge` component with `FIX_STATUS_STYLES` |
 | reviewStatus | Review status | 110px | `StatusBadge` component with `REVIEW_STATUS_STYLES` |
-| assignedTo | Assigned to | 90px | `text-xs`, em dash if empty |
+| assignedTo | Assigned to | 100px | `text-xs`, em dash if empty |
 
 ### Two Independent Status Tracks
 
@@ -358,10 +360,14 @@ Status count colors:
 - issue_id in `font-mono text-sm font-semibold` + severity badge
 - **Rule popover**: "Rule {rule_id} . {domain} . {category}" with dotted underline. Hover shows portal-based popover (`fixed z-[9999] w-72`) with full rule detail (standard, section, description with severity border, rationale, how to fix). No click-to-navigate -- the rule ID is informational only.
 
-#### Record context (one-liner)
-`border-b px-4 py-2 text-xs text-muted-foreground` -- "{subject_id} . {visit} . {domain}"
+#### Pane 1: Record context (default open)
+CollapsiblePane with key-value pairs in `text-[11px]`:
+- Subject ID: `font-mono`
+- Visit
+- Domain: `font-mono`
+- Variable: `font-mono`
 
-#### Pane 1: Finding (default open)
+#### Pane 2: Finding (default open)
 The `FindingSection` component renders category-specific evidence and adaptive action buttons. This is the core fix/triage interface.
 
 **Structure:**
@@ -429,7 +435,7 @@ Triggered from "Run script..." in the Fix dropdown. Rendered as `FixScriptDialog
 - Single scope: saves "Manually fixed" for the current record only
 - All scope: iterates all records for the rule, skips already "Manually fixed" or "Accepted as-is", saves "Manually fixed" for the rest. Reports count applied and skipped.
 
-#### Pane 2: Review (default open)
+#### Pane 3: Review (default open)
 `InlineReviewSection` component -- per-record annotation form with:
 - Review status dropdown: Not reviewed / Reviewed / Approved
 - Assigned to: text input
@@ -450,7 +456,7 @@ Triggered from "Run script..." in the Fix dropdown. Rendered as `FixScriptDialog
 | Record column sizing | Local | `useState<ColumnSizingState>` |
 | Selected rule | Local | `useState<ValidationRuleResult \| null>` |
 | Selected issue ID | Local | `useState<string \| null>` |
-| Record filters | Local | `useState<{ fixStatus: string; reviewStatus: string }>` |
+| Record filters | Local | `useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>` |
 | Validation data (rules, scripts, summary) | Server | `useValidationResults(studyId)` -- React Query, 5min stale |
 | Affected records | Server | `useAffectedRecords(studyId, ruleId)` -- React Query, 5min stale |
 | Record annotations | Server | `useAnnotations<ValidationRecordReview>(studyId, "validation-records")` |
