@@ -18,6 +18,7 @@ import {
   StudyStatementsBar,
 } from "./SignalsPanel";
 import type { SignalSelection } from "@/types/analysis-views";
+import type { StudyMetadata } from "@/types";
 
 interface StudySummaryViewProps {
   onSelectionChange?: (selection: SignalSelection | null) => void;
@@ -399,8 +400,6 @@ function formatSubjects(
   if (males && females) parts.push(`(${males}M, ${females}F)`);
   return parts.join(" ");
 }
-
-import type { StudyMetadata } from "@/types";
 
 function DetailsTab({
   meta,

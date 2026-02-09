@@ -80,8 +80,7 @@ function DomainLink({
   const navigate = useNavigate();
   return (
     <button
-      className="font-mono hover:underline"
-      style={{ color: "#3a7bd5" }}
+      className="font-mono text-blue-500 hover:underline"
       onClick={() =>
         navigate(
           `/studies/${encodeURIComponent(studyId)}/domains/${encodeURIComponent(domain)}`
@@ -1303,7 +1302,10 @@ function InlineReviewSection({
 
         {/* Save */}
         <button
-          className={`rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50 ${isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+          className={cn(
+            "rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50",
+            isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"
+          )}
           onClick={handleSave}
           disabled={!dirty || isPending || isSuccess}
         >
@@ -1545,15 +1547,15 @@ export function ValidationContextPanel({ selection, studyId, setSelection }: Pro
             </p>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#dc2626" }} />
+                <span className="inline-block h-2 w-2 rounded-full bg-red-600" />
                 <span><strong>Error</strong> — Must fix before submission</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#d97706" }} />
+                <span className="inline-block h-2 w-2 rounded-full bg-amber-600" />
                 <span><strong>Warning</strong> — Review recommended</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#2563eb" }} />
+                <span className="inline-block h-2 w-2 rounded-full bg-blue-600" />
                 <span><strong>Info</strong> — Best practice suggestion</span>
               </div>
             </div>

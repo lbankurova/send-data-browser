@@ -27,7 +27,7 @@ export function StudySummaryFilters({ data, filters, onChange }: Props) {
           <option value="">All</option>
           {endpointTypes.map((t) => (
             <option key={t} value={t}>
-              {t.replace(/_/g, " ")}
+              {t.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())}
             </option>
           ))}
         </select>

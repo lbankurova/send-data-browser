@@ -261,8 +261,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
       size: 170,
       cell: (info) => (
         <button
-          className="font-mono text-xs hover:underline"
-          style={{ color: "#3a7bd5" }}
+          className="font-mono text-xs text-blue-500 hover:underline"
           onClick={(e) => {
             e.stopPropagation();
             if (!selectedRule) return;
@@ -452,7 +451,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
             onClick={() => setSeverityFilter((prev) => (prev === "Error" ? "" : "Error"))}
             title="Filter by errors"
           >
-            <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#dc2626" }} />
+            <span className="inline-block h-2 w-2 rounded-full bg-red-600" />
             <span className="font-medium">{counts.errors}</span>
             <span className="text-muted-foreground">errors</span>
           </button>
@@ -465,7 +464,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
             onClick={() => setSeverityFilter((prev) => (prev === "Warning" ? "" : "Warning"))}
             title="Filter by warnings"
           >
-            <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#d97706" }} />
+            <span className="inline-block h-2 w-2 rounded-full bg-amber-600" />
             <span className="font-medium">{counts.warnings}</span>
             <span className="text-muted-foreground">warnings</span>
           </button>
@@ -478,7 +477,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
             onClick={() => setSeverityFilter((prev) => (prev === "Info" ? "" : "Info"))}
             title="Filter by info"
           >
-            <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#2563eb" }} />
+            <span className="inline-block h-2 w-2 rounded-full bg-blue-600" />
             <span className="font-medium">{counts.info}</span>
             <span className="text-muted-foreground">info</span>
           </button>
