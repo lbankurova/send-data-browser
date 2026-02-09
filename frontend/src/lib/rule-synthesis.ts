@@ -172,6 +172,8 @@ export interface SynthLine {
   endpoints?: SynthEndpoint[];
   extraCount?: number;
   qualifiers?: string[];
+  /** If set, render as header + vertical item list */
+  listItems?: string[];
 }
 
 const MAX_ENDPOINTS_IN_LINE = 5;
@@ -248,13 +250,13 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
       }
     }
     if (findingMap.size > 0) {
-      const parts: string[] = [];
+      const items: string[] = [];
       for (const [finding, sexes] of findingMap) {
         const sexStr =
           sexes.size > 0 ? ` (${[...sexes].sort().join(", ")})` : "";
-        parts.push(finding + sexStr);
+        items.push(finding + sexStr);
       }
-      lines.push({ text: "Histopath: " + parts.join("; "), isWarning: true });
+      lines.push({ text: "Histopath", isWarning: true, listItems: items });
     }
   }
 

@@ -164,3 +164,12 @@ export function getSignificanceStars(p: number | null): string {
   if (p < 0.05) return "*";
   return "ns";
 }
+
+/** Convert endpoint labels to title case: "ALBUMIN" → "Albumin", "LIVER_VACUOLIZATION" → "Liver Vacuolization" */
+export function titleCase(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}

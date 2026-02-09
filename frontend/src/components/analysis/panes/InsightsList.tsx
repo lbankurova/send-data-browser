@@ -136,6 +136,24 @@ function SynthLineItem({ line }: { line: SynthLine }) {
     );
   }
 
+  // List layout (histopath findings)
+  if (line.listItems && line.listItems.length > 0) {
+    return (
+      <div className="pl-1">
+        <div className="mb-0.5 text-[10px] font-medium text-muted-foreground/70">
+          {line.text}
+        </div>
+        <div className="space-y-px">
+          {line.listItems.map((item, j) => (
+            <div key={j} className="text-[11px] leading-snug text-foreground">
+              <HistopathItem text={item} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   // Chip layout (R16 correlations)
   if (line.chips) {
     return (
@@ -208,6 +226,19 @@ function EndpointRow({ ep }: { ep: SynthEndpoint }) {
         </span>
       )}
     </div>
+  );
+}
+
+/** Split "FINDING in SPECIMEN (sex)" — color the "in" as a muted separator */
+function HistopathItem({ text }: { text: string }) {
+  const m = text.match(/^(.+?)\s+in\s+(.+)$/);
+  if (!m) return <>{text}</>;
+  return (
+    <>
+      <span className="font-medium">{m[1]}</span>
+      <span className="text-[#7C3AED]/70"> in </span>
+      {m[2]}
+    </>
   );
 }
 

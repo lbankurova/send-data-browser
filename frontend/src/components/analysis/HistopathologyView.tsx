@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -10,9 +10,13 @@ import {
 } from "@tanstack/react-table";
 import type { SortingState } from "@tanstack/react-table";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
+import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
 import { getSeverityBadgeClasses } from "@/lib/severity-colors";
-import type { LesionSeverityRow } from "@/types/analysis-views";
+import { InsightsList } from "./panes/InsightsList";
+import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
+
+// ─── Public types ──────────────────────────────────────────
 
 export interface HistopathSelection {
   finding: string;
@@ -20,11 +24,7 @@ export interface HistopathSelection {
   sex?: string;
 }
 
-interface Filters {
-  specimen: string | null;
-  sex: string | null;
-  min_severity: number;
-}
+// ─── Utility functions ─────────────────────────────────────
 
 /** Severity color scale: pale yellow → deep red per spec §12.3 */
 function getSeverityHeatColor(avgSev: number): string {
@@ -42,53 +42,473 @@ function getIncidenceColor(incidence: number): string {
   return "transparent";
 }
 
+// ─── Derived data types ────────────────────────────────────
+
+interface SpecimenSummary {
+  specimen: string;
+  findingCount: number;
+  adverseCount: number;
+  maxSeverity: number;
+  totalAffected: number;
+  totalN: number;
+  domains: string[];
+}
+
+interface FindingSummary {
+  finding: string;
+  maxSeverity: number;
+  maxIncidence: number;
+  totalAffected: number;
+  totalN: number;
+  severity: "adverse" | "warning" | "normal";
+}
+
+// ─── Helpers ───────────────────────────────────────────────
+
+function deriveSpecimenSummaries(data: LesionSeverityRow[]): SpecimenSummary[] {
+  const map = new Map<string, {
+    findings: Set<string>;
+    adverseFindings: Set<string>;
+    maxSev: number;
+    totalAffected: number;
+    totalN: number;
+    domains: Set<string>;
+  }>();
+
+  for (const row of data) {
+    let entry = map.get(row.specimen);
+    if (!entry) {
+      entry = { findings: new Set(), adverseFindings: new Set(), maxSev: 0, totalAffected: 0, totalN: 0, domains: new Set() };
+      map.set(row.specimen, entry);
+    }
+    entry.findings.add(row.finding);
+    if (row.severity === "adverse") entry.adverseFindings.add(row.finding);
+    if ((row.avg_severity ?? 0) > entry.maxSev) entry.maxSev = row.avg_severity ?? 0;
+    entry.totalAffected += row.affected;
+    entry.totalN += row.n;
+    entry.domains.add(row.domain);
+  }
+
+  const summaries: SpecimenSummary[] = [];
+  for (const [specimen, entry] of map) {
+    summaries.push({
+      specimen,
+      findingCount: entry.findings.size,
+      adverseCount: entry.adverseFindings.size,
+      maxSeverity: entry.maxSev,
+      totalAffected: entry.totalAffected,
+      totalN: entry.totalN,
+      domains: [...entry.domains].sort(),
+    });
+  }
+
+  return summaries.sort((a, b) =>
+    b.maxSeverity - a.maxSeverity ||
+    b.adverseCount - a.adverseCount ||
+    b.findingCount - a.findingCount
+  );
+}
+
+function deriveFindingSummaries(rows: LesionSeverityRow[]): FindingSummary[] {
+  const map = new Map<string, {
+    maxSev: number;
+    maxIncidence: number;
+    totalAffected: number;
+    totalN: number;
+    severity: "adverse" | "warning" | "normal";
+  }>();
+
+  for (const row of rows) {
+    let entry = map.get(row.finding);
+    if (!entry) {
+      entry = { maxSev: 0, maxIncidence: 0, totalAffected: 0, totalN: 0, severity: "normal" };
+      map.set(row.finding, entry);
+    }
+    if ((row.avg_severity ?? 0) > entry.maxSev) entry.maxSev = row.avg_severity ?? 0;
+    if ((row.incidence ?? 0) > entry.maxIncidence) entry.maxIncidence = row.incidence ?? 0;
+    entry.totalAffected += row.affected;
+    entry.totalN += row.n;
+    // Escalate severity
+    if (row.severity === "adverse") entry.severity = "adverse";
+    else if (row.severity === "warning" && entry.severity !== "adverse") entry.severity = "warning";
+  }
+
+  const summaries: FindingSummary[] = [];
+  for (const [finding, entry] of map) {
+    summaries.push({
+      finding,
+      maxSeverity: entry.maxSev,
+      maxIncidence: entry.maxIncidence,
+      totalAffected: entry.totalAffected,
+      totalN: entry.totalN,
+      severity: entry.severity,
+    });
+  }
+
+  return summaries.sort((a, b) => b.maxSeverity - a.maxSeverity);
+}
+
+// ─── SpecimenRailItem ──────────────────────────────────────
+
+function SpecimenRailItem({
+  summary,
+  isSelected,
+  maxGlobalSeverity,
+  onClick,
+}: {
+  summary: SpecimenSummary;
+  isSelected: boolean;
+  maxGlobalSeverity: number;
+  onClick: () => void;
+}) {
+  const barWidth = maxGlobalSeverity > 0
+    ? Math.max(4, (summary.maxSeverity / maxGlobalSeverity) * 100)
+    : 0;
+
+  return (
+    <button
+      className={cn(
+        "w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors",
+        summary.adverseCount > 0
+          ? "border-l-2"
+          : "border-l-2 border-l-transparent",
+        isSelected
+          ? "bg-blue-50/60 dark:bg-blue-950/20"
+          : "hover:bg-accent/30"
+      )}
+      style={summary.adverseCount > 0 ? { borderLeftColor: getSeverityHeatColor(summary.maxSeverity) } : undefined}
+      onClick={onClick}
+    >
+      {/* Row 1: specimen name + finding count */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold">
+          {summary.specimen.replace(/_/g, " ")}
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {summary.findingCount}
+        </span>
+      </div>
+
+      {/* Row 2: severity bar (colored) */}
+      <div className="mt-1.5 flex items-center gap-2">
+        <div className="h-1.5 flex-1 rounded-full bg-muted/50">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${barWidth}%`,
+              backgroundColor: getSeverityHeatColor(summary.maxSeverity),
+            }}
+          />
+        </div>
+        <span
+          className={cn(
+            "shrink-0 text-[10px]",
+            summary.maxSeverity >= 3 ? "font-semibold" : summary.maxSeverity >= 2 ? "font-medium" : ""
+          )}
+        >
+          {summary.maxSeverity.toFixed(1)}
+        </span>
+      </div>
+
+      {/* Row 3: stats + domain chips */}
+      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+        <span>{summary.findingCount} findings</span>
+        <span>&middot;</span>
+        <span>{summary.adverseCount} adverse</span>
+        {summary.domains.map((d) => (
+          <span key={d} className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+            {d}
+          </span>
+        ))}
+      </div>
+    </button>
+  );
+}
+
+// ─── SpecimenRail ──────────────────────────────────────────
+
+function SpecimenRail({
+  specimens,
+  selectedSpecimen,
+  maxGlobalSeverity,
+  onSpecimenClick,
+}: {
+  specimens: SpecimenSummary[];
+  selectedSpecimen: string | null;
+  maxGlobalSeverity: number;
+  onSpecimenClick: (specimen: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!search) return specimens;
+    const q = search.toLowerCase();
+    return specimens.filter((s) => s.specimen.replace(/_/g, " ").toLowerCase().includes(q));
+  }, [specimens, search]);
+
+  return (
+    <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r">
+      <div className="border-b px-3 py-2">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Specimens ({specimens.length})
+        </span>
+        <input
+          type="text"
+          placeholder="Search specimens\u2026"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {filtered.map((s) => (
+          <SpecimenRailItem
+            key={s.specimen}
+            summary={s}
+            isSelected={selectedSpecimen === s.specimen}
+            maxGlobalSeverity={maxGlobalSeverity}
+            onClick={() => onSpecimenClick(s.specimen)}
+          />
+        ))}
+        {filtered.length === 0 && (
+          <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
+            No matches for &ldquo;{search}&rdquo;
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── SpecimenHeader ────────────────────────────────────────
+
+function SpecimenHeader({ summary }: { summary: SpecimenSummary }) {
+  const maxIncidencePct = summary.totalN > 0
+    ? ((summary.totalAffected / summary.totalN) * 100).toFixed(0)
+    : "0";
+
+  return (
+    <div className="shrink-0 border-b px-4 py-3">
+      {/* Title */}
+      <div className="flex items-center gap-2">
+        <h3 className="text-sm font-semibold">
+          {summary.specimen.replace(/_/g, " ")}
+        </h3>
+        {summary.adverseCount > 0 && (
+          <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
+            {summary.adverseCount} ADVERSE
+          </span>
+        )}
+      </div>
+
+      {/* Conclusion text */}
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+        {summary.findingCount} {summary.findingCount === 1 ? "finding" : "findings"} across{" "}
+        {summary.domains.length === 1 ? "1 domain" : `${summary.domains.length} domains`},{" "}
+        {summary.adverseCount} with adverse severity, incidence up to {maxIncidencePct}%.
+      </p>
+
+      {/* Compact metrics */}
+      <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
+        <div>
+          <span className="text-muted-foreground">Max severity: </span>
+          <span
+            className="inline-block rounded px-1 font-mono text-[10px] font-medium"
+            style={{ backgroundColor: getSeverityHeatColor(summary.maxSeverity) }}
+          >
+            {summary.maxSeverity.toFixed(1)}
+          </span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Total affected: </span>
+          <span className="font-medium">{summary.totalAffected}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Findings: </span>
+          <span className="font-medium">{summary.findingCount}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── OverviewTab ───────────────────────────────────────────
+
+function OverviewTab({
+  specimenData,
+  findingSummaries,
+  ruleResults,
+  specimen,
+  studyId,
+  selection,
+  onFindingClick,
+}: {
+  specimenData: LesionSeverityRow[];
+  findingSummaries: FindingSummary[];
+  ruleResults: RuleResult[];
+  specimen: string;
+  studyId: string | undefined;
+  selection: HistopathSelection | null;
+  onFindingClick: (finding: string) => void;
+}) {
+  const navigate = useNavigate();
+
+  // Filter rule results to this specimen
+  const specimenRules = useMemo(() => {
+    if (!ruleResults.length) return [];
+    const specLower = specimen.toLowerCase();
+    const specKey = specLower.replace(/[, ]+/g, "_");
+    return ruleResults.filter(
+      (r) =>
+        r.output_text.toLowerCase().includes(specLower) ||
+        r.context_key.toLowerCase().includes(specKey) ||
+        r.organ_system.toLowerCase() === specLower
+    );
+  }, [ruleResults, specimen]);
+
+  return (
+    <div className="flex-1 overflow-y-auto px-4 py-3">
+      {/* Finding summary */}
+      <div className="mb-4">
+        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Finding summary
+        </h4>
+        {findingSummaries.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">No findings for this specimen.</p>
+        ) : (
+          <div className="space-y-1">
+            {findingSummaries.map((fs) => {
+              const isSelected = selection?.finding === fs.finding && selection?.specimen === specimen;
+              return (
+                <button
+                  key={fs.finding}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-accent/30",
+                    isSelected && "bg-accent ring-1 ring-primary"
+                  )}
+                  onClick={() => onFindingClick(fs.finding)}
+                >
+                  <span className="min-w-0 flex-1 truncate font-medium" title={fs.finding}>
+                    {fs.finding.length > 40 ? fs.finding.slice(0, 40) + "\u2026" : fs.finding}
+                  </span>
+                  <span
+                    className="shrink-0 rounded px-1 font-mono text-[9px]"
+                    style={{ backgroundColor: getSeverityHeatColor(fs.maxSeverity) }}
+                  >
+                    {fs.maxSeverity.toFixed(1)}
+                  </span>
+                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                    {fs.totalAffected}/{fs.totalN}
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-medium",
+                      getSeverityBadgeClasses(fs.severity)
+                    )}
+                  >
+                    {fs.severity}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Insights */}
+      {specimenRules.length > 0 && (
+        <div className="mb-4">
+          <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Insights
+          </h4>
+          <InsightsList rules={specimenRules} />
+        </div>
+      )}
+
+      {/* Cross-view links */}
+      <div>
+        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Related views
+        </h4>
+        <div className="space-y-1 text-[11px]">
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: specimen } });
+            }}
+          >
+            View in Target Organs &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: specimen } });
+            }}
+          >
+            View dose-response &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: specimen } });
+            }}
+          >
+            View NOAEL decision &#x2192;
+          </a>
+        </div>
+      </div>
+
+      {specimenData.length === 0 && findingSummaries.length === 0 && (
+        <div className="py-8 text-center text-xs text-muted-foreground">
+          No data for this specimen.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SeverityMatrixTab ─────────────────────────────────────
+
 const col = createColumnHelper<LesionSeverityRow>();
 
-export function HistopathologyView({
-  onSelectionChange,
+function SeverityMatrixTab({
+  specimenData,
+  selection,
+  onRowClick,
+  onHeatmapClick,
+  sexFilter,
+  setSexFilter,
+  minSeverity,
+  setMinSeverity,
 }: {
-  onSelectionChange?: (sel: HistopathSelection | null) => void;
+  specimenData: LesionSeverityRow[];
+  selection: HistopathSelection | null;
+  onRowClick: (row: LesionSeverityRow) => void;
+  onHeatmapClick: (finding: string) => void;
+  sexFilter: string | null;
+  setSexFilter: (v: string | null) => void;
+  minSeverity: number;
+  setMinSeverity: (v: number) => void;
 }) {
-  const { studyId } = useParams<{ studyId: string }>();
-  const location = useLocation();
-  const { data: lesionData, isLoading, error } = useLesionSeveritySummary(studyId);
-
-  const [filters, setFilters] = useState<Filters>({
-    specimen: null,
-    sex: null,
-    min_severity: 0,
-  });
-  const [selection, setSelection] = useState<HistopathSelection | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
-
-  // Apply cross-view state from navigate()
-  useEffect(() => {
-    const state = location.state as { organ_system?: string; specimen?: string } | null;
-    if (state && lesionData) {
-      const specimenFilter = state.specimen ?? state.organ_system ?? null;
-      if (specimenFilter) {
-        setFilters((f) => ({ ...f, specimen: specimenFilter }));
-      }
-      window.history.replaceState({}, "");
-    }
-  }, [location.state, lesionData]);
-
-  // Unique specimens
-  const specimens = useMemo(() => {
-    if (!lesionData) return [];
-    return [...new Set(lesionData.map((r) => r.specimen))].sort();
-  }, [lesionData]);
 
   // Filtered data
   const filteredData = useMemo(() => {
-    if (!lesionData) return [];
-    return lesionData.filter((row) => {
-      if (filters.specimen && row.specimen !== filters.specimen) return false;
-      if (filters.sex && row.sex !== filters.sex) return false;
-      if ((row.avg_severity ?? 0) < filters.min_severity) return false;
+    return specimenData.filter((row) => {
+      if (sexFilter && row.sex !== sexFilter) return false;
+      if ((row.avg_severity ?? 0) < minSeverity) return false;
       return true;
     });
-  }, [lesionData, filters]);
+  }, [specimenData, sexFilter, minSeverity]);
 
   // Heatmap data
   const heatmapData = useMemo(() => {
@@ -101,7 +521,6 @@ export function HistopathologyView({
       }
     }
 
-    // Unique findings sorted by max avg_severity desc
     const findingMaxSev = new Map<string, number>();
     for (const r of filteredData) {
       const existing = findingMaxSev.get(r.finding) ?? 0;
@@ -111,13 +530,11 @@ export function HistopathologyView({
       .sort((a, b) => b[1] - a[1])
       .map(([f]) => f);
 
-    // Build cell lookup: finding|dose_level → aggregated row
     const cells = new Map<string, { incidence: number; avg_severity: number; affected: number; n: number }>();
     for (const r of filteredData) {
       const key = `${r.finding}|${r.dose_level}`;
       const existing = cells.get(key);
       if (existing) {
-        // aggregate across sexes
         existing.affected += r.affected;
         existing.n += r.n;
         existing.incidence = existing.n > 0 ? existing.affected / existing.n : 0;
@@ -142,14 +559,6 @@ export function HistopathologyView({
         cell: (info) => (
           <span className="truncate" title={info.getValue()}>
             {info.getValue().length > 25 ? info.getValue().slice(0, 25) + "\u2026" : info.getValue()}
-          </span>
-        ),
-      }),
-      col.accessor("specimen", {
-        header: "Specimen",
-        cell: (info) => (
-          <span className="text-muted-foreground" title={info.getValue()}>
-            {info.getValue().length > 20 ? info.getValue().slice(0, 20) + "\u2026" : info.getValue()}
           </span>
         ),
       }),
@@ -218,70 +627,14 @@ export function HistopathologyView({
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const handleRowClick = (row: LesionSeverityRow) => {
-    const sel: HistopathSelection = {
-      finding: row.finding,
-      specimen: row.specimen,
-      sex: row.sex,
-    };
-    const isSame = selection?.finding === sel.finding && selection?.specimen === sel.specimen;
-    const next = isSame ? null : sel;
-    setSelection(next);
-    onSelectionChange?.(next);
-  };
-
-  const handleHeatmapClick = (finding: string) => {
-    const row = filteredData.find((r) => r.finding === finding);
-    if (row) {
-      const sel: HistopathSelection = { finding, specimen: row.specimen };
-      const isSame = selection?.finding === finding;
-      const next = isSame ? null : sel;
-      setSelection(next);
-      onSelectionChange?.(next);
-    }
-  };
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-center">
-        <div className="mb-4 rounded-lg bg-red-50 p-6">
-          <h1 className="mb-2 text-xl font-semibold text-red-700">Analysis data not available</h1>
-          <p className="text-sm text-red-600">Run the generator to produce analysis data:</p>
-          <code className="mt-2 block rounded bg-red-100 px-3 py-1.5 text-xs text-red-800">
-            cd backend && python -m generator.generate {studyId}
-          </code>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Loading histopathology data...</span>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2">
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
         <select
           className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.specimen ?? ""}
-          onChange={(e) => setFilters((f) => ({ ...f, specimen: e.target.value || null }))}
-        >
-          <option value="">All specimens</option>
-          {specimens.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.sex ?? ""}
-          onChange={(e) => setFilters((f) => ({ ...f, sex: e.target.value || null }))}
+          value={sexFilter ?? ""}
+          onChange={(e) => setSexFilter(e.target.value || null)}
         >
           <option value="">All sexes</option>
           <option value="M">Male</option>
@@ -289,8 +642,8 @@ export function HistopathologyView({
         </select>
         <select
           className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.min_severity}
-          onChange={(e) => setFilters((f) => ({ ...f, min_severity: Number(e.target.value) }))}
+          value={minSeverity}
+          onChange={(e) => setMinSeverity(Number(e.target.value))}
         >
           <option value={0}>Min severity: any</option>
           <option value={1}>Min severity: 1+</option>
@@ -298,7 +651,7 @@ export function HistopathologyView({
           <option value={3}>Min severity: 3+</option>
         </select>
         <span className="ml-auto text-[10px] text-muted-foreground">
-          {filteredData.length} of {lesionData?.length ?? 0} rows
+          {filteredData.length} of {specimenData.length} rows
         </span>
       </div>
 
@@ -325,14 +678,14 @@ export function HistopathologyView({
                   ))}
                 </div>
                 {/* Data rows */}
-                {heatmapData.findings.slice(0, 40).map((finding) => (
+                {heatmapData.findings.map((finding) => (
                   <div
                     key={finding}
                     className={cn(
                       "flex cursor-pointer border-t hover:bg-accent/20",
                       selection?.finding === finding && "ring-1 ring-primary"
                     )}
-                    onClick={() => handleHeatmapClick(finding)}
+                    onClick={() => onHeatmapClick(finding)}
                   >
                     <div
                       className="w-52 shrink-0 truncate py-1 pr-2 text-[10px]"
@@ -363,11 +716,6 @@ export function HistopathologyView({
                     })}
                   </div>
                 ))}
-                {heatmapData.findings.length > 40 && (
-                  <div className="py-1 text-[10px] text-muted-foreground">
-                    +{heatmapData.findings.length - 40} more findings...
-                  </div>
-                )}
               </div>
             </div>
             {/* Legend */}
@@ -426,7 +774,7 @@ export function HistopathologyView({
                         "cursor-pointer border-b transition-colors hover:bg-accent/50",
                         isSelected && "bg-accent"
                       )}
-                      onClick={() => handleRowClick(orig)}
+                      onClick={() => onRowClick(orig)}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="px-2 py-1">
@@ -443,8 +791,254 @@ export function HistopathologyView({
                 Showing first 200 of {filteredData.length} rows. Use filters to narrow results.
               </div>
             )}
+            {filteredData.length === 0 && (
+              <div className="p-4 text-center text-xs text-muted-foreground">
+                No rows match the current filters.
+              </div>
+            )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main: HistopathologyView ──────────────────────────────
+
+type EvidenceTab = "overview" | "matrix";
+
+export function HistopathologyView({
+  onSelectionChange,
+}: {
+  onSelectionChange?: (sel: HistopathSelection | null) => void;
+}) {
+  const { studyId } = useParams<{ studyId: string }>();
+  const location = useLocation();
+  const { data: lesionData, isLoading, error } = useLesionSeveritySummary(studyId);
+  const { data: ruleResults } = useRuleResults(studyId);
+
+  const [selectedSpecimen, setSelectedSpecimen] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
+  const [selection, setSelection] = useState<HistopathSelection | null>(null);
+  const [sexFilter, setSexFilter] = useState<string | null>(null);
+  const [minSeverity, setMinSeverity] = useState(0);
+
+  // Derived: specimen summaries
+  const specimenSummaries = useMemo(() => {
+    if (!lesionData) return [];
+    return deriveSpecimenSummaries(lesionData);
+  }, [lesionData]);
+
+  const maxGlobalSeverity = useMemo(() => {
+    if (specimenSummaries.length === 0) return 1;
+    return Math.max(...specimenSummaries.map((s) => s.maxSeverity), 0.01);
+  }, [specimenSummaries]);
+
+  // Rows for selected specimen
+  const specimenData = useMemo(() => {
+    if (!lesionData || !selectedSpecimen) return [];
+    return lesionData.filter((r) => r.specimen === selectedSpecimen);
+  }, [lesionData, selectedSpecimen]);
+
+  // Finding summaries for selected specimen
+  const findingSummaries = useMemo(() => {
+    return deriveFindingSummaries(specimenData);
+  }, [specimenData]);
+
+  // Selected specimen summary
+  const selectedSummary = useMemo(() => {
+    if (!selectedSpecimen) return null;
+    return specimenSummaries.find((s) => s.specimen === selectedSpecimen) ?? null;
+  }, [specimenSummaries, selectedSpecimen]);
+
+  // Auto-select top specimen on load
+  useEffect(() => {
+    if (specimenSummaries.length > 0 && selectedSpecimen === null) {
+      const top = specimenSummaries[0].specimen;
+      setSelectedSpecimen(top);
+      const sel = { finding: "", specimen: top };
+      onSelectionChange?.({ finding: "", specimen: top });
+      // Don't set finding-level selection; just set specimen for context panel awareness
+      void sel;
+    }
+  }, [specimenSummaries]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cross-view navigation from location.state
+  useEffect(() => {
+    const state = location.state as { organ_system?: string; specimen?: string } | null;
+    if (state && lesionData) {
+      const specimenTarget = state.specimen ?? state.organ_system ?? null;
+      if (specimenTarget) {
+        // Find matching specimen (case-insensitive)
+        const match = specimenSummaries.find(
+          (s) => s.specimen.toLowerCase() === specimenTarget.toLowerCase()
+        );
+        if (match) {
+          setSelectedSpecimen(match.specimen);
+        }
+      }
+      window.history.replaceState({}, "");
+    }
+  }, [location.state, lesionData, specimenSummaries]);
+
+  // Escape clears selection
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelection(null);
+        onSelectionChange?.(null);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onSelectionChange]);
+
+  const handleSpecimenClick = (specimen: string) => {
+    setSelectedSpecimen(specimen);
+    setSexFilter(null);
+    setMinSeverity(0);
+    setSelection(null);
+    onSelectionChange?.(null);
+  };
+
+  const handleRowClick = (row: LesionSeverityRow) => {
+    const sel: HistopathSelection = {
+      finding: row.finding,
+      specimen: row.specimen,
+      sex: row.sex,
+    };
+    const isSame = selection?.finding === sel.finding && selection?.specimen === sel.specimen;
+    const next = isSame ? null : sel;
+    setSelection(next);
+    onSelectionChange?.(next);
+  };
+
+  const handleHeatmapClick = (finding: string) => {
+    if (!selectedSpecimen) return;
+    const row = specimenData.find((r) => r.finding === finding);
+    if (row) {
+      const sel: HistopathSelection = { finding, specimen: row.specimen };
+      const isSame = selection?.finding === finding;
+      const next = isSame ? null : sel;
+      setSelection(next);
+      onSelectionChange?.(next);
+    }
+  };
+
+  const handleFindingClick = (finding: string) => {
+    if (!selectedSpecimen) return;
+    const sel: HistopathSelection = { finding, specimen: selectedSpecimen };
+    const isSame = selection?.finding === finding && selection?.specimen === selectedSpecimen;
+    const next = isSame ? null : sel;
+    setSelection(next);
+    onSelectionChange?.(next);
+  };
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center">
+        <div className="mb-4 rounded-lg bg-red-50 p-6">
+          <h1 className="mb-2 text-xl font-semibold text-red-700">Analysis data not available</h1>
+          <p className="text-sm text-red-600">Run the generator to produce analysis data:</p>
+          <code className="mt-2 block rounded bg-red-100 px-3 py-1.5 text-xs text-red-800">
+            cd backend && python -m generator.generate {studyId}
+          </code>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Loading histopathology data...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full overflow-hidden max-[1200px]:flex-col">
+      {/* Left: Specimen rail */}
+      <div className="max-[1200px]:h-[180px] max-[1200px]:w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto min-[1200px]:contents">
+        <SpecimenRail
+          specimens={specimenSummaries}
+          selectedSpecimen={selectedSpecimen}
+          maxGlobalSeverity={maxGlobalSeverity}
+          onSpecimenClick={handleSpecimenClick}
+        />
+      </div>
+
+      {/* Right: Evidence panel */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        {selectedSummary && (
+          <>
+            {/* Summary header */}
+            <SpecimenHeader summary={selectedSummary} />
+
+            {/* Tab bar */}
+            <div className="flex shrink-0 items-center gap-0 border-b px-4">
+              <button
+                className={cn(
+                  "border-b-2 px-3 py-2 text-xs font-medium transition-colors",
+                  activeTab === "overview"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("overview")}
+              >
+                Overview
+              </button>
+              <button
+                className={cn(
+                  "border-b-2 px-3 py-2 text-xs font-medium transition-colors",
+                  activeTab === "matrix"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("matrix")}
+              >
+                Severity matrix
+              </button>
+            </div>
+
+            {/* Tab content */}
+            {activeTab === "overview" ? (
+              <OverviewTab
+                specimenData={specimenData}
+                findingSummaries={findingSummaries}
+                ruleResults={ruleResults ?? []}
+                specimen={selectedSpecimen!}
+                studyId={studyId}
+                selection={selection}
+                onFindingClick={handleFindingClick}
+              />
+            ) : (
+              <SeverityMatrixTab
+                specimenData={specimenData}
+                selection={selection}
+                onRowClick={handleRowClick}
+                onHeatmapClick={handleHeatmapClick}
+                sexFilter={sexFilter}
+                setSexFilter={setSexFilter}
+                minSeverity={minSeverity}
+                setMinSeverity={setMinSeverity}
+              />
+            )}
+          </>
+        )}
+
+        {!selectedSummary && specimenSummaries.length > 0 && (
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            Select a specimen to view histopathology details.
+          </div>
+        )}
+
+        {specimenSummaries.length === 0 && (
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            No histopathology data available.
+          </div>
+        )}
       </div>
     </div>
   );
