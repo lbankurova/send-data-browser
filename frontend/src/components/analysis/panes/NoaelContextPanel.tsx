@@ -9,8 +9,6 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import {
   formatPValue,
   formatEffectSize,
-  getPValueColor,
-  getEffectSizeColor,
   getSeverityBadgeClasses,
 } from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
@@ -225,8 +223,8 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection, s
                   Dose {row.dose_level} ({row.sex})
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className={cn("font-mono", getPValueColor(row.p_value))}>{formatPValue(row.p_value)}</span>
-                  <span className={cn("font-mono", getEffectSizeColor(row.effect_size))}>{formatEffectSize(row.effect_size)}</span>
+                  <span className="font-mono">{formatPValue(row.p_value)}</span>
+                  <span className="font-mono">{formatEffectSize(row.effect_size)}</span>
                   <span
                     className={cn(
                       "rounded-sm px-1 py-0.5 text-[10px] font-medium",
