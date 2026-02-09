@@ -482,46 +482,6 @@ function OrganPanel({
         </div>
       </CollapsiblePane>
 
-      {/* Pane 4: Navigation */}
-      {studyId && (
-        <CollapsiblePane title="Navigate" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-1">
-            <button
-              className="block w-full text-left text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
-              onClick={() =>
-                navigate(
-                  `/studies/${encodeURIComponent(studyId)}/target-organs`,
-                  { state: { organ_system: organSystem } }
-                )
-              }
-            >
-              View in Target Organs &rarr;
-            </button>
-            <button
-              className="block w-full text-left text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
-              onClick={() =>
-                navigate(
-                  `/studies/${encodeURIComponent(studyId)}/histopathology`,
-                  { state: { organ_system: organSystem } }
-                )
-              }
-            >
-              View histopathology &rarr;
-            </button>
-            <button
-              className="block w-full text-left text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
-              onClick={() =>
-                navigate(
-                  `/studies/${encodeURIComponent(studyId)}/dose-response`,
-                  { state: { organ_system: organSystem } }
-                )
-              }
-            >
-              View dose-response &rarr;
-            </button>
-          </div>
-        </CollapsiblePane>
-      )}
     </div>
   );
 }
