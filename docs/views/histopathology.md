@@ -20,30 +20,34 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a two-panel master-detail layout (matching Target Organs, Dose-Response, and Signals views):
+The view itself is a two-panel master-detail layout with a resizable rail (matching Target Organs, Dose-Response, and Signals views):
 
 ```
-+--[300px]--+----------------------------------[flex-1]-----------+
-|            | SpecimenHeader                                      |
-| Specimen   |  specimen name, adverse count, conclusion text,    |
-| Rail       |  compact metrics (max severity, affected, findings)|
-|            +----------------------------------------------------+
-| search     | [Overview] [Severity matrix]  <── tab bar          |
-| specimen 1 +----------------------------------------------------+
-| specimen 2 | Tab content:                                       |
-| specimen 3 |  Overview: finding summary, insights, cross-view   |
-| ...        |  Severity matrix: filters, heatmap, lesion grid    |
-|            |                                                     |
-+------------+----------------------------------------------------+
++--[300px*]-+-+----------------------------------[flex-1]-----------+
+|            |R| SpecimenHeader                                      |
+| Specimen   |e|  specimen name, adverse count, conclusion text,    |
+| Rail       |s|  compact metrics (max severity, affected, findings)|
+|            |i+----------------------------------------------------+
+| search     |z| [Overview] [Severity matrix]  <── tab bar          |
+| specimen 1 |e+----------------------------------------------------+
+| specimen 2 | | Tab content:                                       |
+| specimen 3 | |  Overview: finding summary, insights, cross-view   |
+| ...        | |  Severity matrix: filters, heatmap, lesion grid    |
+|            | |                                                     |
++------------+-+----------------------------------------------------+
+             ^ PanelResizeHandle (4px)
+* default 300px, resizable 180-500px via useResizePanel
 ```
 
-Responsive: stacks vertically below 1200px (`max-[1200px]:flex-col`). Rail becomes horizontal 180px tall strip.
+The rail width is controlled by `useResizePanel(300, 180, 500)` — default 300px, draggable between 180px and 500px. A `PanelResizeHandle` (4px vertical drag strip) sits between the rail and evidence panel, hidden at narrow widths (`max-[1200px]:hidden`).
+
+Responsive: stacks vertically below 1200px (`max-[1200px]:flex-col`). Rail becomes horizontal 180px tall strip with `max-[1200px]:!w-full`.
 
 ---
 
-## Specimen Rail (left panel, 300px)
+## Specimen Rail (left panel, resizable 300px default)
 
-`flex w-[300px] shrink-0 flex-col overflow-hidden border-r`
+Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWidth` comes from `useResizePanel(300, 180, 500)`. On narrow viewports: `max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto`.
 
 ### Header
 - Label: `text-xs font-medium uppercase tracking-wider text-muted-foreground` — "Specimens ({N})"
@@ -61,7 +65,7 @@ Each `SpecimenRailItem` is a `<button>` with:
 
 **Row 2:** Severity bar — max avg_severity normalized to global max, colored with `getSeverityHeatColor(maxSev)` (not neutral gray). Bar: `h-1.5 flex-1 rounded-full bg-muted/50` with inner colored fill. Numeric value: `shrink-0 text-[10px]`, font-semibold for >=3, font-medium for >=2.
 
-**Row 3:** Stats line — `{N} findings · {M} adverse` + domain chips (outline+dot style matching other views: `rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70` with colored dot via `getDomainBadgeColor`).
+**Row 3:** Stats line — `{N} findings · {M} adverse` + domain chips (outline style: `rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70`).
 
 ### Sorting
 
@@ -168,14 +172,16 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 
 ### Lesion Severity Grid
 
-TanStack React Table, `w-full text-xs`, client-side sorting. Scoped to selected specimen (no specimen column needed).
+TanStack React Table, `text-xs`, client-side sorting with column resizing. Scoped to selected specimen (no specimen column needed).
+
+Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` for resize support. Column resizing enabled via `enableColumnResizing: true` and `columnResizeMode: "onChange"`. Each header has a resize handle (`absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize`). Cell widths use `header.getSize()` / `cell.column.getSize()`.
 
 **Columns:**
 
 | Column | Header | Cell Rendering |
 |--------|--------|----------------|
 | finding | Finding | Truncated at 25 chars with ellipsis, `title` tooltip |
-| domain | Domain | Colored badge via `getDomainBadgeColor` (`rounded px-1 py-0.5 text-[10px] font-semibold`) |
+| domain | Domain | Plain text |
 | dose_level | Dose | `text-muted-foreground`, shows `dose_label.split(",")[0]` |
 | sex | Sex | Plain text |
 | n | N | Plain number |
@@ -219,6 +225,8 @@ Panes (unchanged from previous implementation):
 | Sex filter | Local | `useState<string \| null>` — for Severity Matrix tab |
 | Min severity | Local | `useState<number>` — for Severity Matrix tab |
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in SeverityMatrixTab) |
+| Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in SeverityMatrixTab) |
+| Rail width | Local | `useResizePanel(300, 180, 500)` — resizable rail width (default 300px, range 180-500px) |
 | Lesion data | Server | `useLesionSeveritySummary` hook (React Query, 5min stale) |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
 
@@ -226,11 +234,14 @@ Panes (unchanged from previous implementation):
 
 ## Data Flow
 
+**Data filtering:** `deriveSpecimenSummaries()` skips rows where `specimen` is null (e.g., CL domain findings that lack a specimen value). This prevents crashes when the CL domain contributes rows without a valid specimen.
+
 ```
 useLesionSeveritySummary(studyId) ──> lesionData (728 rows)
 useRuleResults(studyId) ──> ruleResults (shared React Query cache)
                                 |
                     deriveSpecimenSummaries() → SpecimenSummary[]
+                    (skips rows with null specimen)
                                 |
                         SpecimenRail (sorted by maxSeverity desc)
                                 |

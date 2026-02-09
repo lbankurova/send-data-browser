@@ -16,7 +16,6 @@ import {
   getSeverityBadgeClasses,
   getSeverityHeatColor,
   getIncidenceColor,
-  getDomainBadgeColor,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
@@ -205,15 +204,11 @@ function SpecimenRailItem({
         <span>{summary.findingCount} findings</span>
         <span>&middot;</span>
         <span>{summary.adverseCount} adverse</span>
-        {summary.domains.map((d) => {
-          const dc = getDomainBadgeColor(d);
-          return (
-            <span key={d} className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
-              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
-              {d}
-            </span>
-          );
-        })}
+        {summary.domains.map((d) => (
+          <span key={d} className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+            {d}
+          </span>
+        ))}
       </div>
     </button>
   );
@@ -557,18 +552,7 @@ function SeverityMatrixTab({
           </span>
         ),
       }),
-      col.accessor("domain", {
-        header: "Domain",
-        cell: (info) => {
-          const v = info.getValue();
-          const dc = getDomainBadgeColor(v);
-          return (
-            <span className={cn("rounded px-1 py-0.5 text-[10px] font-semibold", dc.bg, dc.text)}>
-              {v}
-            </span>
-          );
-        },
-      }),
+      col.accessor("domain", { header: "Domain" }),
       col.accessor("dose_level", {
         header: "Dose",
         cell: (info) => (
