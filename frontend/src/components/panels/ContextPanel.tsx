@@ -320,12 +320,14 @@ function TargetOrgansContextPanelWrapper({ studyId }: { studyId: string }) {
 function DoseResponseContextPanelWrapper({ studyId }: { studyId: string }) {
   const { selection } = useViewSelection();
   const { data: ruleResults } = useRuleResults(studyId);
+  const { data: signalData } = useStudySignalSummary(studyId);
 
   const sel = selection?._view === "dose-response" ? selection as { endpoint_label: string; sex?: string; domain?: string; organ_system?: string } : null;
 
   return (
     <DoseResponseContextPanel
       ruleResults={ruleResults ?? []}
+      signalData={signalData ?? []}
       selection={sel}
       studyId={studyId}
     />

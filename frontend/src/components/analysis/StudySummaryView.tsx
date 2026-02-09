@@ -12,6 +12,7 @@ import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { generateStudyReport } from "@/lib/report-generator";
 import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
 import type { MetricsLine, PanelStatement, OrganBlock } from "@/lib/signals-panel-engine";
+import { getDomainBadgeColor } from "@/lib/severity-colors";
 import {
   SignalsOrganRail,
   SignalsEvidencePanel,
@@ -225,6 +226,7 @@ export function StudySummaryView({
               maxEvidenceScore={maxEvidenceScore}
               onOrganClick={handleOrganClick}
               ruleResults={ruleResults ?? []}
+              signalData={signalData}
               width={railWidth}
             />
             <div className="max-[1200px]:hidden"><PanelResizeHandle onPointerDown={onRailResize} /></div>
@@ -292,7 +294,7 @@ function DecisionBar({
       </div>
 
       {/* Metrics line */}
-      <div className="mt-1 flex flex-wrap gap-x-1.5 text-xs text-muted-foreground">
+      <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
         <span>
           <span className="font-medium">NOAEL</span>{" "}
           <span
@@ -313,10 +315,37 @@ function DecisionBar({
             </span>
           )}
         </span>
+        {metrics.noaelConfidence != null && (
+          <>
+            <span
+              className={cn(
+                "rounded px-1 py-0.5 text-[10px] font-semibold",
+                metrics.noaelConfidence >= 0.8
+                  ? "bg-green-100 text-green-700"
+                  : metrics.noaelConfidence >= 0.6
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-red-100 text-red-700"
+              )}
+            >
+              {Math.round(metrics.noaelConfidence * 100)}%
+            </span>
+          </>
+        )}
         <span>&middot;</span>
         <span>
           {metrics.targets} target{metrics.targets !== 1 ? "s" : ""}
         </span>
+        <span>&middot;</span>
+        <span className={cn(metrics.nAdverseAtLoael >= 5 && "font-semibold text-red-600")}>
+          {metrics.nAdverseAtLoael} adverse at LOAEL
+        </span>
+        {metrics.adverseDomainsAtLoael.length > 0 && (
+          <span className="flex items-center gap-0.5">
+            {metrics.adverseDomainsAtLoael.map((d) => (
+              <span key={d} className={cn("text-[10px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
+            ))}
+          </span>
+        )}
         <span>&middot;</span>
         <span>{metrics.significantRatio} significant</span>
         <span>&middot;</span>

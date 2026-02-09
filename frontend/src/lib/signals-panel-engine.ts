@@ -67,6 +67,9 @@ export interface MetricsLine {
   significantRatio: string;
   doseResponse: number;
   domains: number;
+  nAdverseAtLoael: number;
+  adverseDomainsAtLoael: string[];
+  noaelConfidence: number | null;
 }
 
 export interface SignalsPanelData {
@@ -535,6 +538,9 @@ function buildMetrics(
     significantRatio: `${nSig}/${signals.length}`,
     doseResponse: nDR,
     domains: nDomains,
+    nAdverseAtLoael: combined?.n_adverse_at_loael ?? 0,
+    adverseDomainsAtLoael: combined?.adverse_domains_at_loael ?? [],
+    noaelConfidence: combined?.noael_confidence ?? null,
   };
 }
 

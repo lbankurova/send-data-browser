@@ -197,7 +197,7 @@ Two contributors working on the same subsystem without coordination produce merg
 - `components/analysis/SignalsPanel.tsx` — Signals tab two-panel components: `SignalsOrganRail` (organ navigation), `SignalsEvidencePanel` (organ header + Overview/Matrix tabs), `StudyStatementsBar` (study-level statements)
 - `components/analysis/charts/OrganGroupedHeatmap.tsx` — organ-grouped collapsible signal matrix with `singleOrganMode` prop for organ-scoped rendering
 - `components/analysis/DoseResponseView.tsx` — View 2: Dose-Response (two-panel: organ-grouped endpoint rail + evidence panel with chart/metrics tabs)
-- `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (two-panel: organ rail + evidence panel with overview/table tabs)
+- `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (two-panel: organ rail with signal metrics + evidence panel with Evidence/Hypotheses/Metrics tabs, 5 organ-level tools)
 - `components/analysis/HistopathologyView.tsx` — View 4: Histopathology (two-panel: specimen rail + evidence panel with overview/severity matrix tabs)
 - `components/analysis/NoaelDecisionView.tsx` — View 5: NOAEL & Decision (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
 - `components/analysis/panes/*ContextPanel.tsx` — context panels for each view
@@ -281,7 +281,7 @@ Implemented in `lib/severity-colors.ts`.
 - **Bonus**: Adverse Effects view (paginated table, filters, context panel)
 - **Step 3**: Views 2-5 all implemented:
   - View 2: Dose-Response (Recharts line/bar charts, metrics grid, endpoint search)
-  - View 3: Target Organs (organ cards, evidence detail grid)
+  - View 3: Target Organs (three-tab model view: Evidence/Hypotheses/Metrics, enriched rail + header, 5 organ-level tools)
   - View 4: Histopathology (two-panel: specimen rail, overview + severity matrix tabs)
   - View 5: NOAEL & Decision (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
 - **Step 4**: Cross-view links (each context panel has navigate links to related views)

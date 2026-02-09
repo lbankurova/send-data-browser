@@ -6,10 +6,15 @@ import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
-import { titleCase } from "@/lib/severity-colors";
+import {
+  titleCase,
+  formatPValue,
+  getSignalScoreColor,
+  getDomainBadgeColor,
+} from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
-import type { RuleResult } from "@/types/analysis-views";
+import type { RuleResult, SignalSummaryRow } from "@/types/analysis-views";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,6 +29,7 @@ interface DoseResponseSelection {
 
 interface Props {
   ruleResults: RuleResult[];
+  signalData: SignalSummaryRow[];
   selection: DoseResponseSelection | null;
   studyId?: string;
 }
@@ -34,6 +40,7 @@ interface Props {
 
 export function DoseResponseContextPanel({
   ruleResults,
+  signalData,
   selection,
   studyId: studyIdProp,
 }: Props) {
@@ -52,6 +59,38 @@ export function DoseResponseContextPanel({
       return false;
     });
   }, [ruleResults, selection]);
+
+  // Best signal row for selected endpoint (highest signal_score across doses)
+  const selectedSignalRow = useMemo(() => {
+    if (!selection) return null;
+    const candidates = signalData.filter(
+      (r) =>
+        r.endpoint_label === selection.endpoint_label &&
+        (!selection.sex || r.sex === selection.sex)
+    );
+    if (candidates.length === 0) return null;
+    return candidates.reduce((best, r) =>
+      r.signal_score > best.signal_score ? r : best
+    );
+  }, [signalData, selection]);
+
+  // Correlations: other endpoints in same organ, sorted by signal score
+  const correlatedFindings = useMemo(() => {
+    if (!selection?.organ_system) return [];
+    // Group by endpoint, take max signal_score row per endpoint
+    const map = new Map<string, SignalSummaryRow>();
+    for (const s of signalData) {
+      if (s.organ_system !== selection.organ_system) continue;
+      if (s.endpoint_label === selection.endpoint_label) continue;
+      const existing = map.get(s.endpoint_label);
+      if (!existing || s.signal_score > existing.signal_score) {
+        map.set(s.endpoint_label, s);
+      }
+    }
+    return [...map.values()]
+      .sort((a, b) => b.signal_score - a.signal_score)
+      .slice(0, 10);
+  }, [signalData, selection]);
 
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
@@ -82,20 +121,134 @@ export function DoseResponseContextPanel({
             onTierClick={setTierFilter}
           />
         </div>
-
       </div>
 
-      {/* Endpoint insights */}
+      {/* 1. Insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <InsightsList rules={endpointRules} tierFilter={tierFilter} />
       </CollapsiblePane>
 
-      {/* Tox Assessment */}
+      {/* 2. Statistics */}
+      <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        {selectedSignalRow ? (
+          <div className="space-y-1.5 text-[11px] tabular-nums">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Signal score</span>
+              <span
+                className="rounded px-1.5 py-0.5 text-xs font-semibold text-white"
+                style={{
+                  backgroundColor: getSignalScoreColor(selectedSignalRow.signal_score),
+                }}
+              >
+                {selectedSignalRow.signal_score.toFixed(3)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Direction</span>
+              <span>{selectedSignalRow.direction ?? "\u2014"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Best p-value</span>
+              <span className="font-mono">{formatPValue(selectedSignalRow.p_value)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Trend p-value</span>
+              <span className="font-mono">{formatPValue(selectedSignalRow.trend_p)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Effect size</span>
+              <span className="font-mono">
+                {selectedSignalRow.effect_size != null
+                  ? selectedSignalRow.effect_size.toFixed(2)
+                  : "\u2014"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Dose-response</span>
+              <span>{selectedSignalRow.dose_response_pattern.replace(/_/g, " ")}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Severity</span>
+              <span className="capitalize">{selectedSignalRow.severity}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Treatment-related</span>
+              <span>{selectedSignalRow.treatment_related ? "Yes" : "No"}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">
+            No signal data for selected endpoint.
+          </p>
+        )}
+      </CollapsiblePane>
+
+      {/* 3. Correlations */}
+      <CollapsiblePane title="Correlations" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        {correlatedFindings.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">
+            No other endpoints in this organ system.
+          </p>
+        ) : (
+          <div>
+            <p className="mb-1.5 text-[10px] text-muted-foreground">
+              Other findings in{" "}
+              <span className="font-medium">{titleCase(selection.organ_system)}</span>
+            </p>
+            <table className="w-full text-[10px] tabular-nums">
+              <thead>
+                <tr className="border-b text-muted-foreground">
+                  <th className="pb-0.5 text-left font-medium">Endpoint</th>
+                  <th className="pb-0.5 text-left font-medium">Dom</th>
+                  <th className="pb-0.5 text-right font-medium">Signal</th>
+                  <th className="pb-0.5 text-right font-medium">p</th>
+                </tr>
+              </thead>
+              <tbody>
+                {correlatedFindings.map((f, i) => {
+                  const dc = getDomainBadgeColor(f.domain);
+                  return (
+                    <tr
+                      key={i}
+                      className="cursor-pointer border-b border-dashed hover:bg-accent/30"
+                      onClick={() => {
+                        if (studyId) {
+                          navigate(
+                            `/studies/${encodeURIComponent(studyId)}/dose-response`,
+                            { state: { endpoint_label: f.endpoint_label, organ_system: f.organ_system } }
+                          );
+                        }
+                      }}
+                    >
+                      <td className="truncate py-0.5" title={f.endpoint_label}>
+                        {f.endpoint_label.length > 22
+                          ? f.endpoint_label.slice(0, 22) + "\u2026"
+                          : f.endpoint_label}
+                      </td>
+                      <td className={`py-0.5 text-[9px] font-semibold ${dc.text}`}>
+                        {f.domain}
+                      </td>
+                      <td className="py-0.5 text-right font-mono">
+                        {f.signal_score.toFixed(2)}
+                      </td>
+                      <td className="py-0.5 text-right font-mono">
+                        {formatPValue(f.p_value)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CollapsiblePane>
+
+      {/* 4. Tox Assessment */}
       {studyId && (
-        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} defaultOpen />
+        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
       )}
 
-      {/* Cross-view links */}
+      {/* 5. Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
           {selection.organ_system && (

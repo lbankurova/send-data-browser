@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, Grid3X3, PieChart, Columns2, GitBranch, Clock, Search, Plus, Pin } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -130,6 +130,26 @@ function deriveOrganConclusion(
 }
 
 // ---------------------------------------------------------------------------
+// Per-organ signal stats (computed from evidence data)
+// ---------------------------------------------------------------------------
+
+interface OrganStats {
+  minPValue: number | null;
+  maxEffectSize: number | null;
+  doseConsistency: "Weak" | "Moderate" | "Strong";
+}
+
+function computeOrganStats(rows: OrganEvidenceRow[]): OrganStats {
+  let minP: number | null = null;
+  let maxD: number | null = null;
+  for (const r of rows) {
+    if (r.p_value !== null && (minP === null || r.p_value < minP)) minP = r.p_value;
+    if (r.effect_size !== null && (maxD === null || Math.abs(r.effect_size) > maxD)) maxD = Math.abs(r.effect_size);
+  }
+  return { minPValue: minP, maxEffectSize: maxD, doseConsistency: getDoseConsistency(rows) };
+}
+
+// ---------------------------------------------------------------------------
 // OrganListItem — enriched rail item with evidence bar + stats
 // ---------------------------------------------------------------------------
 
@@ -137,11 +157,13 @@ function OrganListItem({
   organ,
   isSelected,
   maxEvidenceScore,
+  stats,
   onClick,
 }: {
   organ: TargetOrganRow;
   isSelected: boolean;
   maxEvidenceScore: number;
+  stats: OrganStats | undefined;
   onClick: () => void;
 }) {
   const barWidth = maxEvidenceScore > 0
@@ -191,7 +213,39 @@ function OrganListItem({
         </span>
       </div>
 
-      {/* Row 3: stats + domain chips (outline + dot) */}
+      {/* Row 3: signal metrics — min p, max |d|, dose consistency */}
+      {stats && (
+        <div className="mt-1 flex items-center gap-2 text-[10px]">
+          {stats.minPValue !== null && (
+            <span className={cn(
+              "font-mono",
+              stats.minPValue < 0.001 ? "font-semibold text-[#DC2626]" :
+              stats.minPValue < 0.01 ? "font-medium" : "text-muted-foreground"
+            )}>
+              p={formatPValue(stats.minPValue)}
+            </span>
+          )}
+          {stats.maxEffectSize !== null && (
+            <span className={cn(
+              "font-mono",
+              stats.maxEffectSize >= 0.8 ? "font-semibold" :
+              stats.maxEffectSize >= 0.5 ? "font-medium" : "text-muted-foreground"
+            )}>
+              |d|={stats.maxEffectSize.toFixed(2)}
+            </span>
+          )}
+          <span className={cn(
+            "rounded px-1 py-0.5 text-[9px]",
+            stats.doseConsistency === "Strong" ? "bg-green-100 text-green-700" :
+            stats.doseConsistency === "Moderate" ? "bg-amber-100 text-amber-700" :
+            "bg-gray-100 text-gray-500"
+          )}>
+            {stats.doseConsistency}
+          </span>
+        </div>
+      )}
+
+      {/* Row 4: stats + domain chips (outline + dot) */}
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
         <span>{organ.n_significant} sig</span>
         <span>&middot;</span>
@@ -219,11 +273,13 @@ function OrganRail({
   organs,
   selectedOrgan,
   maxEvidenceScore,
+  organStatsMap,
   onOrganClick,
 }: {
   organs: TargetOrganRow[];
   selectedOrgan: string | null;
   maxEvidenceScore: number;
+  organStatsMap: Map<string, OrganStats>;
   onOrganClick: (organ: string) => void;
 }) {
   const [search, setSearch] = useState("");
@@ -255,6 +311,7 @@ function OrganRail({
             organ={organ}
             isSelected={selectedOrgan === organ.organ_system}
             maxEvidenceScore={maxEvidenceScore}
+            stats={organStatsMap.get(organ.organ_system)}
             onClick={() => onOrganClick(organ.organ_system)}
           />
         ))}
@@ -287,6 +344,12 @@ function OrganSummaryHeader({
     [organ, evidenceRows, organRules]
   );
 
+  // Compute min p-value, max effect size, dose consistency from evidence rows
+  const localStats = useMemo(() => computeOrganStats(evidenceRows), [evidenceRows]);
+
+  // Unique domains in this organ
+  const domains = useMemo(() => [...new Set(evidenceRows.map((r) => r.domain))].sort(), [evidenceRows]);
+
   return (
     <div className="shrink-0 border-b px-4 py-3">
       {/* Title + badges */}
@@ -304,36 +367,81 @@ function OrganSummaryHeader({
         </span>
       </div>
 
+      {/* Subtitle: domain chips + endpoint count */}
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
+        {domains.map((d, i) => {
+          const dc = getDomainBadgeColor(d);
+          return (
+            <span key={d}>
+              {i > 0 && <span> &middot; </span>}
+              <span className={cn("font-semibold", dc.text)}>{d}</span>
+            </span>
+          );
+        })}
+        {domains.length > 0 && <span> &middot; </span>}
+        <span>{organ.n_endpoints} endpoints</span>
+      </p>
+
       {/* 1-line conclusion */}
       <p className="mt-1 text-xs leading-relaxed text-foreground/80">
         {conclusion}
       </p>
 
-      {/* Compact metrics */}
-      <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
-        <div>
+      {/* Compact metrics — 6 items in two visual rows */}
+      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]">
+        <span>
           <span className="text-muted-foreground">Max signal: </span>
           <span className={cn(
-            "font-mono text-[10px] font-medium",
+            "font-mono font-medium",
             organ.max_signal_score >= 0.8 && "text-[#DC2626]"
           )}>
             {organ.max_signal_score.toFixed(2)}
           </span>
-        </div>
-        <div>
+        </span>
+        <span>
           <span className="text-muted-foreground">Evidence: </span>
           <span className={cn(
-            "font-mono text-[10px]",
+            "font-mono",
             organ.evidence_score >= 0.7 ? "font-semibold text-[#DC2626]" :
             organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium"
           )}>
             {organ.evidence_score.toFixed(2)}
           </span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Endpoints: </span>
-          <span className="font-medium">{organ.n_endpoints}</span>
-        </div>
+        </span>
+        <span>
+          <span className="text-muted-foreground">Min p: </span>
+          <span className={cn(
+            "font-mono",
+            localStats.minPValue != null && localStats.minPValue < 0.001 ? "font-semibold text-[#DC2626]" :
+            localStats.minPValue != null && localStats.minPValue < 0.01 ? "font-medium" : ""
+          )}>
+            {formatPValue(localStats.minPValue)}
+          </span>
+        </span>
+        <span>
+          <span className="text-muted-foreground">Max |d|: </span>
+          <span className={cn(
+            "font-mono",
+            localStats.maxEffectSize != null && localStats.maxEffectSize >= 0.8 ? "font-semibold text-[#DC2626]" :
+            localStats.maxEffectSize != null && localStats.maxEffectSize >= 0.5 ? "font-medium" : ""
+          )}>
+            {localStats.maxEffectSize != null ? localStats.maxEffectSize.toFixed(2) : "—"}
+          </span>
+        </span>
+        <span>
+          <span className="text-muted-foreground">Domains: </span>
+          <span className="font-medium">{organ.n_domains}</span>
+        </span>
+        <span>
+          <span className="text-muted-foreground">Dose consistency: </span>
+          <span className={cn(
+            "font-medium",
+            localStats.doseConsistency === "Strong" ? "text-green-700" :
+            localStats.doseConsistency === "Moderate" ? "text-amber-700" : ""
+          )}>
+            {localStats.doseConsistency}
+          </span>
+        </span>
       </div>
     </div>
   );
@@ -796,10 +904,413 @@ function EvidenceTableTab({
 }
 
 // ---------------------------------------------------------------------------
+// Hypotheses tab — organ-level exploratory tools
+// ---------------------------------------------------------------------------
+
+type OrganToolIntent = "heatmap" | "domain" | "comparison" | "pathway" | "temporal";
+
+interface OrganTool {
+  value: OrganToolIntent;
+  label: string;
+  icon: typeof Grid3X3;
+  available: boolean;
+  description: string;
+}
+
+const ORGAN_TOOLS: OrganTool[] = [
+  { value: "heatmap", label: "Evidence heatmap", icon: Grid3X3, available: true, description: "Endpoint × dose matrix showing convergent signals" },
+  { value: "domain", label: "Domain contribution", icon: PieChart, available: true, description: "Which domains drive the evidence for this organ" },
+  { value: "comparison", label: "Organ comparison", icon: Columns2, available: true, description: "Compare evidence profiles of two organs" },
+  { value: "pathway", label: "Pathway analysis", icon: GitBranch, available: false, description: "Mechanistic links between endpoints in this organ" },
+  { value: "temporal", label: "Temporal pattern", icon: Clock, available: false, description: "Recovery group data and time-course changes" },
+];
+
+const DEFAULT_ORGAN_FAVORITES: OrganToolIntent[] = ["heatmap", "domain"];
+
+/** Compact chart placeholder area with viewer type label */
+function ViewerPlaceholder({
+  icon: Icon,
+  viewerType,
+  context,
+}: {
+  icon: typeof Grid3X3;
+  viewerType: string;
+  context?: string;
+}) {
+  return (
+    <div className="flex h-28 items-center justify-center rounded-md border bg-muted/30">
+      <div className="text-center">
+        <Icon className="mx-auto mb-1.5 h-6 w-6 text-muted-foreground/25" />
+        <p className="text-[11px] text-muted-foreground/50">{viewerType}</p>
+        {context && (
+          <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/35">{context}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Compact key-value config line */
+function ConfigLine({ items }: { items: [string, string][] }) {
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]">
+      {items.map(([k, v]) => (
+        <span key={k}>
+          <span className="text-muted-foreground">{k}: </span>
+          <span className="font-mono text-foreground/70">{v}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Note for intents that require production infrastructure */
+function ProductionNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] italic text-muted-foreground/60">{children}</p>
+  );
+}
+
+function HeatmapPlaceholder({ organName, endpointCount, domains }: { organName: string; endpointCount: number; domains: string[] }) {
+  return (
+    <div className="space-y-3">
+      <ViewerPlaceholder icon={Grid3X3} viewerType="DG Grid Heatmap" context={`${organName} \u00b7 ${endpointCount} endpoints`} />
+      <p className="text-xs text-muted-foreground">
+        Endpoint-by-dose matrix with cells colored by signal strength. Rows are endpoints in this organ,
+        columns are dose groups. Highlights convergent patterns across multiple endpoints.
+      </p>
+      <div className="rounded-md border bg-card p-3">
+        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <ConfigLine items={[
+          ["Rows", "endpoint_label"],
+          ["Columns", "dose_group \u00d7 sex"],
+          ["Color", "signal_score (0\u20131)"],
+          ["Sort", "max signal desc"],
+        ]} />
+        <div className="mt-1.5">
+          <ConfigLine items={[
+            ["Tooltip", "endpoint, dose, sex, p-value, effect size"],
+            ["Selection", "syncs with context panel"],
+          ]} />
+        </div>
+        {domains.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {domains.map((d) => {
+              const dc = getDomainBadgeColor(d);
+              return (
+                <span key={d} className={cn("text-[10px] font-semibold", dc.text)}>{d}</span>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DomainContributionPlaceholder({ organName, domains }: { organName: string; domains: string[] }) {
+  return (
+    <div className="space-y-3">
+      <ViewerPlaceholder icon={PieChart} viewerType="DG Pie Chart" context={`${organName} \u00b7 ${domains.length} domains`} />
+      <p className="text-xs text-muted-foreground">
+        Proportional contribution of each domain to the organ&apos;s total evidence score. Shows which
+        data sources (clinical pathology, histopathology, organ weights, etc.) drive the target organ designation.
+      </p>
+      <div className="rounded-md border bg-card p-3">
+        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <ConfigLine items={[
+          ["Segments", "domain"],
+          ["Value", "significant endpoint count"],
+          ["Color", "domain color"],
+        ]} />
+        {domains.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {domains.map((d) => {
+              const dc = getDomainBadgeColor(d);
+              return (
+                <span key={d} className={cn("text-[10px] font-semibold", dc.text)}>{d}</span>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ComparisonPlaceholder({ organName }: { organName: string }) {
+  return (
+    <div className="space-y-3">
+      <ViewerPlaceholder icon={Columns2} viewerType="DG Side-by-Side Grid" context={`${organName} vs. ...`} />
+      <p className="text-xs text-muted-foreground">
+        Compare evidence profiles of two organs side-by-side. Shows max signal score, endpoint counts,
+        domain overlap, and dose consistency for each organ to identify related toxicity patterns.
+      </p>
+      <div className="rounded-md border bg-card p-3">
+        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <ConfigLine items={[
+          ["Left", organName],
+          ["Right", "(select organ)"],
+          ["Metrics", "evidence score, n_endpoints, n_significant, domains"],
+          ["Shared endpoints", "highlighted"],
+        ]} />
+      </div>
+    </div>
+  );
+}
+
+function PathwayPlaceholder() {
+  return (
+    <div className="space-y-3">
+      <ViewerPlaceholder icon={GitBranch} viewerType="DG Network Graph" />
+      <p className="text-xs text-muted-foreground">
+        Mechanistic pathway linking endpoints within this organ. Connects related findings
+        (e.g., ALT elevation \u2192 hepatocyte necrosis \u2192 inflammatory infiltrate) to identify
+        underlying toxicity mechanisms.
+      </p>
+      <div className="rounded-md border bg-card p-3">
+        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <ConfigLine items={[
+          ["Nodes", "endpoints"],
+          ["Edges", "mechanistic associations"],
+          ["Layout", "force-directed"],
+          ["Data", "curated pathway DB"],
+        ]} />
+      </div>
+      <ProductionNote>
+        Requires curated mechanistic pathway database. Available in production via Datagrok knowledge graph.
+      </ProductionNote>
+    </div>
+  );
+}
+
+function TemporalPlaceholder() {
+  return (
+    <div className="space-y-3">
+      <ViewerPlaceholder icon={Clock} viewerType="DG Line Chart" />
+      <p className="text-xs text-muted-foreground">
+        Time-course changes and recovery group data for this organ&apos;s endpoints.
+        Shows whether treatment effects persist, worsen, or resolve after dosing cessation.
+      </p>
+      <div className="rounded-md border bg-card p-3">
+        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <ConfigLine items={[
+          ["X", "study day / timepoint"],
+          ["Y", "endpoint value"],
+          ["Series", "dose group"],
+          ["Markers", "recovery group start"],
+        ]} />
+      </div>
+      <ProductionNote>
+        Requires recovery group arm codes and longitudinal data. Available in production.
+      </ProductionNote>
+    </div>
+  );
+}
+
+function HypothesesTabContent({
+  organName,
+  endpointCount,
+  domains,
+}: {
+  organName: string;
+  endpointCount: number;
+  domains: string[];
+}) {
+  const [intent, setIntent] = useState<OrganToolIntent>("heatmap");
+  const [favorites, setFavorites] = useState<OrganToolIntent[]>(DEFAULT_ORGAN_FAVORITES);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState("");
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tool: OrganToolIntent } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Close dropdown and context menu on outside click
+  useEffect(() => {
+    if (!dropdownOpen && !contextMenu) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (dropdownOpen && dropdownRef.current && !dropdownRef.current.contains(target)) {
+        setDropdownOpen(false);
+        setDropdownSearch("");
+      }
+      if (contextMenu && contextMenuRef.current && !contextMenuRef.current.contains(target)) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [dropdownOpen, contextMenu]);
+
+  // Focus search when dropdown opens
+  useEffect(() => {
+    if (dropdownOpen) searchInputRef.current?.focus();
+  }, [dropdownOpen]);
+
+  const toggleFavorite = useCallback((tool: OrganToolIntent) => {
+    setFavorites((prev) =>
+      prev.includes(tool) ? prev.filter((f) => f !== tool) : [...prev, tool]
+    );
+  }, []);
+
+  const filteredTools = useMemo(() => {
+    if (!dropdownSearch) return ORGAN_TOOLS;
+    const q = dropdownSearch.toLowerCase();
+    return ORGAN_TOOLS.filter(
+      (t) => t.label.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
+    );
+  }, [dropdownSearch]);
+
+  const favTools = useMemo(
+    () => favorites.map((f) => ORGAN_TOOLS.find((t) => t.value === f)!).filter(Boolean),
+    [favorites]
+  );
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Toolbar: favorite pills + tool dropdown */}
+      <div className="flex items-center gap-1 border-b bg-muted/20 px-4 py-1.5">
+        {/* Favorite pills */}
+        {favTools.map((tool) => {
+          const Icon = tool.icon;
+          return (
+            <button
+              key={tool.value}
+              className={cn(
+                "flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                intent === tool.value
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              )}
+              onClick={() => setIntent(tool.value)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setContextMenu({ x: e.clientX, y: e.clientY, tool: tool.value });
+              }}
+            >
+              <Icon className="h-3 w-3" />
+              {tool.label}
+            </button>
+          );
+        })}
+
+        {/* Add tool dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            className="flex items-center gap-0.5 rounded-full px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            onClick={() => { setDropdownOpen(!dropdownOpen); setDropdownSearch(""); }}
+            title="Browse tools"
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+
+          {dropdownOpen && (
+            <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover shadow-lg">
+              {/* Search */}
+              <div className="border-b px-2 py-1.5">
+                <div className="relative">
+                  <Search className="absolute left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    ref={searchInputRef}
+                    className="w-full rounded border-none bg-transparent py-0.5 pl-6 pr-2 text-xs outline-none placeholder:text-muted-foreground/50"
+                    placeholder="Search tools..."
+                    value={dropdownSearch}
+                    onChange={(e) => setDropdownSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Tool list */}
+              <div className="max-h-48 overflow-y-auto py-1">
+                {filteredTools.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-muted-foreground">No matching tools</p>
+                )}
+                {filteredTools.map((tool) => {
+                  const Icon = tool.icon;
+                  const isFav = favorites.includes(tool.value);
+                  return (
+                    <button
+                      key={tool.value}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent/50"
+                      onClick={() => {
+                        setIntent(tool.value);
+                        if (!favorites.includes(tool.value)) {
+                          setFavorites((prev) => [...prev, tool.value]);
+                        }
+                        setDropdownOpen(false);
+                        setDropdownSearch("");
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setDropdownOpen(false);
+                        setDropdownSearch("");
+                        setContextMenu({ x: e.clientX, y: e.clientY, tool: tool.value });
+                      }}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">{tool.label}</div>
+                        <div className="truncate text-[10px] text-muted-foreground">{tool.description}</div>
+                      </div>
+                      {isFav && <Pin className="h-3 w-3 shrink-0 fill-muted-foreground/50 text-muted-foreground/50" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <span className="ml-auto text-[10px] italic text-muted-foreground">
+          Does not affect conclusions
+        </span>
+      </div>
+
+      {/* Context menu for favorite toggle */}
+      {contextMenu && (
+        <div
+          ref={contextMenuRef}
+          className="fixed z-50 min-w-[160px] rounded-md border bg-popover py-1 shadow-lg"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-accent/50"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => {
+              toggleFavorite(contextMenu.tool);
+              setContextMenu(null);
+            }}
+          >
+            <Pin className={cn("h-3 w-3", favorites.includes(contextMenu.tool) ? "fill-current text-muted-foreground" : "text-muted-foreground/40")} />
+            {favorites.includes(contextMenu.tool) ? "Remove from favorites" : "Add to favorites"}
+          </button>
+        </div>
+      )}
+
+      {/* Intent content */}
+      <div className="flex-1 overflow-auto p-4">
+        {intent === "heatmap" && (
+          <HeatmapPlaceholder organName={organName} endpointCount={endpointCount} domains={domains} />
+        )}
+        {intent === "domain" && (
+          <DomainContributionPlaceholder organName={organName} domains={domains} />
+        )}
+        {intent === "comparison" && (
+          <ComparisonPlaceholder organName={organName} />
+        )}
+        {intent === "pathway" && <PathwayPlaceholder />}
+        {intent === "temporal" && <TemporalPlaceholder />}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main: TargetOrgansView — two-panel layout
 // ---------------------------------------------------------------------------
 
-type EvidenceTab = "overview" | "table";
+type EvidenceTab = "evidence" | "hypotheses" | "metrics";
 
 export function TargetOrgansView({
   onSelectionChange,
@@ -814,7 +1325,7 @@ export function TargetOrgansView({
 
   const [selectedOrgan, setSelectedOrgan] = useState<string | null>(null);
   const [selectedRow, setSelectedRow] = useState<OrganSelection | null>(null);
-  const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
+  const [activeTab, setActiveTab] = useState<EvidenceTab>("evidence");
   const [sexFilter, setSexFilter] = useState<string | null>(null);
   const [domainFilter, setDomainFilter] = useState<string | null>(null);
   const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
@@ -829,6 +1340,22 @@ export function TargetOrgansView({
     if (sortedOrgans.length === 0) return 1;
     return Math.max(...sortedOrgans.map((o) => o.evidence_score), 0.01);
   }, [sortedOrgans]);
+
+  // Per-organ signal stats (min p-value, max |d|, dose consistency)
+  const organStatsMap = useMemo(() => {
+    if (!evidenceData) return new Map<string, OrganStats>();
+    const map = new Map<string, OrganEvidenceRow[]>();
+    for (const r of evidenceData) {
+      let arr = map.get(r.organ_system);
+      if (!arr) { arr = []; map.set(r.organ_system, arr); }
+      arr.push(r);
+    }
+    const result = new Map<string, OrganStats>();
+    for (const [organ, rows] of map) {
+      result.set(organ, computeOrganStats(rows));
+    }
+    return result;
+  }, [evidenceData]);
 
   // Auto-select top organ on data load
   useEffect(() => {
@@ -940,6 +1467,7 @@ export function TargetOrgansView({
           organs={sortedOrgans}
           selectedOrgan={selectedOrgan}
           maxEvidenceScore={maxEvidenceScore}
+          organStatsMap={organStatsMap}
           onOrganClick={handleOrganClick}
         />
       </div>
@@ -955,40 +1483,45 @@ export function TargetOrgansView({
             <OrganSummaryHeader organ={selectedOrganData} evidenceRows={organEvidenceRows} organRules={organRules} />
 
             {/* Tab bar */}
-            <div className="flex shrink-0 items-center gap-0 border-b px-4">
-              <button
-                className={cn(
-                  "border-b-2 px-3 py-2 text-xs font-medium transition-colors",
-                  activeTab === "overview"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("overview")}
-              >
-                Overview
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-3 py-2 text-xs font-medium transition-colors",
-                  activeTab === "table"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("table")}
-              >
-                Evidence table
-              </button>
+            <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
+              {(["evidence", "hypotheses", "metrics"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  className={cn(
+                    "px-4 py-1.5 text-xs font-medium transition-colors",
+                    activeTab === tab
+                      ? "border-b-2 border-primary text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {{ evidence: "Evidence", hypotheses: "Hypotheses", metrics: "Metrics" }[tab]}
+                </button>
+              ))}
+              {activeTab === "metrics" && (
+                <span className="ml-auto mr-3 text-[10px] text-muted-foreground">
+                  {organEvidenceRows.length} of {evidenceData?.length ?? 0} rows
+                </span>
+              )}
             </div>
 
             {/* Tab content */}
-            {activeTab === "overview" ? (
+            {activeTab === "evidence" && (
               <OverviewTab
                 organ={selectedOrganData}
                 evidenceRows={organEvidenceRows}
                 organRules={organRules}
                 allRuleResults={ruleResults ?? []}
               />
-            ) : (
+            )}
+            {activeTab === "hypotheses" && (
+              <HypothesesTabContent
+                organName={titleCase(selectedOrganData.organ_system)}
+                endpointCount={selectedOrganData.n_endpoints}
+                domains={domainsInOrgan}
+              />
+            )}
+            {activeTab === "metrics" && (
               <EvidenceTableTab
                 evidenceRows={organEvidenceRows}
                 selectedRow={selectedRow}
