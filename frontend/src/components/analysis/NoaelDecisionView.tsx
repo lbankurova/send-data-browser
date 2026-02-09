@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
-import type { SortingState } from "@tanstack/react-table";
+import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
@@ -23,6 +23,7 @@ import {
   getDirectionColor,
   getDomainBadgeColor,
   getDoseGroupColor,
+  titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
@@ -322,7 +323,7 @@ function OrganRailItem({
       {/* Row 1: organ name + adverse count */}
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold">
-          {summary.organ_system.replace(/_/g, " ")}
+          {titleCase(summary.organ_system)}
         </span>
         {summary.adverseCount > 0 && (
           <span className="text-[9px] font-semibold uppercase text-[#DC2626]">
@@ -425,7 +426,7 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
     <div className="shrink-0 border-b px-4 py-3">
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold">
-          {summary.organ_system.replace(/_/g, " ")}
+          {titleCase(summary.organ_system)}
         </h3>
         {summary.adverseCount > 0 && (
           <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
@@ -643,6 +644,7 @@ function AdversityMatrixTab({
   setTrFilter: (v: string | null) => void;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -785,8 +787,9 @@ function AdversityMatrixTab({
   const table = useReactTable({
     data: filteredData,
     columns,
-    state: { sorting },
+    state: { sorting, columnSizing },
     onSortingChange: setSorting,
+    onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableColumnResizing: true,
@@ -897,7 +900,7 @@ function AdversityMatrixTab({
             </h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
               <thead>
                 {table.getHeaderGroups().map((hg) => (
                   <tr key={hg.id} className="border-b bg-muted/50">
@@ -914,7 +917,7 @@ function AdversityMatrixTab({
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
                           className={cn(
-                            "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                            "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
                             header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
                           )}
                         />
