@@ -1,10 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { InsightsList } from "./InsightsList";
+import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { cn } from "@/lib/utils";
 import { getDomainBadgeColor } from "@/lib/severity-colors";
+import { computeTierCounts } from "@/lib/rule-synthesis";
+import type { Tier } from "@/lib/rule-synthesis";
 import type {
   TargetOrganRow,
   OrganEvidenceRow,
@@ -35,6 +38,7 @@ export function TargetOrgansContextPanel({
   const { studyId: studyIdParam } = useParams<{ studyId: string }>();
   const studyId = studyIdProp ?? studyIdParam;
   const navigate = useNavigate();
+  const [tierFilter, setTierFilter] = useState<Tier | null>(null);
 
   const selectedOrganSummary = useMemo(() => {
     if (!selection) return null;
@@ -91,7 +95,7 @@ export function TargetOrgansContextPanel({
               Evidence: {selectedOrganSummary.evidence_score.toFixed(2)}
             </span>
             {selectedOrganSummary.target_organ_flag && (
-              <span className="rounded bg-red-100 px-1 py-0.5 text-[10px] font-medium text-red-700">
+              <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
                 TARGET ORGAN
               </span>
             )}
@@ -100,8 +104,18 @@ export function TargetOrgansContextPanel({
       </div>
 
       {/* Organ convergence */}
-      <CollapsiblePane title="Convergence" defaultOpen>
-        <InsightsList rules={organRules} />
+      <CollapsiblePane
+        title="Convergence"
+        defaultOpen
+        headerRight={
+          <TierCountBadges
+            counts={computeTierCounts(organRules)}
+            activeTier={tierFilter}
+            onTierClick={setTierFilter}
+          />
+        }
+      >
+        <InsightsList rules={organRules} tierFilter={tierFilter} />
       </CollapsiblePane>
 
       {/* Contributing endpoints */}

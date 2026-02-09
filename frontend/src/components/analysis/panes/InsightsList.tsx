@@ -6,6 +6,7 @@ import {
   cleanText,
   type Tier,
   type SynthLine,
+  type SynthEndpoint,
 } from "@/lib/rule-synthesis";
 
 // ---------------------------------------------------------------------------
@@ -14,89 +15,45 @@ import {
 
 interface Props {
   rules: RuleResult[];
+  tierFilter?: Tier | null;
 }
 
-export function InsightsList({ rules }: Props) {
-  const [activeTiers, setActiveTiers] = useState<Set<Tier>>(
-    () => new Set<Tier>(["Critical", "Notable"])
-  );
+export function InsightsList({ rules, tierFilter }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const organGroups = useMemo(() => buildOrganGroups(rules), [rules]);
 
-  const tierCounts = useMemo(() => {
-    const counts: Record<Tier, number> = { Critical: 0, Notable: 0, Observed: 0 };
-    for (const g of organGroups) counts[g.tier]++;
-    return counts;
-  }, [organGroups]);
-
-  const hasHighTiers = tierCounts.Critical > 0 || tierCounts.Notable > 0;
-
-  const visible = useMemo(() => {
-    if (!hasHighTiers) return organGroups;
-    return organGroups.filter((g) => activeTiers.has(g.tier));
-  }, [organGroups, activeTiers, hasHighTiers]);
-
-  const toggleTier = (tier: Tier) => {
-    setActiveTiers((prev) => {
-      const next = new Set(prev);
-      if (next.has(tier)) next.delete(tier);
-      else next.add(tier);
-      return next;
-    });
-  };
+  const visible = useMemo(
+    () => tierFilter ? organGroups.filter((g) => g.tier === tierFilter) : organGroups,
+    [organGroups, tierFilter]
+  );
 
   if (rules.length === 0) {
     return <p className="text-[11px] text-muted-foreground">No insights available.</p>;
   }
 
   return (
-    <div className="space-y-2">
-      {/* Tier filter bar */}
-      {hasHighTiers && (
-        <div className="flex gap-1">
-          {(["Critical", "Notable", "Observed"] as const).map((tier) => {
-            const count = tierCounts[tier];
-            if (count === 0) return null;
-            const active = activeTiers.has(tier);
-            return (
-              <button
-                key={tier}
-                onClick={() => toggleTier(tier)}
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[9px] font-medium leading-relaxed transition-opacity",
-                  TIER_STYLES[tier],
-                  active ? "opacity-100" : "opacity-30"
-                )}
-              >
-                {tier} {count}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
+    <div className="divide-y divide-border/40">
       {/* Organ groups */}
-      {visible.map((g) => {
+      {visible.map((g, gi) => {
         const expanded = expandedGroups.has(g.organ);
         return (
-          <div key={g.organ}>
-            <div className="mb-0.5 flex items-center gap-1.5">
+          <div key={g.organ} className={cn("pb-2.5", gi > 0 ? "pt-2.5" : "")}>
+            {/* Organ header: tier + name + endpoint count */}
+            <div className="mb-1 flex items-baseline gap-1.5">
               <TierBadge tier={g.tier} />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-[11px] font-semibold">
                 {g.displayName}
               </span>
+              {g.endpointCount > 0 && (
+                <span className="text-[9px] text-muted-foreground/50">
+                  {g.endpointCount} ep{g.domainCount > 0 && ` · ${g.domainCount} dom`}
+                </span>
+              )}
             </div>
 
-            {g.endpointCount > 0 && (
-              <div className="mb-1 pl-2 text-[10px] text-muted-foreground/60">
-                {g.endpointCount} endpoint{g.endpointCount !== 1 ? "s" : ""}
-                {g.domainCount > 0 &&
-                  `, ${g.domainCount} domain${g.domainCount !== 1 ? "s" : ""}`}
-              </div>
-            )}
-
-            <div className="space-y-1.5">
+            {/* Synthesis lines */}
+            <div className="space-y-1 pl-1">
               {g.synthLines.map((line, i) => (
                 <SynthLineItem key={i} line={line} />
               ))}
@@ -104,7 +61,7 @@ export function InsightsList({ rules }: Props) {
 
             {g.rules.length > 0 && (
               <button
-                className="mt-0.5 text-[10px] text-blue-600 hover:text-blue-800"
+                className="mt-1 pl-1 text-[10px] text-muted-foreground hover:text-foreground"
                 onClick={() => {
                   const next = new Set(expandedGroups);
                   if (expanded) next.delete(g.organ);
@@ -139,7 +96,7 @@ export function InsightsList({ rules }: Props) {
 
       {visible.length === 0 && (
         <p className="text-[11px] text-muted-foreground">
-          No signals for selected tiers.
+          No signals available.
         </p>
       )}
     </div>
@@ -151,9 +108,38 @@ export function InsightsList({ rules }: Props) {
 // ---------------------------------------------------------------------------
 
 function SynthLineItem({ line }: { line: SynthLine }) {
+  // Structured endpoint signals
+  if (line.endpoints && line.endpoints.length > 0) {
+    return (
+      <div className="space-y-0.5">
+        {line.endpoints.map((ep, i) => (
+          <EndpointRow key={i} ep={ep} />
+        ))}
+        {line.extraCount != null && line.extraCount > 0 && (
+          <div className="pl-1 text-[10px] text-muted-foreground/50">
+            +{line.extraCount} more
+          </div>
+        )}
+        {line.qualifiers && line.qualifiers.length > 0 && (
+          <div className="mt-0.5 flex flex-wrap gap-1 pl-1">
+            {line.qualifiers.map((q) => (
+              <span
+                key={q}
+                className="rounded border border-border px-1 py-0.5 text-[9px] text-muted-foreground"
+              >
+                {q}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Chip layout (R16 correlations)
   if (line.chips) {
     return (
-      <div className="pl-2">
+      <div className="pl-1">
         <div className="mb-1 text-[10px] text-muted-foreground/70">
           {line.text}
         </div>
@@ -170,13 +156,13 @@ function SynthLineItem({ line }: { line: SynthLine }) {
       </div>
     );
   }
+
+  // Plain text
   return (
     <div
       className={cn(
-        "pl-2 text-[11px] leading-snug",
-        line.isWarning
-          ? "border-l-2 border-l-amber-500 text-foreground"
-          : "text-muted-foreground"
+        "pl-1 text-[11px] leading-snug",
+        line.isWarning ? "font-medium text-foreground" : "text-muted-foreground"
       )}
     >
       {line.text}
@@ -184,20 +170,56 @@ function SynthLineItem({ line }: { line: SynthLine }) {
   );
 }
 
-const TIER_STYLES: Record<Tier, string> = {
-  Critical: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  Notable: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  Observed: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+function EndpointRow({ ep }: { ep: SynthEndpoint }) {
+  const bySex = new Map(ep.effectSizes.map((e) => [e.sex, e.d]));
+  const fVal = bySex.get("F");
+  const mVal = bySex.get("M");
+
+  return (
+    <div className="flex items-baseline gap-1.5 py-px pl-1 text-[11px]">
+      <span className="min-w-0 truncate font-medium" title={ep.name}>
+        {ep.name}
+      </span>
+      {ep.direction && (
+        <span className="shrink-0 text-[#9CA3AF]">{ep.direction}</span>
+      )}
+      {(fVal != null || mVal != null) && (
+        <span className="ml-auto shrink-0 font-mono text-[10px]">
+          <span className="inline-block w-[32px] text-right">
+            {fVal != null ? (
+              <>
+                <span className={cn("text-muted-foreground", fVal >= 0.8 && "ev font-semibold")}>{fVal.toFixed(1)}</span>
+                <span className="text-muted-foreground/50">F</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground/20">F</span>
+            )}
+          </span>
+          <span className="inline-block w-[32px] text-right">
+            {mVal != null ? (
+              <>
+                <span className={cn("text-muted-foreground", mVal >= 0.8 && "ev font-semibold")}>{mVal.toFixed(1)}</span>
+                <span className="text-muted-foreground/50">M</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground/20">M</span>
+            )}
+          </span>
+        </span>
+      )}
+    </div>
+  );
+}
+
+const TIER_COLOR: Record<Tier, string> = {
+  Critical: "text-[#DC2626]",
+  Notable: "text-[#D97706]",
+  Observed: "text-muted-foreground/60",
 };
 
 function TierBadge({ tier }: { tier: Tier }) {
   return (
-    <span
-      className={cn(
-        "rounded-full px-1.5 py-0 text-[9px] font-medium leading-relaxed",
-        TIER_STYLES[tier]
-      )}
-    >
+    <span className={cn("text-[9px] font-semibold uppercase", TIER_COLOR[tier])}>
       {tier}
     </span>
   );

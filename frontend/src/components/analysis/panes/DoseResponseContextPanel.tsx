@@ -1,8 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { InsightsList } from "./InsightsList";
+import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
+import { computeTierCounts } from "@/lib/rule-synthesis";
+import type { Tier } from "@/lib/rule-synthesis";
 import type { RuleResult } from "@/types/analysis-views";
 
 interface DoseResponseSelection {
@@ -36,6 +39,8 @@ export function DoseResponseContextPanel({ ruleResults, selection, studyId: stud
     });
   }, [ruleResults, selection]);
 
+  const [tierFilter, setTierFilter] = useState<Tier | null>(null);
+
   if (!selection) {
     return (
       <div className="p-4 text-xs text-muted-foreground">
@@ -56,8 +61,18 @@ export function DoseResponseContextPanel({ ruleResults, selection, studyId: stud
       </div>
 
       {/* Endpoint insights */}
-      <CollapsiblePane title="Insights" defaultOpen>
-        <InsightsList rules={endpointRules} />
+      <CollapsiblePane
+        title="Insights"
+        defaultOpen
+        headerRight={
+          <TierCountBadges
+            counts={computeTierCounts(endpointRules)}
+            activeTier={tierFilter}
+            onTierClick={setTierFilter}
+          />
+        }
+      >
+        <InsightsList rules={endpointRules} tierFilter={tierFilter} />
       </CollapsiblePane>
 
       {/* Tox Assessment */}

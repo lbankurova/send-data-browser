@@ -5,12 +5,14 @@ import type { ReactNode } from "react";
 interface CollapsiblePaneProps {
   title: string;
   defaultOpen?: boolean;
+  headerRight?: ReactNode;
   children: ReactNode;
 }
 
 export function CollapsiblePane({
   title,
   defaultOpen = true,
+  headerRight,
   children,
 }: CollapsiblePaneProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -27,6 +29,11 @@ export function CollapsiblePane({
           <ChevronRight className="h-3 w-3" />
         )}
         {title}
+        {headerRight && (
+          <span className="ml-auto flex items-center gap-1.5 text-[9px] font-medium normal-case tracking-normal">
+            {headerRight}
+          </span>
+        )}
       </button>
       {isOpen && <div className="px-4 pb-3">{children}</div>}
     </div>

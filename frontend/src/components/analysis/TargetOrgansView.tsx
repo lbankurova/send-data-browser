@@ -50,7 +50,7 @@ function OrganListItem({
       className={cn(
         "w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors",
         organ.target_organ_flag
-          ? "border-l-2 border-l-blue-500"
+          ? "border-l-2 border-l-[#DC2626]"
           : "border-l-2 border-l-transparent",
         isSelected
           ? "bg-blue-50/60 dark:bg-blue-950/20"
@@ -64,7 +64,7 @@ function OrganListItem({
           {organ.organ_system.replace(/_/g, " ")}
         </span>
         {organ.target_organ_flag && (
-          <span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-medium text-red-700">
+          <span className="text-[9px] font-semibold uppercase text-[#DC2626]">
             TARGET
           </span>
         )}
@@ -183,7 +183,7 @@ function OrganSummaryHeader({ organ }: { organ: TargetOrganRow }) {
           {organ.organ_system.replace(/_/g, " ")}
         </h3>
         {organ.target_organ_flag && (
-          <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
+          <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
             TARGET ORGAN
           </span>
         )}
@@ -298,12 +298,12 @@ function OverviewTab({
                   </td>
                   <td className="py-1.5 pr-3">{d.endpoints}</td>
                   <td className="py-1.5 pr-3">
-                    <span className={d.significant > 0 ? "font-medium text-amber-700" : ""}>
+                    <span className={d.significant > 0 ? "font-semibold" : ""}>
                       {d.significant}
                     </span>
                   </td>
                   <td className="py-1.5">
-                    <span className={d.treatmentRelated > 0 ? "font-medium text-red-600" : ""}>
+                    <span className={d.treatmentRelated > 0 ? "font-semibold" : ""}>
                       {d.treatmentRelated}
                     </span>
                   </td>
@@ -324,36 +324,28 @@ function OverviewTab({
             {topFindings.map((row, i) => (
               <div
                 key={`${row.endpoint_label}-${row.dose_level}-${row.sex}-${i}`}
-                className="flex items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-[11px]"
+                className="group/finding flex items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30"
               >
                 <span className="min-w-[140px] truncate font-medium" title={row.endpoint_label}>
                   {row.endpoint_label}
                 </span>
-                <span className="shrink-0 text-sm text-muted-foreground">
+                <span className="shrink-0 text-sm text-[#9CA3AF]">
                   {getDirectionSymbol(row.direction)}
                 </span>
                 <span className={cn(
-                  "shrink-0 font-mono",
-                  Math.abs(row.effect_size ?? 0) >= 0.8 ? "font-semibold" : "font-normal",
-                  "text-foreground"
+                  "shrink-0 font-mono group-hover/finding:text-[#DC2626]",
+                  Math.abs(row.effect_size ?? 0) >= 0.8 ? "font-semibold" : "font-normal"
                 )}>
                   {formatEffectSize(row.effect_size)}
                 </span>
                 <span className={cn(
-                  "shrink-0 font-mono text-foreground",
+                  "shrink-0 font-mono group-hover/finding:text-[#DC2626]",
                   row.p_value != null && row.p_value < 0.001 ? "font-semibold" :
                   row.p_value != null && row.p_value < 0.01 ? "font-medium" : "font-normal"
                 )}>
                   {formatPValue(row.p_value)}
                 </span>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-sm border px-1 py-0.5 text-[9px] font-medium",
-                    row.severity === "adverse"
-                      ? "border-red-300 text-red-700 bg-transparent"
-                      : "border-border text-muted-foreground bg-transparent"
-                  )}
-                >
+                <span className="shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground">
                   {row.severity}
                 </span>
                 {row.treatment_related && (
@@ -445,12 +437,14 @@ function EvidenceTableTab({
         header: "P-value",
         cell: (info) => {
           const p = info.getValue();
+          const sorted = !!info.column.getIsSorted();
           return (
             <span className={cn(
-              "font-mono text-foreground",
+              "font-mono",
+              p != null ? "ev" : "text-muted-foreground",
               p != null && p < 0.001 ? "font-semibold" :
-              p != null && p < 0.01 ? "font-medium" :
-              p != null && p < 0.05 ? "" : "text-muted-foreground"
+              p != null && p < 0.01 ? "font-medium" : "",
+              sorted && p != null && p < 0.05 ? "text-[#DC2626]" : ""
             )}>
               {formatPValue(p)}
             </span>
@@ -461,11 +455,14 @@ function EvidenceTableTab({
         header: "Effect",
         cell: (info) => {
           const d = info.getValue();
+          const sorted = !!info.column.getIsSorted();
           return (
             <span className={cn(
-              "font-mono text-foreground",
+              "font-mono",
+              d != null ? "ev" : "text-muted-foreground",
               d != null && Math.abs(d) >= 0.8 ? "font-semibold" :
-              d != null && Math.abs(d) >= 0.5 ? "font-medium" : ""
+              d != null && Math.abs(d) >= 0.5 ? "font-medium" : "",
+              sorted && d != null && Math.abs(d) >= 0.5 ? "text-[#DC2626]" : ""
             )}>
               {formatEffectSize(d)}
             </span>
@@ -482,21 +479,11 @@ function EvidenceTableTab({
       }),
       evidenceCol.accessor("severity", {
         header: "Severity",
-        cell: (info) => {
-          const sev = info.getValue();
-          return (
-            <span
-              className={cn(
-                "inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-medium",
-                sev === "adverse"
-                  ? "border-red-300 text-red-700"
-                  : "border-border text-muted-foreground"
-              )}
-            >
-              {sev}
-            </span>
-          );
-        },
+        cell: (info) => (
+          <span className="inline-block rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {info.getValue()}
+          </span>
+        ),
       }),
       evidenceCol.accessor("treatment_related", {
         header: "TR",
@@ -580,13 +567,17 @@ function EvidenceTableTab({
                     "cursor-pointer border-b transition-colors hover:bg-accent/50",
                     isSelected && "bg-accent"
                   )}
+                  data-selected={isSelected || undefined}
                   onClick={() => onRowClick(orig)}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-2 py-1">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const isEvidence = cell.column.id === "p_value" || cell.column.id === "effect_size";
+                    return (
+                      <td key={cell.id} className="px-2 py-1" data-evidence={isEvidence || undefined}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}

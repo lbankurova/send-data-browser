@@ -120,3 +120,17 @@
     font-family: system-ui, -apple-system, sans-serif;
   }
 }
+
+/* ── Interaction-driven evidence color (spec §3.4, §5.2) ──
+   At rest: neutral. On hover/selection: #DC2626 for key values.
+   Applied to evidence tables via data attributes. */
+tr[data-selected] td[data-evidence] .ev {
+  color: #DC2626;
+}
+tr:hover td[data-evidence] .ev {
+  color: #DC2626;
+}
+/* Rail endpoint items: hover activates evidence values */
+button[data-rail-item]:hover .ev {
+  color: #DC2626;
+}

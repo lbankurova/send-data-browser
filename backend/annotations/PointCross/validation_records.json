@@ -36,5 +36,23 @@
     "comment": "Script applied: Derive RFSTDTC from EX",
     "reviewedBy": "User",
     "reviewedDate": "2026-02-08T07:07:41.382755+00:00"
+  },
+  "SEND-VAL-004-MI-002": {
+    "fixStatus": "Not fixed",
+    "comment": "Reverted from Manually fixed",
+    "reviewedBy": "User",
+    "reviewedDate": "2026-02-08T22:44:18.604440+00:00"
+  },
+  "SEND-VAL-004-MI-004": {
+    "fixStatus": "Not fixed",
+    "comment": "Reverted from Manually fixed",
+    "reviewedBy": "User",
+    "reviewedDate": "2026-02-08T22:44:21.049187+00:00"
+  },
+  "SEND-VAL-004-MI-005": {
+    "fixStatus": "Not fixed",
+    "comment": "Reverted from Manually fixed",
+    "reviewedBy": "User",
+    "reviewedDate": "2026-02-08T22:44:24.205668+00:00"
   }
 }
