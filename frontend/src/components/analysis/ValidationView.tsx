@@ -9,6 +9,7 @@ import {
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
 import { cn } from "@/lib/utils";
+import { getDomainBadgeColor } from "@/lib/severity-colors";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import type { ValidationRuleResult } from "@/hooks/useValidationResults";
@@ -154,7 +155,10 @@ const ruleColumns = [
   ruleColumnHelper.accessor("domain", {
     header: "Domain",
     size: 70,
-    cell: (info) => <span className="font-mono text-xs">{info.getValue()}</span>,
+    cell: (info) => {
+      const d = info.getValue();
+      return <span className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>;
+    },
   }),
   ruleColumnHelper.accessor("category", {
     header: "Category",
@@ -516,7 +520,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
             <table className="text-sm" style={{ width: ruleTable.getCenterTotalSize(), tableLayout: "fixed" }}>
               <thead className="sticky top-0 z-10 bg-background">
                 {ruleTable.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="border-b bg-muted/50">
+                  <tr key={headerGroup.id} className="border-b" style={{ backgroundColor: "#f8f8f8" }}>
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
@@ -623,7 +627,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
               <table className="text-sm" style={{ width: recordTable.getCenterTotalSize(), tableLayout: "fixed" }}>
                 <thead className="sticky top-0 z-10 bg-background">
                   {recordTable.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id} className="border-b bg-muted/50">
+                    <tr key={headerGroup.id} className="border-b" style={{ backgroundColor: "#f8f8f8" }}>
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}

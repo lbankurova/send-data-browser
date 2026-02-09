@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { useClinicalObservations } from "@/hooks/useClinicalObservations";
 import { cn } from "@/lib/utils";
-import { getDoseGroupColor } from "@/lib/severity-colors";
+import { getDoseGroupColor, getSexColor } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import type { CLTimecourseResponse } from "@/types/timecourse";
@@ -211,7 +211,7 @@ function ObservationRail({
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       <div className="shrink-0 border-b px-3 py-2">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Observations ({filtered.length})
         </span>
         <div className="mt-1.5 flex items-center gap-1.5">
@@ -355,7 +355,6 @@ function CLBarChart({
   }, [data, finding]);
 
   const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
-  const sexColors: Record<string, string> = { M: "#3b82f6", F: "#ec4899" };
   const yLabel = finding ? `Subjects with ${finding}` : "Total observations";
 
   return (
@@ -368,7 +367,7 @@ function CLBarChart({
       <div className="flex gap-4">
         {chartData.map(({ sex, points }) => (
           <div key={sex} className="flex-1">
-            <p className="mb-1 text-center text-[10px] font-medium" style={{ color: sexColors[sex] }}>
+            <p className="mb-1 text-center text-[10px] font-medium" style={{ color: getSexColor(sex) }}>
               {sexLabels[sex] ?? sex}
             </p>
             <ResponsiveContainer width="100%" height={250}>

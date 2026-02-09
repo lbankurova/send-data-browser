@@ -117,11 +117,11 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
           <table className="w-full text-[10px]">
             <thead>
               <tr className="border-b text-muted-foreground">
-                <th className="pb-0.5 text-left font-medium">Dose</th>
-                <th className="pb-0.5 text-left font-medium">Sex</th>
-                <th className="pb-0.5 text-right font-medium">Incid.</th>
-                <th className="pb-0.5 text-right font-medium">Avg Sev</th>
-                <th className="pb-0.5 text-center font-medium">Sev</th>
+                <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Dose</th>
+                <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Sex</th>
+                <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Incid.</th>
+                <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Avg sev</th>
+                <th className="pb-0.5 text-center text-[10px] font-semibold uppercase tracking-wider">Sev</th>
               </tr>
             </thead>
             <tbody>

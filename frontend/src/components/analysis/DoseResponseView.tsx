@@ -1174,14 +1174,14 @@ function ChartOverviewContent({
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/50">
-                  <th className="px-2 py-1.5 text-left font-medium">Dose</th>
-                  <th className="px-2 py-1.5 text-left font-medium">Sex</th>
-                  <th className="px-2 py-1.5 text-right font-medium">Mean</th>
-                  <th className="px-2 py-1.5 text-right font-medium">SD</th>
-                  <th className="px-2 py-1.5 text-right font-medium">N</th>
-                  <th className="px-2 py-1.5 text-right font-medium">p-value</th>
-                  <th className="px-2 py-1.5 text-right font-medium">Effect</th>
-                  <th className="px-2 py-1.5 text-left font-medium">Pattern</th>
+                  <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Dose</th>
+                  <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Sex</th>
+                  <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">Mean</th>
+                  <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">SD</th>
+                  <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">N</th>
+                  <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">p-value</th>
+                  <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">Effect</th>
+                  <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Pattern</th>
                 </tr>
               </thead>
               <tbody>
@@ -1842,7 +1842,7 @@ function MetricsTableContent({
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="relative cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                    className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                     style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
@@ -2544,7 +2544,7 @@ function CausalityWorksheet({
       setExpert(saved.expert ?? {});
       setOverall(saved.overall ?? "Not assessed");
       setComment(saved.comment ?? "");
-      setLastSaved(saved.comment !== undefined ? "Previously saved" : null);
+      setLastSaved("Previously saved");
     } else {
       setOverrides({});
       setExpert({});
