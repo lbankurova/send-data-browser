@@ -103,7 +103,7 @@ Each `OrganRailItem` is a `<button>` with:
 
 **Row 2:** Adverse bar — adverse count normalized to max across all organs, `#DC2626/60` fill. Bar: `h-1.5 flex-1 rounded-full bg-muted/50` with inner colored fill. Fraction: `shrink-0 text-[10px] text-muted-foreground` — "adverse/total".
 
-**Row 3:** Stats line — `{N} endpoints · {M} TR` + domain chips (outline style: `rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70` with colored dot).
+**Row 3:** Stats line — `{N} endpoints · {M} TR` + domain chips (plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` color class).
 
 ### Sorting
 
@@ -229,7 +229,7 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 | Column | Header | Cell Rendering |
 |--------|--------|----------------|
 | endpoint_label | Endpoint | Truncated at 30 chars with ellipsis, `title` tooltip |
-| domain | Domain | Domain chip with outline+dot style |
+| domain | Domain | Plain colored text: `text-[10px] font-semibold` with `getDomainBadgeColor().text` |
 | dose_level | Dose | Colored badge with dose group color, shows dose_label |
 | sex | Sex | Plain text |
 | p_value | P-value | `font-mono`, p-value color coded |
