@@ -12,6 +12,7 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
+import { getDomainBadgeColor } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
@@ -292,7 +293,7 @@ function SpecimenRailItem({
         <span>&middot;</span>
         <span>{summary.adverseCount} adverse</span>
         {summary.domains.map((d) => (
-          <span key={d} className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+          <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>
             {d}
           </span>
         ))}
