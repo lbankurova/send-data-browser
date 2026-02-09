@@ -119,8 +119,27 @@ export function getDomainBadgeColor(domain: string): {
       return { bg: "bg-orange-100", text: "text-orange-700" };
     case "CL":
       return { bg: "bg-cyan-100", text: "text-cyan-700" };
+    case "DS":
+      return { bg: "bg-indigo-100", text: "text-indigo-700" };
+    case "FW":
+      return { bg: "bg-teal-100", text: "text-teal-700" };
     default:
       return { bg: "bg-gray-100", text: "text-gray-700" };
+  }
+}
+
+/** Returns a hex color for a domain identity dot (color spec §3.5). */
+export function getDomainDotColor(domain: string): string {
+  switch (domain) {
+    case "BW": return "#10B981";
+    case "LB": return "#3B82F6";
+    case "MA": return "#F59E0B";
+    case "MI": return "#EC4899";
+    case "OM": return "#8B5CF6";
+    case "CL": return "#22C55E";
+    case "DS": return "#6366F1";
+    case "FW": return "#14B8A6";
+    default:   return "#9CA3AF";
   }
 }
 
@@ -141,22 +160,22 @@ export function getIncidenceColor(incidence: number): string {
   return "transparent";
 }
 
-/** Signal score to CSS background color (hex). */
+/** Signal score to CSS background color (hex) — spec §12.3 thresholds. */
 export function getSignalScoreColor(score: number): string {
-  if (score >= 0.7) return "#dc2626"; // red-600
-  if (score >= 0.5) return "#ea580c"; // orange-600
-  if (score >= 0.3) return "#d97706"; // amber-600
-  if (score >= 0.15) return "#ca8a04"; // yellow-600
-  return "#16a34a"; // green-600
+  if (score >= 0.8) return "#D32F2F";
+  if (score >= 0.6) return "#F57C00";
+  if (score >= 0.4) return "#FBC02D";
+  if (score >= 0.2) return "#81C784";
+  return "#388E3C";
 }
 
-/** Signal score to CSS background color with opacity for heatmap cells. */
+/** Signal score to CSS background color with opacity for heatmap cells — spec §12.3 thresholds. */
 export function getSignalScoreHeatmapColor(score: number): string {
-  if (score >= 0.7) return "rgba(220,38,38,0.85)";
-  if (score >= 0.5) return "rgba(234,88,12,0.7)";
-  if (score >= 0.3) return "rgba(217,119,6,0.55)";
-  if (score >= 0.15) return "rgba(202,138,4,0.35)";
-  if (score > 0) return "rgba(22,163,74,0.2)";
+  if (score >= 0.8) return "rgba(211,47,47,0.85)";
+  if (score >= 0.6) return "rgba(245,124,0,0.7)";
+  if (score >= 0.4) return "rgba(251,192,45,0.55)";
+  if (score >= 0.2) return "rgba(129,199,132,0.35)";
+  if (score > 0) return "rgba(56,142,60,0.2)";
   return "rgba(0,0,0,0.03)";
 }
 
