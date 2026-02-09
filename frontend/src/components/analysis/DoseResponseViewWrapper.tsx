@@ -4,7 +4,7 @@ import type { DoseResponseSelection } from "./DoseResponseView";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 
 export function DoseResponseViewWrapper() {
-  const { setSelection } = useViewSelection();
+  const { setSelection, setSelectedSubject } = useViewSelection();
 
   const handleSelectionChange = useCallback(
     (sel: DoseResponseSelection | null) => {
@@ -13,5 +13,17 @@ export function DoseResponseViewWrapper() {
     [setSelection]
   );
 
-  return <DoseResponseView onSelectionChange={handleSelectionChange} />;
+  const handleSubjectClick = useCallback(
+    (usubjid: string) => {
+      setSelectedSubject(usubjid);
+    },
+    [setSelectedSubject]
+  );
+
+  return (
+    <DoseResponseView
+      onSelectionChange={handleSelectionChange}
+      onSubjectClick={handleSubjectClick}
+    />
+  );
 }

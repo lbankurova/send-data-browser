@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 ANNOTATIONS_DIR = Path(__file__).parent.parent / "annotations"
 
-VALID_SCHEMA_TYPES = {"validation-issues", "tox-findings", "pathology-reviews", "validation-records"}
+VALID_SCHEMA_TYPES = {"validation-issues", "tox-findings", "pathology-reviews", "validation-records", "endpoint-bookmarks"}
 
 # Map URL slugs to file names
 _slug_to_file = {slug: slug.replace("-", "_") + ".json" for slug in VALID_SCHEMA_TYPES}
