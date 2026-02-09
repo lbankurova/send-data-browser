@@ -382,7 +382,7 @@ export function AppLandingPage() {
         ) : allStudies.length > 0 ? (
           <div className="overflow-x-auto rounded-md border bg-card">
             <table className="w-full text-sm">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b" style={{ background: "#f8f8f8" }}>
                   <th className="w-8 px-2 py-2.5"></th>
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">Study</th>

@@ -449,7 +449,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
           {/* Top table — Rule Summary (40%) */}
           <div className="flex-[4] overflow-auto border-b">
             <table className="text-sm" style={{ width: ruleTable.getCenterTotalSize(), tableLayout: "fixed" }}>
-              <thead className="sticky top-0 z-10">
+              <thead className="sticky top-0 z-10 bg-background">
                 {ruleTable.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id} style={{ background: "#f8f8f8" }}>
                     {headerGroup.headers.map((header) => (
@@ -542,7 +542,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
           {selectedRule ? (
             <div className="flex-[6] overflow-auto">
               <table className="text-sm" style={{ width: recordTable.getCenterTotalSize(), tableLayout: "fixed" }}>
-                <thead className="sticky top-0 z-10">
+                <thead className="sticky top-0 z-10 bg-background">
                   {recordTable.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id} style={{ background: "#f8f8f8" }}>
                       {headerGroup.headers.map((header) => (
