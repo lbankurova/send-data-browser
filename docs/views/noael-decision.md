@@ -245,17 +245,17 @@ Row cap: 200 rows with message. Row interactions: click to select/deselect, hove
 
 Route-detected: when pathname matches `/studies/{studyId}/noael-decision`, shows `NoaelContextPanel`.
 
-**No changes to context panel.** The `NoaelContextPanelWrapper` in `ContextPanel.tsx` already fetches `noaelData`, `aeData`, and `ruleResults` via hooks and passes as props. Selection flows from `ViewSelectionContext`.
+The `NoaelContextPanelWrapper` in `ContextPanel.tsx` fetches `aeData` and `ruleResults` via hooks and passes as props. Selection flows from `ViewSelectionContext`. (`noaelData` is not passed — the banner already shows all NOAEL numerics, so the context panel focuses on narrative interpretation.)
 
 ### No Selection State
 
 Header: `CollapseAllButtons` (right-aligned, no title).
 
 Panes:
-1. **NOAEL narrative** (default open) — `InsightsList` with rules where `scope === "study"`
-2. **NOAEL summary** (default open) — compact table: Sex | NOAEL | LOAEL | Confidence (High/Moderate/Low with green/amber/red). Below: aggregate counts (target organs, adverse endpoints).
-3. **Confidence factors** (default closed) — per-sex confidence percentage + adverse at LOAEL detail
-4. Footer: "Select a row to view adversity rationale."
+1. **NOAEL narrative** (default open) — `InsightsList` with rules where `scope === "study"`. Provides interpretive value the banner doesn't (study-level rule insights, contextual reasoning).
+2. Footer: "Select an endpoint to view adversity rationale."
+
+Note: NOAEL summary table and confidence factors were removed (RED-02) — the persistent banner already shows sex × NOAEL × LOAEL × confidence numerics. Duplicating them in the context panel added no interpretive value.
 
 ### With Selection
 
@@ -311,7 +311,8 @@ useRuleResults(studyId)           ──> ruleResults (shared React Query cache)
                                           |
                                 NoaelContextPanel
                                   /    |     |      \
-                           Narrative  Dose  Insights  Tox
+                           Narrative  Adversity Insights  Tox
+                           (no-sel)   rationale  (sel)   (sel)
 ```
 
 ---

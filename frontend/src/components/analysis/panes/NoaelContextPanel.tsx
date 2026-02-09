@@ -15,7 +15,6 @@ import { computeTierCounts } from "@/lib/rule-synthesis";
 import { cn } from "@/lib/utils";
 import type { Tier } from "@/lib/rule-synthesis";
 import type {
-  NoaelSummaryRow,
   AdverseEffectSummaryRow,
   RuleResult,
 } from "@/types/analysis-views";
@@ -27,20 +26,13 @@ interface NoaelSelection {
 }
 
 interface Props {
-  noaelData: NoaelSummaryRow[];
   aeData: AdverseEffectSummaryRow[];
   ruleResults: RuleResult[];
   selection: NoaelSelection | null;
   studyId?: string;
 }
 
-function confidenceLabel(score: number): { text: string; cls: string } {
-  if (score >= 0.8) return { text: "High", cls: "font-semibold text-green-700" };
-  if (score >= 0.5) return { text: "Moderate", cls: "font-medium text-amber-700" };
-  return { text: "Low", cls: "font-medium text-red-700" };
-}
-
-export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection, studyId: studyIdProp }: Props) {
+export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: studyIdProp }: Props) {
   const { studyId: studyIdParam } = useParams<{ studyId: string }>();
   const studyId = studyIdProp ?? studyIdParam;
   const navigate = useNavigate();
@@ -80,14 +72,6 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection, s
     return match?.organ_system ?? null;
   }, [aeData, selection]);
 
-  // Count distinct target organs (adverse endpoints at LOAEL across all sexes)
-  const adverseSummary = useMemo(() => {
-    const adverse = aeData.filter((r) => r.severity === "adverse");
-    const organs = new Set(adverse.map((r) => r.organ_system));
-    const endpoints = new Set(adverse.map((r) => r.endpoint_label));
-    return { nOrgans: organs.size, nEndpoints: endpoints.size };
-  }, [aeData]);
-
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // -------------------------------------------------------------------------
@@ -100,89 +84,13 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection, s
           <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
         </div>
 
-        {/* 1. NOAEL narrative */}
+        {/* 1. NOAEL narrative (interpretive value — banner shows numbers, this shows meaning) */}
         <CollapsiblePane title="NOAEL narrative" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <InsightsList rules={noaelRules} />
         </CollapsiblePane>
 
-        {/* 2. NOAEL summary table */}
-        <CollapsiblePane title="NOAEL summary" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          {noaelData.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground">No NOAEL data available.</p>
-          ) : (
-            <div className="space-y-2">
-              <table className="w-full text-[10px] tabular-nums">
-                <thead>
-                  <tr className="border-b text-muted-foreground">
-                    <th className="pb-0.5 text-left font-medium">Sex</th>
-                    <th className="pb-0.5 text-right font-medium">NOAEL</th>
-                    <th className="pb-0.5 text-right font-medium">LOAEL</th>
-                    <th className="pb-0.5 text-right font-medium">Conf.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {noaelData.map((r) => {
-                    const conf = confidenceLabel(r.noael_confidence);
-                    return (
-                      <tr key={r.sex} className="border-b border-dashed">
-                        <td className="py-0.5 text-muted-foreground">
-                          {r.sex === "Combined" ? "All" : r.sex}
-                        </td>
-                        <td className="py-0.5 text-right font-mono">
-                          {r.noael_label}
-                        </td>
-                        <td className="py-0.5 text-right font-mono">
-                          {r.loael_label}
-                        </td>
-                        <td className={cn("py-0.5 text-right", conf.cls)}>
-                          {conf.text}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {/* Aggregate counts */}
-              <div className="space-y-0.5 text-[11px]">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Target organs</span>
-                  <span>{adverseSummary.nOrgans}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Adverse endpoints</span>
-                  <span>{adverseSummary.nEndpoints}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </CollapsiblePane>
-
-        {/* 3. Confidence factors */}
-        <CollapsiblePane title="Confidence factors" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-1.5 text-[11px]">
-            {noaelData.map((r) => {
-              const conf = confidenceLabel(r.noael_confidence);
-              return (
-                <div key={r.sex}>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      {r.sex === "Combined" ? "Combined" : r.sex}
-                    </span>
-                    <span className={conf.cls}>
-                      {(r.noael_confidence * 100).toFixed(0)}% ({conf.text})
-                    </span>
-                  </div>
-                  <div className="ml-2 text-[10px] text-muted-foreground">
-                    {r.n_adverse_at_loael} adverse at LOAEL ({r.adverse_domains_at_loael.join(", ")})
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CollapsiblePane>
-
-        <div className="px-4 py-2 text-xs text-muted-foreground">
-          Select a row to view adversity rationale.
+        <div className="px-4 py-3 text-xs text-muted-foreground">
+          Select an endpoint to view adversity rationale.
         </div>
       </div>
     );

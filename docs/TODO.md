@@ -32,9 +32,9 @@
 | Missing feature | 4 | 4 | Spec'd but not implemented |
 | Gap | 8 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
-| UI redundancy | 3 | 1 | Center view / context panel data overlap |
+| UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | **Incoming feature** | **0** | **9** | **All 9 done (FEAT-01–09)** |
-| **Total** | **30** | **28** | |
+| **Total** | **27** | **31** | |
 
 ## Remaining Open Items
 
@@ -162,7 +162,7 @@
 
 ### HC-07: Non-PointCross demo guard
 - **System:** `systems/navigation-and-layout.md`
-- **Files:** `frontend/src/components/panels/ContextPanel.tsx:402`
+- **Files:** `frontend/src/components/panels/ContextPanel.tsx:399`
 - **Issue:** Shows "demo entry" message for any non-PointCross study.
 - **Fix:** Remove guard when multi-study support lands.
 - **Recommendation:** Remove when HC-03 is resolved. Trivial change.
@@ -350,14 +350,14 @@
 - **Files:** `frontend/src/components/analysis/TargetOrgansView.tsx` (Hypotheses tab → `InsightsList`), `frontend/src/components/analysis/panes/TargetOrgansContextPanel.tsx` (Convergence pane → `InsightsList`)
 - **Issue:** Both render `InsightsList` with the identical organ-scoped `ruleResults`. Fully redundant when Hypotheses tab is active.
 - **Fix:** Remove `InsightsList` from the context panel's Convergence pane. Replace with a brief organ-level summary (e.g., tier count + 1-line conclusion) that doesn't duplicate the center content.
-- **Status:** Open
+- **Status:** RESOLVED — Convergence pane now shows compact tier count summary + "See Hypotheses tab for full insights." pointer. `InsightsList` import removed from context panel.
 
 ### RED-02: NOAEL banner data duplicated in context panel no-selection state
 - **View:** NOAEL Decision
 - **Files:** `frontend/src/components/analysis/NoaelDecisionView.tsx` (NoaelBanner), `frontend/src/components/analysis/panes/NoaelContextPanel.tsx` (NOAEL summary + Confidence factors panes)
 - **Issue:** The persistent NoaelBanner shows sex × NOAEL × LOAEL × confidence × adverse-at-LOAEL × domains. The context panel's no-selection state repeats all of this in "NOAEL summary" table + "Confidence factors" pane. Both visible simultaneously.
 - **Fix:** Remove "NOAEL summary" and "Confidence factors" from context panel no-selection state. Keep only "NOAEL narrative" (InsightsList of study-scope rules) — that adds interpretive value the banner doesn't. Replace the rest with a prompt: "Select an endpoint to view adversity rationale."
-- **Status:** Open
+- **Status:** RESOLVED — Removed NOAEL summary table and Confidence factors pane. Kept NOAEL narrative (InsightsList). Cleaned up dead code: `confidenceLabel`, `adverseSummary`, `noaelData` prop, `NoaelSummaryRow` import, `useNoaelSummary` from wrapper.
 
 ### RED-03: Cross-view links in center Overview tabs (RESOLVED)
 - **Views:** Histopathology, NOAEL Decision
@@ -370,7 +370,7 @@
 - **Files:** `frontend/src/components/analysis/panes/TargetOrgansContextPanel.tsx` (Endpoints pane)
 - **Issue:** Context panel lists contributing endpoints (endpoint, domain, count) which is a simplified duplicate of the Evidence tab grid.
 - **Fix:** Replace with a domain-count summary (e.g., "LB: 8 endpoints, MI: 3 endpoints") instead of listing individual endpoints.
-- **Status:** Open
+- **Status:** RESOLVED — Pane renamed "Domain coverage". Shows per-domain endpoint counts (e.g., "LB: 8 endpoints") with colored domain text + "See Evidence tab for full endpoint list." pointer.
 
 ---
 

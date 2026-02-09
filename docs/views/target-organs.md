@@ -366,19 +366,20 @@ Collapse/expand all functionality is powered by `useCollapseAll()` hook, which p
 
 #### Pane 1: Convergence (default open)
 
-`CollapsiblePane` with `InsightsList` component.
+Compact tier count summary (not full InsightsList — that lives in the center Hypotheses tab to avoid redundancy).
 - Rules filtered to those matching `context_key === "organ_{organ_system}"` or `organ_system === selection.organ_system`.
-- `tierFilter` state from header's `TierCountBadges` is passed through to `InsightsList` to filter displayed insights by tier.
-- Same InsightsList rendering as described in study-summary.md (tier pills, organ groups, synthesized signals, correlation chips, expandable raw rules).
+- Renders: "{N} critical signal(s), {M} notable signal(s), {K} observed across {T} rules."
+- Domains line: unique domain prefixes extracted from rule `context_key` values.
+- Footer: "See Hypotheses tab for full insights."
+- Empty state: "No convergence rules for this organ."
 
-#### Pane 2: Endpoints (default open)
+#### Pane 2: Domain coverage (default open)
 
-Shows up to 15 contributing endpoints sorted by occurrence count descending.
-
-Each item: `flex items-center gap-1 text-[11px]`
-- Domain chip: plain colored text (`text-[9px] font-semibold` with `getDomainBadgeColor().text` color class)
-- Endpoint label: truncated at 28 chars with `title` tooltip
-- Count: `ml-auto text-muted-foreground` -- "(N)"
+Per-domain endpoint count summary (not individual endpoints — that lives in the center Evidence tab to avoid redundancy).
+- Groups endpoints by domain, counts per domain, sorted by count descending.
+- Each row: domain code (plain colored text `text-[9px] font-semibold` with `getDomainBadgeColor().text`) + endpoint count (`text-muted-foreground`).
+- Footer: "See Evidence tab for full endpoint list."
+- Empty state: "No endpoints for this organ."
 
 #### Pane 3: Related Views (default closed)
 
@@ -452,9 +453,9 @@ useRuleResults(studyId)         --> ruleResults (shared React Query cache)
                                         |
                           TargetOrgansContextPanel
                              /     |       \       \
-                      Convergence  Endpoints  Related  ToxAssessment
-                      (InsightsList           Views    (conditional)
-                       + tierFilter)
+                      Convergence  Domain    Related  ToxAssessment
+                      (tier count  coverage  Views    (conditional)
+                       summary)    (counts)
 ```
 
 ---
