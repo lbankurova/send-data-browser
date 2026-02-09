@@ -12,7 +12,12 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
-import { getSeverityBadgeClasses } from "@/lib/severity-colors";
+import {
+  getSeverityBadgeClasses,
+  getSeverityHeatColor,
+  getIncidenceColor,
+  getDomainBadgeColor,
+} from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
@@ -24,24 +29,6 @@ export interface HistopathSelection {
   finding: string;
   specimen: string;
   sex?: string;
-}
-
-// ─── Utility functions ─────────────────────────────────────
-
-/** Severity color scale: pale yellow → deep red per spec §12.3 */
-function getSeverityHeatColor(avgSev: number): string {
-  if (avgSev >= 4) return "#E57373"; // severe
-  if (avgSev >= 3) return "#FF8A65";
-  if (avgSev >= 2) return "#FFB74D";
-  if (avgSev >= 1) return "#FFE0B2";
-  return "#FFF9C4"; // minimal
-}
-
-function getIncidenceColor(incidence: number): string {
-  if (incidence >= 0.8) return "rgba(239,68,68,0.15)";
-  if (incidence >= 0.5) return "rgba(249,115,22,0.1)";
-  if (incidence >= 0.2) return "rgba(234,179,8,0.08)";
-  return "transparent";
 }
 
 // ─── Derived data types ────────────────────────────────────
@@ -218,11 +205,15 @@ function SpecimenRailItem({
         <span>{summary.findingCount} findings</span>
         <span>&middot;</span>
         <span>{summary.adverseCount} adverse</span>
-        {summary.domains.map((d) => (
-          <span key={d} className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
-            {d}
-          </span>
-        ))}
+        {summary.domains.map((d) => {
+          const dc = getDomainBadgeColor(d);
+          return (
+            <span key={d} className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
+              {d}
+            </span>
+          );
+        })}
       </div>
     </button>
   );
@@ -566,7 +557,18 @@ function SeverityMatrixTab({
           </span>
         ),
       }),
-      col.accessor("domain", { header: "Domain" }),
+      col.accessor("domain", {
+        header: "Domain",
+        cell: (info) => {
+          const v = info.getValue();
+          const dc = getDomainBadgeColor(v);
+          return (
+            <span className={cn("rounded px-1 py-0.5 text-[10px] font-semibold", dc.bg, dc.text)}>
+              {v}
+            </span>
+          );
+        },
+      }),
       col.accessor("dose_level", {
         header: "Dose",
         cell: (info) => (
