@@ -467,48 +467,13 @@ export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers
   const organSignalData = useMemo(() => signalData.filter((r) => r.organ_system === organ.organ_system), [signalData, organ.organ_system]);
   const significantPct = organ.n_endpoints > 0 ? ((organ.n_significant / organ.n_endpoints) * 100).toFixed(0) : "0";
 
-  // Conclusion sentence + extended metrics
-  const headerStats = useMemo(() => {
-    const stats = computeOrganRailStats(organSignalData);
-    // Top contributing domain
-    const domainCounts = new Map<string, number>();
-    for (const s of organSignalData) {
-      if (s.p_value != null && s.p_value < 0.05) {
-        domainCounts.set(s.domain, (domainCounts.get(s.domain) ?? 0) + 1);
-      }
-    }
-    let topDomain = "";
-    let topDomainCount = 0;
-    for (const [d, c] of domainCounts) {
-      if (c > topDomainCount) { topDomain = d; topDomainCount = c; }
-    }
-    // Dominant dose-response pattern
-    const patternCounts = new Map<string, number>();
-    for (const s of organSignalData) {
-      if (s.dose_response_pattern && s.dose_response_pattern !== "none" && s.dose_response_pattern !== "flat") {
-        patternCounts.set(s.dose_response_pattern, (patternCounts.get(s.dose_response_pattern) ?? 0) + 1);
-      }
-    }
-    let dominantPattern = "";
-    let patCount = 0;
-    for (const [p, c] of patternCounts) {
-      if (c > patCount) { dominantPattern = p; patCount = c; }
-    }
-    const patternLabel = dominantPattern ? dominantPattern.replace(/_/g, " ") : null;
-    return { ...stats, topDomain, topDomainCount, patternLabel };
-  }, [organSignalData]);
-
-  const conclusionParts: string[] = [];
-  conclusionParts.push(`${organ.n_significant} of ${organ.n_endpoints} significant`);
-  if (headerStats.topDomain) conclusionParts.push(`${headerStats.topDomain} contributes ${headerStats.topDomainCount}`);
-  if (headerStats.patternLabel) conclusionParts.push(`Dominant pattern: ${headerStats.patternLabel}`);
+  const headerStats = useMemo(() => computeOrganRailStats(organSignalData), [organSignalData]);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b px-4 py-2.5">
         <div className="flex items-center gap-2"><h3 className="text-sm font-semibold">{titleCase(organ.organ_system)}</h3>{organ.target_organ_flag && <span className="text-[10px] font-semibold uppercase text-[#DC2626]">TARGET</span>}</div>
-        <div className="mt-0.5 text-[11px] text-muted-foreground">{conclusionParts.join(". ")}.</div>
-        <div className="mt-1 flex flex-wrap gap-x-1.5 text-[11px] text-muted-foreground tabular-nums"><span>{organ.n_domains} domains</span><span>&middot;</span><span>{organ.n_significant}/{organ.n_endpoints} sig ({significantPct}%)</span><span>&middot;</span><span>{organ.n_treatment_related} TR</span><span>&middot;</span><span>Max {organ.max_signal_score.toFixed(2)}</span><span>&middot;</span><span>Evidence <span className={cn(organ.evidence_score >= 0.5 ? "font-semibold text-foreground" : "font-medium")}>{organ.evidence_score.toFixed(2)}</span></span><span>&middot;</span><span className={cn("font-mono", headerStats.maxAbsEffectSize >= 0.8 && "font-semibold text-foreground")}>|d| {headerStats.maxAbsEffectSize.toFixed(2)}</span>{headerStats.minTrendP != null && (<><span>&middot;</span><span className={cn("font-mono", headerStats.minTrendP < 0.01 && "font-semibold text-foreground")}>trend p {formatPValue(headerStats.minTrendP)}</span></>)}</div>
+        <div className="mt-0.5 flex flex-wrap gap-x-1.5 text-[11px] text-muted-foreground tabular-nums"><span>{organ.n_domains} domains</span><span>&middot;</span><span>{organ.n_significant}/{organ.n_endpoints} sig ({significantPct}%)</span><span>&middot;</span><span>{organ.n_treatment_related} TR</span><span>&middot;</span><span>Max {organ.max_signal_score.toFixed(2)}</span><span>&middot;</span><span>Evidence <span className={cn(organ.evidence_score >= 0.5 ? "font-semibold text-foreground" : "font-medium")}>{organ.evidence_score.toFixed(2)}</span></span><span>&middot;</span><span className={cn("font-mono", headerStats.maxAbsEffectSize >= 0.8 && "font-semibold text-foreground")}>|d| {headerStats.maxAbsEffectSize.toFixed(2)}</span>{headerStats.minTrendP != null && (<><span>&middot;</span><span className={cn("font-mono", headerStats.minTrendP < 0.01 && "font-semibold text-foreground")}>trend p {formatPValue(headerStats.minTrendP)}</span></>)}</div>
       </div>
       <div className="flex border-b">{([{ key: "overview" as EvidenceTab, label: "Overview" }, { key: "matrix" as EvidenceTab, label: "Signal matrix" }, { key: "metrics" as EvidenceTab, label: "Metrics" }]).map(({ key, label }) => (<button key={key} onClick={() => setActiveTab(key)} className={cn("relative px-4 py-2 text-xs font-medium transition-colors", activeTab === key ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>{label}{activeTab === key && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />}</button>))}</div>
       {activeTab === "overview" && <SignalsOverviewTab organ={organ} signalData={organSignalData} ruleResults={ruleResults} modifiers={modifiers} caveats={caveats} onOrganSelect={onOrganSelect} studyId={studyId} />}

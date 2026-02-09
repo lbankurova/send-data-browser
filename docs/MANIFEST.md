@@ -20,7 +20,7 @@
 
 | Asset | Depends on (code files) | Last validated | Status |
 |-------|------------------------|----------------|--------|
-| `views/study-summary.md` | `frontend/src/components/analysis/StudySummaryView.tsx`, `frontend/src/components/analysis/StudySummaryGrid.tsx`, `frontend/src/components/analysis/SignalsPanel.tsx`, `frontend/src/components/analysis/charts/OrganGroupedHeatmap.tsx`, `frontend/src/components/analysis/panes/StudySummaryContextPanel.tsx` | 2026-02-09 | Current — updated for neutral-at-rest heatmap, resizable rail, tier dots, Decision Bar accent |
+| `views/study-summary.md` | `frontend/src/components/analysis/StudySummaryView.tsx`, `frontend/src/components/analysis/StudySummaryGrid.tsx`, `frontend/src/components/analysis/SignalsPanel.tsx`, `frontend/src/components/analysis/charts/OrganGroupedHeatmap.tsx`, `frontend/src/components/analysis/panes/StudySummaryContextPanel.tsx`, `frontend/src/lib/signals-panel-engine.ts` | 2026-02-09 | Current — structured Decision Bar, tab order, keyboard nav, 2-line evidence header |
 | `views/dose-response.md` | `frontend/src/components/analysis/DoseResponseView.tsx`, `frontend/src/components/analysis/panes/DoseResponseContextPanel.tsx`, `frontend/src/hooks/useDoseResponseMetrics.ts`, `frontend/src/hooks/useResizePanel.ts`, `frontend/src/components/ui/PanelResizeHandle.tsx` | 2026-02-09 | Current — added Hypotheses tab spec, Evidence/Hypotheses cognitive modes |
 | `views/target-organs.md` | `frontend/src/components/analysis/TargetOrgansView.tsx`, `frontend/src/components/analysis/TargetOrgansViewWrapper.tsx`, `frontend/src/components/analysis/panes/TargetOrgansContextPanel.tsx`, `frontend/src/hooks/useTargetOrganSummary.ts`, `frontend/src/hooks/useOrganEvidenceDetail.ts`, `frontend/src/hooks/useRuleResults.ts` | 2026-02-09 | Current — 3-tab model view (Evidence/Hypotheses/Metrics), enriched rail + header, organ-level tools |
 | `views/histopathology.md` | `frontend/src/components/analysis/HistopathologyView.tsx`, `frontend/src/components/analysis/panes/HistopathologyContextPanel.tsx`, `frontend/src/hooks/useLesionSeveritySummary.ts`, `frontend/src/hooks/useRuleResults.ts`, `frontend/src/lib/severity-colors.ts`, `frontend/src/hooks/useResizePanel.ts`, `frontend/src/components/ui/PanelResizeHandle.tsx` | 2026-02-09 | Current — specimen intelligence, collapsible grid, cross-organ coherence, neutral rail |
@@ -38,6 +38,7 @@
 | `portability/prototype-decisions-log.md` | `CLAUDE.md` (Demo/Stub section) | 2026-02-08 | Current |
 | `portability/datagrok-implementation-plan.md` | `platform/datagrok-patterns.ts`, all system specs | 2026-02-08 | Current |
 | `portability/datagrok-viewer-config.md` | `frontend/src/components/analysis/DoseResponseView.tsx`, `docs/views/dose-response.md` | 2026-02-09 | Current — Dose-Response viewer migration configs (Evidence + Hypotheses) |
+| `portability/clinical-case-handoff.md` | All system specs, all view specs, `CLAUDE.md`, all `docs/design-system/*.md`, all `docs/scaffold/*.md` | 2026-02-09 | Current — Self-contained handoff for SDTM Clinical Case sister app |
 
 ## Platform Reference
 

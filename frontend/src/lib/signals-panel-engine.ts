@@ -63,6 +63,8 @@ export interface OrganBlock {
 export interface MetricsLine {
   noael: string;
   noaelSex: string;
+  loael: string;
+  driver: string | null;
   targets: number;
   significantRatio: string;
   doseResponse: number;
@@ -531,9 +533,37 @@ function buildMetrics(
   else
     noaelStr = `${combined.noael_dose_value} ${combined.noael_dose_unit || "mg/kg"}`;
 
+  // LOAEL string
+  const unit = combined?.noael_dose_unit || "mg/kg";
+  let loaelStr = "—";
+  if (combined) {
+    const loaelDose = signals.find(
+      (s) => s.dose_level === combined.loael_dose_level && s.dose_value !== null
+    )?.dose_value;
+    if (loaelDose != null) loaelStr = `${loaelDose} ${unit}`;
+    else if (combined.loael_label) loaelStr = combined.loael_label.replace(/^Group \d+,\s*/, "");
+  }
+
+  // Driving endpoint at LOAEL
+  let driverStr: string | null = null;
+  if (combined) {
+    const loaelSignals = signals.filter(
+      (s) =>
+        s.dose_level === combined.loael_dose_level &&
+        s.severity === "adverse" &&
+        s.treatment_related
+    );
+    const driving = [...loaelSignals].sort(
+      (a, b) => Math.abs(b.effect_size ?? 0) - Math.abs(a.effect_size ?? 0)
+    )[0];
+    if (driving) driverStr = endpointFmt(driving.endpoint_label);
+  }
+
   return {
     noael: noaelStr,
     noaelSex: combined ? sexLabel(combined.sex) : "",
+    loael: loaelStr,
+    driver: driverStr,
     targets: nTargets,
     significantRatio: `${nSig}/${signals.length}`,
     doseResponse: nDR,
