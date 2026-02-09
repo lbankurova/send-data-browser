@@ -24,12 +24,9 @@ import {
 import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import { cn } from "@/lib/utils";
 import {
-  getPValueColor,
-  getEffectSizeColor,
   formatPValue,
   formatEffectSize,
   getDomainBadgeColor,
-  getDoseGroupColor,
 } from "@/lib/severity-colors";
 import type { DoseResponseRow } from "@/types/analysis-views";
 
@@ -54,12 +51,12 @@ const PATTERN_LABELS: Record<string, string> = {
 };
 
 const PATTERN_BG: Record<string, string> = {
-  monotonic_increase: "bg-red-100 text-red-700",
-  monotonic_decrease: "bg-blue-100 text-blue-700",
-  threshold: "bg-amber-100 text-amber-700",
-  non_monotonic: "bg-purple-100 text-purple-700",
-  flat: "bg-green-100 text-green-700",
-  insufficient_data: "bg-gray-100 text-gray-500",
+  monotonic_increase: "bg-gray-100 text-gray-600",
+  monotonic_decrease: "bg-gray-100 text-gray-600",
+  threshold: "bg-gray-100 text-gray-600",
+  non_monotonic: "bg-gray-100 text-gray-600",
+  flat: "bg-gray-100 text-gray-500",
+  insufficient_data: "bg-gray-100 text-gray-400",
 };
 
 // ─── Derived data types ────────────────────────────────────
@@ -353,7 +350,8 @@ export function DoseResponseView({
         cell: (info) => {
           const dc = getDomainBadgeColor(info.getValue());
           return (
-            <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-medium", dc.bg, dc.text)}>
+            <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
               {info.getValue()}
             </span>
           );
@@ -362,10 +360,7 @@ export function DoseResponseView({
       col.accessor("dose_level", {
         header: "Dose",
         cell: (info) => (
-          <span
-            className="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
-            style={{ backgroundColor: getDoseGroupColor(info.getValue()) }}
-          >
+          <span className="text-[11px]">
             {info.row.original.dose_label.split(",")[0]}
           </span>
         ),
@@ -399,27 +394,57 @@ export function DoseResponseView({
       }),
       col.accessor("p_value", {
         header: "P-value",
-        cell: (info) => (
-          <span className={cn("font-mono", getPValueColor(info.getValue()))}>
-            {formatPValue(info.getValue())}
-          </span>
-        ),
+        cell: (info) => {
+          const p = info.getValue();
+          const sorted = !!info.column.getIsSorted();
+          return (
+            <span className={cn(
+              "font-mono",
+              p != null ? "ev" : "text-muted-foreground",
+              p != null && p < 0.001 ? "font-semibold" :
+              p != null && p < 0.01 ? "font-medium" : "",
+              sorted && p != null && p < 0.05 ? "text-[#DC2626]" : ""
+            )}>
+              {formatPValue(p)}
+            </span>
+          );
+        },
       }),
       col.accessor("effect_size", {
         header: "Effect",
-        cell: (info) => (
-          <span className={cn("font-mono", getEffectSizeColor(info.getValue()))}>
-            {formatEffectSize(info.getValue())}
-          </span>
-        ),
+        cell: (info) => {
+          const d = info.getValue();
+          const sorted = !!info.column.getIsSorted();
+          return (
+            <span className={cn(
+              "font-mono",
+              d != null ? "ev" : "text-muted-foreground",
+              d != null && Math.abs(d) >= 0.8 ? "font-semibold" :
+              d != null && Math.abs(d) >= 0.5 ? "font-medium" : "",
+              sorted && d != null && Math.abs(d) >= 0.5 ? "text-[#DC2626]" : ""
+            )}>
+              {formatEffectSize(d)}
+            </span>
+          );
+        },
       }),
       col.accessor("trend_p", {
         header: "Trend p",
-        cell: (info) => (
-          <span className={cn("font-mono", getPValueColor(info.getValue()))}>
-            {formatPValue(info.getValue())}
-          </span>
-        ),
+        cell: (info) => {
+          const p = info.getValue();
+          const sorted = !!info.column.getIsSorted();
+          return (
+            <span className={cn(
+              "font-mono",
+              p != null ? "ev" : "text-muted-foreground",
+              p != null && p < 0.001 ? "font-semibold" :
+              p != null && p < 0.01 ? "font-medium" : "",
+              sorted && p != null && p < 0.05 ? "text-[#DC2626]" : ""
+            )}>
+              {formatPValue(p)}
+            </span>
+          );
+        },
       }),
       col.accessor("dose_response_pattern", {
         header: "Pattern",
@@ -631,6 +656,7 @@ export function DoseResponseView({
                           "w-full border-b border-dashed px-3 py-1.5 text-left transition-colors hover:bg-accent/50",
                           isSelected && "bg-accent"
                         )}
+                        data-rail-item
                         onClick={() => selectEndpoint(ep.endpoint_label)}
                       >
                         {/* Row 1: name + direction */}
@@ -645,16 +671,7 @@ export function DoseResponseView({
                             {ep.endpoint_label}
                           </span>
                           {ep.direction && (
-                            <span
-                              className={cn(
-                                "text-xs font-semibold",
-                                ep.direction === "up"
-                                  ? "text-red-500"
-                                  : ep.direction === "down"
-                                    ? "text-blue-500"
-                                    : "text-muted-foreground"
-                              )}
-                            >
+                            <span className="text-xs text-[#9CA3AF]">
                               {directionArrow(ep.direction)}
                             </span>
                           )}
@@ -670,11 +687,17 @@ export function DoseResponseView({
                             {(PATTERN_LABELS[ep.dose_response_pattern] ?? ep.dose_response_pattern)
                               .split(" ")[0]}
                           </span>
-                          <span className={cn("text-[10px] font-mono", getPValueColor(ep.min_trend_p))}>
+                          <span className={cn(
+                            "ev text-[10px] font-mono",
+                            ep.min_trend_p != null && ep.min_trend_p < 0.01 ? "font-semibold" : ""
+                          )}>
                             p={formatPValue(ep.min_trend_p)}
                           </span>
                           {ep.max_effect_size != null && (
-                            <span className={cn("text-[10px] font-mono", getEffectSizeColor(ep.max_effect_size))}>
+                            <span className={cn(
+                              "ev text-[10px] font-mono",
+                              ep.max_effect_size >= 0.8 ? "font-semibold" : ""
+                            )}>
                               |d|={ep.max_effect_size.toFixed(1)}
                             </span>
                           )}
@@ -715,24 +738,42 @@ export function DoseResponseView({
             <p className="mt-1 text-xs text-foreground/80">
               {generateConclusion(selectedSummary)}
             </p>
-            {/* Compact metrics */}
+            {/* Compact metrics — active context, #DC2626 for strong signal only */}
             <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]">
               <span>
                 <span className="text-muted-foreground">Trend p: </span>
-                <span className={cn("font-mono", getPValueColor(selectedSummary.min_trend_p))}>
+                <span className={cn(
+                  "font-mono",
+                  selectedSummary.min_trend_p != null && selectedSummary.min_trend_p < 0.01
+                    ? "font-semibold text-[#DC2626]"
+                    : selectedSummary.min_trend_p != null && selectedSummary.min_trend_p < 0.05
+                      ? "font-medium" : ""
+                )}>
                   {formatPValue(selectedSummary.min_trend_p)}
                 </span>
               </span>
               <span>
                 <span className="text-muted-foreground">Min p: </span>
-                <span className={cn("font-mono", getPValueColor(selectedSummary.min_p_value))}>
+                <span className={cn(
+                  "font-mono",
+                  selectedSummary.min_p_value != null && selectedSummary.min_p_value < 0.01
+                    ? "font-semibold text-[#DC2626]"
+                    : selectedSummary.min_p_value != null && selectedSummary.min_p_value < 0.05
+                      ? "font-medium" : ""
+                )}>
                   {formatPValue(selectedSummary.min_p_value)}
                 </span>
               </span>
               {selectedSummary.max_effect_size != null && (
                 <span>
                   <span className="text-muted-foreground">Max |d|: </span>
-                  <span className={cn("font-mono", getEffectSizeColor(selectedSummary.max_effect_size))}>
+                  <span className={cn(
+                    "font-mono",
+                    selectedSummary.max_effect_size >= 0.8
+                      ? "font-semibold text-[#DC2626]"
+                      : selectedSummary.max_effect_size >= 0.5
+                        ? "font-medium" : ""
+                  )}>
                     {selectedSummary.max_effect_size.toFixed(2)}
                   </span>
                 </span>
@@ -886,15 +927,16 @@ function ChartOverviewContent({
                       dot={({ cx, cy, payload }: { cx?: number; cy?: number; payload: { p_value: number | null } }) => {
                         if (cx == null || cy == null) return null;
                         const sig = payload.p_value != null && payload.p_value < 0.05;
+                        const color = sexColors[sex] ?? "#666";
                         return (
                           <circle
                             key={`${cx}-${cy}`}
                             cx={cx}
                             cy={cy}
-                            r={sig ? 6 : 4}
-                            fill={sig ? "#dc2626" : sexColors[sex] ?? "#666"}
-                            stroke={sig ? "#dc2626" : sexColors[sex] ?? "#666"}
-                            strokeWidth={sig ? 2 : 1}
+                            r={sig ? 5 : 3}
+                            fill={sig ? color : "#fff"}
+                            stroke={color}
+                            strokeWidth={sig ? 2 : 1.5}
                           />
                         );
                       }}
@@ -927,13 +969,16 @@ function ChartOverviewContent({
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       shape={(props: any) => {
                         const sig = props.payload?.p_value != null && props.payload.p_value < 0.05;
+                        const color = sexColors[sex] ?? "#666";
                         return (
                           <rect
                             x={props.x}
                             y={props.y}
                             width={props.width}
                             height={props.height}
-                            fill={sig ? "#dc2626" : (sexColors[sex] ?? "#666")}
+                            fill={color}
+                            stroke={sig ? "#1F2937" : "none"}
+                            strokeWidth={sig ? 1.5 : 0}
                             rx={2}
                           />
                         );
@@ -947,11 +992,11 @@ function ChartOverviewContent({
         </div>
         <div className="mt-1 flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-600" />
+            <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-gray-500 bg-gray-500" />
             Significant (p&lt;0.05)
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-gray-400" />
+            <span className="inline-block h-2 w-2 rounded-full border-[1.5px] border-gray-400 bg-white" />
             Not significant
           </span>
         </div>
@@ -980,13 +1025,8 @@ function ChartOverviewContent({
               <tbody>
                 {pairwiseRows.map((row, i) => (
                   <tr key={i} className="border-b border-dashed">
-                    <td className="px-2 py-1">
-                      <span
-                        className="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
-                        style={{ backgroundColor: getDoseGroupColor(row.dose_level) }}
-                      >
-                        {row.dose_label.split(",")[0]}
-                      </span>
+                    <td className="px-2 py-1 text-[11px]">
+                      {row.dose_label.split(",")[0]}
                     </td>
                     <td className="px-2 py-1">{row.sex}</td>
                     <td className="px-2 py-1 text-right font-mono">
@@ -996,11 +1036,25 @@ function ChartOverviewContent({
                       {row.sd != null ? row.sd.toFixed(2) : "\u2014"}
                     </td>
                     <td className="px-2 py-1 text-right">{row.n ?? "\u2014"}</td>
-                    <td className={cn("px-2 py-1 text-right font-mono", getPValueColor(row.p_value))}>
-                      {formatPValue(row.p_value)}
+                    <td className="px-2 py-1 text-right" data-evidence>
+                      <span className={cn(
+                        "font-mono",
+                        row.p_value != null ? "ev" : "text-muted-foreground",
+                        row.p_value != null && row.p_value < 0.001 ? "font-semibold" :
+                        row.p_value != null && row.p_value < 0.01 ? "font-medium" : ""
+                      )}>
+                        {formatPValue(row.p_value)}
+                      </span>
                     </td>
-                    <td className={cn("px-2 py-1 text-right font-mono", getEffectSizeColor(row.effect_size))}>
-                      {formatEffectSize(row.effect_size)}
+                    <td className="px-2 py-1 text-right" data-evidence>
+                      <span className={cn(
+                        "font-mono",
+                        row.effect_size != null ? "ev" : "text-muted-foreground",
+                        row.effect_size != null && Math.abs(row.effect_size) >= 0.8 ? "font-semibold" :
+                        row.effect_size != null && Math.abs(row.effect_size) >= 0.5 ? "font-medium" : ""
+                      )}>
+                        {formatEffectSize(row.effect_size)}
+                      </span>
                     </td>
                     <td className="px-2 py-1 text-muted-foreground">
                       {row.dose_response_pattern.replace(/_/g, " ")}
@@ -1110,13 +1164,17 @@ function MetricsTableContent({
                     "cursor-pointer border-b transition-colors hover:bg-accent/50",
                     isSelected && "bg-accent"
                   )}
+                  data-selected={isSelected || undefined}
                   onClick={() => handleRowClick(orig)}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-2 py-1">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const isEvidence = cell.column.id === "p_value" || cell.column.id === "effect_size" || cell.column.id === "trend_p";
+                    return (
+                      <td key={cell.id} className="px-2 py-1" data-evidence={isEvidence || undefined}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}

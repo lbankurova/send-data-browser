@@ -157,11 +157,21 @@ export function extractEndpointSignals(rules: RuleResult[]): EndpointSignal[] {
 // Synthesis — collapse rules into actionable insight lines
 // ---------------------------------------------------------------------------
 
+export interface SynthEndpoint {
+  name: string;
+  direction: string;
+  effectSizes: { sex: string; d: number }[];
+}
+
 export interface SynthLine {
   text: string;
   isWarning: boolean;
   /** If set, render as label + wrapped chips instead of plain text */
   chips?: string[];
+  /** If set, render as structured endpoint rows + qualifier tags */
+  endpoints?: SynthEndpoint[];
+  extraCount?: number;
+  qualifiers?: string[];
 }
 
 const MAX_ENDPOINTS_IN_LINE = 5;
@@ -175,21 +185,13 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
     const shown = signals.slice(0, MAX_ENDPOINTS_IN_LINE);
     const extra = signals.length - shown.length;
 
-    const tokens = shown.map((s) => {
-      let token = s.testCode;
-      if (s.direction) token += " " + s.direction;
-      if (s.effectSizes.size > 0) {
-        const parts: string[] = [];
-        for (const [sex, d] of s.effectSizes) {
-          parts.push(`${d.toFixed(1)} ${sex}`);
-        }
-        token += ` (d=${parts.join(", ")})`;
-      }
-      return token;
-    });
-
-    let line = tokens.join(", ");
-    if (extra > 0) line += `, +${extra} more`;
+    const endpoints: SynthEndpoint[] = shown.map((s) => ({
+      name: s.name,
+      direction: s.direction,
+      effectSizes: [...s.effectSizes.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([sex, d]) => ({ sex, d })),
+    }));
 
     const quals: string[] = [];
     if (signals.some((s) => s.isAdverse)) quals.push("adverse");
@@ -201,9 +203,14 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
     if (allSexes.has("M") && allSexes.has("F")) quals.push("both sexes");
     else if (allSexes.has("M")) quals.push("M only");
     else if (allSexes.has("F")) quals.push("F only");
-    if (quals.length > 0) line += " \u2014 " + quals.join(", ");
 
-    lines.push({ text: line, isWarning: true });
+    lines.push({
+      text: "",
+      isWarning: true,
+      endpoints,
+      extraCount: extra > 0 ? extra : undefined,
+      qualifiers: quals.length > 0 ? quals : undefined,
+    });
   }
 
   // 2. R08: target organ — text no longer has "Target organ:" prefix
@@ -406,4 +413,12 @@ export function buildOrganGroups(rules: RuleResult[]): OrganGroup[] {
     return td !== 0 ? td : a.displayName.localeCompare(b.displayName);
   });
   return groups;
+}
+
+/** Quick tier counts from rules (avoids full buildOrganGroups when only counts needed). */
+export function computeTierCounts(rules: RuleResult[]): Record<Tier, number> {
+  const groups = buildOrganGroups(rules);
+  const counts: Record<Tier, number> = { Critical: 0, Notable: 0, Observed: 0 };
+  for (const g of groups) counts[g.tier]++;
+  return counts;
 }
