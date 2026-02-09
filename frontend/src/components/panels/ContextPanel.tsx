@@ -9,7 +9,6 @@ import { useAESummary } from "@/hooks/useAESummary";
 import { generateStudyReport } from "@/lib/report-generator";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
-import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useOrganEvidenceDetail } from "@/hooks/useOrganEvidenceDetail";
@@ -251,7 +250,6 @@ function StudySummaryContextPanelWrapper({ studyId }: { studyId: string }) {
 
 function NoaelContextPanelWrapper({ studyId }: { studyId: string }) {
   const { selection } = useViewSelection();
-  const { data: noaelData } = useNoaelSummary(studyId);
   const { data: aeData } = useAdverseEffectSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
 
@@ -259,7 +257,6 @@ function NoaelContextPanelWrapper({ studyId }: { studyId: string }) {
 
   return (
     <NoaelContextPanel
-      noaelData={noaelData ?? []}
       aeData={aeData ?? []}
       ruleResults={ruleResults ?? []}
       selection={sel}

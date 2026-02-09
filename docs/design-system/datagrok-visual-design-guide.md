@@ -372,6 +372,10 @@ Two patterns depending on context:
 - Header cells: `px-3 py-2.5 text-xs font-medium text-muted-foreground`
 - Sortable headers: same hover pattern
 
+**Cell text alignment with headers:**
+- When a cell contains an icon or emoji before text (e.g., status dot + "Complete"), position the icon absolutely within the cell padding (`absolute left-1 top-1/2 -translate-y-1/2`) so it does not shift the text. Cell text must left-align with the column header text. Never use inline icons that push text rightward out of header alignment.
+- When a cell contains a centered icon (e.g., validation check/X), wrap it in `flex items-center justify-center` rather than relying on `text-center` on the `<td>` (inline SVGs don't center reliably with `text-align`).
+
 ### 4.4 Collapsible Pane Pattern
 
 Used for context panel sections and import sections.
@@ -450,6 +454,7 @@ Every interactive area must have an explicit empty state. Never show a blank are
 - Inline navigation links: color `#3a7bd5`, `hover:underline`
 - Cross-view links in context panel: `block text-[11px] hover:underline`, color `#3a7bd5`, arrow suffix
 - Issue ID links: `font-mono text-xs`, color `#3a7bd5`, `hover:underline`
+- **Below-list links:** When a link follows a bullet list (`list-disc pl-4`), indent it to match the first letter of the list items (e.g., `pl-4` on the link). The link text must align with bullet text, not with the bullet marker.
 
 ---
 

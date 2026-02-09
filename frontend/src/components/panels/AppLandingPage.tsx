@@ -6,7 +6,6 @@ import { useStudies } from "@/hooks/useStudies";
 import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useValidationResults } from "@/hooks/useValidationResults";
 import type { StudySummary } from "@/types";
 
 function formatStandard(raw: string | null): string {
@@ -270,10 +269,6 @@ export function AppLandingPage() {
   const { data: studies, isLoading } = useStudies();
   const navigate = useNavigate();
   const { selectedStudyId, selectStudy } = useSelection();
-  // Validation date for tooltip (PointCross only; multi-study: fetch per study)
-  const { data: valResults } = useValidationResults("PointCross");
-  const validatedAt = valResults?.summary?.validated_at;
-
   const allStudies: DisplayStudy[] = [
     ...(studies ?? []).map((s) => ({ ...s, validation: "Pass" })),
     ...DEMO_STUDIES,
@@ -356,7 +351,7 @@ export function AppLandingPage() {
             </ul>
             <a
               href="#"
-              className="mt-2 inline-block text-sm hover:underline"
+              className="mt-2 inline-block pl-4 text-sm hover:underline"
               style={{ color: "#3a7bd5" }}
               onClick={(e) => {
                 e.preventDefault();
@@ -451,25 +446,22 @@ export function AppLandingPage() {
                       <td className="px-3 py-2 tabular-nums text-muted-foreground">
                         {study.end_date ?? "—"}
                       </td>
-                      <td className="px-3 py-2 text-xs text-muted-foreground">
-                        <span className="inline-flex items-center gap-1.5">
+                      <td className="relative pl-5 pr-3 py-2 text-xs text-muted-foreground">
+                        {study.status === "Complete" && (
                           <span
-                            className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-                            style={{ background: study.status === "Complete" ? "#16a34a" : "transparent" }}
+                            className="absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full"
+                            style={{ background: "#16a34a" }}
                           />
-                          {study.status}
-                        </span>
+                        )}
+                        {study.status}
                       </td>
-                      <td
-                        className="px-3 py-2 text-center"
-                        title={
-                          (VAL_DISPLAY[study.validation]?.tooltip ?? study.validation) +
-                          (study.study_id === "PointCross" && validatedAt
-                            ? ` \u00b7 ${new Date(validatedAt).toLocaleDateString()}`
-                            : "")
-                        }
-                      >
-                        {VAL_DISPLAY[study.validation]?.icon ?? <span className="text-xs text-muted-foreground">—</span>}
+                      <td className="px-3 py-2">
+                        <div
+                          className="flex items-center justify-center"
+                          title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}
+                        >
+                          {VAL_DISPLAY[study.validation]?.icon ?? <span className="text-xs text-muted-foreground">—</span>}
+                        </div>
                       </td>
                     </tr>
                   );
