@@ -62,6 +62,8 @@ Typical defaults: 280px initial width, 180px minimum, 500px maximum. Each view m
 
 React Router 7 (`createBrowserRouter`) defines a single layout route with `<Layout />` as the element and all view routes as children rendered via `<Outlet />`. There is no nested routing -- all routes are flat children of the layout.
 
+Five analysis views are **code-split** via `React.lazy()` with `<Suspense>` fallback (a centered `Loader2` spinner): DoseResponseViewWrapper, TargetOrgansViewWrapper, HistopathologyViewWrapper, NoaelDecisionViewWrapper, ValidationViewWrapper. These are loaded on first navigation to the respective route. Eagerly-loaded routes (AppLandingPage, StudySummaryViewWrapper, CenterPanel, AdverseEffectsView) remain in the main bundle.
+
 Route resolution determines which component renders in the center panel. The `ContextPanel` component independently reads `useLocation()` and `useParams()` to decide which context panel variant to show.
 
 ### Selection State Flow

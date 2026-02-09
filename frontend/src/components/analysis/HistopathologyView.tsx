@@ -13,7 +13,8 @@ import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { cn } from "@/lib/utils";
-import { getDomainBadgeColor, getDoseGroupColor } from "@/lib/severity-colors";
+import { DomainLabel } from "@/components/ui/DomainLabel";
+import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
@@ -295,7 +296,7 @@ function SpecimenRailItem({
         <span>&middot;</span>
         <span>{summary.adverseCount} adverse</span>
         {summary.domains.map((d) => (
-          <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
+          <DomainLabel key={d} domain={d} />
         ))}
       </div>
     </button>

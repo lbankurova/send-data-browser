@@ -6,10 +6,8 @@ import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { cn } from "@/lib/utils";
-import {
-  getDomainBadgeColor,
-  titleCase,
-} from "@/lib/severity-colors";
+import { DomainLabel } from "@/components/ui/DomainLabel";
+import { titleCase } from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import type {
@@ -183,10 +181,9 @@ export function TargetOrgansContextPanel({
               return [...domainCounts.entries()]
                 .sort((a, b) => b[1] - a[1])
                 .map(([domain, count]) => {
-                  const dc = getDomainBadgeColor(domain);
                   return (
                     <div key={domain} className="flex items-center justify-between text-[11px]">
-                      <span className={cn("text-[9px] font-semibold", dc.text)}>{domain}</span>
+                      <DomainLabel domain={domain} />
                       <span className="text-muted-foreground">{count} endpoint{count > 1 ? "s" : ""}</span>
                     </div>
                   );
