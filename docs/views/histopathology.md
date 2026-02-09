@@ -25,19 +25,21 @@ The view itself is a two-panel master-detail layout with a resizable rail (match
 ```
 +--[300px*]-+-+----------------------------------[flex-1]-----------+
 |            |R| SpecimenHeader                                      |
-| Specimen   |e|  specimen name, adverse count, conclusion text,    |
-| Rail       |s|  compact metrics (max severity, affected, findings)|
+| Specimen   |e|  specimen name, badges (adverse, sex, preliminary),|
+| Rail       |s|  1-line conclusion, compact metrics                 |
 |            |i+----------------------------------------------------+
 | search     |z| [Overview] [Severity matrix]  <── tab bar          |
 | specimen 1 |e+----------------------------------------------------+
 | specimen 2 | | Tab content:                                       |
-| specimen 3 | |  Overview: finding summary, insights, cross-view   |
-| ...        | |  Severity matrix: filters, heatmap, lesion grid    |
+| specimen 3 | |  Overview: observed findings, coherence, insights   |
+| ...        | |  Severity matrix: filters, heatmap, collapsible grid|
 |            | |                                                     |
 +------------+-+----------------------------------------------------+
              ^ PanelResizeHandle (4px)
 * default 300px, resizable 180-500px via useResizePanel
 ```
+
+The evidence panel has a subtle muted background (`bg-muted/5`) to visually distinguish it from the crisp-white context panel where conclusions live.
 
 The rail width is controlled by `useResizePanel(300, 180, 500)` — default 300px, draggable between 180px and 500px. A `PanelResizeHandle` (4px vertical drag strip) sits between the rail and evidence panel, hidden at narrow widths (`max-[1200px]:hidden`).
 
@@ -63,7 +65,7 @@ Each `SpecimenRailItem` is a `<button>` with:
 
 **Row 1:** Specimen name (`text-xs font-semibold`) + finding count badge (`text-[10px] text-muted-foreground`)
 
-**Row 2:** Severity bar — max avg_severity normalized to global max, colored with `getSeverityHeatColor(maxSev)` (not neutral gray). Bar: `h-1.5 flex-1 rounded-full bg-muted/50` with inner colored fill. Numeric value: `shrink-0 text-[10px]`, font-semibold for >=3, font-medium for >=2.
+**Row 2:** Severity bar — neutral gray alignment matching Signals rail. Track: `h-1.5 flex-1 rounded-full bg-[#E5E7EB]`, fill: `bg-[#D1D5DB]`. Numeric value: `shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground`.
 
 **Row 3:** Stats line — `{N} findings · {M} adverse` + domain chips (outline style: `rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70`).
 
@@ -85,10 +87,28 @@ Filters specimens by name (case-insensitive substring match). Empty state: "No m
 
 `shrink-0 border-b px-4 py-3`
 
+### Title row (flex, gap-2)
+
 - Specimen name: `text-sm font-semibold`
-- Adverse badge (if adverseCount > 0): `text-[10px] font-semibold uppercase text-[#DC2626]` — "{N} ADVERSE"
-- Conclusion text: `mt-1 text-xs leading-relaxed text-muted-foreground` — "{N} findings across {D} domains, {M} with adverse severity, incidence up to {X}%."
-- Compact metrics: `mt-2 flex flex-wrap gap-3 text-[11px]` — max severity (colored badge), total affected, finding count
+- Adverse badge (if adverseCount > 0): `rounded border border-border px-1 text-[10px] font-medium uppercase text-muted-foreground` — "{N} adverse"
+- Sex specificity badge: `rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground` — "Male only" | "Female only" | "Both sexes". Derived from unique `sex` values in `specimenData`.
+- Review-status badge (stub): `rounded border border-border/50 px-1 text-[10px] text-muted-foreground/60` — always shows "Preliminary". TODO: derive from `useAnnotations<PathologyReview>` aggregate `peerReviewStatus` (Preliminary/Confirmed/Adjusted).
+
+### 1-line conclusion
+
+`mt-1 text-[11px] italic leading-relaxed text-muted-foreground`
+
+Deterministic sentence built by `deriveSpecimenConclusion()` from:
+- **Incidence**: "low-incidence" (≤20%), "moderate-incidence" (21-50%), "high-incidence" (>50%)
+- **Severity**: "max severity {n}" or "non-adverse" if adverseCount === 0
+- **Sex**: from `deriveSexLabel()` (lowercase)
+- **Dose relationship**: "with dose-related increase" if R01/R04 rules present, else from `getDoseConsistency()` — "with dose-related trend" (Strong) or "without dose-related increase"
+
+Example: *"Low-incidence, non-adverse, male only, without dose-related increase."*
+
+### Compact metrics
+
+`mt-2 flex flex-wrap gap-3 text-[11px]` — max severity (font-mono), total affected, finding count.
 
 ---
 
@@ -108,23 +128,34 @@ All tabs: `px-3 py-2 text-xs font-medium transition-colors`
 
 `flex-1 overflow-y-auto px-4 py-3` — scrollable content.
 
-### Finding Summary
+### Observed Findings
 
-Section header: `text-xs font-medium uppercase tracking-wide text-muted-foreground` — "Finding summary"
+Section header: `text-xs font-medium uppercase tracking-wide text-muted-foreground` — "Observed findings"
 
 Each finding is a clickable `<button>` row:
 - Container: `flex w-full items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-left text-[11px] hover:bg-accent/30`
 - Selected: `bg-accent ring-1 ring-primary`
 - Finding name: truncated at 40 chars, `min-w-0 flex-1 truncate font-medium`
-- Max severity badge: colored with `getSeverityHeatColor`, `shrink-0 rounded px-1 font-mono text-[9px]`
+- Max severity: `shrink-0 font-mono text-[10px] text-muted-foreground`
 - Incidence summary: `{totalAffected}/{totalN}`, `shrink-0 font-mono text-[10px] text-muted-foreground`
-- Severity category badge: `shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-medium` with `getSeverityBadgeClasses`
+- Severity category badge: `shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground`
 
 Sorted by max avg_severity descending. Click sets finding-level selection (updates context panel). Click again to deselect.
 
+### Cross-Organ Coherence Hint
+
+Rendered between "Observed findings" and "Insights" when R16 rules are relevant. Two possible lines, both `text-[11px] text-muted-foreground`:
+
+1. **Convergent endpoints** (if R16 rules match this specimen's organ_system): "Convergent findings: {endpoint1}, {endpoint2}, ..."
+   - Extracts endpoint names from R16 `output_text` matching pattern `"{endpoints} show convergent pattern"`.
+2. **Related organs** (if other organs share endpoint labels with this specimen's findings): "Related findings also observed in {other_organ}."
+   - Scans all R16 rules for other organs whose output_text mentions any of this specimen's finding names.
+
+If no R16 match found, nothing is rendered (no empty state).
+
 ### Insights
 
-Only shown when specimen-scoped rule results exist. Section header: "Insights". Uses `InsightsList` component with rules filtered to the selected specimen (matches on output_text containing specimen name, context_key containing specimen key, or organ_system matching specimen).
+Only shown when specimen-scoped rule results exist. Section header: "Insights". Uses `InsightsList` component with `specimenRules` (pre-filtered at parent level — matches on output_text, context_key, or organ_system).
 
 ### Cross-View Links
 
@@ -138,7 +169,7 @@ Section header: "Related views". Three navigation links:
 
 ## Severity Matrix Tab
 
-Preserves the existing heatmap + grid, scoped to the selected specimen.
+Preserves the existing heatmap + collapsible grid, scoped to the selected specimen.
 
 ### Filter Bar
 
@@ -155,7 +186,9 @@ No specimen dropdown (specimen already selected via rail). Row count indicator: 
 
 Only shown when `heatmapData` exists and findings.length > 0. Container: `border-b p-4`.
 
-Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Severity heatmap ({N} findings)"
+Section header: flex row with heatmap title + dose consistency badge.
+- Title: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Severity heatmap ({N} findings)"
+- Dose consistency badge: `text-[10px] text-muted-foreground` — "Dose consistency: {Weak|Moderate|Strong}". Computed by `getDoseConsistency()` which checks incidence monotonicity across dose levels.
 
 **Structure:** `overflow-x-auto` > `inline-block` — horizontal scrollable flex layout.
 
@@ -164,13 +197,15 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 **Data rows:** No finding cap (specimens typically have 1-11 findings each).
 - Each `flex cursor-pointer border-t hover:bg-accent/20`, selected: `ring-1 ring-primary`
 - Finding label: `w-52 shrink-0 truncate py-1 pr-2 text-[10px]`, truncated at 40 chars
-- Cells: `flex h-6 w-20 shrink-0 items-center justify-center` with severity-colored inner box or gray placeholder
+- Cells: `flex h-6 w-20 shrink-0 items-center justify-center` with neutral heat color or gray placeholder
 
-**Severity heat color scale:** Same as global — `#FFF9C4` (minimal) through `#E57373` (severe).
+**Neutral heat color scale:** `getNeutralHeatColor()` — grayscale from `#E5E7EB` (minimal) through `#4B5563` (severe).
 
 **Legend:** 5 color swatches with labels (Minimal, Mild, Moderate, Marked, Severe).
 
-### Lesion Severity Grid
+### Lesion Severity Grid (collapsible)
+
+Wrapped in a `<details>` element, **collapsed by default**. Summary label: "Details ({N} rows)" with a rotate-on-open chevron indicator.
 
 TanStack React Table, `text-xs`, client-side sorting with column resizing. Scoped to selected specimen (no specimen column needed).
 
@@ -186,11 +221,27 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 | sex | Sex | Plain text |
 | n | N | Plain number |
 | affected | Affected | Plain number |
-| incidence | Incidence | `font-mono`, `rounded px-1` with incidence background color, percentage |
-| avg_severity | Avg sev | `font-mono text-[10px]`, `rounded px-1.5 py-0.5` with severity heat color |
-| severity | Severity | Badge with severity classes |
+| incidence | Incidence | `font-mono`, percentage |
+| avg_severity | Avg sev | `font-mono text-[10px]`, fixed to 1 decimal |
+| severity | Severity | Badge: `rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground` |
 
 Row cap: 200 rows. Row interactions: click to select/deselect, hover highlight.
+
+---
+
+## Helper Functions
+
+### `deriveSexLabel(rows: LesionSeverityRow[]): string`
+Returns "Male only", "Female only", or "Both sexes" based on unique `sex` values in the specimen data.
+
+### `getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderate" | "Strong"`
+Groups rows by finding, computes incidence-per-dose-level, checks monotonicity.
+- **Strong**: >50% of findings monotonic AND ≥3 dose groups affected
+- **Moderate**: some monotonic OR ≥2 dose groups affected
+- **Weak**: everything else
+
+### `deriveSpecimenConclusion(summary, specimenData, specimenRules): string`
+Builds a deterministic 1-line conclusion from incidence range, severity, sex, and dose relationship.
 
 ---
 
@@ -227,6 +278,7 @@ Panes (unchanged from previous implementation):
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in SeverityMatrixTab) |
 | Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in SeverityMatrixTab) |
 | Rail width | Local | `useResizePanel(300, 180, 500)` — resizable rail width (default 300px, range 180-500px) |
+| Specimen rules | Derived | `useMemo` — rules filtered to selected specimen, shared between SpecimenHeader and OverviewTab |
 | Lesion data | Server | `useLesionSeveritySummary` hook (React Query, 5min stale) |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
 
@@ -247,10 +299,15 @@ useRuleResults(studyId) ──> ruleResults (shared React Query cache)
                                 |
                     [selectedSpecimen] → filter lesionData
                                 |
-                        specimenData → deriveFindingSummaries()
+                    specimenData ──> specimenRules (filtered at parent)
+                                |
+                        deriveFindingSummaries()
+                        deriveSexLabel() / getDoseConsistency()
+                        deriveSpecimenConclusion()
                            /              \
                   OverviewTab          SeverityMatrixTab
-                  (summaries,          (heatmap + grid,
+                  (observed findings,  (heatmap + dose consistency,
+                   coherence hint,      collapsible grid,
                    insights,            sex/severity filter)
                    cross-view)               |
                         \              /
@@ -298,3 +355,11 @@ Same three links in the "Related views" pane.
 | No findings for specimen (overview) | "No findings for this specimen." |
 | No rows after filter (matrix) | "No rows match the current filters." |
 | >200 filtered rows (grid) | Truncation message below grid |
+
+---
+
+## Backlog
+
+| Item | What's needed | Priority |
+|------|--------------|----------|
+| Review-status confidence cue (full) | `useAnnotations<PathologyReview>` call, aggregate `peerReviewStatus` across specimen findings, replace static "Preliminary" with derived Preliminary/Confirmed/Adjusted | P3 |

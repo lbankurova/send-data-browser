@@ -426,6 +426,7 @@ function OverviewTab({
   specimenData,
   findingSummaries,
   specimenRules,
+  allRuleResults,
   specimen,
   studyId,
   selection,
@@ -434,12 +435,56 @@ function OverviewTab({
   specimenData: LesionSeverityRow[];
   findingSummaries: FindingSummary[];
   specimenRules: RuleResult[];
+  allRuleResults: RuleResult[];
   specimen: string;
   studyId: string | undefined;
   selection: HistopathSelection | null;
   onFindingClick: (finding: string) => void;
 }) {
   const navigate = useNavigate();
+
+  // Cross-organ coherence: R16 rules matching this specimen
+  const coherenceHints = useMemo(() => {
+    if (!allRuleResults.length || !specimen) return null;
+    const specLower = specimen.toLowerCase();
+
+    // R16 rules for this specimen
+    const r16Self = allRuleResults.filter(
+      (r) => r.rule_id === "R16" && r.organ_system.toLowerCase() === specLower
+    );
+    // Extract convergent endpoint names from output_text
+    const convergentEndpoints: string[] = [];
+    for (const rule of r16Self) {
+      // Pattern: "{endpoints} show convergent pattern" or similar text with endpoint names
+      const match = rule.output_text.match(/^(.+?)\s+show\s+convergent/i);
+      if (match) {
+        convergentEndpoints.push(...match[1].split(/,\s*/).map((s) => s.trim()).filter(Boolean));
+      }
+    }
+
+    // Find other organs that share endpoint labels with this specimen's findings
+    const specimenFindings = new Set(findingSummaries.map((f) => f.finding.toLowerCase()));
+    const relatedOrgans: string[] = [];
+    if (specimenFindings.size > 0) {
+      const allR16 = allRuleResults.filter(
+        (r) => r.rule_id === "R16" && r.organ_system.toLowerCase() !== specLower
+      );
+      for (const rule of allR16) {
+        const otherOrgan = rule.organ_system;
+        // Check if this R16 mentions any of our specimen's findings
+        const textLower = rule.output_text.toLowerCase();
+        for (const finding of specimenFindings) {
+          if (textLower.includes(finding)) {
+            if (!relatedOrgans.includes(otherOrgan)) relatedOrgans.push(otherOrgan);
+            break;
+          }
+        }
+      }
+    }
+
+    if (convergentEndpoints.length === 0 && relatedOrgans.length === 0) return null;
+    return { convergentEndpoints, relatedOrgans };
+  }, [allRuleResults, specimen, findingSummaries]);
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-3">
@@ -481,6 +526,22 @@ function OverviewTab({
           </div>
         )}
       </div>
+
+      {/* Cross-organ coherence hint */}
+      {coherenceHints && (
+        <div className="mb-4 space-y-0.5">
+          {coherenceHints.convergentEndpoints.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              Convergent findings: {coherenceHints.convergentEndpoints.join(", ")}
+            </p>
+          )}
+          {coherenceHints.relatedOrgans.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              Related findings also observed in {coherenceHints.relatedOrgans.join(", ")}.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Insights */}
       {specimenRules.length > 0 && (
@@ -1106,6 +1167,7 @@ export function HistopathologyView({
                 specimenData={specimenData}
                 findingSummaries={findingSummaries}
                 specimenRules={specimenRules}
+                allRuleResults={ruleResults ?? []}
                 specimen={selectedSpecimen!}
                 studyId={studyId}
                 selection={selection}
