@@ -60,11 +60,13 @@ Container: `shrink-0 border-b bg-muted/20 px-4 py-3`
 
 ### Per-Card Structure
 
-Outer: `rounded-lg border p-3`
+Outer: `rounded-lg border p-3` — neutral background, no colored fill.
 
-**Border/background color logic:**
-- Established (`noael_dose_value > 0`): `border-green-200 bg-green-50`
-- Not established: `border-red-200 bg-red-50`
+**Status badge color logic:**
+- Established (`noael_dose_value != null`, including Control at dose 0): `bg-green-100 text-green-700`
+- Not established (`noael_dose_value` is null): `bg-red-100 text-red-700`
+
+Card surface is always neutral (plain `border`). Color is confined to the small status badge.
 
 **Row 1:** `mb-1 flex items-center justify-between`
 - Sex label: `text-xs font-semibold` — "Combined" / "Males" / "Females"
@@ -95,13 +97,12 @@ Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWi
 
 Each `OrganRailItem` is a `<button>` with:
 - Container: `w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors`
-- Selected: `bg-blue-50/60 dark:bg-blue-950/20`
-- Not selected: `hover:bg-accent/30`
-- Left border: `border-l-2 border-l-[#DC2626]` for organs with adverse findings, `border-l-transparent` otherwise
+- Selected: `border-l-blue-500 bg-blue-50/60 dark:bg-blue-950/20`
+- Not selected: `border-l-transparent hover:bg-accent/30`
 
-**Row 1:** Organ name (`text-xs font-semibold`, displayed via `titleCase()` from `severity-colors.ts`) + adverse count badge (`text-[9px] font-semibold uppercase text-[#DC2626]` — "N ADV")
+**Row 1:** Organ name (`text-xs font-semibold`, displayed via `titleCase()` from `severity-colors.ts`) + adverse count (`text-[10px] text-muted-foreground` — "N adverse")
 
-**Row 2:** Adverse bar — adverse count normalized to max across all organs, `#DC2626/60` fill. Bar: `h-1.5 flex-1 rounded-full bg-muted/50` with inner colored fill. Fraction: `shrink-0 text-[10px] text-muted-foreground` — "adverse/total".
+**Row 2:** Bar — adverse count normalized to max across all organs. Neutral gray fill (`bg-[#D1D5DB]` on `bg-[#E5E7EB]` track). Fraction: `shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground` — "adverse/total".
 
 **Row 3:** Stats line — `{N} endpoints · {M} TR` + domain chips (plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` color class).
 

@@ -16,7 +16,7 @@ import {
   formatPValue,
   formatEffectSize,
   getDirectionSymbol,
-  getDomainBadgeColor,
+  getDomainDotColor,
   titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -150,6 +150,26 @@ function computeOrganStats(rows: OrganEvidenceRow[]): OrganStats {
 }
 
 // ---------------------------------------------------------------------------
+// Shared: domain dot badge (§1.7 dot-only rendering, §1.11 Rule 5)
+// ---------------------------------------------------------------------------
+
+function DomainDotBadge({ domain }: { domain: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getDomainDotColor(domain) }} />
+      {domain}
+    </span>
+  );
+}
+
+// Tier classification for rail dots (§1.11 Rule 4)
+function organTierDot(organ: TargetOrganRow): { color: string } | null {
+  if (organ.target_organ_flag) return { color: "#DC2626" }; // Critical — red
+  if (organ.evidence_score >= 0.3) return { color: "#D97706" }; // Notable — amber
+  return null; // Observed — no dot
+}
+
+// ---------------------------------------------------------------------------
 // OrganListItem — enriched rail item with evidence bar + stats
 // ---------------------------------------------------------------------------
 
@@ -183,8 +203,12 @@ function OrganListItem({
       )}
       onClick={onClick}
     >
-      {/* Row 1: organ name + TARGET badge */}
+      {/* Row 1: tier dot + organ name + TARGET badge */}
       <div className="flex items-center gap-2">
+        {(() => {
+          const dot = organTierDot(organ);
+          return dot ? <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: dot.color }} /> : null;
+        })()}
         <span className="text-xs font-semibold">
           {titleCase(organ.organ_system)}
         </span>
@@ -240,21 +264,14 @@ function OrganListItem({
         </div>
       )}
 
-      {/* Row 4: stats + domain chips (outline + dot) */}
+      {/* Row 4: stats + domain dot badges (§1.7/§1.11 Rule 5) */}
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
         <span>{organ.n_significant} sig</span>
         <span>&middot;</span>
         <span>{organ.n_treatment_related} TR</span>
-        <span>&middot;</span>
-        <span>{organ.n_domains} domains</span>
-        {organ.domains.map((d) => {
-          const dc = getDomainBadgeColor(d);
-          return (
-            <span key={d} className={cn("text-[9px] font-semibold", dc.text)}>
-              {d}
-            </span>
-          );
-        })}
+        {organ.domains.map((d) => (
+          <DomainDotBadge key={d} domain={d} />
+        ))}
       </div>
     </button>
   );
@@ -362,20 +379,14 @@ function OrganSummaryHeader({
         </span>
       </div>
 
-      {/* Subtitle: domain chips + endpoint count */}
-      <p className="mt-0.5 text-[11px] text-muted-foreground">
-        {domains.map((d, i) => {
-          const dc = getDomainBadgeColor(d);
-          return (
-            <span key={d}>
-              {i > 0 && <span> &middot; </span>}
-              <span className={cn("font-semibold", dc.text)}>{d}</span>
-            </span>
-          );
-        })}
-        {domains.length > 0 && <span> &middot; </span>}
+      {/* Subtitle: domain dot badges + endpoint count */}
+      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+        {domains.map((d) => (
+          <DomainDotBadge key={d} domain={d} />
+        ))}
+        <span>&middot;</span>
         <span>{organ.n_endpoints} endpoints</span>
-      </p>
+      </div>
 
       {/* 1-line conclusion */}
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
@@ -552,14 +563,10 @@ function OverviewTab({
             </tr>
           </thead>
           <tbody>
-            {domainBreakdown.map((d) => {
-              const dc = getDomainBadgeColor(d.domain);
-              return (
+            {domainBreakdown.map((d) => (
                 <tr key={d.domain} className="border-b border-border/30">
                   <td className="py-1.5 pr-3">
-                    <span className={cn("text-[10px] font-semibold", dc.text)}>
-                      {d.domain}
-                    </span>
+                    <DomainDotBadge domain={d.domain} />
                   </td>
                   <td className="py-1.5 pr-3">{d.endpoints}</td>
                   <td className="py-1.5 pr-3">
@@ -573,8 +580,7 @@ function OverviewTab({
                     </span>
                   </td>
                 </tr>
-              );
-            })}
+            ))}
           </tbody>
         </table>
       </div>
@@ -708,14 +714,7 @@ function EvidenceTableTab({
       }),
       evidenceCol.accessor("domain", {
         header: "Domain",
-        cell: (info) => {
-          const dc = getDomainBadgeColor(info.getValue());
-          return (
-            <span className={cn("text-[10px] font-semibold", dc.text)}>
-              {info.getValue()}
-            </span>
-          );
-        },
+        cell: (info) => <DomainDotBadge domain={info.getValue()} />,
       }),
       evidenceCol.accessor("dose_level", {
         header: "Dose",
@@ -979,12 +978,9 @@ function HeatmapPlaceholder({ organName, endpointCount, domains }: { organName: 
         </div>
         {domains.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {domains.map((d) => {
-              const dc = getDomainBadgeColor(d);
-              return (
-                <span key={d} className={cn("text-[10px] font-semibold", dc.text)}>{d}</span>
-              );
-            })}
+            {domains.map((d) => (
+              <DomainDotBadge key={d} domain={d} />
+            ))}
           </div>
         )}
       </div>
@@ -1009,12 +1005,9 @@ function DomainContributionPlaceholder({ organName, domains }: { organName: stri
         ]} />
         {domains.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {domains.map((d) => {
-              const dc = getDomainBadgeColor(d);
-              return (
-                <span key={d} className={cn("text-[10px] font-semibold", dc.text)}>{d}</span>
-              );
-            })}
+            {domains.map((d) => (
+              <DomainDotBadge key={d} domain={d} />
+            ))}
           </div>
         )}
       </div>

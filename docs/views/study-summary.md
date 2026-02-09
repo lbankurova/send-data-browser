@@ -121,21 +121,20 @@ Responsive: `max-[1200px]:flex-col` — stacks vertically on narrow screens.
 
 ### Decision Bar
 
-Persistent across the Signals tab. Visual anchor with blue accent: `shrink-0 border-b border-l-2 border-l-blue-500 bg-blue-50/30 px-4 py-3 dark:bg-blue-950/10`.
+Persistent across the Signals tab. Visual anchor with blue accent: `shrink-0 border-b border-l-2 border-l-blue-500 bg-blue-50/30 px-4 py-2.5 dark:bg-blue-950/10`.
 
-**Structured layout (top to bottom):**
+**Structured layout (compact, single-row NOAEL/LOAEL/Driver):**
 
-1. **NOAEL / LOAEL row** — side by side (`flex items-start gap-8`):
-   - Each: label (`text-xs font-medium uppercase tracking-widest text-muted-foreground`) + value (`text-3xl font-bold text-foreground`)
+1. **NOAEL / LOAEL / Driver row** — inline, wrapped (`flex flex-wrap items-baseline gap-x-6 gap-y-1`):
+   - Each: label (`text-xs font-semibold uppercase tracking-wider text-muted-foreground`) + value (`text-sm font-semibold text-foreground`)
    - NOAEL value: amber-600 only if "Not established"; all other values (including "Control") use `text-foreground`
-   - NOAEL sex qualifier: `text-xl text-muted-foreground` inline after value
+   - NOAEL sex qualifier: `text-xs text-muted-foreground` inline after value
    - NOAEL confidence badge (if present): colored pill (`text-[10px] font-semibold`) — green ≥80%, amber ≥60%, red <60%
+   - Driver (if exists): `text-sm font-medium text-blue-600`
 
-2. **Driver row** (if a driving endpoint exists): "Driver" label (`text-xs font-medium uppercase tracking-widest text-muted-foreground`) + endpoint name (`text-lg font-medium text-blue-600`)
+2. **Alert/warning statements** (if any from `panelData.decisionBar` with warning/review-flag icons): `text-xs leading-snug text-amber-700` with triangle/warning icon
 
-3. **Alert/warning statements** (if any from `panelData.decisionBar` with warning/review-flag icons): `text-sm leading-snug text-amber-700` with triangle/warning icon
-
-4. **Metrics line:** `mt-1.5 flex flex-wrap gap-x-1.5 text-xs text-muted-foreground` — N targets · sig ratio · D-R count · N domains
+3. **Metrics line:** `mt-1 flex flex-wrap gap-x-1.5 text-xs text-muted-foreground` — N targets · sig ratio · D-R count · N domains
 
 **Data source:** NOAEL, LOAEL, and driver values come from `MetricsLine` (computed in `signals-panel-engine.ts` from NOAEL summary + signal data). Alert statements from `panelData.decisionBar` (priority 900+ rules, filtered to warning/review-flag icons).
 

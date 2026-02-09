@@ -281,76 +281,60 @@ function DecisionBar({
   );
 
   return (
-    <div className="shrink-0 border-b border-l-2 border-l-blue-500 bg-blue-50/30 px-4 py-3 dark:bg-blue-950/10">
-      {/* Structured NOAEL / LOAEL row */}
-      <div className="flex items-start gap-8">
-        <div>
-          <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            NOAEL
-          </div>
-          <div className="flex items-baseline gap-2">
+    <div className="shrink-0 border-b bg-muted/20 px-4 py-2">
+      {/* Structured NOAEL / LOAEL / Driver — single compact row */}
+      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
+        <span>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">NOAEL</span>{" "}
+          <span
+            className={cn(
+              "text-xs font-semibold",
+              metrics.noael === "Not established"
+                ? "text-amber-600"
+                : "text-foreground"
+            )}
+          >
+            {metrics.noael}
+          </span>
+          {metrics.noaelSex && (
+            <span className="text-[10px] text-muted-foreground"> ({metrics.noaelSex})</span>
+          )}
+          {metrics.noaelConfidence != null && (
             <span
               className={cn(
-                "text-3xl font-bold",
-                metrics.noael === "Not established"
-                  ? "text-amber-600"
-                  : "text-foreground"
+                "ml-1 rounded px-1 py-0.5 text-[10px] font-medium",
+                metrics.noaelConfidence >= 0.8
+                  ? "bg-green-100 text-green-700"
+                  : metrics.noaelConfidence >= 0.6
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-red-100 text-red-700"
               )}
             >
-              {metrics.noael}
+              {Math.round(metrics.noaelConfidence * 100)}%
             </span>
-            {metrics.noaelSex && (
-              <span className="text-xl text-muted-foreground">
-                ({metrics.noaelSex})
-              </span>
-            )}
-            {metrics.noaelConfidence != null && (
-              <span
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] font-semibold",
-                  metrics.noaelConfidence >= 0.8
-                    ? "bg-green-100 text-green-700"
-                    : metrics.noaelConfidence >= 0.6
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-red-100 text-red-700"
-                )}
-              >
-                {Math.round(metrics.noaelConfidence * 100)}%
-              </span>
-            )}
-          </div>
-        </div>
-        <div>
-          <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            LOAEL
-          </div>
-          <span className="text-3xl font-bold text-foreground">
-            {metrics.loael}
+          )}
+        </span>
+        <span>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">LOAEL</span>{" "}
+          <span className="text-xs font-semibold text-foreground">{metrics.loael}</span>
+        </span>
+        {metrics.driver && (
+          <span>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Driver</span>{" "}
+            <span className="text-xs font-medium text-foreground">{metrics.driver}</span>
           </span>
-        </div>
+        )}
       </div>
-
-      {/* Driver row */}
-      {metrics.driver && (
-        <div className="mt-1">
-          <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Driver
-          </span>{" "}
-          <span className="text-lg font-medium text-blue-600">
-            {metrics.driver}
-          </span>
-        </div>
-      )}
 
       {/* Alert/warning statements */}
       {alertStatements.length > 0 && (
-        <div className="mt-1.5 space-y-0.5">
+        <div className="mt-1 space-y-0.5">
           {alertStatements.map((s, i) => (
             <div
               key={i}
-              className="flex items-start gap-2 text-sm leading-snug text-amber-700"
+              className="flex items-start gap-2 text-xs leading-snug text-amber-700"
             >
-              <span className="mt-0.5 shrink-0 text-[11px] text-amber-600">
+              <span className="mt-0.5 shrink-0 text-[10px] text-amber-600">
                 {s.icon === "review-flag" ? "\u26A0" : "\u25B2"}
               </span>
               <span>{s.text}</span>
@@ -360,7 +344,7 @@ function DecisionBar({
       )}
 
       {/* Metrics line */}
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+      <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
         <span>
           {metrics.targets} target{metrics.targets !== 1 ? "s" : ""}
         </span>

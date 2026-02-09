@@ -18,9 +18,19 @@ import {
   formatPValue,
   formatEffectSize,
   getDirectionSymbol,
-  getDomainBadgeColor,
+  getDomainDotColor,
   titleCase,
 } from "@/lib/severity-colors";
+
+// Design system §1.7/§1.11 Rule 5: domain dot+outline badge
+function DomainDotBadge({ domain }: { domain: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getDomainDotColor(domain) }} />
+      {domain}
+    </span>
+  );
+}
 import { computeTier } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import { InsightsList } from "./panes/InsightsList";
@@ -77,11 +87,11 @@ function computeOrganRailStats(signals: SignalSummaryRow[]): OrganRailStats {
 function StatementIcon({ icon }: { icon: PanelStatement["icon"] }) {
   switch (icon) {
     case "fact":
-      return <span className="mt-0.5 shrink-0 text-[11px] text-blue-500">{"\u25CF"}</span>;
+      return <span className="mt-0.5 shrink-0 text-[10px] text-blue-500">{"\u25CF"}</span>;
     case "warning":
-      return <span className="mt-0.5 shrink-0 text-[11px] text-amber-600">{"\u25B2"}</span>;
+      return <span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u25B2"}</span>;
     case "review-flag":
-      return <span className="mt-0.5 shrink-0 text-[11px] text-amber-600">{"\u26A0"}</span>;
+      return <span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u26A0"}</span>;
   }
 }
 
@@ -112,14 +122,6 @@ function ClickableOrganText({
   );
 }
 
-function splitCaveatText(text: string): { primary: string; detail: string | null } {
-  const dashIdx = text.indexOf(" \u2014 ");
-  if (dashIdx !== -1) return { primary: text.slice(0, dashIdx + 3), detail: text.slice(dashIdx + 3) };
-  const dotIdx = text.indexOf(". ");
-  if (dotIdx === -1) return { primary: text, detail: null };
-  return { primary: text.slice(0, dotIdx + 1), detail: text.slice(dotIdx + 2) };
-}
-
 // ---------------------------------------------------------------------------
 // SignalsOrganRailItem
 // ---------------------------------------------------------------------------
@@ -129,30 +131,30 @@ function SignalsOrganRailItem({ organ, organBlock, isSelected, maxEvidenceScore,
 }) {
   const barWidth = maxEvidenceScore > 0 ? Math.max(4, (organ.evidence_score / maxEvidenceScore) * 100) : 0;
   return (
-    <button className={cn("group/rail w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors", organ.target_organ_flag ? "border-l-2 border-l-[#DC2626]" : "border-l-2 border-l-transparent", isSelected ? "bg-blue-50/60 dark:bg-blue-950/20" : "hover:bg-accent/30")} onClick={onClick}>
+    <button className={cn("w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors", organ.target_organ_flag ? "border-l-2 border-l-red-600" : "border-l-2 border-l-transparent", isSelected ? "bg-blue-50/60 dark:bg-blue-950/20" : "hover:bg-accent/30")} onClick={onClick}>
       <div className="flex items-center gap-2">
         {tierDotColor && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: tierDotColor }} />}
         <span className="text-xs font-semibold">{titleCase(organ.organ_system)}</span>
-        {stats?.dominantDirection && <span className="text-[10px] text-gray-400">{stats.dominantDirection}</span>}
-        {organ.target_organ_flag && <span className="text-[9px] font-semibold uppercase text-[#DC2626]">TARGET</span>}
+        {stats?.dominantDirection && <span className="text-[10px] text-muted-foreground/60">{stats.dominantDirection}</span>}
+        {organ.target_organ_flag && <span className="text-[9px] font-semibold uppercase text-red-600">TARGET</span>}
       </div>
       <div className="mt-1.5 flex items-center gap-2">
-        <div className="h-1.5 flex-1 rounded-full bg-[#E5E7EB]"><div className="h-full rounded-full bg-[#D1D5DB] transition-all" style={{ width: `${barWidth}%` }} /></div>
-        <span className={cn("shrink-0 font-mono text-[10px] tabular-nums group-hover/rail:text-[#DC2626]", organ.evidence_score >= 0.5 ? "font-semibold" : organ.evidence_score >= 0.3 ? "font-medium" : "")}>{organ.evidence_score.toFixed(2)}</span>
+        <div className="h-1.5 flex-1 rounded-full bg-gray-200"><div className="h-full rounded-full bg-gray-300 transition-all" style={{ width: `${barWidth}%` }} /></div>
+        <span className={cn("shrink-0 font-mono text-[10px] tabular-nums", organ.evidence_score >= 0.5 ? "font-semibold" : organ.evidence_score >= 0.3 ? "font-medium" : "")}>{organ.evidence_score.toFixed(2)}</span>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
         <span>{organ.n_significant} sig</span><span>&middot;</span><span>{organ.n_treatment_related} TR</span><span>&middot;</span><span>{organ.n_domains} domains</span>
-        {organ.domains.map((d) => (<span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>))}
+        {organ.domains.map((d) => (<DomainDotBadge key={d} domain={d} />))}
       </div>
       {stats && (
         <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground tabular-nums">
-          <span className={cn("font-mono", stats.maxAbsEffectSize >= 0.8 && "font-bold text-foreground")}>|d|={stats.maxAbsEffectSize.toFixed(2)}</span>
+          <span className={cn("font-mono", stats.maxAbsEffectSize >= 0.8 && "font-semibold")}>|d|={stats.maxAbsEffectSize.toFixed(2)}</span>
           {stats.minTrendP != null && (
-            <span className={cn("font-mono", stats.minTrendP < 0.01 && "font-bold text-foreground")}>trend p={formatPValue(stats.minTrendP)}</span>
+            <span className={cn("font-mono", stats.minTrendP < 0.01 && "font-semibold")}>trend p={formatPValue(stats.minTrendP)}</span>
           )}
         </div>
       )}
-      {organBlock?.doseResponse && <div className="mt-0.5 text-[10px] text-blue-600/80">D-R: {organBlock.doseResponse.nEndpoints} ({organBlock.doseResponse.topEndpoint})</div>}
+      {organBlock?.doseResponse && <div className="mt-0.5 text-[10px] text-muted-foreground">D-R: {organBlock.doseResponse.nEndpoints} ({organBlock.doseResponse.topEndpoint})</div>}
     </button>
   );
 }
@@ -251,9 +253,9 @@ function SignalsOverviewTab({ organ, signalData, ruleResults, modifiers, caveats
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {organRules.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Insights</h4><InsightsList rules={organRules} /></div>)}
         {organModifiers.length > 0 && (<div className="mb-4"><div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-amber-700"><span className="text-[10px]">{"\u25B2"}</span>Modifiers<span className="font-normal text-amber-600/70">({organModifiers.length})</span></div><div className="space-y-0.5">{organModifiers.map((s, i) => (<div key={i} className="text-xs leading-relaxed text-amber-800 dark:text-amber-300">{s.clickOrgan ? <ClickableOrganText text={s.text} organKey={s.clickOrgan} onClick={() => onOrganSelect?.(s.clickOrgan!)} /> : s.text}</div>))}</div></div>)}
-        {organCaveats.length > 0 && (<div className="mb-4"><div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-orange-700"><span className="text-[10px]">{"\u26A0"}</span>Review flags<span className="font-normal text-orange-600/70">({organCaveats.length})</span></div><div className="space-y-2">{organCaveats.map((s, i) => { const { primary, detail } = splitCaveatText(s.text); return (<div key={i} className="rounded border border-orange-200 bg-orange-50/50 p-2 dark:border-orange-800 dark:bg-orange-950/20"><div className="text-xs font-medium leading-snug text-orange-900 dark:text-orange-200">{s.clickOrgan ? <ClickableOrganText text={primary} organKey={s.clickOrgan} onClick={() => onOrganSelect?.(s.clickOrgan!)} /> : primary}</div>{detail && <div className="mt-0.5 text-[11px] leading-snug text-orange-700/80 dark:text-orange-400/80">{detail}</div>}</div>); })}</div></div>)}
-        {domainBreakdown.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Domain breakdown</h4><table className="w-full text-xs"><thead><tr className="border-b text-left text-muted-foreground"><th className="pb-1 pr-3 font-medium">Domain</th><th className="pb-1 pr-3 font-medium">Endpoints</th><th className="pb-1 pr-3 font-medium">Significant</th><th className="pb-1 font-medium">TR</th></tr></thead><tbody>{domainBreakdown.map((d) => (<tr key={d.domain} className="border-b border-border/30"><td className="py-1.5 pr-3"><span className={cn("text-[10px] font-semibold", getDomainBadgeColor(d.domain).text)}>{d.domain}</span></td><td className="py-1.5 pr-3">{d.endpoints}</td><td className="py-1.5 pr-3"><span className={d.significant > 0 ? "font-semibold" : ""}>{d.significant}</span></td><td className="py-1.5"><span className={d.treatmentRelated > 0 ? "font-semibold" : ""}>{d.treatmentRelated}</span></td></tr>))}</tbody></table></div>)}
-        {topFindings.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Top findings by effect size</h4><div className="space-y-1">{topFindings.map((row, i) => (<div key={`${row.endpoint_label}-${row.dose_level}-${row.sex}-${i}`} className="group/finding flex cursor-pointer items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30" onClick={() => navigate(`/studies/${studyId}/dose-response`, { state: { endpoint_label: row.endpoint_label, organ_system: organ.organ_system } })}><span className="min-w-[120px] truncate font-medium" title={row.endpoint_label}>{row.endpoint_label}</span><span className="shrink-0 text-sm text-[#9CA3AF]">{getDirectionSymbol(row.direction)}</span><span className={cn("shrink-0 font-mono group-hover/finding:text-[#DC2626]", Math.abs(row.effect_size ?? 0) >= 0.8 ? "font-semibold" : "font-normal")}>{formatEffectSize(row.effect_size)}</span><span className={cn("shrink-0 font-mono group-hover/finding:text-[#DC2626]", row.p_value != null && row.p_value < 0.001 ? "font-semibold" : row.p_value != null && row.p_value < 0.01 ? "font-medium" : "font-normal")}>{formatPValue(row.p_value)}</span>{row.trend_p != null && <span className={cn("shrink-0 font-mono text-muted-foreground", row.trend_p < 0.01 && "font-semibold text-foreground")} title="Trend p-value">t:{formatPValue(row.trend_p)}</span>}{row.dose_response_pattern && row.dose_response_pattern !== "none" && row.dose_response_pattern !== "flat" && <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">{row.dose_response_pattern.split("_")[0]}</span>}<span className="shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground">{row.severity}</span>{row.treatment_related && <span className="shrink-0 text-[9px] font-medium text-muted-foreground">TR</span>}<span className="ml-auto shrink-0 text-muted-foreground">{row.sex} &middot; {row.dose_label.split(",")[0]}</span></div>))}</div></div>)}
+        {organCaveats.length > 0 && (<div className="mb-4"><div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground"><span className="text-[10px] text-amber-600">{"\u26A0"}</span>Review flags<span className="font-normal text-muted-foreground/60">({organCaveats.length})</span></div><div className="space-y-0.5">{organCaveats.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u26A0"}</span><span>{s.clickOrgan ? <ClickableOrganText text={s.text} organKey={s.clickOrgan} onClick={() => onOrganSelect?.(s.clickOrgan!)} /> : s.text}</span></div>))}</div></div>)}
+        {domainBreakdown.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Domain breakdown</h4><table className="w-full text-xs"><thead><tr className="border-b text-left text-muted-foreground"><th className="pb-1 pr-3 font-medium">Domain</th><th className="pb-1 pr-3 font-medium">Endpoints</th><th className="pb-1 pr-3 font-medium">Significant</th><th className="pb-1 font-medium">TR</th></tr></thead><tbody>{domainBreakdown.map((d) => (<tr key={d.domain} className="border-b border-border/30"><td className="py-1.5 pr-3"><DomainDotBadge domain={d.domain} /></td><td className="py-1.5 pr-3">{d.endpoints}</td><td className="py-1.5 pr-3"><span className={d.significant > 0 ? "font-semibold" : ""}>{d.significant}</span></td><td className="py-1.5"><span className={d.treatmentRelated > 0 ? "font-semibold" : ""}>{d.treatmentRelated}</span></td></tr>))}</tbody></table></div>)}
+        {topFindings.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Top findings by effect size</h4><div className="space-y-0">{topFindings.map((row, i) => (<div key={`${row.endpoint_label}-${row.dose_level}-${row.sex}-${i}`} className="flex cursor-pointer items-center gap-2 border-b border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30" onClick={() => navigate(`/studies/${studyId}/dose-response`, { state: { endpoint_label: row.endpoint_label, organ_system: organ.organ_system } })}><span className="min-w-[120px] truncate font-medium" title={row.endpoint_label}>{row.endpoint_label}</span><span className="shrink-0 text-sm text-muted-foreground/50">{getDirectionSymbol(row.direction)}</span><span className={cn("shrink-0 font-mono", Math.abs(row.effect_size ?? 0) >= 0.8 ? "font-semibold" : "font-normal")}>{formatEffectSize(row.effect_size)}</span><span className={cn("shrink-0 font-mono", row.p_value != null && row.p_value < 0.001 ? "font-semibold" : row.p_value != null && row.p_value < 0.01 ? "font-medium" : "font-normal")}>{formatPValue(row.p_value)}</span>{row.trend_p != null && <span className={cn("shrink-0 font-mono text-muted-foreground", row.trend_p < 0.01 && "font-semibold")} title="Trend p-value">t:{formatPValue(row.trend_p)}</span>}{row.dose_response_pattern && row.dose_response_pattern !== "none" && row.dose_response_pattern !== "flat" && <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">{row.dose_response_pattern.split("_")[0]}</span>}<span className="shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground">{row.severity}</span>{row.treatment_related && <span className="shrink-0 text-[9px] font-medium text-muted-foreground">TR</span>}<span className="ml-auto shrink-0 text-muted-foreground">{row.sex} &middot; {row.dose_label.split(",")[0]}</span></div>))}</div></div>)}
         {signalData.length === 0 && <div className="py-8 text-center text-xs text-muted-foreground">No signal data for this organ.</div>}
       </div>
       <div className="shrink-0 border-t px-4 py-2 flex flex-wrap gap-3">
@@ -299,7 +301,7 @@ const SIGNAL_METRICS_COLUMNS = [
   signalColHelper.accessor("domain", {
     header: "Domain",
     size: 55,
-    cell: (info) => <span className={cn("text-[10px] font-semibold", getDomainBadgeColor(info.getValue()).text)}>{info.getValue()}</span>,
+    cell: (info) => <DomainDotBadge domain={info.getValue()} />,
   }),
   signalColHelper.accessor("dose_label", {
     header: "Dose",
@@ -472,8 +474,8 @@ export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b px-4 py-2.5">
-        <div className="flex items-center gap-2"><h3 className="text-sm font-semibold">{titleCase(organ.organ_system)}</h3>{organ.target_organ_flag && <span className="text-[10px] font-semibold uppercase text-[#DC2626]">TARGET</span>}</div>
-        <div className="mt-0.5 flex flex-wrap gap-x-1.5 text-[11px] text-muted-foreground tabular-nums"><span>{organ.n_domains} domains</span><span>&middot;</span><span>{organ.n_significant}/{organ.n_endpoints} sig ({significantPct}%)</span><span>&middot;</span><span>{organ.n_treatment_related} TR</span><span>&middot;</span><span>Max {organ.max_signal_score.toFixed(2)}</span><span>&middot;</span><span>Evidence <span className={cn(organ.evidence_score >= 0.5 ? "font-semibold text-foreground" : "font-medium")}>{organ.evidence_score.toFixed(2)}</span></span><span>&middot;</span><span className={cn("font-mono", headerStats.maxAbsEffectSize >= 0.8 && "font-semibold text-foreground")}>|d| {headerStats.maxAbsEffectSize.toFixed(2)}</span>{headerStats.minTrendP != null && (<><span>&middot;</span><span className={cn("font-mono", headerStats.minTrendP < 0.01 && "font-semibold text-foreground")}>trend p {formatPValue(headerStats.minTrendP)}</span></>)}</div>
+        <div className="flex items-center gap-2"><h3 className="text-sm font-semibold">{titleCase(organ.organ_system)}</h3>{organ.target_organ_flag && <span className="text-[10px] font-semibold uppercase text-red-600">TARGET</span>}</div>
+        <div className="mt-0.5 flex flex-wrap gap-x-1.5 text-[11px] text-muted-foreground tabular-nums"><span>{organ.n_domains} domains</span><span>&middot;</span><span>{organ.n_significant}/{organ.n_endpoints} sig ({significantPct}%)</span><span>&middot;</span><span>{organ.n_treatment_related} TR</span><span>&middot;</span><span>Max {organ.max_signal_score.toFixed(2)}</span><span>&middot;</span><span>Evidence <span className={cn(organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium")}>{organ.evidence_score.toFixed(2)}</span></span><span>&middot;</span><span className={cn("font-mono", headerStats.maxAbsEffectSize >= 0.8 && "font-semibold")}>|d| {headerStats.maxAbsEffectSize.toFixed(2)}</span>{headerStats.minTrendP != null && (<><span>&middot;</span><span className={cn("font-mono", headerStats.minTrendP < 0.01 && "font-semibold")}>trend p {formatPValue(headerStats.minTrendP)}</span></>)}</div>
       </div>
       <div className="flex border-b">{([{ key: "overview" as EvidenceTab, label: "Overview" }, { key: "matrix" as EvidenceTab, label: "Signal matrix" }, { key: "metrics" as EvidenceTab, label: "Metrics" }]).map(({ key, label }) => (<button key={key} onClick={() => setActiveTab(key)} className={cn("relative px-4 py-2 text-xs font-medium transition-colors", activeTab === key ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>{label}{activeTab === key && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />}</button>))}</div>
       {activeTab === "overview" && <SignalsOverviewTab organ={organ} signalData={organSignalData} ruleResults={ruleResults} modifiers={modifiers} caveats={caveats} onOrganSelect={onOrganSelect} studyId={studyId} />}
@@ -493,7 +495,7 @@ export function StudyStatementsBar({ statements, modifiers, caveats }: { stateme
   if (statements.length === 0 && studyModifiers.length === 0 && studyCaveats.length === 0) return null;
   return (
     <div className="shrink-0 border-b px-4 py-2">
-      {statements.map((s, i) => (<div key={i} className="flex items-start gap-2 text-sm leading-relaxed"><StatementIcon icon={s.icon} /><span>{s.text}</span></div>))}
+      {statements.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed"><StatementIcon icon={s.icon} /><span>{s.text}</span></div>))}
       {studyModifiers.length > 0 && (<div className="mt-1 space-y-0.5">{studyModifiers.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-amber-800 dark:text-amber-300"><span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u25B2"}</span><span>{s.text}</span></div>))}</div>)}
       {studyCaveats.length > 0 && (<div className="mt-1 space-y-0.5">{studyCaveats.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-orange-700 dark:text-orange-400"><span className="mt-0.5 shrink-0 text-[10px]">{"\u26A0"}</span><span>{s.text}</span></div>))}</div>)}
     </div>

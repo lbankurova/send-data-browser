@@ -14,17 +14,22 @@ import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
 import {
-  getSeverityBadgeClasses,
-  getPValueColor,
-  getEffectSizeColor,
   formatPValue,
   formatEffectSize,
   getDirectionSymbol,
-  getDirectionColor,
-  getDomainBadgeColor,
-  getDoseGroupColor,
+  getDomainDotColor,
   titleCase,
 } from "@/lib/severity-colors";
+
+// Design system §1.7/§1.11 Rule 5: domain dot+outline badge
+function DomainDotBadge({ domain }: { domain: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getDomainDotColor(domain) }} />
+      {domain}
+    </span>
+  );
+}
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
@@ -210,14 +215,12 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
       <div className="flex flex-wrap gap-3">
         {[combined, males, females].filter(Boolean).map((row) => {
           const r = row!;
-          const established = r.noael_dose_value > 0;
+          // NOAEL is "established" whenever a determination exists (including Control = dose 0)
+          const established = r.noael_dose_value != null;
           return (
             <div
               key={r.sex}
-              className={cn(
-                "flex-1 rounded-lg border p-3",
-                established ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
-              )}
+              className="flex-1 rounded-lg border p-3"
             >
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-xs font-semibold">
@@ -264,17 +267,9 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
                 )}
                 {r.adverse_domains_at_loael.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {r.adverse_domains_at_loael.map((d) => {
-                      const dc = getDomainBadgeColor(d);
-                      return (
-                        <span
-                          key={d}
-                          className={cn("rounded px-1 py-0.5 text-[9px] font-medium", dc.bg, dc.text)}
-                        >
-                          {d}
-                        </span>
-                      );
-                    })}
+                    {r.adverse_domains_at_loael.map((d) => (
+                      <DomainDotBadge key={d} domain={d} />
+                    ))}
                   </div>
                 )}
               </div>
@@ -306,13 +301,10 @@ function OrganRailItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors",
-        summary.adverseCount > 0
-          ? "border-l-2 border-l-[#DC2626]"
-          : "border-l-2 border-l-transparent",
+        "w-full text-left border-b border-border/40 border-l-2 px-3 py-2.5 transition-colors",
         isSelected
-          ? "bg-blue-50/60 dark:bg-blue-950/20"
-          : "hover:bg-accent/30"
+          ? "border-l-blue-500 bg-blue-50/60 dark:bg-blue-950/20"
+          : "border-l-transparent hover:bg-accent/30"
       )}
       onClick={onClick}
     >
@@ -322,21 +314,21 @@ function OrganRailItem({
           {titleCase(summary.organ_system)}
         </span>
         {summary.adverseCount > 0 && (
-          <span className="text-[9px] font-semibold uppercase text-[#DC2626]">
-            {summary.adverseCount} ADV
+          <span className="text-[10px] text-muted-foreground">
+            {summary.adverseCount} adverse
           </span>
         )}
       </div>
 
-      {/* Row 2: adverse bar */}
+      {/* Row 2: bar */}
       <div className="mt-1.5 flex items-center gap-2">
-        <div className="h-1.5 flex-1 rounded-full bg-muted/50">
+        <div className="h-1.5 flex-1 rounded-full bg-[#E5E7EB]">
           <div
-            className="h-full rounded-full bg-[#DC2626]/60 transition-all"
+            className="h-full rounded-full bg-[#D1D5DB] transition-all"
             style={{ width: `${barWidth}%` }}
           />
         </div>
-        <span className="shrink-0 text-[10px] text-muted-foreground">
+        <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
           {summary.adverseCount}/{summary.totalEndpoints}
         </span>
       </div>
@@ -346,14 +338,9 @@ function OrganRailItem({
         <span>{summary.totalEndpoints} endpoints</span>
         <span>&middot;</span>
         <span>{summary.trCount} TR</span>
-        {summary.domains.map((d) => {
-          const dc = getDomainBadgeColor(d);
-          return (
-            <span key={d} className={cn("text-[9px] font-semibold", dc.text)}>
-              {d}
-            </span>
-          );
-        })}
+        {summary.domains.map((d) => (
+          <DomainDotBadge key={d} domain={d} />
+        ))}
       </div>
     </button>
   );
@@ -424,8 +411,8 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
           {titleCase(summary.organ_system)}
         </h3>
         {summary.adverseCount > 0 && (
-          <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
-            {summary.adverseCount} ADVERSE
+          <span className="text-[10px] font-medium text-muted-foreground">
+            {summary.adverseCount} adverse
           </span>
         )}
       </div>
@@ -440,8 +427,8 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
         <div>
           <span className="text-muted-foreground">Max |d|: </span>
           <span className={cn(
-            "font-mono font-medium",
-            summary.maxEffectSize >= 0.8 ? "text-[#DC2626]" : ""
+            "font-mono",
+            summary.maxEffectSize >= 0.8 ? "font-semibold" : "font-medium"
           )}>
             {summary.maxEffectSize.toFixed(2)}
           </span>
@@ -449,8 +436,8 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
         <div>
           <span className="text-muted-foreground">Min p: </span>
           <span className={cn(
-            "font-mono font-medium",
-            summary.minPValue != null && summary.minPValue < 0.01 ? "text-[#DC2626]" : ""
+            "font-mono",
+            summary.minPValue != null && summary.minPValue < 0.01 ? "font-semibold" : "font-medium"
           )}>
             {formatPValue(summary.minPValue)}
           </span>
@@ -504,48 +491,39 @@ function OverviewTab({
         {endpointSummaries.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No endpoints for this organ.</p>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {endpointSummaries.map((ep) => {
               const isSelected = selection?.endpoint_label === ep.endpoint_label;
-              const domainColor = getDomainBadgeColor(ep.domain);
               return (
                 <button
                   key={ep.endpoint_label}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-accent/30",
-                    isSelected && "bg-accent ring-1 ring-primary"
+                    "group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-accent/30",
+                    isSelected && "bg-accent"
                   )}
                   onClick={() => onEndpointClick(ep.endpoint_label)}
                 >
-                  <span className={cn("shrink-0 text-[9px] font-semibold", domainColor.text)}>
+                  <span className="shrink-0 text-[9px] text-muted-foreground">
                     {ep.domain}
                   </span>
-                  <span className="min-w-0 flex-1 truncate font-medium" title={ep.endpoint_label}>
-                    {ep.endpoint_label.length > 35 ? ep.endpoint_label.slice(0, 35) + "\u2026" : ep.endpoint_label}
+                  <span className="min-w-0 flex-1 truncate" title={ep.endpoint_label}>
+                    {ep.endpoint_label}
                   </span>
                   {ep.direction && (
-                    <span className={cn("shrink-0 text-sm", getDirectionColor(ep.direction))}>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
                       {getDirectionSymbol(ep.direction)}
                     </span>
                   )}
                   {ep.maxEffectSize != null && (
-                    <span className={cn(
-                      "shrink-0 font-mono text-[10px]",
-                      getEffectSizeColor(ep.maxEffectSize)
-                    )}>
+                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                       {ep.maxEffectSize.toFixed(2)}
                     </span>
                   )}
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-medium",
-                      getSeverityBadgeClasses(ep.worstSeverity)
-                    )}
-                  >
+                  <span className="shrink-0 text-[9px] text-muted-foreground">
                     {ep.worstSeverity}
                   </span>
                   {ep.treatmentRelated && (
-                    <span className="shrink-0 text-[9px] font-medium text-red-600">TR</span>
+                    <span className="shrink-0 text-[9px] font-medium text-muted-foreground">TR</span>
                   )}
                 </button>
               );
@@ -702,22 +680,12 @@ function AdversityMatrixTab({
       }),
       col.accessor("domain", {
         header: "Domain",
-        cell: (info) => {
-          const dc = getDomainBadgeColor(info.getValue());
-          return (
-            <span className={cn("text-[10px] font-semibold", dc.text)}>
-              {info.getValue()}
-            </span>
-          );
-        },
+        cell: (info) => <DomainDotBadge domain={info.getValue()} />,
       }),
       col.accessor("dose_level", {
         header: "Dose",
         cell: (info) => (
-          <span
-            className="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
-            style={{ backgroundColor: getDoseGroupColor(info.getValue()) }}
-          >
+          <span className="text-muted-foreground">
             {info.row.original.dose_label.split(",")[0]}
           </span>
         ),
@@ -726,7 +694,7 @@ function AdversityMatrixTab({
       col.accessor("p_value", {
         header: "P-value",
         cell: (info) => (
-          <span className={cn("font-mono", getPValueColor(info.getValue()))}>
+          <span className="font-mono text-muted-foreground">
             {formatPValue(info.getValue())}
           </span>
         ),
@@ -734,7 +702,7 @@ function AdversityMatrixTab({
       col.accessor("effect_size", {
         header: "Effect",
         cell: (info) => (
-          <span className={cn("font-mono", getEffectSizeColor(info.getValue()))}>
+          <span className="font-mono text-muted-foreground">
             {formatEffectSize(info.getValue())}
           </span>
         ),
@@ -742,7 +710,7 @@ function AdversityMatrixTab({
       col.accessor("direction", {
         header: "Dir",
         cell: (info) => (
-          <span className={cn("text-sm", getDirectionColor(info.getValue()))}>
+          <span className="text-sm text-muted-foreground">
             {getDirectionSymbol(info.getValue())}
           </span>
         ),
@@ -750,12 +718,7 @@ function AdversityMatrixTab({
       col.accessor("severity", {
         header: "Severity",
         cell: (info) => (
-          <span
-            className={cn(
-              "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
-              getSeverityBadgeClasses(info.getValue())
-            )}
-          >
+          <span className="text-muted-foreground">
             {info.getValue()}
           </span>
         ),
@@ -763,7 +726,7 @@ function AdversityMatrixTab({
       col.accessor("treatment_related", {
         header: "TR",
         cell: (info) => (
-          <span className={info.getValue() ? "font-medium text-red-600" : "text-muted-foreground"}>
+          <span className="text-muted-foreground">
             {info.getValue() ? "Yes" : "No"}
           </span>
         ),
