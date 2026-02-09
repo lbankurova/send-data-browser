@@ -191,7 +191,7 @@ function RuleReviewSummary({
   return (
     <div>
       {/* Header */}
-      <div className="border-b px-4 py-3">
+      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm font-semibold">{selection.rule_id}</span>
           <span
@@ -356,7 +356,7 @@ function FixScriptDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-[500px] rounded-lg border bg-background shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b px-4 py-3">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background px-4 py-3">
           <h3 className="text-sm font-semibold">Run Fix Script</h3>
           <button
             className="rounded p-0.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -1419,7 +1419,7 @@ function IssueReview({
   return (
     <div>
       {/* Header */}
-      <div className="border-b px-4 py-3">
+      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm font-semibold">{selection.issue_id}</span>
           <span
