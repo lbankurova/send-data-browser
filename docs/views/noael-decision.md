@@ -20,27 +20,31 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a flex column: persistent NOAEL Banner at top, then a two-panel master-detail layout below (matching Target Organs, Dose-Response, Signals, and Histopathology views):
+The view itself is a flex column: persistent NOAEL Banner at top, then a two-panel master-detail layout with a resizable rail below (matching Target Organs, Dose-Response, Signals, and Histopathology views):
 
 ```
 +-----------------------------------------------------------+
 |  NOAEL Determination (persistent, non-scrolling)           |
 |  [Combined card] [Males card] [Females card]               |
-+--[300px]--+---------------------------------------[flex-1]-+
-|            | OrganHeader                                    |
-| Organ      |  organ name, adverse count, summary text,     |
-| Rail       |  compact metrics (max |d|, min p, endpoints)  |
-|            +------------------------------------------------+
-| search     | [Overview] [Adversity matrix]  <── tab bar     |
-| organ 1    +------------------------------------------------+
-| organ 2    | Tab content:                                    |
-| organ 3    |  Overview: endpoint summary, insights, links    |
-| ...        |  Adversity matrix: filters, matrix, grid        |
-|            |                                                  |
-+------------+------------------------------------------------+
++--[300px*]-+-+---------------------------------------[flex-1]-+
+|            |R| OrganHeader                                    |
+| Organ      |e|  organ name, adverse count, summary text,     |
+| Rail       |s|  compact metrics (max |d|, min p, endpoints)  |
+|            |i+------------------------------------------------+
+| search     |z| [Overview] [Adversity matrix]  <── tab bar     |
+| organ 1    |e+------------------------------------------------+
+| organ 2    | | Tab content:                                    |
+| organ 3    | |  Overview: endpoint summary, insights, links    |
+| ...        | |  Adversity matrix: filters, matrix, grid        |
+|            | |                                                  |
++------------+-+------------------------------------------------+
+             ^ PanelResizeHandle (4px)
+* default 300px, resizable 180-500px via useResizePanel
 ```
 
-Responsive: stacks vertically below 1200px (`max-[1200px]:flex-col`). Rail becomes horizontal 180px tall strip.
+The rail width is controlled by `useResizePanel(300, 180, 500)` — default 300px, draggable between 180px and 500px. A `PanelResizeHandle` (4px vertical drag strip) sits between the rail and evidence panel, hidden at narrow widths (`max-[1200px]:hidden`).
+
+Responsive: stacks vertically below 1200px (`max-[1200px]:flex-col`). Rail becomes horizontal 180px tall strip with `max-[1200px]:!w-full`.
 
 ---
 
@@ -79,9 +83,9 @@ Outer: `rounded-lg border p-3`
 
 ---
 
-## Organ Rail (left panel, 300px)
+## Organ Rail (left panel, resizable 300px default)
 
-`flex w-[300px] shrink-0 flex-col overflow-hidden border-r`
+Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWidth` comes from `useResizePanel(300, 180, 500)`. On narrow viewports: `max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto`.
 
 ### Header
 - Label: `text-xs font-medium uppercase tracking-wider text-muted-foreground` — "Organ systems ({N})"
@@ -95,7 +99,7 @@ Each `OrganRailItem` is a `<button>` with:
 - Not selected: `hover:bg-accent/30`
 - Left border: `border-l-2 border-l-[#DC2626]` for organs with adverse findings, `border-l-transparent` otherwise
 
-**Row 1:** Organ name (`text-xs font-semibold`, underscores replaced with spaces) + adverse count badge (`text-[9px] font-semibold uppercase text-[#DC2626]` — "N ADV")
+**Row 1:** Organ name (`text-xs font-semibold`, displayed via `titleCase()` from `severity-colors.ts`) + adverse count badge (`text-[9px] font-semibold uppercase text-[#DC2626]` — "N ADV")
 
 **Row 2:** Adverse bar — adverse count normalized to max across all organs, `#DC2626/60` fill. Bar: `h-1.5 flex-1 rounded-full bg-muted/50` with inner colored fill. Fraction: `shrink-0 text-[10px] text-muted-foreground` — "adverse/total".
 
@@ -119,7 +123,7 @@ Filters organs by name (case-insensitive substring match, underscores treated as
 
 `shrink-0 border-b px-4 py-3`
 
-- Organ name: `text-sm font-semibold` (underscores replaced with spaces)
+- Organ name: `text-sm font-semibold` (displayed via `titleCase()` from `severity-colors.ts`)
 - Adverse badge (if adverseCount > 0): `text-[10px] font-semibold uppercase text-[#DC2626]` — "{N} ADVERSE"
 - Summary text: `mt-1 text-xs leading-relaxed text-muted-foreground` — "{N} endpoints across {D} domains, {M} adverse, {T} treatment-related."
 - Compact metrics: `mt-2 flex flex-wrap gap-3 text-[11px]` — max |d| (colored if >= 0.8), min p (colored if < 0.01), endpoint count
@@ -216,7 +220,9 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 
 ### Adverse Effect Grid
 
-TanStack React Table, `w-full text-xs`, client-side sorting. Scoped to selected organ.
+TanStack React Table, `text-xs`, client-side sorting with column resizing. Scoped to selected organ.
+
+Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` for resize support. Column resizing enabled via `enableColumnResizing: true` and `columnResizeMode: "onChange"`. Each header has a resize handle (`absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize`). Cell widths use `header.getSize()` / `cell.column.getSize()`.
 
 **Columns:**
 
@@ -270,6 +276,8 @@ Panes (unchanged):
 | Sex filter | Local | `useState<string \| null>` — for Adversity matrix tab |
 | TR filter | Local | `useState<string \| null>` — for Adversity matrix tab |
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in AdversityMatrixTab) |
+| Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in AdversityMatrixTab) |
+| Rail width | Local | `useResizePanel(300, 180, 500)` — resizable rail width (default 300px, range 180-500px) |
 | NOAEL summary data | Server | `useNoaelSummary` hook (React Query, 5min stale) |
 | Adverse effect data | Server | `useAdverseEffectSummary` hook (React Query, 5min stale) |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |

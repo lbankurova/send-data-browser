@@ -20,25 +20,29 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a two-panel layout:
+The view itself is a two-panel layout with a resizable rail:
 
 ```
-+--[300px]--+--------[flex-1]--------+
-|            |                        |
-| Endpoint   | Evidence Panel         |
-| Rail       | (summary header +     |
-| (organ-    |  tabs: chart/metrics)  |
-| grouped)   |                        |
-+------------+------------------------+
++--[300px*]-+-+--------[flex-1]--------+
+|            |R|                        |
+| Endpoint   |e| Evidence Panel         |
+| Rail       |s| (summary header +     |
+| (organ-    |i|  tabs: evidence /      |
+| grouped)   |z|  metrics / hypotheses)    |
++------------+-+------------------------+
+             ^ PanelResizeHandle (4px)
+* default 300px, resizable 180-500px via useResizePanel
 ```
 
-Responsive: `max-[1200px]:flex-col` — rail collapses to a 180px horizontal strip with `max-[1200px]:h-[180px] max-[1200px]:w-full max-[1200px]:border-b`.
+The rail width is controlled by `useResizePanel(300, 180, 500)` — default 300px, draggable between 180px and 500px. A `PanelResizeHandle` (4px vertical drag strip) sits between the rail and evidence panel.
+
+Responsive: `max-[1200px]:flex-col` — rail collapses to a 180px horizontal strip with `max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b`. The resize handle is hidden at narrow widths (`max-[1200px]:hidden`).
 
 ---
 
-## Endpoint Rail (Left, 300px)
+## Endpoint Rail (Left, resizable 300px default)
 
-Container: `w-[300px] shrink-0 flex-col border-r`
+Container: `shrink-0 flex-col` with `style={{ width: railWidth }}` where `railWidth` comes from `useResizePanel(300, 180, 500)`. Border-right via parent. On narrow viewports: `max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b`.
 
 ### Rail Header
 
@@ -68,7 +72,7 @@ Organ groups sorted by `max_signal_score` descending.
 | Element | Rendering |
 |---------|-----------|
 | Chevron | `ChevronDown` (expanded) or `ChevronRight` (collapsed), `h-3 w-3 shrink-0 text-muted-foreground` |
-| Organ name | `flex-1 truncate`, underscores replaced with spaces |
+| Organ name | `flex-1 truncate`, displayed via `titleCase()` from `severity-colors.ts` |
 | Endpoint count | `text-[10px] font-normal text-muted-foreground` — shows the number of endpoints in the group |
 
 **Collapsed-with-selection highlight:** If the group contains the selected endpoint but is collapsed, applies `bg-accent/30`.
@@ -110,7 +114,7 @@ Selected: `bg-accent`
 
 ### Endpoint Item Interaction
 
-- Click: selects the endpoint, switches to "Chart & overview" tab, updates selection context.
+- Click: selects the endpoint, switches to "Evidence" tab, updates selection context.
 - No toggle-off on re-click from the rail (only metrics table rows toggle).
 
 ---
@@ -130,7 +134,7 @@ Container: `flex min-w-0 flex-1 flex-col overflow-hidden`
 - Right: full pattern badge (`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium` with pattern-specific colors)
 
 **Subtitle:** `text-[11px] text-muted-foreground`
-- Format: "{domain} &middot; {organ_system}" (underscores replaced with spaces)
+- Format: "{domain} &middot; {titleCase(organ_system)}"
 - Appends " &middot; Categorical" if `data_type === "categorical"`
 
 **Conclusion text:** `mt-1 text-xs text-foreground/80`
@@ -153,9 +157,10 @@ Container: `flex min-w-0 flex-1 flex-col overflow-hidden`
 
 `flex shrink-0 items-center gap-0 border-b bg-muted/30`
 
-Two tabs:
-- "Chart & overview"
-- "Metrics table"
+Three tabs (left to right):
+- "Evidence" (default)
+- "Hypotheses"
+- "Metrics"
 
 Active tab: `border-b-2 border-primary text-foreground`
 Inactive tab: `text-muted-foreground hover:text-foreground`
@@ -165,7 +170,7 @@ Both: `px-4 py-1.5 text-xs font-medium transition-colors`
 
 ---
 
-## Chart & Overview Tab
+## Evidence Tab
 
 ### No Data State
 
@@ -258,16 +263,20 @@ Three dropdowns, all `rounded border bg-background px-2 py-1 text-xs`:
 |--------|---------|---------|
 | Sex | All sexes / Male / Female | All sexes |
 | Data type | All types / Continuous / Categorical | All types |
-| Organ system | All organs / {unique organ systems, underscores replaced with spaces} | All organs |
+| Organ system | All organs / {unique organ systems, displayed via `titleCase()`} | All organs |
 
 **Row count:** `ml-auto text-[10px] text-muted-foreground` — "{N} rows"
 
 ### Metrics Grid
 
-TanStack React Table, `w-full text-xs`, client-side sorting.
+TanStack React Table, `text-xs`, client-side sorting with column resizing.
+
+Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` for resize support.
+
+**Column resizing:** Enabled via `enableColumnResizing: true` and `columnResizeMode: "onChange"`. Each header cell has a resize handle `<div>` positioned at `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize`. Active resize: `bg-primary`; hover: `hover:bg-primary/30`. Cell widths use `header.getSize()` / `cell.column.getSize()`.
 
 **Header row:** `border-b bg-muted/50`
-- Headers: `cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50`
+- Headers: `relative cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50` with `style={{ width: header.getSize() }}`
 - Clickable for sorting (shows triangle arrow: `▲` asc / `▼` desc)
 - No default sort applied
 
@@ -399,12 +408,14 @@ All links: `block hover:underline`, color `#3a7bd5`, arrow suffix (`&#x2192;`).
 | State | Scope | Managed By |
 |-------|-------|------------|
 | Selected endpoint | Local | `useState<string \| null>` — tracks which endpoint is active in the rail and evidence panel |
-| Active tab | Local | `useState<"chart" \| "metrics">` — switches between chart and metrics views |
+| Active tab | Local | `useState<"evidence" \| "metrics" \| "hypotheses">` — switches between evidence, metrics, and hypotheses views |
 | Rail search | Local | `useState<string>` — text input for filtering endpoints in the rail |
 | Expanded organs | Local | `useState<Set<string>>` — tracks which organ groups are expanded in the rail |
 | Selection | Shared via context | `ViewSelectionContext` with `_view: "dose-response"` tag, propagated via `onSelectionChange` callback |
 | Metrics filters | Local | `useState` — `{ sex, data_type, organ_system }`, each nullable string |
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state for metrics table |
+| Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state for metrics table |
+| Rail width | Local | `useResizePanel(300, 180, 500)` — resizable rail width (default 300px, range 180-500px) |
 | Dose-response data | Server | `useDoseResponseMetrics` hook (React Query, 5min stale) |
 | Rule results | Server | `useRuleResults` hook (consumed by context panel) |
 
@@ -489,7 +500,7 @@ Accepts `location.state` with `{ organ_system?, endpoint_label? }`:
 ## Auto-Selection Behavior
 
 - **On data load** (if no endpoint selected): auto-selects the highest-signal endpoint, expands its organ group, sets selection for context panel.
-- **On rail endpoint click:** selects endpoint, switches to "Chart & overview" tab, updates selection.
+- **On rail endpoint click:** selects endpoint, switches to "Evidence" tab, updates selection.
 - **On metrics table row click:** sets selection with `endpoint_label` + `sex` + `domain` + `organ_system`, syncs `selectedEndpoint`. Click again to deselect (toggle).
 
 ---
@@ -502,7 +513,168 @@ Accepts `location.state` with `{ organ_system?, endpoint_label? }`:
 | Error (no generated data) | Red box with instructions to run generator command: `cd backend && python -m generator.generate {studyId}` |
 | No endpoint selected | "Select an endpoint from the list to view dose-response details." in evidence panel header area |
 | Rail search no matches | "No endpoints match your search." in rail body |
-| Metrics table no matches | "No rows match the current filters." below table |
+| Metrics no matches | "No rows match the current filters." below table |
+
+---
+
+## Cognitive Modes: Evidence vs. Hypotheses
+
+The Dose-Response view supports two cognitive modes, reflected in the tab structure:
+
+| Mode | Tab | Purpose | Behavior |
+|------|-----|---------|----------|
+| **Confirmation** | "Evidence" | Prove the already-computed signal | Constrained, read-only charts, minimal controls |
+| **Hypothesis** | "Hypotheses" | Hypothesize and play with models | Interactive sandbox, no effect on conclusions |
+| **Audit** | "Metrics" | Verify raw numbers | Sortable/filterable grid of all metrics |
+
+### Hard rule
+
+> The Evidence tab (Evidence) is authoritative and constrained.
+> The Hypotheses tab is optional, transient, and cannot change conclusions.
+> The Metrics is an audit tool — it shows raw data, not interpretations.
+
+This separation ensures that toxicologists can trust what they see on Evidence as a faithful representation of precomputed analysis, while having freedom to investigate further on Hypotheses without risk of contaminating the record.
+
+### Datagrok migration note
+
+When migrating from Recharts to native Datagrok viewers, the Evidence tab viewers must be locked (no zoom, no pan, no model fitting, no axis scaling). The Hypotheses tab viewers may use Datagrok's full interactivity. See `docs/portability/datagrok-viewer-config.md` for exact `setOptions()` configurations.
+
+---
+
+## Hypotheses Tab
+
+**Status:** Implemented as descriptive placeholders. Each intent renders a compact viewer placeholder with configuration summary and purpose text. Actual chart rendering will use native Datagrok viewers in production.
+
+### Purpose
+
+An opt-in sandbox for hypothesis generation. The toxicologist has already seen the signal on the Evidence tab; now they can investigate dose-response shape, model fits, endpoint trade-offs, correlations, and outliers — without affecting any conclusions or stored assessments.
+
+### Layout
+
+The tab uses a fixed header bar + scrollable content area:
+
+```
++──────────────────────────────────────────+
+│ [Shape] [Model fit] [Pareto] ...  italic │  ← intent pill bar (border-b)
++──────────────────────────────────────────+
+│                                          │
+│  Scrollable intent content               │  ← flex-1 overflow-y-auto
+│  (viewer placeholder + config card)      │
+│                                          │
++──────────────────────────────────────────+
+```
+
+### Intent selector (pill bar)
+
+`flex items-center gap-1 border-b px-4 py-2`
+
+Segmented pill buttons, not a dropdown. Each pill:
+
+```
+rounded-full px-2.5 py-1 text-[11px] font-medium flex items-center gap-1
+```
+
+| State | Classes |
+|-------|---------|
+| Active | `bg-foreground text-background` |
+| Inactive + available | `text-muted-foreground hover:bg-accent/50` |
+| Inactive + unavailable | `opacity-40 text-muted-foreground` (not clickable) |
+
+Icon: `h-3.5 w-3.5` inline before label text.
+
+**Disclaimer text:** `ml-auto text-[10px] italic text-muted-foreground` — "Does not affect conclusions" (right-aligned in the pill bar).
+
+### Intents
+
+| Intent | Label | Icon | Available | Description |
+|--------|-------|------|-----------|-------------|
+| `shape` | Shape | `TrendingUp` | Yes | Interactive dose-response curve with zoom, pan, overlays |
+| `model` | Model fit | `GitBranch` | No | Fit dose-response models (linear, sigmoid, polynomial) |
+| `pareto` | Pareto | `ScatterChart` | Yes | Scatter plot of endpoints by effect size vs. p-value |
+| `correlation` | Correlation | `Link2` | No | Correlation matrix or scatter of related endpoints |
+| `outliers` | Outliers | `BoxSelect` | No | Box plots, distribution views, outlier detection |
+
+Default: `shape` (the most common first question after seeing a signal).
+
+**Note:** Icon choices for Shape, Correlation, and Outliers are placeholders. See GAP-11 in TODO.md.
+
+### Viewer placeholder pattern
+
+Each intent renders a `ViewerPlaceholder` — a compact container representing where a Datagrok viewer will render in production:
+
+```
+h-28 rounded-md border bg-muted/30 flex items-center justify-center
+```
+
+Content: viewer type label (`text-sm font-medium text-muted-foreground`) + optional context line (`text-xs text-muted-foreground/70`).
+
+### Configuration summary pattern
+
+Below the viewer placeholder, a single `rounded-md border bg-card p-3` card shows:
+
+- **Section header:** `text-[11px] font-semibold text-muted-foreground` (one per card)
+- **ConfigLine entries:** `flex flex-wrap gap-x-4` with inline key-value pairs. Key: `text-muted-foreground`. Value: `font-mono` or plain text depending on content type.
+- **ProductionNote** (where applicable): `text-[10px] italic text-muted-foreground` — explains what requires the Datagrok backend.
+
+### Intent: Shape
+
+- **Viewer:** Line chart (same as Evidence tab but with full interactivity: zoom, pan, tooltips)
+- **Config:** Interaction = zoom + pan + tooltip; overlay = both sexes; model fitting = none
+- **Endpoint-aware:** Shows selected endpoint name in viewer subtitle
+
+### Intent: Model fit
+
+- **Available:** No (requires Datagrok compute backend)
+- **Viewer:** Line chart with model overlay
+- **Config:** Model type = 4PL sigmoid (selectable); metrics = R², AIC; prediction = dashed interpolation
+- **ProductionNote:** "Requires Datagrok compute backend"
+
+### Intent: Pareto
+
+- **Viewer:** Scatter plot of all endpoints (volcano-style)
+- **Config:** X = max |d|; Y = -log10(trend p); color = organ system; reference lines at d=0.5, d=0.8, p=0.05, p=0.01
+- **Endpoint-aware:** Shows total endpoint count in viewer subtitle; selected endpoint highlighted with ring
+- **Design decision on organ colors:** See "Design decision: organ system colors in Pareto scatter" subsection below.
+
+### Intent: Correlation
+
+- **Available:** No (requires multi-endpoint data alignment)
+- **Viewer:** Scatter plot of subject-level values
+- **Config:** Endpoints = select 2 from same organ; statistic = Pearson + Spearman; grouping = by dose
+- **ProductionNote:** "Requires aligned subject-level data"
+
+### Intent: Outliers
+
+- **Viewer:** Box plot with jitter overlay
+- **Config:** Grouping = dose; split = sex; threshold = 1.5 IQR; overlay = individual points
+- **Endpoint-aware:** Shows selected endpoint name in viewer subtitle
+
+#### Design decision: organ system colors in Pareto scatter
+
+**Choice:** Deterministic hue-from-hash mapping (e.g., `hsl(hash(organ) % 360, 55%, 55%)`), not a fixed palette.
+
+**Rationale:**
+1. **Data-driven variability.** Organ systems are not fixed — different studies surface different organ systems. A hand-curated palette of 8-10 colors would need a fallback for unseen systems anyway, which defeats the purpose of curating.
+2. **Position is primary.** The scatter's core message is encoded in position (x=biological magnitude, y=statistical significance). Color is a secondary grouping aid that helps visually cluster related endpoints. Exact color aesthetics matter less than consistency (same organ → same color every time).
+3. **Existing palettes don't transfer.** The domain badge colors (`getDomainBadgeColor` in `severity-colors.ts`) map to domains (LB, BW, MI), not organ systems. Multiple domains can map to the same organ (e.g., both LB and OM contribute to hepatic), so reusing domain colors for organs would be misleading.
+4. **Hash stability.** A hash function produces the same hue for the same organ name across sessions and studies, without maintaining a lookup table.
+
+**Implementation (deferred to Datagrok migration):** Add `getOrganSystemColor(organSystem: string): string` to `severity-colors.ts`. Use a simple string hash → hue mapping with fixed saturation (55%) and lightness (55%) for visual consistency. The function should also have a small override table for the most common organs (hepatic, renal, cardiovascular, hematologic) to ensure aesthetically pleasant defaults.
+
+### State management
+
+All Hypotheses tab state is session-scoped:
+- Selected intent resets to `shape` when switching away and back
+- No model parameters or hypothesis results are persisted
+- Hypotheses tab state does not affect context panel content (context panel continues to show Evidence-based insights for the selected endpoint)
+
+### What Hypotheses must never do
+
+- Update NOAEL or target organ decisions
+- Rewrite text on the Evidence tab
+- Store model parameters as authoritative results
+- Modify the `DoseResponseSelection` shared via `ViewSelectionContext`
+- Affect any annotation or assessment
 
 ---
 

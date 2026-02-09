@@ -6,8 +6,7 @@ import { InsightsList } from "./InsightsList";
 import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
-import { cn } from "@/lib/utils";
-import { getSeverityBadgeClasses, getSeverityHeatColor } from "@/lib/severity-colors";
+import { getSeverityHeatColor } from "@/lib/severity-colors";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 
 interface HistopathSelection {
@@ -119,20 +118,12 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
                     {row.affected}/{row.n}
                   </td>
                   <td className="py-0.5 text-right">
-                    <span
-                      className="rounded px-1 font-mono text-[9px]"
-                      style={{ backgroundColor: getSeverityHeatColor(row.avg_severity ?? 0) }}
-                    >
+                    <span className="rounded px-1 font-mono text-[9px]">
                       {row.avg_severity != null ? row.avg_severity.toFixed(1) : "\u2014"}
                     </span>
                   </td>
                   <td className="py-0.5 text-center">
-                    <span
-                      className={cn(
-                        "rounded-sm px-1 py-0.5 text-[9px] font-medium",
-                        getSeverityBadgeClasses(row.severity)
-                      )}
-                    >
+                    <span className="rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground">
                       {row.severity}
                     </span>
                   </td>

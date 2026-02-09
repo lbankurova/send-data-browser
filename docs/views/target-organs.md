@@ -3,7 +3,7 @@
 **Route:** `/studies/:studyId/target-organs`
 **Component:** `TargetOrgansView.tsx` (wrapped by `TargetOrgansViewWrapper.tsx`)
 **Scientific question:** "Which organ systems show converging evidence of toxicity?"
-**Role:** Organ-level convergence assessment. Identifies target organs by aggregating evidence across endpoints and domains.
+**Role:** Organ-level convergence assessment. Two-panel master-detail layout with organ rail and evidence panel (Overview + Evidence table tabs). Identifies target organs by aggregating evidence across endpoints and domains.
 
 ---
 
@@ -20,173 +20,188 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a single scrollable column with two main sections:
+The view itself is a two-panel master-detail layout (matching Dose-Response, Histopathology, NOAEL, and Signals views):
 
 ```
-+-----------------------------------------------------------+
-|  Target Organ Systems ({N})                                |
-|  [Card][Card][Card]... (flex-wrap)                         |
-+-----------------------------------------------------------+  <-- border-b
-|  {organ_name} — Evidence Detail                            |
-|  [Domain ▼] [Sex ▼]                        {N} findings   |  <-- filter bar, when organ selected
-+-----------------------------------------------------------+
-|                                                           |
-|  Evidence detail grid (TanStack table, 9 columns)          |
-|                                                           |
-+-----------------------------------------------------------+
++--[300px]--+---------------------------------------[flex-1]-+
+|            | OrganSummaryHeader                              |
+| Organ      |  organ name, TARGET badge, conclusion text,    |
+| Rail       |  compact metrics (max signal, evidence, endpts)|
+|            +------------------------------------------------+
+| search     | [Overview] [Evidence table]  <-- tab bar        |
+| organ 1    +------------------------------------------------+
+| organ 2    | Tab content:                                    |
+| organ 3    |  Overview: domain breakdown, top findings       |
+| ...        |  Evidence table: filters, sortable grid         |
+|            |                                                  |
++------------+------------------------------------------------+
 ```
 
-If no organ is selected, the lower area shows a centered message: "Select an organ system above to view evidence details." (`flex flex-1 items-center justify-center text-sm text-muted-foreground`)
+Responsive: stacks vertically below 1200px (`max-[1200px]:flex-col`). Rail becomes horizontal 180px tall strip.
+
+Rail is resizable via `useResizePanel(300, 180, 500)` with a `PanelResizeHandle` between panels (hidden on narrow viewports).
 
 ---
 
-## Organ Summary Cards
+## Organ Rail (left panel, 300px default)
 
-Container: `border-b p-4`
+`flex shrink-0 flex-col overflow-hidden border-r`, width set via `useResizePanel`.
 
-**Section header:** `text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2` — "Target organ systems ({count})"
+### Header
 
-**Cards wrapper:** `flex flex-wrap gap-2`
+- Label: `text-xs font-medium uppercase tracking-wider text-muted-foreground` -- "Organ systems ({N})"
+- Search input: `mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs` with placeholder "Search organs..."
 
-Organs are sorted by `evidence_score` descending.
+### Rail Items
 
-### Card Structure
+Each `OrganListItem` is a `<button>` with:
+- Container: `w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors`
+- Selected: `bg-blue-50/60 dark:bg-blue-950/20`
+- Not selected: `hover:bg-accent/30`
+- Left border: `border-l-2 border-l-[#DC2626]` for organs with `target_organ_flag`, `border-l-transparent` otherwise
 
-Each card is a `<button>`:
-- Base: `rounded-lg border px-3 py-2 text-left transition-colors hover:bg-accent/50`
-- Selected: `ring-2 ring-primary`
+**Row 1:** Organ name (`text-xs font-semibold`, uses `titleCase()`) + TARGET badge (`text-[9px] font-semibold uppercase text-[#DC2626]` -- only shown if `target_organ_flag` is true)
 
-**Row 1:** `flex items-center gap-2`
-- Organ name: `text-xs font-semibold`, underscores replaced with spaces
-- TARGET badge (shown only if `target_organ_flag` is true): `rounded bg-red-100 px-1 py-0.5 text-[9px] font-medium text-red-700`
+**Row 2:** Evidence bar -- neutral gray fill (`bg-foreground/25`) on `bg-muted/50` track, width proportional to `evidence_score / maxEvidenceScore` (minimum 4%). Numeric value: `shrink-0 text-[10px]`, font-semibold for >= 0.5, font-medium for >= 0.3.
 
-**Row 2:** `mt-1 flex items-center gap-2 text-[10px]`
-- Evidence score badge: `rounded px-1 py-0.5 font-medium text-white` with signal score color (uses `getSignalScoreColor(evidence_score / 2)`)
-- Endpoint count: `text-muted-foreground` — "{n_endpoints} endpoints"
-- Domain count: `text-muted-foreground` — "{n_domains} domains"
+**Row 3:** Stats line -- `{N} sig · {M} TR · {D} domains` + domain chips (outline+dot style: `rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70` with colored dot via `getDomainBadgeColor()`).
 
-**Row 3:** `mt-1 flex gap-1`
-- Domain badges: `rounded px-1 py-0.5 text-[9px] font-medium` with domain-specific bg/text colors (see table below)
+### Sorting
 
-### Domain Badge Colors
+Organs sorted by `evidence_score` descending.
 
-| Domain | Background | Text |
-|--------|-----------|------|
-| LB | `bg-blue-100` | `text-blue-700` |
-| BW | `bg-emerald-100` | `text-emerald-700` |
-| OM | `bg-purple-100` | `text-purple-700` |
-| MI | `bg-rose-100` | `text-rose-700` |
-| MA | `bg-orange-100` | `text-orange-700` |
-| CL | `bg-cyan-100` | `text-cyan-700` |
-| Other | `bg-gray-100` | `text-gray-700` |
+### Auto-Select
 
-### Card Interaction
+On data load, auto-selects the top organ (highest evidence score). Also notifies the wrapper via `onSelectionChange`.
 
-- Clicking a card selects that organ (toggles off if already selected).
-- Selecting an organ clears any active domain filter and updates the selection context.
+### Search
+
+Filters organs by name (case-insensitive substring match, underscores replaced with spaces). Empty state: "No matches for '{search}'".
+
+### Cross-View Inbound
+
+If `location.state` contains `{ organ_system: string }`, auto-selects matching organ in rail and clears the history state via `window.history.replaceState({}, "")`.
 
 ---
 
-## Evidence Detail (shown when organ selected)
+## Organ Summary Header
+
+`shrink-0 border-b px-4 py-3`
+
+- Organ name: `text-sm font-semibold` (uses `titleCase()`)
+- TARGET ORGAN badge (if `target_organ_flag`): `text-[10px] font-semibold uppercase text-[#DC2626]`
+- Conclusion text: `mt-1 text-xs leading-relaxed text-muted-foreground` -- "{Convergent|Evidence from} {N} domain(s): {sig}/{total} endpoints significant ({pct}%), {N} treatment-related."
+- Compact metrics: `mt-2 flex flex-wrap gap-3 text-[11px]` -- max signal score, evidence score (font-semibold if >= 0.5), endpoint count
+
+---
+
+## Tab Bar
+
+`flex shrink-0 items-center gap-0 border-b px-4`
+
+Two tabs: **Overview** and **Evidence table**
+
+Active tab: `border-b-2 border-primary text-primary`
+Inactive tab: `border-transparent text-muted-foreground hover:text-foreground`
+All tabs: `px-3 py-2 text-xs font-medium transition-colors`
+
+---
+
+## Overview Tab
+
+`flex-1 overflow-y-auto px-4 py-3` -- scrollable content.
+
+### Domain Breakdown
+
+Section header: `text-xs font-medium uppercase tracking-wide text-muted-foreground` -- "Domain breakdown"
+
+Static HTML table (`w-full text-xs`) with columns:
+
+| Column | Header | Cell Rendering |
+|--------|--------|----------------|
+| Domain | Domain | Outline+dot chip: `rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-foreground/70` with colored dot |
+| Endpoints | Endpoints | Unique endpoint count per domain |
+| Significant | Significant | Count of rows with p_value < 0.05, font-semibold if > 0 |
+| TR | TR | Treatment-related count, font-semibold if > 0 |
+
+Rows sorted by significant count descending. Computed by grouping `organEvidenceRows` by domain.
+
+### Top Findings by Effect Size
+
+Section header: `text-xs font-medium uppercase tracking-wide text-muted-foreground` -- "Top findings by effect size"
+
+Shows up to 10 evidence rows with the largest absolute effect size (filtered to effect_size > 0, sorted desc).
+
+Each finding is a row:
+- Container: `flex items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30`
+- Endpoint name: `min-w-[140px] truncate font-medium`
+- Direction symbol: `shrink-0 text-sm text-[#9CA3AF]`
+- Effect size: `shrink-0 font-mono`, font-semibold if |d| >= 0.8; hover turns `text-[#DC2626]`
+- P-value: `shrink-0 font-mono`, font-semibold if < 0.001, font-medium if < 0.01; hover turns `text-[#DC2626]`
+- Severity badge: `shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground`
+- TR label (if treatment_related): `shrink-0 text-[9px] font-medium text-muted-foreground`
+- Sex and dose: `ml-auto shrink-0 text-muted-foreground` -- "{sex} · {dose}"
+
+### Empty State
+
+"No evidence rows for this organ." (`py-8 text-center text-xs text-muted-foreground`)
+
+---
+
+## Evidence Table Tab
+
+Two zones: filter bar + scrollable TanStack table, scoped to the selected organ.
 
 ### Filter Bar
 
 `flex items-center gap-2 border-b bg-muted/30 px-4 py-2`
 
-| Element | Rendering |
-|---------|-----------|
-| Organ name label | `text-xs font-medium` — "{organ_name} — Evidence detail" (underscores replaced with spaces) |
-| Domain dropdown | `<select>` with "All domains" + domains present in the selected organ. `rounded border bg-background px-2 py-1 text-xs` |
-| Sex dropdown | `<select>` with All sexes / Male / Female. Same styling as domain dropdown. |
-| Row count | `ml-auto text-[10px] text-muted-foreground` — "{N} findings" |
+| Filter | Type | Control | Default |
+|--------|------|---------|---------|
+| Domain | Dropdown | `<select>` with "All domains" + domains in selected organ | All |
+| Sex | Dropdown | `<select>` with "All sexes" / Male / Female | All |
 
----
+No organ dropdown (organ already selected via rail). Row count indicator: right-aligned `ml-auto text-[10px] text-muted-foreground`, "{N} findings".
 
-## Evidence Grid
+### Evidence Grid
 
-### Table
+TanStack React Table with `enableColumnResizing: true`, `columnResizeMode: "onChange"`, `ColumnSizingState`. Table uses `tableLayout: "fixed"` with width from `table.getCenterTotalSize()`.
 
-TanStack React Table, `w-full text-xs`, client-side sorting.
-
-**Header row:** `border-b bg-muted/50`
-- Headers: `cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50`
+**Header row:** `sticky top-0 z-10 bg-background`, border-b bg-muted/50.
+- Headers: `relative cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50`
 - Clickable for sorting (shows triangle arrow: `▲` asc / `▼` desc)
+- Column resize handle: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize`, blue when actively resizing
 
 **Columns:**
 
 | Column | Header | Cell Rendering |
 |--------|--------|----------------|
-| endpoint_label | Endpoint | Truncated at 30 chars with ellipsis, `title` tooltip for full name |
-| domain | Domain | Colored badge: `rounded px-1.5 py-0.5 text-[10px] font-medium` with domain-specific bg/text colors |
-| dose_level | Dose | `text-muted-foreground`, shows `dose_label.split(",")[0]` (first part before comma) |
+| endpoint_label | Endpoint | Truncated at 30 chars with ellipsis, `title` tooltip |
+| domain | Domain | Outline+dot chip: `rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-foreground/70` with colored dot |
+| dose_level | Dose | `text-muted-foreground`, shows `dose_label.split(",")[0]` |
 | sex | Sex | Plain text |
-| p_value | P-value | `font-mono` with p-value color classes |
-| effect_size | Effect | `font-mono` with effect size color classes |
-| direction | Dir | `text-sm`, direction symbol with color |
-| severity | Severity | Badge with severity color classes |
-| treatment_related | TR | Conditional text styling |
-
-### Direction Symbols
-
-| Value | Symbol | Color |
-|-------|--------|-------|
-| Up | `↑` | Red |
-| Down | `↓` | Blue |
-| None / null | `—` | `text-muted-foreground` |
-
-### Severity Badge
-
-`rounded-sm px-1.5 py-0.5 text-[10px] font-medium`
-
-| Level | Background | Text |
-|-------|-----------|------|
-| Adverse | Red background | Red text |
-| Warning | Amber background | Amber text |
-| Normal | Green background | Green text |
-
-### Treatment Related Column
-
-| Value | Rendering |
-|-------|-----------|
-| Yes | `font-medium text-red-600` |
-| No | `text-muted-foreground` |
-
-### P-value Color Scale (text classes)
-
-| Threshold | Class |
-|-----------|-------|
-| p < 0.001 | `text-red-600 font-semibold` |
-| p < 0.01 | `text-red-500 font-medium` |
-| p < 0.05 | `text-amber-600 font-medium` |
-| p < 0.1 | `text-amber-500` |
-| p >= 0.1 | `text-muted-foreground` |
-
-### Effect Size Color Scale
-
-| Threshold | Class |
-|-----------|-------|
-| |d| >= 1.2 | `text-red-600 font-semibold` |
-| |d| >= 0.8 | `text-red-500 font-medium` |
-| |d| >= 0.5 | `text-amber-600` |
-| |d| >= 0.2 | `text-amber-500` |
-| |d| < 0.2 | `text-muted-foreground` |
+| p_value | P-value | `font-mono`, font-semibold if < 0.001, font-medium if < 0.01; red text when column is sorted and p < 0.05 |
+| effect_size | Effect | `font-mono`, font-semibold if |d| >= 0.8, font-medium if |d| >= 0.5; red text when column is sorted and |d| >= 0.5 |
+| direction | Dir | Direction symbol (`getDirectionSymbol()`), `text-sm text-muted-foreground` |
+| severity | Severity | `inline-block rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground` |
+| treatment_related | TR | "Yes" in `font-medium` or "No" in `text-muted-foreground` |
 
 ### Row Interactions
 
 - Hover: `hover:bg-accent/50`
 - Selected: `bg-accent` (matched on `endpoint_label` + `sex` + `organ_system`)
-- Click: sets selection. Click again to deselect.
+- Click: sets endpoint-level selection (with `endpoint_label` and `sex`). Click again to deselect back to organ-level selection.
 - Row cells: `px-2 py-1`
 
-**Row cap:** None — all rows are rendered regardless of count.
-
-**Empty state:** No explicit empty state in the grid; shows zero rows with just headers.
+**Row cap:** None -- all rows rendered.
 
 ---
 
-## Context Panel (Right Sidebar — 280px)
+## Context Panel (Right Sidebar -- 280px)
 
-Route-detected: when pathname matches `/studies/{studyId}/target-organs`, shows `TargetOrgansContextPanel`.
+Route-detected: when pathname matches `/studies/{studyId}/target-organs`, shows `TargetOrgansContextPanel` via `TargetOrgansContextPanelWrapper` in `ContextPanel.tsx`.
+
+The wrapper fetches `organData` (via `useTargetOrganSummary`), `evidenceData` (via `useOrganEvidenceDetail`), and `ruleResults` (via `useRuleResults`) from shared React Query cache. Selection flows from `ViewSelectionContext` (filtered to `_view: "target-organs"`).
 
 ### No Selection State
 
@@ -197,16 +212,18 @@ Route-detected: when pathname matches `/studies/{studyId}/target-organs`, shows 
 
 #### Header
 
-- `border-b px-4 py-3`
-- Organ name: `text-sm font-semibold`, underscores replaced with spaces
-- Below: `mt-1 flex items-center gap-2 text-[11px]`
-  - Evidence score badge: `rounded px-1.5 py-0.5 font-medium text-white` with signal score color
-  - TARGET ORGAN badge (shown only if flagged): `rounded bg-red-100 px-1 py-0.5 text-[10px] font-medium text-red-700`
+- `sticky top-0 z-10 border-b bg-background px-4 py-3`
+- Row 1: organ name (`text-sm font-semibold`, `titleCase()`) + `CollapseAllButtons` (expand/collapse all panes)
+- Row 2 (left): evidence score (`font-semibold` if >= 0.5, `font-medium` otherwise) + TARGET ORGAN badge (if flagged, `text-[10px] font-semibold uppercase text-[#DC2626]`)
+- Row 2 (right): `TierCountBadges` showing Critical/Notable/Observed counts with clickable tier filter via `tierFilter` state
+
+Collapse/expand all functionality is powered by `useCollapseAll()` hook, which provides generation counters (`expandGen`, `collapseGen`) passed to each `CollapsiblePane`.
 
 #### Pane 1: Convergence (default open)
 
 `CollapsiblePane` with `InsightsList` component.
 - Rules filtered to those matching `context_key === "organ_{organ_system}"` or `organ_system === selection.organ_system`.
+- `tierFilter` state from header's `TierCountBadges` is passed through to `InsightsList` to filter displayed insights by tier.
 - Same InsightsList rendering as described in study-summary.md (tier pills, organ groups, synthesized signals, correlation chips, expandable raw rules).
 
 #### Pane 2: Endpoints (default open)
@@ -214,26 +231,24 @@ Route-detected: when pathname matches `/studies/{studyId}/target-organs`, shows 
 Shows up to 15 contributing endpoints sorted by occurrence count descending.
 
 Each item: `flex items-center gap-1 text-[11px]`
-- Domain badge: `rounded px-1 py-0.5 text-[9px] font-medium` with domain-specific colors (same palette as organ cards)
-- Endpoint label: truncated at 28 chars with `title` tooltip for full name
-- Count: `ml-auto text-muted-foreground` — "(N)"
+- Domain chip: outline+dot style (`rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70` with colored dot)
+- Endpoint label: truncated at 28 chars with `title` tooltip
+- Count: `ml-auto text-muted-foreground` -- "(N)"
 
 #### Pane 3: Related Views (default closed)
 
 Cross-view navigation links in `text-[11px]`:
-- "View dose-response" — navigates to `/studies/{studyId}/dose-response`
-- "View histopathology" — navigates to `/studies/{studyId}/histopathology`
-- "View NOAEL decision" — navigates to `/studies/{studyId}/noael-decision`
+- "View dose-response" -- navigates to `/studies/{studyId}/dose-response` with `{ state: { organ_system } }`
+- "View histopathology" -- navigates to `/studies/{studyId}/histopathology` with `{ state: { organ_system } }`
+- "View NOAEL decision" -- navigates to `/studies/{studyId}/noael-decision` with `{ state: { organ_system } }`
 
 All links: `block hover:underline`, color `#3a7bd5`, arrow suffix.
 
-#### Pane 4: Tox Assessment (conditionally shown, default closed)
+#### Pane 4: Tox Assessment (conditionally shown)
 
-Only shown when `selection.endpoint_label` exists (i.e., a specific endpoint row is selected in the evidence grid, not just an organ card).
+Only shown when `selection.endpoint_label` exists (i.e., a specific endpoint row is selected in the evidence table, not just an organ).
 
-Standard `ToxFindingForm` component — same as study-summary.md:
-- Treatment related dropdown, adversity dropdown (grayed when treatment="No"), comment textarea, SAVE button.
-- Keyed by `endpointLabel` (the selected endpoint).
+Standard `ToxFindingForm` component -- keyed by `endpointLabel` (the selected endpoint). Not wrapped in a `CollapsiblePane`.
 
 ---
 
@@ -241,50 +256,65 @@ Standard `ToxFindingForm` component — same as study-summary.md:
 
 | State | Scope | Managed By |
 |-------|-------|------------|
-| Selected organ | Local | `useState<string \| null>` |
-| Domain filter | Local | `useState<string \| null>` — clears when organ changes |
-| Sex filter | Local | `useState<string \| null>` |
-| Selected row | Shared via context | `ViewSelectionContext` with `_view: "target-organs"` tag |
-| Sorting | Local | `useState<SortingState>` — TanStack sorting state |
+| Selected organ | Local | `useState<string \| null>` -- which organ is active in the rail |
+| Active tab | Local | `useState<EvidenceTab>` -- "overview" or "table" |
+| Selection (organ/endpoint) | Shared via context | `ViewSelectionContext` with `_view: "target-organs"` tag, bridged via `TargetOrgansViewWrapper` |
+| Domain filter | Local | `useState<string \| null>` -- for Evidence table tab, clears on organ change |
+| Sex filter | Local | `useState<string \| null>` -- for Evidence table tab, clears on organ change |
+| Sorting | Local | `useState<SortingState>` -- TanStack sorting state (in EvidenceTableTab) |
+| Column sizing | Local | `useState<ColumnSizingState>` -- TanStack column resize state (in EvidenceTableTab) |
+| Rail width | Local | `useResizePanel(300, 180, 500)` |
+| Rail search | Local | `useState<string>` inside OrganRail |
+| Tier filter | Local (context panel) | `useState<Tier \| null>` -- filters InsightsList tiers |
+| Collapse all | Local (context panel) | `useCollapseAll()` -- generation counters for expand/collapse |
 | Organ summary data | Server | `useTargetOrganSummary` hook (React Query, 5min stale) |
 | Evidence detail data | Server | `useOrganEvidenceDetail` hook (React Query, 5min stale) |
-| Rule results | Server | `useRuleResults` hook (consumed by context panel) |
+| Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
 
 ---
 
 ## Data Flow
 
 ```
-useTargetOrganSummary(studyId)  ──> organData (14 organs)
-useOrganEvidenceDetail(studyId) ──> evidenceData (357 rows)
-                                         |
-                                    [filter by organ + domain + sex]
-                                         |
-                                    filteredEvidence
-                                      /        \
-                               Organ cards    Evidence grid
-                                      \        /
-                                   OrganSelection (shared)
-                                         |
-                              TargetOrgansContextPanel
-                                   /     |      \
-                          Convergence  Endpoints  ToxAssessment
+useTargetOrganSummary(studyId)  --> organData (14 organs, TargetOrganRow[])
+useOrganEvidenceDetail(studyId) --> evidenceData (357 rows, OrganEvidenceRow[])
+useRuleResults(studyId)         --> ruleResults (shared React Query cache)
+                                        |
+                              sortedOrgans (evidence_score desc)
+                                        |
+                                OrganRail (search filter, auto-select top)
+                                        |
+                              [selectedOrgan] --> filter evidenceData
+                                        |
+                                organEvidenceRows
+                                   /              \
+                          OverviewTab          EvidenceTableTab
+                          (domain breakdown,   (domain/sex filter,
+                           top findings)        sortable grid,
+                                                column resize)
+                                \              /
+                            OrganSelection (shared via ViewSelectionContext)
+                                        |
+                          TargetOrgansContextPanel
+                             /     |       \       \
+                      Convergence  Endpoints  Related  ToxAssessment
+                      (InsightsList           Views    (conditional)
+                       + tierFilter)
 ```
 
 ---
 
 ## Cross-View Navigation
 
-| From | Action | Navigates To |
-|------|--------|-------------|
-| Context panel > Related views | Click "View dose-response" | `/studies/{studyId}/dose-response` |
-| Context panel > Related views | Click "View histopathology" | `/studies/{studyId}/histopathology` |
-| Context panel > Related views | Click "View NOAEL decision" | `/studies/{studyId}/noael-decision` |
+### Inbound
+- From other views with `location.state`: `{ organ_system: string }` -- auto-selects matching organ in rail, then clears history state.
 
-**Missing cross-view links (potential improvement):**
-- No link back to Study Summary from this view
-- Related views pane is default-closed, easy to miss
-- No organ or endpoint filter is passed when navigating to other views
+### Outbound (Context panel -- Related views pane)
+| Action | Navigates To | State Passed |
+|--------|-------------|-------------|
+| "View dose-response" | `/studies/{studyId}/dose-response` | `{ organ_system }` |
+| "View histopathology" | `/studies/{studyId}/histopathology` | `{ organ_system }` |
+| "View NOAEL decision" | `/studies/{studyId}/noael-decision` | `{ organ_system }` |
 
 ---
 
@@ -294,35 +324,7 @@ useOrganEvidenceDetail(studyId) ──> evidenceData (357 rows)
 |-------|---------|
 | Loading | Centered spinner `Loader2` (animate-spin) + "Loading target organ data..." |
 | Error (no generated data) | Red box with instructions to run generator command |
-| No organ selected | "Select an organ system above to view evidence details." centered in lower area |
-
----
-
-## Current Issues / Improvement Opportunities
-
-### Organ Cards
-- No visual ordering indicator (e.g., rank number or bar) — cards are sorted by score but this is not communicated visually
-- Evidence score is divided by 2 when mapping to color scale (`getSignalScoreColor(evidence_score / 2)`) — may not match user expectations of the raw score
-- No search or filter for the cards themselves — with 14 organs, scanning is manageable but could scale poorly
-- Cards wrap naturally via flex-wrap but no indicator of how many are off-screen on narrow viewports
-
-### Evidence Grid
-- No row cap — all rows rendered regardless of count, which could cause performance issues with large datasets
-- No pagination
-- No column visibility toggle
-- No "group by endpoint" or collapsible grouping option
-- Endpoint truncation at 30 chars is longer than dose-response (25 chars) — inconsistent across views
-
-### Context Panel
-- Endpoints list capped at 15 — no way to see the full list or expand it
-- InsightsList rule filtering uses `context_key === organKey || organ_system === selection.organ_system` — precise but may miss some relevant cross-organ rules
-- Related views pane is default-closed — users may not discover navigation links
-- Tox Assessment only appears when a specific endpoint row is selected, not for organ-level selection — no way to assess at the organ level
-- No summary statistics for the selected organ (e.g., percentage treatment-related, dominant severity, count by direction)
-
-### General
-- No keyboard navigation (arrow keys in grid or between cards)
-- No visual connection between organ card selection and the grid below (content changes but there is no animation or scroll-into-view)
-- Selecting an organ card and clicking an evidence row are independent selection actions — the two-level selection model (organ then row) could be confusing since the context panel responds differently to each
-- No export option for grid data
-- No back-link to Study Summary from this view
+| No organ selected (but data exists) | "Select an organ system to view evidence details." |
+| No data at all | "No target organ data available." |
+| Empty search results (rail) | "No matches for '{search}'" |
+| No evidence rows (overview) | "No evidence rows for this organ." |

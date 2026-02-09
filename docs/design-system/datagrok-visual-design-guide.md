@@ -496,6 +496,31 @@ Use sentence case for all UI text unless a specific exception applies below.
 - Dropdown options
 - Descriptions
 
+### 5.5 Part-of-Speech Consistency in Grouped Labels
+
+**Rule:** Labels that form a visible set — tab bars, segmented controls, pill groups, toggle sets — must use the same part of speech. If one label is a noun, all labels must be nouns. Do not mix verbs, adjectives, or verb phrases into a noun set.
+
+**Why:** A set of labels is read as a parallel list. Mixing parts of speech creates a cognitive stutter — the reader switches from scanning a category to parsing an instruction mid-list. For example, "Evidence / Metrics / Explore" reads as two things and one action, breaking the pattern.
+
+**Applies to:**
+- Tab bar labels (e.g., "Evidence", "Metrics", "Hypotheses" — all nouns)
+- Segmented pill selectors (e.g., "Shape", "Model fit", "Pareto" — all nouns)
+- Toggle button groups
+- Navigation rail section headers
+
+**Does not apply to:**
+- Standalone buttons (casing rules from §5.1 apply)
+- Dropdown option lists (these are full phrases, not parallel labels)
+- Column headers (governed by sentence case rule in §5.1)
+
+**Examples:**
+
+| Correct | Incorrect | Why |
+|---------|-----------|-----|
+| Evidence / Metrics / Hypotheses | Evidence / Metrics / Explore | "Explore" is a verb in a noun set |
+| Shape / Model fit / Pareto | Shape / Fit model / Pareto | "Fit model" is verb-first in a noun set |
+| Overview / Signal matrix | Overview / View signals | "View signals" is a verb phrase |
+
 ---
 
 ## 6. Chart Conventions

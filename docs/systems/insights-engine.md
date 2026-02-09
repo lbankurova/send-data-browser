@@ -196,10 +196,20 @@ Produced by `buildOrganGroups()` in `rule-synthesis.ts`:
 ```typescript
 type Tier = "Critical" | "Notable" | "Observed";
 
+interface SynthEndpoint {
+  name: string;
+  direction: string;
+  effectSizes: { sex: string; d: number }[];
+}
+
 interface SynthLine {
   text: string;
   isWarning: boolean;
-  chips?: string[];   // For R16 correlation findings
+  chips?: string[];        // For R16 correlation findings
+  endpoints?: SynthEndpoint[];  // Structured endpoint rows (signal summary)
+  extraCount?: number;     // "+N more" when > 5 endpoints
+  qualifiers?: string[];   // Tag chips: "adverse", "dose-dependent", "both sexes"
+  listItems?: string[];    // Vertical item list (histopath findings)
 }
 
 interface OrganGroup {
@@ -483,6 +493,10 @@ function computeTier(rules: RuleResult[]): Tier {
 | Notable | R04 (adverse) or R10 (large effect) fires, OR R01 in >= 2 endpoints |
 | Observed | Everything else |
 
+**`computeTierCounts(rules)`**: Convenience function that calls `buildOrganGroups(rules)` and returns a `Record<Tier, number>` with the count of organ groups per tier. Used by parent components that need tier counts for filter pill badges without needing the full organ group data.
+
+**`tierFilter` prop on InsightsList**: When `tierFilter` is set to a `Tier` value (e.g., `"Critical"`), the component filters `organGroups` to show only groups matching that tier. When `null` or `undefined`, all groups are shown. This enables parent components to implement tier filter bars (clickable Critical/Notable/Observed pills) that control which insights are visible.
+
 #### Step 3: Synthesize lines
 
 `synthesize(rules)` collapses per-rule output_text into compact display lines:
@@ -661,8 +675,8 @@ The following items were previously listed as spec divergences. All have been re
 | `backend/generator/scores_and_rules.py` | Evaluates 17 canonical rules (R01-R17) against computed findings, target organs, and NOAEL data. R17 is the mortality signal from DS domain. Emits structured rule results with context keys and rendered template text. | `RULES` (rule definitions), `evaluate_rules()`, `_emit()`, `_emit_organ()`, `_emit_study()`, `_build_finding_context()` |
 | `backend/generator/view_dataframes.py` | Computes signal scores, builds summary dataframes (study_signal_summary, target_organ_summary, noael_summary). Contains the signal score formula, target organ threshold logic, and NOAEL confidence score. | `build_study_signal_summary()`, `build_target_organ_summary()`, `_compute_signal_score()`, `_compute_noael_confidence()` |
 | `frontend/src/lib/signals-panel-engine.ts` | Derives semantic rules from NOAEL/organ/signal summary data, assigns priority bands, builds organ blocks with compound merging, and produces the full SignalsPanelData structure for the Signals tab center panel. | `buildSignalsPanelData()`, `buildFilteredMetrics()`, `sexLabel()`, `organName()`, `assignSection()` + types: `SignalsPanelData`, `OrganBlock`, `PanelStatement`, `MetricsLine`, `UISection` |
-| `frontend/src/lib/rule-synthesis.ts` | Groups backend rule_results by organ, computes per-organ tiers (Critical/Notable/Observed), extracts per-endpoint signals from R10/R04/R01, and synthesizes compact display lines. Serves the InsightsList context panel. | `buildOrganGroups()`, `computeTier()`, `synthesize()`, `extractEndpointSignals()`, `parseContextKey()`, `cleanText()` + types: `OrganGroup`, `SynthLine`, `EndpointSignal`, `Tier` |
-| `frontend/src/components/analysis/panes/InsightsList.tsx` | React component that renders organ-grouped insights in the context panel. Shows tier filter bar (Critical/Notable/Observed pills), organ groups with synth lines, expandable raw rule detail. | `InsightsList` (component), `SynthLineItem`, `TierBadge` |
+| `frontend/src/lib/rule-synthesis.ts` | Groups backend rule_results by organ, computes per-organ tiers (Critical/Notable/Observed), extracts per-endpoint signals from R10/R04/R01, and synthesizes compact display lines. Serves the InsightsList context panel. | `buildOrganGroups()`, `computeTier()`, `computeTierCounts()`, `synthesize()`, `extractEndpointSignals()`, `parseContextKey()`, `cleanText()` + types: `OrganGroup`, `SynthLine`, `SynthEndpoint`, `EndpointSignal`, `Tier` |
+| `frontend/src/components/analysis/panes/InsightsList.tsx` | React component that renders organ-grouped insights in the context panel. Accepts optional `tierFilter?: Tier \| null` prop to show only organs matching a specific tier. Organ groups with synth lines, expandable raw rule detail. | `InsightsList` (component, props: `rules: RuleResult[]`, `tierFilter?: Tier \| null`), `SynthLineItem`, `EndpointRow`, `HistopathItem`, `TierBadge` |
 | `frontend/src/components/analysis/SignalsPanel.tsx` | React component that renders the Findings mode of the Signals tab center panel. Contains organ cards grid, modifiers section, review flags section, clickable organ/endpoint navigation. | `FindingsView` (main export), `OrganCard`, `TargetOrgansSection`, `ModifiersSection`, `CaveatsSection`, `StudyStatementsSection` |
 | `frontend/src/types/analysis-views.ts` | TypeScript interfaces for all analysis view data types consumed by both synthesis engines. | `SignalSummaryRow`, `TargetOrganRow`, `NoaelSummaryRow`, `RuleResult`, `SignalSelection` |
 
@@ -685,4 +699,5 @@ The following items were previously listed as spec divergences. All have been re
 
 ## Changelog
 
+- 2026-02-09: Added `SynthEndpoint` interface, `computeTierCounts()` export, and `tierFilter` prop on InsightsList. Updated SynthLine interface with full field set (endpoints, extraCount, qualifiers, listItems). Updated code map for rule-synthesis.ts and InsightsList.tsx.
 - 2026-02-08: Consolidated from insight-synthesis-engine.md, send-browser- rule-based-insight-system.md, signals-panel-implementation-spec.md, CLAUDE.md, and five source code files (scores_and_rules.py, view_dataframes.py, signals-panel-engine.ts, rule-synthesis.ts, InsightsList.tsx, SignalsPanel.tsx)
