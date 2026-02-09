@@ -13,6 +13,8 @@ import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
 import { getSeverityBadgeClasses } from "@/lib/severity-colors";
+import { useResizePanel } from "@/hooks/useResizePanel";
+import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 
@@ -247,7 +249,7 @@ function SpecimenRail({
   }, [specimens, search]);
 
   return (
-    <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r">
+    <div className="flex h-full w-full flex-col overflow-hidden">
       <div className="border-b px-3 py-2">
         <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Specimens ({specimens.length})
@@ -625,6 +627,8 @@ function SeverityMatrixTab({
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
   });
 
   return (
@@ -752,11 +756,20 @@ function SeverityMatrixTab({
                     {hg.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                        className="relative cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                        style={{ width: header.getSize() }}
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className={cn(
+                            "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                            header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                          )}
+                        />
                       </th>
                     ))}
                   </tr>
@@ -777,7 +790,7 @@ function SeverityMatrixTab({
                       onClick={() => onRowClick(orig)}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-2 py-1">
+                        <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -822,6 +835,7 @@ export function HistopathologyView({
   const [selection, setSelection] = useState<HistopathSelection | null>(null);
   const [sexFilter, setSexFilter] = useState<string | null>(null);
   const [minSeverity, setMinSeverity] = useState(0);
+  const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
 
   // Derived: specimen summaries
   const specimenSummaries = useMemo(() => {
@@ -960,13 +974,19 @@ export function HistopathologyView({
   return (
     <div className="flex h-full overflow-hidden max-[1200px]:flex-col">
       {/* Left: Specimen rail */}
-      <div className="max-[1200px]:h-[180px] max-[1200px]:w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto min-[1200px]:contents">
+      <div
+        className="shrink-0 border-r max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto"
+        style={{ width: railWidth }}
+      >
         <SpecimenRail
           specimens={specimenSummaries}
           selectedSpecimen={selectedSpecimen}
           maxGlobalSeverity={maxGlobalSeverity}
           onSpecimenClick={handleSpecimenClick}
         />
+      </div>
+      <div className="max-[1200px]:hidden">
+        <PanelResizeHandle onPointerDown={onRailResize} />
       </div>
 
       {/* Right: Evidence panel */}

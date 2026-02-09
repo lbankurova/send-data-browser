@@ -29,6 +29,8 @@ import {
   getDomainBadgeColor,
   titleCase,
 } from "@/lib/severity-colors";
+import { useResizePanel } from "@/hooks/useResizePanel";
+import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import type { DoseResponseRow } from "@/types/analysis-views";
 
 // ─── Public types ──────────────────────────────────────────
@@ -247,6 +249,7 @@ export function DoseResponseView({
     organ_system: string | null;
   }>({ sex: null, data_type: null, organ_system: null });
   const [sorting, setSorting] = useState<SortingState>([]);
+  const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
 
   // ── Derived data ──────────────────────────────────────
 
@@ -467,6 +470,8 @@ export function DoseResponseView({
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
   });
 
   // ── Selection handling ────────────────────────────────
@@ -598,7 +603,8 @@ export function DoseResponseView({
     <div className="flex h-full overflow-hidden max-[1200px]:flex-col">
       {/* ───── Endpoint Rail (left) ───── */}
       <div
-        className="flex w-[300px] shrink-0 flex-col border-r max-[1200px]:h-[180px] max-[1200px]:w-full max-[1200px]:border-b"
+        className="flex shrink-0 flex-col max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b"
+        style={{ width: railWidth }}
       >
         {/* Rail header */}
         <div className="shrink-0 border-b px-3 py-2">
@@ -714,6 +720,10 @@ export function DoseResponseView({
             );
           })}
         </div>
+      </div>
+
+      <div className="max-[1200px]:hidden">
+        <PanelResizeHandle onPointerDown={onRailResize} />
       </div>
 
       {/* ───── Evidence Panel (right) ───── */}
@@ -1146,11 +1156,20 @@ function MetricsTableContent({
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                    className="relative cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                    style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                     {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
+                      className={cn(
+                        "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                        header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                      )}
+                    />
                   </th>
                 ))}
               </tr>
@@ -1175,7 +1194,7 @@ function MetricsTableContent({
                   {row.getVisibleCells().map((cell) => {
                     const isEvidence = cell.column.id === "p_value" || cell.column.id === "effect_size" || cell.column.id === "trend_p";
                     return (
-                      <td key={cell.id} className="px-2 py-1" data-evidence={isEvidence || undefined}>
+                      <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }} data-evidence={isEvidence || undefined}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     );
