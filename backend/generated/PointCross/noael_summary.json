@@ -11,7 +11,8 @@
     "adverse_domains_at_loael": [
       "LB",
       "MI"
-    ]
+    ],
+    "noael_confidence": 0.8
   },
   {
     "sex": "F",
@@ -26,7 +27,8 @@
       "LB",
       "MI",
       "OM"
-    ]
+    ],
+    "noael_confidence": 0.8
   },
   {
     "sex": "Combined",
@@ -41,6 +43,7 @@
       "LB",
       "MI",
       "OM"
-    ]
+    ],
+    "noael_confidence": 0.8
   }
 ]
