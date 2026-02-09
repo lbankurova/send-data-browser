@@ -154,7 +154,7 @@
 
 ### HC-06: No authentication
 - **System:** `systems/annotations.md`
-- **Files:** `backend/main.py:32-37`
+- **Files:** `backend/main.py:36-41`
 - **Issue:** CORS `allow_origins=["*"]`, no auth middleware.
 - **Fix:** Add Datagrok auth integration.
 - **Recommendation:** Defer to production. Datagrok provides SSO integration — use that rather than building custom auth.

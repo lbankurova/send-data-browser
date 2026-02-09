@@ -32,12 +32,6 @@ export interface NoaelViewSelection {
   sex: string;
 }
 
-export interface ClinicalObsViewSelection {
-  _view: "clinical-observations";
-  finding: string;
-  category?: string;
-}
-
 export interface ValidationRuleViewSelection {
   _view: "validation";
   mode: "rule";
@@ -77,7 +71,6 @@ export type ViewSelection =
   | TargetOrgansViewSelection
   | HistopathologyViewSelection
   | NoaelViewSelection
-  | ClinicalObsViewSelection
   | ValidationViewSelection;
 
 // ─── Context ──────────────────────────────────────────────────
