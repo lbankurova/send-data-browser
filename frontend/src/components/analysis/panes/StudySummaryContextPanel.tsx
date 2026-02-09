@@ -1,10 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
 import { InsightsList } from "./InsightsList";
+import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { computeTierCounts } from "@/lib/rule-synthesis";
+import type { Tier } from "@/lib/rule-synthesis";
 import type {
   SignalSummaryRow,
   SignalSelection,
@@ -125,6 +128,7 @@ function EndpointPanel({
   }, [signalData, selection]);
 
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+  const [tierFilter, setTierFilter] = useState<Tier | null>(null);
 
   return (
     <div>
@@ -133,14 +137,21 @@ function EndpointPanel({
           <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
           <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground">
           {selection.domain} &middot; {selection.sex} &middot; Dose{" "}
           {selection.dose_level}
         </p>
+        <div className="mt-1.5 text-xs">
+          <TierCountBadges
+            counts={computeTierCounts(filteredRules)}
+            activeTier={tierFilter}
+            onTierClick={setTierFilter}
+          />
+        </div>
       </div>
 
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <InsightsList rules={filteredRules} />
+        <InsightsList rules={filteredRules} tierFilter={tierFilter} />
       </CollapsiblePane>
 
       <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
@@ -350,6 +361,7 @@ function OrganPanel({
   }, [signalData, organSystem]);
 
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+  const [tierFilter, setTierFilter] = useState<Tier | null>(null);
 
   return (
     <div>
@@ -359,15 +371,22 @@ function OrganPanel({
           <h3 className="text-sm font-semibold">{displayName}</h3>
           <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground">
           {evidence.totalSignals} signals &middot;{" "}
           {evidence.domains.length} domain{evidence.domains.length !== 1 ? "s" : ""}
         </p>
+        <div className="mt-1.5 text-xs">
+          <TierCountBadges
+            counts={computeTierCounts(organRules)}
+            activeTier={tierFilter}
+            onTierClick={setTierFilter}
+          />
+        </div>
       </div>
 
       {/* Pane 1: Organ insights */}
       <CollapsiblePane title="Organ insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <InsightsList rules={organRules} />
+        <InsightsList rules={organRules} tierFilter={tierFilter} />
       </CollapsiblePane>
 
       {/* Pane 2: Contributing endpoints */}

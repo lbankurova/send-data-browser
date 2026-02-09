@@ -1123,7 +1123,7 @@ function MetricsTableContent({
   handleRowClick,
 }: MetricsTableProps) {
   return (
-    <div>
+    <div className="flex h-full flex-col">
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2">
         <select
@@ -1162,7 +1162,7 @@ function MetricsTableContent({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="flex-1 overflow-auto">
         <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
           <thead className="sticky top-0 z-10 bg-background">
             {table.getHeaderGroups().map((hg) => (

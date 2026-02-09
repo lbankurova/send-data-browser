@@ -71,18 +71,16 @@ export function DoseResponseContextPanel({
           <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
           <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
         </div>
-        <div className="mt-1 flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            {selection.domain} &middot; {titleCase(selection.organ_system)}
-            {selection.sex && <> &middot; {selection.sex}</>}
-          </p>
-          <span className="text-xs">
-            <TierCountBadges
-              counts={computeTierCounts(endpointRules)}
-              activeTier={tierFilter}
-              onTierClick={setTierFilter}
-            />
-          </span>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {selection.domain} &middot; {titleCase(selection.organ_system)}
+          {selection.sex && <> &middot; {selection.sex}</>}
+        </p>
+        <div className="mt-1.5 text-xs">
+          <TierCountBadges
+            counts={computeTierCounts(endpointRules)}
+            activeTier={tierFilter}
+            onTierClick={setTierFilter}
+          />
         </div>
 
       </div>
