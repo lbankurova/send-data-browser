@@ -292,7 +292,7 @@ function OrganRail({
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       <div className="border-b px-3 py-2">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Organ systems ({organs.length})
         </span>
         <input
@@ -533,7 +533,7 @@ function OverviewTab({
       {/* Domain breakdown */}
       <div className="mb-4">
         <div className="mb-2 flex items-center gap-2">
-          <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Domain breakdown
           </h4>
           <span className="text-[10px] text-muted-foreground">
@@ -542,11 +542,11 @@ function OverviewTab({
         </div>
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b text-left text-muted-foreground">
-              <th className="pb-1 pr-3 font-medium">Domain</th>
-              <th className="pb-1 pr-3 font-medium">Endpoints</th>
-              <th className="pb-1 pr-3 font-medium">Significant</th>
-              <th className="pb-1 font-medium">TR</th>
+            <tr className="border-b bg-muted/50 text-left text-muted-foreground">
+              <th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Domain</th>
+              <th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Endpoints</th>
+              <th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Significant</th>
+              <th className="pb-1 text-[10px] font-semibold uppercase tracking-wider">TR</th>
             </tr>
           </thead>
           <tbody>
@@ -575,7 +575,7 @@ function OverviewTab({
       {/* Top findings */}
       {topFindings.length > 0 && (
         <div>
-          <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Top findings by effect size
           </h4>
           <div className="space-y-1">
@@ -637,7 +637,7 @@ function OverviewTab({
       {/* Insights */}
       {organRules.length > 0 && (
         <div className="mt-4">
-          <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Insights
           </h4>
           <InsightsList rules={organRules} />
@@ -826,7 +826,7 @@ function EvidenceTableTab({
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="relative cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                    className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                     style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >

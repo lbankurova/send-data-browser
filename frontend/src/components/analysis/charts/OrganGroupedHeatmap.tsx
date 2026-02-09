@@ -5,6 +5,7 @@ import { organName } from "@/lib/signals-panel-engine";
 import {
   getSignalScoreHeatmapColor,
   getSignificanceStars,
+  getDomainDotColor,
 } from "@/lib/severity-colors";
 import type {
   SignalSummaryRow,
@@ -145,7 +146,8 @@ function buildOrganGroups(
 
 function DomainChip({ domain }: { domain: string }) {
   return (
-    <span className="inline-block rounded bg-muted px-1 py-0.5 font-mono text-[9px] text-muted-foreground">
+    <span className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getDomainDotColor(domain) }} />
       {domain}
     </span>
   );

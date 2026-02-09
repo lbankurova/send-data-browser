@@ -156,7 +156,7 @@ export function TargetOrgansContextPanel({
                 <div key={label} className="flex items-center gap-1 text-[11px]">
                   <span className={cn("text-[9px] font-semibold", dc.text)}>{info.domain}</span>
                   <span className="truncate" title={label}>
-                    {label.length > 28 ? label.slice(0, 28) + "\u2026" : label}
+                    {label}
                   </span>
                   <span className="ml-auto text-muted-foreground">({info.count})</span>
                 </div>

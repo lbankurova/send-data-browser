@@ -63,13 +63,13 @@ export function AdverseEffectsView() {
       {/* Summary counts */}
       {data && (
         <div className="mb-4 flex items-center gap-2 text-xs">
-          <span className="rounded-sm border border-red-200 bg-red-50 px-1.5 py-0.5 font-medium text-red-700">
+          <span className="rounded-sm border border-red-200 bg-red-50 px-1.5 py-0.5 font-semibold text-red-700">
             {data.summary.total_adverse} adverse
           </span>
-          <span className="rounded-sm border border-amber-200 bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">
+          <span className="rounded-sm border border-amber-200 bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-700">
             {data.summary.total_warning} warning
           </span>
-          <span className="rounded-sm border border-green-200 bg-green-50 px-1.5 py-0.5 font-medium text-green-700">
+          <span className="rounded-sm border border-green-200 bg-green-50 px-1.5 py-0.5 font-semibold text-green-700">
             {data.summary.total_normal} normal
           </span>
           <span className="ml-1 text-muted-foreground">

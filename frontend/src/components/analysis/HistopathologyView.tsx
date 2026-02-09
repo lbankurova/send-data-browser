@@ -326,7 +326,7 @@ function SpecimenRail({
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       <div className="border-b px-3 py-2">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Specimens ({specimens.length})
         </span>
         <input
@@ -390,7 +390,7 @@ function SpecimenHeader({
           {sexLabel}
         </span>
         {/* TODO: Derive from useAnnotations<PathologyReview> — aggregate peerReviewStatus across specimen findings */}
-        <span className="rounded border border-border/50 px-1 text-[10px] text-muted-foreground/60">
+        <span className="rounded border border-border/50 px-1 py-0.5 text-[10px] text-muted-foreground/60">
           Preliminary
         </span>
       </div>
@@ -506,7 +506,7 @@ function OverviewTab({
     <div className="flex-1 overflow-y-auto px-4 py-3">
       {/* Finding summary */}
       <div className="mb-4">
-        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Observed findings
         </h4>
         {findingSummaries.length === 0 ? (
@@ -562,7 +562,7 @@ function OverviewTab({
       {/* Insights */}
       {specimenRules.length > 0 && (
         <div className="mb-4">
-          <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Insights
           </h4>
           <InsightsList rules={specimenRules} />
@@ -1190,7 +1190,7 @@ function SeverityMatrixTab({
                     {hg.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="relative cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                        className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                         style={{ width: header.getSize() }}
                         onClick={header.column.getToggleSortingHandler()}
                       >
