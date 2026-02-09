@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Loader2, ChevronDown, ChevronRight, Search, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect, Pin, Plus } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, Search, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect, Pin, Plus, Star } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -21,8 +21,12 @@ import {
   ErrorBar,
   ReferenceLine,
   ResponsiveContainer,
+  Customized,
 } from "recharts";
 import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
+import { useTimecourseGroup, useTimecourseSubject } from "@/hooks/useTimecourse";
+import { useEndpointBookmarks, useToggleBookmark } from "@/hooks/useEndpointBookmarks";
+import { BookmarkStar } from "@/components/ui/BookmarkStar";
 import { cn } from "@/lib/utils";
 import {
   formatPValue,
@@ -30,12 +34,14 @@ import {
   getPValueColor,
   getEffectSizeColor,
   getDomainBadgeColor,
+  getDoseGroupColor,
   titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import type { DoseResponseRow } from "@/types/analysis-views";
+import type { TimecourseResponse } from "@/types/timecourse";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -72,6 +78,7 @@ interface EndpointSummary {
   endpoint_label: string;
   organ_system: string;
   domain: string;
+  test_code: string;
   data_type: "continuous" | "categorical";
   dose_response_pattern: string;
   min_p_value: number | null;
@@ -155,6 +162,7 @@ function deriveEndpointSummaries(data: DoseResponseRow[]): EndpointSummary[] {
       endpoint_label: label,
       organ_system: first.organ_system,
       domain: first.domain,
+      test_code: first.test_code,
       data_type: first.data_type,
       dose_response_pattern: bestPattern,
       min_p_value: minP,
@@ -232,8 +240,10 @@ const col = createColumnHelper<DoseResponseRow>();
 
 export function DoseResponseView({
   onSelectionChange,
+  onSubjectClick,
 }: {
   onSelectionChange?: (sel: DoseResponseSelection | null) => void;
+  onSubjectClick?: (usubjid: string) => void;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
@@ -241,10 +251,17 @@ export function DoseResponseView({
 
   // State
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"evidence" | "metrics" | "hypotheses">("evidence");
+  const [activeTab, setActiveTab] = useState<"evidence" | "timecourse" | "hypotheses" | "metrics">("evidence");
   const [railSearch, setRailSearch] = useState("");
   const [expandedOrgans, setExpandedOrgans] = useState<Set<string>>(new Set());
   const [selection, setSelection] = useState<DoseResponseSelection | null>(null);
+
+  const [bookmarkFilter, setBookmarkFilter] = useState(false);
+
+  // Endpoint bookmarks
+  const { data: bookmarksData } = useEndpointBookmarks(studyId);
+  const toggleBookmark = useToggleBookmark(studyId);
+  const bookmarks = bookmarksData ?? {};
 
   // Metrics tab state
   const [metricsFilters, setMetricsFilters] = useState<{
@@ -278,11 +295,25 @@ export function DoseResponseView({
     return endpointSummaries.find((s) => s.endpoint_label === selectedEndpoint) ?? null;
   }, [endpointSummaries, selectedEndpoint]);
 
-  // Filtered rail endpoints by search
+  // Bookmark count
+  const bookmarkCount = useMemo(() => {
+    return Object.values(bookmarks).filter((b) => b.bookmarked).length;
+  }, [bookmarks]);
+
+  // Filtered rail endpoints by search + bookmark filter
   const filteredOrganGroups = useMemo(() => {
-    if (!railSearch) return organGroups;
+    let groups = organGroups;
+    if (bookmarkFilter) {
+      groups = groups
+        .map((g) => ({
+          ...g,
+          endpoints: g.endpoints.filter((ep) => bookmarks[ep.endpoint_label]?.bookmarked),
+        }))
+        .filter((g) => g.endpoints.length > 0);
+    }
+    if (!railSearch) return groups;
     const q = railSearch.toLowerCase();
-    return organGroups
+    return groups
       .map((g) => ({
         ...g,
         endpoints: g.endpoints.filter(
@@ -292,7 +323,7 @@ export function DoseResponseView({
         ),
       }))
       .filter((g) => g.endpoints.length > 0);
-  }, [organGroups, railSearch]);
+  }, [organGroups, railSearch, bookmarkFilter, bookmarks]);
 
   // Chart data for selected endpoint — merged M/F per dose level
   const chartData = useMemo(() => {
@@ -610,6 +641,20 @@ export function DoseResponseView({
               onChange={(e) => setRailSearch(e.target.value)}
             />
           </div>
+          {bookmarkCount > 0 && (
+            <button
+              className={cn(
+                "mt-1.5 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                bookmarkFilter
+                  ? "border-amber-300 bg-amber-100 text-amber-800"
+                  : "border-border text-muted-foreground hover:bg-accent/50"
+              )}
+              onClick={() => setBookmarkFilter(!bookmarkFilter)}
+            >
+              <Star className="h-2.5 w-2.5" fill={bookmarkFilter ? "currentColor" : "none"} />
+              <span className="font-mono">{bookmarkCount}</span> bookmarked
+            </button>
+          )}
         </div>
 
         {/* Rail body */}
@@ -659,7 +704,7 @@ export function DoseResponseView({
                         data-selected={isSelected || undefined}
                         onClick={() => selectEndpoint(ep.endpoint_label)}
                       >
-                        {/* Row 1: name + direction */}
+                        {/* Row 1: name + bookmark + direction */}
                         <div className="flex items-center gap-1">
                           <span
                             className={cn(
@@ -670,6 +715,10 @@ export function DoseResponseView({
                           >
                             {ep.endpoint_label}
                           </span>
+                          <BookmarkStar
+                            bookmarked={!!bookmarks[ep.endpoint_label]?.bookmarked}
+                            onClick={() => toggleBookmark(ep.endpoint_label, !!bookmarks[ep.endpoint_label]?.bookmarked)}
+                          />
                           {ep.direction && (
                             <span
                               className="text-xs text-[#9CA3AF]"
@@ -801,7 +850,7 @@ export function DoseResponseView({
 
         {/* Tab bar */}
         <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
-          {(["evidence", "hypotheses", "metrics"] as const).map((tab) => (
+          {(["evidence", "timecourse", "hypotheses", "metrics"] as const).map((tab) => (
             <button
               key={tab}
               className={cn(
@@ -812,7 +861,7 @@ export function DoseResponseView({
               )}
               onClick={() => setActiveTab(tab)}
             >
-              {{ evidence: "Evidence", metrics: "Metrics", hypotheses: "Hypotheses" }[tab]}
+              {{ evidence: "Evidence", timecourse: "Time-course", hypotheses: "Hypotheses", metrics: "Metrics" }[tab]}
             </button>
           ))}
           {activeTab === "metrics" && (
@@ -830,6 +879,13 @@ export function DoseResponseView({
               selectedEndpoint={selectedEndpoint}
               pairwiseRows={pairwiseRows}
               sexColors={sexColors}
+            />
+          ) : activeTab === "timecourse" ? (
+            <TimecourseTabContent
+              studyId={studyId}
+              selectedEndpoint={selectedEndpoint}
+              selectedSummary={selectedSummary}
+              onSubjectClick={onSubjectClick}
             />
           ) : activeTab === "metrics" ? (
             <MetricsTableContent
@@ -1150,6 +1206,555 @@ function ChartOverviewContent({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Time-course tab ──────────────────────────────────────
+
+type YAxisMode = "absolute" | "pct_change" | "pct_vs_control";
+
+interface TimecourseTabProps {
+  studyId: string | undefined;
+  selectedEndpoint: string | null;
+  selectedSummary: EndpointSummary | null;
+  onSubjectClick?: (usubjid: string) => void;
+}
+
+function TimecourseTabContent({ studyId, selectedEndpoint, selectedSummary, onSubjectClick }: TimecourseTabProps) {
+  const [yAxisMode, setYAxisMode] = useState<YAxisMode>("absolute");
+  const [showSubjects, setShowSubjects] = useState(false);
+
+  const domain = selectedSummary?.domain;
+  const testCode = selectedSummary?.test_code;
+  const isContinuous = selectedSummary?.data_type === "continuous";
+
+  const { data: tcData, isLoading, error } = useTimecourseGroup(
+    studyId,
+    domain,
+    testCode,
+  );
+
+  // Subject data: only fetch when toggle is ON and we have group data
+  const { data: subjData, isLoading: subjLoading } = useTimecourseSubject(
+    showSubjects && isContinuous ? studyId : undefined,
+    showSubjects && isContinuous ? domain : undefined,
+    showSubjects && isContinuous ? testCode : undefined,
+  );
+
+  if (!selectedEndpoint || !selectedSummary) {
+    return (
+      <div className="flex items-center justify-center p-12 text-xs text-muted-foreground">
+        Select an endpoint to view the time-course.
+      </div>
+    );
+  }
+
+  // Categorical endpoints don't have time-course data
+  if (!isContinuous) {
+    return (
+      <div className="flex items-center justify-center p-12 text-center">
+        <div>
+          <p className="text-xs text-muted-foreground">
+            Time-course is available for continuous endpoints only.
+          </p>
+          <p className="mt-1 text-[11px] text-muted-foreground/60">
+            This endpoint uses categorical (incidence) data.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Loading time-course...</span>
+      </div>
+    );
+  }
+
+  if (error || !tcData) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="rounded-lg bg-red-50 p-4 text-center">
+          <p className="text-xs text-red-600">Time-course data not available for this endpoint.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 flex-col overflow-y-auto">
+      {/* Y-axis toggle + Show subjects toggle */}
+      <div className="flex shrink-0 items-center justify-between px-4 pt-3">
+        <div className="flex items-center gap-1">
+          {(["absolute", "pct_change", "pct_vs_control"] as const).map((mode) => (
+            <button
+              key={mode}
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                yAxisMode === mode
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-accent/50"
+              )}
+              onClick={() => setYAxisMode(mode)}
+            >
+              {{ absolute: "Absolute", pct_change: "% change", pct_vs_control: "% vs control" }[mode]}
+            </button>
+          ))}
+        </div>
+        <button
+          className={cn(
+            "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+            showSubjects
+              ? "bg-foreground text-background border-foreground"
+              : "text-muted-foreground border-border hover:bg-accent/50"
+          )}
+          onClick={() => setShowSubjects(!showSubjects)}
+        >
+          {subjLoading ? (
+            <span className="flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Loading...
+            </span>
+          ) : (
+            "Show subjects"
+          )}
+        </button>
+      </div>
+
+      {/* Sex-faceted charts */}
+      <TimecourseCharts
+        tcData={tcData}
+        yAxisMode={yAxisMode}
+        showSubjects={showSubjects}
+        subjData={subjData ?? null}
+        onSubjectClick={onSubjectClick}
+      />
+    </div>
+  );
+}
+
+/** Renders sex-faceted time-course line charts with optional subject overlay. */
+function TimecourseCharts({
+  tcData,
+  yAxisMode,
+  showSubjects,
+  subjData,
+  onSubjectClick,
+}: {
+  tcData: TimecourseResponse;
+  yAxisMode: YAxisMode;
+  showSubjects: boolean;
+  subjData: import("@/types/timecourse").TimecourseSubjectResponse | null;
+  onSubjectClick?: (usubjid: string) => void;
+}) {
+  // Determine available sexes
+  const sexes = useMemo(() => {
+    const s = new Set<string>();
+    for (const tp of tcData.timepoints) {
+      for (const g of tp.groups) s.add(g.sex);
+    }
+    return [...s].sort();
+  }, [tcData]);
+
+  // Get unique dose levels
+  const doseLevels = useMemo(() => {
+    const d = new Set<number>();
+    for (const tp of tcData.timepoints) {
+      for (const g of tp.groups) d.add(g.dose_level);
+    }
+    return [...d].sort((a, b) => a - b);
+  }, [tcData]);
+
+  // Build baseline lookup: dose_level×sex → first timepoint mean (for % change / % vs control)
+  const baselines = useMemo(() => {
+    const map = new Map<string, number>();
+    if (tcData.timepoints.length === 0) return map;
+    const first = tcData.timepoints[0];
+    for (const g of first.groups) {
+      map.set(`${g.dose_level}_${g.sex}`, g.mean);
+    }
+    return map;
+  }, [tcData]);
+
+  // Control baseline per sex (for % vs control)
+  const controlBaselines = useMemo(() => {
+    const map = new Map<string, number>();
+    if (tcData.timepoints.length === 0) return map;
+    for (const tp of tcData.timepoints) {
+      for (const g of tp.groups) {
+        if (g.dose_level === 0 && !map.has(`${tp.day}_${g.sex}`)) {
+          map.set(`${tp.day}_${g.sex}`, g.mean);
+        }
+      }
+    }
+    return map;
+  }, [tcData]);
+
+  // Subject baseline lookup: usubjid → first value (for % change)
+  const subjectBaselines = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!subjData) return map;
+    for (const s of subjData.subjects) {
+      if (s.values.length > 0) {
+        // Sort by day and take the first
+        const sorted = [...s.values].sort((a, b) => a.day - b.day);
+        map.set(s.usubjid, sorted[0].value);
+      }
+    }
+    return map;
+  }, [subjData]);
+
+  // Build chart data per sex
+  const chartsBySex = useMemo(() => {
+    return sexes.map((sex) => {
+      const points = tcData.timepoints.map((tp) => {
+        const point: Record<string, unknown> = { day: tp.day };
+        for (const g of tp.groups) {
+          if (g.sex !== sex) continue;
+          let value = g.mean;
+          let sd = g.sd;
+          const key = `dose_${g.dose_level}`;
+
+          if (yAxisMode === "pct_change") {
+            const bl = baselines.get(`${g.dose_level}_${sex}`);
+            if (bl && bl !== 0) {
+              value = ((g.mean - bl) / bl) * 100;
+              sd = (g.sd / bl) * 100;
+            } else {
+              value = 0;
+              sd = 0;
+            }
+          } else if (yAxisMode === "pct_vs_control") {
+            const ctrl = controlBaselines.get(`${tp.day}_${sex}`);
+            if (ctrl && ctrl !== 0) {
+              value = ((g.mean - ctrl) / ctrl) * 100;
+              sd = (g.sd / ctrl) * 100;
+            } else {
+              value = 0;
+              sd = 0;
+            }
+          }
+
+          point[key] = Math.round(value * 100) / 100;
+          point[`${key}_sd`] = Math.round(sd * 100) / 100;
+          point[`${key}_n`] = g.n;
+          point[`${key}_label`] = g.dose_label;
+        }
+        return point;
+      });
+
+      // Build subject traces for this sex
+      const subjectTraces = showSubjects && subjData
+        ? subjData.subjects
+            .filter((s) => s.sex === sex)
+            .map((s) => ({
+              usubjid: s.usubjid,
+              dose_level: s.dose_level,
+              dose_label: s.dose_label,
+              values: s.values.map((v) => {
+                let val = v.value;
+                if (yAxisMode === "pct_change") {
+                  const bl = subjectBaselines.get(s.usubjid);
+                  val = bl && bl !== 0 ? ((v.value - bl) / bl) * 100 : 0;
+                } else if (yAxisMode === "pct_vs_control") {
+                  const ctrl = controlBaselines.get(`${v.day}_${sex}`);
+                  val = ctrl && ctrl !== 0 ? ((v.value - ctrl) / ctrl) * 100 : 0;
+                }
+                return { day: v.day, value: Math.round(val * 100) / 100 };
+              }),
+            }))
+        : [];
+
+      return { sex, points, subjectTraces };
+    });
+  }, [sexes, tcData, yAxisMode, baselines, controlBaselines, showSubjects, subjData, subjectBaselines]);
+
+  // Y-axis label
+  const yLabel = yAxisMode === "absolute"
+    ? (tcData.unit || "Value")
+    : yAxisMode === "pct_change"
+      ? "% change from baseline"
+      : "% vs control";
+
+  // Baseline reference value (Day 1 control mean for absolute mode)
+  const baselineRefValue = useMemo(() => {
+    if (yAxisMode !== "absolute" || tcData.timepoints.length === 0) return null;
+    const first = tcData.timepoints[0];
+    const ctrl = first.groups.find((g) => g.dose_level === 0);
+    return ctrl?.mean ?? null;
+  }, [tcData, yAxisMode]);
+
+  const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
+  const sexChartColors: Record<string, string> = { M: "#3b82f6", F: "#ec4899" };
+
+  return (
+    <div>
+      {/* Charts */}
+      <div className="flex gap-4 border-b p-4">
+        {chartsBySex.map(({ sex, points, subjectTraces }) => (
+          <div key={sex} className="flex-1">
+            <p className="mb-1 text-center text-[10px] font-medium" style={{ color: sexChartColors[sex] }}>
+              {sexLabels[sex] ?? sex}
+            </p>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={points} margin={{ top: 5, right: 20, bottom: 25, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="day"
+                  tick={{ fontSize: 10 }}
+                  label={{ value: "Study day", position: "insideBottom", offset: -15, fontSize: 10, fill: "#9CA3AF" }}
+                />
+                <YAxis
+                  tick={{ fontSize: 10 }}
+                  label={{ value: yLabel, angle: -90, position: "insideLeft", offset: -5, fontSize: 10, fill: "#9CA3AF" }}
+                />
+                <Tooltip
+                  contentStyle={{ fontSize: 11, borderRadius: 6 }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  formatter={(value: any, name: any, _props: any, _idx: any, payload: any) => {
+                    const n = String(name ?? "");
+                    const item = payload?.[0]?.payload ?? {};
+                    const doseLabel = item[`${n}_label`] ?? `Dose ${parseInt(n.replace("dose_", ""))}`;
+                    const sd = item[`${n}_sd`];
+                    const count = item[`${n}_n`];
+                    const valStr = value != null ? Number(value).toFixed(2) : "\u2014";
+                    const sdStr = sd != null ? ` \u00b1 ${Number(sd).toFixed(2)}` : "";
+                    const nStr = count != null ? `  n=${count}` : "";
+                    return [`${valStr}${sdStr}${nStr}`, String(doseLabel)];
+                  }}
+                  labelFormatter={(label) => `Day ${label}`}
+                />
+                {yAxisMode === "pct_change" && (
+                  <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="8 4" />
+                )}
+                {yAxisMode === "pct_vs_control" && (
+                  <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="8 4" />
+                )}
+                {yAxisMode === "absolute" && baselineRefValue != null && (
+                  <ReferenceLine y={baselineRefValue} stroke="#9CA3AF" strokeDasharray="8 4" />
+                )}
+                {/* Subject lines rendered as SVG paths via Customized */}
+                {showSubjects && subjectTraces.length > 0 && (
+                  <Customized
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    component={(props: any) => {
+                      const { xAxisMap, yAxisMap } = props;
+                      const xAxis = xAxisMap && Object.values(xAxisMap)[0] as { scale?: (v: number) => number } | undefined;
+                      const yAxis = yAxisMap && Object.values(yAxisMap)[0] as { scale?: (v: number) => number } | undefined;
+                      if (!xAxis?.scale || !yAxis?.scale) return null;
+                      return (
+                        <g className="subject-lines">
+                          {subjectTraces.map((trace) => {
+                            const sorted = [...trace.values].sort((a, b) => a.day - b.day);
+                            if (sorted.length < 2) return null;
+                            const d = sorted.map((v, i) => {
+                              const x = xAxis.scale!(v.day);
+                              const y = yAxis.scale!(v.value);
+                              return `${i === 0 ? "M" : "L"}${x},${y}`;
+                            }).join(" ");
+                            return (
+                              <path
+                                key={trace.usubjid}
+                                d={d}
+                                fill="none"
+                                stroke={getDoseGroupColor(trace.dose_level)}
+                                strokeWidth={1}
+                                opacity={0.3}
+                                style={{ cursor: onSubjectClick ? "pointer" : undefined }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onSubjectClick?.(trace.usubjid);
+                                }}
+                              >
+                                <title>{trace.usubjid} ({trace.dose_label})</title>
+                              </path>
+                            );
+                          })}
+                        </g>
+                      );
+                    }}
+                  />
+                )}
+                {/* Group mean lines */}
+                {doseLevels.map((dl) => (
+                  <Line
+                    key={dl}
+                    type="monotone"
+                    dataKey={`dose_${dl}`}
+                    stroke={getDoseGroupColor(dl)}
+                    strokeWidth={showSubjects ? 3 : 2}
+                    name={`dose_${dl}`}
+                    connectNulls
+                    dot={{ r: showSubjects ? 2 : 3, fill: getDoseGroupColor(dl) }}
+                    isAnimationActive={!showSubjects}
+                  >
+                    {!showSubjects && (
+                      <ErrorBar
+                        dataKey={`dose_${dl}_sd`}
+                        width={4}
+                        strokeWidth={1}
+                        stroke={getDoseGroupColor(dl)}
+                      />
+                    )}
+                  </Line>
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-3 border-b px-4 py-2 text-[10px] text-muted-foreground">
+        {doseLevels.map((dl) => {
+          // Get label from first available timepoint
+          const label = tcData.timepoints[0]?.groups.find((g) => g.dose_level === dl)?.dose_label ?? `Dose ${dl}`;
+          return (
+            <span key={dl} className="flex items-center gap-1">
+              <span
+                className="inline-block h-0.5 w-3 rounded"
+                style={{ backgroundColor: getDoseGroupColor(dl) }}
+              />
+              {label}
+            </span>
+          );
+        })}
+        {yAxisMode === "absolute" && baselineRefValue != null && (
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-0 w-3 border-t border-dashed border-gray-400" />
+            Baseline
+          </span>
+        )}
+      </div>
+
+      {/* Subject count indicator */}
+      {showSubjects && subjData && (
+        <div className="px-4 py-1 text-center text-[10px] text-muted-foreground">
+          Showing {subjData.subjects.length} subjects · Click a line to view subject profile
+        </div>
+      )}
+
+      {/* Day-by-dose table below chart */}
+      <TimecourseTable tcData={tcData} yAxisMode={yAxisMode} baselines={baselines} controlBaselines={controlBaselines} />
+    </div>
+  );
+}
+
+/** Compact day-by-dose comparison table below the time-course chart. */
+function TimecourseTable({
+  tcData,
+  yAxisMode,
+  baselines,
+  controlBaselines,
+}: {
+  tcData: TimecourseResponse;
+  yAxisMode: YAxisMode;
+  baselines: Map<string, number>;
+  controlBaselines: Map<string, number>;
+}) {
+  // Get dose levels and their labels
+  const doseInfo = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const tp of tcData.timepoints) {
+      for (const g of tp.groups) {
+        if (!map.has(g.dose_level)) map.set(g.dose_level, g.dose_label);
+      }
+    }
+    return [...map.entries()].sort((a, b) => a[0] - b[0]);
+  }, [tcData]);
+
+  // Get sexes
+  const sexes = useMemo(() => {
+    const s = new Set<string>();
+    for (const tp of tcData.timepoints) {
+      for (const g of tp.groups) s.add(g.sex);
+    }
+    return [...s].sort();
+  }, [tcData]);
+
+  return (
+    <div className="p-4">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Day-by-dose detail
+      </h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="sticky top-0 z-10 bg-background">
+            <tr className="border-b bg-muted/50">
+              <th className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Day
+              </th>
+              <th className="px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Sex
+              </th>
+              {doseInfo.map(([dl, label]) => (
+                <th
+                  key={dl}
+                  className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider"
+                  style={{ color: getDoseGroupColor(dl) }}
+                >
+                  {label.split(",")[0]}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tcData.timepoints.map((tp) =>
+              sexes.map((sex, si) => {
+                const groups = tp.groups.filter((g) => g.sex === sex);
+                const allZero = groups.every((g) => g.mean === 0 && g.n === 0);
+
+                return (
+                  <tr
+                    key={`${tp.day}_${sex}`}
+                    className={cn(
+                      "border-b border-dashed",
+                      allZero && "text-muted-foreground/50",
+                      si === 0 && sexes.length > 1 && "border-t border-border/60"
+                    )}
+                  >
+                    {si === 0 ? (
+                      <td className="px-2 py-1 text-right font-mono" rowSpan={sexes.length}>
+                        {tp.day}
+                      </td>
+                    ) : null}
+                    <td className="px-2 py-1 text-[10px]">{sex}</td>
+                    {doseInfo.map(([dl]) => {
+                      const g = groups.find((gg) => gg.dose_level === dl);
+                      if (!g) return <td key={dl} className="px-2 py-1 text-right font-mono">&mdash;</td>;
+
+                      let displayVal = g.mean;
+                      if (yAxisMode === "pct_change") {
+                        const bl = baselines.get(`${dl}_${sex}`);
+                        displayVal = bl && bl !== 0 ? ((g.mean - bl) / bl) * 100 : 0;
+                      } else if (yAxisMode === "pct_vs_control") {
+                        const ctrl = controlBaselines.get(`${tp.day}_${sex}`);
+                        displayVal = ctrl && ctrl !== 0 ? ((g.mean - ctrl) / ctrl) * 100 : 0;
+                      }
+
+                      return (
+                        <td key={dl} className="px-2 py-1 text-right font-mono text-[11px]">
+                          {displayVal.toFixed(1)}
+                          <span className="ml-0.5 text-[9px] text-muted-foreground">
+                            {"\u00b1"}{g.sd.toFixed(1)}
+                          </span>
+                          <span className="ml-1 text-[9px] text-muted-foreground/60">
+                            n={g.n}
+                          </span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

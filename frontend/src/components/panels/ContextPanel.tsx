@@ -21,6 +21,7 @@ import { TargetOrgansContextPanel } from "@/components/analysis/panes/TargetOrga
 import { DoseResponseContextPanel } from "@/components/analysis/panes/DoseResponseContextPanel";
 import { HistopathologyContextPanel } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { ValidationContextPanel } from "@/components/analysis/panes/ValidationContextPanel";
+import { SubjectProfilePanel } from "@/components/analysis/panes/SubjectProfilePanel";
 import { titleCase } from "@/lib/severity-colors";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AnalysisSummary } from "@/types/analysis";
@@ -450,8 +451,20 @@ export function ContextPanel() {
   const { selectedStudyId } = useSelection();
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
+  const { selectedSubject, setSelectedSubject } = useViewSelection();
 
   const activeStudyId = studyId ?? selectedStudyId;
+
+  // Subject profile takes priority over route-based panels
+  if (selectedSubject && activeStudyId) {
+    return (
+      <SubjectProfilePanel
+        studyId={activeStudyId}
+        usubjid={selectedSubject}
+        onBack={() => setSelectedSubject(null)}
+      />
+    );
+  }
 
   // Route detection
   const isAdverseEffectsRoute = /\/studies\/[^/]+\/analyses\/adverse-effects/.test(
