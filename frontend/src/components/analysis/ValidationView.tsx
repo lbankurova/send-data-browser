@@ -313,6 +313,8 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     onSortingChange: setRuleSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
   });
 
   // Bottom table
@@ -323,6 +325,8 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     onSortingChange: setRecordSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
   });
 
   // Watch for filter changes from context panel
@@ -447,7 +451,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="cursor-pointer select-none border-b px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
+                        className="relative cursor-pointer select-none border-b px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
                         style={{ width: header.getSize() }}
                         onClick={header.column.getToggleSortingHandler()}
                       >
@@ -455,6 +459,14 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                           {flexRender(header.column.columnDef.header, header.getContext())}
                           {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? null}
                         </span>
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className={cn(
+                            "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                            header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                          )}
+                        />
                       </th>
                     ))}
                   </tr>
@@ -473,7 +485,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                       onClick={() => handleRuleClick(row.original)}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-3 py-2 text-xs">
+                        <td key={cell.id} className="px-3 py-2 text-xs" style={{ width: cell.column.getSize() }}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -532,7 +544,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className="cursor-pointer select-none border-b px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
+                          className="relative cursor-pointer select-none border-b px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
                           style={{ width: header.getSize() }}
                           onClick={header.column.getToggleSortingHandler()}
                         >
@@ -540,6 +552,14 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                             {flexRender(header.column.columnDef.header, header.getContext())}
                             {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? null}
                           </span>
+                          <div
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            className={cn(
+                              "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                              header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                            )}
+                          />
                         </th>
                       ))}
                     </tr>
@@ -577,7 +597,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                         }}
                       >
                         {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="px-3 py-2 text-xs">
+                          <td key={cell.id} className="px-3 py-2 text-xs" style={{ width: cell.column.getSize() }}>
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </td>
                         ))}

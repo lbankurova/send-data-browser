@@ -18,6 +18,8 @@ import {
   getDirectionSymbol,
   getDomainBadgeColor,
 } from "@/lib/severity-colors";
+import { useResizePanel } from "@/hooks/useResizePanel";
+import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import type { TargetOrganRow, OrganEvidenceRow } from "@/types/analysis-views";
 
 export interface OrganSelection {
@@ -133,7 +135,7 @@ function OrganRail({
   }, [organs, search]);
 
   return (
-    <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r">
+    <div className="flex h-full w-full flex-col overflow-hidden">
       <div className="border-b px-3 py-2">
         <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Organ systems ({organs.length})
@@ -504,6 +506,8 @@ function EvidenceTableTab({
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
   });
 
   return (
@@ -543,11 +547,20 @@ function EvidenceTableTab({
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                    className="relative cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                    style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                     {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
+                      className={cn(
+                        "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                        header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                      )}
+                    />
                   </th>
                 ))}
               </tr>
@@ -573,7 +586,7 @@ function EvidenceTableTab({
                   {row.getVisibleCells().map((cell) => {
                     const isEvidence = cell.column.id === "p_value" || cell.column.id === "effect_size";
                     return (
-                      <td key={cell.id} className="px-2 py-1" data-evidence={isEvidence || undefined}>
+                      <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }} data-evidence={isEvidence || undefined}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     );
@@ -609,6 +622,7 @@ export function TargetOrgansView({
   const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
   const [sexFilter, setSexFilter] = useState<string | null>(null);
   const [domainFilter, setDomainFilter] = useState<string | null>(null);
+  const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
 
   // Sorted organs by evidence_score desc
   const sortedOrgans = useMemo(() => {
@@ -714,13 +728,19 @@ export function TargetOrgansView({
   return (
     <div className="flex h-full overflow-hidden max-[1200px]:flex-col">
       {/* Left: Organ rail */}
-      <div className="max-[1200px]:h-[180px] max-[1200px]:w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto min-[1200px]:contents">
+      <div
+        className="shrink-0 border-r max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto"
+        style={{ width: railWidth }}
+      >
         <OrganRail
           organs={sortedOrgans}
           selectedOrgan={selectedOrgan}
           maxEvidenceScore={maxEvidenceScore}
           onOrganClick={handleOrganClick}
         />
+      </div>
+      <div className="max-[1200px]:hidden">
+        <PanelResizeHandle onPointerDown={onRailResize} />
       </div>
 
       {/* Right: Evidence panel */}
