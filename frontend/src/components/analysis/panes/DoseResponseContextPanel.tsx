@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { CollapseAllButtons } from "./CollapseAllButtons";
 import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { titleCase } from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
@@ -51,6 +53,8 @@ export function DoseResponseContextPanel({
     });
   }, [ruleResults, selection]);
 
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
   if (!selection) {
     return (
       <div className="p-4 text-xs text-muted-foreground">
@@ -63,7 +67,10 @@ export function DoseResponseContextPanel({
     <div>
       {/* Header */}
       <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
+          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+        </div>
         <div className="mt-1 flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
             {selection.domain} &middot; {titleCase(selection.organ_system)}
@@ -81,7 +88,7 @@ export function DoseResponseContextPanel({
       </div>
 
       {/* Endpoint insights */}
-      <CollapsiblePane title="Insights" defaultOpen>
+      <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <InsightsList rules={endpointRules} tierFilter={tierFilter} />
       </CollapsiblePane>
 
@@ -91,7 +98,7 @@ export function DoseResponseContextPanel({
       )}
 
       {/* Cross-view links */}
-      <CollapsiblePane title="Related views" defaultOpen={false}>
+      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
           {selection.organ_system && (
             <a

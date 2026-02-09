@@ -3,7 +3,9 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { CollapseAllButtons } from "./CollapseAllButtons";
 import { ValidationIssueForm } from "./ValidationIssueForm";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { cn } from "@/lib/utils";
 import {
   FIX_STATUS_STYLES,
@@ -187,6 +189,7 @@ function RuleReviewSummary({
 
   const reviewedCount = records.length - reviewCounts["Not reviewed"];
   const progressPct = records.length > 0 ? (reviewedCount / records.length) * 100 : 0;
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   return (
     <div>
@@ -204,6 +207,9 @@ function RuleReviewSummary({
           >
             {selection.severity}
           </span>
+          <span className="ml-auto">
+            <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+          </span>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           {selection.domain} &middot; {selection.category}
@@ -211,7 +217,7 @@ function RuleReviewSummary({
       </div>
 
       {/* Rule detail */}
-      <CollapsiblePane title="Rule detail" defaultOpen>
+      <CollapsiblePane title="Rule detail" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {detail ? (
           <div className="space-y-2 text-[11px]">
             <div>
@@ -240,7 +246,7 @@ function RuleReviewSummary({
       </CollapsiblePane>
 
       {/* Review progress */}
-      <CollapsiblePane title="Review progress" defaultOpen>
+      <CollapsiblePane title="Review progress" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-2.5 text-[11px]">
           {/* Progress bar */}
           <div>

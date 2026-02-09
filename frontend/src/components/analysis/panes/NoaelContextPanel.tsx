@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { CollapseAllButtons } from "./CollapseAllButtons";
 import { InsightsList } from "./InsightsList";
 import { ToxFindingForm } from "./ToxFindingForm";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
 import {
   formatPValue,
   formatEffectSize,
@@ -61,16 +63,21 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection, s
     );
   }, [ruleResults, selection]);
 
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
   if (!selection) {
     return (
       <div>
+        <div className="flex items-center justify-end border-b px-4 py-1.5">
+          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+        </div>
         {/* NOAEL narrative */}
-        <CollapsiblePane title="NOAEL narrative" defaultOpen>
+        <CollapsiblePane title="NOAEL narrative" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <InsightsList rules={noaelRules} />
         </CollapsiblePane>
 
         {/* Confidence factors */}
-        <CollapsiblePane title="Confidence" defaultOpen={false}>
+        <CollapsiblePane title="Confidence" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-1 text-[11px]">
             {noaelData.map((r) => (
               <div key={r.sex} className="flex justify-between">
@@ -96,14 +103,17 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection, s
     <div>
       {/* Header */}
       <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
+          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+        </div>
         <p className="text-xs text-muted-foreground">
           {selection.sex} &middot; Dose {selection.dose_level}
         </p>
       </div>
 
       {/* Adversity rationale */}
-      <CollapsiblePane title="Adversity rationale" defaultOpen>
+      <CollapsiblePane title="Adversity rationale" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {selectedRows.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No data for selected endpoint.</p>
         ) : (
@@ -132,12 +142,12 @@ export function NoaelContextPanel({ noaelData, aeData, ruleResults, selection, s
       </CollapsiblePane>
 
       {/* Endpoint insights */}
-      <CollapsiblePane title="Insights" defaultOpen>
+      <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <InsightsList rules={endpointRules} />
       </CollapsiblePane>
 
       {/* Cross-view links */}
-      <CollapsiblePane title="Related views" defaultOpen={false}>
+      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
           <a
             href="#"

@@ -1,9 +1,11 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { CollapseAllButtons } from "./CollapseAllButtons";
 import { InsightsList } from "./InsightsList";
 import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { cn } from "@/lib/utils";
 import { getSeverityBadgeClasses } from "@/lib/severity-colors";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
@@ -76,6 +78,8 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       .slice(0, 10);
   }, [lesionData, selection]);
 
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
   if (!selection) {
     return (
       <div className="p-4 text-xs text-muted-foreground">
@@ -88,7 +92,10 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
     <div>
       {/* Header */}
       <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <h3 className="text-sm font-semibold">{selection.finding}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">{selection.finding}</h3>
+          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+        </div>
         <p className="text-xs text-muted-foreground">{selection.specimen}</p>
       </div>
 
@@ -98,7 +105,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       )}
 
       {/* Finding detail */}
-      <CollapsiblePane title="Dose detail" defaultOpen>
+      <CollapsiblePane title="Dose detail" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {findingRows.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No data.</p>
         ) : (
@@ -146,12 +153,12 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       </CollapsiblePane>
 
       {/* Rule-based insights */}
-      <CollapsiblePane title="Insights" defaultOpen>
+      <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <InsightsList rules={findingRules} />
       </CollapsiblePane>
 
       {/* Correlating evidence */}
-      <CollapsiblePane title="Correlating evidence" defaultOpen={false}>
+      <CollapsiblePane title="Correlating evidence" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         {correlating.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No other findings in this specimen.</p>
         ) : (
@@ -174,7 +181,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       </CollapsiblePane>
 
       {/* Cross-view links */}
-      <CollapsiblePane title="Related views" defaultOpen={false}>
+      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
           <a
             href="#"

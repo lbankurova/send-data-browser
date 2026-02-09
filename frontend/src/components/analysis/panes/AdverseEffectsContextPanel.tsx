@@ -1,7 +1,9 @@
 import { useParams } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useFindingContext } from "@/hooks/useFindingContext";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { CollapseAllButtons } from "./CollapseAllButtons";
 import { TreatmentRelatedSummaryPane } from "./TreatmentRelatedSummaryPane";
 import { StatisticsPane } from "./StatisticsPane";
 import { DoseResponsePane } from "./DoseResponsePane";
@@ -39,35 +41,40 @@ export function AdverseEffectsContextPanel() {
     );
   }
 
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
   if (!context) return null;
 
   return (
     <div>
       <div className="border-b px-4 py-2">
-        <h3 className="text-sm font-semibold">{selectedFinding.finding}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">{selectedFinding.finding}</h3>
+          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+        </div>
         <p className="text-[10px] text-muted-foreground">
           {selectedFinding.domain} | {selectedFinding.sex} |{" "}
           {selectedFinding.day != null ? `Day ${selectedFinding.day}` : "Terminal"}
         </p>
       </div>
 
-      <CollapsiblePane title="Treatment summary" defaultOpen>
+      <CollapsiblePane title="Treatment summary" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <TreatmentRelatedSummaryPane data={context.treatment_summary} />
       </CollapsiblePane>
 
-      <CollapsiblePane title="Statistics" defaultOpen>
+      <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <StatisticsPane data={context.statistics} />
       </CollapsiblePane>
 
-      <CollapsiblePane title="Dose response">
+      <CollapsiblePane title="Dose response" expandAll={expandGen} collapseAll={collapseGen}>
         <DoseResponsePane data={context.dose_response} />
       </CollapsiblePane>
 
-      <CollapsiblePane title="Correlations" defaultOpen={false}>
+      <CollapsiblePane title="Correlations" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <CorrelationsPane data={context.correlations} />
       </CollapsiblePane>
 
-      <CollapsiblePane title="Effect size" defaultOpen={false}>
+      <CollapsiblePane title="Effect size" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <EffectSizePane data={context.effect_size} />
       </CollapsiblePane>
     </div>

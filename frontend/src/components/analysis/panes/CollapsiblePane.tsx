@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -7,6 +7,8 @@ interface CollapsiblePaneProps {
   defaultOpen?: boolean;
   headerRight?: ReactNode;
   children: ReactNode;
+  expandAll?: number;
+  collapseAll?: number;
 }
 
 export function CollapsiblePane({
@@ -14,8 +16,26 @@ export function CollapsiblePane({
   defaultOpen = true,
   headerRight,
   children,
+  expandAll,
+  collapseAll,
 }: CollapsiblePaneProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const prevExpand = useRef(expandAll);
+  const prevCollapse = useRef(collapseAll);
+
+  useEffect(() => {
+    if (expandAll != null && expandAll !== prevExpand.current) {
+      setIsOpen(true);
+    }
+    prevExpand.current = expandAll;
+  }, [expandAll]);
+
+  useEffect(() => {
+    if (collapseAll != null && collapseAll !== prevCollapse.current) {
+      setIsOpen(false);
+    }
+    prevCollapse.current = collapseAll;
+  }, [collapseAll]);
 
   return (
     <div className="border-b last:border-b-0">
