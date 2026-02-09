@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
-import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
@@ -129,19 +128,45 @@ export function TargetOrgansContextPanel({
         </div>
       </div>
 
-      {/* 1. Convergence insights */}
+      {/* 1. Convergence summary (detail in center Hypotheses tab) */}
       <CollapsiblePane
         title="Convergence"
         defaultOpen
         expandAll={expandGen}
         collapseAll={collapseGen}
       >
-        <InsightsList rules={organRules} tierFilter={tierFilter} />
+        {organRules.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">No convergence rules for this organ.</p>
+        ) : (
+          <div className="space-y-1.5 text-[11px]">
+            {(() => {
+              const counts = computeTierCounts(organRules);
+              const lines: string[] = [];
+              if (counts.Critical > 0) lines.push(`${counts.Critical} critical signal${counts.Critical > 1 ? "s" : ""}`);
+              if (counts.Notable > 0) lines.push(`${counts.Notable} notable signal${counts.Notable > 1 ? "s" : ""}`);
+              if (counts.Observed > 0) lines.push(`${counts.Observed} observed`);
+              const domains = new Set(organRules.map((r) => r.context_key.split("_")[0]).filter(Boolean));
+              return (
+                <>
+                  <p>{lines.join(", ") || "No tiered signals"} across {organRules.length} rule{organRules.length > 1 ? "s" : ""}.</p>
+                  {domains.size > 0 && (
+                    <p className="text-muted-foreground">
+                      Domains: {[...domains].join(", ")}
+                    </p>
+                  )}
+                  <p className="text-muted-foreground">
+                    See Hypotheses tab for full insights.
+                  </p>
+                </>
+              );
+            })()}
+          </div>
+        )}
       </CollapsiblePane>
 
-      {/* 2. Contributing endpoints */}
+      {/* 2. Domain summary (detail in Evidence tab) */}
       <CollapsiblePane
-        title={`Endpoints (${endpoints.length})`}
+        title="Domain coverage"
         defaultOpen
         expandAll={expandGen}
         collapseAll={collapseGen}
@@ -150,18 +175,26 @@ export function TargetOrgansContextPanel({
           <p className="text-[11px] text-muted-foreground">No endpoints for this organ.</p>
         ) : (
           <div className="space-y-0.5">
-            {endpoints.map(([label, info]) => {
-              const dc = getDomainBadgeColor(info.domain);
-              return (
-                <div key={label} className="flex items-center gap-1 text-[11px]">
-                  <span className={cn("text-[9px] font-semibold", dc.text)}>{info.domain}</span>
-                  <span className="truncate" title={label}>
-                    {label}
-                  </span>
-                  <span className="ml-auto text-muted-foreground">({info.count})</span>
-                </div>
-              );
-            })}
+            {(() => {
+              const domainCounts = new Map<string, number>();
+              for (const [, info] of endpoints) {
+                domainCounts.set(info.domain, (domainCounts.get(info.domain) ?? 0) + 1);
+              }
+              return [...domainCounts.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .map(([domain, count]) => {
+                  const dc = getDomainBadgeColor(domain);
+                  return (
+                    <div key={domain} className="flex items-center justify-between text-[11px]">
+                      <span className={cn("text-[9px] font-semibold", dc.text)}>{domain}</span>
+                      <span className="text-muted-foreground">{count} endpoint{count > 1 ? "s" : ""}</span>
+                    </div>
+                  );
+                });
+            })()}
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              See Evidence tab for full endpoint list.
+            </p>
           </div>
         )}
       </CollapsiblePane>
