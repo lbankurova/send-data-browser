@@ -12,11 +12,11 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useOrganEvidenceDetail } from "@/hooks/useOrganEvidenceDetail";
 import { cn } from "@/lib/utils";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 import {
   formatPValue,
   formatEffectSize,
   getDirectionSymbol,
-  getDomainBadgeColor,
   titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -257,7 +257,7 @@ function OrganListItem({
         <span>&middot;</span>
         <span>{organ.n_treatment_related} TR</span>
         {organ.domains.map((d) => (
-          <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
+          <DomainLabel key={d} domain={d} />
         ))}
       </div>
     </button>
@@ -369,7 +369,7 @@ function OrganSummaryHeader({
       {/* Subtitle: domain chips + endpoint count */}
       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
         {domains.map((d) => (
-          <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
+          <DomainLabel key={d} domain={d} />
         ))}
         <span>&middot;</span>
         <span>{organ.n_endpoints} endpoints</span>
@@ -553,7 +553,7 @@ function OverviewTab({
             {domainBreakdown.map((d) => (
                 <tr key={d.domain} className="border-b border-border/30">
                   <td className="py-1.5 pr-3">
-                    <span className={cn("text-[9px] font-semibold", getDomainBadgeColor(d.domain).text)}>{d.domain}</span>
+                    <DomainLabel domain={d.domain} />
                   </td>
                   <td className="py-1.5 pr-3">{d.endpoints}</td>
                   <td className="py-1.5 pr-3">
@@ -701,14 +701,7 @@ function EvidenceTableTab({
       }),
       evidenceCol.accessor("domain", {
         header: "Domain",
-        cell: (info) => {
-          const dc = getDomainBadgeColor(info.getValue());
-          return (
-            <span className={cn("text-[9px] font-semibold", dc.text)}>
-              {info.getValue()}
-            </span>
-          );
-        },
+        cell: (info) => <DomainLabel domain={info.getValue()} />,
       }),
       evidenceCol.accessor("dose_level", {
         header: "Dose",
@@ -973,7 +966,7 @@ function HeatmapPlaceholder({ organName, endpointCount, domains }: { organName: 
         {domains.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {domains.map((d) => (
-              <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
+              <DomainLabel key={d} domain={d} />
             ))}
           </div>
         )}
@@ -1000,7 +993,7 @@ function DomainContributionPlaceholder({ organName, domains }: { organName: stri
         {domains.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {domains.map((d) => (
-              <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
+              <DomainLabel key={d} domain={d} />
             ))}
           </div>
         )}

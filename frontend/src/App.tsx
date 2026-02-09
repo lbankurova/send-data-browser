@@ -1,15 +1,31 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { AppLandingPage } from "@/components/panels/AppLandingPage";
 import { CenterPanel } from "@/components/panels/CenterPanel";
 import { AdverseEffectsView } from "@/components/analysis/AdverseEffectsView";
 import { PlaceholderAnalysisView } from "@/components/analysis/PlaceholderAnalysisView";
-import { ValidationViewWrapper } from "@/components/analysis/ValidationViewWrapper";
 import { StudySummaryViewWrapper } from "@/components/analysis/StudySummaryViewWrapper";
-import { NoaelDecisionViewWrapper } from "@/components/analysis/NoaelDecisionViewWrapper";
-import { TargetOrgansViewWrapper } from "@/components/analysis/TargetOrgansViewWrapper";
-import { DoseResponseViewWrapper } from "@/components/analysis/DoseResponseViewWrapper";
-import { HistopathologyViewWrapper } from "@/components/analysis/HistopathologyViewWrapper";
+
+// Lazy-loaded analysis views (code-split into separate chunks)
+const DoseResponseViewWrapper = lazy(() => import("@/components/analysis/DoseResponseViewWrapper").then(m => ({ default: m.DoseResponseViewWrapper })));
+const TargetOrgansViewWrapper = lazy(() => import("@/components/analysis/TargetOrgansViewWrapper").then(m => ({ default: m.TargetOrgansViewWrapper })));
+const HistopathologyViewWrapper = lazy(() => import("@/components/analysis/HistopathologyViewWrapper").then(m => ({ default: m.HistopathologyViewWrapper })));
+const NoaelDecisionViewWrapper = lazy(() => import("@/components/analysis/NoaelDecisionViewWrapper").then(m => ({ default: m.NoaelDecisionViewWrapper })));
+const ValidationViewWrapper = lazy(() => import("@/components/analysis/ValidationViewWrapper").then(m => ({ default: m.ValidationViewWrapper })));
+
+function ViewLoading() {
+  return (
+    <div className="flex flex-1 items-center justify-center">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+function LazyRoute({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<ViewLoading />}>{children}</Suspense>;
+}
 
 const router = createBrowserRouter([
   {
@@ -27,23 +43,23 @@ const router = createBrowserRouter([
       },
       {
         path: "/studies/:studyId/dose-response",
-        element: <DoseResponseViewWrapper />,
+        element: <LazyRoute><DoseResponseViewWrapper /></LazyRoute>,
       },
       {
         path: "/studies/:studyId/target-organs",
-        element: <TargetOrgansViewWrapper />,
+        element: <LazyRoute><TargetOrgansViewWrapper /></LazyRoute>,
       },
       {
         path: "/studies/:studyId/histopathology",
-        element: <HistopathologyViewWrapper />,
+        element: <LazyRoute><HistopathologyViewWrapper /></LazyRoute>,
       },
       {
         path: "/studies/:studyId/noael-decision",
-        element: <NoaelDecisionViewWrapper />,
+        element: <LazyRoute><NoaelDecisionViewWrapper /></LazyRoute>,
       },
       {
         path: "/studies/:studyId/validation",
-        element: <ValidationViewWrapper />,
+        element: <LazyRoute><ValidationViewWrapper /></LazyRoute>,
       },
       {
         path: "/studies/:studyId/analyses/:analysisType",

@@ -16,10 +16,9 @@ import type {
 import {
   formatPValue,
   formatEffectSize,
-  getDomainBadgeColor,
   titleCase,
 } from "@/lib/severity-colors";
-import { cn } from "@/lib/utils";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 
 interface Props {
   signalData: SignalSummaryRow[];
@@ -243,7 +242,7 @@ function EndpointPanel({
                         ? f.endpoint_label.slice(0, 25) + "\u2026"
                         : f.endpoint_label}
                     </td>
-                    <td className={cn("py-0.5 text-[9px] font-semibold", getDomainBadgeColor(f.domain).text)}>{f.domain}</td>
+                    <td className="py-0.5"><DomainLabel domain={f.domain} /></td>
                     <td className="py-0.5 text-right font-mono">
                       {f.signal_score.toFixed(2)}
                     </td>
@@ -276,8 +275,7 @@ function EndpointPanel({
           )}
           <a
             href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
+            className="block text-[#3a7bd5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, {
@@ -292,8 +290,7 @@ function EndpointPanel({
           </a>
           <a
             href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
+            className="block text-[#3a7bd5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, {
@@ -305,8 +302,7 @@ function EndpointPanel({
           </a>
           <a
             href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
+            className="block text-[#3a7bd5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, {
@@ -478,7 +474,7 @@ function OrganPanel({
                       ? ep.endpoint_label.slice(0, 22) + "\u2026"
                       : ep.endpoint_label}
                   </td>
-                  <td className={cn("py-0.5 text-[9px] font-semibold", getDomainBadgeColor(ep.domain).text)}>{ep.domain}</td>
+                  <td className="py-0.5"><DomainLabel domain={ep.domain} /></td>
                   <td className="py-0.5 text-right font-mono">
                     {ep.signal_score.toFixed(2)}
                   </td>
@@ -500,12 +496,7 @@ function OrganPanel({
             <span className="text-muted-foreground">Domains: </span>
             <span className="inline-flex flex-wrap gap-1">
               {evidence.domains.map((d) => (
-                <span
-                  key={d}
-                  className={`text-[9px] font-semibold ${getDomainBadgeColor(d).text}`}
-                >
-                  {d}
-                </span>
+                <DomainLabel key={d} domain={d} />
               ))}
             </span>
           </div>
@@ -548,8 +539,7 @@ function OrganPanel({
         <div className="space-y-1 text-[11px]">
           <a
             href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
+            className="block text-[#3a7bd5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: organSystem } });
@@ -559,8 +549,7 @@ function OrganPanel({
           </a>
           <a
             href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
+            className="block text-[#3a7bd5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organSystem } });
@@ -570,8 +559,7 @@ function OrganPanel({
           </a>
           <a
             href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
+            className="block text-[#3a7bd5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: organSystem } });
@@ -581,8 +569,7 @@ function OrganPanel({
           </a>
           <a
             href="#"
-            className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
+            className="block text-[#3a7bd5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: organSystem } });
