@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Loader2, ChevronDown, ChevronRight, Search, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, Search, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect, Pin, Plus } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -1329,13 +1329,23 @@ function MetricsTableContent({
 
 type HypothesisIntent = "shape" | "model" | "pareto" | "correlation" | "outliers";
 
-const HYPOTHESIS_INTENTS: { value: HypothesisIntent; label: string; icon: typeof TrendingUp; available: boolean }[] = [
-  { value: "shape", label: "Shape", icon: TrendingUp, available: true },
-  { value: "model", label: "Model fit", icon: GitBranch, available: false },
-  { value: "pareto", label: "Pareto", icon: ScatterChart, available: true },
-  { value: "correlation", label: "Correlation", icon: Link2, available: false },
-  { value: "outliers", label: "Outliers", icon: BoxSelect, available: false },
+interface HypothesisTool {
+  value: HypothesisIntent;
+  label: string;
+  icon: typeof TrendingUp;
+  available: boolean;
+  description: string;
+}
+
+const HYPOTHESIS_TOOLS: HypothesisTool[] = [
+  { value: "shape", label: "Shape", icon: TrendingUp, available: true, description: "Interactive dose-response curve" },
+  { value: "model", label: "Model fit", icon: GitBranch, available: false, description: "Fit models to dose-response data" },
+  { value: "pareto", label: "Pareto front", icon: ScatterChart, available: true, description: "Effect size vs. significance trade-offs" },
+  { value: "correlation", label: "Correlation", icon: Link2, available: false, description: "Co-movement between endpoints" },
+  { value: "outliers", label: "Outliers", icon: BoxSelect, available: false, description: "Distribution and outlier detection" },
 ];
+
+const DEFAULT_FAVORITES: HypothesisIntent[] = ["shape", "pareto"];
 
 interface HypothesesTabProps {
   selectedEndpoint: string | null;
@@ -1345,34 +1355,175 @@ interface HypothesesTabProps {
 
 function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSummaries }: HypothesesTabProps) {
   const [intent, setIntent] = useState<HypothesisIntent>("shape");
+  const [favorites, setFavorites] = useState<HypothesisIntent[]>(DEFAULT_FAVORITES);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState("");
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tool: HypothesisIntent } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Close dropdown and context menu on outside click
+  useEffect(() => {
+    if (!dropdownOpen && !contextMenu) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (dropdownOpen && dropdownRef.current && !dropdownRef.current.contains(target)) {
+        setDropdownOpen(false);
+        setDropdownSearch("");
+      }
+      if (contextMenu && contextMenuRef.current && !contextMenuRef.current.contains(target)) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [dropdownOpen, contextMenu]);
+
+  // Focus search when dropdown opens
+  useEffect(() => {
+    if (dropdownOpen) searchInputRef.current?.focus();
+  }, [dropdownOpen]);
+
+  const toggleFavorite = useCallback((tool: HypothesisIntent) => {
+    setFavorites((prev) =>
+      prev.includes(tool) ? prev.filter((f) => f !== tool) : [...prev, tool]
+    );
+  }, []);
+
+  const filteredTools = useMemo(() => {
+    if (!dropdownSearch) return HYPOTHESIS_TOOLS;
+    const q = dropdownSearch.toLowerCase();
+    return HYPOTHESIS_TOOLS.filter(
+      (t) => t.label.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
+    );
+  }, [dropdownSearch]);
+
+  const favTools = useMemo(
+    () => favorites.map((f) => HYPOTHESIS_TOOLS.find((t) => t.value === f)!).filter(Boolean),
+    [favorites]
+  );
 
   return (
     <div className="flex h-full flex-col">
-      {/* Intent selector — segmented pill buttons */}
+      {/* Toolbar: favorite pills + tool dropdown */}
       <div className="flex items-center gap-1 border-b bg-muted/20 px-4 py-1.5">
-        {HYPOTHESIS_INTENTS.map((i) => {
-          const Icon = i.icon;
+        {/* Favorite pills */}
+        {favTools.map((tool) => {
+          const Icon = tool.icon;
           return (
             <button
-              key={i.value}
+              key={tool.value}
               className={cn(
                 "flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
-                intent === i.value
+                intent === tool.value
                   ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                !i.available && intent !== i.value && "opacity-50"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
-              onClick={() => setIntent(i.value)}
+              onClick={() => setIntent(tool.value)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setContextMenu({ x: e.clientX, y: e.clientY, tool: tool.value });
+              }}
             >
               <Icon className="h-3 w-3" />
-              {i.label}
+              {tool.label}
             </button>
           );
         })}
+
+        {/* Add tool dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            className="flex items-center gap-0.5 rounded-full px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            onClick={() => { setDropdownOpen(!dropdownOpen); setDropdownSearch(""); }}
+            title="Browse tools"
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+
+          {dropdownOpen && (
+            <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover shadow-lg">
+              {/* Search */}
+              <div className="border-b px-2 py-1.5">
+                <div className="relative">
+                  <Search className="absolute left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    ref={searchInputRef}
+                    className="w-full rounded border-none bg-transparent py-0.5 pl-6 pr-2 text-xs outline-none placeholder:text-muted-foreground/50"
+                    placeholder="Search tools..."
+                    value={dropdownSearch}
+                    onChange={(e) => setDropdownSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Tool list */}
+              <div className="max-h-48 overflow-y-auto py-1">
+                {filteredTools.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-muted-foreground">No matching tools</p>
+                )}
+                {filteredTools.map((tool) => {
+                  const Icon = tool.icon;
+                  const isFav = favorites.includes(tool.value);
+                  return (
+                    <button
+                      key={tool.value}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent/50"
+                      onClick={() => {
+                        setIntent(tool.value);
+                        if (!favorites.includes(tool.value)) {
+                          setFavorites((prev) => [...prev, tool.value]);
+                        }
+                        setDropdownOpen(false);
+                        setDropdownSearch("");
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setDropdownOpen(false);
+                        setDropdownSearch("");
+                        setContextMenu({ x: e.clientX, y: e.clientY, tool: tool.value });
+                      }}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">{tool.label}</div>
+                        <div className="truncate text-[10px] text-muted-foreground">{tool.description}</div>
+                      </div>
+                      {isFav && <Pin className="h-3 w-3 shrink-0 fill-muted-foreground/50 text-muted-foreground/50" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         <span className="ml-auto text-[10px] italic text-muted-foreground">
-          Exploration only — does not affect conclusions
+          Does not affect conclusions
         </span>
       </div>
+
+      {/* Context menu for favorite toggle */}
+      {contextMenu && (
+        <div
+          ref={contextMenuRef}
+          className="fixed z-50 min-w-[160px] rounded-md border bg-popover py-1 shadow-lg"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-accent/50"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => {
+              toggleFavorite(contextMenu.tool);
+              setContextMenu(null);
+            }}
+          >
+            <Pin className={cn("h-3 w-3", favorites.includes(contextMenu.tool) ? "fill-current text-muted-foreground" : "text-muted-foreground/40")} />
+            {favorites.includes(contextMenu.tool) ? "Remove from favorites" : "Add to favorites"}
+          </button>
+        </div>
+      )}
 
       {/* Intent content */}
       <div className="flex-1 overflow-auto p-4">
