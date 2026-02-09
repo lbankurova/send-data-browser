@@ -21,12 +21,112 @@ import {
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
-import type { TargetOrganRow, OrganEvidenceRow } from "@/types/analysis-views";
+import { useRuleResults } from "@/hooks/useRuleResults";
+import { InsightsList } from "./panes/InsightsList";
+import type { TargetOrganRow, OrganEvidenceRow, RuleResult } from "@/types/analysis-views";
 
 export interface OrganSelection {
   organ_system: string;
   endpoint_label?: string;
   sex?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Organ-level intelligence helpers
+// ---------------------------------------------------------------------------
+
+function deriveSexLabel(rows: OrganEvidenceRow[]): string {
+  const sexes = new Set(rows.map((r) => r.sex));
+  if (sexes.size === 1) {
+    const s = [...sexes][0];
+    return s === "M" ? "Male only" : s === "F" ? "Female only" : `${s} only`;
+  }
+  return "Both sexes";
+}
+
+function getDoseConsistency(rows: OrganEvidenceRow[]): "Weak" | "Moderate" | "Strong" {
+  // Group by endpoint, then check if p-values decrease (strengthen) with dose
+  const byEndpoint = new Map<string, Map<number, { sigCount: number; total: number }>>();
+  for (const r of rows) {
+    let endpointMap = byEndpoint.get(r.endpoint_label);
+    if (!endpointMap) {
+      endpointMap = new Map();
+      byEndpoint.set(r.endpoint_label, endpointMap);
+    }
+    const existing = endpointMap.get(r.dose_level);
+    if (existing) {
+      if (r.p_value !== null && r.p_value < 0.05) existing.sigCount++;
+      existing.total++;
+    } else {
+      endpointMap.set(r.dose_level, {
+        sigCount: r.p_value !== null && r.p_value < 0.05 ? 1 : 0,
+        total: 1,
+      });
+    }
+  }
+
+  let monotonic = 0;
+  const doseGroupsAffected = new Set<number>();
+  for (const [, doseMap] of byEndpoint) {
+    const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
+    // Check if significance rate is non-decreasing with dose
+    const rates = sorted.map(([, v]) => (v.total > 0 ? v.sigCount / v.total : 0));
+    let isMonotonic = true;
+    for (let i = 1; i < rates.length; i++) {
+      if (rates[i] < rates[i - 1] - 0.001) {
+        isMonotonic = false;
+        break;
+      }
+    }
+    if (isMonotonic && rates.length > 1) monotonic++;
+    for (const [dl, v] of sorted) {
+      if (v.sigCount > 0) doseGroupsAffected.add(dl);
+    }
+  }
+
+  const totalEndpoints = byEndpoint.size;
+  if (totalEndpoints === 0) return "Weak";
+
+  const monotonePct = monotonic / totalEndpoints;
+  if (monotonePct > 0.5 && doseGroupsAffected.size >= 3) return "Strong";
+  if (monotonePct > 0 || doseGroupsAffected.size >= 2) return "Moderate";
+  return "Weak";
+}
+
+function deriveOrganConclusion(
+  organ: TargetOrganRow,
+  evidenceRows: OrganEvidenceRow[],
+  organRules: RuleResult[]
+): string {
+  const significantPct = organ.n_endpoints > 0
+    ? ((organ.n_significant / organ.n_endpoints) * 100).toFixed(0)
+    : "0";
+
+  // Convergence characterization
+  const convergenceDesc = organ.target_organ_flag
+    ? "convergent evidence" : "evidence";
+
+  // Domain spread
+  const domainDesc = organ.n_domains === 1
+    ? "1 domain" : `${organ.n_domains} domains`;
+
+  // Significance characterization
+  const sigDesc = `${organ.n_significant}/${organ.n_endpoints} significant (${significantPct}%)`;
+
+  // Sex
+  const sexDesc = deriveSexLabel(evidenceRows).toLowerCase();
+
+  // Dose relationship
+  const hasDoseRule = organRules.some((r) => r.rule_id === "R01" || r.rule_id === "R04");
+  let doseDesc: string;
+  if (hasDoseRule) {
+    doseDesc = "dose-dependent";
+  } else {
+    const consistency = getDoseConsistency(evidenceRows);
+    doseDesc = consistency === "Strong" ? "dose-trending" : consistency === "Moderate" ? "some dose pattern" : "no clear dose pattern";
+  }
+
+  return `${convergenceDesc} across ${domainDesc}, ${sigDesc}, ${sexDesc}, ${doseDesc}.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,14 +273,24 @@ function OrganRail({
 // OrganSummaryHeader — conclusion text + compact metrics
 // ---------------------------------------------------------------------------
 
-function OrganSummaryHeader({ organ }: { organ: TargetOrganRow }) {
-  const significantPct = organ.n_endpoints > 0
-    ? ((organ.n_significant / organ.n_endpoints) * 100).toFixed(0)
-    : "0";
+function OrganSummaryHeader({
+  organ,
+  evidenceRows,
+  organRules,
+}: {
+  organ: TargetOrganRow;
+  evidenceRows: OrganEvidenceRow[];
+  organRules: RuleResult[];
+}) {
+  const sexLabel = useMemo(() => deriveSexLabel(evidenceRows), [evidenceRows]);
+  const conclusion = useMemo(
+    () => deriveOrganConclusion(organ, evidenceRows, organRules),
+    [organ, evidenceRows, organRules]
+  );
 
   return (
     <div className="shrink-0 border-b px-4 py-3">
-      {/* Title + badge */}
+      {/* Title + badges */}
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold">
           {titleCase(organ.organ_system)}
@@ -190,25 +300,26 @@ function OrganSummaryHeader({ organ }: { organ: TargetOrganRow }) {
             TARGET ORGAN
           </span>
         )}
+        <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
+          {sexLabel}
+        </span>
       </div>
 
-      {/* Conclusion text */}
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-        {organ.target_organ_flag ? "Convergent" : "Evidence from"}{" "}
-        {organ.n_domains === 1 ? "1 domain" : `${organ.n_domains} domains`}:{" "}
-        {organ.n_significant}/{organ.n_endpoints} endpoints significant ({significantPct}%),{" "}
-        {organ.n_treatment_related} treatment-related.
+      {/* 1-line conclusion */}
+      <p className="mt-1 text-[11px] italic leading-relaxed text-muted-foreground">
+        {conclusion}
       </p>
 
       {/* Compact metrics */}
       <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
         <div>
           <span className="text-muted-foreground">Max signal: </span>
-          <span className="font-medium">{organ.max_signal_score.toFixed(2)}</span>
+          <span className="font-mono text-[10px] font-medium">{organ.max_signal_score.toFixed(2)}</span>
         </div>
         <div>
           <span className="text-muted-foreground">Evidence: </span>
           <span className={cn(
+            "font-mono text-[10px]",
             organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium"
           )}>
             {organ.evidence_score.toFixed(2)}
@@ -236,9 +347,11 @@ interface DomainBreakdown {
 
 function OverviewTab({
   evidenceRows,
+  organRules,
 }: {
   organ: TargetOrganRow;
   evidenceRows: OrganEvidenceRow[];
+  organRules: RuleResult[];
 }) {
   const domainBreakdown = useMemo(() => {
     const map = new Map<string, { endpoints: Set<string>; significant: number; tr: number }>();
@@ -276,9 +389,14 @@ function OverviewTab({
     <div className="flex-1 overflow-y-auto px-4 py-3">
       {/* Domain breakdown */}
       <div className="mb-4">
-        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Domain breakdown
-        </h4>
+        <div className="mb-2 flex items-center gap-2">
+          <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Domain breakdown
+          </h4>
+          <span className="text-[10px] text-muted-foreground">
+            Dose consistency: {getDoseConsistency(evidenceRows)}
+          </span>
+        </div>
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b text-left text-muted-foreground">
@@ -360,6 +478,16 @@ function OverviewTab({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Insights */}
+      {organRules.length > 0 && (
+        <div className="mt-4">
+          <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Insights
+          </h4>
+          <InsightsList rules={organRules} />
         </div>
       )}
 
@@ -619,6 +747,7 @@ export function TargetOrgansView({
   const location = useLocation();
   const { data: organData, isLoading: organLoading, error: organError } = useTargetOrganSummary(studyId);
   const { data: evidenceData, isLoading: evidLoading, error: evidError } = useOrganEvidenceDetail(studyId);
+  const { data: ruleResults } = useRuleResults(studyId);
 
   const [selectedOrgan, setSelectedOrgan] = useState<string | null>(null);
   const [selectedRow, setSelectedRow] = useState<OrganSelection | null>(null);
@@ -677,6 +806,15 @@ export function TargetOrgansView({
   const domainsInOrgan = useMemo(() => {
     return [...new Set(organEvidenceRows.map((r) => r.domain))].sort();
   }, [organEvidenceRows]);
+
+  // Rules scoped to selected organ (shared with OrganSummaryHeader and OverviewTab)
+  const organRules = useMemo(() => {
+    if (!ruleResults?.length || !selectedOrgan) return [];
+    const organKey = `organ_${selectedOrgan}`;
+    return ruleResults.filter(
+      (r) => r.context_key === organKey || r.organ_system === selectedOrgan
+    );
+  }, [ruleResults, selectedOrgan]);
 
   const handleOrganClick = (organ: string) => {
     setSelectedOrgan(organ);
@@ -751,7 +889,7 @@ export function TargetOrgansView({
         {selectedOrganData && (
           <>
             {/* Summary header */}
-            <OrganSummaryHeader organ={selectedOrganData} />
+            <OrganSummaryHeader organ={selectedOrganData} evidenceRows={organEvidenceRows} organRules={organRules} />
 
             {/* Tab bar */}
             <div className="flex shrink-0 items-center gap-0 border-b px-4">
@@ -784,6 +922,7 @@ export function TargetOrgansView({
               <OverviewTab
                 organ={selectedOrganData}
                 evidenceRows={organEvidenceRows}
+                organRules={organRules}
               />
             ) : (
               <EvidenceTableTab
