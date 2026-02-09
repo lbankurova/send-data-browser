@@ -162,9 +162,9 @@ interface FixScriptDef {
 TanStack React Table, `text-sm`, client-side sorting. Column resizing enabled (`enableColumnResizing: true`, `columnResizeMode: "onChange"`). Table width set to `ruleTable.getCenterTotalSize()` with `tableLayout: "fixed"`.
 
 ### Header Row
-`sticky top-0 z-10`, `border-b`, `backgroundColor: "#f8f8f8"` (hardcoded per design guide §1.9 for consistency across views)
+`sticky top-0 z-10`, `border-b bg-muted/50` (matches all other analysis views)
 
-Headers: `relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-xs font-medium text-muted-foreground hover:text-foreground`
+Headers: `relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground`
 
 Sort indicators: ` (up arrow)` asc / ` (down arrow)` desc
 
@@ -222,7 +222,7 @@ Only shown when a rule is selected.
 Only shown when a rule is selected. TanStack React Table, `text-sm`. Column resizing enabled (same pattern as rules table).
 
 ### Header Row
-Same styling as rules table: `sticky top-0 z-10`, `border-b`, `backgroundColor: "#f8f8f8"`. Column resize handles present.
+Same styling as rules table: `sticky top-0 z-10`, `border-b bg-muted/50`, `text-[10px] font-semibold uppercase tracking-wider`. Column resize handles present.
 
 ### Columns
 
