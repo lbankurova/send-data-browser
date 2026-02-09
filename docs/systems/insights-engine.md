@@ -241,23 +241,23 @@ function assignSection(priority: number): UISection {
 
 | ID | Name | Scope | Severity | Condition | Template (abbreviated) | Output |
 |----|------|-------|----------|-----------|----------------------|--------|
-| R01 | Treatment-related | endpoint | info | `treatment_related == true` | "Treatment-related: {endpoint_label} shows statistically significant dose-dependent change ({direction}) in {sex} ({pattern})." | Per endpoint x sex |
+| R01 | Treatment-related | endpoint | info | `treatment_related == true` | "{endpoint_label}: significant dose-dependent {direction} in {sex} ({pattern})." | Per endpoint x sex |
 | R02 | Significant pairwise | endpoint | info | `p_value_adj < 0.05` | "Significant pairwise difference at {dose_label} (p={p_value}, d={effect_size})." | Per endpoint x dose |
 | R03 | Significant trend | endpoint | info | `trend_p < 0.05` | "Significant dose-response trend (p={trend_p})." | Per endpoint |
-| R04 | Adverse severity | endpoint | warning | `severity == "adverse"` | "Adverse finding: {endpoint_label} classified as adverse in {sex} (p={p_value})." | Per endpoint x sex |
-| R05 | Monotonic pattern | endpoint | info | `pattern in ("monotonic_increase", "monotonic_decrease")` | "Monotonic dose-response: {endpoint_label} shows {pattern} across dose groups in {sex}." | Per endpoint x sex |
-| R06 | Threshold pattern | endpoint | info | `pattern == "threshold"` | "Threshold effect: {endpoint_label} shows threshold pattern in {sex}." | Per endpoint x sex |
-| R07 | Non-monotonic | endpoint | info | `pattern == "non_monotonic"` | "Non-monotonic: {endpoint_label} shows inconsistent dose-response in {sex}." | Per endpoint x sex |
-| R08 | Target organ | organ | warning | `target_organ_flag == true` | "Target organ: {organ_system} identified with convergent evidence from {n_domains} domains ({domains})." | Per organ |
-| R09 | Multi-domain evidence | organ | info | `n_domains >= 2` | "Multi-domain evidence for {organ_system}: {n_endpoints} endpoints across {domains}." | Per organ |
-| R10 | Large effect | endpoint | warning | `abs(max_effect_size) >= 1.0` | "Large effect: {endpoint_label} shows Cohen's d = {effect_size} at high dose in {sex}." | Per endpoint x sex |
-| R11 | Moderate effect | endpoint | info | `0.5 <= abs(max_effect_size) < 1.0` | "Moderate effect: {endpoint_label} shows Cohen's d = {effect_size} at high dose." | Per endpoint |
-| R12 | Histo incidence increase | endpoint | warning | `domain in ("MI","MA","CL") AND direction=="up" AND severity!="normal"` | "Histopathology: increased incidence of {finding} in {specimen} at high dose ({sex})." | Per finding x sex |
-| R13 | Severity grade increase | endpoint | info | `domain in ("MI","MA","CL") AND pattern in ("monotonic_increase","threshold") AND avg_severity is not null` | "Severity grade increase: {finding} in {specimen} shows dose-dependent severity increase." | Per finding |
-| R14 | NOAEL established | study | info | `noael_dose_level is not null` | "NOAEL established at {noael_label} ({noael_dose_value} {noael_dose_unit}) for {sex}." | Per sex |
-| R15 | NOAEL not established | study | warning | `noael_dose_level is null` | "NOAEL not established for {sex}: adverse effects observed at lowest dose tested." | Per sex |
-| R16 | Correlated findings | organ | info | `len(organ_findings) >= 2` | "Correlated findings in {organ_system}: {endpoint_labels} suggest convergent toxicity." | Per organ (top 5 labels) |
-| R17 | Mortality signal | study | critical | `domain=="DS" AND test_code=="MORTALITY" AND mortality_count > 0` | "Mortality observed: {count} deaths in {sex} with dose-dependent pattern." | Per sex with deaths |
+| R04 | Adverse severity | endpoint | warning | `severity == "adverse"` | "{endpoint_label} classified as adverse in {sex} (p={p_value})." | Per endpoint x sex |
+| R05 | Monotonic pattern | endpoint | info | `pattern in ("monotonic_increase", "monotonic_decrease")` | "{endpoint_label}: {pattern} across dose groups in {sex}." | Per endpoint x sex |
+| R06 | Threshold pattern | endpoint | info | `pattern == "threshold"` | "{endpoint_label}: threshold pattern in {sex}." | Per endpoint x sex |
+| R07 | Non-monotonic | endpoint | info | `pattern == "non_monotonic"` | "{endpoint_label}: inconsistent dose-response in {sex}." | Per endpoint x sex |
+| R08 | Target organ | organ | warning | `target_organ_flag == true` | "Convergent evidence from {n_domains} domains ({domains})." | Per organ |
+| R09 | Multi-domain evidence | organ | info | `n_domains >= 2` | "{n_endpoints} endpoints across {domains}." | Per organ |
+| R10 | Large effect | endpoint | warning | `abs(max_effect_size) >= 1.0` | "{endpoint_label}: Cohen's d = {effect_size} at high dose in {sex}." | Per endpoint x sex |
+| R11 | Moderate effect | endpoint | info | `0.5 <= abs(max_effect_size) < 1.0` | "{endpoint_label}: Cohen's d = {effect_size} at high dose." | Per endpoint |
+| R12 | Histo incidence increase | endpoint | warning | `domain in ("MI","MA","CL") AND direction=="up" AND severity!="normal"` | "Increased incidence of {finding} in {specimen} at high dose ({sex})." | Per finding x sex |
+| R13 | Severity grade increase | endpoint | info | `domain in ("MI","MA","CL") AND pattern in ("monotonic_increase","threshold") AND avg_severity is not null` | "{finding} in {specimen}: dose-dependent severity increase." | Per finding |
+| R14 | NOAEL established | study | info | `noael_dose_level is not null` | "NOAEL at {noael_label} ({noael_dose_value} {noael_dose_unit}) for {sex}." | Per sex |
+| R15 | NOAEL not established | study | warning | `noael_dose_level is null` | "NOAEL not established for {sex} — adverse effects at lowest dose tested." | Per sex |
+| R16 | Correlated findings | organ | info | `len(organ_findings) >= 2` | "{endpoint_labels} show convergent pattern." | Per organ (top 5 labels) |
+| R17 | Mortality signal | study | critical | `domain=="DS" AND test_code=="MORTALITY" AND mortality_count > 0` | "{count} deaths in {sex}, dose-dependent pattern." | Per sex with deaths |
 
 ### Rule Evaluation Logic (from scores_and_rules.py)
 
@@ -490,7 +490,7 @@ function computeTier(rules: RuleResult[]): Tier {
 1. **Signal summary** (from R10/R11 + R04 + R01): Extracts per-endpoint signals with direction arrows, Cohen's d by sex, adverse flags, dose-dependency flags. Shows top 5 endpoints, remaining as "+N more". Appends qualifiers: "adverse", "dose-dependent", sex specificity.
    - Example: `"ALT up (d=2.2 F, 1.1 M), AST up -- adverse, dose-dependent, both sexes"`
 
-2. **R08 target organ**: Cleans prefix, shows "Target organ: {text}"
+2. **R08 target organ**: Uses R08 output_text directly (no prefix to strip — tier header communicates target organ status)
 
 3. **R12/R13 histopath**: Collapses multiple findings into semicolon-separated line with sex annotations.
    - Example: `"Histopath: hepatocellular hypertrophy in liver (F, M); bile duct hyperplasia in liver (M)"`
