@@ -4,7 +4,7 @@ import type { HistopathSelection } from "./HistopathologyView";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 
 export function HistopathologyViewWrapper() {
-  const { setSelection } = useViewSelection();
+  const { setSelection, setSelectedSubject } = useViewSelection();
 
   const handleSelectionChange = useCallback(
     (sel: HistopathSelection | null) => {
@@ -13,5 +13,17 @@ export function HistopathologyViewWrapper() {
     [setSelection]
   );
 
-  return <HistopathologyView onSelectionChange={handleSelectionChange} />;
+  const handleSubjectClick = useCallback(
+    (usubjid: string) => {
+      setSelectedSubject(usubjid);
+    },
+    [setSelectedSubject]
+  );
+
+  return (
+    <HistopathologyView
+      onSelectionChange={handleSelectionChange}
+      onSubjectClick={handleSubjectClick}
+    />
+  );
 }
