@@ -401,8 +401,8 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
           {titleCase(summary.organ_system)}
         </h3>
         {summary.adverseCount > 0 && (
-          <span className="text-[10px] font-medium text-muted-foreground">
-            {summary.adverseCount} adverse
+          <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
+            {summary.adverseCount} ADVERSE
           </span>
         )}
       </div>
@@ -1051,7 +1051,7 @@ export function NoaelDecisionView({
         </div>
 
         {/* Right: Evidence panel */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
           {selectedSummary && (
             <>
               <OrganHeader summary={selectedSummary} />

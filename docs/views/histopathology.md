@@ -61,7 +61,7 @@ Each `SpecimenRailItem` is a `<button>` with:
 - Container: `w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors`
 - Selected: `bg-blue-50/60 dark:bg-blue-950/20`
 - Not selected: `hover:bg-accent/30`
-- Left border: severity-colored (`border-l-2`) for specimens with adverse findings, transparent otherwise
+- Left border: `border-l-2 border-l-transparent` always (neutral-at-rest design; no severity coloring on rail borders)
 
 **Row 1:** Specimen name (`text-xs font-semibold`) + finding count badge (`text-[10px] text-muted-foreground`)
 
@@ -90,13 +90,13 @@ Filters specimens by name (case-insensitive substring match). Empty state: "No m
 ### Title row (flex, gap-2)
 
 - Specimen name: `text-sm font-semibold`
-- Adverse badge (if adverseCount > 0): `rounded border border-border px-1 text-[10px] font-medium uppercase text-muted-foreground` — "{N} adverse"
+- Adverse badge (if adverseCount > 0): `text-[10px] font-semibold uppercase text-[#DC2626]` — "{N} adverse" (bold red text, matching TARGET badge pattern)
 - Sex specificity badge: `rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground` — "Male only" | "Female only" | "Both sexes". Derived from unique `sex` values in `specimenData`.
 - Review-status badge (stub): `rounded border border-border/50 px-1 text-[10px] text-muted-foreground/60` — always shows "Preliminary". TODO: derive from `useAnnotations<PathologyReview>` aggregate `peerReviewStatus` (Preliminary/Confirmed/Adjusted).
 
 ### 1-line conclusion
 
-`mt-1 text-[11px] italic leading-relaxed text-muted-foreground`
+`mt-1 text-xs leading-relaxed text-muted-foreground`
 
 Deterministic sentence built by `deriveSpecimenConclusion()` from:
 - **Incidence**: "low-incidence" (≤20%), "moderate-incidence" (21-50%), "high-incidence" (>50%)
@@ -157,14 +157,6 @@ If no R16 match found, nothing is rendered (no empty state).
 
 Only shown when specimen-scoped rule results exist. Section header: "Insights". Uses `InsightsList` component with `specimenRules` (pre-filtered at parent level — matches on output_text, context_key, or organ_system).
 
-### Cross-View Links
-
-Section header: "Related views". Three navigation links:
-- "View in Target Organs" → `/studies/{studyId}/target-organs` with `{ state: { organ_system: specimen } }`
-- "View dose-response" → `/studies/{studyId}/dose-response` with `{ state: { organ_system: specimen } }`
-- "View NOAEL decision" → `/studies/{studyId}/noael-decision` with `{ state: { organ_system: specimen } }`
-- All links: `block hover:underline`, color `#3a7bd5`, arrow suffix
-
 ---
 
 ## Severity Matrix Tab
@@ -180,11 +172,42 @@ Preserves the existing heatmap + collapsible grid, scoped to the selected specim
 | Sex | Dropdown | `<select>` with "All sexes" / Male / Female | All |
 | Min severity | Dropdown | `<select>` with "Min severity: any" / "1+" / "2+" / "3+" | Any (0) |
 
-No specimen dropdown (specimen already selected via rail). Row count indicator: right-aligned `ml-auto text-[10px] text-muted-foreground`, "{filtered} of {total} rows".
+No specimen dropdown (specimen already selected via rail).
 
-### Severity Heatmap
+**Group / Subject segmented control** — right-aligned `ml-auto`, two `rounded-full` pills:
+- Active: `bg-foreground text-background`
+- Inactive: `text-muted-foreground hover:bg-accent/50`
+- Default: "Group" mode. "Subject" mode fetches per-subject data on demand via `useHistopathSubjects`.
 
-Only shown when `heatmapData` exists and findings.length > 0. Container: `border-b p-4`.
+The filter bar applies to both modes (sex filter + min severity both affect subject and group heatmaps).
+
+### Subject-Level Heatmap (subject mode)
+
+Shown when `matrixMode === "subject"`. Fetches individual subject data via `useHistopathSubjects(studyId, specimen)`. Container: `border-b p-4`.
+
+**Structure:** Three-tier header:
+1. **Dose group headers** — horizontal bar above each dose group with colored indicator stripe (`getDoseGroupColor(doseLevel)`), label "({N})" subjects.
+2. **Subject IDs** — one column per subject (`w-8`), showing last 4 chars of `usubjid` via `shortId()`. Clickable — highlights column and fires `onSubjectClick`.
+3. **Sex indicator row** (hidden when sex filter active) — "M"/"F" per subject, colored `text-blue-600`/`text-red-600`.
+4. **Examined row** — "E" if subject has any findings, empty otherwise. `bg-muted/20`.
+
+**Data rows:** One per finding (sorted by max severity desc, filtered by `minSeverity`). Each cell (`w-8 h-6`):
+- Severity > 0: colored block (`h-5 w-6 rounded-sm`) with severity number, color from `getNeutralHeatColor(sevNum)`
+- Entry with severity 0: em dash
+- No entry: empty cell
+
+Selected subject column highlighted with `bg-blue-50/50`.
+
+**Legend:** 5 severity labels with numeric prefixes: "1 Minimal", "2 Mild", "3 Moderate", "4 Marked", "5 Severe" + "— = examined, no finding".
+
+**Loading/empty states:**
+- Loading: spinner + "Loading subject data..."
+- No subjects: "Subject-level data not available for this specimen."
+- No findings after filter: "No findings match the current severity filter."
+
+### Group-Level Heatmap (group mode)
+
+Only shown when `matrixMode === "group"` and `heatmapData` exists and findings.length > 0. Container: `border-b p-4`.
 
 Section header: flex row with heatmap title + dose consistency badge.
 - Title: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Severity heatmap ({N} findings)"
@@ -256,13 +279,16 @@ Route-detected: when pathname matches `/studies/{studyId}/histopathology`, shows
 
 ### With Selection
 
-Panes (unchanged from previous implementation):
-1. **Pathology review** (default open) — `PathologyReviewForm`
-2. **Dose detail** (default open) — all dose-level rows for finding + specimen
+Header: sticky, finding name (`text-sm font-semibold`) + `CollapseAllButtons`, specimen name below (`text-xs text-muted-foreground`).
+
+Panes in order:
+1. **Dose detail** (default open) — all dose-level rows for finding + specimen, sorted by dose_level then sex. Table columns: Dose, Sex, Incid., Avg Sev, Sev.
+2. **Sex comparison** (conditional, default open) — only shown when finding has data from both sexes. Per-sex row: affected/total + max severity badge with `getSeverityHeatColor()`.
 3. **Insights** (default open) — `InsightsList` with finding-scoped rules
-4. **Correlating evidence** (default closed) — other findings in same specimen
-5. **Related views** (default closed) — cross-view navigation links
-6. **Tox Assessment** (default closed) — `ToxFindingForm`
+4. **Correlating evidence** (default open) — up to 10 other findings in same specimen, sorted by max severity desc, with severity badge colored by `getSeverityHeatColor()`
+5. **Pathology review** — `PathologyReviewForm` (not wrapped in CollapsiblePane, uses own form state)
+6. **Related views** (default closed) — "View target organs", "View dose-response", "View NOAEL decision" links
+7. **Tox Assessment** — `ToxFindingForm` keyed by finding (not wrapped in CollapsiblePane)
 
 ---
 
@@ -275,11 +301,14 @@ Panes (unchanged from previous implementation):
 | Selection (finding) | Shared via context | `ViewSelectionContext` with `_view: "histopathology"` tag |
 | Sex filter | Local | `useState<string \| null>` — for Severity Matrix tab |
 | Min severity | Local | `useState<number>` — for Severity Matrix tab |
+| Matrix mode | Local | `useState<"group" \| "subject">` — heatmap mode in SeverityMatrixTab (default "group") |
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in SeverityMatrixTab) |
 | Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in SeverityMatrixTab) |
+| Selected subject | Local | `useState<string \| null>` — column highlight in SubjectHeatmap |
 | Rail width | Local | `useResizePanel(300, 180, 500)` — resizable rail width (default 300px, range 180-500px) |
 | Specimen rules | Derived | `useMemo` — rules filtered to selected specimen, shared between SpecimenHeader and OverviewTab |
 | Lesion data | Server | `useLesionSeveritySummary` hook (React Query, 5min stale) |
+| Subject data | Server | `useHistopathSubjects` hook (fetched on demand in subject mode only) |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
 
 ---
@@ -306,16 +335,18 @@ useRuleResults(studyId) ──> ruleResults (shared React Query cache)
                         deriveSpecimenConclusion()
                            /              \
                   OverviewTab          SeverityMatrixTab
-                  (observed findings,  (heatmap + dose consistency,
-                   coherence hint,      collapsible grid,
-                   insights,            sex/severity filter)
-                   cross-view)               |
+                  (observed findings,  (Group / Subject toggle)
+                   coherence hint,      /                    \
+                   insights)      Group mode             Subject mode
+                        |        (group heatmap +       (SubjectHeatmap
+                        |         collapsible grid,      from useHistopath-
+                        |         sex/severity filter)   Subjects on demand)
                         \              /
                     HistopathSelection (shared)
                                 |
                   HistopathologyContextPanel
-                    /    |     |      \     \
-             PathReview  Dose  Insights  Corr  Tox
+                    /  |    |     |     \    \     \
+                 Dose  Sex  Ins  Corr  Path  Nav  Tox
 ```
 
 ---
@@ -325,15 +356,12 @@ useRuleResults(studyId) ──> ruleResults (shared React Query cache)
 ### Inbound
 - From other views with `location.state`: `{ organ_system: string }` or `{ specimen: string }` — auto-selects matching specimen in rail (case-insensitive).
 
-### Outbound (Overview tab)
+### Outbound (Context panel — "Related views" pane)
 | Action | Navigates To | State Passed |
 |--------|-------------|-------------|
-| "View in Target Organs" | `/studies/{studyId}/target-organs` | `{ organ_system: specimen }` |
+| "View target organs" | `/studies/{studyId}/target-organs` | `{ organ_system: specimen }` |
 | "View dose-response" | `/studies/{studyId}/dose-response` | `{ organ_system: specimen }` |
 | "View NOAEL decision" | `/studies/{studyId}/noael-decision` | `{ organ_system: specimen }` |
-
-### Outbound (Context panel — unchanged)
-Same three links in the "Related views" pane.
 
 ---
 

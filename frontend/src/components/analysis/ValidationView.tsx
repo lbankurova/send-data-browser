@@ -7,6 +7,7 @@ import {
   createColumnHelper,
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
+import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
 import { cn } from "@/lib/utils";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
@@ -178,8 +179,8 @@ const recordColumnHelper = createColumnHelper<RecordRowData>();
 
 interface Props {
   studyId?: string;
-  onSelectionChange?: (sel: Record<string, unknown> | null) => void;
-  viewSelection?: Record<string, unknown> | null;
+  onSelectionChange?: (sel: ValidationViewSelection | null) => void;
+  viewSelection?: ValidationViewSelection | null;
 }
 
 export function ValidationView({ studyId, onSelectionChange, viewSelection }: Props) {
@@ -260,17 +261,18 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
           style={{ color: "#3a7bd5" }}
           onClick={(e) => {
             e.stopPropagation();
+            if (!selectedRule) return;
             const rec = info.row.original;
             setSelectedIssueId(rec.issue_id);
             onSelectionChange?.({
               _view: "validation",
               mode: "issue",
-              rule_id: selectedRule?.rule_id,
-              severity: selectedRule?.severity,
+              rule_id: selectedRule.rule_id,
+              severity: selectedRule.severity,
               domain: rec.domain,
-              category: selectedRule?.category,
-              description: selectedRule?.description,
-              records_affected: selectedRule?.records_affected,
+              category: selectedRule.category,
+              description: selectedRule.description,
+              records_affected: selectedRule.records_affected,
               issue_id: rec.issue_id,
               subject_id: rec.subject_id,
               visit: rec.visit,
@@ -346,31 +348,31 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     columnResizeMode: "onChange",
   });
 
+  // Derived values for effect dependency tracking
+  const vsFixFilter = viewSelection?.recordFixStatusFilter;
+  const vsReviewFilter = viewSelection?.recordReviewStatusFilter;
+  const vsMode = viewSelection?.mode;
+  const vsIssueId = viewSelection?.mode === "issue" ? viewSelection.issue_id : undefined;
+
   // Watch for filter changes from context panel
   useEffect(() => {
-    if (viewSelection?._view === "validation" && viewSelection.recordFixStatusFilter !== undefined) {
-      setRecordFilters((prev) => ({
-        ...prev,
-        fixStatus: viewSelection.recordFixStatusFilter as string,
-      }));
+    if (vsFixFilter !== undefined) {
+      setRecordFilters((prev) => ({ ...prev, fixStatus: vsFixFilter }));
     }
-    if (viewSelection?._view === "validation" && viewSelection.recordReviewStatusFilter !== undefined) {
-      setRecordFilters((prev) => ({
-        ...prev,
-        reviewStatus: viewSelection.recordReviewStatusFilter as string,
-      }));
+    if (vsReviewFilter !== undefined) {
+      setRecordFilters((prev) => ({ ...prev, reviewStatus: vsReviewFilter }));
     }
-  }, [viewSelection?.recordFixStatusFilter, viewSelection?.recordReviewStatusFilter]);
+  }, [vsFixFilter, vsReviewFilter]);
 
   // Watch for mode changes from context panel (back link)
   useEffect(() => {
-    if (viewSelection?._view === "validation" && viewSelection.mode === "rule") {
+    if (vsMode === "rule") {
       setSelectedIssueId(null);
     }
-    if (viewSelection?._view === "validation" && viewSelection.mode === "issue" && viewSelection.issue_id) {
-      setSelectedIssueId(viewSelection.issue_id as string);
+    if (vsMode === "issue" && vsIssueId) {
+      setSelectedIssueId(vsIssueId);
     }
-  }, [viewSelection?.mode, viewSelection?.issue_id]);
+  }, [vsMode, vsIssueId]);
 
   const handleRuleClick = (rule: ValidationRuleResult) => {
     const isReselect = selectedRule?.rule_id === rule.rule_id;
