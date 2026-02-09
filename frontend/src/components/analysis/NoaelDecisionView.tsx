@@ -353,8 +353,7 @@ function OrganRailItem({
         {summary.domains.map((d) => {
           const dc = getDomainBadgeColor(d);
           return (
-            <span key={d} className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
-              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
+            <span key={d} className={cn("text-[9px] font-semibold", dc.text)}>
               {d}
             </span>
           );
@@ -710,8 +709,7 @@ function AdversityMatrixTab({
         cell: (info) => {
           const dc = getDomainBadgeColor(info.getValue());
           return (
-            <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
-              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
+            <span className={cn("text-[10px] font-semibold", dc.text)}>
               {info.getValue()}
             </span>
           );
