@@ -67,7 +67,7 @@ Each `SpecimenRailItem` is a `<button>` with:
 
 **Row 2:** Severity bar — neutral gray alignment matching Signals rail. Track: `h-1.5 flex-1 rounded-full bg-[#E5E7EB]`, fill: `bg-[#D1D5DB]`. Numeric value: `shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground`.
 
-**Row 3:** Stats line — `{N} findings · {M} adverse` + domain chips (outline style: `rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70`).
+**Row 3:** Stats line — `{N} findings · {M} adverse` + domain chips (plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` color class).
 
 ### Sorting
 

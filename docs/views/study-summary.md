@@ -155,7 +155,7 @@ Each rail item (`SignalsOrganRailItem`):
 - Not selected: `hover:bg-accent/30`
 - Evidence score bar: normalized to max across all organs, `h-1.5 rounded-full bg-[#D1D5DB]` (neutral gray). On hover, evidence score number turns red (`group-hover/rail:text-[#DC2626]`).
 - Stats line: `{n_significant} sig · {n_treatment_related} TR · {n_domains} domains`
-- Domain chips: outline style with colored dot (`rounded border border-border px-1 py-0.5 text-[9px]`)
+- Domain chips: plain colored text (`text-[9px] font-semibold` with `getDomainBadgeColor().text` color class)
 - Dose-response summary (if available from OrganBlock): `D-R: {nEndpoints} ({topEndpoint})`
 
 **Target/non-target separator:** A subtle divider label ("Other organs") appears between the last target organ and the first non-target organ. Style: `text-[9px] uppercase tracking-wider text-muted-foreground/50 px-3 py-1.5 border-b`.
