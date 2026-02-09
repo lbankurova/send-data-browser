@@ -53,7 +53,7 @@ Rail is resizable via `useResizePanel(300, 180, 500)` with a `PanelResizeHandle`
 
 ### Header
 
-- Label: `text-xs font-medium uppercase tracking-wider text-muted-foreground` -- "Organ systems ({N})"
+- Label: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` -- "Organ systems ({N})"
 - Search input: `mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs` with placeholder "Search organs..."
 
 ### Rail Items
@@ -167,7 +167,7 @@ Tab bar uses `bg-muted/30` for visual consistency with Dose-Response view.
 ### Domain Breakdown
 
 Section header: flex row with title + dose consistency badge.
-- Title: `text-xs font-medium uppercase tracking-wide text-muted-foreground` -- "Domain breakdown"
+- Title: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` -- "Domain breakdown"
 - Dose consistency badge: `text-[10px] text-muted-foreground` -- "Dose consistency: {Weak|Moderate|Strong}". Computed by `getDoseConsistency()` which checks significance-rate monotonicity across dose levels per endpoint.
 
 Static HTML table (`w-full text-xs`) with columns:
@@ -183,7 +183,7 @@ Rows sorted by significant count descending. Computed by grouping `organEvidence
 
 ### Top Findings by Effect Size
 
-Section header: `text-xs font-medium uppercase tracking-wide text-muted-foreground` -- "Top findings by effect size"
+Section header: `text-xs font-medium uppercase tracking-wider text-muted-foreground` -- "Top findings by effect size"
 
 Shows up to 10 evidence rows with the largest absolute effect size (filtered to effect_size > 0, sorted desc).
 
@@ -191,8 +191,8 @@ Each finding is a row:
 - Container: `flex items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30`
 - Endpoint name: `min-w-[140px] truncate font-medium`
 - Direction symbol: `shrink-0 text-sm text-[#9CA3AF]`
-- Effect size: `shrink-0 font-mono`, font-semibold if |d| >= 0.8; hover turns `text-[#DC2626]`
-- P-value: `shrink-0 font-mono`, font-semibold if < 0.001, font-medium if < 0.01; hover turns `text-[#DC2626]`
+- Effect size: `shrink-0 font-mono`, font-semibold if |d| >= 0.8; `group-hover/finding:text-[#DC2626]`
+- P-value: `shrink-0 font-mono`, font-semibold if < 0.001, font-medium if < 0.01; `group-hover/finding:text-[#DC2626]`
 - Severity badge: `shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground`
 - TR label (if treatment_related): `shrink-0 text-[9px] font-medium text-muted-foreground`
 - Sex and dose: `ml-auto shrink-0 text-muted-foreground` -- "{sex} · {dose}"
@@ -369,7 +369,7 @@ Collapse/expand all functionality is powered by `useCollapseAll()` hook, which p
 Compact tier count summary (not full InsightsList — that lives in the center Hypotheses tab to avoid redundancy).
 - Rules filtered to those matching `context_key === "organ_{organ_system}"` or `organ_system === selection.organ_system`.
 - Renders: "{N} critical signal(s), {M} notable signal(s), {K} observed across {T} rules."
-- Domains line: unique domain prefixes extracted from rule `context_key` values.
+- Domains line: unique domains extracted from `organEvidence` rows (not context_key), rendered as `DomainLabel` colored text components, sorted alphabetically.
 - Footer: "See Hypotheses tab for full insights."
 - Empty state: "No convergence rules for this organ."
 

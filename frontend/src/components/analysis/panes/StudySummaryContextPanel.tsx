@@ -257,14 +257,17 @@ function EndpointPanel({
         )}
       </CollapsiblePane>
 
+      {studyId && (
+        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
+      )}
+
       {/* Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
           {selection.organ_system && (
             <a
               href="#"
-              className="block hover:underline"
-              style={{ color: "#3a7bd5" }}
+              className="block text-[#3a7bd5] hover:underline"
               onClick={(e) => {
                 e.preventDefault();
                 if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: selection.organ_system } });
@@ -314,10 +317,6 @@ function EndpointPanel({
           </a>
         </div>
       </CollapsiblePane>
-
-      {studyId && (
-        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
-      )}
     </div>
   );
 }

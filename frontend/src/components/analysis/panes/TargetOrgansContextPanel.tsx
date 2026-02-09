@@ -143,14 +143,18 @@ export function TargetOrgansContextPanel({
               if (counts.Critical > 0) lines.push(`${counts.Critical} critical signal${counts.Critical > 1 ? "s" : ""}`);
               if (counts.Notable > 0) lines.push(`${counts.Notable} notable signal${counts.Notable > 1 ? "s" : ""}`);
               if (counts.Observed > 0) lines.push(`${counts.Observed} observed`);
-              const domains = new Set(organRules.map((r) => r.context_key.split("_")[0]).filter(Boolean));
+              // Extract domain codes from evidence data (not context_key which has format "organ_hepatic" or "LB_ALT_M")
+              const domains = new Set(organEvidence.map((r) => r.domain));
               return (
                 <>
                   <p>{lines.join(", ") || "No tiered signals"} across {organRules.length} rule{organRules.length > 1 ? "s" : ""}.</p>
                   {domains.size > 0 && (
-                    <p className="text-muted-foreground">
-                      Domains: {[...domains].join(", ")}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground">
+                      <span>Domains:</span>
+                      {[...domains].sort().map((d) => (
+                        <DomainLabel key={d} domain={d} />
+                      ))}
+                    </div>
                   )}
                   <p className="text-muted-foreground">
                     See Hypotheses tab for full insights.
