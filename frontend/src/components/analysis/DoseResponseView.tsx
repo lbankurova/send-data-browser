@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Loader2, ChevronDown, ChevronRight, Search, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect, Pin, Plus, Star } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, Search, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect, Pin, Plus, Star, Scale, Edit2, HelpCircle } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -26,6 +26,9 @@ import {
 import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import { useTimecourseGroup, useTimecourseSubject } from "@/hooks/useTimecourse";
 import { useEndpointBookmarks, useToggleBookmark } from "@/hooks/useEndpointBookmarks";
+import { useRuleResults } from "@/hooks/useRuleResults";
+import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
+import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { BookmarkStar } from "@/components/ui/BookmarkStar";
 import { cn } from "@/lib/utils";
 import {
@@ -40,7 +43,7 @@ import {
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
-import type { DoseResponseRow } from "@/types/analysis-views";
+import type { DoseResponseRow, RuleResult, SignalSummaryRow } from "@/types/analysis-views";
 import type { TimecourseResponse } from "@/types/timecourse";
 
 // ─── Public types ──────────────────────────────────────────
@@ -262,6 +265,12 @@ export function DoseResponseView({
   const { data: bookmarksData } = useEndpointBookmarks(studyId);
   const toggleBookmark = useToggleBookmark(studyId);
   const bookmarks = bookmarksData ?? {};
+
+  // Data for Causality tool (fetched at view level, passed to Hypotheses tab)
+  const { data: ruleResultsData } = useRuleResults(studyId);
+  const { data: signalSummaryData } = useStudySignalSummary(studyId);
+  const ruleResults: RuleResult[] = ruleResultsData ?? [];
+  const signalSummary: SignalSummaryRow[] = signalSummaryData ?? [];
 
   // Metrics tab state
   const [metricsFilters, setMetricsFilters] = useState<{
@@ -902,6 +911,9 @@ export function DoseResponseView({
               selectedEndpoint={selectedEndpoint}
               selectedSummary={selectedSummary}
               endpointSummaries={endpointSummaries}
+              studyId={studyId}
+              ruleResults={ruleResults}
+              signalSummary={signalSummary}
             />
           )}
         </div>
@@ -1887,7 +1899,7 @@ function MetricsTableContent({
 
 // ─── Hypotheses Tab ─────────────────────────────────────────
 
-type HypothesisIntent = "shape" | "model" | "pareto" | "correlation" | "outliers";
+type HypothesisIntent = "shape" | "model" | "pareto" | "correlation" | "outliers" | "causality";
 
 interface HypothesisTool {
   value: HypothesisIntent;
@@ -1903,6 +1915,7 @@ const HYPOTHESIS_TOOLS: HypothesisTool[] = [
   { value: "pareto", label: "Pareto front", icon: ScatterChart, available: true, description: "Effect size vs. significance trade-offs" },
   { value: "correlation", label: "Correlation", icon: Link2, available: false, description: "Co-movement between endpoints" },
   { value: "outliers", label: "Outliers", icon: BoxSelect, available: false, description: "Distribution and outlier detection" },
+  { value: "causality", label: "Causality", icon: Scale, available: true, description: "Bradford Hill causal assessment" },
 ];
 
 const DEFAULT_FAVORITES: HypothesisIntent[] = ["shape", "pareto"];
@@ -1911,9 +1924,12 @@ interface HypothesesTabProps {
   selectedEndpoint: string | null;
   selectedSummary: EndpointSummary | null;
   endpointSummaries: EndpointSummary[];
+  studyId: string | undefined;
+  ruleResults: RuleResult[];
+  signalSummary: SignalSummaryRow[];
 }
 
-function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSummaries }: HypothesesTabProps) {
+function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSummaries, studyId, ruleResults, signalSummary }: HypothesesTabProps) {
   const [intent, setIntent] = useState<HypothesisIntent>("shape");
   const [favorites, setFavorites] = useState<HypothesisIntent[]>(DEFAULT_FAVORITES);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -2060,7 +2076,7 @@ function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSumma
         </div>
 
         <span className="ml-auto text-[10px] italic text-muted-foreground">
-          Does not affect conclusions
+          {intent === "causality" ? "Persists assessment" : "Does not affect conclusions"}
         </span>
       </div>
 
@@ -2097,6 +2113,15 @@ function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSumma
         {intent === "correlation" && <CorrelationPlaceholder />}
         {intent === "outliers" && (
           <OutliersPlaceholder selectedEndpoint={selectedEndpoint} selectedSummary={selectedSummary} />
+        )}
+        {intent === "causality" && (
+          <CausalityWorksheet
+            studyId={studyId}
+            selectedEndpoint={selectedEndpoint}
+            selectedSummary={selectedSummary}
+            ruleResults={ruleResults}
+            signalSummary={signalSummary}
+          />
         )}
       </div>
     </div>
@@ -2355,6 +2380,473 @@ function OutliersPlaceholder({
       <ProductionNote>
         Requires subject-level values. Available in production via raw domain endpoint.
       </ProductionNote>
+    </div>
+  );
+}
+
+// ─── Causality Worksheet ──────────────────────────────────────
+
+const STRENGTH_LABELS: Record<number, string> = {
+  0: "Not assessed",
+  1: "Weak",
+  2: "Weak-moderate",
+  3: "Moderate",
+  4: "Strong",
+  5: "Very strong",
+};
+
+const STRENGTH_OPTIONS = [0, 1, 2, 3, 4, 5] as const;
+
+function DotGauge({ level }: { level: 0 | 1 | 2 | 3 | 4 | 5 }) {
+  return (
+    <span className="inline-flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span
+          key={i}
+          className={cn(
+            "inline-block h-1.5 w-1.5 rounded-full",
+            i <= level ? "bg-foreground/70" : "bg-foreground/15"
+          )}
+        />
+      ))}
+    </span>
+  );
+}
+
+interface CausalAssessment {
+  overrides: Record<string, { level: number; justification: string }>;
+  expert: Record<string, { level: number; rationale: string }>;
+  overall: string;
+  comment: string;
+}
+
+const EXPERT_CRITERIA = [
+  { key: "temporality", label: "Temporality", guidance: "Is the timing of onset consistent with treatment exposure? Consider recovery group data if available." },
+  { key: "biological_plausibility", label: "Biological plausibility", guidance: "Is there a known biological mechanism? Reference published literature or compound class effects." },
+  { key: "experiment", label: "Experiment", guidance: "Do the controlled study conditions support a causal interpretation? Consider study design adequacy." },
+  { key: "analogy", label: "Analogy", guidance: "Do similar compounds in the same class produce similar effects?" },
+] as const;
+
+function computeBiologicalGradient(ep: EndpointSummary): { level: 0 | 1 | 2 | 3 | 4 | 5; evidence: string } {
+  const pattern = ep.dose_response_pattern;
+  let base = 1;
+  if (pattern === "monotonic_increase" || pattern === "monotonic_decrease") base = 4;
+  else if (pattern === "threshold") base = 3;
+  else if (pattern === "non_monotonic") base = 2;
+
+  if (ep.min_trend_p != null && ep.min_trend_p < 0.01) base = Math.min(base + 1, 5);
+
+  const patternLabel = pattern.replace(/_/g, " ");
+  const trendText = ep.min_trend_p != null ? ` · trend p ${ep.min_trend_p < 0.001 ? "< 0.001" : `= ${ep.min_trend_p.toFixed(3)}`}` : "";
+  return { level: base as 0 | 1 | 2 | 3 | 4 | 5, evidence: `${patternLabel}${trendText}` };
+}
+
+function computeStrength(ep: EndpointSummary): { level: 0 | 1 | 2 | 3 | 4 | 5; evidence: string } {
+  const d = ep.max_effect_size != null ? Math.abs(ep.max_effect_size) : 0;
+  let level: 0 | 1 | 2 | 3 | 4 | 5;
+  if (d >= 1.2) level = 5;
+  else if (d >= 0.8) level = 4;
+  else if (d >= 0.5) level = 3;
+  else if (d >= 0.2) level = 2;
+  else level = 1;
+
+  const pText = ep.min_p_value != null ? ` · p ${ep.min_p_value < 0.001 ? "< 0.001" : `= ${ep.min_p_value.toFixed(3)}`}` : "";
+  return { level, evidence: `|d| = ${d.toFixed(2)}${pText}` };
+}
+
+function computeConsistency(ep: EndpointSummary): { level: 0 | 1 | 2 | 3 | 4 | 5; evidence: string } {
+  const both = ep.sexes.length >= 2;
+  return {
+    level: both ? 4 : 2,
+    evidence: both ? `Both sexes affected (${ep.sexes.join(", ")})` : `${ep.sexes[0] === "M" ? "Males" : "Females"} only`,
+  };
+}
+
+function computeSpecificity(ep: EndpointSummary, signalSummary: SignalSummaryRow[]): { level: 0 | 1 | 2 | 3 | 4 | 5; evidence: string } {
+  // Count distinct organ systems with signals for this endpoint label
+  const organs = new Set<string>();
+  for (const s of signalSummary) {
+    if (s.endpoint_label === ep.endpoint_label && s.signal_score > 0) {
+      organs.add(s.organ_system);
+    }
+  }
+  const count = Math.max(organs.size, 1); // at least the current organ
+  let level: 0 | 1 | 2 | 3 | 4 | 5;
+  if (count === 1) level = 4;
+  else if (count === 2) level = 3;
+  else if (count === 3) level = 2;
+  else level = 1;
+
+  const organList = organs.size > 0 ? ` (${[...organs].map(titleCase).join(", ")})` : "";
+  return { level, evidence: `Signals in ${count} organ system${count !== 1 ? "s" : ""}${organList}` };
+}
+
+function computeCoherence(ep: EndpointSummary, ruleResults: RuleResult[]): { level: 0 | 1 | 2 | 3 | 4 | 5; evidence: string } {
+  // Count R16 rules where organ_system matches
+  const r16Count = ruleResults.filter(
+    (r) => r.rule_id === "R16" && r.organ_system === ep.organ_system
+  ).length;
+
+  let level: 0 | 1 | 2 | 3 | 4 | 5;
+  if (r16Count >= 3) level = 4;
+  else if (r16Count >= 1) level = 3;
+  else level = 1;
+
+  return {
+    level,
+    evidence: r16Count > 0
+      ? `${r16Count} correlated endpoint${r16Count !== 1 ? "s" : ""} in ${titleCase(ep.organ_system)} (R16 rules)`
+      : `No correlated endpoints in ${titleCase(ep.organ_system)}`,
+  };
+}
+
+function CausalityWorksheet({
+  studyId,
+  selectedEndpoint,
+  selectedSummary,
+  ruleResults,
+  signalSummary,
+}: {
+  studyId: string | undefined;
+  selectedEndpoint: string | null;
+  selectedSummary: EndpointSummary | null;
+  ruleResults: RuleResult[];
+  signalSummary: SignalSummaryRow[];
+}) {
+  // Load saved annotations for this study
+  const { data: savedAnnotations } = useAnnotations<CausalAssessment>(studyId, "causal-assessment");
+  const saveMutation = useSaveAnnotation<CausalAssessment>(studyId, "causal-assessment");
+
+  // Local form state
+  const [overrides, setOverrides] = useState<Record<string, { level: number; justification: string }>>({});
+  const [expert, setExpert] = useState<Record<string, { level: number; rationale: string }>>({});
+  const [overall, setOverall] = useState("Not assessed");
+  const [comment, setComment] = useState("");
+  const [editingOverride, setEditingOverride] = useState<string | null>(null);
+  const [expandedGuidance, setExpandedGuidance] = useState<Set<string>>(new Set());
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+
+  // Load saved data when endpoint changes
+  useEffect(() => {
+    if (!selectedEndpoint || !savedAnnotations) {
+      setOverrides({});
+      setExpert({});
+      setOverall("Not assessed");
+      setComment("");
+      setLastSaved(null);
+      setDirty(false);
+      return;
+    }
+    const saved = savedAnnotations[selectedEndpoint];
+    if (saved) {
+      setOverrides(saved.overrides ?? {});
+      setExpert(saved.expert ?? {});
+      setOverall(saved.overall ?? "Not assessed");
+      setComment(saved.comment ?? "");
+      setLastSaved(saved.comment !== undefined ? "Previously saved" : null);
+    } else {
+      setOverrides({});
+      setExpert({});
+      setOverall("Not assessed");
+      setComment("");
+      setLastSaved(null);
+    }
+    setDirty(false);
+  }, [selectedEndpoint, savedAnnotations]);
+
+  // Empty state
+  if (!selectedEndpoint || !selectedSummary) {
+    return (
+      <div className="p-4 text-xs text-muted-foreground">
+        Select an endpoint to assess causality.
+      </div>
+    );
+  }
+
+  // Compute auto-populated criteria
+  const gradient = computeBiologicalGradient(selectedSummary);
+  const strength = computeStrength(selectedSummary);
+  const consistency = computeConsistency(selectedSummary);
+  const specificity = computeSpecificity(selectedSummary, signalSummary);
+  const coherence = computeCoherence(selectedSummary, ruleResults);
+
+  const computedCriteria = [
+    { key: "biological_gradient", label: "Biological gradient", ...gradient },
+    { key: "strength", label: "Strength of association", ...strength },
+    { key: "consistency", label: "Consistency", ...consistency },
+    { key: "specificity", label: "Specificity", ...specificity },
+    { key: "coherence", label: "Coherence", ...coherence },
+  ];
+
+  const handleSave = () => {
+    if (!studyId || !selectedEndpoint) return;
+    const payload: CausalAssessment = { overrides, expert, overall, comment };
+    saveMutation.mutate(
+      { entityKey: selectedEndpoint, data: payload },
+      {
+        onSuccess: () => {
+          setLastSaved(`User · ${new Date().toLocaleDateString()}`);
+          setDirty(false);
+        },
+        onError: () => {
+          setLastSaved("Save failed");
+        },
+      }
+    );
+  };
+
+  const domainColor = getDomainBadgeColor(selectedSummary.domain);
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div>
+        <h3 className="text-sm font-semibold">Causality: {selectedSummary.endpoint_label}</h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          <span className={cn("text-[9px] font-semibold", domainColor.text)}>{selectedSummary.domain}</span>
+          {" · "}
+          {titleCase(selectedSummary.organ_system)}
+        </p>
+      </div>
+
+      {/* Computed evidence section */}
+      <div>
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Computed evidence
+        </p>
+        <div className="rounded-md border">
+          {computedCriteria.map((c, idx) => {
+            const override = overrides[c.key];
+            const isEditing = editingOverride === c.key;
+            const displayLevel = (override ? override.level : c.level) as 0 | 1 | 2 | 3 | 4 | 5;
+
+            return (
+              <div key={c.key} className={cn("px-3 py-2.5", idx < computedCriteria.length - 1 && "border-b")}>
+                {/* Label + gauge + strength + override toggle */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium">{c.label}</span>
+                  <div className="flex items-center gap-2">
+                    {override && (
+                      <span className="text-[9px] text-amber-600">(overridden)</span>
+                    )}
+                    <DotGauge level={displayLevel} />
+                    <span className="w-20 text-right text-[10px] font-medium text-muted-foreground">
+                      {STRENGTH_LABELS[displayLevel]}
+                    </span>
+                    <button
+                      className="text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+                      title="Override computed score"
+                      onClick={() => {
+                        if (isEditing) {
+                          setEditingOverride(null);
+                        } else {
+                          setEditingOverride(c.key);
+                          if (!override) {
+                            setOverrides((prev) => ({ ...prev, [c.key]: { level: c.level, justification: "" } }));
+                            setDirty(true);
+                          }
+                        }
+                      }}
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Evidence line */}
+                <p className="mt-0.5 text-[10px] text-muted-foreground">{c.evidence}</p>
+
+                {/* Override editor */}
+                {isEditing && (
+                  <div className="mt-2 space-y-1.5 rounded border bg-muted/20 p-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-muted-foreground">Override:</label>
+                      <select
+                        className="rounded border bg-background px-1.5 py-0.5 text-xs"
+                        value={override?.level ?? c.level}
+                        onChange={(e) => {
+                          const level = Number(e.target.value);
+                          setOverrides((prev) => ({
+                            ...prev,
+                            [c.key]: { ...prev[c.key], level, justification: prev[c.key]?.justification ?? "" },
+                          }));
+                          setDirty(true);
+                        }}
+                      >
+                        {STRENGTH_OPTIONS.map((v) => (
+                          <option key={v} value={v}>{STRENGTH_LABELS[v]}</option>
+                        ))}
+                      </select>
+                      <button
+                        className="text-[10px] text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          setOverrides((prev) => {
+                            const next = { ...prev };
+                            delete next[c.key];
+                            return next;
+                          });
+                          setEditingOverride(null);
+                          setDirty(true);
+                        }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <textarea
+                      className="w-full rounded border px-2 py-1.5 text-xs"
+                      rows={2}
+                      placeholder="Reason for override..."
+                      value={override?.justification ?? ""}
+                      onChange={(e) => {
+                        setOverrides((prev) => ({
+                          ...prev,
+                          [c.key]: { ...prev[c.key], level: prev[c.key]?.level ?? c.level, justification: e.target.value },
+                        }));
+                        setDirty(true);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Expert assessment section */}
+      <div>
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Expert assessment
+        </p>
+        <div className="rounded-md border">
+          {EXPERT_CRITERIA.map((c, idx) => {
+            const val = expert[c.key] ?? { level: 0, rationale: "" };
+            const isGuidanceOpen = expandedGuidance.has(c.key);
+
+            return (
+              <div key={c.key} className={cn("px-3 py-2.5", idx < EXPERT_CRITERIA.length - 1 && "border-b")}>
+                {/* Label + help toggle */}
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-medium">{c.label}</span>
+                  <button
+                    className="text-muted-foreground/40 transition-colors hover:text-muted-foreground"
+                    title="Show guidance"
+                    onClick={() => {
+                      setExpandedGuidance((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(c.key)) next.delete(c.key);
+                        else next.add(c.key);
+                        return next;
+                      });
+                    }}
+                  >
+                    <HelpCircle className="h-3 w-3" />
+                  </button>
+                </div>
+
+                {/* Dot gauge + dropdown */}
+                <div className="mt-1 flex items-center gap-2">
+                  <DotGauge level={val.level as 0 | 1 | 2 | 3 | 4 | 5} />
+                  <select
+                    className="rounded border bg-background px-1.5 py-0.5 text-xs"
+                    value={val.level}
+                    onChange={(e) => {
+                      const level = Number(e.target.value);
+                      setExpert((prev) => ({
+                        ...prev,
+                        [c.key]: { ...prev[c.key], level, rationale: prev[c.key]?.rationale ?? "" },
+                      }));
+                      setDirty(true);
+                    }}
+                  >
+                    {STRENGTH_OPTIONS.map((v) => (
+                      <option key={v} value={v}>{STRENGTH_LABELS[v]}</option>
+                    ))}
+                  </select>
+                  <span className="text-[10px] font-medium text-muted-foreground">
+                    {STRENGTH_LABELS[val.level as keyof typeof STRENGTH_LABELS] ?? "Not assessed"}
+                  </span>
+                </div>
+
+                {/* Guidance text */}
+                {isGuidanceOpen && (
+                  <p className="mt-0.5 text-[10px] italic text-muted-foreground">{c.guidance}</p>
+                )}
+
+                {/* Rationale text area */}
+                <textarea
+                  className="mt-1 w-full rounded border px-2 py-1.5 text-xs"
+                  rows={2}
+                  placeholder="Notes..."
+                  value={val.rationale}
+                  onChange={(e) => {
+                    setExpert((prev) => ({
+                      ...prev,
+                      [c.key]: { ...prev[c.key], level: prev[c.key]?.level ?? 0, rationale: e.target.value },
+                    }));
+                    setDirty(true);
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Overall assessment section */}
+      <div>
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Overall assessment
+        </p>
+        <div className="rounded-md border px-3 py-2.5">
+          <div className="flex flex-col gap-1.5">
+            {["Likely causal", "Possibly causal", "Unlikely causal", "Not assessed"].map((opt) => (
+              <label key={opt} className="flex cursor-pointer items-center gap-2 text-xs">
+                <input
+                  type="radio"
+                  name="overall-assessment"
+                  className="accent-primary"
+                  checked={overall === opt}
+                  onChange={() => {
+                    setOverall(opt);
+                    setDirty(true);
+                  }}
+                />
+                {opt}
+              </label>
+            ))}
+          </div>
+
+          <textarea
+            className="mt-2 w-full rounded border px-2 py-1.5 text-xs"
+            rows={2}
+            placeholder="Overall assessment notes..."
+            value={comment}
+            onChange={(e) => {
+              setComment(e.target.value);
+              setDirty(true);
+            }}
+          />
+
+          {/* Save button + footer */}
+          <div className="mt-3 flex items-center justify-between">
+            <button
+              className={cn(
+                "rounded bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase text-primary-foreground transition-colors hover:bg-primary/90",
+                (!dirty || saveMutation.isPending) && "cursor-not-allowed opacity-50"
+              )}
+              disabled={!dirty || saveMutation.isPending}
+              onClick={handleSave}
+            >
+              {saveMutation.isPending ? "Saving..." : "SAVE"}
+            </button>
+            {lastSaved && (
+              <span className="text-[10px] text-muted-foreground">{lastSaved}</span>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
