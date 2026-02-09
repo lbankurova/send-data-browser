@@ -75,15 +75,15 @@ function OrganListItem({
 
       {/* Row 2: evidence bar (neutral gray) */}
       <div className="mt-1.5 flex items-center gap-2">
-        <div className="h-1.5 flex-1 rounded-full bg-muted/50">
+        <div className="h-1.5 flex-1 rounded-full bg-[#E5E7EB]">
           <div
-            className="h-full rounded-full bg-foreground/25 transition-all"
+            className="h-full rounded-full bg-[#D1D5DB] transition-all"
             style={{ width: `${barWidth}%` }}
           />
         </div>
         <span
           className={cn(
-            "shrink-0 text-[10px]",
+            "shrink-0 font-mono text-[10px] tabular-nums",
             organ.evidence_score >= 0.5 ? "font-semibold" : organ.evidence_score >= 0.3 ? "font-medium" : ""
           )}
         >
@@ -747,7 +747,7 @@ export function TargetOrgansView({
       </div>
 
       {/* Right: Evidence panel */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
         {selectedOrganData && (
           <>
             {/* Summary header */}
