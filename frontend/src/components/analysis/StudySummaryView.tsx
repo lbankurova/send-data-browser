@@ -7,6 +7,8 @@ import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
+import { useResizePanel } from "@/hooks/useResizePanel";
+import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { generateStudyReport } from "@/lib/report-generator";
 import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
 import type { MetricsLine, PanelStatement, OrganBlock } from "@/lib/signals-panel-engine";
@@ -80,12 +82,16 @@ export function StudySummaryView({
     return buildSignalsPanelData(noaelData, targetOrgans, signalData);
   }, [signalData, targetOrgans, noaelData]);
 
-  // Sorted organs (by evidence_score desc)
+  // Resizable rail
+  const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
+
+  // Sorted organs (targets first, then by evidence_score desc)
   const sortedOrgans = useMemo(() => {
     if (!targetOrgans) return [];
-    return [...targetOrgans].sort(
-      (a, b) => b.evidence_score - a.evidence_score
-    );
+    return [...targetOrgans].sort((a, b) => {
+      if (a.target_organ_flag !== b.target_organ_flag) return a.target_organ_flag ? -1 : 1;
+      return b.evidence_score - a.evidence_score;
+    });
   }, [targetOrgans]);
 
   // Max evidence score (for rail bar normalization)
@@ -218,7 +224,10 @@ export function StudySummaryView({
               selectedOrgan={selectedOrgan}
               maxEvidenceScore={maxEvidenceScore}
               onOrganClick={handleOrganClick}
+              ruleResults={ruleResults ?? []}
+              width={railWidth}
             />
+            <div className="max-[1200px]:hidden"><PanelResizeHandle onPointerDown={onRailResize} /></div>
             {selectedOrganData && signalData && (
               <SignalsEvidencePanel
                 organ={selectedOrganData}
@@ -251,7 +260,7 @@ function DecisionBar({
   metrics: MetricsLine;
 }) {
   return (
-    <div className="shrink-0 border-b px-4 py-2.5">
+    <div className="shrink-0 border-b border-l-2 border-l-blue-500 bg-blue-50/30 px-4 py-2.5 dark:bg-blue-950/10">
       {/* NOAEL statement(s) */}
       <div className="space-y-0.5">
         {statements.map((s, i) => {
