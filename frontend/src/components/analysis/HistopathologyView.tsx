@@ -382,7 +382,7 @@ function SpecimenHeader({
           {summary.specimen.replace(/_/g, " ")}
         </h3>
         {summary.adverseCount > 0 && (
-          <span className="rounded border border-border px-1 text-[10px] font-medium uppercase text-muted-foreground">
+          <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
             {summary.adverseCount} adverse
           </span>
         )}
@@ -395,8 +395,15 @@ function SpecimenHeader({
         </span>
       </div>
 
+      {/* Domain subtitle */}
+      {summary.domains.length > 0 && (
+        <p className="text-[11px] text-muted-foreground">
+          {summary.domains.join(" \u00b7 ")}
+        </p>
+      )}
+
       {/* 1-line conclusion */}
-      <p className="mt-1 text-[11px] italic leading-relaxed text-muted-foreground">
+      <p className="mt-1 text-xs leading-relaxed text-foreground/80">
         {conclusion}
       </p>
 
@@ -404,13 +411,24 @@ function SpecimenHeader({
       <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
         <div>
           <span className="text-muted-foreground">Max severity: </span>
-          <span className="font-mono text-[10px] font-medium">
+          <span className={cn(
+            "font-mono text-[10px] font-semibold",
+            summary.maxSeverity >= 3.0 && "text-[#DC2626]"
+          )}>
             {summary.maxSeverity.toFixed(1)}
           </span>
         </div>
         <div>
           <span className="text-muted-foreground">Total affected: </span>
-          <span className="font-medium">{summary.totalAffected}</span>
+          <span className={cn(
+            summary.totalN > 0 && summary.totalAffected / summary.totalN > 0.5
+              ? "font-semibold text-[#DC2626]"
+              : summary.totalN > 0 && summary.totalAffected / summary.totalN > 0.2
+                ? "font-semibold"
+                : "font-medium"
+          )}>
+            {summary.totalAffected}
+          </span>
         </div>
         <div>
           <span className="text-muted-foreground">Findings: </span>

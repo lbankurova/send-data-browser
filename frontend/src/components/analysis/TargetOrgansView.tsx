@@ -305,7 +305,7 @@ function OrganSummaryHeader({
       </div>
 
       {/* 1-line conclusion */}
-      <p className="mt-1 text-[11px] italic leading-relaxed text-muted-foreground">
+      <p className="mt-1 text-xs leading-relaxed text-foreground/80">
         {conclusion}
       </p>
 
@@ -313,12 +313,18 @@ function OrganSummaryHeader({
       <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
         <div>
           <span className="text-muted-foreground">Max signal: </span>
-          <span className="font-mono text-[10px] font-medium">{organ.max_signal_score.toFixed(2)}</span>
+          <span className={cn(
+            "font-mono text-[10px] font-medium",
+            organ.max_signal_score >= 0.8 && "text-[#DC2626]"
+          )}>
+            {organ.max_signal_score.toFixed(2)}
+          </span>
         </div>
         <div>
           <span className="text-muted-foreground">Evidence: </span>
           <span className={cn(
             "font-mono text-[10px]",
+            organ.evidence_score >= 0.7 ? "font-semibold text-[#DC2626]" :
             organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium"
           )}>
             {organ.evidence_score.toFixed(2)}

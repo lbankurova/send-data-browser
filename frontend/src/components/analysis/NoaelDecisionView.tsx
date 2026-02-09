@@ -434,7 +434,7 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
         )}
       </div>
 
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-1 text-xs leading-relaxed text-foreground/80">
         {summary.totalEndpoints} {summary.totalEndpoints === 1 ? "endpoint" : "endpoints"} across{" "}
         {summary.domains.length === 1 ? "1 domain" : `${summary.domains.length} domains`},{" "}
         {summary.adverseCount} adverse, {summary.trCount} treatment-related.
