@@ -15,10 +15,17 @@ import type {
 } from "@/types/analysis-views";
 import {
   formatPValue,
+  formatEffectSize,
   getSignalScoreColor,
+  getPValueColor,
+  getEffectSizeColor,
+  getDirectionSymbol,
+  getDirectionColor,
+  getSeverityBadgeClasses,
   getDomainBadgeColor,
   titleCase,
 } from "@/lib/severity-colors";
+import { cn } from "@/lib/utils";
 
 interface Props {
   signalData: SignalSummaryRow[];
@@ -170,26 +177,26 @@ function EndpointPanel({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Direction</span>
-              <span>{selectedRow.direction ?? "\u2014"}</span>
+              <span className={getDirectionColor(selectedRow.direction)}>
+                {getDirectionSymbol(selectedRow.direction)} {selectedRow.direction ?? "\u2014"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Best p-value</span>
-              <span className="font-mono">
+              <span className={cn("font-mono", getPValueColor(selectedRow.p_value))}>
                 {formatPValue(selectedRow.p_value)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Trend p-value</span>
-              <span className="font-mono">
+              <span className={cn("font-mono", getPValueColor(selectedRow.trend_p))}>
                 {formatPValue(selectedRow.trend_p)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Effect size</span>
-              <span className="font-mono">
-                {selectedRow.effect_size != null
-                  ? selectedRow.effect_size.toFixed(2)
-                  : "\u2014"}
+              <span className={cn("font-mono", getEffectSizeColor(selectedRow.effect_size))}>
+                {formatEffectSize(selectedRow.effect_size)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -198,11 +205,18 @@ function EndpointPanel({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Severity</span>
-              <span className="capitalize">{selectedRow.severity}</span>
+              <span className={cn(
+                "rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
+                getSeverityBadgeClasses(selectedRow.severity)
+              )}>
+                {selectedRow.severity}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Treatment-related</span>
-              <span>{selectedRow.treatment_related ? "Yes" : "No"}</span>
+              <span className={selectedRow.treatment_related ? "font-semibold" : ""}>
+                {selectedRow.treatment_related ? "Yes" : "No"}
+              </span>
             </div>
           </div>
         ) : (
@@ -253,11 +267,16 @@ function EndpointPanel({
                         ? f.endpoint_label.slice(0, 25) + "\u2026"
                         : f.endpoint_label}
                     </td>
-                    <td className="py-0.5">{f.domain}</td>
+                    <td className={cn("py-0.5 text-[9px] font-semibold", getDomainBadgeColor(f.domain).text)}>{f.domain}</td>
                     <td className="py-0.5 text-right font-mono">
-                      {f.signal_score.toFixed(2)}
+                      <span
+                        className="rounded px-1 py-0.5 text-[9px] font-medium text-white"
+                        style={{ backgroundColor: getSignalScoreColor(f.signal_score) }}
+                      >
+                        {f.signal_score.toFixed(2)}
+                      </span>
                     </td>
-                    <td className="py-0.5 text-right font-mono">
+                    <td className={cn("py-0.5 text-right font-mono", getPValueColor(f.p_value))}>
                       {formatPValue(f.p_value)}
                     </td>
                   </tr>
@@ -488,11 +507,16 @@ function OrganPanel({
                       ? ep.endpoint_label.slice(0, 22) + "\u2026"
                       : ep.endpoint_label}
                   </td>
-                  <td className="py-0.5">{ep.domain}</td>
+                  <td className={cn("py-0.5 text-[9px] font-semibold", getDomainBadgeColor(ep.domain).text)}>{ep.domain}</td>
                   <td className="py-0.5 text-right font-mono">
-                    {ep.signal_score.toFixed(2)}
+                    <span
+                      className="rounded px-1 py-0.5 text-[9px] font-medium text-white"
+                      style={{ backgroundColor: getSignalScoreColor(ep.signal_score) }}
+                    >
+                      {ep.signal_score.toFixed(2)}
+                    </span>
                   </td>
-                  <td className="py-0.5 text-right font-mono">
+                  <td className={cn("py-0.5 text-right font-mono", getPValueColor(ep.p_value))}>
                     {formatPValue(ep.p_value)}
                   </td>
                 </tr>
@@ -522,15 +546,21 @@ function OrganPanel({
           {/* Counts */}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Significant</span>
-            <span>{evidence.nSignificant} / {evidence.totalSignals}</span>
+            <span className={evidence.nSignificant > 0 ? "font-semibold" : ""}>
+              {evidence.nSignificant} / {evidence.totalSignals}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Treatment-related</span>
-            <span>{evidence.nTR}</span>
+            <span className={evidence.nTR > 0 ? "font-semibold" : ""}>
+              {evidence.nTR}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Adverse</span>
-            <span>{evidence.nAdverse}</span>
+            <span className={evidence.nAdverse > 0 ? "font-semibold" : ""}>
+              {evidence.nAdverse}
+            </span>
           </div>
           {/* Sex comparison */}
           <div className="mt-1 border-t pt-1">

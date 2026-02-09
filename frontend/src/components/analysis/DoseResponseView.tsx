@@ -27,19 +27,9 @@ import { cn } from "@/lib/utils";
 import {
   formatPValue,
   formatEffectSize,
-  getDomainDotColor,
+  getDomainBadgeColor,
   titleCase,
 } from "@/lib/severity-colors";
-
-// Design system §1.7/§1.11 Rule 5: domain dot+outline badge
-function DomainDotBadge({ domain }: { domain: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getDomainDotColor(domain) }} />
-      {domain}
-    </span>
-  );
-}
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
@@ -372,7 +362,14 @@ export function DoseResponseView({
       }),
       col.accessor("domain", {
         header: "Domain",
-        cell: (info) => <DomainDotBadge domain={info.getValue()} />,
+        cell: (info) => {
+          const dc = getDomainBadgeColor(info.getValue());
+          return (
+            <span className={cn("text-[9px] font-semibold", dc.text)}>
+              {info.getValue()}
+            </span>
+          );
+        },
       }),
       col.accessor("dose_level", {
         header: "Dose",

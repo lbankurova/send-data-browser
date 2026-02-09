@@ -9,9 +9,16 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import {
   titleCase,
   formatPValue,
+  formatEffectSize,
   getSignalScoreColor,
+  getPValueColor,
+  getEffectSizeColor,
+  getDirectionSymbol,
+  getDirectionColor,
+  getSeverityBadgeClasses,
   getDomainBadgeColor,
 } from "@/lib/severity-colors";
+import { cn } from "@/lib/utils";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import type { RuleResult, SignalSummaryRow } from "@/types/analysis-views";
@@ -145,22 +152,26 @@ export function DoseResponseContextPanel({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Direction</span>
-              <span>{selectedSignalRow.direction ?? "\u2014"}</span>
+              <span className={getDirectionColor(selectedSignalRow.direction)}>
+                {getDirectionSymbol(selectedSignalRow.direction)} {selectedSignalRow.direction ?? "\u2014"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Best p-value</span>
-              <span className="font-mono">{formatPValue(selectedSignalRow.p_value)}</span>
+              <span className={cn("font-mono", getPValueColor(selectedSignalRow.p_value))}>
+                {formatPValue(selectedSignalRow.p_value)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Trend p-value</span>
-              <span className="font-mono">{formatPValue(selectedSignalRow.trend_p)}</span>
+              <span className={cn("font-mono", getPValueColor(selectedSignalRow.trend_p))}>
+                {formatPValue(selectedSignalRow.trend_p)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Effect size</span>
-              <span className="font-mono">
-                {selectedSignalRow.effect_size != null
-                  ? selectedSignalRow.effect_size.toFixed(2)
-                  : "\u2014"}
+              <span className={cn("font-mono", getEffectSizeColor(selectedSignalRow.effect_size))}>
+                {formatEffectSize(selectedSignalRow.effect_size)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -169,11 +180,18 @@ export function DoseResponseContextPanel({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Severity</span>
-              <span className="capitalize">{selectedSignalRow.severity}</span>
+              <span className={cn(
+                "rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
+                getSeverityBadgeClasses(selectedSignalRow.severity)
+              )}>
+                {selectedSignalRow.severity}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Treatment-related</span>
-              <span>{selectedSignalRow.treatment_related ? "Yes" : "No"}</span>
+              <span className={selectedSignalRow.treatment_related ? "font-semibold" : ""}>
+                {selectedSignalRow.treatment_related ? "Yes" : "No"}
+              </span>
             </div>
           </div>
         ) : (
