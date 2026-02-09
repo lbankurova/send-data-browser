@@ -11,6 +11,7 @@ import {
   formatEffectSize,
   getDirectionSymbol,
   getDomainBadgeColor,
+  titleCase,
 } from "@/lib/severity-colors";
 import { InsightsList } from "./panes/InsightsList";
 import { OrganGroupedHeatmap } from "./charts/OrganGroupedHeatmap";
@@ -84,7 +85,7 @@ function SignalsOrganRailItem({ organ, organBlock, isSelected, maxEvidenceScore,
   return (
     <button className={cn("w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors", organ.target_organ_flag ? "border-l-2 border-l-[#DC2626]" : "border-l-2 border-l-transparent", isSelected ? "bg-blue-50/60 dark:bg-blue-950/20" : "hover:bg-accent/30")} onClick={onClick}>
       <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold">{organ.organ_system.replace(/_/g, " ")}</span>
+        <span className="text-xs font-semibold">{titleCase(organ.organ_system)}</span>
         {organ.target_organ_flag && <span className="text-[9px] font-semibold uppercase text-[#DC2626]">TARGET</span>}
       </div>
       <div className="mt-1.5 flex items-center gap-2">
@@ -194,7 +195,7 @@ export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b px-4 py-3">
-        <div className="flex items-center gap-2"><h3 className="text-sm font-semibold">{organ.organ_system.replace(/_/g, " ")}</h3>{organ.target_organ_flag && <span className="text-[10px] font-semibold uppercase text-[#DC2626]">TARGET ORGAN</span>}</div>
+        <div className="flex items-center gap-2"><h3 className="text-sm font-semibold">{titleCase(organ.organ_system)}</h3>{organ.target_organ_flag && <span className="text-[10px] font-semibold uppercase text-[#DC2626]">TARGET ORGAN</span>}</div>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{organ.target_organ_flag ? "Convergent" : "Evidence from"} {organ.n_domains === 1 ? "1 domain" : `${organ.n_domains} domains`}: {organ.n_significant}/{organ.n_endpoints} endpoints significant ({significantPct}%), {organ.n_treatment_related} treatment-related.</p>
         <div className="mt-2 flex flex-wrap gap-3 text-[11px]"><div><span className="text-muted-foreground">Max signal: </span><span className="font-medium">{organ.max_signal_score.toFixed(2)}</span></div><div><span className="text-muted-foreground">Evidence: </span><span className={cn(organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium")}>{organ.evidence_score.toFixed(2)}</span></div><div><span className="text-muted-foreground">Endpoints: </span><span className="font-medium">{organ.n_endpoints}</span></div></div>
       </div>

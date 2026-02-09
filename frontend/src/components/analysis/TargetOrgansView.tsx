@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
-import type { SortingState } from "@tanstack/react-table";
+import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useOrganEvidenceDetail } from "@/hooks/useOrganEvidenceDetail";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ import {
   formatEffectSize,
   getDirectionSymbol,
   getDomainBadgeColor,
+  titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
@@ -63,7 +64,7 @@ function OrganListItem({
       {/* Row 1: organ name + TARGET badge */}
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold">
-          {organ.organ_system.replace(/_/g, " ")}
+          {titleCase(organ.organ_system)}
         </span>
         {organ.target_organ_flag && (
           <span className="text-[9px] font-semibold uppercase text-[#DC2626]">
@@ -182,7 +183,7 @@ function OrganSummaryHeader({ organ }: { organ: TargetOrganRow }) {
       {/* Title + badge */}
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold">
-          {organ.organ_system.replace(/_/g, " ")}
+          {titleCase(organ.organ_system)}
         </h3>
         {organ.target_organ_flag && (
           <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
@@ -397,6 +398,7 @@ function EvidenceTableTab({
   domainsInOrgan: string[];
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   const filteredEvidence = useMemo(() => {
     return evidenceRows.filter((row) => {
@@ -502,8 +504,9 @@ function EvidenceTableTab({
   const table = useReactTable({
     data: filteredEvidence,
     columns,
-    state: { sorting },
+    state: { sorting, columnSizing },
     onSortingChange: setSorting,
+    onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableColumnResizing: true,
@@ -540,7 +543,7 @@ function EvidenceTableTab({
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
-        <table className="w-full text-xs">
+        <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b bg-muted/50">
@@ -557,7 +560,7 @@ function EvidenceTableTab({
                       onMouseDown={header.getResizeHandler()}
                       onTouchStart={header.getResizeHandler()}
                       className={cn(
-                        "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                        "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
                         header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
                       )}
                     />

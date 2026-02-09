@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
-import type { SortingState, Table } from "@tanstack/react-table";
+import type { SortingState, Table, ColumnSizingState } from "@tanstack/react-table";
 import {
   LineChart,
   Line,
@@ -249,6 +249,7 @@ export function DoseResponseView({
     organ_system: string | null;
   }>({ sex: null, data_type: null, organ_system: null });
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
 
   // ── Derived data ──────────────────────────────────────
@@ -344,10 +345,10 @@ export function DoseResponseView({
       col.accessor("endpoint_label", {
         header: "Endpoint",
         cell: (info) => {
-          const tc = titleCase(info.getValue());
+          const v = info.getValue();
           return (
-            <span className="truncate" title={tc}>
-              {tc.length > 25 ? tc.slice(0, 25) + "\u2026" : tc}
+            <span className="truncate" title={v}>
+              {v.length > 25 ? v.slice(0, 25) + "\u2026" : v}
             </span>
           );
         },
@@ -466,8 +467,9 @@ export function DoseResponseView({
   const table = useReactTable({
     data: metricsData,
     columns,
-    state: { sorting },
+    state: { sorting, columnSizing },
     onSortingChange: setSorting,
+    onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableColumnResizing: true,
@@ -679,7 +681,7 @@ export function DoseResponseView({
                             )}
                             title={ep.endpoint_label}
                           >
-                            {titleCase(ep.endpoint_label)}
+                            {ep.endpoint_label}
                           </span>
                           {ep.direction && (
                             <span className="text-xs text-[#9CA3AF]">
@@ -733,7 +735,7 @@ export function DoseResponseView({
           <div className="shrink-0 border-b px-4 py-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h2 className="text-sm font-semibold">{titleCase(selectedSummary.endpoint_label)}</h2>
+                <h2 className="text-sm font-semibold">{selectedSummary.endpoint_label}</h2>
                 <p className="text-[11px] text-muted-foreground">
                   {selectedSummary.domain} &middot; {titleCase(selectedSummary.organ_system)}
                   {selectedSummary.data_type === "categorical" && " &middot; Categorical"}
@@ -1138,7 +1140,7 @@ function MetricsTableContent({
           <option value="">All organs</option>
           {organSystems.map((os) => (
             <option key={os} value={os}>
-              {os.replace(/_/g, " ")}
+              {titleCase(os)}
             </option>
           ))}
         </select>
@@ -1149,7 +1151,7 @@ function MetricsTableContent({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b bg-muted/50">
@@ -1166,7 +1168,7 @@ function MetricsTableContent({
                       onMouseDown={header.getResizeHandler()}
                       onTouchStart={header.getResizeHandler()}
                       className={cn(
-                        "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                        "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
                         header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
                       )}
                     />

@@ -12,6 +12,7 @@ import {
   formatPValue,
   getSignalScoreColor,
   getDomainBadgeColor,
+  titleCase,
 } from "@/lib/severity-colors";
 import { cn } from "@/lib/utils";
 
@@ -205,7 +206,7 @@ function EndpointPanel({
             <p className="mb-1.5 text-[10px] text-muted-foreground">
               Other findings in{" "}
               <span className="font-medium">
-                {selection.organ_system.replace(/_/g, " ")}
+                {titleCase(selection.organ_system)}
               </span>
             </p>
             <table className="w-full text-[10px]">
@@ -275,10 +276,7 @@ function OrganPanel({
   studyId: string | undefined;
   navigate: ReturnType<typeof useNavigate>;
 }) {
-  const displayName = organSystem
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
+  const displayName = titleCase(organSystem);
 
   // Filter rules to this organ + study scope
   const organRules = useMemo(() => {
