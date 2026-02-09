@@ -138,8 +138,7 @@ export function TargetOrgansContextPanel({
             const dc = getDomainBadgeColor(info.domain);
             return (
               <div key={label} className="flex items-center gap-1 text-[11px]">
-                <span className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
-                  <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
+                <span className={cn("text-[9px] font-semibold", dc.text)}>
                   {info.domain}
                 </span>
                 <span className="truncate" title={label}>

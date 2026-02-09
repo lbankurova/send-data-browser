@@ -16,7 +16,7 @@ import type {
 import {
   formatPValue,
   getSignalScoreColor,
-  getDomainDotColor,
+  getDomainBadgeColor,
   titleCase,
 } from "@/lib/severity-colors";
 
@@ -451,9 +451,8 @@ function OrganPanel({
               {evidence.domains.map((d) => (
                 <span
                   key={d}
-                  className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70"
+                  className={`text-[9px] font-semibold ${getDomainBadgeColor(d).text}`}
                 >
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: getDomainDotColor(d) }} />
                   {d}
                 </span>
               ))}

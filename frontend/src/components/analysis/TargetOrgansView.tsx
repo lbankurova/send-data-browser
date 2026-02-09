@@ -201,8 +201,7 @@ function OrganListItem({
         {organ.domains.map((d) => {
           const dc = getDomainBadgeColor(d);
           return (
-            <span key={d} className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
-              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
+            <span key={d} className={cn("text-[9px] font-semibold", dc.text)}>
               {d}
             </span>
           );
@@ -346,13 +345,57 @@ interface DomainBreakdown {
 }
 
 function OverviewTab({
+  organ,
   evidenceRows,
   organRules,
+  allRuleResults,
 }: {
   organ: TargetOrganRow;
   evidenceRows: OrganEvidenceRow[];
   organRules: RuleResult[];
+  allRuleResults: RuleResult[];
 }) {
+  // Cross-organ coherence: R16 rules matching this organ
+  const coherenceHints = useMemo(() => {
+    if (!allRuleResults.length || !organ) return null;
+    const organLower = organ.organ_system.toLowerCase();
+
+    // R16 rules for this organ
+    const r16Self = allRuleResults.filter(
+      (r) => r.rule_id === "R16" && r.organ_system.toLowerCase() === organLower
+    );
+    // Extract convergent endpoint names
+    const convergentEndpoints: string[] = [];
+    for (const rule of r16Self) {
+      const match = rule.output_text.match(/^(.+?)\s+show\s+convergent/i);
+      if (match) {
+        convergentEndpoints.push(...match[1].split(/,\s*/).map((s) => s.trim()).filter(Boolean));
+      }
+    }
+
+    // Find other organs that share endpoint labels with this organ's evidence
+    const organEndpoints = new Set(evidenceRows.map((r) => r.endpoint_label.toLowerCase()));
+    const relatedOrgans: string[] = [];
+    if (organEndpoints.size > 0) {
+      const allR16 = allRuleResults.filter(
+        (r) => r.rule_id === "R16" && r.organ_system.toLowerCase() !== organLower
+      );
+      for (const rule of allR16) {
+        const otherOrgan = rule.organ_system;
+        const textLower = rule.output_text.toLowerCase();
+        for (const ep of organEndpoints) {
+          if (textLower.includes(ep)) {
+            if (!relatedOrgans.includes(otherOrgan)) relatedOrgans.push(otherOrgan);
+            break;
+          }
+        }
+      }
+    }
+
+    if (convergentEndpoints.length === 0 && relatedOrgans.length === 0) return null;
+    return { convergentEndpoints, relatedOrgans };
+  }, [allRuleResults, organ, evidenceRows]);
+
   const domainBreakdown = useMemo(() => {
     const map = new Map<string, { endpoints: Set<string>; significant: number; tr: number }>();
     for (const row of evidenceRows) {
@@ -412,8 +455,7 @@ function OverviewTab({
               return (
                 <tr key={d.domain} className="border-b border-border/30">
                   <td className="py-1.5 pr-3">
-                    <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
-                      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
+                    <span className={cn("text-[10px] font-semibold", dc.text)}>
                       {d.domain}
                     </span>
                   </td>
@@ -478,6 +520,22 @@ function OverviewTab({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Cross-organ coherence hint */}
+      {coherenceHints && (
+        <div className="mt-4 space-y-0.5">
+          {coherenceHints.convergentEndpoints.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              Convergent findings: {coherenceHints.convergentEndpoints.join(", ")}
+            </p>
+          )}
+          {coherenceHints.relatedOrgans.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              Related findings also observed in {coherenceHints.relatedOrgans.map((o) => titleCase(o)).join(", ")}.
+            </p>
+          )}
         </div>
       )}
 
@@ -551,8 +609,7 @@ function EvidenceTableTab({
         cell: (info) => {
           const dc = getDomainBadgeColor(info.getValue());
           return (
-            <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
-              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
+            <span className={cn("text-[10px] font-semibold", dc.text)}>
               {info.getValue()}
             </span>
           );
@@ -923,6 +980,7 @@ export function TargetOrgansView({
                 organ={selectedOrganData}
                 evidenceRows={organEvidenceRows}
                 organRules={organRules}
+                allRuleResults={ruleResults ?? []}
               />
             ) : (
               <EvidenceTableTab
