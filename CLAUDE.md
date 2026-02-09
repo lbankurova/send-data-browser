@@ -391,7 +391,7 @@ This section catalogs all code that exists purely for demonstration, stubbing, o
 These are foundational changes that most other items depend on.
 
 #### P1.1 — Authentication & Authorization
-- **`backend/main.py:32-37`** — CORS middleware uses `allow_origins=["*"]`, `allow_methods=["*"]`, `allow_headers=["*"]`. No authentication middleware exists anywhere.
+- **`backend/main.py:36-41`** — CORS middleware uses `allow_origins=["*"]`, `allow_methods=["*"]`, `allow_headers=["*"]`. No authentication middleware exists anywhere.
 - **`backend/routers/annotations.py:33-66`** — All annotation endpoints (GET/PUT) have no auth checks. Any client can read/write any study's annotations.
 - **`backend/routers/annotations.py:56`** — Reviewer identity is hardcoded: `annotation["pathologist"] = "User"`. Must be replaced with authenticated user identity.
 - **Production change:** Add Datagrok auth middleware. All API endpoints must validate user tokens. Reviewer identity must come from auth context.
@@ -406,7 +406,7 @@ These are foundational changes that most other items depend on.
 #### P1.3 — Multi-Study Support
 - **`backend/config.py:15`** — `ALLOWED_STUDIES = {"PointCross"}` restricts the entire app to one study.
 - **`backend/services/study_discovery.py:37-38`** — Filter applied at startup: `if ALLOWED_STUDIES: studies = {k: v for k, v in studies.items() if k in ALLOWED_STUDIES}`.
-- **`frontend/src/components/panels/ContextPanel.tsx:592`** — Hardcoded check: `if (selectedStudyId !== "PointCross")` shows "This is a demo entry" message for any non-PointCross study.
+- **`frontend/src/components/panels/ContextPanel.tsx:402`** — Hardcoded check: `if (selectedStudyId !== "PointCross")` shows "This is a demo entry" message for any non-PointCross study.
 - **Production change:** Remove ALLOWED_STUDIES filter entirely. Remove PointCross guard in ContextPanel. Studies should come from Datagrok's study management system.
 
 ### Priority 2 — Hardcoded Demo Data (Remove)
@@ -432,7 +432,7 @@ These are UI elements that show but don't function.
   - Browse button shows `alert()` at line 198
   - All metadata inputs (Study ID, Protocol, Description) are `disabled`
   - Checkboxes ("Validate SEND compliance", "Attempt automatic fixes") are `disabled` with hardcoded states
-  - Import button (line 258-261) is `disabled` with `cursor-not-allowed` and tooltip "Import not available in prototype"
+  - Import button (line 257-261) is `disabled` with `cursor-not-allowed` and tooltip "Import not available in prototype"
 - **Production change:** Replace with Datagrok's study import workflow, or implement real file upload → XPT parsing → study registration pipeline.
 
 #### P3.2 — Export Functionality
