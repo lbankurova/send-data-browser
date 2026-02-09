@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, Search } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
-import type { SortingState } from "@tanstack/react-table";
+import type { SortingState, Table } from "@tanstack/react-table";
 import {
   LineChart,
   Line,
@@ -33,6 +33,8 @@ import {
 } from "@/lib/severity-colors";
 import type { DoseResponseRow } from "@/types/analysis-views";
 
+// ─── Public types ──────────────────────────────────────────
+
 export interface DoseResponseSelection {
   endpoint_label: string;
   sex?: string;
@@ -40,14 +42,189 @@ export interface DoseResponseSelection {
   organ_system?: string;
 }
 
-interface Filters {
-  endpoint: string | null;
-  sex: string | null;
-  data_type: string | null;
-  organ_system: string | null;
+// ─── Pattern label & color maps ────────────────────────────
+
+const PATTERN_LABELS: Record<string, string> = {
+  monotonic_increase: "Monotonic increase",
+  monotonic_decrease: "Monotonic decrease",
+  threshold: "Threshold effect",
+  non_monotonic: "Non-monotonic",
+  flat: "Flat (no effect)",
+  insufficient_data: "Insufficient data",
+};
+
+const PATTERN_BG: Record<string, string> = {
+  monotonic_increase: "bg-red-100 text-red-700",
+  monotonic_decrease: "bg-blue-100 text-blue-700",
+  threshold: "bg-amber-100 text-amber-700",
+  non_monotonic: "bg-purple-100 text-purple-700",
+  flat: "bg-green-100 text-green-700",
+  insufficient_data: "bg-gray-100 text-gray-500",
+};
+
+// ─── Derived data types ────────────────────────────────────
+
+interface EndpointSummary {
+  endpoint_label: string;
+  organ_system: string;
+  domain: string;
+  data_type: "continuous" | "categorical";
+  dose_response_pattern: string;
+  min_p_value: number | null;
+  min_trend_p: number | null;
+  max_effect_size: number | null;
+  direction: "up" | "down" | "mixed" | null;
+  sexes: string[];
+  signal_score: number;
 }
 
+interface OrganGroup {
+  organ_system: string;
+  endpoints: EndpointSummary[];
+  max_signal_score: number;
+}
+
+// ─── Helpers ───────────────────────────────────────────────
+
+function computeSignalScore(minTrendP: number | null, maxEffect: number | null): number {
+  const pPart = minTrendP != null && minTrendP > 0 ? -Math.log10(minTrendP) : 0;
+  const ePart = maxEffect != null ? Math.abs(maxEffect) : 0;
+  return pPart + ePart;
+}
+
+function deriveEndpointSummaries(data: DoseResponseRow[]): EndpointSummary[] {
+  const map = new Map<string, DoseResponseRow[]>();
+  for (const row of data) {
+    const existing = map.get(row.endpoint_label);
+    if (existing) existing.push(row);
+    else map.set(row.endpoint_label, [row]);
+  }
+
+  const summaries: EndpointSummary[] = [];
+  for (const [label, rows] of map) {
+    const first = rows[0];
+    let minP: number | null = null;
+    let minTrendP: number | null = null;
+    let maxEffect: number | null = null;
+    const sexSet = new Set<string>();
+    let hasUp = false;
+    let hasDown = false;
+
+    for (const r of rows) {
+      sexSet.add(r.sex);
+      if (r.p_value != null && (minP === null || r.p_value < minP)) minP = r.p_value;
+      if (r.trend_p != null && (minTrendP === null || r.trend_p < minTrendP)) minTrendP = r.trend_p;
+      if (r.effect_size != null) {
+        const abs = Math.abs(r.effect_size);
+        if (maxEffect === null || abs > maxEffect) maxEffect = abs;
+        if (r.effect_size > 0) hasUp = true;
+        if (r.effect_size < 0) hasDown = true;
+      }
+    }
+
+    // Determine dominant pattern (prefer non-flat)
+    const patternCounts = new Map<string, number>();
+    for (const r of rows) {
+      patternCounts.set(r.dose_response_pattern, (patternCounts.get(r.dose_response_pattern) ?? 0) + 1);
+    }
+    let bestPattern = first.dose_response_pattern;
+    let bestCount = 0;
+    for (const [p, c] of patternCounts) {
+      if (p !== "flat" && p !== "insufficient_data" && c > bestCount) {
+        bestPattern = p;
+        bestCount = c;
+      }
+    }
+    // If only flat/insufficient, use the most common
+    if (bestCount === 0) {
+      for (const [p, c] of patternCounts) {
+        if (c > bestCount) {
+          bestPattern = p;
+          bestCount = c;
+        }
+      }
+    }
+
+    const direction = hasUp && hasDown ? "mixed" : hasUp ? "up" : hasDown ? "down" : null;
+
+    summaries.push({
+      endpoint_label: label,
+      organ_system: first.organ_system,
+      domain: first.domain,
+      data_type: first.data_type,
+      dose_response_pattern: bestPattern,
+      min_p_value: minP,
+      min_trend_p: minTrendP,
+      max_effect_size: maxEffect,
+      direction,
+      sexes: [...sexSet].sort(),
+      signal_score: computeSignalScore(minTrendP, maxEffect),
+    });
+  }
+
+  return summaries.sort((a, b) => b.signal_score - a.signal_score);
+}
+
+function deriveOrganGroups(summaries: EndpointSummary[]): OrganGroup[] {
+  const map = new Map<string, EndpointSummary[]>();
+  for (const s of summaries) {
+    const existing = map.get(s.organ_system);
+    if (existing) existing.push(s);
+    else map.set(s.organ_system, [s]);
+  }
+
+  const groups: OrganGroup[] = [];
+  for (const [organ, endpoints] of map) {
+    // Endpoints are already sorted by signal_score desc from deriveEndpointSummaries
+    groups.push({
+      organ_system: organ,
+      endpoints,
+      max_signal_score: endpoints[0]?.signal_score ?? 0,
+    });
+  }
+
+  return groups.sort((a, b) => b.max_signal_score - a.max_signal_score);
+}
+
+function directionArrow(dir: "up" | "down" | "mixed" | null): string {
+  if (dir === "up") return "↑";
+  if (dir === "down") return "↓";
+  if (dir === "mixed") return "↕";
+  return "";
+}
+
+function generateConclusion(ep: EndpointSummary): string {
+  const patternLabel = PATTERN_LABELS[ep.dose_response_pattern] ?? ep.dose_response_pattern.replace(/_/g, " ");
+  const parts: string[] = [];
+
+  parts.push(`${patternLabel} across doses`);
+
+  if (ep.min_trend_p != null) {
+    parts.push(`trend p=${formatPValue(ep.min_trend_p)}`);
+  }
+
+  if (ep.max_effect_size != null) {
+    parts.push(`max effect size ${ep.max_effect_size.toFixed(2)}`);
+  }
+
+  const sexNote =
+    ep.sexes.length === 2
+      ? "Both sexes affected"
+      : ep.sexes.length === 1
+        ? `${ep.sexes[0] === "M" ? "Males" : "Females"} only`
+        : "";
+
+  let text = parts.join(", ");
+  if (sexNote) text += `. ${sexNote}`;
+  text += ".";
+  return text;
+}
+
+// ─── TanStack Table column defs ────────────────────────────
+
 const col = createColumnHelper<DoseResponseRow>();
+
+// ─── Main component ────────────────────────────────────────
 
 export function DoseResponseView({
   onSelectionChange,
@@ -58,70 +235,70 @@ export function DoseResponseView({
   const location = useLocation();
   const { data: drData, isLoading, error } = useDoseResponseMetrics(studyId);
 
-  const [filters, setFilters] = useState<Filters>({
-    endpoint: null,
-    sex: null,
-    data_type: null,
-    organ_system: null,
-  });
+  // State
+  const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"chart" | "metrics">("chart");
+  const [railSearch, setRailSearch] = useState("");
+  const [expandedOrgans, setExpandedOrgans] = useState<Set<string>>(new Set());
   const [selection, setSelection] = useState<DoseResponseSelection | null>(null);
+
+  // Metrics tab state
+  const [metricsFilters, setMetricsFilters] = useState<{
+    sex: string | null;
+    data_type: string | null;
+    organ_system: string | null;
+  }>({ sex: null, data_type: null, organ_system: null });
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [endpointSearch, setEndpointSearch] = useState("");
 
-  // Apply cross-view state from navigate()
-  useEffect(() => {
-    const state = location.state as { organ_system?: string; endpoint_label?: string } | null;
-    if (state && drData) {
-      if (state.organ_system) {
-        setFilters((f) => ({ ...f, organ_system: state.organ_system ?? null }));
-      }
-      if (state.endpoint_label) {
-        setEndpointSearch(state.endpoint_label);
-      }
-      window.history.replaceState({}, "");
-    }
-  }, [location.state, drData]);
+  const railRef = useRef<HTMLDivElement>(null);
 
-  // Unique values
-  const endpoints = useMemo(() => {
+  // ── Derived data ──────────────────────────────────────
+
+  const endpointSummaries = useMemo(() => {
     if (!drData) return [];
-    return [...new Set(drData.map((r) => r.endpoint_label))].sort();
+    return deriveEndpointSummaries(drData);
   }, [drData]);
+
+  const organGroups = useMemo(() => {
+    return deriveOrganGroups(endpointSummaries);
+  }, [endpointSummaries]);
 
   const organSystems = useMemo(() => {
     if (!drData) return [];
     return [...new Set(drData.map((r) => r.organ_system))].sort();
   }, [drData]);
 
-  const filteredEndpoints = useMemo(() => {
-    if (!endpointSearch) return endpoints.slice(0, 50);
-    const q = endpointSearch.toLowerCase();
-    return endpoints.filter((e) => e.toLowerCase().includes(q)).slice(0, 50);
-  }, [endpoints, endpointSearch]);
+  // Selected endpoint summary
+  const selectedSummary = useMemo(() => {
+    if (!selectedEndpoint) return null;
+    return endpointSummaries.find((s) => s.endpoint_label === selectedEndpoint) ?? null;
+  }, [endpointSummaries, selectedEndpoint]);
 
-  // Filtered data
-  const filteredData = useMemo(() => {
-    if (!drData) return [];
-    return drData.filter((row) => {
-      if (filters.endpoint && row.endpoint_label !== filters.endpoint) return false;
-      if (filters.sex && row.sex !== filters.sex) return false;
-      if (filters.data_type && row.data_type !== filters.data_type) return false;
-      if (filters.organ_system && row.organ_system !== filters.organ_system) return false;
-      return true;
-    });
-  }, [drData, filters]);
+  // Filtered rail endpoints by search
+  const filteredOrganGroups = useMemo(() => {
+    if (!railSearch) return organGroups;
+    const q = railSearch.toLowerCase();
+    return organGroups
+      .map((g) => ({
+        ...g,
+        endpoints: g.endpoints.filter(
+          (ep) =>
+            ep.endpoint_label.toLowerCase().includes(q) ||
+            ep.organ_system.toLowerCase().includes(q)
+        ),
+      }))
+      .filter((g) => g.endpoints.length > 0);
+  }, [organGroups, railSearch]);
 
   // Chart data for selected endpoint
-  const chartEndpoint = selection?.endpoint_label ?? filters.endpoint;
   const chartData = useMemo(() => {
-    if (!drData || !chartEndpoint) return null;
-    const rows = drData.filter((r) => r.endpoint_label === chartEndpoint);
+    if (!drData || !selectedEndpoint) return null;
+    const rows = drData.filter((r) => r.endpoint_label === selectedEndpoint);
     if (rows.length === 0) return null;
     const dataType = rows[0].data_type;
     const sexes = [...new Set(rows.map((r) => r.sex))].sort();
     const doseLevels = [...new Set(rows.map((r) => r.dose_level))].sort((a, b) => a - b);
 
-    // Build chart points per sex
     const series = sexes.map((sex) => {
       const sexRows = rows.filter((r) => r.sex === sex);
       const points = doseLevels.map((dl) => {
@@ -133,13 +310,35 @@ export function DoseResponseView({
           sd: row?.sd ?? null,
           incidence: row?.incidence ?? null,
           n: row?.n ?? null,
+          p_value: row?.p_value ?? null,
         };
       });
       return { sex, points };
     });
 
     return { dataType, sexes, doseLevels, series };
-  }, [drData, chartEndpoint]);
+  }, [drData, selectedEndpoint]);
+
+  // Pairwise comparison table for selected endpoint
+  const pairwiseRows = useMemo(() => {
+    if (!drData || !selectedEndpoint) return [];
+    return drData
+      .filter((r) => r.endpoint_label === selectedEndpoint)
+      .sort((a, b) => a.dose_level - b.dose_level || a.sex.localeCompare(b.sex));
+  }, [drData, selectedEndpoint]);
+
+  // Metrics table data
+  const metricsData = useMemo(() => {
+    if (!drData) return [];
+    return drData.filter((row) => {
+      if (metricsFilters.sex && row.sex !== metricsFilters.sex) return false;
+      if (metricsFilters.data_type && row.data_type !== metricsFilters.data_type) return false;
+      if (metricsFilters.organ_system && row.organ_system !== metricsFilters.organ_system) return false;
+      return true;
+    });
+  }, [drData, metricsFilters]);
+
+  // ── Columns ───────────────────────────────────────────
 
   const columns = useMemo(
     () => [
@@ -235,7 +434,7 @@ export function DoseResponseView({
   );
 
   const table = useReactTable({
-    data: filteredData,
+    data: metricsData,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -243,18 +442,104 @@ export function DoseResponseView({
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const handleRowClick = (row: DoseResponseRow) => {
-    const sel: DoseResponseSelection = {
-      endpoint_label: row.endpoint_label,
-      sex: row.sex,
-      domain: row.domain,
-      organ_system: row.organ_system,
-    };
-    const isSame = selection?.endpoint_label === sel.endpoint_label && selection?.sex === sel.sex;
-    const next = isSame ? null : sel;
-    setSelection(next);
-    onSelectionChange?.(next);
-  };
+  // ── Selection handling ────────────────────────────────
+
+  const selectEndpoint = useCallback(
+    (endpointLabel: string) => {
+      setSelectedEndpoint(endpointLabel);
+      setActiveTab("chart");
+      // Find representative row for selection
+      const row = drData?.find((r) => r.endpoint_label === endpointLabel);
+      if (row) {
+        const sel: DoseResponseSelection = {
+          endpoint_label: row.endpoint_label,
+          domain: row.domain,
+          organ_system: row.organ_system,
+        };
+        setSelection(sel);
+        onSelectionChange?.(sel);
+      }
+    },
+    [drData, onSelectionChange]
+  );
+
+  const handleRowClick = useCallback(
+    (row: DoseResponseRow) => {
+      const sel: DoseResponseSelection = {
+        endpoint_label: row.endpoint_label,
+        sex: row.sex,
+        domain: row.domain,
+        organ_system: row.organ_system,
+      };
+      const isSame = selection?.endpoint_label === sel.endpoint_label && selection?.sex === sel.sex;
+      const next = isSame ? null : sel;
+      setSelection(next);
+      onSelectionChange?.(next);
+      if (next) {
+        setSelectedEndpoint(next.endpoint_label);
+      }
+    },
+    [selection, onSelectionChange]
+  );
+
+  const toggleOrgan = useCallback((organ: string) => {
+    setExpandedOrgans((prev) => {
+      const next = new Set(prev);
+      if (next.has(organ)) next.delete(organ);
+      else next.add(organ);
+      return next;
+    });
+  }, []);
+
+  // ── Auto-select on data load ──────────────────────────
+
+  useEffect(() => {
+    if (!drData || drData.length === 0 || selectedEndpoint) return;
+    const summaries = deriveEndpointSummaries(drData);
+    if (summaries.length === 0) return;
+    const top = summaries[0];
+    setSelectedEndpoint(top.endpoint_label);
+    // Expand the organ group that contains the top endpoint
+    setExpandedOrgans(new Set([top.organ_system]));
+    // Set selection for context panel
+    const row = drData.find((r) => r.endpoint_label === top.endpoint_label);
+    if (row) {
+      const sel: DoseResponseSelection = {
+        endpoint_label: row.endpoint_label,
+        domain: row.domain,
+        organ_system: row.organ_system,
+      };
+      setSelection(sel);
+      onSelectionChange?.(sel);
+    }
+  }, [drData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Cross-view state from navigate() ──────────────────
+
+  useEffect(() => {
+    const state = location.state as { organ_system?: string; endpoint_label?: string } | null;
+    if (state && drData) {
+      if (state.endpoint_label) {
+        selectEndpoint(state.endpoint_label);
+        // Find and expand the organ group
+        const row = drData.find((r) => r.endpoint_label === state.endpoint_label);
+        if (row) {
+          setExpandedOrgans((prev) => new Set([...prev, row.organ_system]));
+        }
+      } else if (state.organ_system) {
+        setExpandedOrgans((prev) => new Set([...prev, state.organ_system!]));
+        // Select first endpoint in that organ
+        const summaries = deriveEndpointSummaries(drData);
+        const first = summaries.find((s) => s.organ_system === state.organ_system);
+        if (first) {
+          selectEndpoint(first.endpoint_label);
+        }
+      }
+      window.history.replaceState({}, "");
+    }
+  }, [location.state, drData, selectEndpoint]);
+
+  // ── Error / Loading states ────────────────────────────
 
   if (error) {
     return (
@@ -280,51 +565,491 @@ export function DoseResponseView({
   }
 
   const sexColors: Record<string, string> = { M: "#3b82f6", F: "#ec4899" };
+  const totalEndpoints = endpointSummaries.length;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search endpoints..."
-            className="w-48 rounded border bg-background px-2 py-1 text-xs"
-            value={endpointSearch}
-            onChange={(e) => setEndpointSearch(e.target.value)}
-          />
-          {endpointSearch && filteredEndpoints.length > 0 && !filters.endpoint && (
-            <div className="absolute left-0 top-full z-10 mt-1 max-h-48 w-64 overflow-auto rounded border bg-background shadow-lg">
-              {filteredEndpoints.map((ep) => (
-                <button
-                  key={ep}
-                  className="block w-full truncate px-2 py-1 text-left text-xs hover:bg-accent/50"
-                  onClick={() => {
-                    setFilters((f) => ({ ...f, endpoint: ep }));
-                    setEndpointSearch("");
-                  }}
-                >
-                  {ep}
-                </button>
-              ))}
+    <div className="flex h-full overflow-hidden">
+      {/* ───── Endpoint Rail (left) ───── */}
+      <div
+        ref={railRef}
+        className="flex w-[320px] shrink-0 flex-col border-r bg-muted/20"
+      >
+        {/* Rail header */}
+        <div className="shrink-0 border-b px-3 py-2">
+          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Endpoints ({totalEndpoints})
+          </div>
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search endpoints..."
+              className="w-full rounded border bg-background py-1 pl-7 pr-2 text-xs"
+              value={railSearch}
+              onChange={(e) => setRailSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Rail body */}
+        <div className="flex-1 overflow-y-auto">
+          {filteredOrganGroups.length === 0 && (
+            <div className="p-3 text-center text-xs text-muted-foreground">
+              No endpoints match your search.
             </div>
           )}
+          {filteredOrganGroups.map((group) => {
+            const isExpanded = expandedOrgans.has(group.organ_system);
+            const hasSelected = group.endpoints.some((ep) => ep.endpoint_label === selectedEndpoint);
+
+            return (
+              <div key={group.organ_system}>
+                {/* Organ group header */}
+                <button
+                  className={cn(
+                    "flex w-full items-center gap-1.5 border-b px-3 py-1.5 text-left text-[11px] font-semibold hover:bg-accent/50",
+                    hasSelected && !isExpanded && "bg-accent/30"
+                  )}
+                  onClick={() => toggleOrgan(group.organ_system)}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="flex-1 truncate">{group.organ_system.replace(/_/g, " ")}</span>
+                  <span className="text-[10px] font-normal text-muted-foreground">
+                    {group.endpoints.length}
+                  </span>
+                </button>
+
+                {/* Endpoint items */}
+                {isExpanded &&
+                  group.endpoints.map((ep) => {
+                    const isSelected = ep.endpoint_label === selectedEndpoint;
+                    return (
+                      <button
+                        key={ep.endpoint_label}
+                        className={cn(
+                          "w-full border-b border-dashed px-3 py-1.5 text-left transition-colors hover:bg-accent/50",
+                          isSelected && "bg-accent"
+                        )}
+                        onClick={() => selectEndpoint(ep.endpoint_label)}
+                      >
+                        {/* Row 1: name + direction */}
+                        <div className="flex items-center gap-1">
+                          <span
+                            className={cn(
+                              "flex-1 truncate text-xs",
+                              isSelected ? "font-semibold" : "font-medium"
+                            )}
+                            title={ep.endpoint_label}
+                          >
+                            {ep.endpoint_label}
+                          </span>
+                          {ep.direction && (
+                            <span
+                              className={cn(
+                                "text-xs font-semibold",
+                                ep.direction === "up"
+                                  ? "text-red-500"
+                                  : ep.direction === "down"
+                                    ? "text-blue-500"
+                                    : "text-muted-foreground"
+                              )}
+                            >
+                              {directionArrow(ep.direction)}
+                            </span>
+                          )}
+                        </div>
+                        {/* Row 2: pattern badge + min p + max |d| */}
+                        <div className="mt-0.5 flex items-center gap-1.5">
+                          <span
+                            className={cn(
+                              "rounded px-1 py-0.5 text-[9px] font-medium leading-tight",
+                              PATTERN_BG[ep.dose_response_pattern] ?? "bg-gray-100 text-gray-500"
+                            )}
+                          >
+                            {(PATTERN_LABELS[ep.dose_response_pattern] ?? ep.dose_response_pattern)
+                              .split(" ")[0]}
+                          </span>
+                          <span className={cn("text-[10px] font-mono", getPValueColor(ep.min_trend_p))}>
+                            p={formatPValue(ep.min_trend_p)}
+                          </span>
+                          {ep.max_effect_size != null && (
+                            <span className={cn("text-[10px] font-mono", getEffectSizeColor(ep.max_effect_size))}>
+                              |d|={ep.max_effect_size.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+            );
+          })}
         </div>
-        {filters.endpoint && (
-          <span className="flex items-center gap-1 rounded bg-primary/10 px-2 py-1 text-xs">
-            {filters.endpoint.length > 25 ? filters.endpoint.slice(0, 25) + "\u2026" : filters.endpoint}
-            <button
-              className="ml-1 text-muted-foreground hover:text-foreground"
-              onClick={() => setFilters((f) => ({ ...f, endpoint: null }))}
-            >
-              &times;
-            </button>
-          </span>
+      </div>
+
+      {/* ───── Evidence Panel (right) ───── */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Summary header */}
+        {selectedSummary ? (
+          <div className="shrink-0 border-b px-4 py-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold">{selectedSummary.endpoint_label}</h2>
+                <p className="text-[11px] text-muted-foreground">
+                  {selectedSummary.domain} &middot; {selectedSummary.organ_system.replace(/_/g, " ")}
+                  {selectedSummary.data_type === "categorical" && " &middot; Categorical"}
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium",
+                  PATTERN_BG[selectedSummary.dose_response_pattern] ?? "bg-gray-100 text-gray-500"
+                )}
+              >
+                {PATTERN_LABELS[selectedSummary.dose_response_pattern] ??
+                  selectedSummary.dose_response_pattern.replace(/_/g, " ")}
+              </span>
+            </div>
+            {/* Conclusion text */}
+            <p className="mt-1 text-xs text-foreground/80">
+              {generateConclusion(selectedSummary)}
+            </p>
+            {/* Compact metrics */}
+            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]">
+              <span>
+                <span className="text-muted-foreground">Trend p: </span>
+                <span className={cn("font-mono", getPValueColor(selectedSummary.min_trend_p))}>
+                  {formatPValue(selectedSummary.min_trend_p)}
+                </span>
+              </span>
+              <span>
+                <span className="text-muted-foreground">Min p: </span>
+                <span className={cn("font-mono", getPValueColor(selectedSummary.min_p_value))}>
+                  {formatPValue(selectedSummary.min_p_value)}
+                </span>
+              </span>
+              {selectedSummary.max_effect_size != null && (
+                <span>
+                  <span className="text-muted-foreground">Max |d|: </span>
+                  <span className={cn("font-mono", getEffectSizeColor(selectedSummary.max_effect_size))}>
+                    {selectedSummary.max_effect_size.toFixed(2)}
+                  </span>
+                </span>
+              )}
+              <span>
+                <span className="text-muted-foreground">Sexes: </span>
+                <span className="font-mono">{selectedSummary.sexes.join(", ")}</span>
+              </span>
+              <span>
+                <span className="text-muted-foreground">Data: </span>
+                <span>{selectedSummary.data_type}</span>
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="shrink-0 border-b px-4 py-3">
+            <p className="text-xs text-muted-foreground">
+              Select an endpoint from the list to view dose-response details.
+            </p>
+          </div>
         )}
+
+        {/* Tab bar */}
+        <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
+          <button
+            className={cn(
+              "px-4 py-1.5 text-xs font-medium transition-colors",
+              activeTab === "chart"
+                ? "border-b-2 border-primary text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={() => setActiveTab("chart")}
+          >
+            Chart & overview
+          </button>
+          <button
+            className={cn(
+              "px-4 py-1.5 text-xs font-medium transition-colors",
+              activeTab === "metrics"
+                ? "border-b-2 border-primary text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={() => setActiveTab("metrics")}
+          >
+            Metrics table
+          </button>
+          {activeTab === "metrics" && (
+            <span className="ml-auto mr-3 text-[10px] text-muted-foreground">
+              {metricsData.length} of {drData?.length ?? 0} rows
+            </span>
+          )}
+        </div>
+
+        {/* Tab content */}
+        <div className="flex-1 overflow-auto">
+          {activeTab === "chart" ? (
+            <ChartOverviewContent
+              chartData={chartData}
+              selectedEndpoint={selectedEndpoint}
+              pairwiseRows={pairwiseRows}
+              sexColors={sexColors}
+            />
+          ) : (
+            <MetricsTableContent
+              table={table}
+              metricsData={metricsData}
+              metricsFilters={metricsFilters}
+              setMetricsFilters={setMetricsFilters}
+              organSystems={organSystems}
+              selection={selection}
+              handleRowClick={handleRowClick}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Chart & Overview tab ──────────────────────────────────
+
+interface ChartOverviewProps {
+  chartData: {
+    dataType: string;
+    sexes: string[];
+    doseLevels: number[];
+    series: {
+      sex: string;
+      points: {
+        dose_level: number;
+        dose_label: string;
+        mean: number | null;
+        sd: number | null;
+        incidence: number | null;
+        n: number | null;
+        p_value: number | null;
+      }[];
+    }[];
+  } | null;
+  selectedEndpoint: string | null;
+  pairwiseRows: DoseResponseRow[];
+  sexColors: Record<string, string>;
+}
+
+function ChartOverviewContent({
+  chartData,
+  selectedEndpoint,
+  pairwiseRows,
+  sexColors,
+}: ChartOverviewProps) {
+  if (!chartData || !selectedEndpoint) {
+    return (
+      <div className="flex items-center justify-center p-12 text-xs text-muted-foreground">
+        Select an endpoint to view chart and overview.
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Chart */}
+      <div className="border-b p-4">
+        <div className="flex gap-4">
+          {chartData.series.map(({ sex, points }) => (
+            <div key={sex} className="flex-1">
+              <div
+                className="mb-1 text-center text-[10px] font-medium"
+                style={{ color: sexColors[sex] ?? "#666" }}
+              >
+                {sex === "M" ? "Males" : sex === "F" ? "Females" : sex}
+              </div>
+              <ResponsiveContainer width="100%" height={280}>
+                {chartData.dataType === "continuous" ? (
+                  <LineChart data={points} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip
+                      contentStyle={{ fontSize: 11 }}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      formatter={(value: any, name: any) => [
+                        value != null ? Number(value).toFixed(2) : "\u2014",
+                        name === "mean" ? "Mean" : String(name ?? ""),
+                      ]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="mean"
+                      stroke={sexColors[sex] ?? "#666"}
+                      strokeWidth={2}
+                      dot={({ cx, cy, payload }: { cx?: number; cy?: number; payload: { p_value: number | null } }) => {
+                        if (cx == null || cy == null) return null;
+                        const sig = payload.p_value != null && payload.p_value < 0.05;
+                        return (
+                          <circle
+                            key={`${cx}-${cy}`}
+                            cx={cx}
+                            cy={cy}
+                            r={sig ? 6 : 4}
+                            fill={sig ? "#dc2626" : sexColors[sex] ?? "#666"}
+                            stroke={sig ? "#dc2626" : sexColors[sex] ?? "#666"}
+                            strokeWidth={sig ? 2 : 1}
+                          />
+                        );
+                      }}
+                      connectNulls
+                    >
+                      <ErrorBar
+                        dataKey="sd"
+                        width={4}
+                        strokeWidth={1}
+                        stroke={sexColors[sex] ?? "#666"}
+                      />
+                    </Line>
+                  </LineChart>
+                ) : (
+                  <BarChart data={points} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} domain={[0, 1]} />
+                    <Tooltip
+                      contentStyle={{ fontSize: 11 }}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      formatter={(value: any) => [
+                        value != null ? (Number(value) * 100).toFixed(0) + "%" : "\u2014",
+                        "Incidence",
+                      ]}
+                    />
+                    <Bar
+                      dataKey="incidence"
+                      fill={sexColors[sex] ?? "#666"}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      shape={(props: any) => {
+                        const sig = props.payload?.p_value != null && props.payload.p_value < 0.05;
+                        return (
+                          <rect
+                            x={props.x}
+                            y={props.y}
+                            width={props.width}
+                            height={props.height}
+                            fill={sig ? "#dc2626" : (sexColors[sex] ?? "#666")}
+                            rx={2}
+                          />
+                        );
+                      }}
+                    />
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+          ))}
+        </div>
+        <div className="mt-1 flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-600" />
+            Significant (p&lt;0.05)
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-gray-400" />
+            Not significant
+          </span>
+        </div>
+      </div>
+
+      {/* Pairwise comparison table */}
+      {pairwiseRows.length > 0 && (
+        <div className="p-4">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Pairwise comparison
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-2 py-1.5 text-left font-medium">Dose</th>
+                  <th className="px-2 py-1.5 text-left font-medium">Sex</th>
+                  <th className="px-2 py-1.5 text-right font-medium">Mean</th>
+                  <th className="px-2 py-1.5 text-right font-medium">SD</th>
+                  <th className="px-2 py-1.5 text-right font-medium">N</th>
+                  <th className="px-2 py-1.5 text-right font-medium">p-value</th>
+                  <th className="px-2 py-1.5 text-right font-medium">Effect</th>
+                  <th className="px-2 py-1.5 text-left font-medium">Pattern</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pairwiseRows.map((row, i) => (
+                  <tr key={i} className="border-b border-dashed">
+                    <td className="px-2 py-1">
+                      <span
+                        className="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
+                        style={{ backgroundColor: getDoseGroupColor(row.dose_level) }}
+                      >
+                        {row.dose_label.split(",")[0]}
+                      </span>
+                    </td>
+                    <td className="px-2 py-1">{row.sex}</td>
+                    <td className="px-2 py-1 text-right font-mono">
+                      {row.mean != null ? row.mean.toFixed(2) : "\u2014"}
+                    </td>
+                    <td className="px-2 py-1 text-right font-mono text-muted-foreground">
+                      {row.sd != null ? row.sd.toFixed(2) : "\u2014"}
+                    </td>
+                    <td className="px-2 py-1 text-right">{row.n ?? "\u2014"}</td>
+                    <td className={cn("px-2 py-1 text-right font-mono", getPValueColor(row.p_value))}>
+                      {formatPValue(row.p_value)}
+                    </td>
+                    <td className={cn("px-2 py-1 text-right font-mono", getEffectSizeColor(row.effect_size))}>
+                      {formatEffectSize(row.effect_size)}
+                    </td>
+                    <td className="px-2 py-1 text-muted-foreground">
+                      {row.dose_response_pattern.replace(/_/g, " ")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Metrics Table tab ─────────────────────────────────────
+
+interface MetricsTableProps {
+  table: Table<DoseResponseRow>;
+  metricsData: DoseResponseRow[];
+  metricsFilters: { sex: string | null; data_type: string | null; organ_system: string | null };
+  setMetricsFilters: React.Dispatch<
+    React.SetStateAction<{ sex: string | null; data_type: string | null; organ_system: string | null }>
+  >;
+  organSystems: string[];
+  selection: DoseResponseSelection | null;
+  handleRowClick: (row: DoseResponseRow) => void;
+}
+
+function MetricsTableContent({
+  table,
+  metricsData,
+  metricsFilters,
+  setMetricsFilters,
+  organSystems,
+  selection,
+  handleRowClick,
+}: MetricsTableProps) {
+  return (
+    <div>
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2">
         <select
           className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.sex ?? ""}
-          onChange={(e) => setFilters((f) => ({ ...f, sex: e.target.value || null }))}
+          value={metricsFilters.sex ?? ""}
+          onChange={(e) => setMetricsFilters((f) => ({ ...f, sex: e.target.value || null }))}
         >
           <option value="">All sexes</option>
           <option value="M">Male</option>
@@ -332,8 +1057,8 @@ export function DoseResponseView({
         </select>
         <select
           className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.data_type ?? ""}
-          onChange={(e) => setFilters((f) => ({ ...f, data_type: e.target.value || null }))}
+          value={metricsFilters.data_type ?? ""}
+          onChange={(e) => setMetricsFilters((f) => ({ ...f, data_type: e.target.value || null }))}
         >
           <option value="">All types</option>
           <option value="continuous">Continuous</option>
@@ -341,149 +1066,70 @@ export function DoseResponseView({
         </select>
         <select
           className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.organ_system ?? ""}
-          onChange={(e) => setFilters((f) => ({ ...f, organ_system: e.target.value || null }))}
+          value={metricsFilters.organ_system ?? ""}
+          onChange={(e) => setMetricsFilters((f) => ({ ...f, organ_system: e.target.value || null }))}
         >
           <option value="">All organs</option>
           {organSystems.map((os) => (
-            <option key={os} value={os}>{os.replace(/_/g, " ")}</option>
+            <option key={os} value={os}>
+              {os.replace(/_/g, " ")}
+            </option>
           ))}
         </select>
         <span className="ml-auto text-[10px] text-muted-foreground">
-          {filteredData.length} of {drData?.length ?? 0} rows
+          {metricsData.length} rows
         </span>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        {/* Chart */}
-        {chartData && (
-          <div className="border-b p-4">
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {chartEndpoint}
-            </h2>
-            <div className="flex gap-4">
-              {chartData.series.map(({ sex, points }) => (
-                <div key={sex} className="flex-1">
-                  <div className="mb-1 text-center text-[10px] font-medium" style={{ color: sexColors[sex] ?? "#666" }}>
-                    {sex === "M" ? "Males" : sex === "F" ? "Females" : sex}
-                  </div>
-                  <ResponsiveContainer width="100%" height={200}>
-                    {chartData.dataType === "continuous" ? (
-                      <LineChart data={points} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} />
-                        <Tooltip
-                          contentStyle={{ fontSize: 11 }}
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          formatter={(value: any, name: any) => [
-                            value != null ? Number(value).toFixed(2) : "\u2014",
-                            name === "mean" ? "Mean" : String(name ?? ""),
-                          ]}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="mean"
-                          stroke={sexColors[sex] ?? "#666"}
-                          strokeWidth={2}
-                          dot={{ r: 4 }}
-                          connectNulls
-                        >
-                          <ErrorBar
-                            dataKey="sd"
-                            width={4}
-                            strokeWidth={1}
-                            stroke={sexColors[sex] ?? "#666"}
-                          />
-                        </Line>
-                      </LineChart>
-                    ) : (
-                      <BarChart data={points} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} domain={[0, 1]} />
-                        <Tooltip
-                          contentStyle={{ fontSize: 11 }}
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          formatter={(value: any) => [
-                            value != null ? (Number(value) * 100).toFixed(0) + "%" : "\u2014",
-                            "Incidence",
-                          ]}
-                        />
-                        <Bar dataKey="incidence" fill={sexColors[sex] ?? "#666"} />
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {!chartEndpoint && (
-          <div className="border-b p-4 text-center text-xs text-muted-foreground">
-            Select an endpoint from the grid or filter to view the dose-response chart.
-          </div>
-        )}
-
-        {/* Grid */}
-        <div>
-          <div className="flex items-center justify-between px-4 pt-3 pb-1">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Dose-response metrics ({filteredData.length} rows)
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                {table.getHeaderGroups().map((hg) => (
-                  <tr key={hg.id} className="border-b bg-muted/50">
-                    {hg.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
-                      </th>
-                    ))}
-                  </tr>
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            {table.getHeaderGroups().map((hg) => (
+              <tr key={hg.id} className="border-b bg-muted/50">
+                {hg.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
+                  </th>
                 ))}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.slice(0, 200).map((row) => {
-                  const orig = row.original;
-                  const isSelected =
-                    selection?.endpoint_label === orig.endpoint_label &&
-                    selection?.sex === orig.sex;
-                  return (
-                    <tr
-                      key={row.id}
-                      className={cn(
-                        "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                        isSelected && "bg-accent"
-                      )}
-                      onClick={() => handleRowClick(orig)}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-2 py-1">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {filteredData.length > 200 && (
-              <div className="p-2 text-center text-[10px] text-muted-foreground">
-                Showing first 200 of {filteredData.length} rows. Use filters to narrow results.
-              </div>
-            )}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => {
+              const orig = row.original;
+              const isSelected =
+                selection?.endpoint_label === orig.endpoint_label &&
+                selection?.sex === orig.sex;
+              return (
+                <tr
+                  key={row.id}
+                  className={cn(
+                    "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                    isSelected && "bg-accent"
+                  )}
+                  onClick={() => handleRowClick(orig)}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-2 py-1">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {metricsData.length === 0 && (
+          <div className="p-4 text-center text-xs text-muted-foreground">
+            No rows match the current filters.
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

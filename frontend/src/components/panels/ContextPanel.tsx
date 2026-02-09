@@ -13,7 +13,6 @@ import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useOrganEvidenceDetail } from "@/hooks/useOrganEvidenceDetail";
-import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { AdverseEffectsContextPanel } from "@/components/analysis/panes/AdverseEffectsContextPanel";
 import { StudySummaryContextPanel } from "@/components/analysis/panes/StudySummaryContextPanel";
@@ -320,14 +319,12 @@ function TargetOrgansContextPanelWrapper({ studyId }: { studyId: string }) {
 
 function DoseResponseContextPanelWrapper({ studyId }: { studyId: string }) {
   const { selection } = useViewSelection();
-  const { data: drData } = useDoseResponseMetrics(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
 
   const sel = selection?._view === "dose-response" ? selection as { endpoint_label: string; sex?: string; domain?: string; organ_system?: string } : null;
 
   return (
     <DoseResponseContextPanel
-      drData={drData ?? []}
       ruleResults={ruleResults ?? []}
       selection={sel}
       studyId={studyId}
