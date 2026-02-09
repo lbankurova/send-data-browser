@@ -78,6 +78,7 @@ function deriveSpecimenSummaries(data: LesionSeverityRow[]): SpecimenSummary[] {
   }>();
 
   for (const row of data) {
+    if (!row.specimen) continue; // skip rows with null specimen (e.g. CL domain findings)
     let entry = map.get(row.specimen);
     if (!entry) {
       entry = { findings: new Set(), adverseFindings: new Set(), maxSev: 0, totalAffected: 0, totalN: 0, domains: new Set() };
