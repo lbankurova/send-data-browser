@@ -15,9 +15,9 @@
 | Hardcoded | 7 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 4 | Spec'd but not implemented |
-| Gap | 6 | 4 | Missing capability, no spec exists |
+| Gap | 7 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
-| **Total** | **20** | **23** | |
+| **Total** | **21** | **23** | |
 
 ## Remaining Open Items
 
@@ -285,6 +285,14 @@
 
 ### GAP-10: Template resolution error handling
 - **Status:** RESOLVED — `_emit()`, `_emit_organ()`, and `_emit_study()` in `scores_and_rules.py` now log `logger.warning("Template error in rule %s: %s", rule["id"], e)` on KeyError/ValueError.
+
+### GAP-11: Hypotheses tab intent icons are placeholder choices
+- **System:** `views/dose-response.md`
+- **Files:** `frontend/src/components/analysis/DoseResponseView.tsx:1333-1339`
+- **Issue:** The Hypotheses tab (Dose-Response view) uses five intent icons from lucide-react. Most are poor semantic fits for the underlying analytical concepts. Only Pareto (`ScatterChart`) and Model fit (`GitBranch`) are acceptable. Shape (`TrendingUp`), Correlation (`Link2`), and Outliers (`BoxSelect`) need replacement with icons that better convey their analytical meaning.
+- **Current mapping:** Shape → `TrendingUp`, Model fit → `GitBranch`, Pareto → `ScatterChart`, Correlation → `Link2`, Outliers → `BoxSelect`
+- **Recommendation:** Replace during Datagrok migration when the full Datagrok icon set is available. If staying on lucide-react, consider: Shape → a dose-response curve icon (custom SVG if needed), Correlation → a scatter/regression icon, Outliers → a box-plot or distribution icon. The icons appear at 14×14 in segmented pill buttons and must be legible at that size.
+- **Status:** Open
 
 ---
 

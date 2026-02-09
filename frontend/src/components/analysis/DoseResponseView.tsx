@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Loader2, ChevronDown, ChevronRight, Search } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, Search, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -19,6 +19,7 @@ import {
   CartesianGrid,
   Tooltip,
   ErrorBar,
+  ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
 import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
@@ -188,9 +189,9 @@ function deriveOrganGroups(summaries: EndpointSummary[]): OrganGroup[] {
 }
 
 function directionArrow(dir: "up" | "down" | "mixed" | null): string {
-  if (dir === "up") return "↑";
-  if (dir === "down") return "↓";
-  if (dir === "mixed") return "↕";
+  if (dir === "up") return "\u2191";
+  if (dir === "down") return "\u2193";
+  if (dir === "mixed") return "\u2195";
   return "";
 }
 
@@ -238,7 +239,7 @@ export function DoseResponseView({
 
   // State
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"chart" | "metrics">("chart");
+  const [activeTab, setActiveTab] = useState<"evidence" | "metrics" | "hypotheses">("evidence");
   const [railSearch, setRailSearch] = useState("");
   const [expandedOrgans, setExpandedOrgans] = useState<Set<string>>(new Set());
   const [selection, setSelection] = useState<DoseResponseSelection | null>(null);
@@ -291,7 +292,7 @@ export function DoseResponseView({
       .filter((g) => g.endpoints.length > 0);
   }, [organGroups, railSearch]);
 
-  // Chart data for selected endpoint
+  // Chart data for selected endpoint — merged M/F per dose level
   const chartData = useMemo(() => {
     if (!drData || !selectedEndpoint) return null;
     const rows = drData.filter((r) => r.endpoint_label === selectedEndpoint);
@@ -300,24 +301,29 @@ export function DoseResponseView({
     const sexes = [...new Set(rows.map((r) => r.sex))].sort();
     const doseLevels = [...new Set(rows.map((r) => r.dose_level))].sort((a, b) => a - b);
 
-    const series = sexes.map((sex) => {
-      const sexRows = rows.filter((r) => r.sex === sex);
-      const points = doseLevels.map((dl) => {
-        const row = sexRows.find((r) => r.dose_level === dl);
-        return {
-          dose_level: dl,
-          dose_label: row?.dose_label.split(",")[0] ?? `Dose ${dl}`,
-          mean: row?.mean ?? null,
-          sd: row?.sd ?? null,
-          incidence: row?.incidence ?? null,
-          n: row?.n ?? null,
-          p_value: row?.p_value ?? null,
-        };
-      });
-      return { sex, points };
+    // Build a lookup: (sex, dose_level) → row
+    const lookup = new Map<string, DoseResponseRow>();
+    for (const r of rows) lookup.set(`${r.sex}_${r.dose_level}`, r);
+
+    const mergedPoints = doseLevels.map((dl) => {
+      // Find any row for the dose label
+      const anyRow = rows.find((r) => r.dose_level === dl);
+      const point: Record<string, unknown> = {
+        dose_level: dl,
+        dose_label: anyRow?.dose_label.split(",")[0] ?? `Dose ${dl}`,
+      };
+      for (const sex of sexes) {
+        const r = lookup.get(`${sex}_${dl}`);
+        point[`mean_${sex}`] = r?.mean ?? null;
+        point[`sd_${sex}`] = r?.sd ?? null;
+        point[`p_${sex}`] = r?.p_value ?? null;
+        point[`incidence_${sex}`] = r?.incidence ?? null;
+        point[`effect_${sex}`] = r?.effect_size ?? null;
+      }
+      return point;
     });
 
-    return { dataType, sexes, doseLevels, series };
+    return { dataType, sexes, doseLevels, mergedPoints };
   }, [drData, selectedEndpoint]);
 
   // Pairwise comparison table for selected endpoint
@@ -482,7 +488,7 @@ export function DoseResponseView({
   const selectEndpoint = useCallback(
     (endpointLabel: string) => {
       setSelectedEndpoint(endpointLabel);
-      setActiveTab("chart");
+      setActiveTab("evidence");
       // Find representative row for selection
       const row = drData?.find((r) => r.endpoint_label === endpointLabel);
       if (row) {
@@ -828,28 +834,20 @@ export function DoseResponseView({
 
         {/* Tab bar */}
         <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
-          <button
-            className={cn(
-              "px-4 py-1.5 text-xs font-medium transition-colors",
-              activeTab === "chart"
-                ? "border-b-2 border-primary text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-            onClick={() => setActiveTab("chart")}
-          >
-            Chart & overview
-          </button>
-          <button
-            className={cn(
-              "px-4 py-1.5 text-xs font-medium transition-colors",
-              activeTab === "metrics"
-                ? "border-b-2 border-primary text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-            onClick={() => setActiveTab("metrics")}
-          >
-            Metrics table
-          </button>
+          {(["evidence", "hypotheses", "metrics"] as const).map((tab) => (
+            <button
+              key={tab}
+              className={cn(
+                "px-4 py-1.5 text-xs font-medium transition-colors",
+                activeTab === tab
+                  ? "border-b-2 border-primary text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setActiveTab(tab)}
+            >
+              {{ evidence: "Evidence", metrics: "Metrics", hypotheses: "Hypotheses" }[tab]}
+            </button>
+          ))}
           {activeTab === "metrics" && (
             <span className="ml-auto mr-3 text-[10px] text-muted-foreground">
               {metricsData.length} of {drData?.length ?? 0} rows
@@ -859,14 +857,14 @@ export function DoseResponseView({
 
         {/* Tab content */}
         <div className="flex-1 overflow-auto">
-          {activeTab === "chart" ? (
+          {activeTab === "evidence" ? (
             <ChartOverviewContent
               chartData={chartData}
               selectedEndpoint={selectedEndpoint}
               pairwiseRows={pairwiseRows}
               sexColors={sexColors}
             />
-          ) : (
+          ) : activeTab === "metrics" ? (
             <MetricsTableContent
               table={table}
               metricsData={metricsData}
@@ -875,6 +873,12 @@ export function DoseResponseView({
               organSystems={organSystems}
               selection={selection}
               handleRowClick={handleRowClick}
+            />
+          ) : (
+            <HypothesesTabContent
+              selectedEndpoint={selectedEndpoint}
+              selectedSummary={selectedSummary}
+              endpointSummaries={endpointSummaries}
             />
           )}
         </div>
@@ -890,18 +894,7 @@ interface ChartOverviewProps {
     dataType: string;
     sexes: string[];
     doseLevels: number[];
-    series: {
-      sex: string;
-      points: {
-        dose_level: number;
-        dose_label: string;
-        mean: number | null;
-        sd: number | null;
-        incidence: number | null;
-        n: number | null;
-        p_value: number | null;
-      }[];
-    }[];
+    mergedPoints: Record<string, unknown>[];
   } | null;
   selectedEndpoint: string | null;
   pairwiseRows: DoseResponseRow[];
@@ -914,6 +907,34 @@ function ChartOverviewContent({
   pairwiseRows,
   sexColors,
 }: ChartOverviewProps) {
+  const chartRowRef = useRef<HTMLDivElement>(null);
+  const [splitPct, setSplitPct] = useState(50); // default 50/50
+
+  const onChartResize = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      const container = chartRowRef.current;
+      if (!container) return;
+      const el = e.currentTarget as HTMLElement;
+      el.setPointerCapture(e.pointerId);
+
+      const onMove = (ev: PointerEvent) => {
+        const rect = container.getBoundingClientRect();
+        const pct = ((ev.clientX - rect.left) / rect.width) * 100;
+        setSplitPct(Math.max(20, Math.min(80, pct)));
+      };
+      const onUp = () => {
+        el.removeEventListener("pointermove", onMove);
+        el.removeEventListener("pointerup", onUp);
+        el.removeEventListener("pointercancel", onUp);
+      };
+      el.addEventListener("pointermove", onMove);
+      el.addEventListener("pointerup", onUp);
+      el.addEventListener("pointercancel", onUp);
+    },
+    [],
+  );
+
   if (!chartData || !selectedEndpoint) {
     return (
       <div className="flex items-center justify-center p-12 text-xs text-muted-foreground">
@@ -922,114 +943,190 @@ function ChartOverviewContent({
     );
   }
 
+  const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
+  const hasEffect = chartData.sexes.some((s) =>
+    chartData.mergedPoints.some((p) => p[`effect_${s}`] != null)
+  );
+
   return (
     <div>
-      {/* Chart */}
-      <div className="border-b p-4">
-        <div className="flex gap-4">
-          {chartData.series.map(({ sex, points }) => (
-            <div key={sex} className="flex-1">
-              <div
-                className="mb-1 text-center text-[10px] font-medium"
-                style={{ color: sexColors[sex] ?? "#666" }}
-              >
-                {sex === "M" ? "Males" : sex === "F" ? "Females" : sex}
-              </div>
-              <ResponsiveContainer width="100%" height={280}>
-                {chartData.dataType === "continuous" ? (
-                  <LineChart data={points} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip
-                      contentStyle={{ fontSize: 11 }}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      formatter={(value: any, name: any) => [
-                        value != null ? Number(value).toFixed(2) : "\u2014",
-                        name === "mean" ? "Mean" : String(name ?? ""),
-                      ]}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="mean"
+      {/* Chart area — two independent containers with resize handle */}
+      <div ref={chartRowRef} className="flex border-b">
+        {/* ── Dose-response chart container ── */}
+        <div
+          className="flex shrink-0 flex-col overflow-hidden p-3"
+          style={{ width: hasEffect ? `${splitPct}%` : "100%" }}
+        >
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {chartData.dataType === "continuous" ? "Mean \u00b1 SD by dose" : "Incidence by dose"}
+          </div>
+          <ResponsiveContainer width="100%" height={260}>
+            {chartData.dataType === "continuous" ? (
+              <LineChart data={chartData.mergedPoints} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={{ fontSize: 11 }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  formatter={(value: any, name: any) => {
+                    const n = String(name ?? "");
+                    const label = n.startsWith("mean_") ? `Mean (${sexLabels[n.slice(5)] ?? n.slice(5)})` : n;
+                    return [value != null ? Number(value).toFixed(2) : "\u2014", label];
+                  }}
+                />
+                {chartData.sexes.map((sex) => (
+                  <Line
+                    key={sex}
+                    type="monotone"
+                    dataKey={`mean_${sex}`}
+                    stroke={sexColors[sex] ?? "#666"}
+                    strokeWidth={2}
+                    name={`mean_${sex}`}
+                    dot={({ cx, cy, payload }: { cx?: number; cy?: number; payload: Record<string, unknown> }) => {
+                      if (cx == null || cy == null) return null;
+                      const pVal = payload[`p_${sex}`] as number | null;
+                      const sig = pVal != null && pVal < 0.05;
+                      const color = sexColors[sex] ?? "#666";
+                      return (
+                        <circle
+                          key={`${sex}-${cx}-${cy}`}
+                          cx={cx}
+                          cy={cy}
+                          r={sig ? 5 : 3}
+                          fill={sig ? color : "#fff"}
+                          stroke={color}
+                          strokeWidth={sig ? 2 : 1.5}
+                        />
+                      );
+                    }}
+                    connectNulls
+                  >
+                    <ErrorBar
+                      dataKey={`sd_${sex}`}
+                      width={4}
+                      strokeWidth={1}
                       stroke={sexColors[sex] ?? "#666"}
-                      strokeWidth={2}
-                      dot={({ cx, cy, payload }: { cx?: number; cy?: number; payload: { p_value: number | null } }) => {
-                        if (cx == null || cy == null) return null;
-                        const sig = payload.p_value != null && payload.p_value < 0.05;
-                        const color = sexColors[sex] ?? "#666";
-                        return (
-                          <circle
-                            key={`${cx}-${cy}`}
-                            cx={cx}
-                            cy={cy}
-                            r={sig ? 5 : 3}
-                            fill={sig ? color : "#fff"}
-                            stroke={color}
-                            strokeWidth={sig ? 2 : 1.5}
-                          />
-                        );
-                      }}
-                      connectNulls
-                    >
-                      <ErrorBar
-                        dataKey="sd"
-                        width={4}
-                        strokeWidth={1}
-                        stroke={sexColors[sex] ?? "#666"}
-                      />
-                    </Line>
-                  </LineChart>
-                ) : (
-                  <BarChart data={points} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} domain={[0, 1]} />
-                    <Tooltip
-                      contentStyle={{ fontSize: 11 }}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      formatter={(value: any) => [
-                        value != null ? (Number(value) * 100).toFixed(0) + "%" : "\u2014",
-                        "Incidence",
-                      ]}
                     />
-                    <Bar
-                      dataKey="incidence"
-                      fill={sexColors[sex] ?? "#666"}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      shape={(props: any) => {
-                        const sig = props.payload?.p_value != null && props.payload.p_value < 0.05;
-                        const color = sexColors[sex] ?? "#666";
-                        return (
-                          <rect
-                            x={props.x}
-                            y={props.y}
-                            width={props.width}
-                            height={props.height}
-                            fill={color}
-                            stroke={sig ? "#1F2937" : "none"}
-                            strokeWidth={sig ? 1.5 : 0}
-                            rx={2}
-                          />
-                        );
-                      }}
-                    />
-                  </BarChart>
-                )}
-              </ResponsiveContainer>
+                  </Line>
+                ))}
+              </LineChart>
+            ) : (
+              <BarChart data={chartData.mergedPoints} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} domain={[0, 1]} />
+                <Tooltip
+                  contentStyle={{ fontSize: 11 }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  formatter={(value: any, name: any) => {
+                    const n = String(name ?? "");
+                    const label = `Incidence (${sexLabels[n.slice(10)] ?? n.slice(10)})`;
+                    return [value != null ? (Number(value) * 100).toFixed(0) + "%" : "\u2014", label];
+                  }}
+                />
+                {chartData.sexes.map((sex) => (
+                  <Bar
+                    key={sex}
+                    dataKey={`incidence_${sex}`}
+                    fill={sexColors[sex] ?? "#666"}
+                    name={`incidence_${sex}`}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    shape={(props: any) => {
+                      const pVal = props.payload?.[`p_${sex}`] as number | null;
+                      const sig = pVal != null && pVal < 0.05;
+                      const color = sexColors[sex] ?? "#666";
+                      return (
+                        <rect
+                          x={props.x}
+                          y={props.y}
+                          width={props.width}
+                          height={props.height}
+                          fill={color}
+                          stroke={sig ? "#1F2937" : "none"}
+                          strokeWidth={sig ? 1.5 : 0}
+                          rx={2}
+                        />
+                      );
+                    }}
+                  />
+                ))}
+              </BarChart>
+            )}
+          </ResponsiveContainer>
+          {/* Legend — dose-response */}
+          <div className="mt-1 flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
+            {chartData.sexes.map((sex) => (
+              <span key={sex} className="flex items-center gap-1">
+                <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: sexColors[sex] ?? "#666" }} />
+                {sexLabels[sex] ?? sex}
+              </span>
+            ))}
+            {chartData.dataType === "continuous" && (
+              <>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-gray-500 bg-gray-500" />
+                  p&lt;0.05
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded-full border-[1.5px] border-gray-400 bg-white" />
+                  NS
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── Resize handle ── */}
+        {hasEffect && <PanelResizeHandle onPointerDown={onChartResize} />}
+
+        {/* ── Effect size chart container ── */}
+        {hasEffect && (
+          <div className="flex min-w-0 flex-1 flex-col p-3">
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Effect size (Cohen&apos;s d)
             </div>
-          ))}
-        </div>
-        <div className="mt-1 flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-gray-500 bg-gray-500" />
-            Significant (p&lt;0.05)
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full border-[1.5px] border-gray-400 bg-white" />
-            Not significant
-          </span>
-        </div>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={chartData.mergedPoints} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={{ fontSize: 11 }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  formatter={(value: any, name: any) => {
+                    const n = String(name ?? "");
+                    const label = sexLabels[n.slice(7)] ?? n.slice(7);
+                    return [value != null ? Number(value).toFixed(2) : "\u2014", label];
+                  }}
+                />
+                <ReferenceLine y={0.8} stroke="#9ca3af" strokeDasharray="4 4" strokeWidth={1} />
+                <ReferenceLine y={0.5} stroke="#d1d5db" strokeDasharray="4 4" strokeWidth={1} />
+                <ReferenceLine y={-0.8} stroke="#9ca3af" strokeDasharray="4 4" strokeWidth={1} />
+                <ReferenceLine y={-0.5} stroke="#d1d5db" strokeDasharray="4 4" strokeWidth={1} />
+                {chartData.sexes.map((sex) => (
+                  <Bar
+                    key={sex}
+                    dataKey={`effect_${sex}`}
+                    fill={sexColors[sex] ?? "#666"}
+                    name={`effect_${sex}`}
+                    opacity={0.8}
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+            {/* Legend — effect size */}
+            <div className="mt-1 flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
+              {chartData.sexes.map((sex) => (
+                <span key={sex} className="flex items-center gap-1">
+                  <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: sexColors[sex] ?? "#666" }} />
+                  {sexLabels[sex] ?? sex}
+                </span>
+              ))}
+              <span className="text-muted-foreground/60">d=0.5, 0.8</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Pairwise comparison table */}
@@ -1225,6 +1322,329 @@ function MetricsTableContent({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Hypotheses Tab ─────────────────────────────────────────
+
+type HypothesisIntent = "shape" | "model" | "pareto" | "correlation" | "outliers";
+
+const HYPOTHESIS_INTENTS: { value: HypothesisIntent; label: string; icon: typeof TrendingUp; available: boolean }[] = [
+  { value: "shape", label: "Shape", icon: TrendingUp, available: true },
+  { value: "model", label: "Model fit", icon: GitBranch, available: false },
+  { value: "pareto", label: "Pareto", icon: ScatterChart, available: true },
+  { value: "correlation", label: "Correlation", icon: Link2, available: false },
+  { value: "outliers", label: "Outliers", icon: BoxSelect, available: false },
+];
+
+interface HypothesesTabProps {
+  selectedEndpoint: string | null;
+  selectedSummary: EndpointSummary | null;
+  endpointSummaries: EndpointSummary[];
+}
+
+function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSummaries }: HypothesesTabProps) {
+  const [intent, setIntent] = useState<HypothesisIntent>("shape");
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Intent selector — segmented pill buttons */}
+      <div className="flex items-center gap-1 border-b bg-muted/20 px-4 py-1.5">
+        {HYPOTHESIS_INTENTS.map((i) => {
+          const Icon = i.icon;
+          return (
+            <button
+              key={i.value}
+              className={cn(
+                "flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                intent === i.value
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                !i.available && intent !== i.value && "opacity-50"
+              )}
+              onClick={() => setIntent(i.value)}
+            >
+              <Icon className="h-3 w-3" />
+              {i.label}
+            </button>
+          );
+        })}
+        <span className="ml-auto text-[10px] italic text-muted-foreground">
+          Exploration only — does not affect conclusions
+        </span>
+      </div>
+
+      {/* Intent content */}
+      <div className="flex-1 overflow-auto p-4">
+        {intent === "shape" && (
+          <ShapePlaceholder selectedEndpoint={selectedEndpoint} selectedSummary={selectedSummary} />
+        )}
+        {intent === "model" && <ModelPlaceholder />}
+        {intent === "pareto" && (
+          <ParetoPlaceholder endpointSummaries={endpointSummaries} selectedEndpoint={selectedEndpoint} />
+        )}
+        {intent === "correlation" && <CorrelationPlaceholder />}
+        {intent === "outliers" && (
+          <OutliersPlaceholder selectedEndpoint={selectedEndpoint} selectedSummary={selectedSummary} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Hypotheses placeholders ────────────────────────────────
+
+/** Compact chart placeholder area with viewer type label */
+function ViewerPlaceholder({
+  icon: Icon,
+  viewerType,
+  context,
+}: {
+  icon: typeof TrendingUp;
+  viewerType: string;
+  context?: string;
+}) {
+  return (
+    <div className="flex h-28 items-center justify-center rounded-md border bg-muted/30">
+      <div className="text-center">
+        <Icon className="mx-auto mb-1.5 h-6 w-6 text-muted-foreground/25" />
+        <p className="text-[11px] text-muted-foreground/50">{viewerType}</p>
+        {context && (
+          <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/35">{context}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Compact key-value config line */
+function ConfigLine({ items }: { items: [string, string][] }) {
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]">
+      {items.map(([k, v]) => (
+        <span key={k}>
+          <span className="text-muted-foreground">{k}: </span>
+          <span className="font-mono text-foreground/70">{v}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Note for intents that require production infrastructure */
+function ProductionNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] italic text-muted-foreground/60">{children}</p>
+  );
+}
+
+function ShapePlaceholder({
+  selectedEndpoint,
+  selectedSummary,
+}: {
+  selectedEndpoint: string | null;
+  selectedSummary: EndpointSummary | null;
+}) {
+  return (
+    <div className="space-y-3">
+      <ViewerPlaceholder
+        icon={TrendingUp}
+        viewerType="DG Line Chart"
+        context={selectedEndpoint
+          ? `${selectedEndpoint}${selectedSummary ? ` \u00b7 ${titleCase(selectedSummary.organ_system)}` : ""}`
+          : undefined}
+      />
+
+      <p className="text-xs text-muted-foreground">
+        Same dose-response chart as Evidence, with full interactivity: zoom, pan, brush selection,
+        and per-sex series toggling. No static annotations or significance encoding.
+      </p>
+
+      <div className="rounded-md border bg-card p-3">
+        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <ConfigLine items={[
+          ["X", "dose_group"],
+          ["Y", "mean"],
+          ["Split", "sex"],
+          ["Error bars", "\u00b1SD"],
+          ["Interpolation", "linear"],
+        ]} />
+        <div className="mt-1.5">
+          <ConfigLine items={[
+            ["Zoom/Pan", "enabled"],
+            ["Brush", "enabled"],
+            ["Tooltip", "dose, value, sex, mean, sd, n"],
+          ]} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModelPlaceholder() {
+  return (
+    <div className="space-y-3">
+      <ViewerPlaceholder icon={GitBranch} viewerType="DG Line Chart + fit overlay" />
+
+      <p className="text-xs text-muted-foreground">
+        Fit dose-response models to observed data with goodness-of-fit metrics.
+        Model parameters are session-scoped and never stored as authoritative.
+      </p>
+
+      <div className="rounded-md border bg-card p-3">
+        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Available models</p>
+        <div className="flex flex-wrap gap-1.5">
+          {["Linear", "4PL sigmoid", "Emax", "Polynomial (2-3)"].map((m) => (
+            <span key={m} className="rounded border px-1.5 py-0.5 text-[10px] text-foreground/70">{m}</span>
+          ))}
+        </div>
+        <div className="mt-2">
+          <ConfigLine items={[
+            ["Metrics", "R\u00b2, AIC, residual plot"],
+            ["Backend", "scipy.optimize.curve_fit()"],
+            ["State", "session-scoped"],
+          ]} />
+        </div>
+      </div>
+
+      <ProductionNote>
+        Requires Datagrok compute backend for scipy curve fitting. Available in production.
+      </ProductionNote>
+    </div>
+  );
+}
+
+function ParetoPlaceholder({
+  endpointSummaries,
+  selectedEndpoint,
+}: {
+  endpointSummaries: EndpointSummary[];
+  selectedEndpoint: string | null;
+}) {
+  const organSystems = [...new Set(endpointSummaries.map((e) => e.organ_system))];
+
+  return (
+    <div className="space-y-3">
+      <ViewerPlaceholder
+        icon={ScatterChart}
+        viewerType="DG Scatter Plot"
+        context={`${endpointSummaries.length} endpoints \u00b7 ${organSystems.length} organ systems`}
+      />
+
+      <p className="text-xs text-muted-foreground">
+        Volcano-style scatter: all endpoints plotted by effect size (X) vs. statistical significance (Y).
+        Identifies endpoints with both biological magnitude and statistical confidence.
+      </p>
+
+      <div className="rounded-md border bg-card p-3">
+        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <ConfigLine items={[
+          ["X", "max |effect_size|"],
+          ["Y", "-log10(trend_p)"],
+          ["Color", "organ_system (hue-from-hash)"],
+          ["Selection", "syncs with endpoint rail"],
+        ]} />
+        <div className="mt-1.5">
+          <ConfigLine items={[
+            ["Ref lines", "|d|=0.5, |d|=0.8, p=0.05, p=0.01"],
+          ]} />
+        </div>
+        {organSystems.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {organSystems.map((os) => (
+              <span key={os} className="rounded border px-1.5 py-0.5 text-[10px] text-foreground/70">
+                {titleCase(os)}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selectedEndpoint && (
+        <p className="text-[10px] text-muted-foreground">
+          <span className="font-mono font-medium text-foreground">{selectedEndpoint}</span> highlighted with ring marker
+        </p>
+      )}
+    </div>
+  );
+}
+
+function CorrelationPlaceholder() {
+  return (
+    <div className="space-y-3">
+      <ViewerPlaceholder icon={Link2} viewerType="DG Scatter Plot" />
+
+      <p className="text-xs text-muted-foreground">
+        Select two endpoints from the same organ system to visualize co-movement across subjects.
+        Determines whether signals are independent or share an underlying mechanism.
+      </p>
+
+      <div className="rounded-md border bg-card p-3">
+        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <ConfigLine items={[
+          ["X", "endpoint A (per subject)"],
+          ["Y", "endpoint B (per subject)"],
+          ["Color", "dose_group"],
+          ["Shape", "sex"],
+        ]} />
+        <div className="mt-1.5">
+          <ConfigLine items={[
+            ["Statistics", "Pearson r, Spearman \u03C1, regression line"],
+            ["Data", "subject-level (raw, not aggregated)"],
+          ]} />
+        </div>
+      </div>
+
+      <ProductionNote>
+        Requires subject-level cross-endpoint data. Available in production via DG DataFrame joining.
+      </ProductionNote>
+    </div>
+  );
+}
+
+function OutliersPlaceholder({
+  selectedEndpoint,
+  selectedSummary,
+}: {
+  selectedEndpoint: string | null;
+  selectedSummary: EndpointSummary | null;
+}) {
+  return (
+    <div className="space-y-3">
+      <ViewerPlaceholder
+        icon={BoxSelect}
+        viewerType="DG Box Plot"
+        context={selectedEndpoint
+          ? `${selectedEndpoint}${selectedSummary ? ` \u00b7 ${selectedSummary.sexes.join(", ")}` : ""}`
+          : undefined}
+      />
+
+      <p className="text-xs text-muted-foreground">
+        Box plots per dose group with individual data points (jitter overlay).
+        Distinguishes outlier-driven signals from consistent group shifts.
+      </p>
+
+      <div className="rounded-md border bg-card p-3">
+        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <ConfigLine items={[
+          ["X", "dose_group"],
+          ["Y", "endpoint value (per subject)"],
+          ["Category", "sex"],
+          ["Jitter", "semi-transparent points"],
+        ]} />
+        <div className="mt-1.5">
+          <ConfigLine items={[
+            ["Outlier rule", ">1.5 IQR"],
+            ["Tooltip", "USUBJID, value, dose, sex"],
+            ["Data", "subject-level (raw, not aggregated)"],
+          ]} />
+        </div>
+      </div>
+
+      <ProductionNote>
+        Requires subject-level values. Available in production via raw domain endpoint.
+      </ProductionNote>
     </div>
   );
 }

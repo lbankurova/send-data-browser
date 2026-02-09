@@ -1,11 +1,11 @@
 # Validation View
 
 **Route:** `/studies/:studyId/validation`
-**Component:** `ValidationView.tsx` (used inline from `PlaceholderAnalysisView` wrapper / `ValidationViewWrapper`)
+**Component:** `ValidationView.tsx` (wrapped by `ValidationViewWrapper.tsx`)
 **Scientific question:** "Does this SEND dataset comply with CDISC SENDIG rules?"
-**Role:** Compliance validation. Two-pane master-detail: top table of rules, bottom table of affected records. Context panel provides rule detail, review progress, suggested fixes, and per-record annotation.
+**Role:** Compliance validation triage and dispatch. Two-pane master-detail: top table of rules, bottom table of affected records. Context panel provides rule detail, review progress, fix actions, and per-record annotation.
 
-**Key difference:** Uses **hardcoded data** (8 validation rules with associated records). Not loaded from API.
+**Data source:** Real validation engine backend. Rules are loaded from YAML definitions (18 rules across 3 files), evaluated by 15 check functions against actual XPT data, and served via REST API. Results are cached as JSON on disk (`generated/{study_id}/validation_results.json`).
 
 ---
 
@@ -26,14 +26,14 @@ The view itself is a full-height flex column with two proportional panes (4:6 sp
 
 ```
 +-----------------------------------------------------------+
-|  SEND Validation  [● N errors] [● N warnings] [● N info]  |  <-- summary header, border-b
+|  SEND Validation  [* N errors] [* N warnings] [* N info]   |  <-- summary header, border-b
 +-----------------------------------------------------------+
 |                                                           |
 |  Rules table (flex-[4], 40% of height)                    |
-|  8 hardcoded rules, sortable, clickable                   |
+|  API-driven rules, sortable, clickable, column resizing   |
 |                                                           |
 +-----------------------------------------------------------+  <-- border-b
-|  {N} records for {rule_id} — {category}   [Status▼][Subj▼]|  <-- divider bar (when rule selected)
+|  {N} records for {rule_id} -- {category}  [Fix▼][Review▼] |  <-- divider bar (when rule selected)
 +-----------------------------------------------------------+
 |                                                           |
 |  Affected Records table (flex-[6], 60% of height)         |
@@ -46,40 +46,133 @@ If no rule is selected, the bottom area shows: "Select a rule above to view affe
 
 ---
 
+## Data Sources
+
+### API hooks
+
+| Hook | API endpoint | Cache key | Purpose |
+|------|-------------|-----------|---------|
+| `useValidationResults(studyId)` | `GET /api/studies/{id}/validation/results` | `["validation-results", studyId]` | Rules array, fix scripts array, summary counts |
+| `useAffectedRecords(studyId, ruleId)` | `GET /api/studies/{id}/validation/results/{ruleId}/records?page_size=500` | `["affected-records", studyId, ruleId]` | Paginated records for the selected rule |
+| `useRunValidation(studyId)` | `POST /api/studies/{id}/validate` | Mutation, invalidates both cache keys above | Triggers validation run |
+| `useAnnotations(studyId, "validation-records")` | `GET /api/studies/{id}/annotations/validation-records` | `["annotations", studyId, "validation-records"]` | Per-record fix/review annotations |
+| `useAnnotations(studyId, "validation-issues")` | `GET /api/studies/{id}/annotations/validation-issues` | `["annotations", studyId, "validation-issues"]` | Per-rule disposition annotations |
+
+All hooks use React Query with 5-minute stale time. The context panel reads from the same cache keys (no extra network calls).
+
+### Data mapping
+
+API responses use `snake_case`. Two mapping helpers in `ValidationView.tsx` convert to frontend models:
+
+- `mapApiRecord(rec: AffectedRecordData) -> AffectedRecord` -- maps `fix_tier` -> `fixTier`, `auto_fixed` -> `autoFixed`, `script_key` -> `scriptKey`, etc.
+- `extractRuleDetail(rule: ValidationRuleResult) -> RuleDetail` -- extracts `standard`, `section`, `rationale`, `how_to_fix` -> `howToFix`.
+
+### Backend pipeline
+
+1. On startup, `init_validation()` auto-runs validation for all studies and caches results.
+2. `POST /validate` re-runs validation: engine loads all XPT domains, evaluates 18 YAML rules via `CHECK_DISPATCH` (15 check types), caches JSON to disk.
+3. `GET /validation/results` serves the cached rules + scripts + summary.
+4. `GET /validation/results/{rule_id}/records` serves paginated affected records for one rule, each carrying `fix_tier`, `auto_fixed`, `suggestions`, `script_key`, `evidence` (discriminated union), and `diagnosis`.
+
+### TypeScript interfaces
+
+**`ValidationRuleResult`** (from `useValidationResults.ts`):
+```ts
+interface ValidationRuleResult {
+  rule_id: string;
+  severity: "Error" | "Warning" | "Info";
+  domain: string;
+  category: string;
+  description: string;
+  records_affected: number;
+  standard: string;
+  section: string;
+  rationale: string;
+  how_to_fix: string;
+  cdisc_reference: string | null;
+}
+```
+
+**`AffectedRecordData`** (from `useAffectedRecords.ts`):
+```ts
+interface AffectedRecordData {
+  issue_id: string;
+  rule_id: string;
+  subject_id: string;
+  visit: string;
+  domain: string;
+  variable: string;
+  actual_value: string;
+  expected_value: string;
+  fix_tier: 1 | 2 | 3;
+  auto_fixed: boolean;
+  suggestions: string[] | null;
+  script_key: string | null;
+  evidence: RecordEvidence;
+  diagnosis: string;
+}
+```
+
+**`RecordEvidence`** (discriminated union, 6 categories):
+```ts
+type RecordEvidence =
+  | { type: "value-correction"; from: string; to: string }
+  | { type: "value-correction-multi"; from: string; candidates: string[] }
+  | { type: "code-mapping"; value: string; code: string }
+  | { type: "range-check"; lines: { label: string; value: string }[] }
+  | { type: "missing-value"; variable: string; derivation?: string; suggested?: string }
+  | { type: "metadata"; lines: { label: string; value: string }[] };
+```
+
+**`FixScriptDef`** (from `useValidationResults.ts`):
+```ts
+interface FixScriptDef {
+  key: string;
+  name: string;
+  description: string;
+  applicable_rules: string[];
+}
+```
+
+---
+
 ## Summary Header
 
 `flex items-center gap-4 border-b px-4 py-3`
 
-- Title: `text-sm font-semibold` — "SEND Validation"
+- Title: `text-sm font-semibold` -- "SEND Validation"
 - Three severity indicators, each: `flex items-center gap-1 text-xs`
   - Colored dot: `inline-block h-2 w-2 rounded-full`
     - Error: `#dc2626` (red)
     - Warning: `#d97706` (amber)
     - Info: `#2563eb` (blue)
-  - Count: `font-medium`
-  - Label: `text-muted-foreground` — "errors" / "warnings" / "info"
+  - Count: `font-medium` -- from `validationData.summary.errors`, `.warnings`, `.info`
+  - Label: `text-muted-foreground` -- "errors" / "warnings" / "info"
+- Elapsed time (when available): `text-muted-foreground` -- "({N}s)"
 
 ---
 
-## Rules Table (Top Pane — flex-[4])
+## Rules Table (Top Pane -- flex-[4])
 
-`overflow-auto border-b`
+`flex-[4] overflow-auto border-b`
 
-TanStack React Table, `w-full text-sm`, client-side sorting.
+TanStack React Table, `text-sm`, client-side sorting. Column resizing enabled (`enableColumnResizing: true`, `columnResizeMode: "onChange"`). Table width set to `ruleTable.getCenterTotalSize()` with `tableLayout: "fixed"`.
 
 ### Header Row
 `sticky top-0 z-10`, background `#f8f8f8`
 
-Headers: `cursor-pointer select-none border-b px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground`
+Headers: `relative cursor-pointer select-none border-b px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground`
 
-Sort indicators: ` ↑` asc / ` ↓` desc
+Sort indicators: ` (up arrow)` asc / ` (down arrow)` desc
+
+Column resize handle: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none`. Active: `bg-primary`. Hover: `hover:bg-primary/30`.
 
 ### Columns
 
 | Column | Header | Size | Cell Rendering |
 |--------|--------|------|----------------|
-| rule_id | Rule | 80px | `font-mono text-xs` |
-| severity | Severity | 90px | Colored badge: `rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold` |
+| rule_id | Rule | 150px | `font-mono text-xs` |
+| severity | Severity | 90px | Colored badge: `inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold` |
 | domain | Domain | 70px | `font-mono text-xs` |
 | category | Category | 140px | Plain text |
 | description | Description | 400px | Plain text |
@@ -94,23 +187,11 @@ Sort indicators: ` ↑` asc / ` ↓` desc
 | Info | `bg-blue-100 text-blue-800 border-blue-200` |
 
 ### Row Interactions
-- Hover: CSS variable `var(--hover-bg)` applied via inline onMouseEnter/Leave
+- Hover: CSS variable `var(--hover-bg)` applied via inline `onMouseEnter`/`onMouseLeave`
 - Selected: CSS variable `var(--selection-bg)` background
-- Click: selects rule (passes rule details to context panel). Click again to deselect.
+- Click: selects rule (passes rule details to context panel via `onSelectionChange`). Click again to deselect.
+- Deselect clears selected rule, selected issue, and record filters.
 - Cells: `px-3 py-2 text-xs`
-
-### Hardcoded Rules (8 total)
-
-| Rule ID | Severity | Domain | Category | Records |
-|---------|----------|--------|----------|---------|
-| SD1002 | Error | DM | Required Variable | 3 |
-| SD1019 | Error | EX | Controlled Terminology | 48 |
-| SD0064 | Warning | BW | Data Consistency | 2 |
-| SD1035 | Warning | MI | Controlled Terminology | 12 |
-| SD0083 | Warning | LB | Range Check | 5 |
-| SD0021 | Info | TS | Metadata | 1 |
-| SD0045 | Info | TA | Metadata | 1 |
-| SD0092 | Info | SUPPMI | Supplemental | 24 |
 
 ---
 
@@ -120,72 +201,95 @@ Only shown when a rule is selected.
 
 `flex items-center gap-2 border-b bg-muted/30 px-4 py-2`
 
-- Left: `text-xs font-medium` — "{N} record(s) for {rule_id} — {category}"
+- Left: `text-xs font-medium` -- "{N} record(s) for `{rule_id}` -- {category}"
 - Right: `ml-auto flex items-center gap-1.5`
-  - Review status filter: `<select>` with rounded-full styling — `rounded-full border bg-background px-2.5 py-0.5 text-[10px]`
-    - Options: "Review status" (all) / Not reviewed / Accepted / Flagged / Resolved
-  - Subject filter: `<select>` same styling
-    - Options: "Subject" (all) + unique subject IDs from current rule's records
+  - **Fix status filter**: `<select>` with `rounded-full border bg-background px-2.5 py-0.5 text-[10px]`
+    - Options: "Fix status" (all) / Not fixed / Auto-fixed / Manually fixed / Accepted as-is / Flagged
+  - **Review status filter**: `<select>` same styling
+    - Options: "Review status" (all) / Not reviewed / Reviewed / Approved
 
 ---
 
-## Affected Records Table (Bottom Pane — flex-[6])
+## Affected Records Table (Bottom Pane -- flex-[6])
 
-`overflow-auto`
+`flex-[6] overflow-auto`
 
-Only shown when a rule is selected. TanStack React Table, `w-full text-sm`.
+Only shown when a rule is selected. TanStack React Table, `text-sm`. Column resizing enabled (same pattern as rules table).
 
 ### Header Row
-Same styling as rules table: `sticky top-0 z-10`, background `#f8f8f8`.
+Same styling as rules table: `sticky top-0 z-10`, background `#f8f8f8`. Column resize handles present.
 
 ### Columns
 
 | Column | Header | Size | Cell Rendering |
 |--------|--------|------|----------------|
-| issue_id | Issue id | 110px | Clickable `font-mono text-xs` link (color `#3a7bd5`, `hover:underline`). Clicking an issue ID navigates context panel to "issue" mode. |
+| issue_id | Issue ID | 170px | Clickable `font-mono text-xs` link (color `#3a7bd5`, `hover:underline`). Click navigates context panel to "issue" mode. |
 | subject_id | Subject | 110px | `font-mono text-xs` |
 | visit | Visit | 90px | Plain text |
-| actual_value | Key value | 200px | `text-xs` |
-| expected_value | Expected | 200px | `text-xs text-muted-foreground` |
-| reviewStatus | Review status | 110px | `ReviewStatusBadge` component |
-| assignedTo | Assigned to | 100px | `text-xs`, em dash if empty |
+| actual_value | Key value | 180px | `text-xs` |
+| expected_value | Expected | 180px | `text-xs text-muted-foreground` |
+| fixStatus | Fix status | 110px | `StatusBadge` component with `FIX_STATUS_STYLES` |
+| reviewStatus | Review status | 110px | `StatusBadge` component with `REVIEW_STATUS_STYLES` |
+| assignedTo | Assigned to | 90px | `text-xs`, em dash if empty |
 
-### Review Status Badge Styles
+### Two Independent Status Tracks
 
-Badge: `inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold`
+Records carry two independent status fields, each with its own badge palette:
+
+**Fix status** (tracks what happened to the data):
 
 | Status | Classes |
 |--------|---------|
-| Not Reviewed | `bg-gray-100 text-gray-600 border-gray-200` |
-| Accepted | `bg-green-100 text-green-800 border-green-200` |
-| Flagged | `bg-red-100 text-red-800 border-red-200` |
-| Resolved | `bg-blue-100 text-blue-800 border-blue-200` |
+| Not fixed | `bg-gray-100 text-gray-600 border-gray-200` |
+| Auto-fixed | `bg-teal-100 text-teal-800 border-teal-200` |
+| Manually fixed | `bg-green-100 text-green-800 border-green-200` |
+| Accepted as-is | `bg-blue-100 text-blue-800 border-blue-200` |
+| Flagged | `bg-orange-100 text-orange-800 border-orange-200` |
+
+**Review status** (tracks human sign-off):
+
+| Status | Classes |
+|--------|---------|
+| Not reviewed | `bg-gray-100 text-gray-600 border-gray-200` |
+| Reviewed | `bg-blue-100 text-blue-800 border-blue-200` |
+| Approved | `bg-green-100 text-green-800 border-green-200` |
+
+Default fix status is derived from `autoFixed` flag: `ann?.fixStatus ?? (rec.autoFixed ? "Auto-fixed" : "Not fixed")`.
+
+### StatusBadge Component
+
+Shared between both status columns: `inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold`. Falls back to gray styling for unknown status values.
 
 ### Record Data
-Records are enriched with live annotation data (reviewStatus, assignedTo) from `useAnnotations`.
+Records are enriched with live annotation data (`fixStatus`, `reviewStatus`, `assignedTo`) from `useAnnotations<ValidationRecordReview>(studyId, "validation-records")`.
 
 ### Row Interactions
 - Same hover/selected styling as rules table (CSS variables)
-- Click: selects record, updates context panel to "issue" mode
+- Click: selects record, updates context panel to "issue" mode (sends full record data via `onSelectionChange`)
+- Issue ID column click also selects the record (with `e.stopPropagation()` to avoid double-fire)
 - Cells: `px-3 py-2 text-xs`
 
 ### Empty State
-"No records match the current filters." — `px-4 py-6 text-center text-xs text-muted-foreground`
+"No records match the current filters." -- `px-4 py-6 text-center text-xs text-muted-foreground`
 
 ---
 
-## Context Panel (Right Sidebar — 280px)
+## Context Panel (Right Sidebar -- 280px)
+
+Route-detected: when pathname matches `/studies/{studyId}/validation`, shows `ValidationContextPanel`.
+
+The `ValidationContextPanelWrapper` in `ContextPanel.tsx` casts `ViewSelectionContext` selection to the expected shape and passes `selection`, `studyId`, and `setSelection` as props.
 
 ### No Selection State
 
 **Pane 1: Overview (default open)**
-- Explanation text: `text-[11px] text-muted-foreground` — describes what SEND compliance validation does
+- Explanation text: `text-[11px] text-muted-foreground` -- describes what SEND compliance validation does
 - Three severity level descriptions with colored dots:
   - Error (red): "Must fix before submission"
   - Warning (amber): "Review recommended"
   - Info (blue): "Best practice suggestion"
 
-**Footer:** "Select a rule to view details and affected records." — `px-4 py-2 text-xs text-muted-foreground`
+**Footer:** "Select a rule to view details and affected records." -- `px-4 py-2 text-xs text-muted-foreground`
 
 ### Navigation Bar
 
@@ -195,79 +299,144 @@ Records are enriched with live annotation data (reviewStatus, assignedTo) from `
 - `rounded p-0.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-30`
 - Icon: `ChevronLeft/ChevronRight h-3.5 w-3.5`
 - Maintains navigation history stack for rule-to-issue transitions
+- History tracked via `useMemo` watching composite key: `${mode}:${rule_id}:${issue_id}`
 
 ### Mode 1: Rule Review Summary (when a rule is selected)
 
 #### Header
-- `border-b px-4 py-3`
-- `flex items-center gap-2`: rule_id in `font-mono text-sm font-semibold` + severity badge
-- Subtitle: "{domain} . {category}" in `text-xs text-muted-foreground`
+- `sticky top-0 z-10 border-b bg-background px-4 py-3`
+- `flex items-center gap-2`: rule_id in `font-mono text-sm font-semibold` + severity badge + CollapseAllButtons (right-aligned)
+- Subtitle: "{domain} . {category}" in `mt-1 text-xs text-muted-foreground`
 
 #### Pane 1: Rule detail (default open)
 Key-value pairs in `text-[11px]`:
 - Standard: e.g., "SENDIG v3.1.1"
-- Section: e.g., "Section 4.1 — Demographics (DM)"
+- Section: e.g., "Section 4.1 -- Demographics (DM)"
 - Description: shown with severity-colored left border (`border-l-2`, red/amber/blue per severity)
 - Rationale: explanation text
 - How to fix: remediation instructions
 - Empty state: "No detail available for this rule."
 
 #### Pane 2: Review progress (default open)
-- Progress header: "N of M reviewed" + "N%" in `text-[10px] text-muted-foreground`
-- Progress bar: `h-1 w-full rounded-full bg-gray-200` with `bg-green-500` fill
-- Status counts: "Not Reviewed N . Accepted N . Flagged N . Resolved N" in `text-[10px]` with colored count numbers
+Uses `useAffectedRecords` and `useAnnotations` to compute live counts.
+
+- **Progress bar**: `h-1 w-full rounded-full bg-gray-200` with `bg-green-500` fill
+- **Progress header**: "N of M reviewed" + "N%" in `text-[10px] text-muted-foreground`
+- **Review status counts**: "Not reviewed N . Reviewed N . Approved N" in `text-[10px]` with colored count numbers
+- **Fix status counts**: "Not fixed N . Auto-fixed N . Manually fixed N . Accepted as-is N . Flagged N" in `text-[10px]` with colored count numbers
 
 Status count colors:
 
-| Status | Color Class |
-|--------|-------------|
-| Not Reviewed | `text-gray-500` |
-| Accepted | `text-green-700` |
-| Flagged | `text-red-700` |
-| Resolved | `text-blue-700` |
+| Review Status | Color Class |
+|---------------|-------------|
+| Not reviewed | `text-gray-500` |
+| Reviewed | `text-blue-700` |
+| Approved | `text-green-700` |
+
+| Fix Status | Color Class |
+|------------|-------------|
+| Not fixed | `text-gray-500` |
+| Auto-fixed | `text-teal-700` |
+| Manually fixed | `text-green-700` |
+| Accepted as-is | `text-blue-700` |
+| Flagged | `text-orange-700` |
 
 #### Pane 3: Rule disposition (default open)
-`ValidationIssueForm` component for rule-level annotation.
+`ValidationIssueForm` component -- rule-level annotation form with:
+- Status dropdown: Not Reviewed / In Progress / Resolved / Exception / Won't Fix
+- Assigned to: text input
+- Resolution dropdown (enabled only when status is Resolved or Exception): (none) / Fixed in Source / Auto-Fixed / Documented Exception / Not Applicable
+- Disposition dropdown: (none) / Accept All / Needs Fix / Partial Fix / Not Applicable
+- Comment: textarea
+- SAVE button with success flash ("SAVING..." -> "SAVED" -> "SAVE")
+- Stored via `useAnnotations(studyId, "validation-issues")`
 
 ### Mode 2: Issue Review (when a specific record is selected)
 
 #### Header
-- `border-b px-4 py-3`
+- `sticky top-0 z-10 border-b bg-background px-4 py-3`
 - issue_id in `font-mono text-sm font-semibold` + severity badge
-- Subtitle: "Rule {rule_id}" in `text-xs text-muted-foreground`
+- **Rule popover**: "Rule {rule_id} . {domain} . {category}" with dotted underline. Hover shows portal-based popover (`fixed z-[9999] w-72`) with full rule detail (standard, section, description with severity border, rationale, how to fix). No click-to-navigate -- the rule ID is informational only.
 
-#### Pane 1: Record context (default open)
-Key-value pairs in `text-[11px]`:
-- Subject ID: `font-mono`
-- Visit
-- Domain: `font-mono`
-- Variable: `font-mono`
+#### Record context (one-liner)
+`border-b px-4 py-2 text-xs text-muted-foreground` -- "{subject_id} . {visit} . {domain}"
 
-#### Pane 2: Finding detail (default open)
-- Actual value: `font-mono text-red-700`
-- Expected value: `font-mono text-green-700`
+#### Pane 1: Finding (default open)
+The `FindingSection` component renders category-specific evidence and adaptive action buttons. This is the core fix/triage interface.
 
-#### Pane 3: Suggested fix (default open)
-`SuggestedFixSection` — only shown when studyId and issue_id are present.
+**Structure:**
+1. Fix status badge (current status from annotations, with "on import" suffix for auto-fixed)
+2. Diagnosis text (from `record.diagnosis`)
+3. Evidence rendering (dispatched by `evidence.type`)
+4. Action buttons (adaptive based on fix status and record properties)
 
-**Auto-fixable rules** (SD1019, SD1035, SD0092, SD0021): show "Suggested correction" with:
-- Title: `font-medium`
-- Mapping: `font-mono text-[10px]` — "{variable}: {actual} → {expected}"
-- Detail: `text-[10px] text-muted-foreground`
-- Buttons: "APPLY FIX" (primary) + "DISMISS" (outlined)
-- Container: `rounded bg-blue-50/60 p-2.5`
+**Evidence rendering by category:**
 
-**Non-auto-fixable rules**: show "Manual fix required" with:
-- Manual value input: `w-full rounded border bg-background px-2 py-1 text-[11px]`
-- Buttons: "APPLY" (primary, disabled when empty) + "Flag for review" (text button)
+| Evidence type | Renderer | What it shows |
+|---------------|----------|---------------|
+| `value-correction` | `ValueCorrectionEvidence` -> `InlineDiff` | Character-level diff (edit distance <= 0.3) or from/to replacement |
+| `value-correction-multi` | `ValueCorrectionMultiEvidence` | Radio buttons to pick from candidates, current value shown |
+| `code-mapping` | `CodeMappingEvidence` | `{value} -> {code}` in monospace |
+| `range-check` | `RangeCheckEvidence` | Key-value lines (label: value) |
+| `missing-value` | `MissingValueEvidence` | "Suggested: {value} (from {derivation})" with linkified SEND variable names, or "{variable}: (empty)" |
+| `metadata` | `MetadataEvidence` | Key-value lines with linkified DOMAIN.VAR references |
 
-**Button styles:**
-- Primary: `rounded bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase text-primary-foreground hover:bg-primary/90`
-- Outlined: `rounded border px-2.5 py-1 text-[10px] font-semibold uppercase text-muted-foreground hover:bg-muted/50`
-- Text: `rounded border px-2.5 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/50`
+**InlineDiff modes** (automatic based on edit distance ratio):
+- `char` (ratio <= 0.3): LCS-based character diff with green inserts and red strikethrough deletes
+- `replacement` (ratio > 0.3): two-line "From: / To:" display
+- `missing` (actual is empty or "(missing)"): muted text with optional expected value
 
-#### Pane 4: Review form (default open)
-`ValidationRecordForm` component — per-record annotation form.
+**Linkification:** SEND variable names (uppercase, 2+ char prefix matching known domains) and DOMAIN.VAR patterns are rendered as clickable links that navigate to the domain table view. Known domains: BG, BW, CL, CO, DD, DM, DS, EG, EX, FW, LB, MA, MI, OM, PC, PM, PP, SC, SE, TA, TE, TF, TS, TX, VS, SUPPMA, SUPPMI.
+
+**Action buttons by fix status:**
+
+| Current fix status | Buttons shown |
+|--------------------|---------------|
+| Auto-fixed | **Revert** (outlined) -- sets fix status to "Not fixed" |
+| Manually fixed / Accepted as-is | **Undo fix** (outlined) -- reverts to "Not fixed" |
+| Not fixed / Flagged | **Fix (dropdown)** (primary) + **Accept** (outlined) |
+
+**Fix dropdown options** (adaptive, only applicable options shown):
+
+| Option | When shown | Action |
+|--------|-----------|--------|
+| Apply suggestion | Single suggestion available (value-correction, code-mapping, missing-value with suggested, or metadata with 1 suggestion) | Saves "Manually fixed" with chosen value |
+| Apply selected | Multiple candidates (value-correction-multi) | Saves "Manually fixed" with radio-selected candidate |
+| Enter value... | Always | Opens inline text input with Apply/Cancel |
+| Run script... | Record has `scriptKey` | Opens Fix Script Dialog modal |
+
+**Accept button:** Opens inline accept-as-is sub-view with justification text input. Submit requires non-empty justification. Saves "Accepted as-is" with justification.
+
+**Fix result feedback:** After any fix action, the Finding pane shows a green confirmation box with the result message (e.g., "Fix applied -- {variable} set to '{value}'.").
+
+#### Fix Script Dialog (Modal)
+
+Triggered from "Run script..." in the Fix dropdown. Rendered as `FixScriptDialog` component using `createPortal` to escape overflow containers (Note: actually rendered as `fixed inset-0 z-50` overlay).
+
+**Layout:**
+- `fixed inset-0 z-50 flex items-center justify-center bg-black/40` -- backdrop
+- `w-[500px] rounded-lg border bg-background shadow-xl` -- dialog
+
+**Sections:**
+1. **Header**: "Run Fix Script" title + close X button
+2. **Script selector**: dropdown of applicable scripts (filtered by `script.applicable_rules.includes(ruleId)`)
+3. **Description**: script description text
+4. **Scope**: radio buttons -- "This record only ({subject_id})" or "All {N} records for {rule_id}" (shows unfixed/already-fixed counts)
+5. **Preview table**: fetched via `POST /api/studies/{id}/validation/scripts/{key}/preview` -- shows before/after for each affected field (Subject, Field, From in red, To in green)
+6. **Footer**: Cancel (outlined) + RUN (primary, disabled if no script selected)
+
+**Script run behavior:**
+- Single scope: saves "Manually fixed" for the current record only
+- All scope: iterates all records for the rule, skips already "Manually fixed" or "Accepted as-is", saves "Manually fixed" for the rest. Reports count applied and skipped.
+
+#### Pane 2: Review (default open)
+`InlineReviewSection` component -- per-record annotation form with:
+- Review status dropdown: Not reviewed / Reviewed / Approved
+- Assigned to: text input
+- Comment: textarea
+- SAVE button with success flash
+- Footer: "Reviewed by {name} on {date}" if exists
+- Stored via `useAnnotations(studyId, "validation-records")`
 
 ---
 
@@ -277,11 +446,16 @@ Key-value pairs in `text-[11px]`:
 |-------|-------|------------|
 | Rule sorting | Local | `useState<SortingState>` |
 | Record sorting | Local | `useState<SortingState>` |
-| Selected rule | Local | `useState<ValidationRule \| null>` |
+| Rule column sizing | Local | `useState<ColumnSizingState>` |
+| Record column sizing | Local | `useState<ColumnSizingState>` |
+| Selected rule | Local | `useState<ValidationRuleResult \| null>` |
 | Selected issue ID | Local | `useState<string \| null>` |
-| Record filters | Local | `useState<{ reviewStatus, subjectId }>` |
-| Selection | Shared via context | `ViewSelectionContext` with `_view: "validation"` tag |
+| Record filters | Local | `useState<{ fixStatus: string; reviewStatus: string }>` |
+| Validation data (rules, scripts, summary) | Server | `useValidationResults(studyId)` -- React Query, 5min stale |
+| Affected records | Server | `useAffectedRecords(studyId, ruleId)` -- React Query, 5min stale |
 | Record annotations | Server | `useAnnotations<ValidationRecordReview>(studyId, "validation-records")` |
+| Rule annotations | Server | `useAnnotations<ValidationIssue>(studyId, "validation-issues")` |
+| Selection | Shared via context | `ViewSelectionContext` with `_view: "validation"` tag |
 | Context panel history | Local (context panel) | `useState` history stack + index |
 
 ---
@@ -289,21 +463,33 @@ Key-value pairs in `text-[11px]`:
 ## Data Flow
 
 ```
-HARDCODED_RULES (8 rules)
-        |
-   Rules table (top pane)
-        |
-   handleRuleClick ──> selectedRule + selection context
-        |
-   AFFECTED_RECORDS[rule_id] + recordAnnotations
-        |
-   Records table (bottom pane)
-        |
-   handleRowClick / issue_id click ──> issue selection
-        |
-   ValidationContextPanel
-     Mode 1: Rule ──> RuleReviewSummary
-     Mode 2: Issue ──> IssueReview + SuggestedFix
+useValidationResults(studyId) ──> { rules[], scripts[], summary }
+                                      |
+                              Rules table (top pane)
+                                      |
+                        handleRuleClick ──> selectedRule + onSelectionChange
+                                      |
+                       useAffectedRecords(studyId, rule_id)
+                                      |
+                          mapApiRecord() + recordAnnotations
+                                      |
+                        enriched RecordRowData[] (with fixStatus, reviewStatus, assignedTo)
+                                      |
+                   [fixStatus filter] + [reviewStatus filter]
+                                      |
+                    filteredRecords ──> Records table (bottom pane)
+                                      |
+                    handleRowClick / issue_id click ──> selectedIssueId + onSelectionChange
+                                      |
+                  ValidationContextPanel
+                    Mode 1: Rule ──> RuleReviewSummary
+                      - Rule detail (from extractRuleDetail)
+                      - Review progress (from useAffectedRecords + useAnnotations)
+                      - Rule disposition (ValidationIssueForm)
+                    Mode 2: Issue ──> IssueReview
+                      - Record context (subject, visit, domain)
+                      - FindingSection (evidence + fix actions)
+                      - InlineReviewSection (review form)
 ```
 
 ---
@@ -312,16 +498,24 @@ HARDCODED_RULES (8 rules)
 
 The Validation view has **bidirectional communication** between the center panel and context panel:
 
-- Center to Context: rule/issue selection propagated via `onSelectionChange`
-- Context to Center: `recordStatusFilter` pushed via `viewSelection` to filter records table
-- Context to Center: `mode` changes (rule to issue) to sync issue selection state
-- This is implemented via `useEffect` watchers on `viewSelection` properties
+- **Center to Context**: rule/issue selection propagated via `onSelectionChange` with `_view: "validation"` and `mode: "rule" | "issue"` discriminator
+- **Context to Center (filter)**: `recordFixStatusFilter` and `recordReviewStatusFilter` pushed via `viewSelection` to filter records table. Watched by `useEffect` in the center panel.
+- **Context to Center (mode)**: `mode` changes (e.g., back button navigating from issue to rule) sync `selectedIssueId` state. When mode is "rule", issue selection is cleared. When mode is "issue" with an `issue_id`, that issue is selected.
 
 ---
 
 ## Cross-View Navigation
 
-No direct cross-view links from this view.
+### Outbound (from context panel)
+SEND variable names and DOMAIN.VAR references in evidence rendering are linkified. Clicking navigates to the domain table view: `/studies/{studyId}/domains/{domain}`.
+
+No other direct cross-view links from this view.
+
+---
+
+## Keyboard
+
+No keyboard shortcuts currently implemented (no Escape handler, no keyboard navigation).
 
 ---
 
@@ -329,41 +523,52 @@ No direct cross-view links from this view.
 
 | State | Display |
 |-------|---------|
-| No rule selected | "Select a rule above to view affected records" centered in bottom pane |
-| No matching records | "No records match the current filters." in bottom table |
-| No rule detail | "No detail available for this rule." in context panel |
-
-No loading state needed (hardcoded data).
+| Loading (results fetching) | Summary header shown, flex-1 area shows "Loading validation results..." centered in `text-xs text-muted-foreground` |
+| No results (404 or null) | Summary header shown, flex-1 area shows "No validation results available for this study." centered |
+| Results loaded but zero rules | Summary header with counts, flex-1 area shows "No validation issues found. Dataset passed all checks." centered |
+| No rule selected | Rules table visible, bottom 60% shows "Select a rule above to view affected records" centered |
+| No matching records (after filter) | Bottom table shows "No records match the current filters." in colspan cell |
+| No rule detail | Context panel Rule Detail pane shows "No detail available for this rule." |
+| No fix scripts for rule | Fix Script Dialog shows "No fix scripts available for this rule." |
 
 ---
 
-## Current Issues / Improvement Opportunities
+## Three Fix Tiers
 
-### Data
-- All data is hardcoded — no actual SEND validation engine
-- Only 8 rules — real validation would have hundreds
-- Records are fabricated — don't correspond to actual study data
-- SD1019 has "ORAL GAVAGE" as both actual and expected value (the description says the value doesn't match CT, but the data shows it does) — appears to be a subtle data quality issue in the mock
+Each `AffectedRecord` carries a `fixTier` field (1, 2, or 3) that classifies the type of fix needed. The fix tier influences which buttons and actions appear in the FindingSection:
+
+| Tier | Name | Description | UI behavior |
+|------|------|-------------|-------------|
+| 1 | Accept as-is | Value is non-standard but intentional | Accept button -> justification prompt |
+| 2 | Simple correction | Fix is known (CT mapping, single suggestion) | Fix dropdown with "Apply suggestion" or candidate selection |
+| 3 | Script fix | Requires batch logic or derived calculation | Fix dropdown with "Run script..." option |
+
+The `fixTier` value is assigned by the backend validation engine based on the check type and whether a clear correction exists. The frontend uses the presence of `suggestions`, `evidence.type`, and `scriptKey` to adaptively show relevant fix options.
+
+---
+
+## Current Improvement Opportunities
 
 ### Rules Table
-- Uses CSS variables (var(--hover-bg), var(--selection-bg)) for styling — different pattern from other views which use Tailwind classes
-- Description column at 400px is very wide — may truncate on smaller screens
+- Uses CSS variables (`var(--hover-bg)`, `var(--selection-bg)`) for styling -- different pattern from other views which use Tailwind classes
+- Description column at 400px is very wide -- may truncate on smaller screens
 - No column visibility toggle
 - No severity filter on the rules table itself
 
 ### Records Table
-- Review status and assigned-to come from annotations — may not load instantly
-- Issue ID is clickable link that changes context panel mode — this interaction isn't visually indicated beyond the blue color
+- Issue ID is a clickable link that changes context panel mode -- interaction not visually indicated beyond the blue color
 - No bulk actions (mark all as reviewed, accept all)
+- Page size hardcoded to 500 in the hook -- no pagination controls in the UI
 
 ### Context Panel
-- Navigation history is complex — forward/back buttons with a state machine
-- Auto-fix "APPLY FIX" saves annotation but doesn't actually modify the underlying data
-- SuggestedFixSection has a `dismissed` local state that resets on re-render
-- Rule disposition form (ValidationIssueForm) and record review form (ValidationRecordForm) are separate annotation stores
+- Navigation history is complex -- forward/back buttons with a state machine built via `useMemo` side-effect
+- Fix "APPLY" actions save annotations but do not modify the underlying XPT data (simulated result)
+- FindingSection has multiple sub-views (accept, enter value, script dialog) that reset on record change
+- Rule disposition form (`ValidationIssueForm`) and record review form (`InlineReviewSection`) use separate annotation stores (`validation-issues` and `validation-records`)
 
 ### General
 - No keyboard navigation
-- No export option
-- Review progress uses green progress bar — could show red/amber for incomplete reviews
-- No connection to the analysis views (e.g., clicking a finding in MI validation doesn't navigate to histopathology view)
+- No export option for validation results
+- Review progress uses green progress bar -- could show red/amber for incomplete reviews
+- No connection to the analysis views (e.g., clicking a finding in MI validation does not navigate to histopathology view)
+- RUN VALIDATION button exists in the landing page context menu but not directly in this view

@@ -27,6 +27,37 @@ Three-panel Datagrok-style layout with tree navigation, React Router-based view 
 
 The outer shell is `flex h-screen flex-col`. The header is fixed height. Below it, `flex min-h-0 flex-1` arranges the three columns. Left and right panels have fixed widths and are scroll-independent from the center.
 
+### Resizable Panels
+
+Views 2-5 (Dose-Response, Target Organs, Histopathology, NOAEL Decision) use a two-panel master-detail layout where the left rail (organ/specimen/endpoint list) is resizable by dragging. This is implemented with two primitives:
+
+**`useResizePanel(initial, min, max, direction?)` hook** (`frontend/src/hooks/useResizePanel.ts`):
+- Parameters: `initial` (default width in px), `min` (minimum width), `max` (maximum width), `direction` (`"left"` or `"right"`, defaults to `"left"` -- `"left"` means dragging right increases width)
+- Returns: `{ width: number, onPointerDown: (e: React.PointerEvent) => void }`
+- Implementation: Uses pointer events with `setPointerCapture` for smooth dragging. Tracks drag state via refs (`dragging`, `startX`, `startW`). Clamps width to `[min, max]` on every pointer move. Cleans up listeners on pointer up or cancel.
+
+**`PanelResizeHandle` component** (`frontend/src/components/ui/PanelResizeHandle.tsx`):
+- Props: `onPointerDown: (e: React.PointerEvent) => void` (from `useResizePanel`)
+- Renders a 4px-wide vertical drag handle between panels with `cursor-col-resize`. Shows `bg-primary/10` on hover and `bg-primary/20` when active.
+- Placed between the left rail `<div>` (with `style={{ width }}`) and the right evidence panel.
+
+**Usage pattern** in Views 2-5:
+```tsx
+const { width, onPointerDown } = useResizePanel(280, 180, 500);
+
+<div className="flex flex-1 overflow-hidden">
+  <div style={{ width }} className="shrink-0 overflow-y-auto border-r">
+    {/* Left rail content */}
+  </div>
+  <PanelResizeHandle onPointerDown={onPointerDown} />
+  <div className="flex-1 overflow-y-auto">
+    {/* Right evidence panel */}
+  </div>
+</div>
+```
+
+Typical defaults: 280px initial width, 180px minimum, 500px maximum. Each view may adjust these values.
+
 ### Routing
 
 React Router 7 (`createBrowserRouter`) defines a single layout route with `<Layout />` as the element and all view routes as children rendered via `<Outlet />`. There is no nested routing -- all routes are flat children of the layout.
@@ -205,6 +236,7 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 - Dual-mode (Findings/Heatmap) center panel with `pendingNavigation` pattern
 - BrowsingTree with study expansion, domain categories, view navigation
 - Four selection contexts with proper isolation via `_view` tags
+- Resizable left rails in Views 2-5 via `useResizePanel` hook and `PanelResizeHandle` component
 
 **Limitations**:
 - No URL persistence of filter state -- navigating to a view always starts with default filters
@@ -233,6 +265,8 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 | `frontend/src/components/analysis/panes/*ContextPanel.tsx` | View-specific context panels with cross-view links |
 | `frontend/src/types/analysis-views.ts` | `SignalSelection` interface |
 | `frontend/src/types/analysis.ts` | `UnifiedFinding` interface (used by FindingSelectionContext) |
+| `frontend/src/hooks/useResizePanel.ts` | Hook for resizable panels — returns `{ width, onPointerDown }` |
+| `frontend/src/components/ui/PanelResizeHandle.tsx` | Visual drag handle (4px) placed between resizable panels |
 
 ## Datagrok Notes
 
@@ -249,4 +283,5 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 
 ## Changelog
 
+- 2026-02-09: Added resizable panel system documentation (useResizePanel hook, PanelResizeHandle component, usage in Views 2-5). Added to code map and current state.
 - 2026-02-08: Created from CLAUDE.md architecture section and frontend source code
