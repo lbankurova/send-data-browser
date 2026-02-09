@@ -81,7 +81,7 @@ Card surface is always neutral (plain `border`). Color is confined to the small 
 - Confidence (if `noael_confidence != null`): label `text-muted-foreground`, value `font-medium` with color (green >= 80%, yellow >= 60%, red < 60%) — percentage
 
 **Row 3 (conditional):** Only rendered if `adverse_domains_at_loael` is not empty. `mt-1 flex flex-wrap gap-1`
-- Domain badges: `rounded px-1 py-0.5 text-[9px] font-medium` with `getDomainBadgeColor()` — bg + text color
+- Domain labels: plain colored text `text-[9px] font-semibold` with `getDomainBadgeColor().text` (no background — consistent with domain label rule)
 
 ---
 
@@ -125,9 +125,9 @@ Filters organs by name (case-insensitive substring match, underscores treated as
 `shrink-0 border-b px-4 py-3`
 
 - Organ name: `text-sm font-semibold` (displayed via `titleCase()` from `severity-colors.ts`)
-- Adverse badge (if adverseCount > 0): `text-[10px] font-semibold uppercase text-[#DC2626]` — "{N} ADVERSE"
+- Adverse badge (if adverseCount > 0): `text-[10px] font-semibold uppercase text-[#DC2626]` — "{N} ADVERSE" (matching Histopathology/Target Organs badge pattern)
 - Summary text: `mt-1 text-xs leading-relaxed text-muted-foreground` — "{N} endpoints across {D} domains, {M} adverse, {T} treatment-related."
-- Compact metrics: `mt-2 flex flex-wrap gap-3 text-[11px]` — max |d| (colored if >= 0.8), min p (colored if < 0.01), endpoint count
+- Compact metrics: `mt-2 flex flex-wrap gap-3 text-[11px]` — max |d| (font-mono, font-semibold if >= 0.8), min p (font-mono, font-semibold if < 0.01). Typography-only, no color.
 
 ---
 
@@ -152,13 +152,16 @@ All tabs: `px-3 py-2 text-xs font-medium transition-colors`
 Section header: `text-xs font-medium uppercase tracking-wide text-muted-foreground` — "Endpoint summary"
 
 Each endpoint is a clickable `<button>` row:
-- Container: `flex w-full items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-left text-[11px] hover:bg-accent/30`
-- Selected: `bg-accent ring-1 ring-primary`
-- Endpoint name: truncated at 35 chars, `min-w-0 flex-1 truncate font-medium`
-- Direction symbol: `shrink-0 text-sm`, colored (red for up, blue for down)
-- Max effect size: `shrink-0 font-mono text-[10px]` with effect size color
-- Severity badge: `shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-medium` with `getSeverityBadgeClasses`
-- TR badge (if treatment-related): `shrink-0 text-[9px] font-medium text-red-600` — "TR"
+- Container: `group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] hover:bg-accent/30`
+- Selected: `bg-accent`
+- Domain code: `shrink-0 text-[9px] text-muted-foreground` (plain text, no color)
+- Endpoint name: `min-w-0 flex-1 truncate`
+- Direction symbol: `shrink-0 text-[10px] text-muted-foreground` — via `getDirectionSymbol()`
+- Max effect size: `shrink-0 font-mono text-[10px] text-muted-foreground`
+- Severity label: `shrink-0 text-[9px] text-muted-foreground` — plain text (adverse/warning/normal)
+- TR badge (if treatment-related): `shrink-0 text-[9px] font-medium text-muted-foreground` — "TR"
+
+All evidence columns use neutral muted text — no categorical coloring in the overview.
 
 Sorted by: severity (adverse first) → treatment-related → max effect size desc. Click sets endpoint-level selection (finds representative row, updates context panel). Click again to deselect.
 
@@ -166,13 +169,7 @@ Sorted by: severity (adverse first) → treatment-related → max effect size de
 
 Only shown when organ-scoped rule results exist. Section header: "Insights". Uses `InsightsList` component with rules filtered to the selected organ (matches on `organ_system`, `output_text` containing organ name, or `context_key` containing organ key).
 
-### Cross-View Links
-
-Section header: "Related views". Three navigation links:
-- "View in Target Organs" → `/studies/{studyId}/target-organs` with `{ state: { organ_system: organ } }`
-- "View dose-response" → `/studies/{studyId}/dose-response` with `{ state: { organ_system: organ } }`
-- "View histopathology" → `/studies/{studyId}/histopathology` with `{ state: { organ_system: organ } }`
-- All links: `block hover:underline`, color `#3a7bd5`, arrow suffix
+Note: no cross-view links in the overview tab. Cross-view navigation is in the context panel's "Related views" pane (see below).
 
 ---
 
@@ -212,7 +209,7 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 
 | Condition | Color |
 |-----------|-------|
-| Adverse + treatment-related | `#ef4444` (red) |
+| Adverse + treatment-related | `#DC2626` (red) |
 | Warning | `#fbbf24` (amber) |
 | Normal / other | `#4ade80` (green) |
 | No data | `#e5e7eb` (gray) |
@@ -230,14 +227,14 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 | Column | Header | Cell Rendering |
 |--------|--------|----------------|
 | endpoint_label | Endpoint | Truncated at 30 chars with ellipsis, `title` tooltip |
-| domain | Domain | Plain colored text: `text-[10px] font-semibold` with `getDomainBadgeColor().text` |
-| dose_level | Dose | Colored badge with dose group color, shows dose_label |
+| domain | Domain | Plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` |
+| dose_level | Dose | `text-muted-foreground`, shows `dose_label.split(",")[0]` |
 | sex | Sex | Plain text |
-| p_value | P-value | `font-mono`, p-value color coded |
-| effect_size | Effect | `font-mono`, effect size color coded |
-| direction | Dir | Direction symbol with color |
-| severity | Severity | Badge with severity classes |
-| treatment_related | TR | "Yes" in `font-medium text-red-600` or "No" in `text-muted-foreground` |
+| p_value | P-value | `font-mono text-muted-foreground` |
+| effect_size | Effect | `font-mono text-muted-foreground` |
+| direction | Dir | `text-sm text-muted-foreground` via `getDirectionSymbol()` |
+| severity | Severity | `text-muted-foreground` (plain text) |
+| treatment_related | TR | `text-muted-foreground` — "Yes" or "No" |
 | dose_response_pattern | Pattern | `text-muted-foreground`, underscores replaced with spaces |
 
 Row cap: 200 rows with message. Row interactions: click to select/deselect, hover highlight.
@@ -252,18 +249,23 @@ Route-detected: when pathname matches `/studies/{studyId}/noael-decision`, shows
 
 ### No Selection State
 
-Panes (unchanged):
+Header: `CollapseAllButtons` (right-aligned, no title).
+
+Panes:
 1. **NOAEL narrative** (default open) — `InsightsList` with rules where `scope === "study"`
-2. **Confidence** (default closed) — adverse at LOAEL per sex
-3. Footer: "Select a row to view adversity rationale."
+2. **NOAEL summary** (default open) — compact table: Sex | NOAEL | LOAEL | Confidence (High/Moderate/Low with green/amber/red). Below: aggregate counts (target organs, adverse endpoints).
+3. **Confidence factors** (default closed) — per-sex confidence percentage + adverse at LOAEL detail
+4. Footer: "Select a row to view adversity rationale."
 
 ### With Selection
 
-Panes (unchanged):
-1. **Adversity rationale** (default open) — dose-level rows for selected endpoint + sex
-2. **Insights** (default open) — `InsightsList` with endpoint-scoped rules
-3. **Related views** (default closed) — cross-view navigation links
-4. **Tox Assessment** (default closed) — `ToxFindingForm`
+Header: sticky, endpoint name (`text-sm font-semibold`) + `CollapseAllButtons`. Below: sex + dose level info. `TierCountBadges` for tier filtering.
+
+Panes:
+1. **Adversity rationale** (default open) — dose-level rows for selected endpoint + sex, with p-value, effect size, severity badge (`getSeverityBadgeClasses`)
+2. **Insights** (default open) — `InsightsList` with endpoint-scoped rules + `tierFilter` from header badges
+3. **Related views** (default closed) — "View dose-response" (passes endpoint_label + organ_system), "View target organs", "View histopathology" (pass organ_system)
+4. **Tox Assessment** — `ToxFindingForm` keyed by endpoint_label
 
 ---
 
@@ -319,15 +321,12 @@ useRuleResults(studyId)           ──> ruleResults (shared React Query cache)
 ### Inbound
 - From other views with `location.state`: `{ organ_system: string }` — auto-selects matching organ in rail (case-insensitive).
 
-### Outbound (Overview tab)
+### Outbound (Context panel — "Related views" pane, with selection)
 | Action | Navigates To | State Passed |
 |--------|-------------|-------------|
-| "View in Target Organs" | `/studies/{studyId}/target-organs` | `{ organ_system: organ }` |
-| "View dose-response" | `/studies/{studyId}/dose-response` | `{ organ_system: organ }` |
-| "View histopathology" | `/studies/{studyId}/histopathology` | `{ organ_system: organ }` |
-
-### Outbound (Context panel — unchanged)
-Same three links in the "Related views" pane.
+| "View dose-response" | `/studies/{studyId}/dose-response` | `{ endpoint_label, organ_system }` |
+| "View target organs" | `/studies/{studyId}/target-organs` | `{ organ_system }` |
+| "View histopathology" | `/studies/{studyId}/histopathology` | `{ organ_system }` |
 
 ---
 

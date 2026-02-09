@@ -64,11 +64,14 @@ Each `OrganListItem` is a `<button>` with:
 - Not selected: `hover:bg-accent/30`
 - Left border: `border-l-2 border-l-[#DC2626]` for organs with `target_organ_flag`, `border-l-transparent` otherwise
 
-**Row 1:** Organ name (`text-xs font-semibold`, uses `titleCase()`) + TARGET badge (`text-[9px] font-semibold uppercase text-[#DC2626]` -- only shown if `target_organ_flag` is true)
+**Row 1:** Tier dot + organ name + TARGET badge.
+- Tier dot: `h-2 w-2 rounded-full`, colored by `organTierDot()`: `#DC2626` (red) if `target_organ_flag`, `#D97706` (amber) if `evidence_score >= 0.3`, omitted otherwise.
+- Organ name: `text-xs font-semibold` (uses `titleCase()`)
+- TARGET badge: `text-[9px] font-semibold uppercase text-[#DC2626]` -- only shown if `target_organ_flag` is true
 
 **Row 2:** Evidence bar -- neutral gray alignment matching Signals and Histopathology rails. Track: `h-1.5 flex-1 rounded-full bg-[#E5E7EB]`, fill: `bg-[#D1D5DB]`. Width proportional to `evidence_score / maxEvidenceScore` (minimum 4%). Numeric value: `shrink-0 font-mono text-[10px] tabular-nums`, font-semibold for >= 0.5, font-medium for >= 0.3.
 
-**Row 3 (NEW):** Signal metrics -- `text-[10px]` row showing min p-value (font-mono, colored by significance), max |d| (font-mono, weighted by magnitude), and dose consistency badge (colored pill: green for Strong, amber for Moderate, gray for Weak). Computed per-organ from `organStatsMap` via `computeOrganStats()`.
+**Row 3:** Signal metrics -- `text-[10px]` row showing min p-value (font-mono text-muted-foreground, font-semibold if < 0.001, font-medium if < 0.01), max |d| (font-mono text-muted-foreground, font-semibold if >= 0.8, font-medium if >= 0.5), and dose consistency label (`text-[9px] text-muted-foreground`, plain text — no color differentiation). Computed per-organ from `organStatsMap` via `computeOrganStats()`.
 
 **Row 4:** Stats line -- `{N} sig · {M} TR · {D} domains` + domain chips (plain colored text: `text-[9px] font-semibold` with domain-specific color class via `getDomainBadgeColor().text`).
 
@@ -130,12 +133,12 @@ Example: *"Convergent evidence across 3 domains, 8/15 significant (53%), both se
 
 | Metric | Source | Formatting |
 |--------|--------|------------|
-| Max signal | `organ.max_signal_score` | font-mono font-medium, `text-[#DC2626]` if >= 0.8 |
-| Evidence | `organ.evidence_score` | font-mono, font-semibold + `text-[#DC2626]` if >= 0.7, font-semibold if >= 0.5 |
-| Min p | `localStats.minPValue` | font-mono, font-semibold + `text-[#DC2626]` if < 0.001, font-medium if < 0.01 |
-| Max \|d\| | `localStats.maxEffectSize` | font-mono, font-semibold + `text-[#DC2626]` if >= 0.8, font-medium if >= 0.5 |
+| Max signal | `organ.max_signal_score` | font-mono, font-semibold if >= 0.8, font-medium otherwise |
+| Evidence | `organ.evidence_score` | font-mono, font-semibold if >= 0.5, font-medium otherwise |
+| Min p | `localStats.minPValue` | font-mono, font-semibold if < 0.01, font-medium otherwise |
+| Max \|d\| | `localStats.maxEffectSize` | font-mono, font-semibold if >= 0.8, font-medium otherwise |
 | Domains | `organ.n_domains` | font-medium |
-| Dose consistency | `localStats.doseConsistency` | font-medium, colored: green-700 for Strong, amber-700 for Moderate |
+| Dose consistency | `localStats.doseConsistency` | font-medium (plain text, no color) |
 
 `localStats` computed in header via `computeOrganStats(evidenceRows)`.
 
@@ -303,8 +306,8 @@ TanStack React Table with `enableColumnResizing: true`, `columnResizeMode: "onCh
 | domain | Domain | Plain colored text: `text-[10px] font-semibold` with `getDomainBadgeColor().text` color class |
 | dose_level | Dose | `text-muted-foreground`, shows `dose_label.split(",")[0]` |
 | sex | Sex | Plain text |
-| p_value | P-value | `font-mono`, font-semibold if < 0.001, font-medium if < 0.01; red text when column is sorted and p < 0.05 |
-| effect_size | Effect | `font-mono`, font-semibold if |d| >= 0.8, font-medium if |d| >= 0.5; red text when column is sorted and |d| >= 0.5 |
+| p_value | P-value | `ev font-mono`, font-semibold if < 0.001, font-medium if < 0.01. Uses `ev` class + `data-evidence=""` on `<td>` for hover/selection coloring (`#DC2626`) |
+| effect_size | Effect | `ev font-mono`, font-semibold if |d| >= 0.8, font-medium if |d| >= 0.5. Uses `ev` class + `data-evidence=""` on `<td>` for hover/selection coloring (`#DC2626`) |
 | direction | Dir | Direction symbol (`getDirectionSymbol()`), `text-sm text-muted-foreground` |
 | severity | Severity | `inline-block rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground` |
 | treatment_related | TR | "Yes" in `font-medium` or "No" in `text-muted-foreground` |

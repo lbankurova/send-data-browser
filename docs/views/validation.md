@@ -141,14 +141,17 @@ interface FixScriptDef {
 `flex items-center gap-4 border-b px-4 py-3`
 
 - Title: `text-sm font-semibold` -- "SEND Validation"
-- Three severity indicators, each: `flex items-center gap-1 text-xs`
-  - Colored dot: `inline-block h-2 w-2 rounded-full`
-    - Error: `#dc2626` (red)
-    - Warning: `#d97706` (amber)
-    - Info: `#2563eb` (blue)
-  - Count: `font-medium` -- from `validationData.summary.errors`, `.warnings`, `.info`
-  - Label: `text-muted-foreground` -- "errors" / "warnings" / "info"
+- Severity filter pills (wrapped in `flex items-center gap-3 text-xs`):
+  - Each pill is a `<button>` with `flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity`
+  - Contents: colored dot (`inline-block h-2 w-2 rounded-full`) + count (`font-medium`) + label (`text-muted-foreground`)
+  - Colors: Error `#dc2626` (red), Warning `#d97706` (amber), Info `#2563eb` (blue)
+  - Counts from `validationData.summary.errors`, `.warnings`, `.info`
+  - **Active state** (filter matches): `ring-1 ring-{color}-300 bg-{color}-50` (e.g., `ring-red-300 bg-red-50`)
+  - **Inactive state** (another filter active): `opacity-40`
+  - **No filter**: all pills at full opacity, no ring/bg
+  - Click toggles the severity filter (click same pill again to clear)
 - Elapsed time (when available): `text-muted-foreground` -- "({N}s)"
+- **RUN VALIDATION button** (right-aligned, `ml-auto`): `rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50`. Shows "RUNNING..." while pending. Present in both loaded and no-results states.
 
 ---
 
@@ -322,10 +325,10 @@ Key-value pairs in `text-[11px]`:
 #### Pane 2: Review progress (default open)
 Uses `useAffectedRecords` and `useAnnotations` to compute live counts.
 
-- **Progress bar**: `h-1 w-full rounded-full bg-gray-200` with `bg-green-500` fill
+- **Progress bar**: `h-1 w-full rounded-full bg-gray-200` with tri-color fill: `bg-green-500` (>=70%), `bg-amber-500` (>=30%), `bg-red-500` (<30%)
 - **Progress header**: "N of M reviewed" + "N%" in `text-[10px] text-muted-foreground`
-- **Review status counts**: "Not reviewed N . Reviewed N . Approved N" in `text-[10px]` with colored count numbers
-- **Fix status counts**: "Not fixed N . Auto-fixed N . Manually fixed N . Accepted as-is N . Flagged N" in `text-[10px]` with colored count numbers
+- **Review status counts**: "Not reviewed N . Reviewed N . Approved N" in `text-[10px]` — count numbers are clickable `<button>` elements (`font-medium hover:underline`) that push `recordReviewStatusFilter` to the center panel via `setSelection`
+- **Fix status counts**: "Not fixed N . Auto-fixed N . Manually fixed N . Accepted as-is N . Flagged N" in `text-[10px]` — count numbers are clickable `<button>` elements (`font-medium hover:underline`) that push `recordFixStatusFilter` to the center panel via `setSelection`
 
 Status count colors:
 
@@ -456,6 +459,7 @@ Triggered from "Run script..." in the Fix dropdown. Rendered as `FixScriptDialog
 | Record column sizing | Local | `useState<ColumnSizingState>` |
 | Selected rule | Local | `useState<ValidationRuleResult \| null>` |
 | Selected issue ID | Local | `useState<string \| null>` |
+| Severity filter | Local | `useState<"" \| "Error" \| "Warning" \| "Info">("")` — filters rules table, toggled by header severity pills |
 | Record filters | Local | `useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>` |
 | Validation data (rules, scripts, summary) | Server | `useValidationResults(studyId)` -- React Query, 5min stale |
 | Affected records | Server | `useAffectedRecords(studyId, ruleId)` -- React Query, 5min stale |
@@ -574,5 +578,4 @@ The `fixTier` value is assigned by the backend validation engine based on the ch
 ### General
 - No keyboard navigation
 - No export option for validation results
-- Review progress uses green progress bar -- could show red/amber for incomplete reviews
 - No connection to the analysis views (e.g., clicking a finding in MI validation does not navigate to histopathology view)

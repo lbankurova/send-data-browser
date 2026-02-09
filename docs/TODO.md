@@ -26,7 +26,7 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 1 | 4 | Incorrect behavior that should be fixed |
+| Bug | 0 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 7 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 4 | Spec'd but not implemented |
@@ -34,7 +34,7 @@
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 3 | 1 | Center view / context panel data overlap |
 | **Incoming feature** | **1** | **7** | **7 done (FEAT-01–07), 1 remaining (FEAT-08)** |
-| **Total** | **32** | **25** | |
+| **Total** | **31** | **26** | |
 
 ## Remaining Open Items
 
@@ -60,7 +60,7 @@
 - GAP-07: SENDIG metadata verification (needs CDISC Library)
 - GAP-08: Incremental recomputation (performance, not needed for prototype)
 - GAP-09: SPECIMEN CT check (needs CDISC Library)
-- BUG-05, SD-10: TypeScript cleanup (nice-to-have)
+- SD-10: TypeScript cleanup (nice-to-have)
 - SD-08: FW domain asymmetry (on-demand pipeline missing FW)
 
 ---
@@ -105,7 +105,7 @@
 - **Issue:** Selection state typed as `Record<string, any>` with a runtime `_view` tag. No compile-time enforcement of selection shape per view.
 - **Fix:** Define discriminated union type per view (DoseResponseSelection | TargetOrgansSelection | ...).
 - **Recommendation:** Quick win. Define proper discriminated union types. Prevents runtime errors and makes the code self-documenting. Not domain-specific, just good engineering.
-- **Status:** Open
+- **Status:** RESOLVED — `ViewSelection` discriminated union type defined with 6 per-view interfaces (`DoseResponseViewSelection`, `TargetOrgansViewSelection`, `HistopathologyViewSelection`, `NoaelViewSelection`, `ClinicalObsViewSelection`, `ValidationViewSelection`). All consumers updated: `ValidationView`, `ValidationViewWrapper`, `ValidationContextPanel`, `ContextPanel` wrapper functions. Removed inline type casts and local `ValidationSelection` interface (now imported from context). Navigation-and-layout system spec updated.
 
 ---
 
@@ -161,7 +161,7 @@
 
 ### HC-07: Non-PointCross demo guard
 - **System:** `systems/navigation-and-layout.md`
-- **Files:** `frontend/src/components/panels/ContextPanel.tsx:436`
+- **Files:** `frontend/src/components/panels/ContextPanel.tsx:592`
 - **Issue:** Shows "demo entry" message for any non-PointCross study.
 - **Fix:** Remove guard when multi-study support lands.
 - **Recommendation:** Remove when HC-03 is resolved. Trivial change.

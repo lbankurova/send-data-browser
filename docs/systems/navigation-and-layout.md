@@ -117,16 +117,17 @@ Center panel components write to the appropriate context on user interaction (ro
 #### ViewSelectionContext
 
 - **File**: `contexts/ViewSelectionContext.tsx`
-- **State**: `{ selection: Record<string, any> | null }`
+- **State**: `{ selection: ViewSelection | null }` — discriminated union type (`DoseResponseViewSelection | TargetOrgansViewSelection | HistopathologyViewSelection | NoaelViewSelection | ClinicalObsViewSelection | ValidationViewSelection`)
 - **Actions**: `setSelection(sel)`
-- **Used by**: Views 2-5 and Validation. Each view tags its selection with `_view` to prevent cross-view interference.
+- **Used by**: Views 2-6 and Validation. Each view tags its selection with `_view` to prevent cross-view interference. Compile-time type safety via discriminated union on `_view`.
 - **Selection shapes by view**:
-  - `_view: "dose-response"` -- `{ endpoint_label, sex?, domain?, organ_system? }`
-  - `_view: "target-organs"` -- `{ organ_system, endpoint_label?, sex? }`
-  - `_view: "histopathology"` -- `{ finding, specimen, sex? }`
-  - `_view: "noael"` -- `{ endpoint_label, dose_level, sex }`
-  - `_view: "validation"` -- `{ mode: "rule" | "issue", rule_id, severity, domain, category, description, records_affected, issue_id?, subject_id?, visit?, variable?, actual_value?, expected_value? }`
-- **Key pattern**: `ContextPanel` wrapper functions cast `selection` back to the typed shape only when `selection?._view` matches the expected view tag. This prevents stale selections from a previous view leaking into the current context panel.
+  - `DoseResponseViewSelection` (`_view: "dose-response"`) -- `{ endpoint_label, sex?, domain?, organ_system? }`
+  - `TargetOrgansViewSelection` (`_view: "target-organs"`) -- `{ organ_system, endpoint_label?, sex? }`
+  - `HistopathologyViewSelection` (`_view: "histopathology"`) -- `{ finding, specimen, sex? }`
+  - `NoaelViewSelection` (`_view: "noael"`) -- `{ endpoint_label, dose_level, sex }`
+  - `ClinicalObsViewSelection` (`_view: "clinical-observations"`) -- `{ finding, category? }`
+  - `ValidationViewSelection` (`_view: "validation"`) -- union of `ValidationRuleViewSelection` (`mode: "rule"`) and `ValidationIssueViewSelection` (`mode: "issue"`, adds `issue_id`, `subject_id?`, `visit?`, `variable?`, `actual_value?`, `expected_value?`). Both share `rule_id`, `severity`, `domain`, `category`, `description`, `records_affected`, `recordFixStatusFilter?`, `recordReviewStatusFilter?`.
+- **Key pattern**: `ContextPanel` wrapper functions narrow `selection` via `selection?._view === "..."` discriminant check. TypeScript narrows the type automatically — no casting needed. This prevents stale selections from a previous view leaking into the current context panel.
 
 #### FindingSelectionContext
 
@@ -243,7 +244,7 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 **Limitations**:
 - No URL persistence of filter state -- navigating to a view always starts with default filters
 - No deep linking -- cannot share a URL that pre-selects a specific endpoint or organ
-- `ViewSelectionContext` uses `Record<string, any>` type -- no compile-time enforcement of selection shape per view (runtime `_view` tag check only)
+- ~~`ViewSelectionContext` uses `Record<string, any>` type~~ — resolved: proper discriminated union (`ViewSelection`) with compile-time enforcement per view
 - Non-PointCross studies show a demo guard message instead of real data (P1.3)
 - `SelectionContext` tracks landing page study selection, but this state is not used once you navigate into a study route (route params take precedence)
 

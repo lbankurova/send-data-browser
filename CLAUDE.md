@@ -406,7 +406,7 @@ These are foundational changes that most other items depend on.
 #### P1.3 — Multi-Study Support
 - **`backend/config.py:15`** — `ALLOWED_STUDIES = {"PointCross"}` restricts the entire app to one study.
 - **`backend/services/study_discovery.py:37-38`** — Filter applied at startup: `if ALLOWED_STUDIES: studies = {k: v for k, v in studies.items() if k in ALLOWED_STUDIES}`.
-- **`frontend/src/components/panels/ContextPanel.tsx:584`** — Hardcoded check: `if (selectedStudyId !== "PointCross")` shows "This is a demo entry" message for any non-PointCross study.
+- **`frontend/src/components/panels/ContextPanel.tsx:592`** — Hardcoded check: `if (selectedStudyId !== "PointCross")` shows "This is a demo entry" message for any non-PointCross study.
 - **Production change:** Remove ALLOWED_STUDIES filter entirely. Remove PointCross guard in ContextPanel. Studies should come from Datagrok's study management system.
 
 ### Priority 2 — Hardcoded Demo Data (Remove)
