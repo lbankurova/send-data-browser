@@ -33,19 +33,19 @@
 | Gap | 8 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 3 | 1 | Center view / context panel data overlap |
-| **Incoming feature** | **8** | **0** | **Spec'd in `docs/incoming/`, pending implementation** |
+| **Incoming feature** | **2** | **6** | **6 done (FEAT-01–06), 2 remaining (FEAT-07, FEAT-08)** |
 | **Total** | **33** | **24** | |
 
 ## Remaining Open Items
 
 **Incoming features (prototype-scope, ready to build):**
-- FEAT-01: Temporal Evidence API — **IMPLEMENTED, needs commit** (backend + frontend plumbing)
-- FEAT-02 → FEAT-03: Time-course tab → spaghetti plot (sequential, blocked on FEAT-01 commit)
-- FEAT-04: Subject profile context panel (blocked on FEAT-01 commit)
-- FEAT-05: Endpoint bookmarks (independent — can start anytime)
-- FEAT-06: Subject-level histopath matrix (blocked on FEAT-01 + FEAT-04)
-- FEAT-07: Clinical observations view (blocked on FEAT-01 commit)
-- FEAT-08: Causal inference tool (independent — needs design review first)
+- FEAT-01: Temporal Evidence API — **DONE** (committed `daec3e8`)
+- FEAT-02 + FEAT-03: Time-course tab + spaghetti plot — **DONE** (implemented + UX audit)
+- FEAT-04: Subject profile context panel — **DONE** (cross-domain profile with BW/LB/CL/MI/MA)
+- FEAT-05: Endpoint bookmarks — **DONE** (star toggle, filter pill, annotations backend)
+- FEAT-06: Subject-level histopath matrix — **DONE** (by-subject severity toggle)
+- FEAT-07: Clinical observations view (not started — blocked on design review)
+- FEAT-08: Causal inference tool (not started — needs design review first)
 
 **Defer to production/Datagrok:**
 - HC-01, HC-02: Dynamic dose group mapping (essential for multi-study)
@@ -379,52 +379,52 @@
 > **Dependency chain:** FEAT-01 is the data foundation; FEAT-02/03/04/06 build on it. FEAT-05/08 are independent.
 > **Role hints:** FEAT-01 → backend-dev. FEAT-02–08 → frontend-dev (with ux-designer review). FEAT-08 also needs ux-designer for workflow design.
 
-### FEAT-01: Temporal Evidence API (spec 01)
+### FEAT-01: Temporal Evidence API (spec 01) — DONE
 - **Spec:** `docs/incoming/01-temporal-evidence-api.md`
 - **Files:** `backend/routers/temporal.py`, `backend/main.py`, `frontend/src/types/timecourse.ts`, `frontend/src/lib/temporal-api.ts`, `frontend/src/hooks/useTimecourse.ts`
 - **Scope:** 4 backend endpoints (continuous timecourse, CL timecourse, subject profile, subject histopath matrix) + frontend types/hooks/fetch functions
-- **Status:** IMPLEMENTED (uncommitted) — all 4 endpoints functional, router wired into `main.py`, frontend types + hooks + API layer complete. Needs commit + acceptance testing against PointCross data.
+- **Status:** DONE — committed as `daec3e8`
 - **Owner:** backend-dev
 - **Blocks:** FEAT-02, FEAT-03, FEAT-04, FEAT-06, FEAT-07
 
-### FEAT-02: Time-Course Tab in Dose-Response (spec 02)
+### FEAT-02: Time-Course Tab in Dose-Response (spec 02) — DONE
 - **Spec:** `docs/incoming/02-timecourse-tab.md`
 - **Files:** `frontend/src/components/analysis/DoseResponseView.tsx`
 - **Scope:** New "Time-course" tab in evidence panel — Recharts line chart of group mean ± SD over study days, sex-faceted, with Y-axis toggle (Absolute / % change / % vs control). Significant timepoints marked with red dots.
-- **Status:** Not started
-- **Owner:** frontend-dev
+- **Status:** DONE — implemented + UX design audit (tooltip enrichment, overflow fix, unicode fix)
+- **Owner:** frontend-dev + ux-designer (audit)
 - **Blocked by:** FEAT-01
 - **Blocks:** FEAT-03
 
-### FEAT-03: Subject-Level Spaghetti Plot (spec 03)
+### FEAT-03: Subject-Level Spaghetti Plot (spec 03) — DONE
 - **Spec:** `docs/incoming/03-spaghetti-plot.md`
 - **Files:** `frontend/src/components/analysis/DoseResponseView.tsx`
 - **Scope:** "Show subjects" toggle on Time-course tab — overlays individual animal trajectories on group mean chart. Hover shows USUBJID tooltip, click selects subject → triggers subject profile panel.
-- **Status:** Not started
+- **Status:** DONE — subject lines render over group means, click triggers subject profile
 - **Owner:** frontend-dev
 - **Blocked by:** FEAT-02, FEAT-04
 
-### FEAT-04: Subject Profile Context Panel (spec 04)
+### FEAT-04: Subject Profile Context Panel (spec 04) — DONE
 - **Spec:** `docs/incoming/04-subject-profile-panel.md`
-- **Files:** `frontend/src/components/panels/ContextPanel.tsx`, `frontend/src/contexts/ViewSelectionContext.tsx`
+- **Files:** `frontend/src/components/analysis/panes/SubjectProfilePanel.tsx` (new), `frontend/src/hooks/useSubjectProfile.ts` (new), `frontend/src/components/panels/ContextPanel.tsx`, `frontend/src/contexts/ViewSelectionContext.tsx`
 - **Scope:** New context panel mode showing cross-domain summary for one animal: demographics, BW sparkline, LB values, CL timeline, MI/MA findings. Triggered by subject selection from spaghetti plot or future subject-selection UI.
-- **Status:** Not started
+- **Status:** DONE — full cross-domain profile with collapsible panes, auto-expand on notable findings
 - **Owner:** frontend-dev
 - **Blocked by:** FEAT-01
 
-### FEAT-05: Endpoint Bookmarks (spec 05)
+### FEAT-05: Endpoint Bookmarks (spec 05) — DONE
 - **Spec:** `docs/incoming/05-endpoint-bookmarks.md`
-- **Files:** `backend/routers/annotations.py` (add schema type), all view components (star icon), `frontend/src/hooks/useAnnotations.ts` (existing — no changes)
+- **Files:** `backend/routers/annotations.py` (add schema type), `frontend/src/components/ui/BookmarkStar.tsx` (new), `frontend/src/hooks/useEndpointBookmarks.ts` (new), `frontend/src/components/analysis/DoseResponseView.tsx` (star + filter integration)
 - **Scope:** Lightweight star-toggle bookmarking for endpoints. Visible cross-view. "Bookmarked only" filter toggle in rails. Persists via annotations API.
-- **Status:** Not started
-- **Owner:** frontend-dev + backend-dev (trivial backend change)
+- **Status:** DONE — star toggle in rail, filter pill, annotations backend schema type added
+- **Owner:** frontend-dev + backend-dev
 - **Blocked by:** None (independent)
 
-### FEAT-06: Subject-Level Histopathology Matrix (spec 06)
+### FEAT-06: Subject-Level Histopathology Matrix (spec 06) — DONE
 - **Spec:** `docs/incoming/06-subject-level-histopath.md`
-- **Files:** `frontend/src/components/analysis/HistopathologyView.tsx`
+- **Files:** `frontend/src/components/analysis/HistopathologyView.tsx`, `frontend/src/components/analysis/HistopathologyViewWrapper.tsx`, `frontend/src/hooks/useHistopathSubjects.ts` (new)
 - **Scope:** "By subject" toggle on severity matrix — replaces dose-group columns with individual animal columns. Cells show per-subject severity grades. Click subject column → subject profile.
-- **Status:** Not started
+- **Status:** DONE — by-subject toggle, per-animal severity cells, dose group separators
 - **Owner:** frontend-dev
 - **Blocked by:** FEAT-01, FEAT-04
 
