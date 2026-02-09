@@ -124,6 +124,23 @@ export function getDomainBadgeColor(domain: string): {
   }
 }
 
+/** Severity heat color scale: pale yellow → deep red per spec §12.3 */
+export function getSeverityHeatColor(avgSev: number): string {
+  if (avgSev >= 4) return "#E57373"; // severe
+  if (avgSev >= 3) return "#FF8A65"; // marked
+  if (avgSev >= 2) return "#FFB74D"; // moderate
+  if (avgSev >= 1) return "#FFE0B2"; // mild
+  return "#FFF9C4"; // minimal
+}
+
+/** Incidence background color for table cells. */
+export function getIncidenceColor(incidence: number): string {
+  if (incidence >= 0.8) return "rgba(239,68,68,0.15)";
+  if (incidence >= 0.5) return "rgba(249,115,22,0.1)";
+  if (incidence >= 0.2) return "rgba(234,179,8,0.08)";
+  return "transparent";
+}
+
 /** Signal score to CSS background color (hex). */
 export function getSignalScoreColor(score: number): string {
   if (score >= 0.7) return "#dc2626"; // red-600
