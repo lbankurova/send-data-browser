@@ -1,6 +1,8 @@
 # Datagrok LLM Development Guide
 
-Meta-guide for LLM-assisted Datagrok application development. Full narrative version: `datagrok-llm-development-guide-original.md`.
+Meta-guide for LLM-assisted Datagrok application development.
+
+> **Condensed 2026-02-09.** Full original: `datagrok-llm-development-guide-original.md`. Restore by copying it over this file if agent performance degrades.
 
 ---
 
