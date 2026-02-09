@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { CollapseAllButtons } from "./CollapseAllButtons";
 import { InsightsList } from "./InsightsList";
 import { ToxFindingForm } from "./ToxFindingForm";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
 import type {
   SignalSummaryRow,
   SignalSelection,
@@ -122,21 +124,26 @@ function EndpointPanel({
       .slice(0, 10);
   }, [signalData, selection]);
 
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
   return (
     <div>
       <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
+          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+        </div>
         <p className="text-xs text-muted-foreground">
           {selection.domain} &middot; {selection.sex} &middot; Dose{" "}
           {selection.dose_level}
         </p>
       </div>
 
-      <CollapsiblePane title="Insights" defaultOpen>
+      <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <InsightsList rules={filteredRules} />
       </CollapsiblePane>
 
-      <CollapsiblePane title="Statistics" defaultOpen>
+      <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {selectedRow ? (
           <div className="space-y-1.5 text-[11px]">
             <div className="flex items-center justify-between">
@@ -196,7 +203,7 @@ function EndpointPanel({
         )}
       </CollapsiblePane>
 
-      <CollapsiblePane title="Correlations" defaultOpen>
+      <CollapsiblePane title="Correlations" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {correlatedFindings.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">
             No correlations in this organ system.
@@ -342,11 +349,16 @@ function OrganPanel({
     };
   }, [signalData, organSystem]);
 
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
   return (
     <div>
       {/* Header */}
       <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <h3 className="text-sm font-semibold">{displayName}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">{displayName}</h3>
+          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+        </div>
         <p className="text-xs text-muted-foreground">
           {evidence.totalSignals} signals &middot;{" "}
           {evidence.domains.length} domain{evidence.domains.length !== 1 ? "s" : ""}
@@ -354,7 +366,7 @@ function OrganPanel({
       </div>
 
       {/* Pane 1: Organ insights */}
-      <CollapsiblePane title="Organ insights" defaultOpen>
+      <CollapsiblePane title="Organ insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <InsightsList rules={organRules} />
       </CollapsiblePane>
 
@@ -362,6 +374,8 @@ function OrganPanel({
       <CollapsiblePane
         title={`Contributing endpoints (${endpoints.length})`}
         defaultOpen
+        expandAll={expandGen}
+        collapseAll={collapseGen}
       >
         {endpoints.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">
@@ -411,7 +425,7 @@ function OrganPanel({
       </CollapsiblePane>
 
       {/* Pane 3: Evidence breakdown */}
-      <CollapsiblePane title="Evidence breakdown" defaultOpen>
+      <CollapsiblePane title="Evidence breakdown" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-2 text-[11px]">
           {/* Domains */}
           <div>
@@ -470,7 +484,7 @@ function OrganPanel({
 
       {/* Pane 4: Navigation */}
       {studyId && (
-        <CollapsiblePane title="Navigate" defaultOpen>
+        <CollapsiblePane title="Navigate" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-1">
             <button
               className="block w-full text-left text-[11px] text-blue-600 hover:text-blue-800 hover:underline"

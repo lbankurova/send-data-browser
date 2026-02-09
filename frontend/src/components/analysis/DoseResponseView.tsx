@@ -31,6 +31,7 @@ import {
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import type { DoseResponseRow } from "@/types/analysis-views";
 
 // ─── Public types ──────────────────────────────────────────
@@ -610,8 +611,16 @@ export function DoseResponseView({
       >
         {/* Rail header */}
         <div className="shrink-0 border-b px-3 py-2">
-          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Endpoints ({totalEndpoints})
+          <div className="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <span>Endpoints ({totalEndpoints})</span>
+            <CollapseAllButtons
+              onExpandAll={() =>
+                setExpandedOrgans(
+                  new Set(filteredOrganGroups.map((g) => g.organ_system))
+                )
+              }
+              onCollapseAll={() => setExpandedOrgans(new Set())}
+            />
           </div>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
