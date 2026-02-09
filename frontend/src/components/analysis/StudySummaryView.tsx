@@ -35,7 +35,7 @@ export function StudySummaryView({
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: meta } = useStudyMetadata(studyId!);
 
-  const [tab, setTab] = useState<Tab>("details");
+  const [tab, setTab] = useState<Tab>("signals");
   const [selection, setSelection] = useState<SignalSelection | null>(null);
   const [selectedOrgan, setSelectedOrganState] = useState<string | null>(null);
 
@@ -162,8 +162,8 @@ export function StudySummaryView({
       <div className="flex items-center border-b">
         <div className="flex">
           {([
-            { key: "details" as Tab, label: "Study details" },
             { key: "signals" as Tab, label: "Signals" },
+            { key: "details" as Tab, label: "Study details" },
           ]).map(({ key, label }) => (
             <button
               key={key}

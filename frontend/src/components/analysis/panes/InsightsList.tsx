@@ -143,7 +143,7 @@ function SynthLineItem({ line }: { line: SynthLine }) {
         <div className="mb-0.5 text-[10px] font-medium text-muted-foreground/70">
           {line.text}
         </div>
-        <div className="space-y-px">
+        <div className="space-y-1">
           {line.listItems.map((item, j) => (
             <div key={j} className="text-[11px] leading-snug text-foreground">
               <HistopathItem text={item} />
