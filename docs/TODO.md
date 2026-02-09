@@ -45,7 +45,7 @@
 - FEAT-05: Endpoint bookmarks — **DONE** (star toggle, filter pill, annotations backend)
 - FEAT-06: Subject-level histopath matrix — **DONE** (by-subject severity toggle)
 - FEAT-07: Clinical observations view — **DONE** (two-panel layout, observation rail, bar chart, timeline table, context panel with statistics + dose relationship)
-- FEAT-08: Causal inference tool (not started — needs design review first)
+- FEAT-08: Causal inference tool (UX design done — ready for frontend-dev implementation + backend schema type)
 
 **Defer to production/Datagrok:**
 - HC-01, HC-02: Dynamic dose group mapping (essential for multi-study)
@@ -437,12 +437,13 @@
 - **Blocked by:** FEAT-01
 
 ### FEAT-08: Causal Inference Tool — Bradford Hill Worksheet (spec 08)
-- **Spec:** `docs/incoming/08-causal-inference-tool.md`
-- **Files:** `frontend/src/components/analysis/DoseResponseView.tsx` (Hypotheses tab), `backend/routers/annotations.py` (add schema type), `docs/systems/annotations.md`
-- **Scope:** New "Causality" tool in Hypotheses tab. Structured worksheet with 5 auto-populated Bradford Hill criteria + 4 expert-input criteria + overall assessment radio buttons. Persists via annotations API as `causal-assessment` schema type.
-- **Status:** Not started
-- **Owner:** ux-designer (workflow design) + frontend-dev (implementation)
+- **Spec:** `docs/incoming/08-causal-inference-tool.md` + full UX spec in `docs/views/dose-response.md` (Intent: Causality section)
+- **Files:** `frontend/src/components/analysis/DoseResponseView.tsx` (Hypotheses tab), `backend/routers/annotations.py` (add `causal-assessment` to `VALID_SCHEMA_TYPES`), `docs/systems/annotations.md`
+- **Scope:** New "Causality" tool in Hypotheses tab. Structured worksheet with 5 auto-populated Bradford Hill criteria (neutral dot gauge, override mechanism) + 4 expert-input criteria (strength selector + rationale textarea) + overall assessment radio buttons + SAVE. Persists via annotations API as `causal-assessment` schema type.
+- **Status:** UX design done. Ready for implementation (frontend-dev + backend-dev for schema type).
+- **Owner:** frontend-dev (implementation) + backend-dev (add schema type to whitelist)
 - **Blocked by:** None (uses existing rule_results and signal data)
+- **Design decisions:** Scale icon, neutral dot gauge, persistence exception for regulatory documentation, auto-populated score overrides with justification. See `docs/views/dose-response.md` Intent: Causality section.
 
 ---
 

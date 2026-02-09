@@ -581,6 +581,7 @@ Icon: `h-3.5 w-3.5` inline before label text.
 | `pareto` | Pareto front | `ScatterChart` | Yes | Scatter plot of endpoints by effect size vs. p-value |
 | `correlation` | Correlation | `Link2` | No | Correlation matrix or scatter of related endpoints |
 | `outliers` | Outliers | `BoxSelect` | No | Box plots, distribution views, outlier detection |
+| `causality` | Causality | `Scale` | Yes | Bradford Hill causal assessment worksheet |
 
 Default: `shape` (the most common first question after seeing a signal).
 
@@ -637,6 +638,258 @@ Below the viewer placeholder, a single `rounded-md border bg-card p-3` card show
 - **Config:** Grouping = dose; split = sex; threshold = 1.5 IQR; overlay = individual points
 - **Endpoint-aware:** Shows selected endpoint name in viewer subtitle
 
+### Intent: Causality
+
+- **Available:** Yes
+- **Icon:** `Scale` (lucide-react) — the balance/scales icon represents weighing evidence, which is exactly what Bradford Hill criteria do
+- **Description:** "Bradford Hill causal assessment"
+- **Viewer:** None — this intent uses a structured form, not a chart placeholder
+- **Requires endpoint selection:** Yes — empty state when no endpoint selected
+
+**Purpose:** Structured causality worksheet using Bradford Hill criteria. Unlike other Hypotheses tools that are ephemeral explorations, the Causality tool captures expert reasoning that supports regulatory conclusions. See "Design decision: Causality persistence exception" below.
+
+#### Layout
+
+When an endpoint is selected, the content area renders as a scrollable form:
+
+```
++──────────────────────────────────────────+
+│ Causality: {endpoint_label}              │  ← header (text-sm font-semibold)
+│ {domain dot} {domain} · {organ_system}   │  ← subtitle (text-xs text-muted-foreground)
++──────────────────────────────────────────+
+│                                          │
+│ COMPUTED EVIDENCE          (section hdr) │
+│ ┌──────────────────────────────────────┐ │
+│ │ Biological gradient  ●●●○○  Strong   │ │
+│ │ monotonic_increase · p_trend < 0.001 │ │
+│ ├──────────────────────────────────────┤ │
+│ │ Strength             ●●●●○  Strong   │ │
+│ │ max |d| = 2.23 · p < 0.001          │ │
+│ ├──────────────────────────────────────┤ │
+│ │ Consistency          ●●○○○  Moderate │ │
+│ │ Both sexes affected                  │ │
+│ ├──────────────────────────────────────┤ │
+│ │ Specificity          ●○○○○  Weak     │ │
+│ │ Endpoint signals in 4 organ systems  │ │
+│ ├──────────────────────────────────────┤ │
+│ │ Coherence            ●●●○○  Moderate │ │
+│ │ 2 correlated findings in organ       │ │
+│ └──────────────────────────────────────┘ │
+│                                          │
+│ EXPERT ASSESSMENT          (section hdr) │
+│ ┌──────────────────────────────────────┐ │
+│ │ Temporality                          │ │
+│ │ ○○○○○ [▾ select]                     │ │
+│ │ "Is the timing of onset..."  (hint)  │ │
+│ │ [  rationale text area             ] │ │
+│ ├──────────────────────────────────────┤ │
+│ │ Biological plausibility              │ │
+│ │ ○○○○○ [▾ select]                     │ │
+│ │ "Is there a known biological..."     │ │
+│ │ [  rationale text area             ] │ │
+│ ├──────────────────────────────────────┤ │
+│ │ Experiment                           │ │
+│ │ ○○○○○ [▾ select]                     │ │
+│ │ "Do the controlled study..."         │ │
+│ │ [  rationale text area             ] │ │
+│ ├──────────────────────────────────────┤ │
+│ │ Analogy                              │ │
+│ │ ○○○○○ [▾ select]                     │ │
+│ │ "Do similar compounds..."            │ │
+│ │ [  rationale text area             ] │ │
+│ └──────────────────────────────────────┘ │
+│                                          │
+│ OVERALL ASSESSMENT                       │
+│ ┌──────────────────────────────────────┐ │
+│ │ ○ Likely causal                      │ │
+│ │ ○ Possibly causal                    │ │
+│ │ ○ Unlikely causal                    │ │
+│ │ ○ Not assessed                       │ │
+│ │                                      │ │
+│ │ Comment: [________________________]  │ │
+│ │                                      │ │
+│ │ [SAVE]          User · 2026-02-09    │ │
+│ └──────────────────────────────────────┘ │
++──────────────────────────────────────────+
+```
+
+When no endpoint is selected:
+```
+p-4 text-xs text-muted-foreground: "Select an endpoint to assess causality."
+```
+
+#### Criteria cards
+
+Each criterion renders in a card-row inside a bordered container. Shared structure:
+
+**Card row:** `border-b last:border-b-0 px-3 py-2.5`
+
+**Label + dot gauge row:** `flex items-center justify-between`
+- Label: `text-xs font-medium` (sentence case — "Biological gradient", not "Biological Gradient")
+- Dot gauge: 5 dots, inline with strength label
+- Strength label: `text-[10px] font-medium text-muted-foreground`
+
+**Evidence line (computed criteria only):** `text-[10px] text-muted-foreground mt-0.5`
+- Shows the data values that produced the score
+- P-values and effect sizes use standard color functions from `severity-colors.ts`
+- Pattern names, organ counts, etc. are plain text
+
+#### Dot gauge
+
+5-dot scale using filled/empty circles. All dots are **neutral gray** — no color coding (signal-not-meaning principle).
+
+```tsx
+// Filled: text-foreground/70   Empty: text-foreground/15
+function DotGauge({ level }: { level: 0 | 1 | 2 | 3 | 4 | 5 }) {
+  return (
+    <span className="inline-flex gap-0.5">
+      {[1,2,3,4,5].map(i => (
+        <span key={i} className={cn(
+          "inline-block h-1.5 w-1.5 rounded-full",
+          i <= level ? "bg-foreground/70" : "bg-foreground/15"
+        )} />
+      ))}
+    </span>
+  );
+}
+```
+
+**Mapping to strength labels:**
+| Level | Dots | Label |
+|-------|------|-------|
+| 0 | ○○○○○ | Not assessed |
+| 1 | ●○○○○ | Weak |
+| 2 | ●●○○○ | Weak-moderate |
+| 3 | ●●●○○ | Moderate |
+| 4 | ●●●●○ | Strong |
+| 5 | ●●●●● | Very strong |
+
+#### Auto-population logic (computed evidence section)
+
+These criteria are scored automatically from existing data. No user input needed. The computed score is shown as the dot gauge. If the user disagrees, they can override (see "Override" below).
+
+| Criterion | Data source | Score mapping |
+|-----------|-------------|--------------|
+| **Biological gradient** | `endpointSummary.dose_response_pattern` + `endpointSummary.min_trend_p` | `monotonic_increase`/`monotonic_decrease` → 4 (Strong); `threshold` → 3 (Moderate); `non_monotonic` → 2 (Weak-moderate); `flat`/`no_pattern` → 1 (Weak). Bonus +1 if `min_trend_p < 0.01`. |
+| **Strength of association** | `endpointSummary.max_effect_size` | `|d| >= 1.2` → 5 (Very strong); `|d| >= 0.8` → 4 (Strong); `|d| >= 0.5` → 3 (Moderate); `|d| >= 0.2` → 2 (Weak-moderate); `|d| < 0.2` → 1 (Weak) |
+| **Consistency** | `endpointSummary.sexes` | Both M and F → 4 (Strong); one sex only → 2 (Weak-moderate) |
+| **Specificity** | Count distinct `organ_system` values in `endpointSummaries` matching this `endpoint_label` | 1 organ → 4 (Strong); 2 organs → 3 (Moderate); 3 organs → 2 (Weak-moderate); 4+ → 1 (Weak) |
+| **Coherence** | Count R16 rules from `ruleResults` where `organ_system` matches | 3+ correlations → 4 (Strong); 1-2 → 3 (Moderate); 0 → 1 (Weak) |
+
+**Evidence line text examples:**
+- Biological gradient: `"monotonic_increase · trend p < 0.001"`
+- Strength: `"|d| = 2.23 (F, high dose) · p < 0.001"`
+- Consistency: `"Both sexes affected (M, F)"`
+- Specificity: `"Signals in 1 organ system (hepatic)"`
+- Coherence: `"3 correlated endpoints in hepatic (R16 rules)"`
+
+#### Override mechanism
+
+Each auto-populated criterion has a small override toggle. When clicked:
+- The dot gauge becomes editable (a 5-level stepper or dropdown)
+- A justification text area appears (`text-xs`, 2 rows, placeholder "Reason for override...")
+- The card shows a subtle `(overridden)` badge in `text-[9px] text-amber-600`
+- Override values persist via annotations alongside expert-input values
+
+Toggle: small `Edit2` (pencil) icon, `h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground`, positioned right of the strength label.
+
+#### Expert assessment section
+
+Four criteria that require toxicologist judgment. Each card has:
+
+1. **Label**: `text-xs font-medium`
+2. **Strength selector**: dropdown `<select>` with options: Not assessed, Weak, Weak-moderate, Moderate, Strong, Very strong. Default: "Not assessed" (0 dots).
+3. **Guidance text**: `text-[10px] italic text-muted-foreground mt-0.5` — shown collapsed by default, toggle via `(?)` icon
+4. **Rationale text area**: `text-xs rounded border px-2 py-1.5 mt-1`, 2 rows, placeholder "Notes..."
+5. **Dot gauge**: updates to reflect dropdown selection
+
+Guidance text (collapsible via `(?)` icon next to label):
+| Criterion | Guidance |
+|-----------|----------|
+| Temporality | "Is the timing of onset consistent with treatment exposure? Consider recovery group data if available." |
+| Biological plausibility | "Is there a known biological mechanism? Reference published literature or compound class effects." |
+| Experiment | "Do the controlled study conditions support a causal interpretation? Consider study design adequacy." |
+| Analogy | "Do similar compounds in the same class produce similar effects?" |
+
+#### Overall assessment section
+
+Bordered container with radio buttons and comment field.
+
+**Radio group:**
+- `flex flex-col gap-1.5`
+- Each option: `flex items-center gap-2 text-xs cursor-pointer`
+- Radio input: standard HTML radio, `accent-primary`
+- Options: "Likely causal", "Possibly causal", "Unlikely causal", "Not assessed"
+- Default: "Not assessed"
+- No color on the radio labels — plain text
+
+**Comment field:**
+- `text-xs rounded border px-2 py-1.5 mt-2 w-full`, 2 rows
+- Placeholder: "Overall assessment notes..."
+
+**Save button + footer:**
+- SAVE button: `rounded bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase text-primary-foreground hover:bg-primary/90`, disabled when no changes
+- Footer: `text-[10px] text-muted-foreground` — reviewer name + last save date (from annotation metadata)
+- Layout: `flex items-center justify-between mt-3`
+
+#### Persistence
+
+- **Schema type:** `causal-assessment` (new annotation schema)
+- **Key format:** `{endpoint_label}` — one assessment per endpoint per study
+- **Stored fields:** `{ overrides: Record<string, { level: number, justification: string }>, expert: Record<string, { level: number, rationale: string }>, overall: string, comment: string }`
+- **Hooks:** `useAnnotations<CausalAssessment>(studyId, "causal-assessment")` + `useSaveAnnotation<CausalAssessment>(studyId, "causal-assessment")`
+- Auto-populated scores are NOT stored — they are computed on the fly from endpoint summary and rule results. Only overrides, expert input, and overall assessment are persisted.
+
+#### Data dependencies
+
+The Causality tool needs two data sources not currently available in the Hypotheses tab:
+
+1. **`useStudySignalSummary(studyId)`** — needed for specificity calculation (counting organ systems where an endpoint signals). Already available via hook.
+2. **`useRuleResults(studyId)`** — needed for coherence calculation (counting R16 rules). Not currently imported in DoseResponseView.
+
+Both should be fetched at the view level and passed to the Hypotheses tab as props. These are read-only data sources — the Causality tool never writes to them.
+
+#### Design decision: Causality persistence exception
+
+**The problem:** The Hypotheses tab rule says "No model parameters or hypothesis results are persisted" and "Affect any annotation or assessment" is in the "must never do" list.
+
+**The resolution:** The Causality tool is an exception because Bradford Hill assessment is a **regulatory documentation requirement**, not an analytical exploration.
+
+- Shape, Model, Pareto, Correlation, Outliers are **analytical sandboxes** — the toxicologist explores data patterns. These are ephemeral.
+- Causality is a **structured reasoning worksheet** — it documents WHY the toxicologist concluded something was treatment-related. This has regulatory value (ICH M3(R2), FDA reviewer expects this rationale).
+
+**Updated rule:** "Hypotheses tools must not persist results that change conclusions. The Causality tool persists expert reasoning (Bradford Hill assessment) as an annotation — it documents the rationale behind conclusions made elsewhere (ToxFinding annotations, NOAEL determination), but does not itself modify those conclusions."
+
+**Spec update needed:** Lines 656 and 665 of dose-response.md should add the Causality caveat.
+
+#### Design decision: icon choice (Scale)
+
+**Choice:** `Scale` from lucide-react (balance/scales icon).
+
+**Rationale:**
+1. The Bradford Hill framework is literally about *weighing evidence* — the scales metaphor is exact.
+2. It visually distinguishes from the other analytical tools (charts, scatter, link).
+3. At 14x14 it reads clearly as a balance/scales.
+4. Alternative considered: `ClipboardCheck` (too generic, implies a checklist not reasoning), `Brain` (too abstract), `FileCheck` (too administrative).
+
+#### Design decision: auto-populated score overridability
+
+**The Open Question #3 in the spec** asks whether auto-populated scores should be overridable.
+
+**Decision: Yes, with justification.** A toxicologist may have domain knowledge that changes the assessment — e.g., the dose-response pattern is classified as "non-monotonic" by the algorithm but the toxicologist recognizes it as a hormesis curve (U-shaped, biologically meaningful). The override mechanism captures both the original computed value and the expert's adjusted value with justification, preserving the audit trail.
+
+#### Design decision: study-level causality summary
+
+**The Open Question #2** asks about aggregating endpoint-level assessments.
+
+**Decision: Defer.** This is a separate feature. The worksheet is per-endpoint. A study-level summary that aggregates across endpoints would be a new component (perhaps in the Study Summary view). Not in scope for FEAT-08.
+
+#### Design decision: HTML report export
+
+**The Open Question #1** asks about including causality assessments in the HTML report.
+
+**Decision: Yes, as an appendix table.** When a report is generated, include a "Causality Assessments" section listing each assessed endpoint with its criterion scores and overall conclusion. This is a report-generator change, not a FEAT-08 scope item — deferred to a follow-up.
+
 #### Design decision: organ system colors in Pareto scatter
 
 **Choice:** Deterministic hue-from-hash mapping (e.g., `hsl(hash(organ) % 360, 55%, 55%)`), not a fixed palette.
@@ -653,8 +906,10 @@ Below the viewer placeholder, a single `rounded-md border bg-card p-3` card show
 
 All Hypotheses tab state is session-scoped:
 - Selected intent resets to `shape` when switching away and back
-- No model parameters or hypothesis results are persisted
+- No model parameters or hypothesis results are persisted (exception: Causality tool, see below)
 - Hypotheses tab state does not affect context panel content (context panel continues to show Evidence-based insights for the selected endpoint)
+
+**Causality tool persistence exception:** The Causality tool persists expert reasoning (Bradford Hill assessment) as an annotation via the `causal-assessment` schema type. This is a regulatory documentation requirement, not an analytical exploration. The persisted data captures *reasoning rationale*, not *conclusions* — the actual conclusions (treatment-relatedness, adversity, NOAEL) are stored in ToxFinding annotations and the NOAEL determination. See "Design decision: Causality persistence exception" in the Intent: Causality section above.
 
 ### What Hypotheses must never do
 
@@ -662,7 +917,8 @@ All Hypotheses tab state is session-scoped:
 - Rewrite text on the Evidence tab
 - Store model parameters as authoritative results
 - Modify the `DoseResponseSelection` shared via `ViewSelectionContext`
-- Affect any annotation or assessment
+- Override conclusions from the Evidence tab or any other view
+- (Causality exception: may persist Bradford Hill reasoning via annotations API, but this documents rationale — it does not change computed results)
 
 ---
 
