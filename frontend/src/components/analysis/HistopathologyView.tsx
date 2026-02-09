@@ -12,7 +12,17 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
-import { getDomainBadgeColor } from "@/lib/severity-colors";
+import { getDomainDotColor } from "@/lib/severity-colors";
+
+// Design system §1.7/§1.11 Rule 5: domain dot+outline badge
+function DomainDotBadge({ domain }: { domain: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getDomainDotColor(domain) }} />
+      {domain}
+    </span>
+  );
+}
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
@@ -293,9 +303,7 @@ function SpecimenRailItem({
         <span>&middot;</span>
         <span>{summary.adverseCount} adverse</span>
         {summary.domains.map((d) => (
-          <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>
-            {d}
-          </span>
+          <DomainDotBadge key={d} domain={d} />
         ))}
       </div>
     </button>
@@ -403,7 +411,7 @@ function SpecimenHeader({
       )}
 
       {/* 1-line conclusion */}
-      <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
         {conclusion}
       </p>
 
@@ -412,8 +420,8 @@ function SpecimenHeader({
         <div>
           <span className="text-muted-foreground">Max severity: </span>
           <span className={cn(
-            "font-mono text-[10px] font-semibold",
-            summary.maxSeverity >= 3.0 && "text-[#DC2626]"
+            "font-mono text-[10px]",
+            summary.maxSeverity >= 3.0 ? "font-semibold" : "font-medium"
           )}>
             {summary.maxSeverity.toFixed(1)}
           </span>
@@ -422,7 +430,7 @@ function SpecimenHeader({
           <span className="text-muted-foreground">Total affected: </span>
           <span className={cn(
             summary.totalN > 0 && summary.totalAffected / summary.totalN > 0.5
-              ? "font-semibold text-[#DC2626]"
+              ? "font-semibold"
               : summary.totalN > 0 && summary.totalAffected / summary.totalN > 0.2
                 ? "font-semibold"
                 : "font-medium"
