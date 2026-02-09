@@ -4,7 +4,7 @@ import { CollapsiblePane } from "./CollapsiblePane";
 import { InsightsList } from "./InsightsList";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { cn } from "@/lib/utils";
-import { getDomainBadgeColor, getSignalScoreColor } from "@/lib/severity-colors";
+import { getDomainBadgeColor } from "@/lib/severity-colors";
 import type {
   TargetOrganRow,
   OrganEvidenceRow,
@@ -85,10 +85,9 @@ export function TargetOrgansContextPanel({
         </h3>
         {selectedOrganSummary && (
           <div className="mt-1 flex items-center gap-2 text-[11px]">
-            <span
-              className="rounded px-1.5 py-0.5 font-medium text-white"
-              style={{ backgroundColor: getSignalScoreColor(selectedOrganSummary.evidence_score) }}
-            >
+            <span className={cn(
+              selectedOrganSummary.evidence_score >= 0.5 ? "font-semibold" : "font-medium"
+            )}>
               Evidence: {selectedOrganSummary.evidence_score.toFixed(2)}
             </span>
             {selectedOrganSummary.target_organ_flag && (
@@ -112,7 +111,8 @@ export function TargetOrgansContextPanel({
             const dc = getDomainBadgeColor(info.domain);
             return (
               <div key={label} className="flex items-center gap-1 text-[11px]">
-                <span className={cn("rounded px-1 py-0.5 text-[9px] font-medium", dc.bg, dc.text)}>
+                <span className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+                  <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
                   {info.domain}
                 </span>
                 <span className="truncate" title={label}>

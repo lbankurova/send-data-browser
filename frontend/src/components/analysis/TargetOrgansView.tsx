@@ -13,15 +13,10 @@ import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useOrganEvidenceDetail } from "@/hooks/useOrganEvidenceDetail";
 import { cn } from "@/lib/utils";
 import {
-  getSignalScoreColor,
-  getPValueColor,
-  getEffectSizeColor,
   formatPValue,
   formatEffectSize,
   getDirectionSymbol,
-  getDirectionColor,
   getDomainBadgeColor,
-  getSeverityBadgeClasses,
 } from "@/lib/severity-colors";
 import type { TargetOrganRow, OrganEvidenceRow } from "@/types/analysis-views";
 
@@ -75,26 +70,25 @@ function OrganListItem({
         )}
       </div>
 
-      {/* Row 2: evidence bar */}
+      {/* Row 2: evidence bar (neutral gray) */}
       <div className="mt-1.5 flex items-center gap-2">
         <div className="h-1.5 flex-1 rounded-full bg-muted/50">
           <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${barWidth}%`,
-              backgroundColor: getSignalScoreColor(organ.evidence_score),
-            }}
+            className="h-full rounded-full bg-foreground/25 transition-all"
+            style={{ width: `${barWidth}%` }}
           />
         </div>
         <span
-          className="shrink-0 rounded px-1 py-0.5 text-[10px] font-medium text-white"
-          style={{ backgroundColor: getSignalScoreColor(organ.evidence_score) }}
+          className={cn(
+            "shrink-0 text-[10px]",
+            organ.evidence_score >= 0.5 ? "font-semibold" : organ.evidence_score >= 0.3 ? "font-medium" : ""
+          )}
         >
           {organ.evidence_score.toFixed(2)}
         </span>
       </div>
 
-      {/* Row 3: stats + domain chips */}
+      {/* Row 3: stats + domain chips (outline + dot) */}
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
         <span>{organ.n_significant} sig</span>
         <span>&middot;</span>
@@ -104,7 +98,8 @@ function OrganListItem({
         {organ.domains.map((d) => {
           const dc = getDomainBadgeColor(d);
           return (
-            <span key={d} className={cn("rounded px-1 py-0.5 text-[9px] font-medium", dc.bg, dc.text)}>
+            <span key={d} className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
               {d}
             </span>
           );
@@ -210,10 +205,9 @@ function OrganSummaryHeader({ organ }: { organ: TargetOrganRow }) {
         </div>
         <div>
           <span className="text-muted-foreground">Evidence: </span>
-          <span
-            className="rounded px-1 py-0.5 font-medium text-white"
-            style={{ backgroundColor: getSignalScoreColor(organ.evidence_score) }}
-          >
+          <span className={cn(
+            organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium"
+          )}>
             {organ.evidence_score.toFixed(2)}
           </span>
         </div>
@@ -297,7 +291,8 @@ function OverviewTab({
               return (
                 <tr key={d.domain} className="border-b border-border/30">
                   <td className="py-1.5 pr-3">
-                    <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-medium", dc.bg, dc.text)}>
+                    <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
+                      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
                       {d.domain}
                     </span>
                   </td>
@@ -334,25 +329,35 @@ function OverviewTab({
                 <span className="min-w-[140px] truncate font-medium" title={row.endpoint_label}>
                   {row.endpoint_label}
                 </span>
-                <span className={cn("shrink-0 text-sm", getDirectionColor(row.direction))}>
+                <span className="shrink-0 text-sm text-muted-foreground">
                   {getDirectionSymbol(row.direction)}
                 </span>
-                <span className={cn("shrink-0 font-mono", getEffectSizeColor(row.effect_size))}>
+                <span className={cn(
+                  "shrink-0 font-mono",
+                  Math.abs(row.effect_size ?? 0) >= 0.8 ? "font-semibold" : "font-normal",
+                  "text-foreground"
+                )}>
                   {formatEffectSize(row.effect_size)}
                 </span>
-                <span className={cn("shrink-0 font-mono", getPValueColor(row.p_value))}>
+                <span className={cn(
+                  "shrink-0 font-mono text-foreground",
+                  row.p_value != null && row.p_value < 0.001 ? "font-semibold" :
+                  row.p_value != null && row.p_value < 0.01 ? "font-medium" : "font-normal"
+                )}>
                   {formatPValue(row.p_value)}
                 </span>
                 <span
                   className={cn(
-                    "shrink-0 rounded-sm px-1 py-0.5 text-[9px] font-medium",
-                    getSeverityBadgeClasses(row.severity)
+                    "shrink-0 rounded-sm border px-1 py-0.5 text-[9px] font-medium",
+                    row.severity === "adverse"
+                      ? "border-red-300 text-red-700 bg-transparent"
+                      : "border-border text-muted-foreground bg-transparent"
                   )}
                 >
                   {row.severity}
                 </span>
                 {row.treatment_related && (
-                  <span className="shrink-0 text-[9px] font-medium text-red-600">TR</span>
+                  <span className="shrink-0 text-[9px] font-medium text-muted-foreground">TR</span>
                 )}
                 <span className="ml-auto shrink-0 text-muted-foreground">
                   {row.sex} · {row.dose_label.split(",")[0]}
@@ -422,7 +427,8 @@ function EvidenceTableTab({
         cell: (info) => {
           const dc = getDomainBadgeColor(info.getValue());
           return (
-            <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-medium", dc.bg, dc.text)}>
+            <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
               {info.getValue()}
             </span>
           );
@@ -437,45 +443,65 @@ function EvidenceTableTab({
       evidenceCol.accessor("sex", { header: "Sex" }),
       evidenceCol.accessor("p_value", {
         header: "P-value",
-        cell: (info) => (
-          <span className={cn("font-mono", getPValueColor(info.getValue()))}>
-            {formatPValue(info.getValue())}
-          </span>
-        ),
+        cell: (info) => {
+          const p = info.getValue();
+          return (
+            <span className={cn(
+              "font-mono text-foreground",
+              p != null && p < 0.001 ? "font-semibold" :
+              p != null && p < 0.01 ? "font-medium" :
+              p != null && p < 0.05 ? "" : "text-muted-foreground"
+            )}>
+              {formatPValue(p)}
+            </span>
+          );
+        },
       }),
       evidenceCol.accessor("effect_size", {
         header: "Effect",
-        cell: (info) => (
-          <span className={cn("font-mono", getEffectSizeColor(info.getValue()))}>
-            {formatEffectSize(info.getValue())}
-          </span>
-        ),
+        cell: (info) => {
+          const d = info.getValue();
+          return (
+            <span className={cn(
+              "font-mono text-foreground",
+              d != null && Math.abs(d) >= 0.8 ? "font-semibold" :
+              d != null && Math.abs(d) >= 0.5 ? "font-medium" : ""
+            )}>
+              {formatEffectSize(d)}
+            </span>
+          );
+        },
       }),
       evidenceCol.accessor("direction", {
         header: "Dir",
         cell: (info) => (
-          <span className={cn("text-sm", getDirectionColor(info.getValue()))}>
+          <span className="text-sm text-muted-foreground">
             {getDirectionSymbol(info.getValue())}
           </span>
         ),
       }),
       evidenceCol.accessor("severity", {
         header: "Severity",
-        cell: (info) => (
-          <span
-            className={cn(
-              "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
-              getSeverityBadgeClasses(info.getValue())
-            )}
-          >
-            {info.getValue()}
-          </span>
-        ),
+        cell: (info) => {
+          const sev = info.getValue();
+          return (
+            <span
+              className={cn(
+                "inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-medium",
+                sev === "adverse"
+                  ? "border-red-300 text-red-700"
+                  : "border-border text-muted-foreground"
+              )}
+            >
+              {sev}
+            </span>
+          );
+        },
       }),
       evidenceCol.accessor("treatment_related", {
         header: "TR",
         cell: (info) => (
-          <span className={info.getValue() ? "font-medium text-red-600" : "text-muted-foreground"}>
+          <span className={info.getValue() ? "font-medium" : "text-muted-foreground"}>
             {info.getValue() ? "Yes" : "No"}
           </span>
         ),
