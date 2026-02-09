@@ -68,6 +68,26 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       .slice(0, 10);
   }, [lesionData, selection]);
 
+  // Sex summary for selected finding
+  const sexSummary = useMemo(() => {
+    if (!selection) return null;
+    const rows = lesionData.filter(
+      (r) => r.finding === selection.finding && r.specimen === selection.specimen
+    );
+    const bySex = new Map<string, { affected: number; total: number; maxSev: number }>();
+    for (const r of rows) {
+      const existing = bySex.get(r.sex);
+      if (existing) {
+        existing.affected += r.affected;
+        existing.total += r.n;
+        if ((r.avg_severity ?? 0) > existing.maxSev) existing.maxSev = r.avg_severity ?? 0;
+      } else {
+        bySex.set(r.sex, { affected: r.affected, total: r.n, maxSev: r.avg_severity ?? 0 });
+      }
+    }
+    return bySex;
+  }, [lesionData, selection]);
+
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   if (!selection) {
@@ -89,12 +109,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
         <p className="text-xs text-muted-foreground">{selection.specimen}</p>
       </div>
 
-      {/* Pathology Review */}
-      {studyId && (
-        <PathologyReviewForm studyId={studyId} finding={selection.finding} defaultOpen />
-      )}
-
-      {/* Finding detail */}
+      {/* Dose detail */}
       <CollapsiblePane title="Dose detail" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {findingRows.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No data.</p>
@@ -134,13 +149,37 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
         )}
       </CollapsiblePane>
 
+      {/* Sex summary */}
+      {sexSummary && sexSummary.size > 1 && (
+        <CollapsiblePane title="Sex comparison" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="space-y-1 text-[11px]">
+            {[...sexSummary.entries()].map(([sex, stats]) => (
+              <div key={sex} className="flex items-center justify-between">
+                <span className="text-muted-foreground">{sex === "M" ? "Males" : sex === "F" ? "Females" : sex}</span>
+                <span className="tabular-nums">
+                  {stats.affected}/{stats.total} affected
+                  {stats.maxSev > 0 && (
+                    <span
+                      className="ml-1.5 rounded px-1 font-mono text-[9px]"
+                      style={{ backgroundColor: getSeverityHeatColor(stats.maxSev) }}
+                    >
+                      sev {stats.maxSev.toFixed(1)}
+                    </span>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        </CollapsiblePane>
+      )}
+
       {/* Rule-based insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <InsightsList rules={findingRules} />
       </CollapsiblePane>
 
       {/* Correlating evidence */}
-      <CollapsiblePane title="Correlating evidence" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title="Correlating evidence" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {correlating.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No other findings in this specimen.</p>
         ) : (
@@ -162,6 +201,11 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
         )}
       </CollapsiblePane>
 
+      {/* Pathology Review */}
+      {studyId && (
+        <PathologyReviewForm studyId={studyId} finding={selection.finding} defaultOpen />
+      )}
+
       {/* Cross-view links */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
@@ -182,7 +226,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
             style={{ color: "#3a7bd5" }}
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { specimen: selection.specimen } });
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: selection.specimen } });
             }}
           >
             View dose-response &#x2192;

@@ -188,7 +188,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const [recordColumnSizing, setRecordColumnSizing] = useState<ColumnSizingState>({});
   const [selectedRule, setSelectedRule] = useState<ValidationRuleResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
-  const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string }>({ fixStatus: "", reviewStatus: "" });
+  const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>({ fixStatus: "", reviewStatus: "", subjectId: "" });
 
   // API hooks
   const { data: validationData, isLoading: resultsLoading } = useValidationResults(studyId);
@@ -224,6 +224,12 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     });
   }, [affectedData, recordAnnotations]);
 
+  // Unique subject IDs for subject filter
+  const uniqueSubjects = useMemo(() => {
+    const set = new Set(recordRows.map((r) => r.subject_id));
+    return [...set].sort();
+  }, [recordRows]);
+
   // Filter records
   const filteredRecords = useMemo(() => {
     let rows = recordRows;
@@ -232,6 +238,9 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     }
     if (recordFilters.reviewStatus) {
       rows = rows.filter((r) => r.reviewStatus === recordFilters.reviewStatus);
+    }
+    if (recordFilters.subjectId) {
+      rows = rows.filter((r) => r.subject_id === recordFilters.subjectId);
     }
     return rows;
   }, [recordRows, recordFilters]);
@@ -282,12 +291,12 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     }),
     recordColumnHelper.accessor("actual_value", {
       header: "Key value",
-      size: 180,
+      size: 200,
       cell: (info) => <span className="text-xs">{info.getValue()}</span>,
     }),
     recordColumnHelper.accessor("expected_value", {
       header: "Expected",
-      size: 180,
+      size: 200,
       cell: (info) => <span className="text-xs text-muted-foreground">{info.getValue()}</span>,
     }),
     recordColumnHelper.accessor("fixStatus", {
@@ -302,7 +311,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     }),
     recordColumnHelper.accessor("assignedTo", {
       header: "Assigned to",
-      size: 90,
+      size: 100,
       cell: (info) => <span className="text-xs">{info.getValue() || "\u2014"}</span>,
     }),
   ], [selectedRule, onSelectionChange]);
@@ -364,12 +373,12 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     if (isReselect) {
       setSelectedRule(null);
       setSelectedIssueId(null);
-      setRecordFilters({ fixStatus: "", reviewStatus: "" });
+      setRecordFilters({ fixStatus: "", reviewStatus: "", subjectId: "" });
       onSelectionChange?.(null);
     } else {
       setSelectedRule(rule);
       setSelectedIssueId(null);
-      setRecordFilters({ fixStatus: "", reviewStatus: "" });
+      setRecordFilters({ fixStatus: "", reviewStatus: "", subjectId: "" });
       onSelectionChange?.({
         _view: "validation",
         mode: "rule",
@@ -533,6 +542,17 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                   <option value="Not reviewed">Not reviewed</option>
                   <option value="Reviewed">Reviewed</option>
                   <option value="Approved">Approved</option>
+                </select>
+                {/* Subject filter */}
+                <select
+                  className="rounded-full border bg-background px-2.5 py-0.5 text-[10px]"
+                  value={recordFilters.subjectId}
+                  onChange={(e) => setRecordFilters((prev) => ({ ...prev, subjectId: e.target.value }))}
+                >
+                  <option value="">Subject</option>
+                  {uniqueSubjects.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
                 </select>
               </div>
             </div>

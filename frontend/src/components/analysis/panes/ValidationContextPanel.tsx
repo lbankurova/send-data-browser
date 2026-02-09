@@ -1443,10 +1443,27 @@ function IssueReview({
         <RulePopover ruleId={selection.rule_id} domain={selection.domain} category={selection.category} severity={selection.severity} description={selection.description} detail={detail} />
       </div>
 
-      {/* Record context — one-liner */}
-      <div className="border-b px-4 py-2 text-xs text-muted-foreground">
-        {selection.subject_id} &middot; {selection.visit} &middot; {selection.domain}
-      </div>
+      {/* Record context */}
+      <CollapsiblePane title="Record context" defaultOpen>
+        <div className="space-y-1 text-[11px]">
+          <div>
+            <span className="font-medium text-muted-foreground">Subject ID: </span>
+            <span className="font-mono">{selection.subject_id}</span>
+          </div>
+          <div>
+            <span className="font-medium text-muted-foreground">Visit: </span>
+            <span>{selection.visit}</span>
+          </div>
+          <div>
+            <span className="font-medium text-muted-foreground">Domain: </span>
+            <span className="font-mono">{selection.domain}</span>
+          </div>
+          <div>
+            <span className="font-medium text-muted-foreground">Variable: </span>
+            <span className="font-mono">{selection.variable}</span>
+          </div>
+        </div>
+      </CollapsiblePane>
 
       {/* Finding (merged — diagnosis + diff + action) */}
       {studyId && record && (

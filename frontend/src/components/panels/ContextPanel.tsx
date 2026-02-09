@@ -21,6 +21,7 @@ import { TargetOrgansContextPanel } from "@/components/analysis/panes/TargetOrga
 import { DoseResponseContextPanel } from "@/components/analysis/panes/DoseResponseContextPanel";
 import { HistopathologyContextPanel } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { ValidationContextPanel } from "@/components/analysis/panes/ValidationContextPanel";
+import { titleCase } from "@/lib/severity-colors";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AnalysisSummary } from "@/types/analysis";
 
@@ -96,7 +97,7 @@ function AdverseEffectsSummarySection({
   const navigate = useNavigate();
 
   const noaelValue = data.suggested_noael;
-  const noaelEstablished = noaelValue && noaelValue.dose_value != null && noaelValue.dose_value > 0;
+  const noaelEstablished = noaelValue && noaelValue.dose_value != null;
   const trPct = data.total_findings > 0
     ? Math.round((data.total_treatment_related / data.total_findings) * 100)
     : 0;
@@ -152,6 +153,8 @@ function AdverseEffectsSummarySection({
 function StudyInspector({ studyId }: { studyId: string }) {
   const { data: meta, isLoading } = useStudyMetadata(studyId);
   const { data: aeSummary, isLoading: aeLoading } = useAESummary(studyId);
+  const { data: targetOrgans } = useTargetOrganSummary(studyId);
+  const { data: signalData } = useStudySignalSummary(studyId);
   const navigate = useNavigate();
 
   if (isLoading) {
@@ -210,6 +213,75 @@ function StudyInspector({ studyId }: { studyId: string }) {
           <p className="text-xs text-muted-foreground">No analysis available</p>
         )}
       </CollapsibleSection>
+
+      {/* Target organs summary */}
+      {targetOrgans && targetOrgans.length > 0 && (
+        <CollapsibleSection title="Target organs" defaultOpen>
+          <div className="space-y-0.5">
+            {targetOrgans
+              .filter((o) => o.target_organ_flag)
+              .sort((a, b) => b.evidence_score - a.evidence_score)
+              .slice(0, 8)
+              .map((o) => (
+                <div key={o.organ_system} className="flex items-center justify-between text-xs">
+                  <a
+                    href="#"
+                    className="hover:underline"
+                    style={{ color: "#3a7bd5" }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: o.organ_system } });
+                    }}
+                  >
+                    {titleCase(o.organ_system)}
+                  </a>
+                  <span className="text-muted-foreground tabular-nums">
+                    {o.evidence_score.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            {targetOrgans.filter((o) => o.target_organ_flag).length === 0 && (
+              <p className="text-xs text-muted-foreground">No target organs identified.</p>
+            )}
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* Signal overview */}
+      {signalData && signalData.length > 0 && (
+        <CollapsibleSection title="Signal overview">
+          {(() => {
+            const domains = [...new Set(signalData.map((s) => s.domain))].sort();
+            const nSignificant = signalData.filter((s) => s.p_value != null && s.p_value < 0.05).length;
+            const nTR = signalData.filter((s) => s.treatment_related).length;
+            const maxSignal = signalData.reduce((m, s) => Math.max(m, s.signal_score), 0);
+            return (
+              <div className="space-y-0.5">
+                <div className="flex justify-between gap-2 py-0.5 text-xs">
+                  <span className="text-muted-foreground">Total signals</span>
+                  <span>{signalData.length}</span>
+                </div>
+                <div className="flex justify-between gap-2 py-0.5 text-xs">
+                  <span className="text-muted-foreground">Significant (p&lt;0.05)</span>
+                  <span>{nSignificant}</span>
+                </div>
+                <div className="flex justify-between gap-2 py-0.5 text-xs">
+                  <span className="text-muted-foreground">Treatment-related</span>
+                  <span>{nTR}</span>
+                </div>
+                <div className="flex justify-between gap-2 py-0.5 text-xs">
+                  <span className="text-muted-foreground">Max signal score</span>
+                  <span className="tabular-nums font-mono">{maxSignal.toFixed(3)}</span>
+                </div>
+                <div className="flex justify-between gap-2 py-0.5 text-xs">
+                  <span className="text-muted-foreground">Domains</span>
+                  <span>{domains.join(", ")}</span>
+                </div>
+              </div>
+            );
+          })()}
+        </CollapsibleSection>
+      )}
 
       <CollapsibleSection title="Actions">
         <div className="space-y-0.5">
