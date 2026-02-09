@@ -324,10 +324,14 @@ class ValidationEngine:
 
     def save_results(self, study_id: str, results: ValidationResults) -> Path:
         """Save validation results to cache."""
+        from datetime import datetime, timezone
+
         cache_path = self._get_cache_path(study_id)
         cache_path.parent.mkdir(parents=True, exist_ok=True)
+        data = results.model_dump()
+        data["summary"]["validated_at"] = datetime.now(timezone.utc).isoformat()
         with open(cache_path, "w", encoding="utf-8") as f:
-            json.dump(results.model_dump(), f, indent=2, default=str)
+            json.dump(data, f, indent=2, default=str)
         return cache_path
 
     def load_cached_results(self, study_id: str) -> ValidationResults | None:

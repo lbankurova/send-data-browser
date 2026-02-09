@@ -61,6 +61,7 @@ export interface CLGroupCount {
   sex: string;
   total_subjects: number;
   findings: Record<string, number>;
+  subjects: Record<string, string[]>;  // finding → list of USUBJIDs
 }
 
 // --- Endpoint 3: Subject profile ---

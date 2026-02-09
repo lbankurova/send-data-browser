@@ -259,10 +259,14 @@ async def get_cl_timecourse(
                 (subjects_df["dose_level"] == dose_level) & (subjects_df["SEX"] == sex_val)
             ].shape[0])
 
-            # Count findings
-            finding_counts = grp[finding_col].value_counts().to_dict()
-            # Convert keys to str
-            finding_counts = {str(k): int(v) for k, v in finding_counts.items()}
+            # Count findings and collect subject IDs per finding
+            finding_counts = {}
+            finding_subjects = {}
+            for f_val, f_grp in grp.groupby(finding_col):
+                f_key = str(f_val)
+                ids = f_grp["USUBJID"].unique().tolist()
+                finding_counts[f_key] = len(ids)
+                finding_subjects[f_key] = ids
 
             counts.append({
                 "dose_level": int(dose_level),
@@ -270,6 +274,7 @@ async def get_cl_timecourse(
                 "sex": sex_val,
                 "total_subjects": total_subjects,
                 "findings": finding_counts,
+                "subjects": finding_subjects,
             })
         timecourse.append({"day": int(day), "counts": counts})
 

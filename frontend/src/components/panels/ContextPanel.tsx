@@ -22,9 +22,13 @@ import { DoseResponseContextPanel } from "@/components/analysis/panes/DoseRespon
 import { HistopathologyContextPanel } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { ValidationContextPanel } from "@/components/analysis/panes/ValidationContextPanel";
 import { SubjectProfilePanel } from "@/components/analysis/panes/SubjectProfilePanel";
-import { titleCase } from "@/lib/severity-colors";
+import { useValidationResults } from "@/hooks/useValidationResults";
+import { useClinicalObservations } from "@/hooks/useClinicalObservations";
+import { useAnnotations } from "@/hooks/useAnnotations";
+import { getDoseGroupColor } from "@/lib/severity-colors";
+import type { ToxFinding, PathologyReview, ValidationRecordReview } from "@/types/annotations";
+import type { CLTimecourseResponse } from "@/types/timecourse";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { AnalysisSummary } from "@/types/analysis";
 
 function CollapsibleSection({
   title,
@@ -88,74 +92,13 @@ function formatSubjects(
   return total;
 }
 
-function AdverseEffectsSummarySection({
-  studyId,
-  data,
-}: {
-  studyId: string;
-  data: AnalysisSummary;
-}) {
-  const navigate = useNavigate();
-
-  const noaelValue = data.suggested_noael;
-  const noaelEstablished = noaelValue && noaelValue.dose_value != null;
-  const trPct = data.total_findings > 0
-    ? Math.round((data.total_treatment_related / data.total_findings) * 100)
-    : 0;
-
-  return (
-    <div>
-      <div className="flex justify-between gap-2 py-0.5 text-xs">
-        <span className="text-muted-foreground">Findings</span>
-        <span className="text-right">
-          <span className="font-medium text-red-600">{data.total_adverse}</span>
-          <span className="text-muted-foreground"> / </span>
-          <span className="font-medium text-amber-600">{data.total_warning}</span>
-          <span className="text-muted-foreground"> / </span>
-          <span className="font-medium text-green-600">{data.total_normal}</span>
-        </span>
-      </div>
-      <div className="flex justify-between gap-2 py-0.5 text-xs">
-        <span className="text-muted-foreground">Treatment-related</span>
-        <span className="text-right">
-          {data.total_treatment_related}
-          <span className="text-muted-foreground"> ({trPct}%)</span>
-        </span>
-      </div>
-      <div className="flex justify-between gap-2 py-0.5 text-xs">
-        <span className="text-muted-foreground">NOAEL</span>
-        {noaelEstablished ? (
-          <span className="text-right">
-            {noaelValue.dose_value} {noaelValue.dose_unit}
-          </span>
-        ) : (
-          <span className="text-right font-medium text-red-600">
-            Not established
-          </span>
-        )}
-      </div>
-      <a
-        href="#"
-        className="mt-1.5 inline-block text-xs hover:underline"
-        style={{ color: "#3a7bd5" }}
-        onClick={(e) => {
-          e.preventDefault();
-          navigate(
-            `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects`
-          );
-        }}
-      >
-        View adverse effects &#x2192;
-      </a>
-    </div>
-  );
-}
-
 function StudyInspector({ studyId }: { studyId: string }) {
   const { data: meta, isLoading } = useStudyMetadata(studyId);
   const { data: aeSummary, isLoading: aeLoading } = useAESummary(studyId);
-  const { data: targetOrgans } = useTargetOrganSummary(studyId);
-  const { data: signalData } = useStudySignalSummary(studyId);
+  const { data: valResults } = useValidationResults(studyId);
+  const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
+  const { data: pathAnnotations } = useAnnotations<PathologyReview>(studyId, "pathology-reviews");
+  const { data: valRecordAnnotations } = useAnnotations<ValidationRecordReview>(studyId, "validation-records");
   const navigate = useNavigate();
 
   if (isLoading) {
@@ -170,6 +113,21 @@ function StudyInspector({ studyId }: { studyId: string }) {
   }
 
   if (!meta) return null;
+
+  // Study health one-liner
+  const noael = aeSummary?.suggested_noael;
+  const noaelEstablished = noael && noael.dose_value != null;
+  const healthLine = aeSummary
+    ? `${aeSummary.total_adverse} adverse \u00b7 NOAEL ${noaelEstablished ? `${noael.dose_value} ${noael.dose_unit}` : "not established"}`
+    : null;
+
+  // Review progress counts
+  const toxReviewed = toxAnnotations ? Object.keys(toxAnnotations).length : 0;
+  const toxTotal = aeSummary?.total_findings ?? 0;
+  const pathReviewed = pathAnnotations ? Object.keys(pathAnnotations).length : 0;
+  const valRecordReviewed = valRecordAnnotations ? Object.keys(valRecordAnnotations).length : 0;
+  const valTotal = valResults?.summary?.total_issues ?? 0;
+  const validatedAt = valResults?.summary?.validated_at;
 
   return (
     <div className="p-4">
@@ -202,87 +160,29 @@ function StudyInspector({ studyId }: { studyId: string }) {
         <MetadataRow label="GLP" value={meta.glp} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="Adverse findings" defaultOpen>
+      <CollapsibleSection title="Study health" defaultOpen>
         {aeLoading ? (
-          <div className="space-y-1">
-            <Skeleton className="h-5 w-full" />
-            <Skeleton className="h-3 w-2/3" />
-          </div>
-        ) : aeSummary ? (
-          <AdverseEffectsSummarySection studyId={meta.study_id} data={aeSummary} />
+          <Skeleton className="h-4 w-full" />
+        ) : healthLine ? (
+          <p className="text-xs text-muted-foreground">{healthLine}</p>
         ) : (
           <p className="text-xs text-muted-foreground">No analysis available</p>
         )}
       </CollapsibleSection>
 
-      {/* Target organs summary */}
-      {targetOrgans && targetOrgans.length > 0 && (
-        <CollapsibleSection title="Target organs" defaultOpen>
-          <div className="space-y-0.5">
-            {targetOrgans
-              .filter((o) => o.target_organ_flag)
-              .sort((a, b) => b.evidence_score - a.evidence_score)
-              .slice(0, 8)
-              .map((o) => (
-                <div key={o.organ_system} className="flex items-center justify-between text-xs">
-                  <a
-                    href="#"
-                    className="hover:underline"
-                    style={{ color: "#3a7bd5" }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: o.organ_system } });
-                    }}
-                  >
-                    {titleCase(o.organ_system)}
-                  </a>
-                  <span className="text-muted-foreground tabular-nums">
-                    {o.evidence_score.toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            {targetOrgans.filter((o) => o.target_organ_flag).length === 0 && (
-              <p className="text-xs text-muted-foreground">No target organs identified.</p>
-            )}
+      <CollapsibleSection title="Review progress" defaultOpen>
+        <MetadataRow label="Tox findings" value={`${toxReviewed} / ${toxTotal} reviewed`} />
+        <MetadataRow label="Pathology" value={`${pathReviewed} annotated`} />
+        <MetadataRow
+          label="Validation"
+          value={`${valRecordReviewed} / ${valTotal} reviewed`}
+        />
+        {validatedAt && (
+          <div className="mt-1 text-[10px] text-muted-foreground/60">
+            Last validated: {new Date(validatedAt).toLocaleDateString()}
           </div>
-        </CollapsibleSection>
-      )}
-
-      {/* Signal overview */}
-      {signalData && signalData.length > 0 && (
-        <CollapsibleSection title="Signal overview">
-          {(() => {
-            const domains = [...new Set(signalData.map((s) => s.domain))].sort();
-            const nSignificant = signalData.filter((s) => s.p_value != null && s.p_value < 0.05).length;
-            const nTR = signalData.filter((s) => s.treatment_related).length;
-            const maxSignal = signalData.reduce((m, s) => Math.max(m, s.signal_score), 0);
-            return (
-              <div className="space-y-0.5">
-                <div className="flex justify-between gap-2 py-0.5 text-xs">
-                  <span className="text-muted-foreground">Total signals</span>
-                  <span>{signalData.length}</span>
-                </div>
-                <div className="flex justify-between gap-2 py-0.5 text-xs">
-                  <span className="text-muted-foreground">Significant (p&lt;0.05)</span>
-                  <span>{nSignificant}</span>
-                </div>
-                <div className="flex justify-between gap-2 py-0.5 text-xs">
-                  <span className="text-muted-foreground">Treatment-related</span>
-                  <span>{nTR}</span>
-                </div>
-                <div className="flex justify-between gap-2 py-0.5 text-xs">
-                  <span className="text-muted-foreground">Max signal score</span>
-                  <span className="tabular-nums font-mono">{maxSignal.toFixed(3)}</span>
-                </div>
-                <div className="flex justify-between gap-2 py-0.5 text-xs">
-                  <span className="text-muted-foreground">Domains</span>
-                  <span>{domains.join(", ")}</span>
-                </div>
-              </div>
-            );
-          })()}
-        </CollapsibleSection>
-      )}
+        )}
+      </CollapsibleSection>
 
       <CollapsibleSection title="Actions">
         <div className="space-y-0.5">
@@ -447,6 +347,188 @@ function HistopathologyContextPanelWrapper({ studyId }: { studyId: string }) {
   );
 }
 
+function deriveCLStats(data: CLTimecourseResponse, finding: string) {
+  let totalOccurrences = 0;
+  const uniqueSubjects = new Set<string>();
+  let firstDay = Infinity;
+  let lastDay = -Infinity;
+  let peakDay = 0;
+  let peakCount = 0;
+  const doseGroupTotals = new Map<number, { count: number; total: number; label: string }>();
+
+  for (const tp of data.timecourse) {
+    let dayCount = 0;
+    for (const gc of tp.counts) {
+      const count = gc.findings[finding] ?? 0;
+      if (count > 0) {
+        totalOccurrences += count;
+        dayCount += count;
+        const ids = gc.subjects?.[finding];
+        if (ids) for (const id of ids) uniqueSubjects.add(id);
+      }
+      const existing = doseGroupTotals.get(gc.dose_level);
+      if (existing) {
+        existing.count += count;
+        existing.total = Math.max(existing.total, gc.total_subjects);
+      } else {
+        doseGroupTotals.set(gc.dose_level, { count, total: gc.total_subjects, label: gc.dose_label });
+      }
+    }
+    if (dayCount > 0) {
+      if (tp.day < firstDay) firstDay = tp.day;
+      if (tp.day > lastDay) lastDay = tp.day;
+      if (dayCount > peakCount) { peakCount = dayCount; peakDay = tp.day; }
+    }
+  }
+
+  // Sex distribution: unique subjects per sex
+  const sexCounts: Record<string, number> = {};
+  for (const tp of data.timecourse) {
+    for (const gc of tp.counts) {
+      const ids = gc.subjects?.[finding];
+      if (ids && ids.length > 0) {
+        if (!sexCounts[gc.sex]) sexCounts[gc.sex] = 0;
+        // Use Set to avoid double-counting across days (handled by uniqueSubjects above)
+        // But per-sex we need a separate set
+      }
+    }
+  }
+  // Recalculate sex distribution properly with per-sex unique subject sets
+  const sexSubjects: Record<string, Set<string>> = {};
+  for (const tp of data.timecourse) {
+    for (const gc of tp.counts) {
+      const ids = gc.subjects?.[finding];
+      if (ids) {
+        if (!sexSubjects[gc.sex]) sexSubjects[gc.sex] = new Set();
+        for (const id of ids) sexSubjects[gc.sex].add(id);
+      }
+    }
+  }
+  for (const [sex, set] of Object.entries(sexSubjects)) {
+    sexCounts[sex] = set.size;
+  }
+
+  // Dose-response pattern
+  const sorted = [...doseGroupTotals.entries()].sort((a, b) => a[0] - b[0]);
+  let dosePattern = "No clear dose relationship";
+  const nonZero = sorted.filter(([, v]) => v.count > 0);
+  if (nonZero.length === 0) {
+    dosePattern = "Not observed";
+  } else if (nonZero.length === 1 && nonZero[0][0] === sorted[sorted.length - 1][0]) {
+    dosePattern = "Present in high dose only";
+  } else {
+    let increasing = true;
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i][1].count < sorted[i - 1][1].count) { increasing = false; break; }
+    }
+    const controlCount = sorted[0]?.[1].count ?? 0;
+    if (increasing && sorted[sorted.length - 1][1].count > controlCount * 2) {
+      dosePattern = "Increasing with dose";
+    } else if (nonZero.length === sorted.length) {
+      dosePattern = "Present across all groups";
+    }
+  }
+
+  return {
+    totalOccurrences,
+    subjectsAffected: uniqueSubjects.size,
+    firstDay: firstDay === Infinity ? null : firstDay,
+    lastDay: lastDay === -Infinity ? null : lastDay,
+    peakDay,
+    peakCount,
+    sexCounts,
+    doseGroupTotals: sorted,
+    dosePattern,
+  };
+}
+
+function ClinicalObsContextPanelWrapper({ studyId }: { studyId: string }) {
+  const { selection } = useViewSelection();
+  const navigate = useNavigate();
+  const { data: clData, isLoading } = useClinicalObservations(studyId);
+
+  const sel = selection?._view === "clinical-observations"
+    ? (selection as { finding: string })
+    : null;
+
+  if (!sel) {
+    return (
+      <div className="p-4 text-xs text-muted-foreground">
+        Select an observation to view details.
+      </div>
+    );
+  }
+
+  if (isLoading || !clData) {
+    return (
+      <div className="p-4">
+        <h3 className="mb-3 text-sm font-semibold">{sel.finding}</h3>
+        <Skeleton className="h-4 w-full" />
+      </div>
+    );
+  }
+
+  const stats = deriveCLStats(clData, sel.finding);
+  const sexKeys = Object.keys(stats.sexCounts).sort();
+  const sexDistribution = sexKeys.length > 1
+    ? sexKeys.map((s) => `${s}: ${stats.sexCounts[s]}`).join(", ")
+    : sexKeys.length === 1
+      ? `${sexKeys[0]} only (${stats.sexCounts[sexKeys[0]]})`
+      : "\u2014";
+
+  return (
+    <div className="p-4">
+      <h3 className="mb-3 text-sm font-semibold">{sel.finding}</h3>
+
+      <CollapsibleSection title="Statistics" defaultOpen>
+        <MetadataRow label="Total occurrences" value={String(stats.totalOccurrences)} />
+        <MetadataRow label="Subjects affected" value={String(stats.subjectsAffected)} />
+        <MetadataRow label="First observed" value={stats.firstDay != null ? `Day ${stats.firstDay}` : "\u2014"} />
+        <MetadataRow label="Last observed" value={stats.lastDay != null ? `Day ${stats.lastDay}` : "\u2014"} />
+        <MetadataRow label="Peak day" value={`Day ${stats.peakDay} (${stats.peakCount} obs)`} />
+        <MetadataRow label="Sex distribution" value={sexDistribution} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Dose relationship" defaultOpen>
+        <p className="mb-1.5 text-xs font-medium">{stats.dosePattern}</p>
+        <div className="space-y-0.5">
+          {stats.doseGroupTotals.map(([dl, { count, total, label }]) => (
+            <div key={dl} className="flex items-center justify-between gap-2 py-0.5 text-xs">
+              <span style={{ color: getDoseGroupColor(dl) }}>{label.split(",")[0]}</span>
+              <span className="font-mono text-muted-foreground">
+                {count}/{total}
+              </span>
+            </div>
+          ))}
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Related views">
+        <div className="space-y-1">
+          {[
+            { label: "Dose-response", path: "dose-response" },
+            { label: "NOAEL decision", path: "noael-decision" },
+            { label: "Histopathology", path: "histopathology" },
+          ].map(({ label, path }) => (
+            <a
+              key={path}
+              href="#"
+              className="block text-xs hover:underline"
+              style={{ color: "#3a7bd5" }}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(`/studies/${encodeURIComponent(studyId)}/${path}`);
+              }}
+            >
+              View {label} &rarr;
+            </a>
+          ))}
+        </div>
+      </CollapsibleSection>
+    </div>
+  );
+}
+
 export function ContextPanel() {
   const { selectedStudyId } = useSelection();
   const { studyId } = useParams<{ studyId: string }>();
@@ -478,6 +560,7 @@ export function ContextPanel() {
   const isDoseResponseRoute = /\/studies\/[^/]+\/dose-response/.test(location.pathname);
   const isHistopathologyRoute = /\/studies\/[^/]+\/histopathology/.test(location.pathname);
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);
+  const isClinicalObsRoute = /\/studies\/[^/]+\/clinical-observations/.test(location.pathname);
 
   if (isAdverseEffectsRoute) {
     return <AdverseEffectsContextPanel />;
@@ -497,6 +580,10 @@ export function ContextPanel() {
 
   if (isHistopathologyRoute && activeStudyId) {
     return <HistopathologyContextPanelWrapper studyId={activeStudyId} />;
+  }
+
+  if (isClinicalObsRoute && activeStudyId) {
+    return <ClinicalObsContextPanelWrapper studyId={activeStudyId} />;
   }
 
   if (isValidationRoute && activeStudyId) {

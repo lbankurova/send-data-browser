@@ -191,7 +191,7 @@ Overlay: `fixed inset-0 z-40` click-to-close
 | Generate Report | Call `generateStudyReport` | Demo only |
 | Share... | (stub) | Always |
 | Export... | Alert "coming soon" | Demo only |
-| Re-validate SEND... | (stub) | Always |
+| Re-validate SEND... | Navigate to validation + fire POST /validate | Demo only |
 | --- separator --- | | |
 | Delete | (stub) | Always |
 
@@ -199,14 +199,37 @@ Item styling: `flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-[
 
 ---
 
-## Context Panel Behavior
+## Context Panel — StudyInspector
 
-When on the landing page with a study selected:
-- For PointCross: shows `StudyInspector` with full metadata, adverse findings summary, and actions
-- For demo studies: shows study name + "This is a demo entry" message
-- For no selection: shows "Select a study to view details."
+When on the landing page with a study selected, the context panel shows `StudyInspector` (triage-grade info for study selection mode). For demo studies, shows name + "This is a demo entry." For no selection: "Select a study to view details."
 
-(See `ContextPanel.tsx` for full implementation)
+### Pane structure
+
+| Section | Default | Content |
+|---------|---------|---------|
+| Study details | Open | Metadata rows: Species, Strain, Type, Design, Subjects, Duration, Start, End, Test article, Vehicle, Route, Sponsor, Facility, Director, GLP |
+| Study health | Open | One-line plain text: `"{N} adverse · NOAEL {dose} {unit}"` or `"… · NOAEL not established"`. No colored counts. |
+| Review progress | Open | Tox findings: `{reviewed} / {total} reviewed` · Pathology: `{reviewed} annotated` · Validation: `{reviewed} / {total} reviewed` · Validated-at timestamp (10px muted) |
+| Actions | Open | Links: Open study, Validation report, Generate report, Export... |
+
+### Data sources
+
+| Hook | Purpose |
+|------|---------|
+| `useStudyMetadata(studyId)` | Study details section |
+| `useAESummary(studyId)` | Health line (total_adverse, suggested_noael), tox total |
+| `useValidationResults(studyId)` | Validation total + validated_at timestamp |
+| `useAnnotations<ToxFinding>("tox-findings")` | Tox reviewed count |
+| `useAnnotations<PathologyReview>("pathology-reviews")` | Pathology reviewed count |
+| `useAnnotations<ValidationRecordReview>("validation-records")` | Validation reviewed count |
+
+### Design rationale
+
+The landing page is a **study selection context** — the user is choosing which study to open. The context panel should only show triage-grade information: enough to identify, compare, and decide. Analytical content (target organ lists, signal heatmaps, evidence scores) belongs in the Study Summary view, not here. The previous Target Organs and Signal Overview sections were removed per this cognitive mode analysis.
+
+### Validation tooltip
+
+The validation icon in the studies table shows a tooltip with status text (e.g., "SEND validation passed"). For studies with cached results, the tooltip appends the last-run date: `"SEND validation passed · 2/9/2026"`. Currently PointCross only; multi-study requires per-study validation hooks.
 
 ---
 
@@ -258,7 +281,7 @@ When on the landing page with a study selected:
 ### Context Menu
 - Uses CSS variable `var(--hover-bg)` — may not be defined in all themes
 - Delete action is always disabled — no confirmation UX designed
-- "Share..." and "Re-validate SEND..." are stubs with no plans
+- "Share..." is a stub with no plans
 
 ### General
 - No pagination for studies table (not needed at current scale)

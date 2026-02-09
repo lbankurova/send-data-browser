@@ -731,3 +731,279 @@ const DOMAIN_COLORS: Record<string, { bg: string; text: string }> = {
   CL: { bg: '#CFFAFE', text: '#0E7490' },    // cyan-100, cyan-700
 };
 ```
+
+---
+
+## 4. Grid & Table Portability Analysis
+
+> **Purpose:** For every table, grid, and matrix in the prototype, document what it does, what DG Grid gives for free, what needs custom work, and whether it should be a Native Grid, Configured Grid, or Custom JsViewer.
+>
+> **Audit date:** 2026-02-09
+>
+> **Scope:** 18 major data display components across 7 analysis views + shared domain browser + 12 context panel displays.
+
+### 4.1 Classification System
+
+| Classification | Definition | Custom Code Needed |
+|---|---|---|
+| **Native Grid** | Use `DG.TableView` grid as-is. Sorting, column resizing, row selection, hover all come free. | Zero — just load the DataFrame |
+| **Configure Grid** | Use `DG.TableView` grid with `grid.onCellPrepare()` for color-coding, `grid.col().width` for sizing, `grid.columns.setOrder()` for ordering. | Minimal — configuration callbacks only |
+| **Custom JsViewer** | Build a `DG.JsViewer` subclass with custom canvas or HTML rendering. Needed when the layout isn't a flat table (heatmaps, matrices, rails, cards). | Substantial — full viewer implementation |
+| **UI Widget** | Build with `ui.*` primitives (tables, divs, accordions). For small display-only tables in context panels that aren't data grids. | Moderate — manual HTML/DOM |
+
+### 4.2 Master Inventory
+
+| # | View | Component | Prototype Tech | Rows | Classification | Rationale |
+|---|---|---|---|---|---|---|
+| T1 | Study Summary | StudySummaryGrid | TanStack | 989 | **Configure Grid** | Standard tabular data with sorting, column resizing, color-coded cells. DG Grid handles all of this natively via `onCellPrepare()`. |
+| T2 | Signals | SignalsOrganRail | Div list | 14 | **Custom JsViewer** | Not a table — multi-line cards with evidence bars, domain chips, sparklines, tier dots. No DG Grid equivalent. |
+| T3 | Signals | SignalsMetricsTab | TanStack | ~300 | **Configure Grid** | Standard table with sorting, resizing, color-coded domain/p-value cells. Direct DG Grid mapping. |
+| T4 | Signals | OrganGroupedHeatmap | CSS grid | ~200 cells | **Custom JsViewer** | Organ-grouped expandable matrix with cell selection, hover-activated color, sparklines. No native DG viewer matches this interaction model. |
+| T5 | Dose-Response | EndpointRail | Div list | ~50 | **Custom JsViewer** | Multi-line items with bookmarks, sparklines, organ group collapse. Not a tabular layout. |
+| T6 | Dose-Response | MetricsTab | TanStack | 1342 | **Configure Grid** | Standard data table with filters, sorting, resizing, color-coded p-value/effect-size cells. Perfect DG Grid candidate. |
+| T7 | Dose-Response | PairwiseComparison | HTML table | ~10 | **UI Widget** | Small static table in evidence panel. Build with `ui.table()` or `ui.tableFromMap()`. |
+| T8 | Dose-Response | DayByDoseDetail | HTML table | ~50 | **UI Widget** | Small static table. Build with `ui.table()`. |
+| T9 | Target Organs | OrganRail | Div list | 14 | **Custom JsViewer** | Multi-line cards with evidence bars, metrics, tier dots. Same pattern as T2. |
+| T10 | Target Organs | EvidenceTableTab | TanStack | ~60 | **Configure Grid** | Standard table with filters, sorting, resizing, bold thresholds. DG Grid with `onCellPrepare()`. |
+| T11 | Histopathology | SpecimenRail | Div list | ~20 | **Custom JsViewer** | Multi-line cards with severity badges, finding counts. Same pattern as T2/T9. |
+| T12 | Histopathology | SeverityMatrixTab | TanStack | 728 | **Configure Grid** | Table with grayscale heat coloring on `avg_severity`. `grid.onCellPrepare()` applies neutral heat colors. |
+| T13 | NOAEL Decision | OrganRail | Div list | ~14 | **Custom JsViewer** | Same organ rail pattern as T9. |
+| T14 | NOAEL Decision | AdversityMatrixTab | TanStack | ~357 | **Configure Grid** | Standard table with severity/domain badges, p-value color, effect-size bolding. DG Grid with `onCellPrepare()`. |
+| T15 | Adverse Effects | FindingsTable | HTML table | 50/page | **Configure Grid** | Dynamic dose columns require column setup logic, but cell rendering (p-value color, domain badges, direction symbols) maps to `onCellPrepare()`. |
+| T16 | Validation | RuleResultsTable | TanStack | 18 | **Configure Grid** | Master table in master-detail. Row selection drives bottom panel. DG Grid with `df.onCurrentRowChanged`. |
+| T17 | Validation | AffectedRecordsTable | TanStack | ~20 | **Configure Grid** | Detail table with status badges, filter dropdowns. DG Grid with `onCellPrepare()` for badge colors. |
+| T18 | Domain Browse | DataTable | TanStack | 100+ | **Native Grid** | Generic domain data browser with column visibility and resizing. This IS the DG Grid use case — zero custom rendering needed. |
+
+**Context Panel Displays (12 items — Info Pane Grid or UI Widget):**
+
+DG Grid can be embedded in info panes via `DG.Viewer.grid(df)` → `new DG.Widget(grid.root)` (see the built-in "Contents" info pane from PowerGrid package). Tables with 5+ rows and multiple columns benefit from embedded grids (free sorting, filtering, resizing, export).
+
+| # | Panel | Display | Prototype Tech | Classification |
+|---|---|---|---|---|
+| C1 | StudySummaryCP | Correlations table | HTML table | **Info Pane Grid** — sortable, row click navigation, domain color |
+| C2 | StudySummaryCP | Contributing endpoints table | HTML table | **Info Pane Grid** — sortable, row click navigation, domain color |
+| C3 | DoseResponseCP | Correlations table | HTML table | **Info Pane Grid** — sortable, row click navigation, domain color |
+| C4 | HistopathologyCP | Dose detail table | HTML table | **Info Pane Grid** — sortable, severity heat coloring |
+| C5 | HistopathologyCP | Sex comparison display | Div key-value | **UI Widget** — 2 rows max, `ui.tableFromMap()` |
+| C6 | HistopathologyCP | Correlating evidence list | Div list | **UI Widget** — `ui.list()` |
+| C7 | NoaelDecisionCP | NOAEL summary table | HTML table | **UI Widget** — 3 rows (M/F/Combined), `ui.tableFromMap()` |
+| C8 | NoaelDecisionCP | Confidence factors | Div key-value | **UI Widget** — `ui.tableFromMap()` |
+| C9 | NoaelDecisionCP | Adversity rationale list | Div list | **UI Widget** — `ui.list()` |
+| C10 | ValidationCP | Fix script preview | HTML table | **Info Pane Grid** — sortable, red/green diff coloring |
+| C11 | ValidationCP | Review progress bar | Div + progress | **UI Widget** — `ui.div()` + clickable count buttons |
+| C12 | TargetOrgansCP | Contributing endpoints | Div list | **Info Pane Grid** — sortable, domain badges |
+
+### 4.3 Detailed Analysis by Classification
+
+#### 4.3.1 Configure Grid (T1, T3, T6, T10, T12, T14, T15, T16, T17) — 9 components
+
+These are the high-value portability wins. The prototype builds each of these as a TanStack React Table (or HTML table for T15) with manual column definitions, sort handlers, resize handlers, and color-coded cell renderers. **DG Grid provides all of this natively.**
+
+**What DG Grid gives for free (zero custom code):**
+- Column sorting (click header, asc/desc/reset, multi-column)
+- Column resizing (drag header borders)
+- Column reordering (drag to rearrange)
+- Row selection (click row, `df.currentRowIdx` updates, orange highlight)
+- Row hover highlighting (light blue)
+- Built-in search (`Ctrl+F` with expression support)
+- Column hide/show (right-click header menu)
+- Pinned rows/columns
+- Export to CSV/clipboard
+- Layout serialization (save/restore column widths, order, visibility)
+- Scrolling with virtual rows (no pagination needed for <5000 rows)
+
+**What needs `grid.onCellPrepare()` configuration:**
+
+| Color Rule | Affected Grids | DG Implementation |
+|---|---|---|
+| P-value: 4-tier color | T1, T3, T6, T10, T14, T15 | `if (gc.tableColumn.name === 'p_value') gc.style.backColor = DG.Color.fromHtml(getPValueColor(gc.cell.value))` |
+| Signal score: 5-tier color | T1, T3 | Same pattern with `getSignalScoreColor()` |
+| Effect size: bold threshold | T1, T3, T6, T10, T14, T15 | `if (gc.cell.value >= 0.8) gc.style.font = '700 11px monospace'` |
+| Domain badge | T1, T3, T6, T10, T14, T15, T17 | Custom cell renderer for colored chip (extend `DG.GridCellRenderer`) |
+| Severity badge | T3, T14, T17 | Custom cell renderer for red/amber/gray badge |
+| Direction symbol | T1, T15 | `gc.style.textColor = val === '↑' ? DG.Color.fromHtml('#DC2626') : DG.Color.fromHtml('#2563EB')` |
+| Neutral heat (grayscale) | T12 | `gc.style.backColor = DG.Color.fromHtml(getNeutralHeatColor(gc.cell.value))` |
+| Fix/review status badge | T17 | Custom cell renderer for multi-color status chip |
+
+**Shared custom cell renderers to build (reusable across grids):**
+
+1. **DomainBadgeCellRenderer** — colored chip (bg + text) from `getDomainBadgeColor()`. Used in T1, T3, T6, T10, T14, T15.
+2. **SeverityBadgeCellRenderer** — red/amber/gray badge. Used in T3, T14.
+3. **StatusBadgeCellRenderer** — multi-color chip for fix status / review status. Used in T17.
+4. **PValueCellRenderer** — monospace formatted number with background color. Used in T1, T3, T6, T10, T14, T15.
+
+These 4 renderers cover all 9 Configure Grid components.
+
+**Grid event wiring:**
+
+| Event | Purpose | DG API |
+|---|---|---|
+| Row click → context panel | Update right panel with selected row details | `df.onCurrentRowChanged.subscribe(() => { updateInfoPanel(df.currentRow) })` |
+| Row click → detail table | Master-detail (Validation: rule → records) | `masterDf.onCurrentRowChanged.subscribe(() => { detailDf.filter.init(matchingRows) })` |
+| Filter change → grid update | External dropdowns filter the grid | `df.filter.init((i) => matchesFilter(df, i, filters))` |
+
+**Dynamic column issue (T15 — FindingsTable):**
+The Adverse Effects FindingsTable has dynamic dose columns (1–4 depending on study). In DG, this means building the DataFrame with dose-specific columns and setting `grid.columns.setOrder()` after construction. Not a problem — DG Grid handles dynamic column counts natively.
+
+#### 4.3.2 Custom JsViewer (T2, T4, T5, T9, T11, T13) — 6 components
+
+These components have layouts that don't fit a flat tabular grid. They require `DG.JsViewer` subclasses or custom `ui.*` widgets.
+
+**T2/T9/T11/T13 — Organ/Specimen Rails:**
+Four rail components share the same pattern: a scrollable list of multi-line cards with rich content (evidence bars, metrics, domain chips, sparklines, tier dots). They look like a sidebar navigation, not a data grid.
+
+**DG Options:**
+1. **Custom JsViewer with HTML rendering** (Recommended) — Build a `DG.JsViewer` subclass that renders the rail as a scrollable `<div>` list. Subscribe to the main DataFrame's `onFilterChanged` to re-render. Click handlers set the current organ via `df.currentRow` or a separate filter. This preserves the prototype's rich visual design (evidence bars, sparklines, tier dots).
+2. **DG Grid with summary columns** — Use a DataFrame with one row per organ and Grid Summary Columns (sparklines, bar renderers). Loses the multi-line card layout but gains native sort/filter/export. Suitable if the design simplifies in production.
+3. **DG Tree Viewer** — Could represent the organ hierarchy but doesn't support the rich per-item content (bars, chips, metrics).
+
+**Recommendation: Option 1.** The organ rail is a navigation component, not a data table. Its purpose is to provide at-a-glance comparison of organs with rich visual cues. The multi-line layout with SVG sparklines, evidence bars, and domain chips has no DG Grid equivalent. Build once as a reusable `OrganRailViewer extends DG.JsViewer` and parameterize for the 4 views.
+
+**T4 — OrganGroupedHeatmap:**
+A hierarchical expandable matrix with organ group headers, endpoint rows, dose columns, and cell-level selection with hover-activated color.
+
+**DG Options:**
+1. **Custom JsViewer with canvas rendering** (Recommended) — Build a `DG.JsViewer` subclass that renders the matrix on canvas. Handle click events for cell selection, organ expansion, and hover effects. Subscribe to `df.onFilterChanged` for data updates. This is the most complex custom component.
+2. **DG Heatmap viewer** — `DG.VIEWER.HEAT_MAP` can display a color matrix, but it doesn't support hierarchical grouping (collapsible organ headers), cell-level selection with context panel updates, or inline sparklines. Insufficient.
+3. **DG Grid with grouped rows** — Grid supports row grouping, but not the organ-level summary rows with sparklines and domain chips.
+
+**Recommendation: Option 1.** This is the highest-complexity custom component in the entire app. The hierarchical grouping, cell-level selection, hover color activation, and inline sparklines require full canvas control. Budget significant development time. Consider building it incrementally: start with a flat heatmap, add grouping, then add sparklines.
+
+**T5 — EndpointRail (Dose-Response):**
+Similar to organ rails but with organ-grouped collapsible sections, bookmark toggles, and endpoint-level selection.
+
+**Recommendation:** Build as a `DG.JsViewer` subclass, sharing base class with the OrganRailViewer. The bookmark feature is unique to this view — implement as a column tag (`col.setTag('bookmarked', 'true')`) on the underlying DataFrame.
+
+#### 4.3.3 Native Grid (T18) — 1 component
+
+**T18 — DataTable (Domain Browser):**
+This is the purest DG Grid use case. It displays raw domain data (DM, TX, LB, BW, etc.) with dynamic columns from the API. The prototype builds column visibility toggles and resize handles manually — DG Grid provides all of this natively via the column header context menu.
+
+**DG Implementation:**
+```js
+const df = DG.DataFrame.fromObjects(domainData);
+const tv = grok.shell.addTableView(df);
+tv.name = `${studyId} — ${domainName}`;
+// Column visibility, sorting, resizing, search — all free.
+// No onCellPrepare needed (no color coding).
+```
+
+Zero custom code. This is why Datagrok exists.
+
+#### 4.3.4 Info Pane Grid vs. UI Widget (T7, T8, C1–C12) — 14 components
+
+DG Grid can be embedded directly in info panes via `DG.Viewer.grid(df)` → `new DG.Widget(grid.root)`. The built-in "Contents" info pane (PowerGrid package) is a working example. This means context panel tables with enough rows and interactivity should use embedded grids — gaining free sorting, filtering, column resizing, and export — rather than static `ui.table()`.
+
+**Decision criteria:** Use **Info Pane Grid** when the table has 5+ rows, multiple columns, and would benefit from sorting/filtering. Use **UI Widget** for key-value summaries, progress displays, and tiny 2-3 row tables.
+
+**Info Pane Grid (embedded `DG.Viewer.grid()`) — 6 components:**
+
+| # | Panel | Display | Rows | Why Grid | DG Implementation |
+|---|---|---|---|---|---|
+| C1 | StudySummaryCP | Correlations table | ≤10 | 4 columns, row click navigation, benefits from sort by signal score | `DG.Viewer.grid(correlationsDf)` + `onCellPrepare()` for domain color + `df.onCurrentRowChanged` for navigation |
+| C2 | StudySummaryCP | Contributing endpoints | ≤15 | Same structure as C1, row click navigation | Same pattern as C1 |
+| C3 | DoseResponseCP | Correlations table | ≤10 | Identical to C1 | Same pattern as C1 |
+| C4 | HistopathologyCP | Dose detail table | Variable | 5 columns including severity heat coloring, benefits from sort by dose | `DG.Viewer.grid(doseDetailDf)` + `onCellPrepare()` for severity heat |
+| C10 | ValidationCP | Fix script preview | Variable | 4 columns (Subject, Field, From→To), benefits from sort/filter by subject | `DG.Viewer.grid(previewDf)` + `onCellPrepare()` for red/green diff colors |
+| C12 | TargetOrgansCP | Contributing endpoints | ≤15 | Domain + endpoint + count, benefits from sort | `DG.Viewer.grid(endpointsDf)` + domain badge renderer |
+
+**Shared pattern for info pane grids:**
+```js
+function createInfoPaneGrid(data: any[], columns: string[], colorConfig?: GridColorConfig): DG.Widget {
+  const df = DG.DataFrame.fromObjects(data);
+  const grid = DG.Viewer.grid(df);
+  if (colorConfig) configureAnalysisGrid(grid, colorConfig);  // reuse shared helper
+  return new DG.Widget(grid.root);
+}
+```
+
+**UI Widget (`ui.tableFromMap()` / `ui.div()`) — 8 components:**
+
+| # | Panel | Display | Why Widget | DG Implementation |
+|---|---|---|---|---|
+| T7 | Dose-Response | Pairwise comparison | ~10 rows, static evidence display | `ui.table(rows, columns)` |
+| T8 | Dose-Response | Day-by-dose detail | ~50 rows but simple structure | `ui.table(rows, columns)` — or promote to Info Pane Grid if sorting desired |
+| C5 | HistopathologyCP | Sex comparison | 2 rows max (M/F) | `ui.tableFromMap()` |
+| C6 | HistopathologyCP | Correlating evidence | ≤10 items, list not table | `ui.list()` with severity badges |
+| C7 | NoaelDecisionCP | NOAEL summary | 3 rows (M/F/Combined) | `ui.tableFromMap()` with confidence coloring |
+| C8 | NoaelDecisionCP | Confidence factors | 2-3 key-value pairs | `ui.tableFromMap()` |
+| C9 | NoaelDecisionCP | Adversity rationale | Small list | `ui.list()` with badges |
+| C11 | ValidationCP | Review progress | Progress bar + clickable counts | `ui.div()` + `ui.element('progress')` + `ui.button()` |
+
+### 4.4 Migration Effort Estimate
+
+| Classification | Count | Effort per Item | Total Effort | Notes |
+|---|---|---|---|---|
+| Native Grid | 1 | Trivial | 1× | T18 — zero custom code |
+| Configure Grid | 9 | Low | 9× | Shared `onCellPrepare()` callbacks + 4 custom cell renderers |
+| Custom JsViewer | 6 | High | 18× | T4 (heatmap) is 3× alone; T2/T9/T11/T13 share a base class |
+| Info Pane Grid | 6 | Low | 4× | Embedded `DG.Viewer.grid()` in info panes; reuse shared cell renderers + `configureAnalysisGrid()` |
+| UI Widget | 8 | Trivial | 3× | Key-value summaries, progress bars, tiny lists |
+
+**Total relative effort: ~35 units.** The 6 Custom JsViewers account for 51% of effort. The 9+6 grid components (Configure + Info Pane) account for 37%. The remaining 12% is trivial UI widgets.
+
+### 4.5 Shared Infrastructure to Build
+
+These reusable components serve multiple views:
+
+| Component | Type | Used By | Priority |
+|---|---|---|---|
+| `OrganRailViewer` | JsViewer | T2, T9, T11, T13 | Phase 2 |
+| `OrganGroupedHeatmapViewer` | JsViewer | T4 | Phase 2 |
+| `EndpointRailViewer` | JsViewer | T5 | Phase 2 |
+| `DomainBadgeCellRenderer` | GridCellRenderer | T1, T3, T6, T10, T14, T15 | Phase 1 |
+| `PValueCellRenderer` | GridCellRenderer | T1, T3, T6, T10, T14, T15 | Phase 1 |
+| `SeverityBadgeCellRenderer` | GridCellRenderer | T3, T14 | Phase 1 |
+| `StatusBadgeCellRenderer` | GridCellRenderer | T17 | Phase 2 |
+| `configureAnalysisGrid()` | Helper function | All Configure Grid + Info Pane Grid components | Phase 1 |
+| `createInfoPaneGrid()` | Helper function | C1, C2, C3, C4, C10, C12 | Phase 1 |
+
+**`configureAnalysisGrid()`** — a shared function that takes a `DG.Grid` and column configuration, then wires up `onCellPrepare()` with the correct color rules per column. This prevents duplicating the same color-coding logic across 15 grids (9 center + 6 info pane).
+
+```js
+function configureAnalysisGrid(grid: DG.Grid, config: GridColorConfig): void {
+  grid.onCellPrepare(function(gc) {
+    const col = gc.tableColumn?.name;
+    if (!col || gc.isTableHeaderCell) return;
+    const rule = config[col];
+    if (rule?.backColor) gc.style.backColor = rule.backColor(gc.cell.value);
+    if (rule?.textColor) gc.style.textColor = rule.textColor(gc.cell.value);
+    if (rule?.font) gc.style.font = rule.font(gc.cell.value);
+    if (rule?.renderer) gc.customRenderer = rule.renderer;
+  });
+}
+```
+
+**`createInfoPaneGrid()`** — a helper that builds an embedded grid for info panes. Wraps `DG.Viewer.grid()` with optional color configuration and returns a `DG.Widget` ready for the property panel. Reuses `configureAnalysisGrid()` for color rules.
+
+```js
+function createInfoPaneGrid(
+  data: any[],
+  columns: string[],
+  options?: { colorConfig?: GridColorConfig; onRowClick?: (row: DG.Row) => void }
+): DG.Widget {
+  const df = DG.DataFrame.fromObjects(data);
+  const grid = DG.Viewer.grid(df, { showColumnLabels: false });
+  grid.columns.setOrder(columns);
+
+  if (options?.colorConfig)
+    configureAnalysisGrid(grid, options.colorConfig);
+
+  if (options?.onRowClick)
+    df.onCurrentRowChanged.subscribe(() => options.onRowClick!(df.currentRow));
+
+  return new DG.Widget(grid.root);
+}
+```
+
+### 4.6 Key Portability Decisions
+
+| Decision | Prototype | DG Recommendation | Impact |
+|---|---|---|---|
+| **Pagination vs. virtual scroll** | T15 uses server-side pagination (50/page). All others are client-side. | DG Grid virtualizes automatically — no pagination needed for <10K rows. Remove pagination logic for T15; load full dataset. | Simplifies code, improves UX (no page buttons) |
+| **Column resizing persistence** | Prototype uses `columnResizeMode: "onChange"` with local state. | DG Grid persists column widths in layout serialization. Free. | Remove manual resize state management |
+| **Filter UI location** | Prototype puts filter dropdowns above or inside each grid. | Use DG Filter Panel (`tv.filters()`) for standard categorical filters. Put custom filters in the toolbox accordion. | Consistent filter UX across views |
+| **Master-detail (Validation)** | Prototype uses two stacked TanStack tables with manual wiring. | Use `DG.GridGroup` or wire `masterDf.onCurrentRowChanged` → `detailDf.filter.init()`. Both DataFrames share a view. | Native DG pattern — see Pattern #2 |
+| **Organ/specimen rail width** | Prototype uses `useResizePanel(300, 180, 500)` for adjustable rail width. | Use `ui.splitH([rail, evidence], { ratios: [0.25, 0.75] })` with DG's built-in splitter. | Native DG splitter replaces custom hook |
+| **Sort indicators** | Prototype renders ▲▼ arrows in column headers manually. | DG Grid shows sort arrows natively. | Remove custom sort indicator rendering |
+| **Empty states** | Prototype renders "No signals match current filters" messages manually. | DG Grid shows empty state automatically. For custom messages, use `grid.onCellPrepare()` or overlay a `ui.div()`. | May need custom overlay for domain-specific empty messages |

@@ -6,6 +6,7 @@ import { useStudies } from "@/hooks/useStudies";
 import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useValidationResults } from "@/hooks/useValidationResults";
 import type { StudySummary } from "@/types";
 
 function formatStandard(raw: string | null): string {
@@ -269,6 +270,9 @@ export function AppLandingPage() {
   const { data: studies, isLoading } = useStudies();
   const navigate = useNavigate();
   const { selectedStudyId, selectStudy } = useSelection();
+  // Validation date for tooltip (PointCross only; multi-study: fetch per study)
+  const { data: valResults } = useValidationResults("PointCross");
+  const validatedAt = valResults?.summary?.validated_at;
 
   const allStudies: DisplayStudy[] = [
     ...(studies ?? []).map((s) => ({ ...s, validation: "Pass" })),
@@ -456,7 +460,15 @@ export function AppLandingPage() {
                           {study.status}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-center" title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}>
+                      <td
+                        className="px-3 py-2 text-center"
+                        title={
+                          (VAL_DISPLAY[study.validation]?.tooltip ?? study.validation) +
+                          (study.study_id === "PointCross" && validatedAt
+                            ? ` \u00b7 ${new Date(validatedAt).toLocaleDateString()}`
+                            : "")
+                        }
+                      >
                         {VAL_DISPLAY[study.validation]?.icon ?? <span className="text-xs text-muted-foreground">—</span>}
                       </td>
                     </tr>

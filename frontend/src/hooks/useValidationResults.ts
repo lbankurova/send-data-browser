@@ -31,6 +31,7 @@ export interface ValidationResultsData {
     info: number;
     domains_affected: string[];
     elapsed_seconds?: number;
+    validated_at?: string;
   };
 }
 
