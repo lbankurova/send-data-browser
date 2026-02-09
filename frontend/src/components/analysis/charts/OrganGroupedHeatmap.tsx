@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { organName } from "@/lib/signals-panel-engine";
@@ -244,6 +244,10 @@ export function OrganGroupedHeatmap({
     onNavigationConsumed();
   }, [pendingNavigation, expandedOrgans, onToggleOrgan, onNavigationConsumed]);
 
+  // Hover state for neutral-at-rest cells
+  const [hoveredCell, setHoveredCell] = useState<string | null>(null);
+  const clearHover = useCallback(() => setHoveredCell(null), []);
+
   if (organGroups.length === 0) {
     return (
       <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
@@ -358,23 +362,30 @@ export function OrganGroupedHeatmap({
                         const isCellSelected =
                           selection?.endpoint_label === ep.label &&
                           selection?.dose_level === dl.level;
+                        const cellKey = `${ep.label}-${dl.level}`;
+                        const isHovered = hoveredCell === cellKey;
 
                         return (
                           <div
                             key={dl.level}
-                            className="flex cursor-pointer items-center justify-center py-1 text-[10px] font-medium transition-opacity hover:opacity-80"
+                            className="flex cursor-pointer items-center justify-center py-1 text-[10px] font-medium tabular-nums transition-colors"
                             style={{
-                              backgroundColor:
-                                score > 0
-                                  ? getSignalScoreHeatmapColor(score)
-                                  : undefined,
-                              color: score >= 0.5 ? "#fff" : "#374151",
+                              backgroundColor: isHovered && score > 0
+                                ? getSignalScoreHeatmapColor(score)
+                                : score > 0
+                                  ? "rgba(0,0,0,0.04)"
+                                  : "rgba(0,0,0,0.02)",
+                              color: isHovered && score >= 0.5
+                                ? "#fff"
+                                : "#1F2937",
                               outline: isCellSelected
                                 ? "2px solid #3b82f6"
                                 : "1px solid rgba(0,0,0,0.05)",
                               outlineOffset: isCellSelected ? "-2px" : "0",
                             }}
                             title={`${ep.label} @ ${dl.label}: score=${score.toFixed(3)}${stars ? ` (${stars})` : ""}`}
+                            onMouseEnter={() => setHoveredCell(cellKey)}
+                            onMouseLeave={clearHover}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (!cell) return;
