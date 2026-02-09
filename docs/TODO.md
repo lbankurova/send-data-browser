@@ -30,11 +30,11 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 4 | Spec'd but not implemented |
-| Gap | 8 | 4 | Missing capability, no spec exists |
+| Gap | 9 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | **Incoming feature** | **0** | **9** | **All 9 done (FEAT-01–09)** |
-| **Total** | **28** | **31** | |
+| **Total** | **29** | **31** | |
 
 ## Remaining Open Items
 
@@ -345,6 +345,14 @@
   4. Icon and label choices (GAP-11) follow naturally from the redesigned workflows.
 - **Recommendation:** Treat as a design task, not a code task. Produce an incoming spec (`docs/incoming/hypotheses-tab-redesign.md`) before writing code. The current placeholder implementation is sufficient for the prototype — this is a production design concern.
 - **Status:** Open
+
+### GAP-13: Generated HTML report needs redesign
+- **System:** `views/study-summary.md`
+- **Files:** `frontend/src/lib/report-generator.ts`
+- **Issue:** The HTML report generator was built early in the project before the analysis views were fully designed. It needs a redesign to reflect the current view structure, user workflows, and assessment data (tox findings, causality assessments, NOAEL rationale). The report should tell the same story the toxicologist built during their review session.
+- **Blocked by:** User flow document (in progress — another agent is producing this). The report structure should follow the user's review workflow, not the view hierarchy.
+- **Recommendation:** Wait for the user flow document, then produce an incoming spec for the report redesign. Design task first, implementation second.
+- **Status:** Open (blocked on user flow document)
 
 ---
 
