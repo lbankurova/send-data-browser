@@ -15,9 +15,9 @@
 | Hardcoded | 7 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 4 | Spec'd but not implemented |
-| Gap | 7 | 4 | Missing capability, no spec exists |
+| Gap | 8 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
-| **Total** | **21** | **23** | |
+| **Total** | **22** | **23** | |
 
 ## Remaining Open Items
 
@@ -287,11 +287,28 @@
 - **Status:** RESOLVED — `_emit()`, `_emit_organ()`, and `_emit_study()` in `scores_and_rules.py` now log `logger.warning("Template error in rule %s: %s", rule["id"], e)` on KeyError/ValueError.
 
 ### GAP-11: Hypotheses tab intent icons are placeholder choices
+- **Superseded by GAP-12.** Icon choices are a symptom of the deeper design issue below. Resolve GAP-12 first; icon selection follows from the redesigned workflows.
+
+### GAP-12: Hypotheses tab — intents are workflows, not viewer types
 - **System:** `views/dose-response.md`
 - **Files:** `frontend/src/components/analysis/DoseResponseView.tsx:1333-1339`
 - **Issue:** The Hypotheses tab (Dose-Response view) uses five intent icons from lucide-react. Most are poor semantic fits for the underlying analytical concepts. Only Pareto (`ScatterChart`) and Model fit (`GitBranch`) are acceptable. Shape (`TrendingUp`), Correlation (`Link2`), and Outliers (`BoxSelect`) need replacement with icons that better convey their analytical meaning.
 - **Current mapping:** Shape → `TrendingUp`, Model fit → `GitBranch`, Pareto → `ScatterChart`, Correlation → `Link2`, Outliers → `BoxSelect`
 - **Recommendation:** Replace during Datagrok migration when the full Datagrok icon set is available. If staying on lucide-react, consider: Shape → a dose-response curve icon (custom SVG if needed), Correlation → a scatter/regression icon, Outliers → a box-plot or distribution icon. The icons appear at 14×14 in segmented pill buttons and must be legible at that size.
+- **Status:** Open
+
+### GAP-12: Hypotheses tab — intents are workflows, not viewer types
+- **System:** `views/dose-response.md`
+- **Files:** `frontend/src/components/analysis/DoseResponseView.tsx` (Hypotheses tab section)
+- **Issue:** The current Hypotheses tab maps each intent 1:1 to a single viewer placeholder (e.g., Shape → line chart, Pareto → scatter plot). This is wrong on two levels:
+  1. **Viewer type mismatch.** "Shape" should be an interactive curve viewer (with zoom/pan/overlay), not a static line chart. "Pareto" is intended as Pareto front analysis (multi-objective trade-off between effect size and statistical significance), not just "show me a scatter plot." "Outliers" implies box plots + jitter + IQR thresholds, not just a chart.
+  2. **Intents are analytical workflows, not viewer selections.** Each intent represents a multi-step analytical process (select parameters → configure analysis → view results → iterate) that happens to produce one or more visualizations. The current design treats them as viewer launchers from a menu. The controls, layout, and output for each workflow need to be designed from the user's analytical goal backward, not from a viewer type forward.
+- **What needs to happen:**
+  1. Revisit each intent against the toxicologist's actual analytical goals (what question are they answering? what decisions does the output inform?).
+  2. For each intent, define the workflow steps, required user inputs, and expected outputs.
+  3. Design controls and view layouts from scratch based on the workflows — not by picking a Datagrok viewer and wrapping it.
+  4. Icon and label choices (GAP-11) follow naturally from the redesigned workflows.
+- **Recommendation:** Treat as a design task, not a code task. Produce an incoming spec (`docs/incoming/hypotheses-tab-redesign.md`) before writing code. The current placeholder implementation is sufficient for the prototype — this is a production design concern.
 - **Status:** Open
 
 ---
