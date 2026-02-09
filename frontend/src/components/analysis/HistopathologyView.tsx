@@ -12,17 +12,7 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
-import { getDomainDotColor } from "@/lib/severity-colors";
-
-// Design system §1.7/§1.11 Rule 5: domain dot+outline badge
-function DomainDotBadge({ domain }: { domain: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getDomainDotColor(domain) }} />
-      {domain}
-    </span>
-  );
-}
+import { getDomainBadgeColor } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
@@ -303,7 +293,7 @@ function SpecimenRailItem({
         <span>&middot;</span>
         <span>{summary.adverseCount} adverse</span>
         {summary.domains.map((d) => (
-          <DomainDotBadge key={d} domain={d} />
+          <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
         ))}
       </div>
     </button>

@@ -16,7 +16,7 @@ import {
   formatPValue,
   formatEffectSize,
   getDirectionSymbol,
-  getDomainDotColor,
+  getDomainBadgeColor,
   titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -149,20 +149,7 @@ function computeOrganStats(rows: OrganEvidenceRow[]): OrganStats {
   return { minPValue: minP, maxEffectSize: maxD, doseConsistency: getDoseConsistency(rows) };
 }
 
-// ---------------------------------------------------------------------------
-// Shared: domain dot badge (§1.7 dot-only rendering, §1.11 Rule 5)
-// ---------------------------------------------------------------------------
-
-function DomainDotBadge({ domain }: { domain: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getDomainDotColor(domain) }} />
-      {domain}
-    </span>
-  );
-}
-
-// Tier classification for rail dots (§1.11 Rule 4)
+// Tier classification for rail dots
 function organTierDot(organ: TargetOrganRow): { color: string } | null {
   if (organ.target_organ_flag) return { color: "#DC2626" }; // Critical — red
   if (organ.evidence_score >= 0.3) return { color: "#D97706" }; // Notable — amber
@@ -270,7 +257,7 @@ function OrganListItem({
         <span>&middot;</span>
         <span>{organ.n_treatment_related} TR</span>
         {organ.domains.map((d) => (
-          <DomainDotBadge key={d} domain={d} />
+          <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
         ))}
       </div>
     </button>
@@ -379,10 +366,10 @@ function OrganSummaryHeader({
         </span>
       </div>
 
-      {/* Subtitle: domain dot badges + endpoint count */}
+      {/* Subtitle: domain chips + endpoint count */}
       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
         {domains.map((d) => (
-          <DomainDotBadge key={d} domain={d} />
+          <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
         ))}
         <span>&middot;</span>
         <span>{organ.n_endpoints} endpoints</span>
@@ -566,7 +553,7 @@ function OverviewTab({
             {domainBreakdown.map((d) => (
                 <tr key={d.domain} className="border-b border-border/30">
                   <td className="py-1.5 pr-3">
-                    <DomainDotBadge domain={d.domain} />
+                    <span className={cn("text-[9px] font-semibold", getDomainBadgeColor(d.domain).text)}>{d.domain}</span>
                   </td>
                   <td className="py-1.5 pr-3">{d.endpoints}</td>
                   <td className="py-1.5 pr-3">
@@ -714,7 +701,14 @@ function EvidenceTableTab({
       }),
       evidenceCol.accessor("domain", {
         header: "Domain",
-        cell: (info) => <DomainDotBadge domain={info.getValue()} />,
+        cell: (info) => {
+          const dc = getDomainBadgeColor(info.getValue());
+          return (
+            <span className={cn("text-[9px] font-semibold", dc.text)}>
+              {info.getValue()}
+            </span>
+          );
+        },
       }),
       evidenceCol.accessor("dose_level", {
         header: "Dose",
@@ -979,7 +973,7 @@ function HeatmapPlaceholder({ organName, endpointCount, domains }: { organName: 
         {domains.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {domains.map((d) => (
-              <DomainDotBadge key={d} domain={d} />
+              <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
             ))}
           </div>
         )}
@@ -1006,7 +1000,7 @@ function DomainContributionPlaceholder({ organName, domains }: { organName: stri
         {domains.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {domains.map((d) => (
-              <DomainDotBadge key={d} domain={d} />
+              <span key={d} className={cn("text-[9px] font-semibold", getDomainBadgeColor(d).text)}>{d}</span>
             ))}
           </div>
         )}
