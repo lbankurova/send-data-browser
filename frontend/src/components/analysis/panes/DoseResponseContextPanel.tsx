@@ -4,6 +4,7 @@ import { CollapsiblePane } from "./CollapsiblePane";
 import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
+import { titleCase } from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import type { RuleResult } from "@/types/analysis-views";
@@ -65,7 +66,7 @@ export function DoseResponseContextPanel({
         <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
         <div className="mt-1 flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
-            {selection.domain} &middot; {selection.organ_system?.replace(/_/g, " ")}
+            {selection.domain} &middot; {titleCase(selection.organ_system)}
             {selection.sex && <> &middot; {selection.sex}</>}
           </p>
           <span className="text-xs">
@@ -102,7 +103,7 @@ export function DoseResponseContextPanel({
                 if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: selection.organ_system } });
               }}
             >
-              View target organ: {selection.organ_system.replace(/_/g, " ")} &#x2192;
+              View target organ: {titleCase(selection.organ_system)} &#x2192;
             </a>
           )}
           <a

@@ -5,7 +5,7 @@ import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { cn } from "@/lib/utils";
-import { getDomainBadgeColor } from "@/lib/severity-colors";
+import { getDomainBadgeColor, titleCase } from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import type {
@@ -85,7 +85,7 @@ export function TargetOrgansContextPanel({
       {/* Header */}
       <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <h3 className="text-sm font-semibold">
-          {selection.organ_system.replace(/_/g, " ")}
+          {titleCase(selection.organ_system)}
         </h3>
         <div className="mt-1 flex items-center justify-between">
           <div className="flex items-center gap-2 text-[11px]">

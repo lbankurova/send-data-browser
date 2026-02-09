@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
-import type { SortingState } from "@tanstack/react-table";
+import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
@@ -503,6 +503,7 @@ function SeverityMatrixTab({
   setMinSeverity: (v: number) => void;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -624,8 +625,9 @@ function SeverityMatrixTab({
   const table = useReactTable({
     data: filteredData,
     columns,
-    state: { sorting },
+    state: { sorting, columnSizing },
     onSortingChange: setSorting,
+    onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableColumnResizing: true,
@@ -750,7 +752,7 @@ function SeverityMatrixTab({
             </h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
               <thead>
                 {table.getHeaderGroups().map((hg) => (
                   <tr key={hg.id} className="border-b bg-muted/50">
@@ -767,7 +769,7 @@ function SeverityMatrixTab({
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
                           className={cn(
-                            "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                            "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
                             header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
                           )}
                         />

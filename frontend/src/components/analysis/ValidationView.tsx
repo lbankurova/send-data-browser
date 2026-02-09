@@ -6,7 +6,7 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
-import type { SortingState } from "@tanstack/react-table";
+import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
@@ -184,6 +184,8 @@ interface Props {
 export function ValidationView({ studyId, onSelectionChange, viewSelection }: Props) {
   const [ruleSorting, setRuleSorting] = useState<SortingState>([]);
   const [recordSorting, setRecordSorting] = useState<SortingState>([]);
+  const [ruleColumnSizing, setRuleColumnSizing] = useState<ColumnSizingState>({});
+  const [recordColumnSizing, setRecordColumnSizing] = useState<ColumnSizingState>({});
   const [selectedRule, setSelectedRule] = useState<ValidationRuleResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string }>({ fixStatus: "", reviewStatus: "" });
@@ -309,8 +311,9 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const ruleTable = useReactTable({
     data: rules,
     columns: ruleColumns,
-    state: { sorting: ruleSorting },
+    state: { sorting: ruleSorting, columnSizing: ruleColumnSizing },
     onSortingChange: setRuleSorting,
+    onColumnSizingChange: setRuleColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableColumnResizing: true,
@@ -321,8 +324,9 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const recordTable = useReactTable({
     data: filteredRecords,
     columns: recordColumns,
-    state: { sorting: recordSorting },
+    state: { sorting: recordSorting, columnSizing: recordColumnSizing },
     onSortingChange: setRecordSorting,
+    onColumnSizingChange: setRecordColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableColumnResizing: true,
@@ -444,7 +448,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
         <>
           {/* Top table — Rule Summary (40%) */}
           <div className="flex-[4] overflow-auto border-b">
-            <table className="w-full text-sm">
+            <table className="text-sm" style={{ width: ruleTable.getCenterTotalSize(), tableLayout: "fixed" }}>
               <thead className="sticky top-0 z-10">
                 {ruleTable.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id} style={{ background: "#f8f8f8" }}>
@@ -463,7 +467,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
                           className={cn(
-                            "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                            "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
                             header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
                           )}
                         />
@@ -537,7 +541,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
           {/* Bottom table — Affected Records (60%) */}
           {selectedRule ? (
             <div className="flex-[6] overflow-auto">
-              <table className="w-full text-sm">
+              <table className="text-sm" style={{ width: recordTable.getCenterTotalSize(), tableLayout: "fixed" }}>
                 <thead className="sticky top-0 z-10">
                   {recordTable.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id} style={{ background: "#f8f8f8" }}>
@@ -556,7 +560,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                             onMouseDown={header.getResizeHandler()}
                             onTouchStart={header.getResizeHandler()}
                             className={cn(
-                              "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                              "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
                               header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
                             )}
                           />
