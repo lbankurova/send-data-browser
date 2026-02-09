@@ -186,8 +186,9 @@ Container: `flex border-b` — two charts side-by-side with a `PanelResizeHandle
 - Line: `type="monotone"`, dataKey="mean_{sex}", sex-colored stroke, `strokeWidth={2}`, `connectNulls`
 - Error bars: `<ErrorBar dataKey="sd_{sex}">`, width 4, strokeWidth 1, sex-colored stroke
 - Dots: significance-aware custom rendering:
-  - p < 0.05: r=6, fill `#dc2626` (red-600), stroke `#dc2626`, strokeWidth 2
-  - p >= 0.05 or null: r=4, sex-colored fill, sex-colored stroke, strokeWidth 1
+  - p < 0.05: r=5, sex-colored fill, dark stroke ring `#374151` (gray-700), strokeWidth 2
+  - p >= 0.05 or null: r=3, sex-colored fill, sex-colored stroke, strokeWidth 1
+  - Rationale: size + stroke differentiates significance while preserving sex color identity. Same principle as stroke-for-significance on categorical bars.
 
 #### Categorical Data: Bar Chart (Recharts `<BarChart>`)
 
@@ -704,7 +705,7 @@ All Hypotheses tab state is session-scoped:
 - **Direction arrows:** Documented neutral gray as intentional (categorical identity, not signal)
 - **Dose columns:** Removed colored badge specs from pairwise and metrics tables. Plain `font-mono` text — color encodes signal, not categorical identity. Added standing rule to CLAUDE.md.
 - **Domain column:** Updated to colored-text-only (matches project-wide rule)
-- **Chart dots:** Spec now matches code — r=6 red fill for significant, r=4 sex-colored for NS
+- **Chart dots:** Significant dots use size + dark stroke ring (`#374151`) to preserve sex color identity. Same approach as stroke-for-significance on categorical bars.
 - **Categorical bars:** Updated to document stroke-for-significance (preserves sex color identity in combined chart)
 - **P-value/effect columns:** Pairwise table reverted to interaction-driven `ev` class (neutral at rest, `#DC2626` on row hover) — follows evidence-whispers-in-text philosophy. Metrics table uses always-on p-value color (design decision pending user testing). Documented stub for user-togglable color coding via hamburger menu (Datagrok Pattern #23).
 - **Rail search:** Updated to inline flex pattern (consistent with all view rails)
