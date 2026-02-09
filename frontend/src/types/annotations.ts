@@ -1,8 +1,8 @@
 export interface ValidationIssue {
-  status: "Not Reviewed" | "In Progress" | "Resolved" | "Exception" | "Won't Fix";
+  status: "Not reviewed" | "In progress" | "Resolved" | "Exception" | "Won't fix";
   assignedTo: string;
-  resolution: "" | "Fixed in Source" | "Auto-Fixed" | "Documented Exception" | "Not Applicable";
-  disposition: "" | "Accept All" | "Needs Fix" | "Partial Fix" | "Not Applicable";
+  resolution: "" | "Fixed in source" | "Auto-fixed" | "Documented exception" | "Not applicable";
+  disposition: "" | "Accept all" | "Needs fix" | "Partial fix" | "Not applicable";
   comment: string;
   reviewedBy: string;
   reviewedDate: string;
