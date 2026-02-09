@@ -27,14 +27,14 @@
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
 | Bug | 0 | 5 | Incorrect behavior that should be fixed |
-| Hardcoded | 7 | 1 | Values that should be configurable or derived |
+| Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 4 | Spec'd but not implemented |
 | Gap | 8 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | **Incoming feature** | **0** | **9** | **All 9 done (FEAT-01–09)** |
-| **Total** | **27** | **31** | |
+| **Total** | **28** | **31** | |
 
 ## Remaining Open Items
 
@@ -175,6 +175,14 @@
 - **Fix:** Decide on consistent policy or document the domain-specific rationale.
 - **Recommendation:** Keep domain-specific rounding — it is scientifically correct. Body weights (BW) and food/water (FW) are measured to the nearest gram (whole number or 1 decimal), so 2 decimal places for summary stats is appropriate precision. Laboratory results (LB) and organ measurements (OM) use analytical instruments with higher precision (4+ significant figures). Rounding should reflect source data measurement precision. Just document the rationale in a code comment.
 - **Status:** RESOLVED — Rationale documented in `docs/systems/data-pipeline.md` Bonferroni section and per-domain findings sections.
+
+### HC-09: Review Progress pane counts depend on file-based annotations
+- **System:** `systems/navigation-and-layout.md`
+- **Files:** `frontend/src/components/panels/ContextPanel.tsx` (StudyInspector, Review progress section)
+- **Issue:** The Review Progress pane in StudyInspector counts reviewed items by calling `Object.keys()` on annotation objects from `useAnnotations()` (tox-findings, pathology-reviews, validation-records). These counts are only meaningful with the current file-based annotation backend. Once a real database replaces the JSON file storage (HC-04), the review counts, total denominators, and "last validated" timestamp should come from proper database queries — not client-side key counting.
+- **Fix:** When HC-04 (database for annotations) is implemented, add a dedicated API endpoint (e.g., `GET /api/studies/{id}/review-summary`) that returns review counts server-side. Update StudyInspector to use the new endpoint instead of fetching full annotation objects just to count keys.
+- **Recommendation:** Defer to production. Current approach works fine for single-user prototype. The client-side counting pattern doesn't scale to multi-user concurrent review workflows where counts must be consistent.
+- **Status:** Open (blocked on HC-04)
 
 ---
 
