@@ -335,11 +335,11 @@ Key-value pairs, `text-[11px] tabular-nums`:
 - Rows clickable — navigate to dose-response view with `{ state: { endpoint_label, organ_system } }`
 - Empty state: "No correlations in this organ system."
 
-#### Pane 4: Related views (default closed)
-Links to Target Organs (with organ_system), Dose-Response (with endpoint_label + organ_system), Histopathology (with organ_system), NOAEL Decision (with organ_system). Style: `text-[11px]`, color `#3a7bd5`, `hover:underline`.
-
-#### Pane 5: Tox Assessment (no pane header — direct `ToxFindingForm`)
+#### Pane 4: Tox Assessment (no pane header — direct `ToxFindingForm`)
 `ToxFindingForm` component with treatment-related dropdown, adversity dropdown, comment textarea, and SAVE button.
+
+#### Pane 5: Related views (default closed)
+Links to Target Organs (with organ_system), Dose-Response (with endpoint_label + organ_system), Histopathology (with organ_system), NOAEL Decision (with organ_system). Style: `text-[11px]`, color `text-[#3a7bd5]`, `hover:underline`.
 
 ---
 

@@ -144,7 +144,7 @@ interface FixScriptDef {
 - Severity filter pills (wrapped in `flex items-center gap-3 text-xs`):
   - Each pill is a `<button>` with `flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity`
   - Contents: colored dot (`inline-block h-2 w-2 rounded-full`) + count (`font-medium`) + label (`text-muted-foreground`)
-  - Colors: Error `#dc2626` (red), Warning `#d97706` (amber), Info `#2563eb` (blue)
+  - Colors: Error `bg-red-600`, Warning `bg-amber-600`, Info `bg-blue-600`
   - Counts from `validationData.summary.errors`, `.warnings`, `.info`
   - **Active state** (filter matches): `ring-1 ring-{color}-300 bg-{color}-50` (e.g., `ring-red-300 bg-red-50`)
   - **Inactive state** (another filter active): `opacity-40`
@@ -162,7 +162,7 @@ interface FixScriptDef {
 TanStack React Table, `text-sm`, client-side sorting. Column resizing enabled (`enableColumnResizing: true`, `columnResizeMode: "onChange"`). Table width set to `ruleTable.getCenterTotalSize()` with `tableLayout: "fixed"`.
 
 ### Header Row
-`sticky top-0 z-10`, `border-b bg-muted/50` (Tailwind class, consistent with other views)
+`sticky top-0 z-10`, `border-b`, `backgroundColor: "#f8f8f8"` (hardcoded per design guide §1.9 for consistency across views)
 
 Headers: `relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-xs font-medium text-muted-foreground hover:text-foreground`
 
@@ -176,7 +176,7 @@ Column resize handle: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize
 |--------|--------|------|----------------|
 | rule_id | Rule | 150px | `font-mono text-xs` |
 | severity | Severity | 90px | Colored badge: `inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold` |
-| domain | Domain | 70px | `font-mono text-xs` |
+| domain | Domain | 70px | `<DomainLabel>` component (colored text, `text-[9px] font-semibold`) |
 | category | Category | 140px | Plain text |
 | description | Description | 400px | Plain text |
 | records_affected | Records | 70px | `tabular-nums` |
@@ -222,13 +222,13 @@ Only shown when a rule is selected.
 Only shown when a rule is selected. TanStack React Table, `text-sm`. Column resizing enabled (same pattern as rules table).
 
 ### Header Row
-Same styling as rules table: `sticky top-0 z-10`, `border-b bg-muted/50`. Column resize handles present.
+Same styling as rules table: `sticky top-0 z-10`, `border-b`, `backgroundColor: "#f8f8f8"`. Column resize handles present.
 
 ### Columns
 
 | Column | Header | Size | Cell Rendering |
 |--------|--------|------|----------------|
-| issue_id | Issue ID | 170px | Clickable `font-mono text-xs` link (color `#3a7bd5`, `hover:underline`). Click navigates context panel to "issue" mode. |
+| issue_id | Issue ID | 170px | Clickable `font-mono text-xs text-blue-500 hover:underline`. Click navigates context panel to "issue" mode. |
 | subject_id | Subject | 110px | `font-mono text-xs` |
 | visit | Visit | 90px | Plain text |
 | actual_value | Key value | 200px | `text-xs` |

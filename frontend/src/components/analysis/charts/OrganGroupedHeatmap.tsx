@@ -268,7 +268,7 @@ export function OrganGroupedHeatmap({
         style={{ gridTemplateColumns: gridCols }}
       >
         <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground">
-          Organ / Endpoint
+          Organ / endpoint
         </div>
         {doseLabels.map((dl) => (
           <div

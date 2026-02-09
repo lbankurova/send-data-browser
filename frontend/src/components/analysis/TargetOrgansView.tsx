@@ -256,6 +256,8 @@ function OrganListItem({
         <span>{organ.n_significant} sig</span>
         <span>&middot;</span>
         <span>{organ.n_treatment_related} TR</span>
+        <span>&middot;</span>
+        <span>{organ.n_domains} domain{organ.n_domains !== 1 ? "s" : ""}</span>
         {organ.domains.map((d) => (
           <DomainLabel key={d} domain={d} />
         ))}
@@ -591,13 +593,13 @@ function OverviewTab({
                   {getDirectionSymbol(row.direction)}
                 </span>
                 <span className={cn(
-                  "shrink-0 font-mono",
+                  "shrink-0 font-mono group-hover/finding:text-[#DC2626]",
                   Math.abs(row.effect_size ?? 0) >= 0.8 ? "font-semibold" : "font-normal"
                 )}>
                   {formatEffectSize(row.effect_size)}
                 </span>
                 <span className={cn(
-                  "shrink-0 font-mono",
+                  "shrink-0 font-mono group-hover/finding:text-[#DC2626]",
                   row.p_value != null && row.p_value < 0.001 ? "font-semibold" :
                   row.p_value != null && row.p_value < 0.01 ? "font-medium" : "font-normal"
                 )}>
