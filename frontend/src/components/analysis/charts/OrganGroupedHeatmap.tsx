@@ -383,7 +383,7 @@ export function OrganGroupedHeatmap({
                                 : "1px solid rgba(0,0,0,0.05)",
                               outlineOffset: isCellSelected ? "-2px" : "0",
                             }}
-                            title={`${ep.label} @ ${dl.label}: score=${score.toFixed(3)}${stars ? ` (${stars})` : ""}`}
+                            title={cell ? `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}${stars ? ` (${stars})` : ""}${cell.direction && cell.direction !== "none" ? ` ${cell.direction === "up" ? "↑" : "↓"}` : ""}${cell.effect_size != null ? ` |d|=${Math.abs(cell.effect_size).toFixed(2)}` : ""}${cell.trend_p != null ? ` trend_p=${cell.trend_p < 0.0001 ? "<0.0001" : cell.trend_p.toFixed(3)}` : ""}${cell.dose_response_pattern ? ` (${cell.dose_response_pattern})` : ""}` : `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}`}
                             onMouseEnter={() => setHoveredCell(cellKey)}
                             onMouseLeave={clearHover}
                             onClick={(e) => {
@@ -405,7 +405,14 @@ export function OrganGroupedHeatmap({
                           >
                             {score > 0 ? (
                               <>
-                                <span>{score.toFixed(2)}</span>
+                                <span className={cn(
+                                  cell && Math.abs(cell.effect_size ?? 0) >= 0.8 ? "font-semibold" : cell && Math.abs(cell.effect_size ?? 0) >= 0.5 ? "font-medium" : ""
+                                )}>{score.toFixed(2)}</span>
+                                {cell?.direction && cell.direction !== "none" && (
+                                  <span className="ml-px text-[8px] opacity-60">
+                                    {cell.direction === "up" ? "↑" : "↓"}
+                                  </span>
+                                )}
                                 {stars && stars !== "ns" && (
                                   <span className="ml-0.5 text-[9px]">
                                     {stars}
