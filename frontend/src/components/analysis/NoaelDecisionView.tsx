@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -11,6 +11,7 @@ import {
 import type { SortingState } from "@tanstack/react-table";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
+import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
 import {
   getSeverityBadgeClasses,
@@ -23,10 +24,14 @@ import {
   getDomainBadgeColor,
   getDoseGroupColor,
 } from "@/lib/severity-colors";
+import { InsightsList } from "./panes/InsightsList";
 import type {
   NoaelSummaryRow,
   AdverseEffectSummaryRow,
+  RuleResult,
 } from "@/types/analysis-views";
+
+// ─── Public types ──────────────────────────────────────────
 
 interface NoaelSelection {
   endpoint_label: string;
@@ -34,428 +39,164 @@ interface NoaelSelection {
   sex: string;
 }
 
-interface Filters {
-  severity: string | null;
-  organ_system: string | null;
-  sex: string | null;
-  treatment_related: string | null;
+// ─── Derived data types ────────────────────────────────────
+
+interface OrganSummary {
+  organ_system: string;
+  adverseCount: number;
+  warningCount: number;
+  totalEndpoints: number;
+  trCount: number;
+  maxEffectSize: number;
+  minPValue: number | null;
+  domains: string[];
 }
 
-const col = createColumnHelper<AdverseEffectSummaryRow>();
+interface EndpointSummary {
+  endpoint_label: string;
+  domain: string;
+  worstSeverity: "adverse" | "warning" | "normal";
+  treatmentRelated: boolean;
+  maxEffectSize: number | null;
+  minPValue: number | null;
+  direction: "up" | "down" | "none" | null;
+  sexes: string[];
+  pattern: string;
+}
 
-export function NoaelDecisionView({
-  onSelectionChange,
-}: {
-  onSelectionChange?: (sel: NoaelSelection | null) => void;
-}) {
-  const { studyId } = useParams<{ studyId: string }>();
-  const location = useLocation();
-  const { data: noaelData, isLoading: noaelLoading, error: noaelError } = useNoaelSummary(studyId);
-  const { data: aeData, isLoading: aeLoading, error: aeError } = useAdverseEffectSummary(studyId);
+// ─── Helpers ───────────────────────────────────────────────
 
-  const [filters, setFilters] = useState<Filters>({
-    severity: null,
-    organ_system: null,
-    sex: null,
-    treatment_related: null,
-  });
-  const [selection, setSelection] = useState<NoaelSelection | null>(null);
-  const [sorting, setSorting] = useState<SortingState>([]);
+function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSummary[] {
+  const map = new Map<string, {
+    endpoints: Map<string, { severity: "adverse" | "warning" | "normal"; tr: boolean }>;
+    maxEffect: number;
+    minP: number | null;
+    domains: Set<string>;
+  }>();
 
-  // Apply cross-view state from navigate()
-  useEffect(() => {
-    const state = location.state as { organ_system?: string } | null;
-    if (state?.organ_system && aeData) {
-      setFilters((f) => ({ ...f, organ_system: state.organ_system ?? null }));
-      window.history.replaceState({}, "");
+  for (const row of data) {
+    let entry = map.get(row.organ_system);
+    if (!entry) {
+      entry = { endpoints: new Map(), maxEffect: 0, minP: null, domains: new Set() };
+      map.set(row.organ_system, entry);
     }
-  }, [location.state, aeData]);
+    entry.domains.add(row.domain);
+    if (row.effect_size != null && Math.abs(row.effect_size) > entry.maxEffect) {
+      entry.maxEffect = Math.abs(row.effect_size);
+    }
+    if (row.p_value != null && (entry.minP === null || row.p_value < entry.minP)) {
+      entry.minP = row.p_value;
+    }
 
-  // Unique filter values
-  const organSystems = useMemo(() => {
-    if (!aeData) return [];
-    return [...new Set(aeData.map((r) => r.organ_system))].sort();
-  }, [aeData]);
+    const epEntry = entry.endpoints.get(row.endpoint_label);
+    if (!epEntry) {
+      entry.endpoints.set(row.endpoint_label, { severity: row.severity, tr: row.treatment_related });
+    } else {
+      // Escalate severity
+      if (row.severity === "adverse") epEntry.severity = "adverse";
+      else if (row.severity === "warning" && epEntry.severity !== "adverse") epEntry.severity = "warning";
+      if (row.treatment_related) epEntry.tr = true;
+    }
+  }
 
-  // Filtered data
-  const filteredData = useMemo(() => {
-    if (!aeData) return [];
-    return aeData.filter((row) => {
-      if (filters.severity && row.severity !== filters.severity) return false;
-      if (filters.organ_system && row.organ_system !== filters.organ_system) return false;
-      if (filters.sex && row.sex !== filters.sex) return false;
-      if (filters.treatment_related !== null) {
-        const wantTR = filters.treatment_related === "yes";
-        if (row.treatment_related !== wantTR) return false;
-      }
-      return true;
+  const summaries: OrganSummary[] = [];
+  for (const [organ, entry] of map) {
+    let adverseCount = 0;
+    let warningCount = 0;
+    let trCount = 0;
+    for (const ep of entry.endpoints.values()) {
+      if (ep.severity === "adverse") adverseCount++;
+      else if (ep.severity === "warning") warningCount++;
+      if (ep.tr) trCount++;
+    }
+    summaries.push({
+      organ_system: organ,
+      adverseCount,
+      warningCount,
+      totalEndpoints: entry.endpoints.size,
+      trCount,
+      maxEffectSize: entry.maxEffect,
+      minPValue: entry.minP,
+      domains: [...entry.domains].sort(),
     });
-  }, [aeData, filters]);
-
-  // Adversity matrix data
-  const matrixData = useMemo(() => {
-    if (!aeData) return { endpoints: [], doseLevels: [], cells: new Map<string, AdverseEffectSummaryRow>() };
-    const doseLevels = [...new Set(aeData.map((r) => r.dose_level))].sort((a, b) => a - b);
-    // Get unique endpoints, sorted by first adverse dose
-    const endpointFirstDose = new Map<string, number>();
-    for (const row of aeData) {
-      if (row.severity === "adverse" && row.treatment_related) {
-        const key = row.endpoint_label;
-        const existing = endpointFirstDose.get(key);
-        if (existing === undefined || row.dose_level < existing) {
-          endpointFirstDose.set(key, row.dose_level);
-        }
-      }
-    }
-    // Only show endpoints that have at least one adverse + treatment_related
-    const endpoints = [...endpointFirstDose.entries()]
-      .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
-      .map(([ep]) => ep);
-
-    const cells = new Map<string, AdverseEffectSummaryRow>();
-    for (const row of aeData) {
-      if (endpoints.includes(row.endpoint_label)) {
-        const key = `${row.endpoint_label}|${row.dose_level}`;
-        // Keep worst severity per endpoint×dose (across sexes)
-        const existing = cells.get(key);
-        if (!existing || (row.severity === "adverse" && existing.severity !== "adverse")) {
-          cells.set(key, row);
-        }
-      }
-    }
-    return { endpoints, doseLevels, cells };
-  }, [aeData]);
-
-  // Table columns
-  const columns = useMemo(
-    () => [
-      col.accessor("endpoint_label", {
-        header: "Endpoint",
-        cell: (info) => (
-          <span className="truncate" title={info.getValue()}>
-            {info.getValue().length > 30 ? info.getValue().slice(0, 30) + "\u2026" : info.getValue()}
-          </span>
-        ),
-      }),
-      col.accessor("endpoint_type", {
-        header: "Type",
-        cell: (info) => (
-          <span className="text-muted-foreground">{info.getValue().replace(/_/g, " ")}</span>
-        ),
-      }),
-      col.accessor("organ_system", {
-        header: "Organ",
-        cell: (info) => info.getValue().replace(/_/g, " "),
-      }),
-      col.accessor("dose_level", {
-        header: "Dose",
-        cell: (info) => (
-          <span
-            className="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
-            style={{ backgroundColor: getDoseGroupColor(info.getValue()) }}
-          >
-            {info.row.original.dose_label.split(",")[0]}
-          </span>
-        ),
-      }),
-      col.accessor("sex", { header: "Sex" }),
-      col.accessor("p_value", {
-        header: "P-value",
-        cell: (info) => (
-          <span className={cn("font-mono", getPValueColor(info.getValue()))}>
-            {formatPValue(info.getValue())}
-          </span>
-        ),
-      }),
-      col.accessor("effect_size", {
-        header: "Effect",
-        cell: (info) => (
-          <span className={cn("font-mono", getEffectSizeColor(info.getValue()))}>
-            {formatEffectSize(info.getValue())}
-          </span>
-        ),
-      }),
-      col.accessor("direction", {
-        header: "Dir",
-        cell: (info) => (
-          <span className={cn("text-sm", getDirectionColor(info.getValue()))}>
-            {getDirectionSymbol(info.getValue())}
-          </span>
-        ),
-      }),
-      col.accessor("severity", {
-        header: "Severity",
-        cell: (info) => (
-          <span
-            className={cn(
-              "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
-              getSeverityBadgeClasses(info.getValue())
-            )}
-          >
-            {info.getValue()}
-          </span>
-        ),
-      }),
-      col.accessor("treatment_related", {
-        header: "TR",
-        cell: (info) => (
-          <span className={info.getValue() ? "font-medium text-red-600" : "text-muted-foreground"}>
-            {info.getValue() ? "Yes" : "No"}
-          </span>
-        ),
-      }),
-      col.accessor("dose_response_pattern", {
-        header: "Pattern",
-        cell: (info) => (
-          <span className="text-muted-foreground">{info.getValue().replace(/_/g, " ")}</span>
-        ),
-      }),
-    ],
-    []
-  );
-
-  const table = useReactTable({
-    data: filteredData,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  });
-
-  const handleRowClick = (row: AdverseEffectSummaryRow) => {
-    const sel: NoaelSelection = {
-      endpoint_label: row.endpoint_label,
-      dose_level: row.dose_level,
-      sex: row.sex,
-    };
-    const isSame =
-      selection?.endpoint_label === sel.endpoint_label &&
-      selection?.dose_level === sel.dose_level &&
-      selection?.sex === sel.sex;
-    const next = isSame ? null : sel;
-    setSelection(next);
-    onSelectionChange?.(next);
-  };
-
-  const isLoading = noaelLoading || aeLoading;
-  const error = noaelError || aeError;
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-center">
-        <div className="mb-4 rounded-lg bg-red-50 p-6">
-          <h1 className="mb-2 text-xl font-semibold text-red-700">Analysis data not available</h1>
-          <p className="text-sm text-red-600">Run the generator to produce analysis data:</p>
-          <code className="mt-2 block rounded bg-red-100 px-3 py-1.5 text-xs text-red-800">
-            cd backend && python -m generator.generate {studyId}
-          </code>
-        </div>
-      </div>
-    );
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Loading NOAEL data...</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* NOAEL Banner */}
-      {noaelData && <NoaelBanner data={noaelData} />}
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2">
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.severity ?? ""}
-          onChange={(e) => setFilters((f) => ({ ...f, severity: e.target.value || null }))}
-        >
-          <option value="">All severities</option>
-          <option value="adverse">Adverse</option>
-          <option value="warning">Warning</option>
-          <option value="normal">Normal</option>
-        </select>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.organ_system ?? ""}
-          onChange={(e) => setFilters((f) => ({ ...f, organ_system: e.target.value || null }))}
-        >
-          <option value="">All organs</option>
-          {organSystems.map((os) => (
-            <option key={os} value={os}>{os.replace(/_/g, " ")}</option>
-          ))}
-        </select>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.sex ?? ""}
-          onChange={(e) => setFilters((f) => ({ ...f, sex: e.target.value || null }))}
-        >
-          <option value="">All sexes</option>
-          <option value="M">Male</option>
-          <option value="F">Female</option>
-        </select>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
-          value={filters.treatment_related ?? ""}
-          onChange={(e) => setFilters((f) => ({ ...f, treatment_related: e.target.value || null }))}
-        >
-          <option value="">TR: Any</option>
-          <option value="yes">Treatment-related</option>
-          <option value="no">Not treatment-related</option>
-        </select>
-        <span className="ml-auto text-[10px] text-muted-foreground">
-          {filteredData.length} of {aeData?.length ?? 0} findings
-        </span>
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        {/* Adversity Matrix */}
-        {matrixData.endpoints.length > 0 && (
-          <div className="border-b p-4">
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Adversity matrix ({matrixData.endpoints.length} endpoints)
-            </h2>
-            <div className="overflow-x-auto">
-              <div className="inline-block">
-                {/* Header row */}
-                <div className="flex">
-                  <div className="w-48 shrink-0" />
-                  {matrixData.doseLevels.map((dl) => (
-                    <div
-                      key={dl}
-                      className="w-16 shrink-0 text-center text-[10px] font-medium text-muted-foreground"
-                    >
-                      Dose {dl}
-                    </div>
-                  ))}
-                </div>
-                {/* Data rows */}
-                {matrixData.endpoints.slice(0, 30).map((ep) => (
-                  <div key={ep} className="flex border-t">
-                    <div
-                      className="w-48 shrink-0 truncate py-0.5 pr-2 text-[10px]"
-                      title={ep}
-                    >
-                      {ep.length > 35 ? ep.slice(0, 35) + "\u2026" : ep}
-                    </div>
-                    {matrixData.doseLevels.map((dl) => {
-                      const cell = matrixData.cells.get(`${ep}|${dl}`);
-                      let bg = "#e5e7eb"; // gray
-                      if (cell) {
-                        if (cell.severity === "adverse" && cell.treatment_related) {
-                          bg = "#ef4444"; // red
-                        } else if (cell.severity === "warning") {
-                          bg = "#fbbf24"; // amber
-                        } else {
-                          bg = "#4ade80"; // green
-                        }
-                      }
-                      return (
-                        <div
-                          key={dl}
-                          className="flex h-5 w-16 shrink-0 items-center justify-center"
-                        >
-                          <div
-                            className="h-4 w-12 rounded-sm"
-                            style={{ backgroundColor: bg }}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-                {matrixData.endpoints.length > 30 && (
-                  <div className="py-1 text-[10px] text-muted-foreground">
-                    +{matrixData.endpoints.length - 30} more endpoints...
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: "#ef4444" }} />
-                Adverse
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: "#fbbf24" }} />
-                Warning
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: "#4ade80" }} />
-                Normal
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: "#e5e7eb" }} />
-                N/A
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Grid */}
-        <div>
-          <div className="flex items-center justify-between px-4 pt-3 pb-1">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Adverse effect summary ({filteredData.length} rows)
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                {table.getHeaderGroups().map((hg) => (
-                  <tr key={hg.id} className="border-b bg-muted/50">
-                    {hg.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.map((row) => {
-                  const orig = row.original;
-                  const isSelected =
-                    selection?.endpoint_label === orig.endpoint_label &&
-                    selection?.dose_level === orig.dose_level &&
-                    selection?.sex === orig.sex;
-                  return (
-                    <tr
-                      key={row.id}
-                      className={cn(
-                        "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                        isSelected && "bg-accent"
-                      )}
-                      onClick={() => handleRowClick(orig)}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-2 py-1">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+  return summaries.sort((a, b) =>
+    b.adverseCount - a.adverseCount ||
+    b.trCount - a.trCount ||
+    b.maxEffectSize - a.maxEffectSize
   );
 }
+
+function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): EndpointSummary[] {
+  const map = new Map<string, {
+    domain: string;
+    worstSeverity: "adverse" | "warning" | "normal";
+    tr: boolean;
+    maxEffect: number | null;
+    minP: number | null;
+    direction: "up" | "down" | "none" | null;
+    sexes: Set<string>;
+    pattern: string;
+  }>();
+
+  for (const row of rows) {
+    let entry = map.get(row.endpoint_label);
+    if (!entry) {
+      entry = {
+        domain: row.domain,
+        worstSeverity: row.severity,
+        tr: row.treatment_related,
+        maxEffect: null,
+        minP: null,
+        direction: null,
+        sexes: new Set(),
+        pattern: row.dose_response_pattern,
+      };
+      map.set(row.endpoint_label, entry);
+    }
+    entry.sexes.add(row.sex);
+    if (row.severity === "adverse") entry.worstSeverity = "adverse";
+    else if (row.severity === "warning" && entry.worstSeverity !== "adverse") entry.worstSeverity = "warning";
+    if (row.treatment_related) entry.tr = true;
+    if (row.effect_size != null) {
+      const abs = Math.abs(row.effect_size);
+      if (entry.maxEffect === null || abs > entry.maxEffect) entry.maxEffect = abs;
+    }
+    if (row.p_value != null && (entry.minP === null || row.p_value < entry.minP)) entry.minP = row.p_value;
+    if (row.direction === "up" || row.direction === "down") entry.direction = row.direction;
+    // Prefer non-flat pattern
+    if (row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
+      entry.pattern = row.dose_response_pattern;
+    }
+  }
+
+  const summaries: EndpointSummary[] = [];
+  for (const [label, entry] of map) {
+    summaries.push({
+      endpoint_label: label,
+      domain: entry.domain,
+      worstSeverity: entry.worstSeverity,
+      treatmentRelated: entry.tr,
+      maxEffectSize: entry.maxEffect,
+      minPValue: entry.minP,
+      direction: entry.direction,
+      sexes: [...entry.sexes].sort(),
+      pattern: entry.pattern,
+    });
+  }
+
+  // Sort: adverse first, then TR, then by max effect
+  return summaries.sort((a, b) => {
+    const sevOrder = { adverse: 0, warning: 1, normal: 2 };
+    const sevDiff = sevOrder[a.worstSeverity] - sevOrder[b.worstSeverity];
+    if (sevDiff !== 0) return sevDiff;
+    if (a.treatmentRelated !== b.treatmentRelated) return a.treatmentRelated ? -1 : 1;
+    return (b.maxEffectSize ?? 0) - (a.maxEffectSize ?? 0);
+  });
+}
+
+// ─── NOAEL Banner (compact, persistent) ────────────────────
 
 function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
   const combined = data.find((r) => r.sex === "Combined");
@@ -463,7 +204,7 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
   const females = data.find((r) => r.sex === "F");
 
   return (
-    <div className="border-b bg-muted/20 px-4 py-3">
+    <div className="shrink-0 border-b bg-muted/20 px-4 py-3">
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         NOAEL determination
       </h2>
@@ -541,6 +282,912 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ─── OrganRailItem ─────────────────────────────────────────
+
+function OrganRailItem({
+  summary,
+  isSelected,
+  maxAdverse,
+  onClick,
+}: {
+  summary: OrganSummary;
+  isSelected: boolean;
+  maxAdverse: number;
+  onClick: () => void;
+}) {
+  const barWidth = maxAdverse > 0
+    ? Math.max(4, (summary.adverseCount / maxAdverse) * 100)
+    : 0;
+
+  return (
+    <button
+      className={cn(
+        "w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors",
+        summary.adverseCount > 0
+          ? "border-l-2 border-l-[#DC2626]"
+          : "border-l-2 border-l-transparent",
+        isSelected
+          ? "bg-blue-50/60 dark:bg-blue-950/20"
+          : "hover:bg-accent/30"
+      )}
+      onClick={onClick}
+    >
+      {/* Row 1: organ name + adverse count */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold">
+          {summary.organ_system.replace(/_/g, " ")}
+        </span>
+        {summary.adverseCount > 0 && (
+          <span className="text-[9px] font-semibold uppercase text-[#DC2626]">
+            {summary.adverseCount} ADV
+          </span>
+        )}
+      </div>
+
+      {/* Row 2: adverse bar */}
+      <div className="mt-1.5 flex items-center gap-2">
+        <div className="h-1.5 flex-1 rounded-full bg-muted/50">
+          <div
+            className="h-full rounded-full bg-[#DC2626]/60 transition-all"
+            style={{ width: `${barWidth}%` }}
+          />
+        </div>
+        <span className="shrink-0 text-[10px] text-muted-foreground">
+          {summary.adverseCount}/{summary.totalEndpoints}
+        </span>
+      </div>
+
+      {/* Row 3: stats + domain chips */}
+      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+        <span>{summary.totalEndpoints} endpoints</span>
+        <span>&middot;</span>
+        <span>{summary.trCount} TR</span>
+        {summary.domains.map((d) => {
+          const dc = getDomainBadgeColor(d);
+          return (
+            <span key={d} className="inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70">
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
+              {d}
+            </span>
+          );
+        })}
+      </div>
+    </button>
+  );
+}
+
+// ─── OrganRail ─────────────────────────────────────────────
+
+function OrganRail({
+  organs,
+  selectedOrgan,
+  maxAdverse,
+  onOrganClick,
+}: {
+  organs: OrganSummary[];
+  selectedOrgan: string | null;
+  maxAdverse: number;
+  onOrganClick: (organ: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!search) return organs;
+    const q = search.toLowerCase();
+    return organs.filter((o) => o.organ_system.replace(/_/g, " ").toLowerCase().includes(q));
+  }, [organs, search]);
+
+  return (
+    <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r">
+      <div className="border-b px-3 py-2">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Organ systems ({organs.length})
+        </span>
+        <input
+          type="text"
+          placeholder="Search organs\u2026"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {filtered.map((o) => (
+          <OrganRailItem
+            key={o.organ_system}
+            summary={o}
+            isSelected={selectedOrgan === o.organ_system}
+            maxAdverse={maxAdverse}
+            onClick={() => onOrganClick(o.organ_system)}
+          />
+        ))}
+        {filtered.length === 0 && (
+          <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
+            No matches for &ldquo;{search}&rdquo;
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── OrganHeader ───────────────────────────────────────────
+
+function OrganHeader({ summary }: { summary: OrganSummary }) {
+  return (
+    <div className="shrink-0 border-b px-4 py-3">
+      <div className="flex items-center gap-2">
+        <h3 className="text-sm font-semibold">
+          {summary.organ_system.replace(/_/g, " ")}
+        </h3>
+        {summary.adverseCount > 0 && (
+          <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
+            {summary.adverseCount} ADVERSE
+          </span>
+        )}
+      </div>
+
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+        {summary.totalEndpoints} {summary.totalEndpoints === 1 ? "endpoint" : "endpoints"} across{" "}
+        {summary.domains.length === 1 ? "1 domain" : `${summary.domains.length} domains`},{" "}
+        {summary.adverseCount} adverse, {summary.trCount} treatment-related.
+      </p>
+
+      <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
+        <div>
+          <span className="text-muted-foreground">Max |d|: </span>
+          <span className={cn(
+            "font-mono font-medium",
+            summary.maxEffectSize >= 0.8 ? "text-[#DC2626]" : ""
+          )}>
+            {summary.maxEffectSize.toFixed(2)}
+          </span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Min p: </span>
+          <span className={cn(
+            "font-mono font-medium",
+            summary.minPValue != null && summary.minPValue < 0.01 ? "text-[#DC2626]" : ""
+          )}>
+            {formatPValue(summary.minPValue)}
+          </span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Endpoints: </span>
+          <span className="font-medium">{summary.totalEndpoints}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── OverviewTab ───────────────────────────────────────────
+
+function OverviewTab({
+  organData,
+  endpointSummaries,
+  ruleResults,
+  organ,
+  studyId,
+  selection,
+  onEndpointClick,
+}: {
+  organData: AdverseEffectSummaryRow[];
+  endpointSummaries: EndpointSummary[];
+  ruleResults: RuleResult[];
+  organ: string;
+  studyId: string | undefined;
+  selection: NoaelSelection | null;
+  onEndpointClick: (endpoint: string) => void;
+}) {
+  const navigate = useNavigate();
+
+  // Filter rule results to this organ
+  const organRules = useMemo(() => {
+    if (!ruleResults.length) return [];
+    const organLower = organ.toLowerCase();
+    const organKey = organLower.replace(/[, ]+/g, "_");
+    return ruleResults.filter(
+      (r) =>
+        r.organ_system.toLowerCase() === organLower ||
+        r.output_text.toLowerCase().includes(organLower) ||
+        r.context_key.toLowerCase().includes(organKey)
+    );
+  }, [ruleResults, organ]);
+
+  return (
+    <div className="flex-1 overflow-y-auto px-4 py-3">
+      {/* Endpoint summary */}
+      <div className="mb-4">
+        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Endpoint summary
+        </h4>
+        {endpointSummaries.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">No endpoints for this organ.</p>
+        ) : (
+          <div className="space-y-1">
+            {endpointSummaries.map((ep) => {
+              const isSelected = selection?.endpoint_label === ep.endpoint_label;
+              return (
+                <button
+                  key={ep.endpoint_label}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-accent/30",
+                    isSelected && "bg-accent ring-1 ring-primary"
+                  )}
+                  onClick={() => onEndpointClick(ep.endpoint_label)}
+                >
+                  <span className="min-w-0 flex-1 truncate font-medium" title={ep.endpoint_label}>
+                    {ep.endpoint_label.length > 35 ? ep.endpoint_label.slice(0, 35) + "\u2026" : ep.endpoint_label}
+                  </span>
+                  {ep.direction && (
+                    <span className={cn("shrink-0 text-sm", getDirectionColor(ep.direction))}>
+                      {getDirectionSymbol(ep.direction)}
+                    </span>
+                  )}
+                  {ep.maxEffectSize != null && (
+                    <span className={cn(
+                      "shrink-0 font-mono text-[10px]",
+                      getEffectSizeColor(ep.maxEffectSize)
+                    )}>
+                      {ep.maxEffectSize.toFixed(2)}
+                    </span>
+                  )}
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-medium",
+                      getSeverityBadgeClasses(ep.worstSeverity)
+                    )}
+                  >
+                    {ep.worstSeverity}
+                  </span>
+                  {ep.treatmentRelated && (
+                    <span className="shrink-0 text-[9px] font-medium text-red-600">TR</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Insights */}
+      {organRules.length > 0 && (
+        <div className="mb-4">
+          <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Insights
+          </h4>
+          <InsightsList rules={organRules} />
+        </div>
+      )}
+
+      {/* Cross-view links */}
+      <div>
+        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Related views
+        </h4>
+        <div className="space-y-1 text-[11px]">
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: organ } });
+            }}
+          >
+            View in Target Organs &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+            }}
+          >
+            View dose-response &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block hover:underline"
+            style={{ color: "#3a7bd5" }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: organ } });
+            }}
+          >
+            View histopathology &#x2192;
+          </a>
+        </div>
+      </div>
+
+      {organData.length === 0 && endpointSummaries.length === 0 && (
+        <div className="py-8 text-center text-xs text-muted-foreground">
+          No data for this organ.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── AdversityMatrixTab ────────────────────────────────────
+
+const col = createColumnHelper<AdverseEffectSummaryRow>();
+
+function AdversityMatrixTab({
+  organData,
+  allAeData,
+  selection,
+  onRowClick,
+  sexFilter,
+  setSexFilter,
+  trFilter,
+  setTrFilter,
+}: {
+  organData: AdverseEffectSummaryRow[];
+  allAeData: AdverseEffectSummaryRow[];
+  selection: NoaelSelection | null;
+  onRowClick: (row: AdverseEffectSummaryRow) => void;
+  sexFilter: string | null;
+  setSexFilter: (v: string | null) => void;
+  trFilter: string | null;
+  setTrFilter: (v: string | null) => void;
+}) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  // Filtered data
+  const filteredData = useMemo(() => {
+    return organData.filter((row) => {
+      if (sexFilter && row.sex !== sexFilter) return false;
+      if (trFilter !== null) {
+        const wantTR = trFilter === "yes";
+        if (row.treatment_related !== wantTR) return false;
+      }
+      return true;
+    });
+  }, [organData, sexFilter, trFilter]);
+
+  // Adversity matrix — scoped to selected organ
+  const matrixData = useMemo(() => {
+    if (!organData.length) return { endpoints: [], doseLevels: [], cells: new Map<string, AdverseEffectSummaryRow>() };
+    const doseLevels = [...new Set(allAeData.map((r) => r.dose_level))].sort((a, b) => a - b);
+    const doseLabels = new Map<number, string>();
+    for (const r of allAeData) {
+      if (!doseLabels.has(r.dose_level)) {
+        doseLabels.set(r.dose_level, r.dose_label.split(",")[0]);
+      }
+    }
+
+    const endpointFirstDose = new Map<string, number>();
+    for (const row of organData) {
+      if (row.severity === "adverse" && row.treatment_related) {
+        const existing = endpointFirstDose.get(row.endpoint_label);
+        if (existing === undefined || row.dose_level < existing) {
+          endpointFirstDose.set(row.endpoint_label, row.dose_level);
+        }
+      }
+    }
+    const endpoints = [...endpointFirstDose.entries()]
+      .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
+      .map(([ep]) => ep);
+
+    const cells = new Map<string, AdverseEffectSummaryRow>();
+    for (const row of organData) {
+      if (endpoints.includes(row.endpoint_label)) {
+        const key = `${row.endpoint_label}|${row.dose_level}`;
+        const existing = cells.get(key);
+        if (!existing || (row.severity === "adverse" && existing.severity !== "adverse")) {
+          cells.set(key, row);
+        }
+      }
+    }
+    return { endpoints, doseLevels, doseLabels, cells };
+  }, [organData, allAeData]);
+
+  const columns = useMemo(
+    () => [
+      col.accessor("endpoint_label", {
+        header: "Endpoint",
+        cell: (info) => (
+          <span className="truncate" title={info.getValue()}>
+            {info.getValue().length > 30 ? info.getValue().slice(0, 30) + "\u2026" : info.getValue()}
+          </span>
+        ),
+      }),
+      col.accessor("domain", {
+        header: "Domain",
+        cell: (info) => {
+          const dc = getDomainBadgeColor(info.getValue());
+          return (
+            <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dc.bg)} />
+              {info.getValue()}
+            </span>
+          );
+        },
+      }),
+      col.accessor("dose_level", {
+        header: "Dose",
+        cell: (info) => (
+          <span
+            className="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
+            style={{ backgroundColor: getDoseGroupColor(info.getValue()) }}
+          >
+            {info.row.original.dose_label.split(",")[0]}
+          </span>
+        ),
+      }),
+      col.accessor("sex", { header: "Sex" }),
+      col.accessor("p_value", {
+        header: "P-value",
+        cell: (info) => (
+          <span className={cn("font-mono", getPValueColor(info.getValue()))}>
+            {formatPValue(info.getValue())}
+          </span>
+        ),
+      }),
+      col.accessor("effect_size", {
+        header: "Effect",
+        cell: (info) => (
+          <span className={cn("font-mono", getEffectSizeColor(info.getValue()))}>
+            {formatEffectSize(info.getValue())}
+          </span>
+        ),
+      }),
+      col.accessor("direction", {
+        header: "Dir",
+        cell: (info) => (
+          <span className={cn("text-sm", getDirectionColor(info.getValue()))}>
+            {getDirectionSymbol(info.getValue())}
+          </span>
+        ),
+      }),
+      col.accessor("severity", {
+        header: "Severity",
+        cell: (info) => (
+          <span
+            className={cn(
+              "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
+              getSeverityBadgeClasses(info.getValue())
+            )}
+          >
+            {info.getValue()}
+          </span>
+        ),
+      }),
+      col.accessor("treatment_related", {
+        header: "TR",
+        cell: (info) => (
+          <span className={info.getValue() ? "font-medium text-red-600" : "text-muted-foreground"}>
+            {info.getValue() ? "Yes" : "No"}
+          </span>
+        ),
+      }),
+      col.accessor("dose_response_pattern", {
+        header: "Pattern",
+        cell: (info) => (
+          <span className="text-muted-foreground">{info.getValue().replace(/_/g, " ")}</span>
+        ),
+      }),
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: filteredData,
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
+        <select
+          className="rounded border bg-background px-2 py-1 text-xs"
+          value={sexFilter ?? ""}
+          onChange={(e) => setSexFilter(e.target.value || null)}
+        >
+          <option value="">All sexes</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+        <select
+          className="rounded border bg-background px-2 py-1 text-xs"
+          value={trFilter ?? ""}
+          onChange={(e) => setTrFilter(e.target.value || null)}
+        >
+          <option value="">TR: Any</option>
+          <option value="yes">Treatment-related</option>
+          <option value="no">Not treatment-related</option>
+        </select>
+        <span className="ml-auto text-[10px] text-muted-foreground">
+          {filteredData.length} of {organData.length} findings
+        </span>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 overflow-auto">
+        {/* Adversity Matrix */}
+        {matrixData.endpoints.length > 0 && (
+          <div className="border-b p-4">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Adversity matrix ({matrixData.endpoints.length} endpoints)
+            </h2>
+            <div className="overflow-x-auto">
+              <div className="inline-block">
+                <div className="flex">
+                  <div className="w-48 shrink-0" />
+                  {matrixData.doseLevels.map((dl) => (
+                    <div
+                      key={dl}
+                      className="w-16 shrink-0 text-center text-[10px] font-medium text-muted-foreground"
+                    >
+                      {matrixData.doseLabels?.get(dl) ?? `Dose ${dl}`}
+                    </div>
+                  ))}
+                </div>
+                {matrixData.endpoints.map((ep) => (
+                  <div key={ep} className="flex border-t">
+                    <div
+                      className="w-48 shrink-0 truncate py-0.5 pr-2 text-[10px]"
+                      title={ep}
+                    >
+                      {ep.length > 35 ? ep.slice(0, 35) + "\u2026" : ep}
+                    </div>
+                    {matrixData.doseLevels.map((dl) => {
+                      const cell = matrixData.cells.get(`${ep}|${dl}`);
+                      let bg = "#e5e7eb";
+                      if (cell) {
+                        if (cell.severity === "adverse" && cell.treatment_related) bg = "#ef4444";
+                        else if (cell.severity === "warning") bg = "#fbbf24";
+                        else bg = "#4ade80";
+                      }
+                      return (
+                        <div
+                          key={dl}
+                          className="flex h-5 w-16 shrink-0 items-center justify-center"
+                        >
+                          <div
+                            className="h-4 w-12 rounded-sm"
+                            style={{ backgroundColor: bg }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
+              {[
+                { label: "Adverse", color: "#ef4444" },
+                { label: "Warning", color: "#fbbf24" },
+                { label: "Normal", color: "#4ade80" },
+                { label: "N/A", color: "#e5e7eb" },
+              ].map(({ label, color }) => (
+                <span key={label} className="flex items-center gap-1">
+                  <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Grid */}
+        <div>
+          <div className="flex items-center justify-between px-4 pt-3 pb-1">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Adverse effect summary ({filteredData.length} rows)
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                {table.getHeaderGroups().map((hg) => (
+                  <tr key={hg.id} className="border-b bg-muted/50">
+                    {hg.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className="cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50"
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.slice(0, 200).map((row) => {
+                  const orig = row.original;
+                  const isSelected =
+                    selection?.endpoint_label === orig.endpoint_label &&
+                    selection?.dose_level === orig.dose_level &&
+                    selection?.sex === orig.sex;
+                  return (
+                    <tr
+                      key={row.id}
+                      className={cn(
+                        "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                        isSelected && "bg-accent"
+                      )}
+                      onClick={() => onRowClick(orig)}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="px-2 py-1">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {filteredData.length > 200 && (
+              <div className="p-2 text-center text-[10px] text-muted-foreground">
+                Showing first 200 of {filteredData.length} rows. Use filters to narrow results.
+              </div>
+            )}
+            {filteredData.length === 0 && (
+              <div className="p-4 text-center text-xs text-muted-foreground">
+                No rows match the current filters.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main: NoaelDecisionView ───────────────────────────────
+
+type EvidenceTab = "overview" | "matrix";
+
+export function NoaelDecisionView({
+  onSelectionChange,
+}: {
+  onSelectionChange?: (sel: NoaelSelection | null) => void;
+}) {
+  const { studyId } = useParams<{ studyId: string }>();
+  const location = useLocation();
+  const { data: noaelData, isLoading: noaelLoading, error: noaelError } = useNoaelSummary(studyId);
+  const { data: aeData, isLoading: aeLoading, error: aeError } = useAdverseEffectSummary(studyId);
+  const { data: ruleResults } = useRuleResults(studyId);
+
+  const [selectedOrgan, setSelectedOrgan] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
+  const [selection, setSelection] = useState<NoaelSelection | null>(null);
+  const [sexFilter, setSexFilter] = useState<string | null>(null);
+  const [trFilter, setTrFilter] = useState<string | null>(null);
+
+  // Derived: organ summaries
+  const organSummaries = useMemo(() => {
+    if (!aeData) return [];
+    return deriveOrganSummaries(aeData);
+  }, [aeData]);
+
+  const maxAdverse = useMemo(() => {
+    if (organSummaries.length === 0) return 1;
+    return Math.max(...organSummaries.map((o) => o.adverseCount), 1);
+  }, [organSummaries]);
+
+  // Rows for selected organ
+  const organData = useMemo(() => {
+    if (!aeData || !selectedOrgan) return [];
+    return aeData.filter((r) => r.organ_system === selectedOrgan);
+  }, [aeData, selectedOrgan]);
+
+  // Endpoint summaries for selected organ
+  const endpointSummaries = useMemo(() => {
+    return deriveEndpointSummaries(organData);
+  }, [organData]);
+
+  // Selected organ summary
+  const selectedSummary = useMemo(() => {
+    if (!selectedOrgan) return null;
+    return organSummaries.find((o) => o.organ_system === selectedOrgan) ?? null;
+  }, [organSummaries, selectedOrgan]);
+
+  // Auto-select top organ on load
+  useEffect(() => {
+    if (organSummaries.length > 0 && selectedOrgan === null) {
+      setSelectedOrgan(organSummaries[0].organ_system);
+    }
+  }, [organSummaries]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cross-view navigation from location.state
+  useEffect(() => {
+    const state = location.state as { organ_system?: string } | null;
+    if (state?.organ_system && aeData) {
+      const match = organSummaries.find(
+        (o) => o.organ_system.toLowerCase() === state.organ_system!.toLowerCase()
+      );
+      if (match) {
+        setSelectedOrgan(match.organ_system);
+      }
+      window.history.replaceState({}, "");
+    }
+  }, [location.state, aeData, organSummaries]);
+
+  // Escape clears selection
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelection(null);
+        onSelectionChange?.(null);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onSelectionChange]);
+
+  const handleOrganClick = (organ: string) => {
+    setSelectedOrgan(organ);
+    setSexFilter(null);
+    setTrFilter(null);
+    setSelection(null);
+    onSelectionChange?.(null);
+  };
+
+  const handleRowClick = (row: AdverseEffectSummaryRow) => {
+    const sel: NoaelSelection = {
+      endpoint_label: row.endpoint_label,
+      dose_level: row.dose_level,
+      sex: row.sex,
+    };
+    const isSame =
+      selection?.endpoint_label === sel.endpoint_label &&
+      selection?.dose_level === sel.dose_level &&
+      selection?.sex === sel.sex;
+    const next = isSame ? null : sel;
+    setSelection(next);
+    onSelectionChange?.(next);
+  };
+
+  const handleEndpointClick = (endpoint: string) => {
+    if (!selectedOrgan) return;
+    // Find representative row for this endpoint
+    const row = organData.find((r) => r.endpoint_label === endpoint);
+    if (row) {
+      const sel: NoaelSelection = {
+        endpoint_label: endpoint,
+        dose_level: row.dose_level,
+        sex: row.sex,
+      };
+      const isSame = selection?.endpoint_label === endpoint;
+      const next = isSame ? null : sel;
+      setSelection(next);
+      onSelectionChange?.(next);
+    }
+  };
+
+  const isLoading = noaelLoading || aeLoading;
+  const error = noaelError || aeError;
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center">
+        <div className="mb-4 rounded-lg bg-red-50 p-6">
+          <h1 className="mb-2 text-xl font-semibold text-red-700">Analysis data not available</h1>
+          <p className="text-sm text-red-600">Run the generator to produce analysis data:</p>
+          <code className="mt-2 block rounded bg-red-100 px-3 py-1.5 text-xs text-red-800">
+            cd backend && python -m generator.generate {studyId}
+          </code>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Loading NOAEL data...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* NOAEL Banner (persistent, non-scrolling) */}
+      {noaelData && <NoaelBanner data={noaelData} />}
+
+      {/* Two-panel area */}
+      <div className="flex min-h-0 flex-1 overflow-hidden max-[1200px]:flex-col">
+        {/* Left: Organ rail */}
+        <div className="max-[1200px]:h-[180px] max-[1200px]:w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto min-[1200px]:contents">
+          <OrganRail
+            organs={organSummaries}
+            selectedOrgan={selectedOrgan}
+            maxAdverse={maxAdverse}
+            onOrganClick={handleOrganClick}
+          />
+        </div>
+
+        {/* Right: Evidence panel */}
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          {selectedSummary && (
+            <>
+              <OrganHeader summary={selectedSummary} />
+
+              {/* Tab bar */}
+              <div className="flex shrink-0 items-center gap-0 border-b px-4">
+                <button
+                  className={cn(
+                    "border-b-2 px-3 py-2 text-xs font-medium transition-colors",
+                    activeTab === "overview"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={() => setActiveTab("overview")}
+                >
+                  Overview
+                </button>
+                <button
+                  className={cn(
+                    "border-b-2 px-3 py-2 text-xs font-medium transition-colors",
+                    activeTab === "matrix"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={() => setActiveTab("matrix")}
+                >
+                  Adversity matrix
+                </button>
+              </div>
+
+              {/* Tab content */}
+              {activeTab === "overview" ? (
+                <OverviewTab
+                  organData={organData}
+                  endpointSummaries={endpointSummaries}
+                  ruleResults={ruleResults ?? []}
+                  organ={selectedOrgan!}
+                  studyId={studyId}
+                  selection={selection}
+                  onEndpointClick={handleEndpointClick}
+                />
+              ) : (
+                <AdversityMatrixTab
+                  organData={organData}
+                  allAeData={aeData ?? []}
+                  selection={selection}
+                  onRowClick={handleRowClick}
+                  sexFilter={sexFilter}
+                  setSexFilter={setSexFilter}
+                  trFilter={trFilter}
+                  setTrFilter={setTrFilter}
+                />
+              )}
+            </>
+          )}
+
+          {!selectedSummary && organSummaries.length > 0 && (
+            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+              Select an organ system to view adverse effect details.
+            </div>
+          )}
+
+          {organSummaries.length === 0 && (
+            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+              No adverse effect data available.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
