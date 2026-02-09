@@ -1,3 +1,15 @@
+**STATUS: SUPERSEDED** by `signals-v2-rationale.md`. The Signals tab was further redesigned from dual-mode (Findings/Heatmap toggle) to a two-panel master-detail layout (organ rail + evidence panel with Overview/Signal Matrix tabs). See `signals-v2-rationale.md` for rationale.
+
+**Previous status: COMPLETED** — all streams below were implemented but then replaced.
+
+| Stream | Commit | Description |
+|--------|--------|-------------|
+| A — App-Wide Compliance Fixes | `6b59366` | Fix hedging language and pre-existing build errors |
+| B — Template & Synthesis Fixes | `e634b4e` | Revise R01-R17 templates: remove self-labeling prefixes, update synthesis regexes |
+| C — Signals Page Redesign | `7488fac` | Redesign Signals tab: two-column layout, tabular rows, enhanced Decision Bar |
+
+---
+
 # Signals View Redesign — Implementation Plan
 
 ## Source Specs (in `C:/pg/pcc-design/`)
@@ -29,7 +41,7 @@
 | Pre-existing build fix | `ValidationContextPanel.tsx:1307` | Added null guard on `existing.reviewedDate` for Date constructor |
 
 ### Stream B — Template & Synthesis Fixes (Another Agent)
-**Status: IN PROGRESS by another agent**
+**Status: COMPLETED** (commit `e634b4e`)
 
 These fixes are in `r01-r17-template-revisions.md`. The backend templates in `scores_and_rules.py` are **already revised** — prefixes were removed in a previous sprint. The remaining work is frontend:
 

@@ -32,6 +32,8 @@ interface Props {
   onToggleOrgan: (organ: string) => void;
   pendingNavigation: PendingNavigation | null;
   onNavigationConsumed: () => void;
+  /** When true, suppress organ header and always expand the single organ */
+  singleOrganMode?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,6 +194,7 @@ export function OrganGroupedHeatmap({
   onToggleOrgan,
   pendingNavigation,
   onNavigationConsumed,
+  singleOrganMode = false,
 }: Props) {
   // Build dose labels (global)
   const doseLabels = useMemo(() => {
@@ -273,13 +276,13 @@ export function OrganGroupedHeatmap({
 
       {/* Organ groups */}
       {organGroups.map((group) => {
-        const isExpanded = expandedOrgans.has(group.organKey);
+        const isExpanded = singleOrganMode || expandedOrgans.has(group.organKey);
         const isOrganSelected = organSelection === group.organKey;
 
         return (
           <div key={group.organKey}>
-            {/* Organ header — full width */}
-            <div
+            {/* Organ header — skip in single organ mode */}
+            {!singleOrganMode && (<div
               id={`organ-header-${group.organKey}`}
               className={cn(
                 "flex cursor-pointer items-center gap-2 border-b border-t px-2 py-1.5 transition-colors hover:bg-accent/30",
@@ -319,7 +322,7 @@ export function OrganGroupedHeatmap({
               <span className="ml-auto text-[10px] text-muted-foreground">
                 {group.endpoints.length} endpoints
               </span>
-            </div>
+            </div>)}
 
             {/* Endpoint rows (when expanded) */}
             {isExpanded && (

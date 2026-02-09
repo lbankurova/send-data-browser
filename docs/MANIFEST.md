@@ -20,7 +20,7 @@
 
 | Asset | Depends on (code files) | Last validated | Status |
 |-------|------------------------|----------------|--------|
-| `views/study-summary.md` | `frontend/src/components/analysis/StudySummaryView.tsx`, `frontend/src/components/analysis/SignalsPanel.tsx`, `frontend/src/components/analysis/charts/OrganGroupedHeatmap.tsx`, `frontend/src/components/analysis/panes/StudySummaryContextPanel.tsx` | 2026-02-08 | Current |
+| `views/study-summary.md` | `frontend/src/components/analysis/StudySummaryView.tsx`, `frontend/src/components/analysis/SignalsPanel.tsx`, `frontend/src/components/analysis/charts/OrganGroupedHeatmap.tsx`, `frontend/src/components/analysis/panes/StudySummaryContextPanel.tsx` | 2026-02-08 | Current — rewritten for two-panel master-detail Signals tab |
 | `views/dose-response.md` | `frontend/src/components/analysis/DoseResponseView.tsx`, `frontend/src/components/analysis/panes/DoseResponseContextPanel.tsx`, `frontend/src/hooks/useDoseResponseMetrics.ts` | 2026-02-08 | Current — rewritten for two-panel organ-grouped endpoint explorer |
 | `views/target-organs.md` | `frontend/src/components/analysis/TargetOrgansView.tsx`, `frontend/src/components/analysis/panes/TargetOrgansContextPanel.tsx`, `frontend/src/hooks/useTargetOrganSummary.ts` | 2026-02-08 | STALE — evidence bar neutralized, domain chips restyled to outline+dot |
 | `views/histopathology.md` | `frontend/src/components/analysis/HistopathologyView.tsx`, `frontend/src/components/analysis/panes/HistopathologyContextPanel.tsx`, `frontend/src/hooks/useLesionSeveritySummary.ts` | 2026-02-08 | Current |

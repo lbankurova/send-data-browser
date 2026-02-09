@@ -194,8 +194,8 @@ Two contributors working on the same subsystem without coordination produce merg
 - `contexts/SignalSelectionContext.tsx` — study summary signal + organ selection (mutually exclusive)
 - `contexts/ViewSelectionContext.tsx` — shared selection state for Views 2-5 (NOAEL, Target Organs, Dose-Response, Histopathology)
 - `components/analysis/StudySummaryView.tsx` — View 1: Study Summary (two tabs: Details + Signals; Signals tab has dual-mode center panel with persistent Decision Bar)
-- `components/analysis/SignalsPanel.tsx` — `FindingsView` component: full-width structured synthesis (study statements, Target Organs, Modifiers, Caveats)
-- `components/analysis/charts/OrganGroupedHeatmap.tsx` — organ-grouped collapsible signal matrix with cross-mode navigation support
+- `components/analysis/SignalsPanel.tsx` — Signals tab two-panel components: `SignalsOrganRail` (organ navigation), `SignalsEvidencePanel` (organ header + Overview/Matrix tabs), `StudyStatementsBar` (study-level statements)
+- `components/analysis/charts/OrganGroupedHeatmap.tsx` — organ-grouped collapsible signal matrix with `singleOrganMode` prop for organ-scoped rendering
 - `components/analysis/DoseResponseView.tsx` — View 2: Dose-Response (two-panel: organ-grouped endpoint rail + evidence panel with chart/metrics tabs)
 - `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (two-panel: organ rail + evidence panel with overview/table tabs)
 - `components/analysis/HistopathologyView.tsx` — View 4: Histopathology (severity heatmap, lesion grid)
@@ -321,41 +321,31 @@ The `InsightsList` component (`panes/InsightsList.tsx`) synthesizes raw rule_res
 - **Tier filter bar**: Clickable pills at top (Critical N / Notable N / Observed N) with opacity toggle
 - All parsing is heuristic-based on rule_id semantics and context_key format (`DOMAIN_TESTCODE_SEX`), not study-specific
 
-### Signals Tab — Dual-Mode Center Panel
-The Signals tab uses a **dual-mode center panel** with a persistent Decision Bar. The scientist toggles between Findings mode (structured synthesis) and Heatmap mode (organ-grouped signal matrix). Both modes share selection state and the right-side context panel.
+### Signals Tab — Two-Panel Master-Detail
+The Signals tab uses a **two-panel master-detail layout** with a persistent Decision Bar. The left panel is an organ rail for navigation; the right panel is an evidence panel with Overview and Signal Matrix tabs. No mode toggle — both conclusions and evidence are accessible simultaneously via tabs.
 
 **Layout zones:**
-- **Decision Bar** (~60px, non-scrolling): NOAEL statement + filter-responsive metrics line. Renders from priority 900+ rules only.
-- **Mode toggle + filter bar**: `[Findings] [Heatmap]` segmented control + filters (dimmed/disabled in Findings mode).
-- **Center content**: FindingsView OR OrganGroupedHeatmap (mutually exclusive).
-- **Context panel** (right sidebar): reacts to organ or endpoint selection from either mode.
+- **Decision Bar** (~60px, non-scrolling): NOAEL statement + metrics line. Renders from priority 900+ rules only.
+- **Study Statements Bar** (non-scrolling): study-level facts, modifiers, caveats (only items where `organSystem` is falsy).
+- **Two-panel area** (`flex flex-1 overflow-hidden max-[1200px]:flex-col`):
+  - **Organ rail** (left, 300px): scrollable list of organs sorted by `evidence_score` desc. Search input at top. Auto-selects highest-evidence organ on load.
+  - **Evidence panel** (right, flex-1): organ header + [Overview | Signal Matrix] tab bar + tab content.
+- **Context panel** (right sidebar): reacts to organ or endpoint selection.
 
 **Engine** (`lib/signals-panel-engine.ts`): derives semantic rules from NOAEL/organ/signal data. Output: `decisionBar` (NOAEL rules), `studyStatements` (study-scope facts), `organBlocks` (with `evidenceScore`), `modifiers`, `caveats`, `metrics`.
 
-**Priority-band → UI zone mapping:**
-- 900+ → Decision Bar (persistent across modes)
-- 800–899 → Findings: Target Organs headline (compound-merged with D-R sub-lines into `OrganBlock`)
-- 600–799 → Findings: Target Organs sub-lines / study-scope statements
-- 400–599 → Findings: Modifiers (always visible, sex badges `[F]`/`[M]` right-aligned)
-- 200–399 → Findings: Review Flags (always visible, amber block cards with primary/detail split)
+**Components** (from `SignalsPanel.tsx`):
+- `SignalsOrganRail` — organ navigation rail with search, evidence score bars, domain chips, D-R summary
+- `SignalsEvidencePanel` — organ header + tab bar + Overview/Signal Matrix tabs
+- `StudyStatementsBar` — study-level statements, modifiers, caveats (filters out organ-specific items)
 
-**Findings mode layout — no content is hidden or collapsed:**
-- Study-scope statement (e.g., "Treatment-related effects are present...")
-- TARGET ORGANS section header + responsive card grid (`repeat(auto-fill, minmax(280px, 1fr))`), sorted by `evidenceScore` desc. Each card shows organ name, `[▸]` hover icon, domain chips, D-R summary. Card states: default / hover (border-blue-300 shadow-sm) / selected (border-blue-500 bg-blue-50/50).
-- MODIFIERS section header + always-visible list with inline organ name links and `[F]`/`[M]` sex badges.
-- REVIEW FLAGS section header + always-visible amber block cards (`bg-amber-50 border-amber-200 rounded-md p-3`) with bold primary statement, muted detail line.
+**Evidence panel tabs:**
+- **Overview tab** (`SignalsOverviewTab`): InsightsList (organ-scoped rules), modifiers, review flags, domain breakdown table, top findings by effect size, cross-view links (Target Organs / Dose-Response / Histopathology)
+- **Signal Matrix tab** (`SignalsMatrixTab`): inline filters (no organ dropdown) + `OrganGroupedHeatmap` with `singleOrganMode` (suppresses organ header, always expanded)
 
-**Cross-mode navigation:**
-- Organ card click in Findings → switches to Heatmap + expands organ + scrolls to it (via `pendingNavigation` state)
-- Ctrl+click organ card in Findings → stays in Findings, sets organ selection (context panel updates)
-- Organ name in modifier/caveat → same as card click (transition to Heatmap)
-- Escape in Heatmap → returns to Findings (selection preserved)
-- Escape in Findings → clears selection
-- Decision Bar endpoint click → sets endpoint selection, stays in current mode (scrolls if in Heatmap)
+**OrganGroupedHeatmap** (`charts/OrganGroupedHeatmap.tsx`): supports `singleOrganMode?: boolean` prop. When true: no organ header row, single organ always expanded. Normal mode: organs grouped by evidence_score desc, target organs first, collapsible with chevron.
 
-**OrganGroupedHeatmap** (`charts/OrganGroupedHeatmap.tsx`): organs sorted by evidence_score desc, target organs start expanded, collapsible with chevron. Organ header click → organ selection; endpoint×dose cell click → endpoint selection.
-
-`SignalSelectionContext` manages both `selection` (endpoint-level) and `organSelection` (organ-level) — mutually exclusive (setting one clears the other).
+**Selection:** `SignalSelectionContext` manages `selection` (endpoint-level) and `organSelection` (organ-level) — mutually exclusive (setting one clears the other). Escape clears both. Rail click sets organ selection. Heatmap cell click sets endpoint selection.
 
 ### Validation View — Fix Tier System
 

@@ -5,19 +5,17 @@ import { cn } from "@/lib/utils";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
+import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { generateStudyReport } from "@/lib/report-generator";
-import { buildSignalsPanelData, buildFilteredMetrics } from "@/lib/signals-panel-engine";
-import type { MetricsLine, PanelStatement } from "@/lib/signals-panel-engine";
-import { FindingsView } from "./SignalsPanel";
-import { OrganGroupedHeatmap } from "./charts/OrganGroupedHeatmap";
-import type { PendingNavigation } from "./charts/OrganGroupedHeatmap";
-import { StudySummaryFilters } from "./StudySummaryFilters";
-import { StudySummaryGrid } from "./StudySummaryGrid";
-import type {
-  StudySummaryFilters as Filters,
-  SignalSelection,
-} from "@/types/analysis-views";
+import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
+import type { MetricsLine, PanelStatement, OrganBlock } from "@/lib/signals-panel-engine";
+import {
+  SignalsOrganRail,
+  SignalsEvidencePanel,
+  StudyStatementsBar,
+} from "./SignalsPanel";
+import type { SignalSelection } from "@/types/analysis-views";
 
 interface StudySummaryViewProps {
   onSelectionChange?: (selection: SignalSelection | null) => void;
@@ -25,41 +23,21 @@ interface StudySummaryViewProps {
 }
 
 type Tab = "details" | "signals";
-type CenterPanelMode = "findings" | "heatmap";
 
-export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySummaryViewProps) {
+export function StudySummaryView({
+  onSelectionChange,
+  onOrganSelect,
+}: StudySummaryViewProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { data: signalData, isLoading, error } = useStudySignalSummary(studyId);
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const { data: noaelData } = useNoaelSummary(studyId);
+  const { data: ruleResults } = useRuleResults(studyId);
   const { data: meta } = useStudyMetadata(studyId!);
 
   const [tab, setTab] = useState<Tab>("details");
-  const [centerMode, setCenterMode] = useState<CenterPanelMode>("findings");
-  const [filters, setFilters] = useState<Filters>({
-    endpoint_type: null,
-    organ_system: null,
-    signal_score_min: 0,
-    sex: null,
-    significant_only: false,
-  });
-
   const [selection, setSelection] = useState<SignalSelection | null>(null);
-  const [organSelection, setOrganSelectionState] = useState<string | null>(null);
-  const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation | null>(null);
-  const [showGrid, setShowGrid] = useState(false);
-
-  // Heatmap expanded organs — target organs start expanded
-  const [heatmapExpandedOrgans, setHeatmapExpandedOrgans] = useState<Set<string>>(new Set());
-
-  // Initialize expanded organs when targetOrgans data loads
-  useEffect(() => {
-    if (!targetOrgans) return;
-    const targets = targetOrgans
-      .filter((t) => t.target_organ_flag)
-      .map((t) => t.organ_system);
-    setHeatmapExpandedOrgans(new Set(targets));
-  }, [targetOrgans]);
+  const [selectedOrgan, setSelectedOrganState] = useState<string | null>(null);
 
   // Propagate selection changes to parent (SignalSelectionContext)
   useEffect(() => {
@@ -67,107 +45,34 @@ export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySumm
   }, [selection, onSelectionChange]);
 
   useEffect(() => {
-    onOrganSelect?.(organSelection);
-  }, [organSelection, onOrganSelect]);
+    onOrganSelect?.(selectedOrgan);
+  }, [selectedOrgan, onOrganSelect]);
 
   // Mutually exclusive selection
   const handleSetSelection = useCallback((sel: SignalSelection | null) => {
     setSelection(sel);
-    if (sel) setOrganSelectionState(null);
+    if (sel) setSelectedOrganState(null);
   }, []);
 
-  const handleSetOrganSelection = useCallback((organ: string | null) => {
-    setOrganSelectionState(organ);
-    if (organ) setSelection(null);
-  }, []);
+  const handleOrganClick = useCallback(
+    (organ: string) => {
+      setSelectedOrganState(organ);
+      setSelection(null);
+    },
+    []
+  );
 
-  // Cross-mode navigation: organ click in Findings → switch to Heatmap
-  const handleOrganNavigate = useCallback((organKey: string) => {
-    handleSetOrganSelection(organKey);
-    setCenterMode("heatmap");
-    setPendingNavigation({ targetOrgan: organKey });
-  }, [handleSetOrganSelection]);
-
-  // Endpoint click in Decision Bar
-  const handleDecisionBarEndpointClick = useCallback((endpointLabel: string) => {
-    if (!signalData) return;
-    const match = signalData.find(
-      (s) => s.endpoint_label === endpointLabel
-    );
-    if (match) {
-      handleSetSelection({
-        endpoint_label: match.endpoint_label,
-        dose_level: match.dose_level,
-        sex: match.sex,
-        domain: match.domain,
-        test_code: match.test_code,
-        organ_system: match.organ_system,
-      });
-      // Per spec: if in Findings, stay in Findings. If in Heatmap, scroll to endpoint.
-      if (centerMode === "heatmap") {
-        setPendingNavigation({
-          targetOrgan: match.organ_system,
-          targetEndpoint: match.endpoint_label,
-        });
-      }
-    }
-  }, [signalData, centerMode, handleSetSelection]);
-
-  // Heatmap organ select
-  const handleHeatmapOrganSelect = useCallback((organKey: string) => {
-    handleSetOrganSelection(organKey);
-  }, [handleSetOrganSelection]);
-
-  const handleToggleOrgan = useCallback((organKey: string) => {
-    setHeatmapExpandedOrgans((prev) => {
-      const next = new Set(prev);
-      if (next.has(organKey)) next.delete(organKey);
-      else next.add(organKey);
-      return next;
-    });
-  }, []);
-
-  const handleNavigationConsumed = useCallback(() => {
-    setPendingNavigation(null);
-  }, []);
-
-  // Keyboard shortcuts
+  // Keyboard: Escape clears selection
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (tab !== "signals") return;
-        if (centerMode === "heatmap") {
-          // Return to Findings, preserve selection
-          setCenterMode("findings");
-        } else {
-          // Clear selection
-          setSelection(null);
-          setOrganSelectionState(null);
-        }
+      if (e.key === "Escape" && tab === "signals") {
+        setSelection(null);
+        setSelectedOrganState(null);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [tab, centerMode]);
-
-  // Filter data
-  const filteredData = useMemo(() => {
-    if (!signalData) return [];
-    return signalData.filter((row) => {
-      if (filters.endpoint_type && row.endpoint_type !== filters.endpoint_type)
-        return false;
-      if (filters.organ_system && row.organ_system !== filters.organ_system)
-        return false;
-      if (row.signal_score < filters.signal_score_min) return false;
-      if (filters.sex && row.sex !== filters.sex) return false;
-      if (
-        filters.significant_only &&
-        (row.p_value === null || row.p_value >= 0.05)
-      )
-        return false;
-      return true;
-    });
-  }, [signalData, filters]);
+  }, [tab]);
 
   // Build panel data
   const panelData = useMemo(() => {
@@ -175,11 +80,50 @@ export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySumm
     return buildSignalsPanelData(noaelData, targetOrgans, signalData);
   }, [signalData, targetOrgans, noaelData]);
 
-  // Filter-responsive metrics
-  const displayMetrics = useMemo(() => {
-    if (!panelData) return null;
-    return buildFilteredMetrics(panelData.metrics, filteredData);
-  }, [panelData, filteredData]);
+  // Sorted organs (by evidence_score desc)
+  const sortedOrgans = useMemo(() => {
+    if (!targetOrgans) return [];
+    return [...targetOrgans].sort(
+      (a, b) => b.evidence_score - a.evidence_score
+    );
+  }, [targetOrgans]);
+
+  // Max evidence score (for rail bar normalization)
+  const maxEvidenceScore = useMemo(
+    () =>
+      sortedOrgans.length > 0
+        ? Math.max(...sortedOrgans.map((o) => o.evidence_score))
+        : 1,
+    [sortedOrgans]
+  );
+
+  // OrganBlock map
+  const organBlocksMap = useMemo(() => {
+    const map = new Map<string, OrganBlock>();
+    if (panelData?.organBlocks) {
+      for (const ob of panelData.organBlocks) {
+        map.set(ob.organKey, ob);
+      }
+    }
+    return map;
+  }, [panelData]);
+
+  // Auto-select top organ when data loads
+  useEffect(() => {
+    if (
+      tab === "signals" &&
+      selectedOrgan === null &&
+      sortedOrgans.length > 0
+    ) {
+      setSelectedOrganState(sortedOrgans[0].organ_system);
+    }
+  }, [tab, selectedOrgan, sortedOrgans]);
+
+  // Selected organ data
+  const selectedOrganData = useMemo(() => {
+    if (!selectedOrgan || !targetOrgans) return null;
+    return targetOrgans.find((o) => o.organ_system === selectedOrgan) ?? null;
+  }, [selectedOrgan, targetOrgans]);
 
   if (error) {
     return (
@@ -256,106 +200,39 @@ export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySumm
           {/* Decision Bar — persistent */}
           <DecisionBar
             statements={panelData.decisionBar}
-            metrics={displayMetrics ?? panelData.metrics}
-            onEndpointClick={handleDecisionBarEndpointClick}
+            metrics={panelData.metrics}
           />
 
-          {/* Mode toggle + filter bar */}
-          <div className="flex items-center gap-3 border-b px-4 py-1.5">
-            {/* Segmented control */}
-            <div className="flex rounded-md border">
-              <button
-                className={cn(
-                  "px-3 py-1 text-xs font-medium transition-colors",
-                  centerMode === "findings"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setCenterMode("findings")}
-              >
-                Findings
-              </button>
-              <button
-                className={cn(
-                  "px-3 py-1 text-xs font-medium transition-colors",
-                  centerMode === "heatmap"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setCenterMode("heatmap")}
-              >
-                Heatmap
-              </button>
-            </div>
+          {/* Study-level statements + study-level flags */}
+          <StudyStatementsBar
+            statements={panelData.studyStatements}
+            modifiers={panelData.modifiers}
+            caveats={panelData.caveats}
+          />
 
-            {/* Filters — visible in both modes, dimmed in Findings */}
-            <div
-              className={cn(
-                "flex-1 transition-opacity",
-                centerMode === "findings" && "pointer-events-none opacity-40"
-              )}
-              title={
-                centerMode === "findings"
-                  ? "Filters apply to Heatmap view"
-                  : undefined
-              }
-            >
-              <StudySummaryFilters
-                data={signalData}
-                filters={filters}
-                onChange={setFilters}
-              />
-            </div>
-          </div>
-
-          {/* Center content */}
-          {centerMode === "findings" ? (
-            <FindingsView
-              data={panelData}
-              organSelection={organSelection}
-              onOrganNavigate={handleOrganNavigate}
-              onOrganSelect={handleSetOrganSelection}
-              onEndpointClick={handleDecisionBarEndpointClick}
+          {/* Two-panel master-detail */}
+          <div className="flex flex-1 overflow-hidden max-[1200px]:flex-col">
+            <SignalsOrganRail
+              organs={sortedOrgans}
+              organBlocksMap={organBlocksMap}
+              selectedOrgan={selectedOrgan}
+              maxEvidenceScore={maxEvidenceScore}
+              onOrganClick={handleOrganClick}
             />
-          ) : (
-            <div className="flex-1 overflow-auto">
-              {targetOrgans && (
-                <OrganGroupedHeatmap
-                  data={filteredData}
-                  targetOrgans={targetOrgans}
-                  selection={selection}
-                  organSelection={organSelection}
-                  onSelect={handleSetSelection}
-                  onOrganSelect={handleHeatmapOrganSelect}
-                  expandedOrgans={heatmapExpandedOrgans}
-                  onToggleOrgan={handleToggleOrgan}
-                  pendingNavigation={pendingNavigation}
-                  onNavigationConsumed={handleNavigationConsumed}
-                />
-              )}
-
-              {/* Toggle for signal table */}
-              <div className="border-t px-4 py-2">
-                <button
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowGrid((v) => !v)}
-                >
-                  {showGrid
-                    ? "Hide signal table"
-                    : `Show signal table (${filteredData.length} rows)`}
-                </button>
-              </div>
-              {showGrid && (
-                <div className="border-t">
-                  <StudySummaryGrid
-                    data={filteredData}
-                    selection={selection}
-                    onSelect={handleSetSelection}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+            {selectedOrganData && signalData && (
+              <SignalsEvidencePanel
+                organ={selectedOrganData}
+                signalData={signalData}
+                ruleResults={ruleResults ?? []}
+                modifiers={panelData.modifiers}
+                caveats={panelData.caveats}
+                selection={selection}
+                onSelect={handleSetSelection}
+                onOrganSelect={handleOrganClick}
+                studyId={studyId!}
+              />
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -369,11 +246,9 @@ export function StudySummaryView({ onSelectionChange, onOrganSelect }: StudySumm
 function DecisionBar({
   statements,
   metrics,
-  onEndpointClick,
 }: {
   statements: PanelStatement[];
   metrics: MetricsLine;
-  onEndpointClick?: (endpointLabel: string) => void;
 }) {
   return (
     <div className="shrink-0 border-b px-4 py-2.5">
@@ -401,17 +276,7 @@ function DecisionBar({
               >
                 {isAlert ? "\u25B2" : "\u25CF"}
               </span>
-              <span>
-                {s.clickEndpoint ? (
-                  <DecisionBarClickableText
-                    text={s.text}
-                    clickEndpoint={s.clickEndpoint}
-                    onEndpointClick={onEndpointClick}
-                  />
-                ) : (
-                  s.text
-                )}
-              </span>
+              <span>{s.text}</span>
             </div>
           );
         })}
@@ -424,7 +289,8 @@ function DecisionBar({
           <span
             className={cn(
               "font-semibold",
-              metrics.noael === "Not established" || metrics.noael === "Control"
+              metrics.noael === "Not established" ||
+                metrics.noael === "Control"
                 ? "text-amber-600"
                 : "text-foreground"
             )}
@@ -432,7 +298,10 @@ function DecisionBar({
             {metrics.noael}
           </span>
           {metrics.noaelSex && (
-            <span className="text-muted-foreground"> ({metrics.noaelSex})</span>
+            <span className="text-muted-foreground">
+              {" "}
+              ({metrics.noaelSex})
+            </span>
           )}
         </span>
         <span>&middot;</span>
@@ -449,35 +318,6 @@ function DecisionBar({
         </span>
       </div>
     </div>
-  );
-}
-
-function DecisionBarClickableText({
-  text,
-  clickEndpoint,
-  onEndpointClick,
-}: {
-  text: string;
-  clickEndpoint: string;
-  onEndpointClick?: (ep: string) => void;
-}) {
-  const idx = text.indexOf(clickEndpoint);
-  if (idx === -1) return <>{text}</>;
-
-  const before = text.slice(0, idx);
-  const after = text.slice(idx + clickEndpoint.length);
-
-  return (
-    <>
-      {before}
-      <button
-        className="font-semibold text-blue-600 hover:underline"
-        onClick={() => onEndpointClick?.(clickEndpoint)}
-      >
-        {clickEndpoint}
-      </button>
-      {after}
-    </>
   );
 }
 
@@ -522,12 +362,20 @@ function formatSubjects(
 
 import type { StudyMetadata } from "@/types";
 
-function DetailsTab({ meta, studyId }: { meta: StudyMetadata | undefined; studyId: string }) {
+function DetailsTab({
+  meta,
+  studyId,
+}: {
+  meta: StudyMetadata | undefined;
+  studyId: string;
+}) {
   if (!meta) {
     return (
       <div className="flex items-center justify-center p-12">
         <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Loading details...</span>
+        <span className="text-sm text-muted-foreground">
+          Loading details...
+        </span>
       </div>
     );
   }
@@ -557,7 +405,9 @@ function DetailsTab({ meta, studyId }: { meta: StudyMetadata | undefined; studyI
         <MetadataRow label="End date" value={meta.end_date} />
         <MetadataRow
           label="Duration"
-          value={meta.dosing_duration ? formatDuration(meta.dosing_duration) : null}
+          value={
+            meta.dosing_duration ? formatDuration(meta.dosing_duration) : null
+          }
         />
       </section>
 
@@ -590,7 +440,7 @@ function DetailsTab({ meta, studyId }: { meta: StudyMetadata | undefined; studyI
             <Link
               key={d}
               to={`/studies/${studyId}/domains/${d}`}
-              className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs hover:bg-primary/20 transition-colors"
+              className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs transition-colors hover:bg-primary/20"
             >
               {d}
             </Link>
