@@ -95,107 +95,109 @@ Each section has:
 
 ---
 
-## Tab 2: Signals
+## Tab 2: Signals — Two-Panel Master-Detail
 
-Vertical stack, fills remaining height. Contains three sections separated by `border-b`.
+Vertical stack, fills remaining height. Contains Decision Bar, Study Statements Bar, and a two-panel master-detail layout.
 
-### Filters Bar
+```
++-----------------------------------------------------------+
+| Decision Bar (NOAEL statement + metrics)                  |  border-b
++-----------------------------------------------------------+
+| Study Statements Bar (study-level facts/modifiers/caveats)|  border-b (if content)
++-----------------------------------------------------------+
+| Organ Rail (300px)  |  Evidence Panel (flex-1)            |
+| ┌─────────────────┐ | ┌──────────────────────────────────┐|
+| │ Search input    │ | │ Organ Header (name, stats)       │|
+| │ ─ ─ ─ ─ ─ ─ ─  │ | │ [Overview] [Signal matrix]  tabs │|
+| │ Organ items     │ | │ ┌────────────────────────────────┐│|
+| │  (scrollable)   │ | │ │ Tab content (scrollable)      ││|
+| │                 │ | │ │                                ││|
+| └─────────────────┘ | │ └────────────────────────────────┘│|
+|                     | └──────────────────────────────────┘|
++-----------------------------------------------------------+
+```
 
-`flex flex-wrap items-center gap-3 border-b px-4 py-2`
+Responsive: `max-[1200px]:flex-col` — stacks vertically on narrow screens.
 
-| Filter | Type | Control | Default |
-|--------|------|---------|---------|
-| Endpoint | Dropdown | `<select>` with All + unique `endpoint_type` values | All |
-| Organ | Dropdown | `<select>` with All + unique `organ_system` values | All |
-| Sex | Dropdown | `<select>` with All / Male / Female | All |
-| Min score | Range slider | `<input type="range">` 0-1, step 0.05, `w-20` + mono display | 0.00 |
-| Significant only | Checkbox | `<input type="checkbox">` + label | Unchecked |
+### Decision Bar
 
-- All labels: `text-xs text-muted-foreground`
-- All controls: `rounded border bg-background px-2 py-1 text-xs`
-- Filters apply client-side to `signalData` array (989 rows full, filtered subset shown)
+Persistent across the Signals tab. `shrink-0 border-b px-4 py-2.5`.
 
-### Signal Heatmap
+**NOAEL statements:** From `panelData.decisionBar` (priority 900+ rules). Each as:
+- `flex items-start gap-2 leading-snug`
+- First line: `text-sm font-medium`; subsequent lines: `text-sm`
+- Alert icon (`▲`) for warning/review-flag statements, blue dot (`●`) for facts
 
-Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2`
+**Metrics line:** `mt-1 flex flex-wrap gap-x-1.5 text-xs text-muted-foreground`
+- NOAEL value (amber-600 if "Not established" or "Control", foreground otherwise)
+- N targets · significant ratio · D-R count · N domains
 
-**Structure:** CSS Grid heatmap
-- `grid-template-columns: 180px repeat({doseCount}, 70px)`
-- Rows = endpoint labels (sorted by max signal score descending)
-- Columns = dose levels (sorted ascending)
-- Capped at **30 endpoints** max. Shows "Showing top 30 of {N} endpoints" below if truncated.
-- Aggregation: for each endpoint x dose, takes max signal score across sexes
+### Study Statements Bar
 
-**Header row:**
-- Endpoint column: sticky left, `text-[10px] font-semibold text-muted-foreground`
-- Dose columns: centered `text-[10px] font-semibold text-muted-foreground`
+Shows study-level statements, modifiers, and caveats from `panelData`. Only renders if non-empty.
 
-**Data cells:**
-- Background: signal score color scale (green #388E3C to red #D32F2F)
-- Text: score `{v.toFixed(2)}` + significance stars (*** / ** / * but not "ns")
-- Text color: white if score >= 0.5, dark gray `#374151` if below
-- Size: 70px wide, `py-1`
-- Outline: `1px solid rgba(0,0,0,0.05)` default; `2px solid #3b82f6` when selected
-- Hover: `opacity-80`
-- Tooltip: `"{endpoint} @ {dose}: score={score} ({stars})"`
+- **Study statements:** `text-sm leading-relaxed` with StatementIcon
+- **Study modifiers:** `text-xs text-amber-800` with amber triangle icon. Only includes modifiers where `organSystem` is falsy.
+- **Study caveats:** `text-xs text-orange-700` with warning icon. Only includes caveats where `organSystem` is falsy.
 
-**Endpoint labels:**
-- Sticky left, `z-10 bg-background`
-- `text-[11px]`, truncated with title tooltip
-- 180px wide
+### Organ Rail (left panel, 300px)
 
-**Interactions:**
-- Click cell: selects that endpoint x dose. Updates selection state, highlights cell with blue outline, updates context panel.
-- Click same cell again: deselects.
-- Selection syncs with grid below (same `SignalSelection` state).
+**Component:** `SignalsOrganRail` (from `SignalsPanel.tsx`)
 
-### Signal Summary Grid
+Header: "ORGAN SYSTEMS ({count})" + search input (`text-xs`).
 
-Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` with row count "({N} rows)"
+Each rail item (`SignalsOrganRailItem`):
+- Target organs: red left border (`border-l-2 border-l-[#DC2626]`), "TARGET" badge
+- Non-targets: transparent left border
+- Selected: `bg-blue-50/60 dark:bg-blue-950/20`
+- Not selected: `hover:bg-accent/30`
+- Evidence score bar: normalized to max across all organs, `h-1.5 rounded-full bg-foreground/25`
+- Stats line: `{n_significant} sig · {n_treatment_related} TR · {n_domains} domains`
+- Domain chips: outline style with colored dot (`rounded border border-border px-1 py-0.5 text-[9px]`)
+- Dose-response summary (if available from OrganBlock): `D-R: {nEndpoints} ({topEndpoint})`
 
-**Table:** TanStack React Table, `w-full border-collapse text-xs`
+**Sorted by:** `evidence_score` descending.
+**Auto-select:** Highest-evidence organ is auto-selected when data loads and no organ is selected.
 
-**Header row:** `bg-muted/50 border-b`
-- Headers: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
-- Clickable for sorting (shows triangle arrow)
-- Default sort: `signal_score` descending
+### Evidence Panel (right panel, flex-1)
 
-**Columns:**
+**Component:** `SignalsEvidencePanel` (from `SignalsPanel.tsx`)
 
-| Column | Header | Width | Cell Rendering |
-|--------|--------|-------|----------------|
-| endpoint_label | Endpoint | 200px | Truncated `text-xs` with title tooltip |
-| endpoint_type | Type | 100px | `bg-muted px-1.5 py-0.5 text-[10px]` badge, underscores replaced with spaces |
-| organ_system | Organ | 100px | `text-xs`, underscores replaced |
-| dose_label | Dose | 80px | `text-xs font-medium` |
-| sex | Sex | 40px | `text-xs font-semibold` colored (M=#1565C0, F=#C62828) |
-| signal_score | Signal | 70px | Colored badge: `rounded px-1.5 py-0.5 text-xs font-semibold text-white` with signal score bg color |
-| direction | Dir | 40px | Arrow symbol: up/down/dash. `text-sm font-bold` colored |
-| p_value | P-val | 70px | `font-mono text-[11px]` formatted (e.g., "<0.001", "0.023") |
-| trend_p | Trend | 70px | Same as p_value |
-| effect_size | d | 60px | `font-mono text-[11px]`, null shows em dash |
-| statistical_flag | Stat | 30px | Checkmark or empty |
-| dose_response_flag | DR | 30px | Checkmark or empty |
-| domain | Dom | 50px | Domain badge with domain-specific bg/text colors |
+#### Organ Header
+- Organ name: `text-sm font-semibold` + "TARGET ORGAN" badge (if applicable)
+- Summary text: "Convergent|Evidence from N domains: X/Y endpoints significant (Z%), W treatment-related."
+- Compact metrics: max signal, evidence score, endpoint count
 
-**Row interactions:**
-- Hover: `bg-accent/30`
-- Selected: `bg-accent`
-- Click: sets selection (same state as heatmap). Click again to deselect.
-- Row cells: `px-2 py-1`
+#### Tab Bar
+Two tabs: "Overview" and "Signal matrix"
+- Same styling as main tab bar (`text-xs font-medium`, `h-0.5 bg-primary` underline)
 
-**Empty state:** "No signals match current filters" centered, `text-sm text-muted-foreground`
+#### Overview Tab (`SignalsOverviewTab`)
 
-### Target Organ Bar Chart
+Scrollable content (`overflow-y-auto px-4 py-3`):
 
-Only shown if `staticHtml` loads successfully from `/api/studies/{studyId}/analysis/static/target_organ_bar`.
+1. **Insights** — `InsightsList` component filtered to organ-specific rules (`r.organ_system === key` or `r.context_key.startsWith("organ_{key}")`)
+2. **Modifiers** — Amber-styled items filtered to this organ (`s.organSystem === key || s.clickOrgan === key`). Organ names are clickable links.
+3. **Review flags** — Orange bordered cards (`rounded border border-orange-200 bg-orange-50/50 p-2`) with primary/detail text split. Organ names are clickable links.
+4. **Domain breakdown** — Table with columns: Domain (colored badge), Endpoints, Significant, TR. Sorted by significant count desc.
+5. **Top findings** — Up to 8 findings sorted by `|effect_size|` desc. Each row shows: endpoint name, direction arrow, effect size (mono), p-value (mono), severity badge, TR flag, sex + dose label.
+6. **Cross-view links** — "View in Target Organs →", "View dose-response →", "View histopathology →". Navigate with `{ state: { organ_system } }`.
 
-Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2`
-- Shows count: "({N} identified)" from `target_organ_summary` where `target_organ_flag = true`
+#### Signal Matrix Tab (`SignalsMatrixTab`)
 
-**Chart:** Pre-rendered Plotly HTML, embedded via `dangerouslySetInnerHTML`.
-- Horizontal bar chart of target organs by evidence score
-- Padding: `p-4`
+1. **Inline filters** — `StudySummaryFilters` without organ dropdown (organ already selected). Filters: endpoint type, sex, min score, significant only.
+2. **Organ-scoped heatmap** — `OrganGroupedHeatmap` with `singleOrganMode` prop. Shows only the selected organ's signals. No organ header row, always expanded.
+
+### OrganGroupedHeatmap (shared component)
+
+**Component:** `charts/OrganGroupedHeatmap.tsx`
+
+**Props include `singleOrganMode?: boolean`** — when true:
+- Organ header row is suppressed (no chevron, organ name, sparkline, etc.)
+- The single organ group is always expanded
+- Only endpoint rows and dose column headers render
+
+**Normal mode (multi-organ):** Used by other views. Organs grouped and sorted by evidence_score desc, target organs first. Collapsible with chevron. Organ header shows: name, evidence score badge, domain chips, target star, sparkline, endpoint count.
 
 ---
 
@@ -207,7 +209,10 @@ Route-detected: when pathname matches `/studies/{studyId}`, shows `StudySummaryC
 - Message: "Select a signal from the heatmap or grid to view details."
 - `p-4 text-xs text-muted-foreground`
 
-### With Selection
+### Organ Selected
+- Shows OrganPanel with organ-specific insights, domain breakdown, and cross-view links
+
+### Endpoint Selected
 
 #### Header
 - `border-b px-4 py-3`
@@ -218,18 +223,6 @@ Route-detected: when pathname matches `/studies/{studyId}`, shows `StudySummaryC
 `CollapsiblePane` with `InsightsList` component.
 
 Rules filtered to: matching context_key (`{domain}_{test_code}_{sex}`), matching organ key (`organ_{organ_system}`), or study scope.
-
-**InsightsList rendering:**
-- Tier filter pills at top: Critical (red-100/red-700), Notable (amber-100/amber-700), Observed (gray-100/gray-500)
-- Pills: `rounded-full px-2 py-0.5 text-[9px] font-medium`. Active=full opacity, inactive=30% opacity.
-- Only shown when Critical or Notable counts > 0
-
-- Organ groups: header with TierBadge + organ name (`text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`)
-- Endpoint/domain count subtitle: `text-[10px] text-muted-foreground/60`
-- Synthesized signal lines: `text-[11px] leading-snug pl-2`. Warning lines get `border-l-2 border-l-amber-500`.
-- Correlation chips: `rounded bg-muted px-1.5 py-0.5 text-[10px]` in flex-wrap
-- "Show N rules" toggle: `text-[10px] text-blue-600`
-- Expanded raw rules: `border-l border-border pl-2`, `text-[10px]` with mono rule_id
 
 #### Pane 2: Statistics (default open)
 Key-value pairs, `text-[11px]`:
@@ -249,25 +242,8 @@ Key-value pairs, `text-[11px]`:
 - Shows other findings in same `organ_system`, up to 10, sorted by signal_score desc
 - Header text: "Other findings in {organ system}"
 
-**Table:** `text-[10px]`
-| Col | Align |
-|-----|-------|
-| Endpoint | Left, truncated at 25 chars |
-| Dom | Left |
-| Signal | Right, mono |
-| p | Right, mono |
-
-- Rows are clickable: navigate to `/studies/{studyId}/dose-response` (cross-view link)
-- Hover: `bg-accent/30`, `cursor-pointer`, `border-b border-dashed`
-
 #### Pane 4: Tox Assessment (default closed)
-`ToxFindingForm` component with:
-
-- **Treatment related** dropdown: Yes / No / Equivocal / Not Evaluated
-- **Adversity** dropdown: Adverse / Non-Adverse/Adaptive / Not Determined. Grayed out (opacity-40) when treatment_related = "No"
-- **Comment** textarea: 2 rows, placeholder "Notes..."
-- **SAVE button:** `bg-primary text-primary-foreground`, disabled when no changes or saving
-- **Footer:** reviewer name + date if previously saved
+`ToxFindingForm` component with treatment-related dropdown, adversity dropdown, comment textarea, and SAVE button.
 
 ---
 
@@ -276,13 +252,14 @@ Key-value pairs, `text-[11px]`:
 | State | Scope | Managed By |
 |-------|-------|-----------|
 | Active tab | Local | `useState<"details" \| "signals">` — defaults to "details" |
-| Filters | Local | `useState<Filters>` |
-| Selection | Shared via context | `SignalSelectionContext` — syncs heatmap, grid, and context panel |
+| Selected organ | Local | `useState<string \| null>` — auto-selects top organ |
+| Selection | Shared via context | `SignalSelectionContext` — syncs heatmap cells and context panel |
 | Signal data | Server | `useStudySignalSummary` hook (React Query, 5min stale) |
 | Target organs | Server | `useTargetOrganSummary` hook |
+| NOAEL data | Server | `useNoaelSummary` hook |
+| Rule results | Server | `useRuleResults` hook |
 | Study metadata | Server | `useStudyMetadata` hook |
-| Rule results | Server | `useRuleResults` hook (consumed by context panel) |
-| Static chart HTML | Local | `useState` + `fetchStaticChart` on mount |
+| Panel data | Derived | `buildSignalsPanelData(noaelData, targetOrgans, signalData)` |
 
 ---
 
@@ -290,19 +267,37 @@ Key-value pairs, `text-[11px]`:
 
 ```
 useStudySignalSummary(studyId)  ──> signalData (989 rows)
-                                         |
-                                    [client-side filter]
-                                         |
-                                    filteredData
-                                     /        \
-                              SignalHeatmap   StudySummaryGrid
-                                     \        /
-                                   SignalSelection (shared)
-                                         |
-                              StudySummaryContextPanel
-                                   /     |      \
-                             Insights  Stats  Correlations
+useTargetOrganSummary(studyId)  ──> targetOrgans (14 organs)
+useNoaelSummary(studyId)        ──> noaelData
+useRuleResults(studyId)         ──> ruleResults
+         |
+    buildSignalsPanelData()
+         |
+    panelData ──> decisionBar, studyStatements, organBlocks,
+                  modifiers, caveats, metrics
+         |
+    ┌────┴────────────────────────────────────┐
+    │                                         │
+SignalsOrganRail                    SignalsEvidencePanel
+(sorted organs,                     (selected organ's data)
+ organBlocksMap)                    ├── Overview (InsightsList, domain table,
+    │                               │            top findings, cross-view links)
+    └── selectedOrgan ──────────>  └── Signal matrix (filtered heatmap)
+                                         │
+                                    SignalSelection (shared)
+                                         │
+                                  StudySummaryContextPanel
+                                    /     |      \
+                              Insights  Stats  Correlations
 ```
+
+---
+
+## Keyboard
+
+| Key | Action |
+|-----|--------|
+| Escape | Clears both organ selection and endpoint selection |
 
 ---
 
@@ -310,15 +305,9 @@ useStudySignalSummary(studyId)  ──> signalData (989 rows)
 
 | From | Action | Navigates To |
 |------|--------|-------------|
-| Correlations table row | Click | `/studies/{studyId}/dose-response` |
+| Overview tab cross-view links | Click | Target Organs / Dose-Response / Histopathology (with `organ_system` state) |
 | Domain chip (Details tab) | Click | `/studies/{studyId}/domains/{domain}` |
 | Generate Report button | Click | Opens HTML report in new browser tab |
-
-**Missing cross-view links (potential improvement):**
-- No navigation from heatmap/grid selection to dose-response view
-- Correlation rows navigate to dose-response but don't pass endpoint filter
-- No link to target organs view from organ system display
-- No link to histopathology from pathology-type findings
 
 ---
 
@@ -328,42 +317,6 @@ useStudySignalSummary(studyId)  ──> signalData (989 rows)
 |-------|---------|
 | Loading | Centered spinner `Loader2` (animate-spin) + "Loading study summary..." |
 | Error (no generated data) | Red box with instructions to run generator command |
-| Empty filters | "No signals match current filters" in grid area |
-| No heatmap data | "No signals to display" centered |
+| Empty organ search | "No matches for '{search}'" centered in rail |
+| No signal data for organ | "No signal data for this organ." centered in overview tab |
 | No metadata (Details tab) | Spinner + "Loading details..." |
-
----
-
-## Current Issues / Improvement Opportunities
-
-### Layout & Information Architecture
-- Default tab is "Details" but most users coming to Study Summary want signals — consider defaulting to Signals tab or a combined view
-- Study Details tab duplicates metadata already shown in the context panel's StudyInspector (when on landing page)
-- No visual summary/dashboard on the Details tab — just raw metadata fields
-- The three sections in Signals tab (heatmap, grid, bar chart) are stacked vertically with no side-by-side option, making it hard to see all at once
-
-### Signal Heatmap
-- Capped at 30 endpoints — no way to see or navigate to the rest
-- Aggregates across sexes (max score) — loses M/F split that the spec calls for
-- No sex toggle/facet as specified in the design spec (SS12.4)
-- No row grouping by organ system or endpoint type
-- Fixed 70px column width — may be too narrow or too wide depending on dose count
-- No legend for the color scale
-
-### Signal Grid
-- No pagination — all filtered rows rendered at once (could be hundreds)
-- No column visibility toggle — all 12 columns always shown
-- P-value and trend columns show formatted text but no color coding (spec calls for background colors from the p-value scale)
-- Statistical flag and dose-response flag show only checkmarks — no color (spec: green check / gray X)
-- No treatment-related column (the spec includes it in the grid)
-
-### Context Panel
-- Correlations row click navigates to dose-response but doesn't pass the endpoint as a filter parameter
-- No "View in target organs" or "View in histopathology" links
-- Statistics pane shows flat key-value list — could benefit from signal score component breakdown (stat/trend/effect/bio weights)
-- Tox Assessment form is default-closed — easy to miss
-
-### General
-- No keyboard navigation (arrow keys in grid, tab between panes)
-- No responsive behavior — fixed 260px + 280px sidebars with flex-1 center
-- Generate Report button styling is subtle — could be more prominent for a primary action
