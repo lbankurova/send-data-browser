@@ -655,7 +655,7 @@ When an endpoint is selected, the content area renders as a scrollable form:
 ```
 +──────────────────────────────────────────+
 │ Causality: {endpoint_label}              │  ← header (text-sm font-semibold)
-│ {domain dot} {domain} · {organ_system}   │  ← subtitle (text-xs text-muted-foreground)
+│ {domain colored text} · {organ_system}   │  ← subtitle (text-xs text-muted-foreground, domain via getDomainBadgeColor().text)
 +──────────────────────────────────────────+
 │                                          │
 │ COMPUTED EVIDENCE          (section hdr) │
@@ -731,8 +731,7 @@ Each criterion renders in a card-row inside a bordered container. Shared structu
 
 **Evidence line (computed criteria only):** `text-[10px] text-muted-foreground mt-0.5`
 - Shows the data values that produced the score
-- P-values and effect sizes use standard color functions from `severity-colors.ts`
-- Pattern names, organ counts, etc. are plain text
+- All text is neutral `text-muted-foreground` — no color on p-values or effect sizes (this is a form, not a heatmap; follows neutral-at-rest principle §1.11)
 
 #### Dot gauge
 
