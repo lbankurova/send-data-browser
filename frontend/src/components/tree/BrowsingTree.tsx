@@ -28,6 +28,7 @@ const VIEW_ICONS: Record<string, React.ReactNode> = {
   "target-organs": <Crosshair className="h-4 w-4 text-muted-foreground" />,
   histopathology: <Microscope className="h-4 w-4 text-muted-foreground" />,
   "noael-decision": <Target className="h-4 w-4 text-muted-foreground" />,
+  "clinical-observations": <AlertTriangle className="h-4 w-4 text-muted-foreground" />,
   validation: <ShieldCheck className="h-4 w-4 text-muted-foreground" />,
 };
 
