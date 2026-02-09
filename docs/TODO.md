@@ -16,6 +16,7 @@
 - `BUG`, `SD`, `RED` items touching frontend → **frontend-dev** or **ux-designer**
 - `BUG`, `HC`, `MF`, `GAP` items touching backend → **backend-dev**
 - `GAP-11`, `GAP-12`, `RED` items (design) → **ux-designer**
+- `FEAT` items (backend plumbing) → **backend-dev**; (UI components) → **frontend-dev**; (workflow design) → **ux-designer**
 - Spec divergences needing doc updates → **docs-agent**
 - Code quality (dead code, bundle, duplication) → **review**
 
@@ -32,9 +33,19 @@
 | Gap | 8 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 3 | 1 | Center view / context panel data overlap |
-| **Total** | **25** | **24** | |
+| **Incoming feature** | **8** | **0** | **Spec'd in `docs/incoming/`, pending implementation** |
+| **Total** | **33** | **24** | |
 
 ## Remaining Open Items
+
+**Incoming features (prototype-scope, ready to build):**
+- FEAT-01: Temporal Evidence API — **IMPLEMENTED, needs commit** (backend + frontend plumbing)
+- FEAT-02 → FEAT-03: Time-course tab → spaghetti plot (sequential, blocked on FEAT-01 commit)
+- FEAT-04: Subject profile context panel (blocked on FEAT-01 commit)
+- FEAT-05: Endpoint bookmarks (independent — can start anytime)
+- FEAT-06: Subject-level histopath matrix (blocked on FEAT-01 + FEAT-04)
+- FEAT-07: Clinical observations view (blocked on FEAT-01 commit)
+- FEAT-08: Causal inference tool (independent — needs design review first)
 
 **Defer to production/Datagrok:**
 - HC-01, HC-02: Dynamic dose group mapping (essential for multi-study)
@@ -359,6 +370,79 @@
 - **Issue:** Context panel lists contributing endpoints (endpoint, domain, count) which is a simplified duplicate of the Evidence tab grid.
 - **Fix:** Replace with a domain-count summary (e.g., "LB: 8 endpoints, MI: 3 endpoints") instead of listing individual endpoints.
 - **Status:** Open
+
+---
+
+## Incoming Features
+
+> **Source:** Specs in `docs/incoming/` — proposed features with full UI/API specifications.
+> **Dependency chain:** FEAT-01 is the data foundation; FEAT-02/03/04/06 build on it. FEAT-05/08 are independent.
+> **Role hints:** FEAT-01 → backend-dev. FEAT-02–08 → frontend-dev (with ux-designer review). FEAT-08 also needs ux-designer for workflow design.
+
+### FEAT-01: Temporal Evidence API (spec 01)
+- **Spec:** `docs/incoming/01-temporal-evidence-api.md`
+- **Files:** `backend/routers/temporal.py`, `backend/main.py`, `frontend/src/types/timecourse.ts`, `frontend/src/lib/temporal-api.ts`, `frontend/src/hooks/useTimecourse.ts`
+- **Scope:** 4 backend endpoints (continuous timecourse, CL timecourse, subject profile, subject histopath matrix) + frontend types/hooks/fetch functions
+- **Status:** IMPLEMENTED (uncommitted) — all 4 endpoints functional, router wired into `main.py`, frontend types + hooks + API layer complete. Needs commit + acceptance testing against PointCross data.
+- **Owner:** backend-dev
+- **Blocks:** FEAT-02, FEAT-03, FEAT-04, FEAT-06, FEAT-07
+
+### FEAT-02: Time-Course Tab in Dose-Response (spec 02)
+- **Spec:** `docs/incoming/02-timecourse-tab.md`
+- **Files:** `frontend/src/components/analysis/DoseResponseView.tsx`
+- **Scope:** New "Time-course" tab in evidence panel — Recharts line chart of group mean ± SD over study days, sex-faceted, with Y-axis toggle (Absolute / % change / % vs control). Significant timepoints marked with red dots.
+- **Status:** Not started
+- **Owner:** frontend-dev
+- **Blocked by:** FEAT-01
+- **Blocks:** FEAT-03
+
+### FEAT-03: Subject-Level Spaghetti Plot (spec 03)
+- **Spec:** `docs/incoming/03-spaghetti-plot.md`
+- **Files:** `frontend/src/components/analysis/DoseResponseView.tsx`
+- **Scope:** "Show subjects" toggle on Time-course tab — overlays individual animal trajectories on group mean chart. Hover shows USUBJID tooltip, click selects subject → triggers subject profile panel.
+- **Status:** Not started
+- **Owner:** frontend-dev
+- **Blocked by:** FEAT-02, FEAT-04
+
+### FEAT-04: Subject Profile Context Panel (spec 04)
+- **Spec:** `docs/incoming/04-subject-profile-panel.md`
+- **Files:** `frontend/src/components/panels/ContextPanel.tsx`, `frontend/src/contexts/ViewSelectionContext.tsx`
+- **Scope:** New context panel mode showing cross-domain summary for one animal: demographics, BW sparkline, LB values, CL timeline, MI/MA findings. Triggered by subject selection from spaghetti plot or future subject-selection UI.
+- **Status:** Not started
+- **Owner:** frontend-dev
+- **Blocked by:** FEAT-01
+
+### FEAT-05: Endpoint Bookmarks (spec 05)
+- **Spec:** `docs/incoming/05-endpoint-bookmarks.md`
+- **Files:** `backend/routers/annotations.py` (add schema type), all view components (star icon), `frontend/src/hooks/useAnnotations.ts` (existing — no changes)
+- **Scope:** Lightweight star-toggle bookmarking for endpoints. Visible cross-view. "Bookmarked only" filter toggle in rails. Persists via annotations API.
+- **Status:** Not started
+- **Owner:** frontend-dev + backend-dev (trivial backend change)
+- **Blocked by:** None (independent)
+
+### FEAT-06: Subject-Level Histopathology Matrix (spec 06)
+- **Spec:** `docs/incoming/06-subject-level-histopath.md`
+- **Files:** `frontend/src/components/analysis/HistopathologyView.tsx`
+- **Scope:** "By subject" toggle on severity matrix — replaces dose-group columns with individual animal columns. Cells show per-subject severity grades. Click subject column → subject profile.
+- **Status:** Not started
+- **Owner:** frontend-dev
+- **Blocked by:** FEAT-01, FEAT-04
+
+### FEAT-07: Clinical Observations Timecourse View (spec 07)
+- **Spec:** `docs/incoming/07-clinical-observations-view.md`
+- **Files:** New route + component + tree item + context panel variant
+- **Scope:** New analysis view for CL domain. Two-panel layout: observation rail + evidence panel (grouped bar chart by study day, faceted by sex). Context panel shows incidence statistics and dose-relationship assessment.
+- **Status:** Not started
+- **Owner:** frontend-dev
+- **Blocked by:** FEAT-01
+
+### FEAT-08: Causal Inference Tool — Bradford Hill Worksheet (spec 08)
+- **Spec:** `docs/incoming/08-causal-inference-tool.md`
+- **Files:** `frontend/src/components/analysis/DoseResponseView.tsx` (Hypotheses tab), `backend/routers/annotations.py` (add schema type), `docs/systems/annotations.md`
+- **Scope:** New "Causality" tool in Hypotheses tab. Structured worksheet with 5 auto-populated Bradford Hill criteria + 4 expert-input criteria + overall assessment radio buttons. Persists via annotations API as `causal-assessment` schema type.
+- **Status:** Not started
+- **Owner:** ux-designer (workflow design) + frontend-dev (implementation)
+- **Blocked by:** None (uses existing rule_results and signal data)
 
 ---
 
