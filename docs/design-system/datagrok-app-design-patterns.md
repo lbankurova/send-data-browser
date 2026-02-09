@@ -1,467 +1,198 @@
 # Datagrok Application Design Patterns
 
-A generalized pattern library for building Datagrok applications. Every pattern described here was extracted from the SEND Data Browser prototype and applies to any domain-specific Datagrok app (clinical, genomics, chemistry, engineering). Patterns reference the canonical API file (`datagrok-patterns.ts`) by number.
+Generalized pattern library for Datagrok applications. Patterns extracted from the SEND Data Browser prototype. References the canonical API file (`datagrok-patterns.ts`) by number.
 
 ---
 
-## 1. Navigation Patterns
+## 1. User Personas
 
-### 1.1 Toolbox Tree as Primary Navigation
+Seven personas use this tool. Each has distinct primary views and goals. Full narrative descriptions preserved in `user-personas-and-view-analysis-original.md`.
 
-**Pattern:** Use an accordion-based tree in the left toolbox as the sole navigation mechanism. Do not use tab bars, URL routes, or sidebar icons for primary view switching.
+### Quick Reference
 
-**When to use:** Any application with more than two views or data categories.
+| ID | Archetype | Core question | Primary views | Annotates |
+|----|-----------|--------------|---------------|-----------|
+| P1 | Study Director "The Assessor" | What happened, and what does it mean? | Signals, NOAEL, D-R | ToxFinding, CausalAssessment |
+| P2 | Pathologist "The Microscopist" | What do the slides show? | Histopathology | PathologyReview, ToxFinding |
+| P3 | Reg Toxicologist "The Synthesizer" | What goes into the regulatory document? | Signals, Target Organs, NOAEL | Minimal (consumes) |
+| P4 | Data Manager "The Validator" | Is the dataset clean and conformant? | Validation, Domain Tables | ValidationRecord/Issue |
+| P5 | Biostatistician "The Quantifier" | Are the numbers right? | Dose-Response | Minimal (advises P1) |
+| P6 | QA Auditor "The Inspector" | Was everything documented and reviewed? | Validation, Domain Tables | Audit observations (future) |
+| P7 | Reg Reviewer "The Skeptic" | Can I trust the sponsor's conclusions? | Signals, Target Organs, NOAEL | Reviewer notes (future) |
 
-**When NOT to use:** Single-view applications or embedded viewers that occupy a table view with no custom navigation.
+### Mental Models (design-critical)
 
-**API reference:** Pattern #9 (Toolbox), Pattern #16 (Tree View)
+- **P1 (Study Director):** Thinks in convergence — elevated ALT + liver hypertrophy + hepatocellular vacuolation = hepatotoxicity. Distinguishes statistical from biological significance. Fear: missing a real signal (regulatory rejection) or over-calling one (killing a drug).
+- **P2 (Pathologist):** Specimen-centric — "Liver → what did I see?" not "ALT → where is the correlate?" Navigates tissue-by-tissue, not endpoint-by-endpoint. Primary metrics: incidence and severity.
+- **P3 (Reg Tox):** Cross-study synthesis — needs NOAEL, target organs, dose-limiting findings fast. Doesn't re-derive conclusions, verifies and cites them.
+- **P4 (Data Manager):** Variable-and-domain-centric — "Is LBTESTCD populated correctly?" Cares about structural conformance, not scientific interpretation.
+- **P5 (Biostatistician):** Distributions, effect sizes, test assumptions. Distrusts small effects with small p-values in large samples. Takes large effects with moderate p-values seriously in small samples.
+- **P6 (QA Auditor):** Process and traceability — "Was this step documented? Is there an audit trail?" Doesn't evaluate findings, evaluates whether rationale was recorded.
+- **P7 (Reg Reviewer):** Skeptical verification — "Show me the evidence for this NOAEL." Wants transparent reasoning, not hidden inconvenient findings.
 
-**Implementation:**
-```typescript
-const acc = ui.accordion('App Name');
-acc.addPane('Analysis Views', () => {
-  const tree = ui.tree();
-  tree.group('Summary').item('Study Summary');
-  tree.group('Drill-Down').item('Dose-Response');
-  tree.group('Drill-Down').item('Target Organs');
-  return tree.root;
-});
-acc.addPane('Raw Data', () => {
-  const tree = ui.tree();
-  tree.group('Domains').item('Demographics');
-  tree.group('Domains').item('Laboratory');
-  return tree.root;
-});
-view.toolbox = acc.root;
-```
+### View-Persona Utility Matrix
 
-**Tree structure conventions:**
-- Group by function, not by data source. In SEND Data Browser, the tree groups are "Analysis Views" (study summary, dose-response, target organs, histopathology, NOAEL) and "Domains" (DM, LB, BW, MI, etc.). The user thinks "I want to analyze dose-response," not "I want the dose_response_metrics DataFrame."
-- Place analysis/insight views above raw data views. This reinforces the "insights first" principle (see Section 2.1).
-- Use descriptive labels, not codes. "Laboratory (LB)" not just "LB." Include the code in parentheses for domain experts who think in codes.
-- Indent sub-items under groups. Do not flatten the tree.
+Scored 0-5. **Bold** = primary workspace (5).
 
-**SEND Data Browser example:** The browsing tree has two top-level groups. "Analysis Views" contains Study Summary, Dose-Response, Target Organs, Histopathology, NOAEL & Decision, and Validation. "Domains" contains all SEND domain tables (DM, LB, BW, MI, MA, CL, OM). Clicking any item swaps the center panel content.
+| View | P1 | P2 | P3 | P4 | P5 | P6 | P7 |
+|------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| Landing Page | 3 | 2 | 4 | 3 | 2 | 3 | 3 |
+| Study Summary (Details) | 3 | 2 | 4 | 2 | 2 | 3 | 3 |
+| Study Summary (Signals) | **5** | 3 | **5** | 1 | 3 | 2 | **5** |
+| Dose-Response | **5** | 2 | 4 | 0 | **5** | 1 | 4 |
+| Target Organs | 4 | 3 | **5** | 0 | 2 | 1 | **5** |
+| Histopathology | 4 | **5** | 3 | 0 | 1 | 2 | 4 |
+| NOAEL Decision | **5** | 3 | **5** | 0 | 3 | 2 | **5** |
+| Validation | 2 | 0 | 2 | **5** | 0 | **5** | 3 |
+| Adverse Effects | 3 | 2 | 3 | 1 | 3 | 1 | 3 |
+| Domain Tables | 2 | 1 | 1 | **5** | 3 | 4 | 3 |
 
----
+### Critical Paths
 
-### 1.2 View Switching with State Preservation
+| Persona | Path | Time allocation |
+|---------|------|-----------------|
+| P1 Study Director | Signals → Target Organs → NOAEL Decision (+ D-R detours) | Even across 3 views |
+| P2 Pathologist | Histopathology (95%) → brief excursions for clinical correlates | 95% Histopath |
+| P3 Reg Toxicologist | Landing → Signals → NOAEL → Report (fast extraction, repeat per study) | Even; many studies |
+| P4 Data Manager | Validation ↔ Domain Tables (fix-verify cycle) | 50/50 loop |
+| P5 Biostatistician | Dose-Response (80%) → Signals → NOAEL | 80% D-R |
+| P6 QA Auditor | Validation → Domain Tables → Study Summary (inspect, don't create) | Mostly Validation |
+| P7 Reg Reviewer | Signals → Target Organs → NOAEL → spot-check D-R/Histo/Domains | Follows sponsor logic |
 
-**Pattern:** When the user navigates from View A to View B and back to View A, restore View A's filter state, scroll position, selection, and sort order. The user should never lose context by switching views.
-
-**When to use:** Always. Every multi-view application.
-
-**When NOT to use:** Never. Losing state on navigation is always a defect.
-
-**API reference:** Pattern #20 (Events), Pattern #2 (DataFrame filter/selection)
-
-**Implementation approach:**
-- Store filter state, sort state, and selection in a shared context (React Context, Datagrok property bag, or a state management object).
-- Tag each state object with a `_view` discriminator so views do not collide.
-- On view mount, read the persisted state. On view unmount (or navigation away), persist the current state.
-
-**SEND Data Browser example:** The `ViewSelectionContext` carries `_view` tags (`"dose-response"`, `"validation"`, etc.) so each view's selection survives navigation. Filters are held in local state keyed by view, and React Query caches server data for 5 minutes, so returning to a view does not trigger a reload.
-
----
-
-### 1.3 No Route-Based Navigation for Internal Views
-
-**Pattern:** Treat the Datagrok shell as a single-page container. Internal view switching happens by swapping content in the center panel, not by changing browser URLs.
-
-**When to use:** Datagrok plugin development where the shell provides the chrome (toolbox, context panel, ribbon).
-
-**When NOT to use:** Standalone web applications that need bookmarkable URLs or browser back-button navigation. The SEND Data Browser prototype used React Router because it was a standalone app, but in a true Datagrok plugin, the shell manages view lifecycle.
-
-**API reference:** Pattern #3 (TableView), Pattern #1 (Package boilerplate)
-
-**Rationale:** Datagrok's `grok.shell` manages view lifecycle. Adding URL routing creates a parallel navigation system that fights the shell. Use the toolbox tree click handler to call `grok.shell.addTableView()` or swap a custom view's content.
-
----
-
-## 2. Information Architecture
-
-### 2.1 Insights First, Data Second
-
-**Pattern:** Default the user into an analysis/insight view, not a raw data table. Raw data is available one click away but is not the starting point.
-
-**When to use:** Any application where users make decisions from computed results rather than raw records.
-
-**When NOT to use:** Data entry or data cleaning tools where the raw records ARE the primary work surface.
-
-**API reference:** Pattern #25 (Complete pattern: Building a Study Analysis View)
-
-**SEND Data Browser example:** When a user opens a study, they land on the Study Summary view showing a signal heatmap, synthesized insights, and target organ identification. The raw domain tables (DM, LB, BW) are available in the tree under "Domains" but are not the default. The scientific question "What happened in this study?" is answered immediately without requiring the user to navigate to individual data tables and mentally synthesize the results.
-
-**Anti-pattern:** Landing on a list of domain tables with row counts and forcing the user to open each one to find patterns. This is the "spreadsheet dump" anti-pattern.
-
----
-
-### 2.2 Context Panel as the Primary Detail Surface
-
-**Pattern:** Use the right-side context panel (Datagrok's property/info panel area) as the primary surface for showing details about the currently selected item. Do not use modals, dedicated detail pages, or inline expansion rows.
-
-**When to use:** Any time the user needs to see details about a selected row, cell, or visual element while keeping the overview visible.
-
-**When NOT to use:** Configuration dialogs that require focused user input (use `ui.dialog()` for those). Bulk data display that exceeds 280px of width.
-
-**API reference:** Pattern #6 (Info Panels), Pattern #7 (Custom Info Panels), Pattern #8 (Accordion)
-
-**Context panel structure (accordion panes, ordered by priority):**
-1. **Domain-specific insights** (expanded by default) -- synthesized rules, narrative text, key findings
-2. **Statistics / metrics** (expanded by default) -- quantitative details about the selection
-3. **Related items** (expanded by default) -- cross-references, correlations, linked entities
-4. **Annotation / review form** (collapsed by default, or expanded in review-focused views) -- human judgment capture
-5. **Navigation links** (collapsed by default) -- cross-view links to drill deeper
-
-**SEND Data Browser example:** Every analysis view has a context panel with this structure. The Study Summary context panel shows InsightsList (synthesized rules), Statistics (signal score, p-value, effect size), Correlations (other findings in the same organ), and Tox Assessment (annotation form). Selection in the heatmap, grid, or Findings cards all update the same context panel.
-
----
-
-### 2.3 Cross-View Linking via Identifiers
-
-**Pattern:** Include clickable links in context panel panes that navigate to a related view with a filter pre-applied. The link text names the destination and the filter: "View in dose-response" or "View target organ: Liver."
-
-**When to use:** Any time two views share a common identifier (endpoint, organ, subject, compound).
-
-**When NOT to use:** Do not link between views that share no common filter key. A link that navigates but cannot apply a filter is disorienting.
-
-**API reference:** Pattern #16 (Tree View for navigation), Pattern #20 (Events for cross-view communication)
-
-**Implementation:**
-- The link handler sets a filter value in the shared selection context, then triggers a view switch.
-- The target view reads the shared context on mount and applies the filter.
-- Use a `pendingNavigation` state pattern: set the target (view + filter), trigger navigation, let the target view consume and clear the pending state.
-
-**SEND Data Browser example:** In the Study Summary context panel, correlation rows are clickable. Clicking "AST" in the correlations table navigates to the Dose-Response view. In every context panel, a "Related views" pane offers links: "View target organ: Liver" navigates to Target Organs, "View histopathology" navigates to Histopathology, "View NOAEL decision" navigates to NOAEL & Decision.
-
----
-
-## 3. Data Display Patterns
-
-### 3.1 The Universal View Layout: Grid + Chart + Context Panel
-
-**Pattern:** Every analysis view follows the same three-zone layout:
+### Collaboration Flow
 
 ```
-+--[260px]--+----------[flex-1]----------+--[280px]--+
-|            | Filters (top bar)          |            |
-| Toolbox    | Chart(s)                   | Context    |
-| Tree       | Grid (table)               | Panel      |
-|            |                            | (accordion)|
-+------------+----------------------------+------------+
+P4 Data Manager → P2 Pathologist → P1 Study Director → P3 Reg Toxicologist → P7 Reg Reviewer
+                                         ↕
+                                    P5 Biostatistician
+P6 QA Auditor audits P4 (validation) and P1 (assessments)
 ```
 
-Filters at the top of the center panel. Chart(s) above the grid. Grid below. Context panel on the right updating on selection.
+Key handoffs: P2→P1 (severity grades, peer review), P5→P1 (statistical advice), P4→P6 (validation dispositions), P1→P3 (NOAEL, target organs), P1→P7 (submission package).
 
-**When to use:** Every analysis view. This is the Datagrok interaction model.
+### Persona-Driven Design Implications
 
-**When NOT to use:** Landing pages (no grid, no chart -- just a list/table and hero). Configuration screens.
+1. **Navigation:** Reorder tree by role — P1/P3/P7 see Analysis first, P4/P6 see Validation/Domains first. Never hide views.
+2. **Landing page:** Add summary columns (target organs, NOAEL, review progress) so P3/P6 can triage without opening studies.
+3. **Annotations:** Production needs per-user layers (P1+P2 concurrent), comment threads (P1↔P2 adversity, P4↔P6 validation), audit trail (P6/P7), role-typed annotations (P6/P7).
+4. **Cross-view links:** Weight by role — P1 prioritizes D-R/NOAEL, P2 prioritizes Histopath, P5 prioritizes D-R.
+5. **Reports:** Each persona needs different output: P1 study narrative, P2 pathology tables, P3 regulatory summary, P4 validation report, P5 statistical tables, P6 audit trail.
+6. **Keyboard efficiency:** P2 (40+ specimens: arrow keys, quick-save), P4 (50+ records: batch actions), P1 (50+ endpoints: rail arrows, escape-deselect).
 
-**API reference:** Pattern #3 (TableView), Pattern #4 (Viewers), Pattern #5 (Filters), Pattern #9 (Toolbox)
+### Design Principles — Persona Validation
 
-**The filter-chart-grid stack:**
-- Filters live in a horizontal bar at the top of the center panel (within the view, not in the toolbox). Dropdowns, search inputs, range sliders, checkboxes. All `text-xs`, compact.
-- Charts occupy a collapsible area below the filters. When no item is selected (for charts that require selection), show a prompt: "Select an endpoint to view the chart."
-- The grid occupies the remaining height, scrollable. TanStack Table or Datagrok Grid.
-- Filters apply client-side to both the chart and the grid simultaneously. Changing a filter updates the grid row count and the chart data.
-
-**SEND Data Browser example:** The Dose-Response view has a filter bar (endpoint search, sex, data type, organ system), a Recharts chart area (line/bar chart per sex), and a metrics grid (1342 rows, 12 columns). Selecting a row in the grid updates the chart and the context panel. Applying a filter narrows both the grid and the chart.
-
----
-
-### 3.2 Color Coding Conventions
-
-**Pattern:** Use consistent, application-wide color scales for recurring data categories. Define them once, use them everywhere.
-
-**Color scale categories:**
-
-| Category | Use case | Scale type |
-|----------|----------|------------|
-| Statistical significance | p-values across any statistical test | Diverging: red (significant) to green (not significant) |
-| Severity / risk gradient | Severity scores, signal scores, risk levels | Sequential: light warm (low) to dark warm (high) |
-| Categorical groups | Dose groups, treatment arms, domains | Qualitative: distinct hues per category |
-| Binary sex differentiation | Male vs. female | Two-color: blue (M), red (F) |
-
-**Rules for color-coded cells:**
-- Use background color for the cell, not just text color. Background is visible at a glance in dense grids.
-- When background is dark (score >= 0.5 on a 0-1 scale), use white text. When background is light, use dark gray text.
-- Null/missing values get no color (default background) and display an em dash.
-- Always provide a text value alongside the color. Color alone is not accessible.
-
-**API reference:** Pattern #23 (Grid Customization -- Cell Rendering, Color Coding)
-
-**SEND Data Browser example:** The signal heatmap uses the signal score palette (green to red). The grid uses p-value colors for the p-value column, domain-specific colors for domain badges (LB=blue, BW=emerald, MI=rose, etc.), and dose-level colors for dose badges (control=gray, low=blue, mid=amber, high=red). These same palettes appear in every view.
-
-See Document 2 (`datagrok-visual-design-guide.md`) for the exact hex values.
+| Principle | Primary beneficiary | Risk if violated |
+|-----------|-------------------|-----------------|
+| Insights first, data second | P1, P3, P7 | P4 confused (mitigated by tree ordering) |
+| Context panel is the product | P1 (assessment forms), P4 (fix guidance) | P2 underserved if PathologyReview hard to find |
+| Selection cascade | P1, P5 (drill-down) | P2 frustrated if specimen selection doesn't update context |
+| Cross-view linking | P1, P3 (evidence chains) | P2 loses context if links don't carry specimen identity |
+| Color is signal | P5 (thresholds), P1 (severity) | P6 overwhelmed if everything colored |
+| Consistency across views | All | P3 frustrated if NOAEL presented differently across views |
 
 ---
 
-### 3.3 Sentence Case Throughout
+## 2. Navigation Patterns
 
-**Pattern:** Use sentence case for all UI text. Column headers, section headers, button labels, dropdown options, descriptions, tooltips.
+### 2.1 Toolbox Tree as Primary Navigation (API #9, #16)
 
-**Exceptions:**
-- Dialog titles and L1 page headers: Title Case ("SEND Validation", "Study: PointCross")
-- Context menu action labels: Title Case ("Export to CSV", "Copy Issue ID")
-- Domain codes and abbreviations: UPPERCASE ("DM", "LB", "USUBJID")
-- Specific button exceptions: OK, SAVE, RUN
+Accordion-based tree in left toolbox. Group by function: "Analysis Views" (Signals, D-R, Target Organs, Histopath, NOAEL) above "Domains" (DM, LB, BW, MI, etc.). Use descriptive labels: "Laboratory (LB)" not "LB". Do not use tab bars, URL routes, or sidebar icons for view switching.
 
-**When to use:** Always. This is a firm convention, not a guideline.
+### 2.2 View Switching with State Preservation (API #20, #2)
 
-**SEND Data Browser example:**
-- Button: "Apply fix", "Flag for review", "Generate report"
-- Column header: "Signal score", "Review status", "Assigned to"
-- Section header: "Rule detail", "Review progress", "Suggested fix"
-- Dropdown: "Not reviewed", "Accept all"
+Store filter/sort/selection state per view in shared context with `_view` discriminator. React Query caches for 5min. The user must never lose context by switching views.
+
+### 2.3 No Route-Based Navigation in DG Plugins (API #3)
+
+Datagrok's `grok.shell` manages view lifecycle. The SEND Browser prototype uses React Router as a standalone app, but a true DG plugin would use shell view management instead.
+
+---
+
+## 3. Information Architecture
+
+### 3.1 Insights First, Data Second (API #25)
+
+Default users into analysis views, not raw tables. The scientific question ("What happened in this study?") is answered immediately. Raw data is one click away under "Domains" in the tree.
+
+### 3.2 Context Panel as Primary Detail Surface (API #6, #7, #8)
+
+Right-side panel (280px). Never use modals, dedicated pages, or inline row expansion for details.
+
+**Accordion pane order (priority):**
+1. Domain-specific insights (expanded) — synthesized rules, narrative
+2. Statistics / metrics (expanded) — quantitative details
+3. Related items (expanded) — cross-references, correlations
+4. Annotation / review form (collapsed or expanded per view)
+5. Navigation links (collapsed) — cross-view drill-down
+
+### 3.3 Cross-View Linking via Identifiers (API #16, #20)
+
+Context panel links navigate to related views with pre-applied filters. Use `pendingNavigation` state pattern: set target (view + filter), trigger navigation, target view consumes and clears. Never link between views with no shared filter key.
 
 ---
 
 ## 4. Interaction Patterns
 
-### 4.1 The Selection Cascade
-
-**Pattern:** Every interactive view follows this interaction flow:
+### 4.1 The Selection Cascade (API #20, #7)
 
 ```
-User clicks item (grid row, heatmap cell, chart element, card)
-    |
-    v
-Selection state updates (shared context)
-    |
-    v
-Context panel re-renders with details for the selected item
-    |
-    v
-Context panel shows insights, statistics, related items, and cross-view links
-    |
-    v
-User clicks cross-view link in context panel
-    |
-    v
-Target view opens with filter pre-applied to the linked identifier
+User clicks item → selection state updates → context panel re-renders → cross-view links available
 ```
 
-**When to use:** Every analysis view. This is the core interaction loop.
+Debounce 50-200ms. Click same item = deselect (toggle). Mutually exclusive within a view. Empty state prompt when nothing selected.
 
-**When NOT to use:** Landing pages where selection means "choose which study to open" (use double-click or context menu to open, not the selection cascade).
+### 4.2 Filters in the View, Not the Toolbox (API #5, #14)
 
-**API reference:** Pattern #20 (Events -- onCurrentRowChanged, onSelectionChanged), Pattern #7 (Custom Info Panels)
+Compact horizontal bar at top of center content: `flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2`. Row count right-aligned. Client-side filtering of both grid and charts. Default all filters to "All".
 
-**Implementation details:**
-- Debounce selection updates at 50-200ms to avoid rapid context panel re-renders during keyboard navigation.
-- Click on the same item again deselects (toggle behavior).
-- Selection is mutually exclusive within a view: selecting an organ clears any endpoint selection, and vice versa.
-- Context panel shows a prompt when nothing is selected: "Select a signal from the heatmap or grid to view details."
+### 4.3 Ribbon for Actions, Not Navigation (API #10)
 
-**SEND Data Browser example:** In Study Summary, clicking a heatmap cell sets the selection (endpoint + dose + sex). The context panel updates to show insights for that endpoint, statistics for that specific signal, correlations within the organ system, and a Tox Assessment annotation form. The user can then click "View in dose-response" in the correlations pane to navigate to the Dose-Response view filtered to that endpoint.
-
----
-
-### 4.2 Filters in the View, Not in the Toolbox
-
-**Pattern:** Place per-view filters in a compact horizontal bar at the top of the center panel content area. Do not put them in the left toolbox.
-
-**When to use:** When filters are view-specific (endpoint, sex, severity) and change frequently during analysis.
-
-**When NOT to use:** Global filters that affect multiple views (e.g., study selection) belong in the toolbox. Datagrok's built-in filter viewer (`tv.filters()`) docks in the left panel -- this is fine for exploration of a single table view. But for custom analysis views, inline filters are better.
-
-**API reference:** Pattern #5 (Filters), Pattern #14 (Input Controls)
-
-**Filter bar conventions:**
-- Compact: `text-xs` labels, `rounded border bg-background px-2 py-1 text-xs` controls.
-- Horizontal flex-wrap: `flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2`.
-- Row count indicator right-aligned: "{filtered} of {total} rows".
-- Apply client-side to both grid and charts simultaneously.
-- Default to "All" for every filter (no pre-filtering on load).
-
-**SEND Data Browser example:** Every analysis view has a filter bar. The Study Summary Signals tab filters by endpoint type, organ, sex, min score, and significance. The Dose-Response view filters by endpoint search (with autocomplete), sex, data type, and organ system. The Validation view has status and subject filters in its divider bar.
-
----
-
-### 4.3 Ribbon for Actions, Not Navigation
-
-**Pattern:** Use the ribbon (top action bar) for view-specific actions: export, refresh, generate report, settings. Do not use the ribbon for navigation between views.
-
-**When to use:** When a view has actionable operations (export, compute, annotate).
-
-**When NOT to use:** Do not add view-switching buttons to the ribbon. Navigation belongs in the toolbox tree.
-
-**API reference:** Pattern #10 (Ribbon)
-
-**Implementation:**
-```typescript
-view.setRibbonPanels([[
-  ui.iconFA('download', () => exportData(), 'Export data'),
-  ui.iconFA('sync', () => refreshAnalysis(), 'Refresh analysis'),
-  ui.iconFA('file-alt', () => generateReport(), 'Generate report'),
-]]);
-```
-
-**SEND Data Browser example:** The Study Summary view has a "Generate Report" button in the tab bar (acting as a ribbon-level action). The landing page has context menu actions (Open Study, Open Validation, Generate Report, Export) rather than ribbon buttons, because the landing page is a list, not an analysis view.
+Ribbon/tab bar: export, refresh, generate report. Navigation belongs in the toolbox tree.
 
 ---
 
 ## 5. Annotation Patterns
 
-### 5.1 Expert Judgment Capture (Sticky Meta)
+### 5.1 Expert Judgment Capture (API #7, #8, #14)
 
-**Pattern:** Provide annotation forms in the context panel for capturing expert judgment. Forms appear as the last accordion pane in the context panel and are keyed to the currently selected item.
-
-**When to use:** Any domain where human judgment must be recorded alongside computed data (toxicology assessments, pathology reviews, data quality decisions, compliance dispositions).
-
-**When NOT to use:** Fully automated views with no human decision step.
-
-**API reference:** Pattern #7 (Custom Info Panels), Pattern #8 (Accordion), Pattern #14 (Input Controls)
-
-**Form conventions:**
-- Dropdowns for categorical judgments: "Treatment related: Yes / No / Equivocal / Not Evaluated"
-- Textarea for free-text comments: 2 rows, placeholder text.
-- SAVE button: `bg-primary text-primary-foreground`, disabled when no changes or while saving.
-- Footer: reviewer name + date of last save.
-- Form is keyed by the selection identifier (endpoint label, issue ID, subject ID). Changing selection loads the saved annotation for the new item.
-
-**SEND Data Browser example:** The `ToxFindingForm` captures treatment-relatedness, adversity, and comments for each toxicology finding. The `ValidationRecordForm` captures review status, assigned reviewer, and disposition for each validation issue. Both persist via a REST API with React Query managing cache invalidation.
-
----
+Forms in context panel, keyed to selected item by stable identifier (endpoint label, issue ID, subject ID). Dropdowns for categorical judgments, textarea for comments. SAVE button `btn.primary`, disabled when no changes. Footer: reviewer + last-save date. Form loads saved annotation when selection changes.
 
 ### 5.2 Two-Track Status Workflows
 
-**Pattern:** Separate "what happened to the data" (fix status) from "what a human decided" (review status). These are independent tracks.
-
-**When to use:** Compliance, validation, and quality review workflows where automated and human actions coexist.
-
-**When NOT to use:** Simple annotation workflows with a single status (e.g., "reviewed / not reviewed").
-
-**Fix status track:** Not fixed -> Auto-fixed / Manually fixed / Accepted as-is / Flagged
-
-**Review status track:** Not reviewed -> Reviewed -> Approved
-
-**SEND Data Browser example:** The Validation view uses two independent status tracks. Fix status tracks what happened to the underlying data issue (auto-fixed by script, manually corrected, accepted as intentional). Review status tracks human sign-off (not reviewed, reviewed, approved). An item can be "Auto-fixed" (fix status) but "Not reviewed" (review status) -- the automation ran but no human has confirmed it.
-
----
+Separate "what happened to the data" (fix status: Not fixed → Auto-fixed / Manually fixed / Accepted / Flagged) from "what a human decided" (review status: Not reviewed → Reviewed → Approved). Independent tracks — an item can be "Auto-fixed" but "Not reviewed".
 
 ### 5.3 Annotations Visible Across Views
 
-**Pattern:** Annotations saved in one view must be visible when the same entity appears in another view. If a user marks a finding as "Treatment-related" in the Dose-Response context panel, that annotation must appear when the same finding is viewed in the Study Summary context panel.
-
-**When to use:** Multi-view applications where the same entity (finding, subject, organ) appears in multiple views.
-
-**When NOT to use:** Single-view applications where this is not applicable.
-
-**Implementation:** Key annotations by a stable identifier (endpoint label, subject ID, issue ID), not by view or route. Store once, read everywhere.
-
-**SEND Data Browser example:** The `ToxFindingForm` is keyed by `endpointLabel`. Whether the user opens it from Study Summary, Dose-Response, or Target Organs, the same annotation data loads because the key is the same. React Query caching ensures the most recent save is reflected across all views without explicit synchronization.
+Key by stable identifier, not by view/route. Store once, read everywhere. React Query caching reflects latest save across all views.
 
 ---
 
 ## 6. Master-Detail Patterns
 
-### 6.1 Dual-Pane Master-Detail (Validation Pattern)
+### 6.1 Dual-Pane Master-Detail
 
-**Pattern:** Split the center panel into two vertical panes: a master table (top, 40% height) and a detail table (bottom, 60% height). Selecting a row in the master table populates the detail table with related records.
-
-**When to use:** Compliance/validation views, grouped issue triage, any workflow where items group under categories.
-
-**When NOT to use:** Analysis views where the grid + chart + context panel layout is more appropriate.
-
-**SEND Data Browser example:** The Validation view splits into a rules table (top, 8 rules) and an affected records table (bottom, records for the selected rule). A divider bar between them shows the record count and inline filters. Selecting a rule populates the bottom table. Clicking an issue ID in the bottom table switches the context panel from "rule" mode to "issue" mode.
-
----
+Split center: master table (top, `flex-[4]`) + detail table (bottom, `flex-[6]`). Selecting master row populates detail. Divider bar with count + filters between panes.
 
 ### 6.2 Context Panel Mode Switching
 
-**Pattern:** When a context panel must show fundamentally different content for different entity types (rule vs. record, organ vs. endpoint), implement mode switching with back/forward navigation.
+For views with multiple entity types (rule vs. record): maintain navigation history stack. `<` `>` buttons at panel top. Mode 1 = summary (category-level), Mode 2 = detail (record-level). Mode 2 links back to Mode 1 via rule ID click.
 
-**When to use:** Views where the user drills from a summary entity to a child entity within the same view (e.g., rule -> affected record).
+### 6.3 Findings + Heatmap Toggle
 
-**When NOT to use:** Views where the context panel always shows the same type of content (just with different data for different selections).
-
-**Implementation:**
-- Maintain a navigation history stack: `[{mode: "rule", id: "SD1002"}, {mode: "issue", id: "SD1002-003"}]`
-- Show `<` and `>` navigation buttons at the top of the context panel.
-- Mode 1 (summary): shows category-level detail, aggregate progress, disposition form.
-- Mode 2 (detail): shows record-level detail, evidence rendering, per-record action buttons.
-
-**SEND Data Browser example:** The Validation context panel has two modes. Mode 1 (Rule Review Summary) shows rule detail, review progress bar, and rule-level disposition. Mode 2 (Issue Review) shows record context, finding evidence, suggested fix, and per-record review form. The user navigates between modes via issue ID clicks (forward) and the back button (backward). The rule ID in Mode 2 is a clickable link back to Mode 1.
+Dual representations toggled by segmented control. Persistent elements (Decision Bar, filter bar) across both modes. Shared selection state. Escape returns from Heatmap to Findings.
 
 ---
 
-## 7. Dual-Mode Center Panel (Advanced)
+## 7. Anti-Patterns
 
-### 7.1 Findings + Heatmap Toggle
-
-**Pattern:** Provide two complementary representations of the same data in the center panel, toggled by a segmented control. One mode is narrative/synthesized (Findings), the other is spatial/quantitative (Heatmap/Grid). Both share the same selection state and context panel.
-
-**When to use:** When the user needs both a high-level narrative summary and a detailed spatial/quantitative view of the same dataset.
-
-**When NOT to use:** When one representation is sufficient. Do not add modes for the sake of adding modes.
-
-**Implementation:**
-- Segmented control: `[Findings] [Heatmap]` at the top of the center content, below any persistent elements.
-- Persistent elements (Decision Bar, filter bar) remain visible across both modes.
-- Selection state is shared: selecting an organ in Findings mode and switching to Heatmap mode preserves the selection.
-- Cross-mode navigation: clicking an organ card in Findings mode can switch to Heatmap mode and scroll to that organ.
-
-**SEND Data Browser example:** The Signals tab in Study Summary has a dual-mode center panel. Findings mode shows a structured synthesis: study-scope statements, target organ cards, modifiers, and review flags. Heatmap mode shows the organ-grouped signal matrix. A Decision Bar (NOAEL statement + metrics) persists across both modes. Clicking an organ card in Findings mode switches to Heatmap mode and expands/scrolls to that organ. Ctrl+click stays in Findings mode but selects the organ for the context panel. Escape returns from Heatmap to Findings.
-
----
-
-## 8. Anti-Patterns
-
-### 8.1 Do Not Use Modals for Detail Views
-
-Modals break the context panel pattern. The user loses sight of the grid/chart while reading details. Use the context panel instead.
-
-**Exception:** Configuration dialogs (settings, export options, NOAEL override) that require focused input.
-
-### 8.2 Do Not Put Navigation in the Ribbon
-
-The ribbon is for actions (export, refresh, compute). Navigation belongs in the toolbox tree. Mixing them confuses users about where to look for view switching.
-
-### 8.3 Do Not Use Tabs for Primary View Navigation
-
-Tabs suggest the content is related and switchable. Views in a Datagrok app are independent analyses. Use the tree, not tabs.
-
-**Exception:** Tabs within a single view for sub-modes (Details tab + Signals tab within Study Summary).
-
-### 8.4 Do Not Show Raw Data First
-
-If the user opens the app and sees "DM: 48 rows, 15 columns | LB: 2,400 rows, 22 columns," they have to do mental work to find insights. Show the analysis first.
-
-### 8.5 Do Not Use Inline Row Expansion for Details
-
-Expanding a row inline pushes other rows down, destroying spatial context. Use the fixed-position context panel instead.
-
----
-
-## Quick Reference: Pattern-to-API Mapping
-
-| Pattern | datagrok-patterns.ts # | Key API |
-|---------|------------------------|---------|
-| Package boilerplate | #1 | `DG.Package`, `grok.shell.newView()` |
-| DataFrame operations | #2 | `DG.DataFrame.fromCsv()`, `.filter`, `.selection` |
-| Table view | #3 | `grok.shell.addTableView()` |
-| Viewers (charts) | #4 | `tv.addViewer()`, `DG.Viewer.scatterPlot()` |
-| Filters | #5 | `tv.filters()` |
-| Info panels (annotated) | #6 | `//tags: panel, widgets` |
-| Custom info panels | #7 | `df.onCurrentRowChanged.subscribe()` |
-| Accordion | #8 | `ui.accordion()` |
-| Toolbox | #9 | `view.toolbox = element` |
-| Ribbon | #10 | `view.setRibbonPanels()`, `view.ribbonMenu` |
-| Sidebar | #11 | `grok.shell.sidebar.addPane()` |
-| Docking | #12 | `grok.shell.dockElement()` |
-| UI primitives | #13 | `ui.divV()`, `ui.divH()`, `ui.panel()` |
-| Input controls | #14 | `ui.input.choice()`, `ui.input.string()` |
-| Dialogs | #15 | `ui.dialog()` |
-| Tree view | #16 | `ui.tree()` |
-| Notifications | #17 | `grok.shell.info()`, `.warning()`, `.error()` |
-| Tooltips | #18 | `ui.tooltip.bind()` |
-| Context menus | #19 | `DG.Menu.popup()` |
-| Events | #20 | `df.onCurrentRowChanged`, `DG.debounce()` |
-| Custom viewer | #21 | `DG.JsViewer` subclass |
-| Semantic type detector | #22 | `//tags: semTypeDetector` |
-| Grid customization | #23 | `grid.onCellPrepare()` |
-| Progress indicator | #24 | `DG.TaskBarProgressIndicator.create()` |
-| Complete study view | #25 | Composite pattern |
-| File I/O | #26 | `_package.files.readAsText()` |
-| Column manager | #27 | `grid.col().visible`, `grid.columns.setOrder()` |
+| Don't | Instead |
+|-------|---------|
+| Modals for detail views | Context panel |
+| Navigation in ribbon | Toolbox tree |
+| Tabs for primary view switching | Toolbox tree (tabs OK for sub-modes) |
+| Raw data as default | Insights first |
+| Inline row expansion | Fixed-position context panel |
+| Color without text | Always pair with text value |
+| Color every value | Color only threshold-crossing values |
+| Loud context panel | Font-weight and font-mono, not color |
+| Blank areas | Always show empty state |

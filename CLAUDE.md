@@ -17,9 +17,7 @@ SEND Data Browser — a web app for exploring pre-clinical regulatory study data
 
 **View specs:** `docs/views/*.md` — one per view (8 files: landing, study summary, dose-response, target organs, histopathology, NOAEL, adverse effects, validation)
 
-**Portability:** `docs/portability/` — porting guide, implementation plan, pipeline spec, decisions log
-
-**External specs (in `C:\pg\pcc-design\`):** Original multi-part design spec (`send-browser-spec-p1,2.md` through `p5.md`). These are historical — the `docs/systems/` files are the current source of truth.
+**Portability:** `docs/portability/` — frozen reference for Datagrok migration. Not maintained per-commit; refresh on demand when porting begins.
 
 **Colleague handoff:** Drop feature specs in `docs/incoming/` following the template in `docs/incoming/README.md`.
 
@@ -52,103 +50,29 @@ cd C:/pg/pcc/frontend && npm run lint     # ESLint
 - Run Python/pip via full venv path: `C:/pg/pcc/backend/venv/Scripts/python.exe`
 - When starting backend in PowerShell, set `$env:OPENBLAS_NUM_THREADS = 1` first
 
-## Agent Commit Protocol — Demo/Stub Tracking
+## Agent Commit Protocol
 
-**MANDATORY for every commit.** Before committing, check whether your changes affect any item in the [Demo/Stub/Prototype Code — Production Migration Guide](#demostubprototype-code--production-migration-guide) section below. You must:
-
-1. **If you resolved a demo/stub item** (e.g., replaced hardcoded data with an API call, added auth, implemented a stub feature): update that item's entry — change its description to reflect the new state, or move it to the "Resolved" table at the bottom of the section. Update line numbers if code shifted.
-2. **If you introduced new demo/stub/hardcoded/prototype code** (e.g., added a placeholder, hardcoded a value, used `alert()` as a stub, added a `// TODO` for production): add a new entry under the appropriate priority tier with file path, line number, what it does, and what production change is needed.
-3. **If your changes shifted line numbers** in files referenced by the guide (e.g., you added 20 lines above a hardcoded array): update the affected line numbers so they stay accurate.
-4. **Update the summary table** at the bottom of the section if any item's status changed (Demo → Real, Stub → Implemented, Missing → Added).
-
-This keeps the migration guide accurate as the codebase evolves. A developer picking up this codebase for Datagrok production should be able to trust every file path and line number in the guide.
-
-## Agent Commit Protocol — Asset Maintenance
-
-**MANDATORY for every commit that changes behavior.** Before committing, check `docs/MANIFEST.md` to see which assets depend on the files you changed. You must:
-
-1. **Check staleness.** Look up every file you modified in the MANIFEST's "Depends on" columns. If a match exists, that asset may be stale.
-2. **Update affected system specs.** If your changes alter the architecture, contracts, rules, or behavior described in a `docs/systems/*.md` file, update that file to match the new code. The system spec must always reflect what the code actually does — not what it used to do or what the spec wishes it did.
-3. **Update affected view specs.** If your changes alter how a view works (layout, interactions, data displayed), update the corresponding `docs/views/*.md` file.
-4. **Update TODO.md.** If your changes resolve a TODO item, mark it done. If your changes introduce a new known issue or divergence, add it.
-5. **Update MANIFEST.md.** Set "Last validated" to today's date for any asset you updated. If you added new code files that an asset should track, add them to the "Depends on" column.
-
-**For major rewrites** (e.g., replacing a subsystem): rewrite the affected `docs/systems/*.md` file entirely rather than patching it. Read the current system spec first, then rewrite it to match the new code.
-
-**Minimum bar:** If you cannot update the asset yourself (e.g., time constraints), you MUST at minimum update MANIFEST.md to mark the affected assets as `STALE — <commit description>` so the next agent knows.
-
-## Agent Protocol — Incoming Spec Conflict Check
-
-**MANDATORY before starting any task AND before committing.** Check `docs/incoming/` for feature specs that may conflict with your work.
-
-### On session start or before beginning a new task:
-
-1. **List incoming specs**: `ls docs/incoming/*.md` (excluding README.md).
-2. **If any specs exist**, read each one. For each spec:
-   a. Check its **Integration points** section — which `systems/*.md` and `views/*.md` does it touch?
-   b. Compare against the files you plan to modify.
-   c. If there is overlap (same system, same view, same API endpoints, same data model), **STOP and ask the human** before proceeding. Report:
-      - Which incoming spec(s) you found
-      - Which of your planned changes overlap
-      - Whether the incoming spec should be implemented first, deferred, or merged with your task
-3. **If no specs exist or no overlap**, proceed normally.
-
-### Before committing:
-
-1. **Re-check `docs/incoming/`** — a colleague may have pushed a spec while you were working.
-2. **If a new incoming spec appeared** that touches the same files you modified:
-   a. **Do NOT commit yet.**
-   b. Report the conflict to the human: "Incoming spec `X` touches the same subsystem I just modified. How should we proceed?"
-   c. Options to present: commit as-is (spec author adapts), hold commit and integrate spec first, or split the commit.
-3. **If no conflict**, proceed with commit (and follow the other two commit protocols).
-
-### Why this matters
-
-Two contributors working on the same subsystem without coordination produce merge conflicts — not in git, but in design intent. An incoming spec represents a human's planned direction. If an agent modifies the same area without awareness, the spec may become stale or contradictory before it's even implemented. This check prevents that.
+Before committing changes that alter system or view behavior:
+1. **Update the affected spec.** If you changed how a system or view works, update the corresponding `docs/systems/*.md` or `docs/views/*.md` to match. Specs must reflect code, not the other way around.
+2. **Mark MANIFEST.md.** Set "Last validated" to today for any spec you updated. If you can't update the spec, mark it `STALE — <reason>` in MANIFEST.
+3. **Check `docs/incoming/`** for feature specs that conflict with your changes. If a conflict exists, ask the user before committing.
 
 ## Architecture
 
 ### Backend (`backend/`)
 - **Framework**: FastAPI with uvicorn
 - **Entry**: `main.py` — app setup, CORS (allows *), lifespan startup discovers studies
-- **Routers**:
-  - `routers/studies.py` — domain browsing endpoints under `/api`
-  - `routers/analyses.py` — dynamic adverse effects analysis under `/api/studies/{id}/analyses/`
-  - `routers/analysis_views.py` — serves pre-generated JSON under `/api/studies/{id}/analysis/{view_name}`
-  - `routers/validation.py` — SEND validation engine endpoints under `/api`
-  - `routers/annotations.py` — annotations CRUD under `/api`
-- **Validation Engine**: `validation/` package — YAML-driven SEND conformance checking
-  - `validation/engine.py` — main ValidationEngine class (loads rules, evaluates checks, caches results)
-  - `validation/models.py` — Pydantic models (RuleDefinition, ValidationRuleResult, AffectedRecordResult, etc.)
-  - `validation/rules/*.yaml` — rule definitions (domain_level, cross_domain, completeness)
-  - `validation/metadata/` — SENDIG variable specs + controlled terminology codelists
-  - `validation/checks/` — check functions (required_variables, controlled_terminology, data_integrity, etc.)
-  - `validation/scripts/registry.py` — fix script definitions and preview computation
+- **Routers**: `studies.py` (domain browsing), `analyses.py` (dynamic adverse effects), `analysis_views.py` (pre-generated JSON), `validation.py` (validation engine), `annotations.py` (annotations CRUD) — all under `/api`
+- **Validation Engine**: `validation/` package — 18 YAML rules, 15 check types, SENDIG metadata. See `docs/systems/validation-engine.md`.
 - **Services**: `services/study_discovery.py`, `services/xpt_processor.py`, `services/analysis/` (statistical pipeline)
-- **Generator**: `generator/generate.py` — reads .XPT files, computes statistics, writes JSON to `generated/{study_id}/`
-- **Models**: `models/schemas.py`, `models/analysis_schemas.py`
+- **Generator**: `generator/generate.py` — reads .XPT, writes 8 JSON files + static charts to `generated/{study_id}/`
 - **Config**: `config.py` — paths, skip list, allowed studies filter
-
-**API Endpoints:**
-| Method | Path | Returns |
-|--------|------|---------|
-| GET | `/api/studies` | All studies with summary metadata |
-| GET | `/api/studies/{study_id}/metadata` | Full study metadata from TS domain |
-| GET | `/api/studies/{study_id}/domains` | List of domains with row/col counts |
-| GET | `/api/studies/{study_id}/domains/{domain_name}?page=&page_size=` | Paginated domain data |
-| GET | `/api/studies/{study_id}/analyses/adverse-effects?page=&page_size=&domain=&sex=&severity=&search=` | Dynamic adverse effects (computed on request) |
-| GET | `/api/studies/{study_id}/analyses/adverse-effects/finding/{finding_id}` | Finding context detail |
-| GET | `/api/studies/{study_id}/analyses/adverse-effects/summary` | Adverse effects summary counts |
-| GET | `/api/studies/{study_id}/analysis/{view_name}` | Pre-generated JSON (see view names below) |
-| GET | `/api/studies/{study_id}/analysis/static/{chart_name}` | Pre-generated HTML charts |
-| POST | `/api/studies/{study_id}/validate` | Run validation engine, cache results |
-| GET | `/api/studies/{study_id}/validation/results` | Cached validation results (rules + summary) |
-| GET | `/api/studies/{study_id}/validation/results/{rule_id}/records` | Paginated affected records for a rule |
-| POST | `/api/studies/{study_id}/validation/scripts/{script_key}/preview` | Fix script before/after preview |
 
 **Valid view names for `/analysis/{view_name}`:** study-signal-summary, target-organ-summary, dose-response-metrics, organ-evidence-detail, lesion-severity-summary, adverse-effect-summary, noael-summary, rule-results
 
 **Important:** The `analysis_views.py` router must use `APIRouter(prefix="/api")` with full paths in decorators (not path params in the router prefix — FastAPI/Starlette doesn't route those correctly).
+
+> Full API endpoint table and module inventory: `docs/reference/claude-md-archive.md`
 
 ### Frontend (`frontend/src/`)
 - **Framework**: React 19 + TypeScript (strict mode) + Vite
@@ -156,53 +80,11 @@ Two contributors working on the same subsystem without coordination produce merg
 - **UI Components**: shadcn/ui (Radix UI + CVA) in `components/ui/`
 - **State**: TanStack React Query (5 min stale), React Context for selections
 - **Tables**: TanStack React Table (client-side sorting in analysis views, server-side pagination in domain views)
+- **Layout**: Three-panel Datagrok-style (Left: `BrowsingTree`, Center: route-dependent, Right: `ContextPanel`)
+- **Routes**: React Router 7 in `App.tsx` — 9 routes (landing, study summary, domain browser, adverse effects, dose-response, target organs, histopathology, NOAEL decision, validation). All done.
+- **Views**: 5 analysis views use two-panel master-detail layout (rail + evidence panel with tabs). See `docs/views/*.md` for each.
 
-**Layout**: Three-panel Datagrok-style:
-- **Left**: `BrowsingTree` — study/domain/analysis navigation tree
-- **Center**: Route-dependent content (analysis views, domain tables, landing pages)
-- **Right**: `ContextPanel` — context-sensitive inspector (updates on row selection)
-
-**Routes** (React Router 7, defined in `App.tsx`):
-| Route | Component | Status |
-|-------|-----------|--------|
-| `/` | AppLandingPage | Done |
-| `/studies/:studyId` | StudySummaryViewWrapper | Done |
-| `/studies/:studyId/domains/:domainName` | CenterPanel | Done |
-| `/studies/:studyId/analyses/adverse-effects` | AdverseEffectsView | Done |
-| `/studies/:studyId/dose-response` | DoseResponseViewWrapper | Done |
-| `/studies/:studyId/target-organs` | TargetOrgansViewWrapper | Done |
-| `/studies/:studyId/histopathology` | HistopathologyViewWrapper | Done |
-| `/studies/:studyId/noael-decision` | NoaelDecisionViewWrapper | Done |
-| `/studies/:studyId/validation` | ValidationViewWrapper | Done |
-
-**Key frontend modules:**
-- `lib/api.ts` — fetch wrapper for domain browsing (`/api` base, proxied by Vite)
-- `lib/analysis-api.ts` — fetch functions for dynamic adverse effects
-- `lib/analysis-view-api.ts` — fetch functions for all pre-generated JSON views (signal, target organ, dose-response, organ evidence, lesion severity, NOAEL, adverse effect, rule results)
-- `lib/analysis-definitions.ts` — `ANALYSIS_VIEWS` array (key, label, implemented flag)
-- `lib/severity-colors.ts` — color functions for p-values, signal scores, severity, domains, sex
-- `lib/signals-panel-engine.ts` — Signals Panel engine (derives semantic rules from NOAEL/organ/signal data, priority-band section assignment, compound merge)
-- `lib/rule-synthesis.ts` — organ-grouped rule synthesis for InsightsList context panel (parses R01-R17 rule_results)
-- `hooks/useStudySignalSummary.ts`, `useTargetOrganSummary.ts`, `useRuleResults.ts` — hooks for generated data
-- `hooks/useNoaelSummary.ts`, `useAdverseEffectSummary.ts`, `useDoseResponseMetrics.ts`, `useOrganEvidenceDetail.ts`, `useLesionSeveritySummary.ts` — hooks for Views 2-5
-- `hooks/useAdverseEffects.ts`, `useAESummary.ts`, `useFindingContext.ts` — hooks for dynamic analysis
-- `hooks/useValidationResults.ts`, `useAffectedRecords.ts`, `useRunValidation.ts` — hooks for validation engine API
-- `types/analysis-views.ts` — TypeScript interfaces for all generated view data
-- `types/analysis.ts` — TypeScript interfaces for adverse effects
-- `contexts/SelectionContext.tsx` — study selection state
-- `contexts/FindingSelectionContext.tsx` — adverse effects finding selection
-- `contexts/SignalSelectionContext.tsx` — study summary signal + organ selection (mutually exclusive)
-- `contexts/ViewSelectionContext.tsx` — shared selection state for Views 2-5 (NOAEL, Target Organs, Dose-Response, Histopathology)
-- `components/analysis/StudySummaryView.tsx` — View 1: Study Summary (two tabs: Details + Signals; Signals tab has dual-mode center panel with persistent Decision Bar)
-- `components/analysis/SignalsPanel.tsx` — Signals tab two-panel components: `SignalsOrganRail` (organ navigation), `SignalsEvidencePanel` (organ header + Overview/Matrix tabs), `StudyStatementsBar` (study-level statements)
-- `components/analysis/charts/OrganGroupedHeatmap.tsx` — organ-grouped collapsible signal matrix with `singleOrganMode` prop for organ-scoped rendering
-- `components/analysis/DoseResponseView.tsx` — View 2: Dose-Response (two-panel: organ-grouped endpoint rail + evidence panel with evidence/hypotheses/metrics tabs; time-course toggle in evidence tab)
-- `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (two-panel: organ rail with signal metrics + evidence panel with Evidence/Hypotheses/Metrics tabs, 5 organ-level tools)
-- `components/analysis/HistopathologyView.tsx` — View 4: Histopathology (two-panel: specimen rail + evidence panel with overview/severity matrix tabs)
-- `components/analysis/NoaelDecisionView.tsx` — View 5: NOAEL & Decision (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
-- `hooks/useClinicalObservations.ts` — hook for CL timecourse data from temporal API (used by Dose-Response time-course toggle for CL endpoints)
-- `components/analysis/panes/*ContextPanel.tsx` — context panels for each view
-- `components/analysis/panes/InsightsList.tsx` — organ-grouped signal synthesis with tiered insights (Critical/Notable/Observed)
+> Full routes table and module inventory: `docs/reference/claude-md-archive.md`
 
 ## Design Decisions
 
@@ -248,251 +130,25 @@ Context menu:       Export to CSV, Copy Issue ID, Open in Domain Viewer
 
 ## Generated Analysis Data
 
-Pre-generated by `python -m generator.generate PointCross`. Output in `backend/generated/PointCross/`:
+Pre-generated by `python -m generator.generate PointCross`. Outputs 8 JSON files + 1 HTML chart to `backend/generated/PointCross/`. See `docs/systems/data-pipeline.md` for pipeline details or `docs/reference/claude-md-archive.md` for the full data table.
 
-| File | Items | Grain | Key columns |
-|------|-------|-------|-------------|
-| `study_signal_summary.json` | 989 | endpoint × dose × sex | signal_score, p_value, effect_size, trend_p, severity, treatment_related, dose_response_pattern |
-| `target_organ_summary.json` | 14 | organ system | evidence_score, n_endpoints, n_domains, max_signal_score, target_organ_flag |
-| `dose_response_metrics.json` | 1342 | endpoint × dose × sex | mean, sd, n, incidence, p_value, effect_size, trend_p, dose_response_pattern, data_type |
-| `organ_evidence_detail.json` | 357 | organ × endpoint × dose × sex | p_value, effect_size, direction, severity, treatment_related |
-| `lesion_severity_summary.json` | 728 | finding × dose × sex | n, affected, incidence, avg_severity, severity |
-| `adverse_effect_summary.json` | 357 | endpoint × dose × sex | p_value, effect_size, direction, severity, treatment_related, dose_response_pattern |
-| `noael_summary.json` | 3 | sex (M/F/Combined) | noael_dose_level/label/value/unit, loael_dose_level/label, n_adverse_at_loael, noael_confidence |
-| `rule_results.json` | 975+ | rule instance | rule_id (R01-R17), scope, severity, context_key, organ_system, output_text, evidence_refs |
-| `static/target_organ_bar.html` | 1 | static chart | Plotly bar chart of target organs |
+## Color Schemes
 
-## Color Schemes (§12.3 — use exactly)
-
-| What | Values |
-|------|--------|
-| P-value | `#D32F2F` (<0.001), `#F57C00` (<0.01), `#FBC02D` (<0.05), `#388E3C` (≥0.05) |
-| Signal score | `#D32F2F` (0.8–1.0), `#F57C00` (0.6–0.8), `#FBC02D` (0.4–0.6), `#81C784` (0.2–0.4), `#388E3C` (0.0–0.2) |
-| Severity | `#FFF9C4` (minimal) → `#FFE0B2` → `#FFB74D` → `#FF8A65` → `#E57373` (severe) |
-| Dose groups | `#1976D2` (control), `#66BB6A` (low), `#FFA726` (mid), `#EF5350` (high) |
-| Sex | `#1565C0` (M), `#C62828` (F) |
-
-Implemented in `lib/severity-colors.ts`.
+All color functions implemented in `lib/severity-colors.ts` (p-value, signal score, severity, dose groups, sex). Hex values in `docs/reference/claude-md-archive.md` and `docs/design-system/datagrok-visual-design-guide.md`.
 
 ---
 
 ## Implementation Status
 
-### Completed
-- **Step 1**: Generator + backend shell (8 JSON files + static charts)
-- **Step 2**: View 1 — Study Summary (signal heatmap, grid, target organ bar, filters, context panel)
-- **Bonus**: Adverse Effects view (paginated table, filters, context panel)
-- **Step 3**: Views 2-5 all implemented:
-  - View 2: Dose-Response (Recharts line/bar charts, metrics grid, endpoint search, time-course toggle in evidence tab, CL temporal bar charts)
-  - View 3: Target Organs (three-tab model view: Evidence/Hypotheses/Metrics, enriched rail + header, 5 organ-level tools)
-  - View 4: Histopathology (two-panel: specimen rail, overview + severity matrix tabs)
-  - View 5: NOAEL & Decision (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
-- **Step 4**: Cross-view links (each context panel has navigate links to related views)
+**All 5 build steps complete.** 8 analysis views (Study Summary, Adverse Effects, Dose-Response, Target Organs, Histopathology, NOAEL Decision, Validation, plus HTML Report). Real validation engine (18 YAML rules, 15 check types). All FEAT-01 through FEAT-09 incoming features implemented. See system specs (`docs/systems/*.md`) and view specs (`docs/views/*.md`) for current architecture. Detailed implementation notes archived in `docs/reference/claude-md-archive.md`.
 
-### Step 5: Polish (DONE)
-- **5a**: Validation View — now backed by real validation engine (see below)
-- **5b**: HTML Report Generator (`lib/report-generator.ts` — fetches all data, builds standalone HTML, opens in new tab)
-- **5c**: Landing Page Integration (context menu: Open Validation, Generate Report, Export; Generate Report button on Study Summary)
-- **5d**: Import Section Stub (collapsible "IMPORT NEW STUDY" on landing page — drop zone, metadata fields, validation checkboxes, disabled import button)
-- **5e**: Context Panel Actions (StudyInspector actions now live: Validation report, Generate report, Export)
-
-### Validation Engine
-Real SEND conformance validation engine replaces the original hardcoded rules/records.
-
-**Backend** (`validation/` package):
-- **18 rules** across 3 YAML files (domain_level, cross_domain, completeness)
-- **15 check types** mapped to handler functions via `CHECK_DISPATCH` dict in `engine.py`
-- **SENDIG metadata**: `sendig_31_variables.yaml` (required/expected variables per domain), `controlled_terms.yaml` (14 codelists)
-- **Results cached** as JSON in `generated/{study_id}/validation_results.json`
-- **Fix scripts**: 4 generic scripts (strip-whitespace, uppercase-ct, fix-domain-value, fix-date-format) with live preview from actual data
-- PointCross results: 7 rules fired, 22 affected records, ~1.2s
-
-**Frontend hooks** (replace hardcoded HARDCODED_RULES, RULE_DETAILS, AFFECTED_RECORDS, FIX_SCRIPTS):
-- `useValidationResults(studyId)` — fetches cached results (rules + scripts + summary)
-- `useAffectedRecords(studyId, ruleId)` — fetches paginated records for a rule
-- `useRunValidation(studyId)` — POST mutation to trigger validation run
-- `mapApiRecord()` / `extractRuleDetail()` — snake_case → camelCase mapping helpers
-
-**Data flow**: User clicks "RUN VALIDATION" → POST `/validate` → engine loads all XPT, runs rules → caches JSON → frontend fetches via GET. Context panel uses same React Query cache keys (no extra network calls).
-
-### InsightsList Synthesis
-The `InsightsList` component (`panes/InsightsList.tsx`) synthesizes raw rule_results into actionable organ-grouped signals:
-- **Grouping**: Rules grouped by `organ_system`, tiered as Critical / Notable / Observed based on rule_id combinations
-- **Synthesis**: Per-organ endpoint signals collapsed from R10/R04/R01 into compact lines (e.g., "ALT ↑ (d=2.23 F, 1.14 M), AST ↑ — adverse, dose-dependent")
-- **R09 counts**: Endpoint/domain counts parsed from R09 output_text, not counted from filtered rules
-- **R16 chips**: Correlation findings rendered as wrapped chips, not comma-separated text
-- **R14 NOAEL**: Consolidated when same dose across sexes ("NOAEL: Control for both sexes")
-- **Tier filter bar**: Clickable pills at top (Critical N / Notable N / Observed N) with opacity toggle
-- All parsing is heuristic-based on rule_id semantics and context_key format (`DOMAIN_TESTCODE_SEX`), not study-specific
-
-### Signals Tab — Two-Panel Master-Detail
-The Signals tab uses a **two-panel master-detail layout** with a persistent Decision Bar. The left panel is an organ rail for navigation; the right panel is an evidence panel with Overview and Signal Matrix tabs. No mode toggle — both conclusions and evidence are accessible simultaneously via tabs.
-
-**Layout zones:**
-- **Decision Bar** (~60px, non-scrolling): NOAEL statement + metrics line. Renders from priority 900+ rules only.
-- **Study Statements Bar** (non-scrolling): study-level facts, modifiers, caveats (only items where `organSystem` is falsy).
-- **Two-panel area** (`flex flex-1 overflow-hidden max-[1200px]:flex-col`):
-  - **Organ rail** (left, 300px): scrollable list of organs sorted by `evidence_score` desc. Search input at top. Auto-selects highest-evidence organ on load.
-  - **Evidence panel** (right, flex-1): organ header + [Overview | Signal Matrix] tab bar + tab content.
-- **Context panel** (right sidebar): reacts to organ or endpoint selection.
-
-**Engine** (`lib/signals-panel-engine.ts`): derives semantic rules from NOAEL/organ/signal data. Output: `decisionBar` (NOAEL rules), `studyStatements` (study-scope facts), `organBlocks` (with `evidenceScore`), `modifiers`, `caveats`, `metrics`.
-
-**Components** (from `SignalsPanel.tsx`):
-- `SignalsOrganRail` — organ navigation rail with search, evidence score bars, domain chips, D-R summary
-- `SignalsEvidencePanel` — organ header + tab bar + Overview/Signal Matrix tabs
-- `StudyStatementsBar` — study-level statements, modifiers, caveats (filters out organ-specific items)
-
-**Evidence panel tabs:**
-- **Overview tab** (`SignalsOverviewTab`): InsightsList (organ-scoped rules), modifiers, review flags, domain breakdown table, top findings by effect size, cross-view links (Target Organs / Dose-Response / Histopathology)
-- **Signal Matrix tab** (`SignalsMatrixTab`): inline filters (no organ dropdown) + `OrganGroupedHeatmap` with `singleOrganMode` (suppresses organ header, always expanded)
-
-**OrganGroupedHeatmap** (`charts/OrganGroupedHeatmap.tsx`): supports `singleOrganMode?: boolean` prop. When true: no organ header row, single organ always expanded. Normal mode: organs grouped by evidence_score desc, target organs first, collapsible with chevron.
-
-**Selection:** `SignalSelectionContext` manages `selection` (endpoint-level) and `organSelection` (organ-level) — mutually exclusive (setting one clears the other). Escape clears both. Rail click sets organ selection. Heatmap cell click sets endpoint selection.
-
-### Validation View — Fix Tier System
-
-The validation view is a **triage and dispatch tool**, not a data editor. The system auto-validates
-on import, applying trivial fixes. What the user sees is what's left:
-- Auto-fixed items needing **confirmation** (review + approve)
-- Items that could NOT be auto-fixed needing **human attention**
-
-**Three fix tiers:**
-- **Tier 1 — Accept as-is**: Value is non-standard but intentional. User provides justification.
-- **Tier 2 — Simple correction**: Fix is known (CT mapping). Single suggestion or pick from candidates.
-- **Tier 3 — Script fix**: Requires batch logic or derived calculation. Opens script dialog.
-
-**Two independent status tracks:**
-- **Fix status**: Not fixed → Auto-fixed / Manually fixed / Accepted as-is / Flagged
-- **Review status**: Not reviewed → Reviewed → Approved
-
-Fix status tracks what happened to the data. Review status tracks human sign-off. Independent.
-
-**Finding section (Mode 2 context panel)** uses category-based evidence rendering:
-- Each `AffectedRecord` carries a `RecordEvidence` discriminated union (`type` field) and a `diagnosis` string
-- 6 evidence templates: `value-correction`, `value-correction-multi`, `code-mapping`, `range-check`, `missing-value`, `metadata`
-- The Finding section dispatches by `evidence.type` — no instructional prose, just data + action buttons
-- Button logic: auto-fixed → REVERT; has suggestion → APPLY FIX / DISMISS; no suggestion → Fix dropdown / ACCEPT
-
-### Data Nullability Notes
-- `lesion_severity_summary.json`: `avg_severity` is null for 550/728 rows — always null-guard with `?? 0`
+**Data nullability note:** `lesion_severity_summary.json`: `avg_severity` is null for 550/728 rows — always null-guard with `?? 0`.
 
 ---
 
-## Demo/Stub/Prototype Code — Production Migration Guide
+## What's Real vs. Demo
 
-This section catalogs all code that exists purely for demonstration, stubbing, or prototype purposes. When building the production app on Datagrok, each item must be addressed. Items are grouped by migration priority.
-
-### Priority 1 — Infrastructure Dependencies
-
-These are foundational changes that most other items depend on.
-
-#### P1.1 — Authentication & Authorization
-- **`backend/main.py:36-41`** — CORS middleware uses `allow_origins=["*"]`, `allow_methods=["*"]`, `allow_headers=["*"]`. No authentication middleware exists anywhere.
-- **`backend/routers/annotations.py:33-66`** — All annotation endpoints (GET/PUT) have no auth checks. Any client can read/write any study's annotations.
-- **`backend/routers/annotations.py:56`** — Reviewer identity is hardcoded: `annotation["pathologist"] = "User"`. Must be replaced with authenticated user identity.
-- **Production change:** Add Datagrok auth middleware. All API endpoints must validate user tokens. Reviewer identity must come from auth context.
-
-#### P1.2 — Database for Annotations
-- **`backend/routers/annotations.py:10`** — Annotations stored as JSON files on disk: `ANNOTATIONS_DIR = Path(__file__).parent.parent / "annotations"`. Storage path: `backend/annotations/{study_id}/{schema_type}.json`.
-- **`backend/routers/annotations.py:62-64`** — Writes via `json.dump()` to flat files. No concurrency control, no transactions, no backup.
-- **4 schema types stored:** `tox-findings.json`, `pathology-reviews.json`, `validation-issues.json`, `validation-records.json`
-- **Frontend hooks are migration-safe:** `useAnnotations()` and `useSaveAnnotation()` use React Query + REST API. Swapping the backend storage from files to database requires **zero frontend changes** — the API contract (GET/PUT with JSON payloads) stays the same.
-- **Production change:** Replace file I/O in `annotations.py` with database operations. Schema types map to database tables. Add proper error handling, concurrency, audit trail.
-
-#### P1.3 — Multi-Study Support
-- **`backend/config.py:15`** — `ALLOWED_STUDIES = {"PointCross"}` restricts the entire app to one study.
-- **`backend/services/study_discovery.py:37-38`** — Filter applied at startup: `if ALLOWED_STUDIES: studies = {k: v for k, v in studies.items() if k in ALLOWED_STUDIES}`.
-- **`frontend/src/components/panels/ContextPanel.tsx:399`** — Hardcoded check: `if (selectedStudyId !== "PointCross")` shows "This is a demo entry" message for any non-PointCross study.
-- **Production change:** Remove ALLOWED_STUDIES filter entirely. Remove PointCross guard in ContextPanel. Studies should come from Datagrok's study management system.
-
-### Priority 2 — Hardcoded Demo Data (Remove)
-
-These are fake data entries that must be removed entirely.
-
-#### P2.1 — Demo Studies on Landing Page
-- **`frontend/src/components/panels/AppLandingPage.tsx:27-88`** — `DEMO_STUDIES` array contains 4 hardcoded fake studies: DART-2024-0091, CARDIO-TX-1147, ONCO-MTD-3382, NEURO-PK-0256. Each has fabricated metadata (protocol, standard, subjects, dates, validation status).
-- **`AppLandingPage.tsx:103`** — `const isDemo = !!study.demo` guard used at lines 105, 112, 120, 129, 143 to disable context menu actions for demo entries.
-- **`AppLandingPage.tsx:278`** — All real studies get hardcoded `validation: "Pass"` regardless of actual validation state.
-- **Production change:** Delete DEMO_STUDIES array and all `isDemo` logic. Validation status should come from actual validation results via API.
-
-#### P2.2 — Hardcoded Validation Rules & Records — RESOLVED
-- **Resolved:** All hardcoded constants (`HARDCODED_RULES`, `RULE_DETAILS`, `AFFECTED_RECORDS`, `FIX_SCRIPTS`) have been removed from `ValidationView.tsx` and `ValidationContextPanel.tsx`. Replaced with real API hooks (`useValidationResults`, `useAffectedRecords`, `useRunValidation`) that fetch from the backend validation engine. See "Validation Engine" section below for details.
-
-### Priority 3 — Stub Features (Implement or Remove)
-
-These are UI elements that show but don't function.
-
-#### P3.1 — Import Section
-- **`AppLandingPage.tsx:172-266`** — Entire `ImportSection` component is a non-functional stub:
-  - Drop zone doesn't accept drops
-  - Browse button shows `alert()` at line 198
-  - All metadata inputs (Study ID, Protocol, Description) are `disabled`
-  - Checkboxes ("Validate SEND compliance", "Attempt automatic fixes") are `disabled` with hardcoded states
-  - Import button (line 257-261) is `disabled` with `cursor-not-allowed` and tooltip "Import not available in prototype"
-- **Production change:** Replace with Datagrok's study import workflow, or implement real file upload → XPT parsing → study registration pipeline.
-
-#### P3.2 — Export Functionality
-- **`AppLandingPage.tsx:127`** — `alert("CSV/Excel export coming soon.")` in context menu Export action.
-- **`ContextPanel.tsx:224`** — `alert("CSV/Excel export coming soon.")` in StudyInspector Export link.
-- **Production change:** Implement actual CSV/Excel export for study data, analysis results, and reports.
-
-#### P3.3 — Disabled Context Menu Actions
-- **`AppLandingPage.tsx:122`** — "Share..." is always disabled (no implementation planned in prototype).
-- **`AppLandingPage.tsx:145`** — "Delete" is always disabled (no confirmation UX or delete logic).
-- Note: "Re-validate SEND..." is functional for real studies (navigates to validation + fires POST /validate).
-- **Production change:** Implement sharing and study deletion with proper confirmation dialogs and backend support.
-
-#### P3.4 — Documentation Link
-- **`AppLandingPage.tsx:363`** — "Learn more" link calls `alert("Documentation is not available in this prototype.")`.
-- **Production change:** Link to actual product documentation.
-
-#### P3.5 — Feature Flags
-- **`frontend/src/lib/analysis-definitions.ts:8-15`** — `ANALYSIS_TYPES` array has `implemented` boolean flags. Only `adverse-effects` is `true`; `noael`, `target-organs`, `validation`, `sex-differences`, `reversibility` are `false`.
-- **`analysis-definitions.ts:23-31`** — `ANALYSIS_VIEWS` array also has `implemented` flags (most are `true` now).
-- **`frontend/src/components/analysis/PlaceholderAnalysisView.tsx:1-39`** — Catch-all placeholder for unimplemented analysis types, shows "This analysis type is not yet implemented."
-- **Production change:** Remove `implemented` flags (all views should be implemented). Remove PlaceholderAnalysisView. Or keep as a gating mechanism if Datagrok has staged rollout.
-
-### Priority 4 — Pre-Generated Static Data (Architecture Decision)
-
-The prototype pre-computes analysis data via a CLI generator. Production may keep this pattern or compute on-demand.
-
-#### P4.1 — Generator Pipeline
-- **`backend/generator/generate.py`** — CLI tool reads .XPT files, computes statistics, writes 8 JSON files + 1 HTML chart to `backend/generated/{study_id}/`.
-- **`backend/routers/analysis_views.py:47-63`** — Serves these JSON files directly via `json.load()` from disk.
-- **`backend/routers/analysis_views.py:29-44`** — Serves pre-generated HTML charts from `generated/{study_id}/static/`.
-- **`backend/generator/static_charts.py:10-73`** — Generates self-contained HTML bar chart with inline CSS. Hardcoded threshold `0.3` for target organ designation.
-- **Production decision:** Either (a) keep the generator pattern and run it on study import, or (b) compute views on-demand with caching. The frontend doesn't care — it fetches from the same API endpoints either way.
-
-#### P4.2 — File-Based Caching
-- **`backend/services/xpt_processor.py:22-48`** — XPT domains cached as CSV files in `backend/cache/{study_id}/{domain}.csv`. Freshness checked against XPT file mtime.
-- **`backend/services/analysis/unified_findings.py:40-74, 167-169`** — Adverse effects analysis cached as JSON in `backend/cache/{study_id}/adverse_effects.json`. Freshness checked against source XPT mtimes.
-- **Production change:** Replace file-based caching with Datagrok's data infrastructure or a proper cache layer (Redis, database materialized views).
-
-### Priority 5 — Hardcoded Configuration (Parameterize)
-
-These are values baked into the code that should be configurable.
-
-#### P5.1 — Dose Group Mapping
-- **`backend/services/analysis/dose_groups.py:10`** — `ARMCD_TO_DOSE_LEVEL = {"1": 0, "2": 1, "3": 2, "4": 3}` — Maps arm codes to dose levels. Only works for studies with ARMCD values "1"-"4".
-- **`dose_groups.py:13`** — `RECOVERY_ARMCDS = {"1R", "2R", "3R", "4R"}` — Hardcoded recovery arm codes.
-- **Production change:** Derive dose level mapping dynamically from study TX/DM domains, or make it configurable per study.
-
-#### P5.2 — Skip Folders
-- **`backend/config.py:9-12`** — `SKIP_FOLDERS = {"JSON-CBER-POC-Pilot-Study3-Gene-Therapy", "SENDIG3.1.1excel"}` — Specific folder names excluded from study scan.
-- **Production change:** Not needed if study discovery is replaced by Datagrok's study management.
-
-#### P5.3 — Data Directory
-- **`backend/config.py:4`** — `SEND_DATA_DIR` defaults to `r"C:\pg\pcc\send"` (env-overridable via `SEND_DATA_DIR`).
-- **Production change:** Will use Datagrok's file storage system.
-
-#### P5.4 — Domain Defaults in Generator
-- **`backend/generator/organ_map.py`** — Contains hardcoded `domain_defaults` mapping domains to default organ systems (e.g., BW→Body, LB→Blood).
-- **`backend/services/analysis/unified_findings.py:48`** — Hardcoded list of relevant XPT domains: `["dm", "tx", "lb", "bw", "om", "mi", "ma", "cl"]`.
-- **Production change:** Make domain-organ mappings configurable. Consider SEND controlled terminology for domain discovery.
-
-### Summary: What's Real vs. Demo
+Full migration guide with file paths and line numbers: `docs/reference/demo-stub-guide.md`
 
 | Component | Status | Notes |
 |-----------|--------|-------|
@@ -512,23 +168,6 @@ These are values baked into the code that should be configurable.
 | Authentication | **Missing** | No auth anywhere, hardcoded "User" identity |
 | Database storage | **Missing** | Annotations use JSON files on disk |
 | Multi-study support | **Blocked** | ALLOWED_STUDIES restricts to PointCross |
-
-### Resolved Items
-
-Items that have been addressed. Kept for audit trail.
-
-| Item | Resolved In | What Changed |
-|------|-------------|--------------|
-| P2.2 — Hardcoded Validation Rules & Records | Validation engine build | Removed `HARDCODED_RULES`, `RULE_DETAILS`, `AFFECTED_RECORDS`, `FIX_SCRIPTS` from frontend. Replaced with `useValidationResults`, `useAffectedRecords`, `useRunValidation` hooks calling real backend engine (18 YAML rules, 15 check types, reads actual XPT data). |
-
-### Maintenance Checklist (for agents)
-
-When updating this section, verify:
-- [ ] Every file path exists and points to the right code
-- [ ] Every line number matches the current file (re-check after any edit to a referenced file)
-- [ ] New stubs/demos/hardcoded items added in this session are documented
-- [ ] Resolved items are moved to the Resolved table with commit context
-- [ ] Summary table statuses are current
 
 ---
 
