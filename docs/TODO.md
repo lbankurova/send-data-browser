@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 4 | Spec'd but not implemented |
-| Gap | 9 | 4 | Missing capability, no spec exists |
+| Gap | 10 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **23** | **37** | |
+| **Total open** | **24** | **37** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -155,6 +155,12 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Files:** `frontend/src/components/analysis/DoseResponseView.tsx`
 - **Issue:** Intent icons are placeholder choices (GAP-11). Intents are analytical workflows, not viewer types — need design task before code (GAP-12). Current placeholder implementation sufficient for prototype.
 - **Status:** Open (design task, defer to production)
+
+### GAP-14: Design tokens for icons
+- **Files:** `frontend/src/lib/design-tokens.ts`, `frontend/src/index.css`, various components
+- **Issue:** No centralized icon tokens (size, stroke width, color by context). Icon sizes and colors are ad-hoc across components. Need standardized tokens like `icon.sm` / `icon.md` / `icon.lg` with contextual color rules (muted in chrome, primary in actions, etc.) aligned with Datagrok UI Kit.
+- **Status:** Open
+- **Owner hint:** ux-designer → frontend-dev
 
 ### GAP-13: Generated HTML report needs redesign
 - **Files:** `frontend/src/lib/report-generator.ts`

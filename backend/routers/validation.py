@@ -45,13 +45,17 @@ def init_validation(studies: dict):
             logger.exception("Auto-validation failed for %s", study_id)
 
 
-def register_validation_study(study):
+def register_validation_study(study, *, validate: bool = True, auto_fix: bool = False):
     """Register a study for validation at runtime."""
     _studies[study.study_id] = study
-    if _engine:
+    if _engine and validate:
         try:
             results = _engine.validate(study)
             _engine.save_results(study.study_id, results)
+            if auto_fix:
+                fix_counts = _engine.apply_auto_fixes(study)
+                if fix_counts:
+                    logger.info("Auto-fixes for %s: %s", study.study_id, fix_counts)
         except Exception:
             logger.exception("Validation failed for imported study %s", study.study_id)
 
