@@ -215,18 +215,18 @@ All defined in `frontend/src/index.css` `:root`. Consumed via Tailwind utilities
 | `--chart-4` | `#e15759` |
 | `--chart-5` | `#b07aa1` |
 
-### 1.1 Semantic Colors (design-tokens.ts)
+### 1.1 Conclusion-Tier Colors (analysis views only)
 
-These are the `status.*` tokens in `design-tokens.ts`, used for validation badges and status indicators. They use Tailwind color classes (not CSS custom properties).
+These hex values are used ONLY for **conclusion-level elements** — tier dots, NOAEL/LOAEL banners, target organ indicators. They are NOT used for categorical severity badges (Error/Warning/Info), which always use neutral gray (see §1.8).
 
-| Semantic | Hex | Tailwind bg/text/border |
-|----------|-----|------------------------|
-| Error / Critical | `#dc2626` | `bg-red-100 text-red-800 border-red-200` |
-| Warning / Notable | `#d97706` | `bg-amber-100 text-amber-800 border-amber-200` |
-| Info / Observed | `#2563eb` | `bg-blue-100 text-blue-800 border-blue-200` |
-| Success / Pass | `#16a34a` | `bg-green-100 text-green-800 border-green-200` |
+| Tier | Hex | Usage |
+|------|-----|-------|
+| Critical | `#dc2626` | Tier dot, TARGET ORGAN badge, Critical flag |
+| Notable | `#d97706` | Tier dot, qualifier/caveat accent |
+| Observed | — | No dot, no color |
+| Pass/Normal | `#16a34a` | Validation pass icon only |
 
-Badge rendering: `status.error` / `.warning` / `.info` / `.success` from `design-tokens.ts`.
+**Categorical badges** (severity level, fix status, review status, workflow state): always `bg-gray-100 text-gray-600 border-gray-200`. See §1.8. The `status.*` tokens in `design-tokens.ts` enforce this.
 
 ### 1.2 P-Value Palette
 
@@ -335,13 +335,47 @@ Always `font-mono`, 2dp.
 ### 1.10 Color Philosophy — Signal-First Rendering
 
 > **"Color is punctuation, not prose. Conclusions speak in color; evidence whispers in text."**
+> **"If everything looks important, nothing is."**
 
+#### Core hierarchy
+**Visual hierarchy order: Position > Grouping > Typography > Color.** Position and grouping do the heavy lifting; color is a supporting tool.
+
+#### Emphasis tiers
+| Tier | Visibility | What belongs here |
+|------|-----------|-------------------|
+| Tier 1 (always colored) | Persistent at rest | TARGET ORGAN badge, Critical flag, tier dots, NOAEL banner |
+| Tier 2 (visible, muted) | Visible but low-salience | "adverse" outline badge, direction arrows (gray), domain colored text |
+| Tier 3 (on interaction) | Hover/selection only | p-values, effect sizes, signal score cell fills |
+
+#### Rules
 1. **Conclusions in color, evidence in text.** NOAEL banners, target organ badges, tier dots use color at rest. Heatmap cells, p-values, effect sizes use color only on hover/selection.
 2. **Neutral at rest.** Heatmap cells, evidence bars, domain badges are neutral gray at rest.
 3. **Interaction-only evidence colors.** Signal score colors fill cells only on hover.
 4. **Tier dots for severity.** Critical = red `#DC2626`, Notable = amber `#D97706`, Observed = no dot.
-5. **Domain identity dots, not filled badges.** 1.5px colored dot + outline border in rails. See `badge.domainDot`.
+5. **Domain labels: colored text only** (this app). `getDomainBadgeColor(d).text` + `text-[9px] font-semibold`. General principle: domain identity may use dot, outline, or text — confirm with user per app.
 6. **Decision Bar is the visual anchor.** `border-l-2 border-l-blue-500 bg-blue-50/30` — only element with persistent accent at rest in Signals tab.
+7. **One saturated color family per column at rest.** Everything else must be neutral, outlined, muted, or interaction-only.
+8. **Color budget test.** Grayscale must still make sense. ≤10% saturated pixels at rest. Only conclusions visually "shout."
+9. **Per-screen color budget.** 1 dominant color (status), 1 secondary accent (interaction/selection), unlimited neutrals.
+10. **No repetition of decision red per row.** Status color does not appear more than once per row.
+11. **Table density lint.** If >30% of rows contain red at rest → redesign needed.
+
+#### Information hierarchy
+Every derived information element belongs to exactly one category. Mixing categories in one visual unit is forbidden.
+
+| Category | What it is | Example |
+|----------|-----------|---------|
+| Decision | Final, reportable conclusion | NOAEL, target organ status, pass/fail |
+| Finding | Evidence-backed conclusion | "Compound is hepatotoxic at high dose" |
+| Qualifier | Condition on a finding | "In females only", "At doses above LOAEL" |
+| Caveat | Uncertainty or limitation | "Small sample size", "Single domain" |
+| Evidence | Data supporting the above | p-values, effect sizes, signal scores |
+| Context | Raw or exploratory data | Source tables, domain drill-downs |
+
+#### Cognitive mode constraints
+- **Exploration views:** No asserted conclusions by default. Charts and data are primary.
+- **Conclusion/Hybrid views:** Conclusions explicitly stated; evidence supports but doesn't lead.
+- **The system computes what it can** — don't make users derive conclusions from raw data.
 
 ---
 

@@ -33,10 +33,10 @@
 
 | Asset | Depends on | Last validated | Status |
 |-------|-----------|----------------|--------|
-| `design-system/datagrok-visual-design-guide.md` | `frontend/src/lib/severity-colors.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/index.css` | 2026-02-09 | Current — §1.8 rewritten (workflow badges neutral), foreground #374151 |
+| `design-system/datagrok-visual-design-guide.md` | `frontend/src/lib/severity-colors.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/index.css` | 2026-02-09 | Current — §1.1 rewritten (conclusion-tier-only colors), §1.10 expanded (emphasis tiers, color budget, info hierarchy, cognitive modes, visual hierarchy) |
 | `design-system/datagrok-app-design-patterns.md` | `design-system/user-personas-and-view-analysis-original.md` | 2026-02-09 | Current — condensed, personas integrated from §1 |
 | `design-system/datagrok-llm-development-guide.md` | None (meta-guide) | 2026-02-09 | Current — condensed |
-| `design-system/audit-checklist.md` | All design system docs, CLAUDE.md | 2026-02-09 | New — 60+ testable rules across 7 categories (C/T/S/X/K/I/A) |
+| `design-system/audit-checklist.md` | All design system docs, CLAUDE.md | 2026-02-09 | Current — 66 testable rules across 7 categories (C/T/S/X/K/I/A), C-28 through C-33 added from external gap analysis |
 | `design-system/user-personas-and-view-analysis.md` | — | 2026-02-09 | Redirect → `datagrok-app-design-patterns.md` §1 |
 
 > **Rollback:** All 4 design system docs were condensed 2026-02-09 (2,333→490 lines). Full originals preserved as `*-original.md` in the same directory. To restore: `cp docs/design-system/{name}-original.md docs/design-system/{name}.md` for each file.

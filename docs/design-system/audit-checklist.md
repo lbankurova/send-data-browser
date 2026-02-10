@@ -41,6 +41,12 @@ Testable rules extracted from `datagrok-visual-design-guide.md`, `datagrok-app-d
 | C-25 | **Domain labels: colored text only.** `getDomainBadgeColor(d).text` + `text-[9px] font-semibold`. Never dot badges, outline pills, bordered treatments. | Search for domain rendering. Any non-text treatment → FAIL. Hard rule. | Critical |
 | C-26 | **Severity tier dots.** Critical = `#DC2626`, Notable = `#D97706`, Observed = no dot. | Check tier dot rendering. Wrong colors or Observed has dot → FAIL. | High |
 | C-27 | **ALL categorical badges: neutral gray.** Severity (Error/Warning/Info), fix status, review status — all use `bg-gray-100 text-gray-600 border-gray-200`. | Check every badge/pill color map. Any per-category color variation → FAIL. Hard rule. | Critical |
+| C-28 | **One saturated color family per column at rest.** Everything else must be neutral, outlined, muted, or interaction-only. | Scan each column zone. >1 saturated color family visible at rest → FAIL. | High |
+| C-29 | **Color budget: ≤10% saturated pixels at rest.** Grayscale screenshot must still make sense. Only conclusions visually "shout." | Take screenshot → grayscale. Lost information (not just aesthetics) → FAIL. Estimate saturation coverage → >10% → FAIL. | High |
+| C-30 | **Table density: <30% of rows red at rest.** If the majority of a table is colored, the view has alarm fatigue. | Count colored rows in any table at rest. >30% → FAIL. | High |
+| C-31 | **No decision red repetition per row.** Status/conclusion color (`#DC2626`) must not appear more than once in any single table row. | Scan table rows. >1 red element per row → FAIL. | High |
+| C-32 | **Info hierarchy categories not mixed in one visual unit.** Each element is Decision, Finding, Qualifier, Caveat, Evidence, or Context — never two in the same statement or badge. | Read each text element. Finding + caveat in same sentence → FAIL. | High |
+| C-33 | **Histopath block constraints.** No `#DC2626` anywhere, no background fills except neutral card bg, no reuse of status colors, no TARGET badges, no red severity encoding, no inline conclusions. | Scan histopath component. Any of these present → FAIL. | High |
 
 ---
 
