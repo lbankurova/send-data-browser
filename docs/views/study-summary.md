@@ -173,7 +173,7 @@ Each rail item (`SignalsOrganRailItem`):
 **Sorted by:** Targets first, then by `evidence_score` descending within each group.
 **Auto-select:** Highest-evidence organ is auto-selected when data loads and no organ is selected.
 
-### Evidence Panel (right panel, flex-1)
+### Evidence Panel (right panel, flex-1, `bg-muted/5`)
 
 **Component:** `SignalsEvidencePanel` (from `SignalsPanel.tsx`)
 
@@ -183,10 +183,10 @@ Each rail item (`SignalsOrganRailItem`):
 - No conclusion sentence — all relevant information is conveyed by the metrics line
 
 #### Tab Bar
-Three tabs: "Overview", "Signal matrix", "Metrics"
+Three tabs: "Evidence", "Signal matrix", "Metrics"
 - Same styling as main tab bar (`text-xs font-medium`, `h-0.5 bg-primary` underline)
 
-#### Overview Tab (`SignalsOverviewTab`)
+#### Evidence Tab (`SignalsOverviewTab`)
 
 Scrollable content (`overflow-y-auto px-4 py-3`):
 
@@ -197,8 +197,8 @@ Scrollable content (`overflow-y-auto px-4 py-3`):
 5. **Top findings** — Up to 8 findings sorted by `|effect_size|` desc. Each row (`hover:bg-accent/30`, clickable → navigates to dose-response view) shows:
    - Endpoint name (`min-w-[120px] truncate font-medium`)
    - Direction arrow (`text-muted-foreground/50`)
-   - Effect size (font-mono, font-semibold if |d| ≥ 0.8)
-   - P-value (font-mono, font-semibold if < 0.001, font-medium if < 0.01)
+   - Effect size (font-mono, font-semibold if |d| ≥ 0.8, `group-hover/finding:text-[#DC2626]` interaction-driven evidence color)
+   - P-value (font-mono, font-semibold if < 0.001, font-medium if < 0.01, `group-hover/finding:text-[#DC2626]` interaction-driven evidence color)
    - Trend p-value (font-mono text-muted-foreground, font-semibold if < 0.01, prefixed with "t:")
    - D-R pattern badge (if not none/flat): `rounded-full bg-muted px-1.5 py-0.5 text-[9px]`
    - Severity badge (`rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium`)
