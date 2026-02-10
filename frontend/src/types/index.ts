@@ -12,6 +12,17 @@ export interface StudySummary {
   status: string;
 }
 
+export interface DoseGroup {
+  dose_level: number;
+  armcd: string;
+  label: string;
+  dose_value: number | null;
+  dose_unit: string | null;
+  n_male: number;
+  n_female: number;
+  n_total: number;
+}
+
 export interface StudyMetadata {
   study_id: string;
   title: string | null;
@@ -36,6 +47,7 @@ export interface StudyMetadata {
   send_version: string | null;
   domain_count: number;
   domains: string[];
+  dose_groups: DoseGroup[] | null;
 }
 
 export interface DomainSummary {

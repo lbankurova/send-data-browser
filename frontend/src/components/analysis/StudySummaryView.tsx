@@ -470,6 +470,44 @@ function DetailsTab({
         <MetadataRow label="SEND version" value={meta.send_version} />
       </section>
 
+      {meta.dose_groups && meta.dose_groups.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-3 border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Treatment arms ({meta.dose_groups.length})
+          </h2>
+          <div className="overflow-x-auto rounded-md border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/30">
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Arm code</th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Label</th>
+                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dose</th>
+                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">M</th>
+                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">F</th>
+                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {meta.dose_groups.map((dg) => (
+                  <tr key={dg.armcd} className="border-b last:border-b-0">
+                    <td className="px-3 py-1.5 font-mono text-xs">{dg.armcd}</td>
+                    <td className="px-3 py-1.5">{dg.label}</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
+                      {dg.dose_value != null
+                        ? `${dg.dose_value}${dg.dose_unit ? ` ${dg.dose_unit}` : ""}`
+                        : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{dg.n_male}</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{dg.n_female}</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums font-medium">{dg.n_total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section>
         <h2 className="mb-3 border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Domains ({meta.domain_count})

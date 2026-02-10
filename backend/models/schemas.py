@@ -15,6 +15,17 @@ class StudySummary(BaseModel):
     status: str = "Complete"
 
 
+class DoseGroupSchema(BaseModel):
+    dose_level: int
+    armcd: str
+    label: str
+    dose_value: float | None = None
+    dose_unit: str | None = None
+    n_male: int = 0
+    n_female: int = 0
+    n_total: int = 0
+
+
 class StudyMetadata(BaseModel):
     study_id: str
     title: str | None = None
@@ -39,6 +50,7 @@ class StudyMetadata(BaseModel):
     send_version: str | None = None
     domain_count: int = 0
     domains: list[str] = []
+    dose_groups: list[DoseGroupSchema] | None = None
 
 
 class DomainSummary(BaseModel):
