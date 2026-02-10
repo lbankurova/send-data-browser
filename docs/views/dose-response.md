@@ -151,9 +151,9 @@ Three tabs (left to right):
 - "Hypotheses"
 - "Metrics"
 
-Active tab: `border-b-2 border-primary text-foreground`
+Active tab: `text-foreground` with `<span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />` underline (canonical pattern)
 Inactive tab: `text-muted-foreground hover:text-foreground`
-Both: `px-4 py-1.5 text-xs font-medium transition-colors`
+Both: `relative px-4 py-1.5 text-xs font-medium transition-colors`
 
 **Row count (metrics tab only):** `ml-auto mr-3 text-[10px] text-muted-foreground` — "{filtered} of {total} rows"
 
@@ -330,9 +330,9 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 | sd | SD | `font-mono text-muted-foreground`, 2 decimal places, em dash if null |
 | n | N | Plain text, em dash if null |
 | incidence | Incid. | `font-mono`, displayed as percentage `{(value * 100).toFixed(0)}%`, em dash if null |
-| p_value | P-value | `font-mono`, always-on p-value color via `getPValueColor()`, formatted via `formatPValue`. **Design decision (pending user testing):** always-on color was chosen over sort-triggered color to aid visual scanning in dense tables. May be revised after user testing. |
-| effect_size | Effect | `font-mono`, always-on effect size color via `getEffectSizeColor()`, formatted via `formatEffectSize` |
-| trend_p | Trend p | `font-mono`, always-on p-value color via `getPValueColor()`, formatted via `formatPValue` |
+| p_value | P-value | `ev font-mono` — interaction-driven evidence color (neutral `text-muted-foreground` at rest, `#DC2626` on row hover/selection). Formatted via `formatPValue`. `<td>` carries `data-evidence=""`. |
+| effect_size | Effect | `ev font-mono` — interaction-driven evidence color. Formatted via `formatEffectSize`. `<td>` carries `data-evidence=""`. |
+| trend_p | Trend p | `ev font-mono` — interaction-driven evidence color. Formatted via `formatPValue`. `<td>` carries `data-evidence=""`. |
 | dose_response_pattern | Pattern | `text-muted-foreground`, underscores replaced with spaces |
 
 **Row interactions:**
@@ -411,13 +411,41 @@ Rules filtered by: `organ_system` match (rules where `r.organ_system === selecti
 
 Same InsightsList rendering as described in study-summary.md (tier pills, organ groups, synthesized signals, correlation chips, expandable raw rules).
 
-#### Pane 2: Tox Assessment (default open)
+#### Pane 2: Statistics (default open)
+
+`CollapsiblePane` showing signal-level statistics for the selected endpoint. Key-value pairs in `text-[11px] tabular-nums`:
+- Signal score: `font-mono`, 3 decimal places
+- Direction: plain text or em dash if null
+- Severity: plain text
+- Treatment-related: "yes" or "no"
+
+Data source: best signal row from `signalData` (highest `signal_score` for the selected endpoint, optionally filtered by sex).
+
+Empty state: "No signal data for selected endpoint."
+
+#### Pane 3: Correlations (default open)
+
+`CollapsiblePane` showing other endpoints in the same organ system, sorted by signal score descending (top 10).
+
+Header text: "Other findings in {titleCase(organ_system)}" in `text-[10px] text-muted-foreground`.
+
+Mini table in `text-[10px] tabular-nums`:
+- Endpoint: truncated at 22 chars with tooltip
+- Dom: domain colored text via `getDomainBadgeColor().text`, `text-[9px] font-semibold`
+- Signal: `font-mono`, 2 decimal places
+- p: `font-mono`, formatted via `formatPValue`
+
+Rows are clickable — navigate back to this view with `state: { endpoint_label, organ_system }`.
+
+Empty state: "No other endpoints in this organ system."
+
+#### Pane 4: Tox Assessment (default open)
 
 `ToxFindingForm` component keyed by `endpointLabel` (the selected endpoint).
 - Treatment related dropdown, adversity dropdown (grayed when treatment="No"), comment textarea, SAVE button.
 - Only rendered when `studyId` is available.
 
-#### Pane 3: Related views (default closed)
+#### Pane 5: Related views (default closed)
 
 Cross-view navigation links in `text-[11px]`:
 - "View target organ: {organ_system}" (only if `organ_system` present in selection) — navigates to `/studies/{studyId}/target-organs` with `state: { organ_system }`
@@ -1000,7 +1028,7 @@ All Hypotheses tab state is session-scoped:
 - **Domain column:** Updated to colored-text-only (matches project-wide rule)
 - **Chart dots:** Significant dots use size + dark stroke ring (`#374151`) to preserve sex color identity. Same approach as stroke-for-significance on categorical bars.
 - **Categorical bars:** Updated to document stroke-for-significance (preserves sex color identity in combined chart)
-- **P-value/effect columns:** Pairwise table reverted to interaction-driven `ev` class (neutral at rest, `#DC2626` on row hover) — follows evidence-whispers-in-text philosophy. Metrics table uses always-on p-value color (design decision pending user testing). Documented stub for user-togglable color coding via hamburger menu (Datagrok Pattern #23).
+- **P-value/effect columns:** Both pairwise and metrics tables now use interaction-driven `ev` class (neutral at rest, `#DC2626` on row hover) — follows evidence-whispers-in-text philosophy and CLAUDE.md hard rule. Documented stub for user-togglable color coding via hamburger menu (Datagrok Pattern #23).
 - **Rail search:** Updated to inline flex pattern (consistent with all view rails)
 - **Context panel subtitle:** Updated to `titleCase(organ_system)` (matches code and project convention)
 - **Hypotheses tools:** All tools fully interactive regardless of `available` flag; removed unavailable/not-clickable distinction. Updated Pareto label to "Pareto front".
