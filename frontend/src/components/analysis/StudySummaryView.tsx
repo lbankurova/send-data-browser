@@ -184,7 +184,7 @@ export function StudySummaryView({
       <div className="flex items-center border-b bg-muted/30">
         <div className="flex">
           {([
-            { key: "details" as Tab, label: "Study Details" },
+            { key: "details" as Tab, label: "Study details" },
             { key: "signals" as Tab, label: "Signals" },
           ]).map(({ key, label }) => (
             <button
@@ -240,7 +240,6 @@ export function StudySummaryView({
               selectedOrgan={selectedOrgan}
               maxEvidenceScore={maxEvidenceScore}
               onOrganClick={handleOrganClick}
-              ruleResults={ruleResults ?? []}
               signalData={signalData}
               width={railWidth}
             />
@@ -303,7 +302,7 @@ function DecisionBar({
           {metrics.noaelConfidence != null && (
             <span
               className={cn(
-                "ml-1 rounded px-1 py-0.5 text-[10px] font-medium",
+                "ml-1 rounded px-1.5 py-0.5 text-[10px] font-medium",
                 metrics.noaelConfidence >= 0.8
                   ? "bg-green-100 text-green-700"
                   : metrics.noaelConfidence >= 0.6

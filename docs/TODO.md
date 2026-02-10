@@ -128,7 +128,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Gaps (9 open)
+## Gaps (10 open)
 
 ### GAP-01: No URL persistence of filter state
 - **Status:** Skip for prototype (Datagrok handles differently)
@@ -161,6 +161,12 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Issue:** No centralized icon tokens (size, stroke width, color by context). Icon sizes and colors are ad-hoc across components. Need standardized tokens like `icon.sm` / `icon.md` / `icon.lg` with contextual color rules (muted in chrome, primary in actions, etc.) aligned with Datagrok UI Kit.
 - **Status:** Open
 - **Owner hint:** ux-designer → frontend-dev
+
+### GAP-15: Organ rail click-to-deselect
+- **Files:** `frontend/src/components/analysis/StudySummaryView.tsx`
+- **Issue:** Clicking the already-selected organ in the Signals rail does not deselect it (I-02 checklist rule). Currently moot because auto-select would immediately re-select. If auto-select behavior changes, this should be revisited.
+- **Status:** Open (deferred — no user impact with current auto-select)
+- **Owner hint:** frontend-dev
 
 ### GAP-13: Generated HTML report needs redesign
 - **Files:** `frontend/src/lib/report-generator.ts`
