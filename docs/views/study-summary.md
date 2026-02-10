@@ -2,6 +2,7 @@
 
 **Route:** `/studies/:studyId`
 **Component:** `StudySummaryView.tsx` (wrapped by `StudySummaryViewWrapper.tsx`)
+**Cognitive mode:** Hybrid (conclusions stated in Decision Bar and TARGET badges; evidence available on drill-down)
 **Scientific question:** "What happened in this study?"
 **Role:** Entry point after opening a study. Orientation, signal detection, triage.
 
@@ -39,7 +40,7 @@ The Study Summary View itself is split into two tabs with a shared tab bar:
 - **Position:** Top of the view, full width, `border-b`
 - **Tabs:** "Study Details" (first) and "Signals" (second, default active)
 - **Active indicator:** `h-0.5 bg-primary` underline at bottom of active tab
-- **Tab text:** `text-xs font-medium`. Active = `text-foreground`. Inactive = `text-muted-foreground`. Title Case for all tab labels.
+- **Tab text:** `text-xs font-medium`. Active = `text-foreground`. Inactive = `text-muted-foreground`. Sentence case for tab labels.
 - **Generate Report button:** Right-aligned in tab bar. Border, `text-xs`, icon `FileText` (3.5x3.5) + "Generate Report" label. Opens HTML report in new tab.
 
 ---
@@ -155,12 +156,9 @@ Header: "ORGAN SYSTEMS ({count})" + search input (`text-xs`).
 
 Each rail item (`SignalsOrganRailItem`):
 - **Row 1: Name line** — `flex items-center gap-2`:
-  - Tier indication dot (leftmost): Critical = red `#DC2626`, Notable = amber `#D97706`, Observed = no dot. Computed via `computeTier()` from `rule-synthesis.ts`.
   - Organ name: `text-xs font-semibold` + `titleCase()`
   - Dominant direction arrow (if available): `text-[10px] text-muted-foreground/60` — ↑ (mostly up), ↓ (mostly down), ↕ (mixed). Computed from significant signals (p < 0.05) in `computeOrganRailStats()`.
-  - "TARGET" badge (if target organ): `text-[9px] font-semibold uppercase text-red-600`
-- Target organs: red left border (`border-l-2 border-l-red-600`)
-- Non-targets: transparent left border
+  - "TARGET" badge (if target organ): `text-[9px] font-semibold uppercase text-red-600` — sole red element per rail item (C-31 compliance)
 - Selected: `bg-blue-50/60 dark:bg-blue-950/20`
 - Not selected: `hover:bg-accent/30`
 - **Row 2: Evidence score bar** — `mt-1.5 flex items-center gap-2`: track `h-1.5 rounded-full bg-gray-200`, fill `bg-gray-300` (width normalized to max across all organs). Score number: `font-mono text-[10px] tabular-nums`, font-semibold if ≥0.5, font-medium if ≥0.3.
@@ -298,7 +296,7 @@ Rows: `cursor-pointer border-b border-dashed hover:bg-accent/30`. Click navigate
 - Sex comparison (below separator): Males (sig/total), Females (sig/total)
 
 #### Pane 4: Related views (default closed)
-Links to Target Organs, Dose-Response, Histopathology, NOAEL Decision — all with `{ state: { organ_system } }`. Style: `text-[11px]`, color `#3a7bd5`, `hover:underline`.
+Links to Target Organs, Dose-Response, Histopathology, NOAEL Decision — all with `{ state: { organ_system } }`. Style: `text-[11px]`, `text-primary hover:underline`.
 
 ### Endpoint Selected (`EndpointPanel`)
 
