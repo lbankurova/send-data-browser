@@ -294,6 +294,8 @@ export function DoseResponseView({
     data_type: string | null;
     organ_system: string | null;
   }>({ sex: null, data_type: null, organ_system: null });
+  const [sigOnly, setSigOnly] = useState(false);
+  const [evidenceColor, setEvidenceColor] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
@@ -399,9 +401,10 @@ export function DoseResponseView({
       if (metricsFilters.sex && row.sex !== metricsFilters.sex) return false;
       if (metricsFilters.data_type && row.data_type !== metricsFilters.data_type) return false;
       if (metricsFilters.organ_system && row.organ_system !== metricsFilters.organ_system) return false;
+      if (sigOnly && (row.p_value == null || row.p_value >= 0.05)) return false;
       return true;
     });
-  }, [drData, metricsFilters]);
+  }, [drData, metricsFilters, sigOnly]);
 
   // ── Columns ───────────────────────────────────────────
 
@@ -437,6 +440,10 @@ export function DoseResponseView({
           </span>
         ),
       }),
+      col.accessor("n", {
+        header: "N",
+        cell: (info) => <span>{info.getValue() ?? "\u2014"}</span>,
+      }),
       col.accessor("sex", { header: "Sex" }),
       col.accessor("mean", {
         header: "Mean",
@@ -452,10 +459,6 @@ export function DoseResponseView({
           </span>
         ),
       }),
-      col.accessor("n", {
-        header: "N",
-        cell: (info) => <span>{info.getValue() ?? "\u2014"}</span>,
-      }),
       col.accessor("incidence", {
         header: "Incid.",
         cell: (info) => (
@@ -466,27 +469,36 @@ export function DoseResponseView({
       }),
       col.accessor("p_value", {
         header: "P-value",
-        cell: (info) => (
-          <span className="ev font-mono">
-            {formatPValue(info.getValue())}
-          </span>
-        ),
+        cell: (info) => {
+          const v = info.getValue();
+          return (
+            <span className={cn("ev font-mono", evidenceColor && v != null && v < 0.05 && "text-[#DC2626]")}>
+              {formatPValue(v)}
+            </span>
+          );
+        },
       }),
       col.accessor("effect_size", {
         header: "Effect",
-        cell: (info) => (
-          <span className="ev font-mono">
-            {formatEffectSize(info.getValue())}
-          </span>
-        ),
+        cell: (info) => {
+          const v = info.getValue();
+          return (
+            <span className={cn("ev font-mono", evidenceColor && v != null && Math.abs(v) > 0.8 && "text-[#DC2626]")}>
+              {formatEffectSize(v)}
+            </span>
+          );
+        },
       }),
       col.accessor("trend_p", {
         header: "Trend p",
-        cell: (info) => (
-          <span className="ev font-mono">
-            {formatPValue(info.getValue())}
-          </span>
-        ),
+        cell: (info) => {
+          const v = info.getValue();
+          return (
+            <span className={cn("ev font-mono", evidenceColor && v != null && v < 0.05 && "text-[#DC2626]")}>
+              {formatPValue(v)}
+            </span>
+          );
+        },
       }),
       col.accessor("dose_response_pattern", {
         header: "Pattern",
@@ -494,8 +506,16 @@ export function DoseResponseView({
           <span className="text-muted-foreground">{info.getValue().replace(/_/g, " ")}</span>
         ),
       }),
+      col.accessor("data_type", {
+        header: "Method",
+        cell: (info) => (
+          <span className="text-muted-foreground">
+            {info.getValue() === "continuous" ? "Dunnett" : "Fisher"}
+          </span>
+        ),
+      }),
     ],
-    []
+    [evidenceColor]
   );
 
   const table = useReactTable({
@@ -957,6 +977,10 @@ export function DoseResponseView({
               metricsData={metricsData}
               metricsFilters={metricsFilters}
               setMetricsFilters={setMetricsFilters}
+              sigOnly={sigOnly}
+              setSigOnly={setSigOnly}
+              evidenceColor={evidenceColor}
+              setEvidenceColor={setEvidenceColor}
               organSystems={organSystems}
               selection={selection}
               handleRowClick={handleRowClick}
@@ -2011,6 +2035,10 @@ interface MetricsTableProps {
   setMetricsFilters: React.Dispatch<
     React.SetStateAction<{ sex: string | null; data_type: string | null; organ_system: string | null }>
   >;
+  sigOnly: boolean;
+  setSigOnly: React.Dispatch<React.SetStateAction<boolean>>;
+  evidenceColor: boolean;
+  setEvidenceColor: React.Dispatch<React.SetStateAction<boolean>>;
   organSystems: string[];
   selection: DoseResponseSelection | null;
   handleRowClick: (row: DoseResponseRow) => void;
@@ -2021,6 +2049,10 @@ function MetricsTableContent({
   metricsData,
   metricsFilters,
   setMetricsFilters,
+  sigOnly,
+  setSigOnly,
+  evidenceColor,
+  setEvidenceColor,
   organSystems,
   selection,
   handleRowClick,
@@ -2059,6 +2091,24 @@ function MetricsTableContent({
             </option>
           ))}
         </select>
+        <label className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={sigOnly}
+            onChange={(e) => setSigOnly(e.target.checked)}
+            className="h-3 w-3 rounded border-gray-300"
+          />
+          p &lt; 0.05
+        </label>
+        <label className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={evidenceColor}
+            onChange={(e) => setEvidenceColor(e.target.checked)}
+            className="h-3 w-3 rounded border-gray-300"
+          />
+          Color
+        </label>
         <span className="ml-auto text-[10px] text-muted-foreground">
           {metricsData.length} rows
         </span>
