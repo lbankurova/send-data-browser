@@ -20,7 +20,7 @@ import type {
 } from "@/types/analysis-views";
 import { buildOrganGroups, type OrganGroup } from "@/lib/rule-synthesis";
 
-const BRAND = "#3a7bd5";
+const BRAND = "#2083d5";
 
 function escapeHtml(str: string | null | undefined): string {
   if (!str) return "—";
