@@ -10,8 +10,8 @@ SKIP_FOLDERS = {
     "SENDIG3.1.1excel",
 }
 
-# Prototype: only include this study (most complete SEND dataset — 28 domains)
-ALLOWED_STUDIES = {"PointCross"}
+# Empty = serve all discovered studies; populate to restrict (e.g. {"PointCross"})
+ALLOWED_STUDIES: set[str] = set()
 
 DEFAULT_PAGE_SIZE = 50
 MAX_PAGE_SIZE = 500

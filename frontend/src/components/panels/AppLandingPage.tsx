@@ -22,70 +22,7 @@ const VAL_DISPLAY: Record<string, { icon: React.ReactNode; tooltip: string }> = 
   "Not Run": { icon: <span className="text-xs text-muted-foreground">—</span>, tooltip: "Not validated" },
 };
 
-type DisplayStudy = StudySummary & { validation: string; demo?: boolean };
-
-const DEMO_STUDIES: DisplayStudy[] = [
-  {
-    study_id: "DART-2024-0091",
-    name: "DART-2024-0091",
-    domain_count: 22,
-    species: "Rat",
-    study_type: "Reproductive",
-    protocol: "DART-091-GLP",
-    standard: "SEND 3.1",
-    subjects: 240,
-    start_date: "2024-03-11",
-    end_date: "2024-09-28",
-    status: "Complete",
-    validation: "Pass",
-    demo: true,
-  },
-  {
-    study_id: "CARDIO-TX-1147",
-    name: "CARDIO-TX-1147",
-    domain_count: 18,
-    species: "Dog",
-    study_type: "Chronic",
-    protocol: "CRD-1147-28D",
-    standard: "SEND 3.1.1",
-    subjects: 32,
-    start_date: "2024-06-01",
-    end_date: "2024-12-15",
-    status: "Complete",
-    validation: "Warnings",
-    demo: true,
-  },
-  {
-    study_id: "ONCO-MTD-3382",
-    name: "ONCO-MTD-3382",
-    domain_count: 14,
-    species: "Mouse",
-    study_type: "Carcinogenicity",
-    protocol: "ONC-3382-MTD",
-    standard: "SEND 3.0",
-    subjects: 400,
-    start_date: "2023-11-20",
-    end_date: null,
-    status: "Ongoing",
-    validation: "Fail",
-    demo: true,
-  },
-  {
-    study_id: "NEURO-PK-0256",
-    name: "NEURO-PK-0256",
-    domain_count: 9,
-    species: "Rat",
-    study_type: "Neurotoxicity",
-    protocol: "NPK-256-7D",
-    standard: "SEND 3.1.1",
-    subjects: 60,
-    start_date: "2025-01-06",
-    end_date: null,
-    status: "Ongoing",
-    validation: "Not Run",
-    demo: true,
-  },
-];
+type DisplayStudy = StudySummary & { validation: string };
 
 function StudyContextMenu({
   position,
@@ -100,16 +37,14 @@ function StudyContextMenu({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isDemo = !!study.demo;
   const items: { label: string; action: () => void; disabled?: boolean; separator?: boolean }[] = [
-    { label: "Open Study", action: onOpen, disabled: isDemo },
+    { label: "Open Study", action: onOpen },
     {
       label: "Open Validation Report",
       action: () => {
         onClose();
         navigate(`/studies/${encodeURIComponent(study.study_id)}/validation`);
       },
-      disabled: isDemo,
     },
     {
       label: "Generate Report",
@@ -117,30 +52,26 @@ function StudyContextMenu({
         onClose();
         generateStudyReport(study.study_id);
       },
-      disabled: isDemo,
     },
     { label: "Share...", action: () => onClose(), disabled: true },
     {
       label: "Export...",
       action: () => {
         onClose();
-        if (!isDemo) alert("CSV/Excel export coming soon.");
+        alert("CSV/Excel export coming soon.");
       },
-      disabled: isDemo,
     },
     {
       label: "Re-validate SEND...",
       action: () => {
         onClose();
         navigate(`/studies/${encodeURIComponent(study.study_id)}/validation`);
-        // Fire-and-forget: re-run validation in background, then refresh the view
         fetch(`/api/studies/${encodeURIComponent(study.study_id)}/validate`, { method: "POST" })
           .then(() => {
             queryClient.invalidateQueries({ queryKey: ["validation-results", study.study_id] });
             queryClient.invalidateQueries({ queryKey: ["affected-records", study.study_id] });
           });
       },
-      disabled: isDemo,
     },
     { label: "Delete", action: () => onClose(), disabled: true, separator: true },
   ];
@@ -270,10 +201,10 @@ export function AppLandingPage() {
   const { data: studies, isLoading } = useStudies();
   const navigate = useNavigate();
   const { selectedStudyId, selectStudy } = useSelection();
-  const allStudies: DisplayStudy[] = [
-    ...(studies ?? []).map((s) => ({ ...s, validation: "Pass" })),
-    ...DEMO_STUDIES,
-  ];
+  const allStudies: DisplayStudy[] = (studies ?? []).map((s) => ({
+    ...s,
+    validation: "Not Run",
+  }));
 
   const [contextMenu, setContextMenu] = useState<{
     study: DisplayStudy;
@@ -299,7 +230,6 @@ export function AppLandingPage() {
 
   const handleDoubleClick = useCallback(
     (study: DisplayStudy) => {
-      if (study.demo) return;
       if (clickTimerRef.current) {
         clearTimeout(clickTimerRef.current);
         clickTimerRef.current = null;
