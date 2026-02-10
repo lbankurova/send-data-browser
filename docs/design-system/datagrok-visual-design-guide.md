@@ -3,19 +3,228 @@
 Comprehensive visual design system for Datagrok applications. Structural tokens (buttons, badges, typography, spacing, surfaces) are codified in `frontend/src/lib/design-tokens.ts`. Color-scale functions are in `frontend/src/lib/severity-colors.ts`. This document is the hex-value and rule reference.
 
 > **Condensed 2026-02-09.** Full original: `datagrok-visual-design-guide-original.md`. Restore by copying it over this file if agent performance degrades.
+> **Palette updated 2026-02-09.** Tokens aligned with `datagrok-ui-kit-figma-community` (white bg, Datagrok blue, steel borders).
 
 ---
 
-## 1. Color System
+## 0. Datagrok Platform Palette
 
-### 1.1 Semantic Colors
+Source: `pcc-design/datagrok-ui-kit-figma-community.pdf`. These are the raw Datagrok platform swatches. Not all are used in this app — included here as the reference palette for future decisions.
 
-| Semantic | Hex | Usage |
-|----------|-----|-------|
-| Error / Critical | `#dc2626` | Validation errors, critical findings, destructive actions |
-| Warning / Notable | `#d97706` | Warnings, review-recommended items |
-| Info / Observed | `#2563eb` | Informational messages, best-practice suggestions |
-| Success / Pass | `#16a34a` | Passed validation, completed status |
+### 0.1 Steel
+
+| Swatch | Hex | RGB |
+|--------|-----|-----|
+| steel-1 | `#ECEFF2` | 236, 239, 242 |
+| steel-2 | `#D7DFE7` | 215, 223, 231 |
+| steel-3 | `#B3BFCC` | 179, 191, 204 |
+| steel-4 | `#7990A5` | 121, 144, 165 |
+| steel-5 | `#4D607F` | 77, 96, 127 |
+
+**App usage:** steel-1 → `--border-subtle`, steel-2 → `--border` / `--input`.
+
+### 0.2 Grey
+
+| Swatch | Hex | RGB |
+|--------|-----|-----|
+| grey-1 | `#F2F2F5` | 242, 242, 245 |
+| grey-2 | `#DBDCDF` | 219, 220, 223 |
+| grey-3 | `#B8BAC0` | 184, 186, 192 |
+| grey-4 | `#9497A0` | 148, 151, 160 |
+| grey-5 | `#717081` | 113, 112, 129 |
+| grey-6 | `#4D5261` | 77, 82, 97 |
+
+**App usage:** grey-1 → `--muted` / `--secondary`.
+
+### 0.3 Warm Grey
+
+| Swatch | Hex |
+|--------|-----|
+| warm-grey-1 | `#F7F6F4` |
+| warm-grey-2 | `#DEDDDC` |
+| warm-grey-3 | `#949492` |
+| warm-grey-4 | `#4A4A49` |
+
+### 0.4 Red
+
+| Swatch | Hex |
+|--------|-----|
+| red-1 | `#FBE1E1` |
+| red-3 | `#EB6767` |
+| red-4 | `#763434` |
+
+### 0.5 Green
+
+| Swatch | Hex |
+|--------|-----|
+| green-1 | `#DCF3E7` |
+| green-2 | `#3CB173` |
+| green-3 | `#2B6344` |
+
+**App usage:** green-2 → `--success`.
+
+### 0.6 Orange
+
+| Swatch | Hex |
+|--------|-----|
+| orange-1 | `#FFECDB` |
+| orange-2 | `#F7A36A` |
+| orange-3 | `#BB5125` |
+
+**App usage:** orange-2 → `--warning`.
+
+### 0.7 Blue (Primary)
+
+| Swatch | Hex | Notes |
+|--------|-----|-------|
+| blue-1 | `#2083D5` | Datagrok primary action blue |
+| blue-2 | `#3049C5` | Deeper accent (unused) |
+
+**App usage:** blue-1 → `--primary`, `--ring`, `--info`, `--chart-1`, all link colors.
+
+### 0.8 Beige
+
+| Swatch | Hex |
+|--------|-----|
+| beige-1 | `#FDF1E5` |
+| beige-2 | `#E4BACE` |
+
+### 0.9 Status
+
+| Swatch | Hex | Usage |
+|--------|-----|-------|
+| success-1 | `#0D6400` | Deep success (not used — too dark for UI text) |
+| failure-2 | `#BB0000` | Failure / destructive |
+
+**App usage:** failure-2 → `--destructive`.
+
+### 0.10 Standard Chart Palette
+
+Datagrok's default 20-color Tableau-derived chart palette:
+
+| Name | Hex | Name | Hex |
+|------|-----|------|-----|
+| Blue | `#1F77B4` | Light-blue | (paired) |
+| Orange | `#FFBB78` | Green | `#2CA02C` |
+| Light-green | `#98DF8A` | Red | `#D62728` |
+| Light-red | `#FF9896` | Purple | `#9467BD` |
+| Light-purple | `#C5B0D5` | Brown | `#8C564B` |
+| Light-brown | `#C49C94` | Pink | `#E377C2` |
+| Light-pink | `#F7B6D2` | Gray | `#7F7F7F` |
+| Light-gray | `#C7C7C7` | Yellow | `#BCBD22` |
+| Light-yellow | `#DBDB8D` | Cyan | `#17BECF` |
+| Light-cyan | `#9EDAE5` | | |
+
+### 0.11 Traffic Light Palette
+
+| Name | Hex |
+|------|-----|
+| Blue | `#73AFF5` |
+| Orange | `#FFA500` |
+| Red | `#FF5140` |
+| Green | `#4FAF27` |
+| Gray | `#D9D9D9` |
+
+---
+
+## 1. Color System — App Tokens
+
+### 1.0 CSS Custom Properties
+
+All defined in `frontend/src/index.css` `:root`. Consumed via Tailwind utilities (`bg-background`, `text-primary`, etc.) and `@theme inline` mapping.
+
+**Core surfaces:**
+
+| Token | Value | Notes |
+|-------|-------|-------|
+| `--background` | `#ffffff` | White — Datagrok native |
+| `--foreground` | `#2b2b2b` | Softer dark for body text |
+| `--card` | `#ffffff` | Card surfaces |
+| `--card-foreground` | `#2b2b2b` | |
+| `--popover` | `#ffffff` | Dropdown/tooltip surfaces |
+| `--popover-foreground` | `#2b2b2b` | |
+
+**Brand / interactive:**
+
+| Token | Value | Notes |
+|-------|-------|-------|
+| `--primary` | `#2083d5` | Datagrok blue (kit blue-1) |
+| `--primary-foreground` | `#ffffff` | White on primary |
+| `--ring` | `#2083d5` | Focus ring = primary |
+| `--accent` | `rgba(32,131,213,0.10)` | Selection highlight |
+| `--accent-foreground` | `#2b2b2b` | |
+| `--destructive` | `#bb0000` | Kit failure-2 |
+| `--destructive-foreground` | `#bb0000` | |
+
+**Neutral chrome:**
+
+| Token | Value | Source |
+|-------|-------|--------|
+| `--secondary` | `#f2f2f5` | Kit grey-1 |
+| `--secondary-foreground` | `#2b2b2b` | |
+| `--muted` | `#f2f2f5` | Kit grey-1 |
+| `--muted-foreground` | `#6b7280` | Cool steel grey |
+| `--border` | `#d7dfe7` | Kit steel-2 |
+| `--input` | `#d7dfe7` | Kit steel-2 |
+| `--border-subtle` | `#eceff2` | Kit steel-1 |
+
+**Selection / hover:**
+
+| Token | Value |
+|-------|-------|
+| `--selection-bg` | `rgba(32,131,213,0.10)` |
+| `--selection-border` | `#2083d5` |
+| `--hover-bg` | `#f0f5fa` |
+
+**Semantic status (kit palette):**
+
+| Token | Value | Source |
+|-------|-------|--------|
+| `--success` | `#3cb173` | Kit green-2 |
+| `--warning` | `#f7a36a` | Kit orange-2 |
+| `--info` | `#2083d5` | = primary |
+
+**Severity (app-specific, analysis views):**
+
+| Token | Value |
+|-------|-------|
+| `--adverse-bg` | `rgba(239,68,68,0.08)` |
+| `--adverse-text` | `#dc2626` |
+| `--warning-bg` | `rgba(245,158,11,0.08)` |
+| `--warning-text` | `#d97706` |
+| `--normal-bg` | `rgba(34,197,94,0.08)` |
+| `--normal-text` | `#16a34a` |
+
+**Sidebar:**
+
+| Token | Value |
+|-------|-------|
+| `--sidebar-background` | `#ffffff` |
+| `--sidebar-foreground` | `#2b2b2b` |
+| `--sidebar-primary` | `#2083d5` |
+| `--sidebar-border` | `#eceff2` |
+| `--sidebar-accent` | `rgba(32,131,213,0.10)` |
+
+**Chart palette:**
+
+| Token | Value |
+|-------|-------|
+| `--chart-1` | `#2083d5` |
+| `--chart-2` | `#f28e2b` |
+| `--chart-3` | `#59a14f` |
+| `--chart-4` | `#e15759` |
+| `--chart-5` | `#b07aa1` |
+
+### 1.1 Semantic Colors (design-tokens.ts)
+
+These are the `status.*` tokens in `design-tokens.ts`, used for validation badges and status indicators. They use Tailwind color classes (not CSS custom properties).
+
+| Semantic | Hex | Tailwind bg/text/border |
+|----------|-----|------------------------|
+| Error / Critical | `#dc2626` | `bg-red-100 text-red-800 border-red-200` |
+| Warning / Notable | `#d97706` | `bg-amber-100 text-amber-800 border-amber-200` |
+| Info / Observed | `#2563eb` | `bg-blue-100 text-blue-800 border-blue-200` |
+| Success / Pass | `#16a34a` | `bg-green-100 text-green-800 border-green-200` |
 
 Badge rendering: `status.error` / `.warning` / `.info` / `.success` from `design-tokens.ts`.
 
