@@ -5,7 +5,7 @@ import shutil
 import zipfile
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 
 from config import SEND_DATA_DIR, CACHE_DIR
 from services.study_discovery import StudyInfo, _find_xpt_files
@@ -22,7 +22,11 @@ ANNOTATIONS_DIR = Path(__file__).parent.parent / "annotations"
 
 
 @router.post("/import")
-async def import_study(file: UploadFile = File(...)):
+async def import_study(
+    file: UploadFile = File(...),
+    validate: bool = Query(True, description="Run SEND validation after import"),
+    auto_fix: bool = Query(False, description="Attempt automatic fixes after validation"),
+):
     """Import a SEND study from a .zip file containing .xpt files.
 
     The zip should contain .xpt files either at the root or in a single subdirectory.
@@ -90,7 +94,7 @@ async def import_study(file: UploadFile = File(...)):
     )
     register_study(study)
     register_analysis_study(study)
-    register_validation_study(study)
+    register_validation_study(study, validate=validate, auto_fix=auto_fix)
 
     # Run generator (non-fatal)
     try:
