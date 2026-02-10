@@ -35,8 +35,6 @@ import { cn } from "@/lib/utils";
 import {
   formatPValue,
   formatEffectSize,
-  getPValueColor,
-  getEffectSizeColor,
   getDomainBadgeColor,
   getDoseGroupColor,
   titleCase,
@@ -452,7 +450,7 @@ export function DoseResponseView({
       col.accessor("p_value", {
         header: "P-value",
         cell: (info) => (
-          <span className={cn("font-mono", getPValueColor(info.getValue()))}>
+          <span className="ev font-mono">
             {formatPValue(info.getValue())}
           </span>
         ),
@@ -460,7 +458,7 @@ export function DoseResponseView({
       col.accessor("effect_size", {
         header: "Effect",
         cell: (info) => (
-          <span className={cn("font-mono", getEffectSizeColor(info.getValue()))}>
+          <span className="ev font-mono">
             {formatEffectSize(info.getValue())}
           </span>
         ),
@@ -468,7 +466,7 @@ export function DoseResponseView({
       col.accessor("trend_p", {
         header: "Trend p",
         cell: (info) => (
-          <span className={cn("font-mono", getPValueColor(info.getValue()))}>
+          <span className="ev font-mono">
             {formatPValue(info.getValue())}
           </span>
         ),
@@ -2056,7 +2054,7 @@ function MetricsTableContent({
                   onClick={() => handleRowClick(orig)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }}>
+                    <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }} data-evidence="">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
