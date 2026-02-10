@@ -52,7 +52,7 @@ Responsive: stacks vertically below 1200px (`max-[1200px]:flex-col`). Rail becom
 Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWidth` comes from `useResizePanel(300, 180, 500)`. On narrow viewports: `max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto`.
 
 ### Header
-- Label: `text-xs font-medium uppercase tracking-wider text-muted-foreground` — "Specimens ({N})"
+- Label: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Specimens ({N})"
 - Search input: `mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs` with placeholder "Search specimens..."
 
 ### Rail Items
@@ -114,13 +114,13 @@ Example: *"Low-incidence, non-adverse, male only, without dose-related increase.
 
 ## Tab Bar
 
-`flex shrink-0 items-center gap-0 border-b px-4`
+`flex shrink-0 items-center gap-0 border-b bg-muted/30` (canonical tab bar pattern)
 
-Two tabs: **Overview** and **Severity matrix**
+Three tabs: **Evidence**, **Severity matrix**, **Hypotheses**
 
-Active tab: `border-b-2 border-primary text-primary`
-Inactive tab: `border-transparent text-muted-foreground hover:text-foreground`
-All tabs: `px-3 py-2 text-xs font-medium transition-colors`
+Active tab: `text-foreground` + `absolute inset-x-0 bottom-0 h-0.5 bg-primary` underline
+Inactive tab: `text-muted-foreground hover:text-foreground`
+All tabs: `relative px-4 py-1.5 text-xs font-medium transition-colors`
 
 ---
 
@@ -130,7 +130,7 @@ All tabs: `px-3 py-2 text-xs font-medium transition-colors`
 
 ### Observed Findings
 
-Section header: `text-xs font-medium uppercase tracking-wide text-muted-foreground` — "Observed findings"
+Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Observed findings"
 
 Each finding is a clickable `<button>` row:
 - Container: `flex w-full items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-left text-[11px] hover:bg-accent/30`
@@ -252,6 +252,33 @@ Row cap: 200 rows. Row interactions: click to select/deselect, hover highlight.
 
 ---
 
+## Hypotheses Tab
+
+Pathologist-oriented exploratory tools, matching the Hypotheses tab pattern from Target Organs and Dose-Response views. Provides structural consistency across analysis views.
+
+### Toolbar
+
+`flex items-center gap-1 border-b bg-muted/20 px-4 py-1.5`
+
+Favorite tool pills (active: `bg-foreground text-background`, inactive: `text-muted-foreground hover:bg-accent hover:text-foreground`) + "+" dropdown button + right-aligned "Does not affect conclusions" note.
+
+Right-click on pills opens context menu for pin/unpin from favorites.
+
+### Specimen Tools
+
+| Tool | Icon | Available | Description |
+|------|------|-----------|-------------|
+| Severity distribution | `BarChart3` | Yes | Severity grade distribution across dose groups |
+| Treatment-related assessment | `Microscope` | Yes | Classify findings as treatment-related, incidental, or spontaneous |
+| Peer comparison | `Users` | No (production) | Compare against historical control incidence data |
+| Dose-severity trend | `TrendingUp` | Yes | Severity and incidence changes across dose groups |
+
+Default favorites: Severity distribution, Treatment-related assessment.
+
+Each tool renders a `ViewerPlaceholder` (DG viewer type label), descriptive text, and a `ConfigLine` settings block in a `rounded-md border bg-card p-3` card. Unavailable tools show a `ProductionNote` explaining the dependency.
+
+---
+
 ## Helper Functions
 
 ### `deriveSexLabel(rows: LesionSeverityRow[]): string`
@@ -281,14 +308,14 @@ Route-detected: when pathname matches `/studies/{studyId}/histopathology`, shows
 
 Header: sticky, finding name (`text-sm font-semibold`) + `CollapseAllButtons`, specimen name below (`text-xs text-muted-foreground`).
 
-Panes in order:
-1. **Dose detail** (default open) — all dose-level rows for finding + specimen, sorted by dose_level then sex. Table columns: Dose, Sex, Incid., Avg Sev, Sev.
-2. **Sex comparison** (conditional, default open) — only shown when finding has data from both sexes. Per-sex row: affected/total + max severity badge with `getSeverityHeatColor()`.
-3. **Insights** (default open) — `InsightsList` with finding-scoped rules
+Panes in order (follows design system priority: insights > stats > related > annotation > navigation):
+1. **Insights** (default open) — `InsightsList` with finding-scoped rules
+2. **Dose detail** (default open) — all dose-level rows for finding + specimen, sorted by dose_level then sex. Table columns: Dose, Sex, Incid., Avg Sev, Sev.
+3. **Sex comparison** (conditional, default open) — only shown when finding has data from both sexes. Per-sex row: affected/total + max severity badge with `getSeverityHeatColor()`.
 4. **Correlating evidence** (default open) — up to 10 other findings in same specimen, sorted by max severity desc, with severity badge colored by `getSeverityHeatColor()`
 5. **Pathology review** — `PathologyReviewForm` (not wrapped in CollapsiblePane, uses own form state)
-6. **Related views** (default closed) — "View target organs", "View dose-response", "View NOAEL decision" links
-7. **Tox Assessment** — `ToxFindingForm` keyed by finding (not wrapped in CollapsiblePane)
+6. **Tox Assessment** — `ToxFindingForm` keyed by finding (not wrapped in CollapsiblePane)
+7. **Related views** (default closed) — "View target organs", "View dose-response", "View NOAEL decision" links
 
 ---
 
@@ -297,7 +324,7 @@ Panes in order:
 | State | Scope | Managed By |
 |-------|-------|------------|
 | Selected specimen | Local | `useState<string \| null>` — which specimen is active in the rail |
-| Active tab | Local | `useState<EvidenceTab>` — "overview" or "matrix" |
+| Active tab | Local | `useState<EvidenceTab>` — "overview", "matrix", or "hypotheses" |
 | Selection (finding) | Shared via context | `ViewSelectionContext` with `_view: "histopathology"` tag |
 | Sex filter | Local | `useState<string \| null>` — for Severity Matrix tab |
 | Min severity | Local | `useState<number>` — for Severity Matrix tab |
