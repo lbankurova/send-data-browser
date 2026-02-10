@@ -2,7 +2,8 @@
 
 Testable rules extracted from `datagrok-visual-design-guide.md`, `datagrok-app-design-patterns.md`, and CLAUDE.md design decisions. Every rule is pass/fail with a clear test. Run this checklist against any view before declaring it compliant.
 
-> **Created:** 2026-02-09. Derived from all three design system docs.
+> **Created:** 2026-02-09. Updated: 2026-02-09. Derived from all three design system docs + master rules consolidation.
+> **Rules:** 75 testable rules (C: 27, T: 9, S: 6, X: 7, K: 6, I: 10, A: 10) + 3 guiding principles.
 > **Usage:** The UX designer role MUST run this checklist (not just spot-check) during any design audit. Each rule has an ID for referencing in audit reports.
 
 ---
@@ -42,11 +43,14 @@ Testable rules extracted from `datagrok-visual-design-guide.md`, `datagrok-app-d
 | C-26 | **Severity tier dots.** Critical = `#DC2626`, Notable = `#D97706`, Observed = no dot. | Check tier dot rendering. Wrong colors or Observed has dot → FAIL. | High |
 | C-27 | **ALL categorical badges: neutral gray.** Severity (Error/Warning/Info), fix status, review status — all use `bg-gray-100 text-gray-600 border-gray-200`. | Check every badge/pill color map. Any per-category color variation → FAIL. Hard rule. | Critical |
 | C-28 | **One saturated color family per column at rest.** Everything else must be neutral, outlined, muted, or interaction-only. | Scan each column zone. >1 saturated color family visible at rest → FAIL. | High |
-| C-29 | **Color budget: ≤10% saturated pixels at rest.** Grayscale screenshot must still make sense. Only conclusions visually "shout." | Take screenshot → grayscale. Lost information (not just aesthetics) → FAIL. Estimate saturation coverage → >10% → FAIL. | High |
+| C-29 | **Color budget: ≤10% saturated pixels at rest.** Grayscale screenshot must still communicate essential hierarchy — confirming that position, grouping, and typography (not color) do the heavy lifting. If removing all color loses actual information (not just aesthetics), the view over-relies on color → FAIL. Estimate saturation coverage → >10% → FAIL. | Take screenshot → grayscale. Structure unclear without color → FAIL. Estimate saturation → >10% → FAIL. | High |
 | C-30 | **Table density: <30% of rows red at rest.** If the majority of a table is colored, the view has alarm fatigue. | Count colored rows in any table at rest. >30% → FAIL. | High |
 | C-31 | **No decision red repetition per row.** Status/conclusion color (`#DC2626`) must not appear more than once in any single table row. | Scan table rows. >1 red element per row → FAIL. | High |
 | C-32 | **Info hierarchy categories not mixed in one visual unit.** Each element is Decision, Finding, Qualifier, Caveat, Evidence, or Context — never two in the same statement or badge. | Read each text element. Finding + caveat in same sentence → FAIL. | High |
 | C-33 | **Histopath block constraints.** No `#DC2626` anywhere, no background fills except neutral card bg, no reuse of status colors, no TARGET badges, no red severity encoding, no inline conclusions. | Scan histopath component. Any of these present → FAIL. | High |
+| C-34 | **Emphasis tier classification.** Every colored element is Tier 1 (conclusion — colored at rest: TARGET ORGAN, tier dots, NOAEL banner), Tier 2 (label — visible but muted: "adverse" outline, direction arrows, domain text), or Tier 3 (evidence — interaction only: p-values, effect sizes, signal fills). Tier 3 colored at rest → FAIL. Lower tiers competing with higher tiers → FAIL. | Classify each colored element. Tier 3 element visible without hover → FAIL. | High |
+| C-35 | **Per-screen color budget.** At rest: max 1 dominant saturated color family (status/conclusions) + 1 secondary accent (interaction/selection) + unlimited neutrals. | Count distinct saturated color families at rest. >2 → FAIL. | High |
+| C-36 | **Info hierarchy — every element classifiable.** Every derived information element belongs to exactly one of: Decision, Finding, Qualifier, Caveat, Evidence, Context. Unclassifiable element or element straddling two categories → FAIL. | Read each derived text element and classify. Ambiguous → FAIL. | High |
 
 ---
 
@@ -133,6 +137,10 @@ Testable rules extracted from `datagrok-visual-design-guide.md`, `datagrok-app-d
 | A-04 | **Annotations keyed by stable identifier,** not by route. Same annotation visible across views. | Save annotation, navigate to related view. Annotation missing → FAIL. | High |
 | A-05 | **SAVE button: `bg-primary text-primary-foreground`, disabled when no changes.** | Check annotation forms. SAVE enabled with no changes → FAIL. | Medium |
 | A-06 | **Form footer: reviewer name + last-save date.** | Check annotation forms. Missing footer → FAIL. | Medium |
+| A-07 | **Cognitive mode declaration.** Each view spec declares a mode: Exploration (no asserted conclusions — charts/data primary), Conclusion (conclusions stated, evidence supports), or Hybrid (conclusions with drill-down). In Exploration views, verdict badges, NOAEL banners, or tier-colored elements → FAIL. | Check view spec for mode declaration. Check Exploration views for conclusions at rest → FAIL. | High |
+| A-08 | **System computes what it can.** If a statistical comparison, count, aggregation, or summary can be derived from the data, show the computed result directly. Don't force users to mentally derive conclusions from raw numbers. | Look for raw data displays where a computed summary is feasible but absent → FAIL. | Medium |
+| A-09 | **No breadcrumb navigation in context panel.** Use `< >` icon buttons at top of context panel for back/forward between pane modes. Breadcrumbs in context panel → FAIL. | Search for breadcrumb elements in context panel code. Present → FAIL. Hard rule. | High |
+| A-10 | **Mode 2 issue pane constraints.** The issue detail pane (Mode 2) shows ONLY: record identity, finding evidence, action buttons, review form. Rule ID is a clickable link back to Mode 1 with one-line summary. No rationale, no "how to fix" guidance, no standard references (those belong in Mode 1). | Check Mode 2 pane content. Extra guidance/rationale present → FAIL. | High |
 
 ---
 
@@ -155,3 +163,13 @@ Testable rules extracted from `datagrok-visual-design-guide.md`, `datagrok-app-d
 2. High (visible to users, affects usability)
 3. Medium (polish, consistency)
 4. Low (nitpicks)
+
+---
+
+## Design Principles (Non-Testable)
+
+These are guiding principles from the master design rules. They inform judgment calls when testable rules don't fully cover a situation.
+
+- **"If everything looks important, nothing is."** Visual noise degrades the user's ability to find real signals. When in doubt, reduce, don't add.
+- **Visual hierarchy: Position > Grouping > Typography > Color.** Structure communicates through spatial arrangement first. Color is always the last resort, not the first. (Testable aspect captured in C-29.)
+- **Conclusions speak in color; evidence whispers in text.** The emphasis tier system (C-34) operationalizes this, but the principle extends to any design decision about visual weight.

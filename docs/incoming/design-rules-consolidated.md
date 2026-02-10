@@ -1,7 +1,7 @@
 # Consolidated Design Rules — External vs Internal
 
 > **Purpose:** Compare rules extracted from external pcc-design files (149 rules) with internal design system docs (146 rules). Identify overlaps, gaps, and conflicts.
-> **Created:** 2026-02-09
+> **Created:** 2026-02-09. **Updated:** 2026-02-09 — all gaps resolved, checklist updated to 75 rules.
 > **Process:** Merged by theme, flagged duplicates, flagged conflicts for user resolution.
 
 ---
@@ -66,6 +66,8 @@ Most external rules are already captured in internal docs. The internal docs are
 
 **Context:** Internal rule was a deliberate design decision made during implementation. CL3 is marked as HARD RULE in CLAUDE.md.
 
+**RESOLVED:** Internal wins. CLAUDE.md hard rule takes precedence. C-25 in audit checklist enforces "colored text only." External rule applies to generic Datagrok apps; this app chose a more restrictive treatment.
+
 ### CONFLICT 2: Decision Bar color
 
 | Source | Rule | What it says |
@@ -75,7 +77,7 @@ Most external rules are already captured in internal docs. The internal docs are
 
 **The conflict:** External says "no color" but internal has a blue accent border + tinted background on the Decision Bar itself. The external rule targets the *values* (NOAEL/LOAEL text), while internal describes the *container styling*. These may not actually conflict — the container has accent styling, but the values within don't have color.
 
-**Likely resolution:** Not a true conflict. External rule about values, internal about container. Both can coexist.
+**RESOLVED:** Not a true conflict. External rule targets NOAEL/LOAEL *values* (no color on text), internal describes *container styling* (blue accent border + tint). Both coexist: container has accent, values are neutral text.
 
 ### CONFLICT 3: Severity badges — already resolved
 
@@ -87,7 +89,7 @@ Most external rules are already captured in internal docs. The internal docs are
 
 **Status:** §1.1 still lists colored semantic badges (`bg-red-100 text-red-800 border-red-200` for Error, etc.) but §1.8 overrides this: "ALL categorical badges use neutral gray." The code was fixed to match §1.8. §1.1 is stale — the hex values remain valid for *conclusion-level* usage (tier dots, NOAEL badges) but NOT for categorical severity badges.
 
-**Resolution needed:** Update §1.1 to clarify these colors are for conclusion tiers only, not for categorical severity badges. Or remove §1.1 entirely if the distinction is covered elsewhere.
+**RESOLVED:** §1.1 was rewritten as "Conclusion-Tier Colors" (analysis views only). These hex values apply to tier dots, NOAEL banners, and target organ indicators — NOT categorical severity badges. §1.8 is authoritative for all categorical badges (neutral gray). C-05 and C-27 in checklist enforce this.
 
 ---
 
@@ -95,23 +97,23 @@ Most external rules are already captured in internal docs. The internal docs are
 
 These rules appear in the external pcc-design files but are NOT captured in the internal design system docs:
 
-| # | Rule | Source | Recommendation |
-|---|------|--------|---------------|
-| GAP-E1 | One saturated color family per column at rest | E4, D1, D28, D29 | **Add to checklist as C-08** |
-| GAP-E2 | Info hierarchy: 6 categories (Decision→Context) — every element classified | E7, G12 | **Add to design guide §1.10** |
-| GAP-E3 | Mixing info hierarchy categories in one visual unit forbidden | E8, G14 | **Add to checklist as C-09** |
-| GAP-E4 | Each view declares a cognitive mode | E9, G6 | **Add to design guide** |
-| GAP-E5 | No repetition of decision red per row | E14, D35 | **Add to checklist as C-28** |
-| GAP-E6 | Histopath block: no #DC2626, no bg fills, no status color reuse, no TARGET badges | E30, E31 | **Add to audit checklist** |
-| GAP-E7 | Color budget test: grayscale works, ≤10% saturated pixels at rest | E32, G18 | **Add to checklist as C-29** |
-| GAP-E8 | >30% of rows red at rest = FAIL (table density lint) | D43 | **Add to checklist as C-30** |
-| GAP-E9 | Don't assert conclusions in exploration views | G8, G22 | **Add to design guide** |
-| GAP-E10 | Visual hierarchy: Position > Grouping > Typography > Color | G4 | **Add to design guide** |
-| GAP-E11 | System computes what it can — don't make users derive | G27 | **Add to design guide** |
-| GAP-E12 | Emphasis tier system: Tier 1 (always colored) = conclusions; Tier 2 (muted) = labels; Tier 3 (interaction) = evidence | D14 | **Add to design guide §1.10** |
-| GAP-E13 | Per-screen color budget: 1 dominant, 1 secondary accent, unlimited neutrals | D18 | **Add to design guide** |
-| GAP-E14 | Color removal test (if removing color loses only aesthetics, color wasn't doing work) | G18 | Overlaps E32, merge into C-29 |
-| GAP-E15 | "If everything looks important, nothing is" | G28 | **Add to design guide** |
+| # | Rule | Source | Resolution |
+|---|------|--------|------------|
+| GAP-E1 | One saturated color family per column at rest | E4, D1, D28, D29 | **RESOLVED** → C-28 |
+| GAP-E2 | Info hierarchy: 6 categories (Decision→Context) — every element classified | E7, G12 | **RESOLVED** → C-36 (new) |
+| GAP-E3 | Mixing info hierarchy categories in one visual unit forbidden | E8, G14 | **RESOLVED** → C-32 |
+| GAP-E4 | Each view declares a cognitive mode | E9, G6 | **RESOLVED** → A-07 (new) |
+| GAP-E5 | No repetition of decision red per row | E14, D35 | **RESOLVED** → C-31 |
+| GAP-E6 | Histopath block: no #DC2626, no bg fills, no status color reuse, no TARGET badges | E30, E31 | **RESOLVED** → C-33 |
+| GAP-E7 | Color budget test: grayscale works, ≤10% saturated pixels at rest | E32, G18 | **RESOLVED** → C-29 (expanded) |
+| GAP-E8 | >30% of rows red at rest = FAIL (table density lint) | D43 | **RESOLVED** → C-30 |
+| GAP-E9 | Don't assert conclusions in exploration views | G8, G22 | **RESOLVED** → A-07 (new, merged with GAP-E4) |
+| GAP-E10 | Visual hierarchy: Position > Grouping > Typography > Color | G4 | **RESOLVED** → C-29 (expanded) + principles section |
+| GAP-E11 | System computes what it can — don't make users derive | G27 | **RESOLVED** → A-08 (new) |
+| GAP-E12 | Emphasis tier system: Tier 1 (always colored) = conclusions; Tier 2 (muted) = labels; Tier 3 (interaction) = evidence | D14 | **RESOLVED** → C-34 (new) |
+| GAP-E13 | Per-screen color budget: 1 dominant, 1 secondary accent, unlimited neutrals | D18 | **RESOLVED** → C-35 (new) |
+| GAP-E14 | Color removal test (if removing color loses only aesthetics, color wasn't doing work) | G18 | **RESOLVED** → C-29 (expanded, merged with GAP-E7/E10) |
+| GAP-E15 | "If everything looks important, nothing is" | G28 | **RESOLVED** → principles section (non-testable) |
 
 ---
 
@@ -143,9 +145,10 @@ All internal-only rules are valid and should be retained.
 ### No action needed (already aligned): ~120 rules
 Both sources agree. Internal docs are more specific (CSS classes, hex values). External docs provide the "why."
 
-### 2 conflicts requiring user decision:
-1. **Domain labels:** External says dot/outline badges. Internal says colored text only. Which wins?
-2. **§1.1 semantic colors:** Lists colored badges for Error/Warning/Info but §1.8 says all categorical = neutral gray. Should §1.1 be updated?
+### 3 conflicts — ALL RESOLVED:
+1. **Domain labels:** Internal "colored text only" wins (CLAUDE.md hard rule). C-25 enforces.
+2. **Decision Bar:** Not a true conflict (container styling vs value styling coexist).
+3. **§1.1 severity badges:** §1.1 rewritten as conclusion-tier-only colors. §1.8 authoritative for categorical. C-05/C-27 enforce.
 
-### 15 gaps to fill:
-External rules not yet captured in internal docs. All are valid principles that should be added.
+### 15 gaps — ALL RESOLVED:
+All 15 external-only rules now captured in audit checklist (75 rules total, up from 66). 7 new testable rules added (C-34 through C-36, A-07 through A-10), 1 rule expanded (C-29), 3 guiding principles added.
