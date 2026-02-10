@@ -8,6 +8,7 @@ interface TreeNodeProps {
   isExpanded?: boolean;
   isActive?: boolean;
   onClick?: () => void;
+  onToggle?: () => void;
 }
 
 export function TreeNode({
@@ -17,6 +18,7 @@ export function TreeNode({
   isExpanded,
   isActive,
   onClick,
+  onToggle,
 }: TreeNodeProps) {
   return (
     <button
@@ -28,11 +30,23 @@ export function TreeNode({
       onClick={onClick}
     >
       {isExpanded !== undefined ? (
-        isExpanded ? (
-          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-        )
+        <span
+          className="shrink-0"
+          onClick={
+            onToggle
+              ? (e) => {
+                  e.stopPropagation();
+                  onToggle();
+                }
+              : undefined
+          }
+        >
+          {isExpanded ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </span>
       ) : (
         <span className="w-4 shrink-0" />
       )}
