@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
+import { cn } from "@/lib/utils";
 import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -155,7 +156,7 @@ function StudyContextMenu({
           <div key={i}>
             {item.separator && <div className="my-1 border-t" />}
             <button
-              className="flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-[var(--hover-bg)] disabled:opacity-40 disabled:hover:bg-transparent"
+              className="flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent"
               onClick={item.action}
               disabled={item.disabled}
             >
@@ -382,16 +383,16 @@ export function AppLandingPage() {
           <div className="overflow-x-auto rounded-md border bg-card">
             <table className="w-full text-sm">
               <thead className="sticky top-0 z-10 bg-background">
-                <tr className="border-b" style={{ background: "#f8f8f8" }}>
-                  <th className="w-8 px-2 py-2.5"></th>
-                  <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">Study</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">Protocol</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">Standard</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-medium text-muted-foreground">Subjects</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">Start</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">End</th>
-                  <th className="pl-5 pr-3 py-2.5 text-left text-xs font-medium text-muted-foreground">Status</th>
-                  <th className="px-3 py-2.5 text-center text-xs font-medium text-muted-foreground">Val</th>
+                <tr className="border-b bg-muted/30">
+                  <th className="w-8 px-2 py-2"></th>
+                  <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
+                  <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
+                  <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Standard</th>
+                  <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subjects</th>
+                  <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
+                  <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">End</th>
+                  <th className="pl-5 pr-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                  <th className="px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Val</th>
                 </tr>
               </thead>
               <tbody>
@@ -400,28 +401,17 @@ export function AppLandingPage() {
                   return (
                     <tr
                       key={study.study_id}
-                      className="cursor-pointer border-b last:border-b-0 transition-colors"
-                      style={{
-                        background: isSelected
-                          ? "var(--selection-bg)"
-                          : undefined,
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSelected)
-                          (e.currentTarget as HTMLElement).style.background = "var(--hover-bg)";
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.background = isSelected
-                          ? "var(--selection-bg)"
-                          : "";
-                      }}
+                      className={cn(
+                        "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
+                        isSelected && "bg-accent"
+                      )}
                       onClick={() => handleClick(study)}
                       onDoubleClick={() => handleDoubleClick(study)}
                       onContextMenu={(e) => handleContextMenu(e, study)}
                     >
                       <td className="px-2 py-2 text-center">
                         <button
-                          className="rounded p-0.5 hover:bg-[var(--accent)]"
+                          className="rounded p-0.5 hover:bg-accent"
                           onClick={(e) => handleActionsClick(e, study)}
                           title="Actions"
                         >

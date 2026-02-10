@@ -109,6 +109,11 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
         <p className="text-xs text-muted-foreground">{selection.specimen}</p>
       </div>
 
+      {/* Insights */}
+      <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <InsightsList rules={findingRules} />
+      </CollapsiblePane>
+
       {/* Dose detail */}
       <CollapsiblePane title="Dose detail" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {findingRows.length === 0 ? (
@@ -173,11 +178,6 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
         </CollapsiblePane>
       )}
 
-      {/* Rule-based insights */}
-      <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <InsightsList rules={findingRules} />
-      </CollapsiblePane>
-
       {/* Correlating evidence */}
       <CollapsiblePane title="Correlating evidence" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {correlating.length === 0 ? (
@@ -204,6 +204,11 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       {/* Pathology Review */}
       {studyId && (
         <PathologyReviewForm studyId={studyId} finding={selection.finding} defaultOpen />
+      )}
+
+      {/* Tox Assessment */}
+      {studyId && (
+        <ToxFindingForm studyId={studyId} endpointLabel={selection.finding} />
       )}
 
       {/* Cross-view links */}
@@ -244,11 +249,6 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
           </a>
         </div>
       </CollapsiblePane>
-
-      {/* Tox Assessment */}
-      {studyId && (
-        <ToxFindingForm studyId={studyId} endpointLabel={selection.finding} />
-      )}
     </div>
   );
 }

@@ -490,9 +490,7 @@ function OverviewTab({
                   )}
                   onClick={() => onEndpointClick(ep.endpoint_label)}
                 >
-                  <span className="shrink-0 text-[9px] text-muted-foreground">
-                    {ep.domain}
-                  </span>
+                  <DomainLabel domain={ep.domain} className="shrink-0" />
                   <span className="min-w-0 flex-1 truncate" title={ep.endpoint_label}>
                     {ep.endpoint_label}
                   </span>
@@ -639,7 +637,7 @@ function AdversityMatrixTab({
       col.accessor("p_value", {
         header: "P-value",
         cell: (info) => (
-          <span className="font-mono text-muted-foreground">
+          <span className="ev font-mono">
             {formatPValue(info.getValue())}
           </span>
         ),
@@ -647,7 +645,7 @@ function AdversityMatrixTab({
       col.accessor("effect_size", {
         header: "Effect",
         cell: (info) => (
-          <span className="font-mono text-muted-foreground">
+          <span className="ev font-mono">
             {formatEffectSize(info.getValue())}
           </span>
         ),
@@ -759,8 +757,8 @@ function AdversityMatrixTab({
                       let bg = "#e5e7eb";
                       if (cell) {
                         if (cell.severity === "adverse" && cell.treatment_related) bg = "#DC2626";
-                        else if (cell.severity === "warning") bg = "#fbbf24";
-                        else bg = "#4ade80";
+                        else if (cell.severity === "warning") bg = "#D97706";
+                        else bg = "#16a34a";
                       }
                       return (
                         <div
@@ -781,8 +779,8 @@ function AdversityMatrixTab({
             <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
               {[
                 { label: "Adverse", color: "#DC2626" },
-                { label: "Warning", color: "#fbbf24" },
-                { label: "Normal", color: "#4ade80" },
+                { label: "Warning", color: "#D97706" },
+                { label: "Normal", color: "#16a34a" },
                 { label: "N/A", color: "#e5e7eb" },
               ].map(({ label, color }) => (
                 <span key={label} className="flex items-center gap-1">
@@ -842,10 +840,16 @@ function AdversityMatrixTab({
                         "cursor-pointer border-b transition-colors hover:bg-accent/50",
                         isSelected && "bg-accent"
                       )}
+                      data-selected={isSelected || undefined}
                       onClick={() => onRowClick(orig)}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }}>
+                        <td
+                          key={cell.id}
+                          className="px-2 py-1"
+                          style={{ width: cell.column.getSize() }}
+                          {...(cell.column.id === "p_value" || cell.column.id === "effect_size" ? { "data-evidence": "" } : {})}
+                        >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -1050,28 +1054,34 @@ export function NoaelDecisionView({
               <OrganHeader summary={selectedSummary} />
 
               {/* Tab bar */}
-              <div className="flex shrink-0 items-center gap-0 border-b px-4">
+              <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
                 <button
                   className={cn(
-                    "border-b-2 px-3 py-2 text-xs font-medium transition-colors",
+                    "relative px-4 py-1.5 text-xs font-medium transition-colors",
                     activeTab === "overview"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                   onClick={() => setActiveTab("overview")}
                 >
-                  Overview
+                  Evidence
+                  {activeTab === "overview" && (
+                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
+                  )}
                 </button>
                 <button
                   className={cn(
-                    "border-b-2 px-3 py-2 text-xs font-medium transition-colors",
+                    "relative px-4 py-1.5 text-xs font-medium transition-colors",
                     activeTab === "matrix"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                   onClick={() => setActiveTab("matrix")}
                 >
                   Adversity matrix
+                  {activeTab === "matrix" && (
+                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
+                  )}
                 </button>
               </div>
 

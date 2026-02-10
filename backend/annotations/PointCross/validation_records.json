@@ -54,5 +54,11 @@
     "comment": "Reverted from Manually fixed",
     "reviewedBy": "User",
     "reviewedDate": "2026-02-08T22:44:24.205668+00:00"
+  },
+  "SEND-VAL-004-MI-003": {
+    "fixStatus": "Manually fixed",
+    "comment": "Fix applied: MIRESCAT \u2192 '(valid RESULT_CATEGORY term)'",
+    "pathologist": "User",
+    "reviewDate": "2026-02-09T21:52:04.214597+00:00"
   }
 }
