@@ -97,16 +97,16 @@ const SEVERITY_STYLES: Record<string, string> = {
 
 export const FIX_STATUS_STYLES: Record<string, string> = {
   "Not fixed": "bg-gray-100 text-gray-600 border-gray-200",
-  "Auto-fixed": "bg-teal-100 text-teal-800 border-teal-200",
-  "Manually fixed": "bg-green-100 text-green-800 border-green-200",
-  "Accepted as-is": "bg-blue-100 text-blue-800 border-blue-200",
-  "Flagged": "bg-orange-100 text-orange-800 border-orange-200",
+  "Auto-fixed": "bg-gray-100 text-gray-600 border-gray-200",
+  "Manually fixed": "bg-gray-100 text-gray-600 border-gray-200",
+  "Accepted as-is": "bg-gray-100 text-gray-600 border-gray-200",
+  "Flagged": "bg-gray-100 text-gray-600 border-gray-200",
 };
 
 export const REVIEW_STATUS_STYLES: Record<string, string> = {
   "Not reviewed": "bg-gray-100 text-gray-600 border-gray-200",
-  "Reviewed": "bg-blue-100 text-blue-800 border-blue-200",
-  "Approved": "bg-green-100 text-green-800 border-green-200",
+  "Reviewed": "bg-gray-100 text-gray-600 border-gray-200",
+  "Approved": "bg-gray-100 text-gray-600 border-gray-200",
 };
 
 export function StatusBadge({ status, styles }: { status: string; styles: Record<string, string> }) {
@@ -261,7 +261,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
       size: 170,
       cell: (info) => (
         <button
-          className="font-mono text-xs text-[#2083d5] hover:underline"
+          className="font-mono text-xs text-primary hover:underline"
           onClick={(e) => {
             e.stopPropagation();
             if (!selectedRule) return;
