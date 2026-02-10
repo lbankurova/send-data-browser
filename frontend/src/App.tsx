@@ -5,8 +5,10 @@ import { Layout } from "@/components/layout/Layout";
 import { AppLandingPage } from "@/components/panels/AppLandingPage";
 import { CenterPanel } from "@/components/panels/CenterPanel";
 import { AdverseEffectsView } from "@/components/analysis/AdverseEffectsView";
+import { CopyAdverseEffectsView } from "@/components/analysis/CopyAdverseEffectsView";
 import { PlaceholderAnalysisView } from "@/components/analysis/PlaceholderAnalysisView";
 import { StudySummaryViewWrapper } from "@/components/analysis/StudySummaryViewWrapper";
+import { CopyStudySummaryViewWrapper } from "@/components/analysis/CopyStudySummaryViewWrapper";
 
 // Lazy-loaded analysis views (code-split into separate chunks)
 const DoseResponseViewWrapper = lazy(() => import("@/components/analysis/DoseResponseViewWrapper").then(m => ({ default: m.DoseResponseViewWrapper })));
@@ -14,6 +16,13 @@ const TargetOrgansViewWrapper = lazy(() => import("@/components/analysis/TargetO
 const HistopathologyViewWrapper = lazy(() => import("@/components/analysis/HistopathologyViewWrapper").then(m => ({ default: m.HistopathologyViewWrapper })));
 const NoaelDecisionViewWrapper = lazy(() => import("@/components/analysis/NoaelDecisionViewWrapper").then(m => ({ default: m.NoaelDecisionViewWrapper })));
 const ValidationViewWrapper = lazy(() => import("@/components/analysis/ValidationViewWrapper").then(m => ({ default: m.ValidationViewWrapper })));
+
+// Lazy-loaded playground copies
+const CopyDoseResponseViewWrapper = lazy(() => import("@/components/analysis/CopyDoseResponseViewWrapper").then(m => ({ default: m.CopyDoseResponseViewWrapper })));
+const CopyTargetOrgansViewWrapper = lazy(() => import("@/components/analysis/CopyTargetOrgansViewWrapper").then(m => ({ default: m.CopyTargetOrgansViewWrapper })));
+const CopyHistopathologyViewWrapper = lazy(() => import("@/components/analysis/CopyHistopathologyViewWrapper").then(m => ({ default: m.CopyHistopathologyViewWrapper })));
+const CopyNoaelDecisionViewWrapper = lazy(() => import("@/components/analysis/CopyNoaelDecisionViewWrapper").then(m => ({ default: m.CopyNoaelDecisionViewWrapper })));
+const CopyValidationViewWrapper = lazy(() => import("@/components/analysis/CopyValidationViewWrapper").then(m => ({ default: m.CopyValidationViewWrapper })));
 
 function ViewLoading() {
   return (
@@ -60,6 +69,32 @@ const router = createBrowserRouter([
       {
         path: "/studies/:studyId/validation",
         element: <LazyRoute><ValidationViewWrapper /></LazyRoute>,
+      },
+      // Playground copies
+      { path: "/studies/:studyId/copy-study-summary", element: <CopyStudySummaryViewWrapper /> },
+      {
+        path: "/studies/:studyId/copy-adverse-effects",
+        element: <CopyAdverseEffectsView />,
+      },
+      {
+        path: "/studies/:studyId/copy-dose-response",
+        element: <LazyRoute><CopyDoseResponseViewWrapper /></LazyRoute>,
+      },
+      {
+        path: "/studies/:studyId/copy-target-organs",
+        element: <LazyRoute><CopyTargetOrgansViewWrapper /></LazyRoute>,
+      },
+      {
+        path: "/studies/:studyId/copy-histopathology",
+        element: <LazyRoute><CopyHistopathologyViewWrapper /></LazyRoute>,
+      },
+      {
+        path: "/studies/:studyId/copy-noael-decision",
+        element: <LazyRoute><CopyNoaelDecisionViewWrapper /></LazyRoute>,
+      },
+      {
+        path: "/studies/:studyId/copy-validation",
+        element: <LazyRoute><CopyValidationViewWrapper /></LazyRoute>,
       },
       {
         path: "/studies/:studyId/analyses/:analysisType",
