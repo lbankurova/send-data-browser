@@ -33,7 +33,7 @@
 
 | Asset | Depends on | Last validated | Status |
 |-------|-----------|----------------|--------|
-| `design-system/datagrok-visual-design-guide.md` | `frontend/src/lib/severity-colors.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/index.css` | 2026-02-09 | Current — §0 platform palette added, §1.0 CSS custom properties added, tokens aligned with DG-UI-KIT v2 |
+| `design-system/datagrok-visual-design-guide.md` | `frontend/src/lib/severity-colors.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/index.css` | 2026-02-09 | Current — foreground softened to #374151 (9.6:1), §0 platform palette, §1.0 CSS tokens, DG-UI-KIT v2 |
 | `design-system/datagrok-app-design-patterns.md` | `design-system/user-personas-and-view-analysis-original.md` | 2026-02-09 | Current — condensed, personas integrated from §1 |
 | `design-system/datagrok-llm-development-guide.md` | None (meta-guide) | 2026-02-09 | Current — condensed |
 | `design-system/user-personas-and-view-analysis.md` | — | 2026-02-09 | Redirect → `datagrok-app-design-patterns.md` §1 |

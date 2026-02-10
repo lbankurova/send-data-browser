@@ -138,11 +138,11 @@ All defined in `frontend/src/index.css` `:root`. Consumed via Tailwind utilities
 | Token | Value | Notes |
 |-------|-------|-------|
 | `--background` | `#ffffff` | White — Datagrok native |
-| `--foreground` | `#2b2b2b` | Softer dark for body text |
+| `--foreground` | `#374151` | Tailwind gray-700 — balanced contrast (9.6:1) on white |
 | `--card` | `#ffffff` | Card surfaces |
-| `--card-foreground` | `#2b2b2b` | |
+| `--card-foreground` | `#374151` | |
 | `--popover` | `#ffffff` | Dropdown/tooltip surfaces |
-| `--popover-foreground` | `#2b2b2b` | |
+| `--popover-foreground` | `#374151` | |
 
 **Brand / interactive:**
 
@@ -152,7 +152,7 @@ All defined in `frontend/src/index.css` `:root`. Consumed via Tailwind utilities
 | `--primary-foreground` | `#ffffff` | White on primary |
 | `--ring` | `#2083d5` | Focus ring = primary |
 | `--accent` | `rgba(32,131,213,0.10)` | Selection highlight |
-| `--accent-foreground` | `#2b2b2b` | |
+| `--accent-foreground` | `#374151` | |
 | `--destructive` | `#bb0000` | Kit failure-2 |
 | `--destructive-foreground` | `#bb0000` | |
 
@@ -161,7 +161,7 @@ All defined in `frontend/src/index.css` `:root`. Consumed via Tailwind utilities
 | Token | Value | Source |
 |-------|-------|--------|
 | `--secondary` | `#f2f2f5` | Kit grey-1 |
-| `--secondary-foreground` | `#2b2b2b` | |
+| `--secondary-foreground` | `#374151` | |
 | `--muted` | `#f2f2f5` | Kit grey-1 |
 | `--muted-foreground` | `#6b7280` | Cool steel grey |
 | `--border` | `#d7dfe7` | Kit steel-2 |
@@ -200,7 +200,7 @@ All defined in `frontend/src/index.css` `:root`. Consumed via Tailwind utilities
 | Token | Value |
 |-------|-------|
 | `--sidebar-background` | `#ffffff` |
-| `--sidebar-foreground` | `#2b2b2b` |
+| `--sidebar-foreground` | `#374151` |
 | `--sidebar-primary` | `#2083d5` |
 | `--sidebar-border` | `#eceff2` |
 | `--sidebar-accent` | `rgba(32,131,213,0.10)` |
