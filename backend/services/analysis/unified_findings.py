@@ -30,6 +30,8 @@ def _sanitize_floats(obj):
     if isinstance(obj, (float, np.floating)):
         val = float(obj)
         return None if (math.isnan(val) or math.isinf(val)) else val
+    if isinstance(obj, np.ndarray):
+        return _sanitize_floats(obj.tolist())
     if isinstance(obj, dict):
         return {k: _sanitize_floats(v) for k, v in obj.items()}
     if isinstance(obj, list):

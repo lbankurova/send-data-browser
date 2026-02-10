@@ -164,6 +164,22 @@ def extract_full_ts_metadata(study: StudyInfo) -> StudyMetadata:
         except Exception:
             pass
 
+    # Fallback: derive subject counts from DM domain if TS doesn't have them
+    if "SPLANSUB" not in ts_map and "dm" in study.xpt_files:
+        try:
+            dm_df, _ = read_xpt(study.xpt_files["dm"])
+            dm_df.columns = [c.upper() for c in dm_df.columns]
+            if "USUBJID" in dm_df.columns:
+                ts_map.setdefault("SPLANSUB", str(dm_df["USUBJID"].nunique()))
+            if "SEX" in dm_df.columns:
+                sex_counts = dm_df.groupby("SEX")["USUBJID"].nunique()
+                if "M" in sex_counts.index:
+                    ts_map.setdefault("PLANMSUB", str(int(sex_counts["M"])))
+                if "F" in sex_counts.index:
+                    ts_map.setdefault("PLANFSUB", str(int(sex_counts["F"])))
+        except Exception:
+            pass
+
     def g(key: str) -> str | None:
         return ts_map.get(key)
 
