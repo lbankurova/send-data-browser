@@ -1,9 +1,9 @@
-import { useMemo, useEffect, useState, useCallback } from "react";
+import { useMemo, useEffect } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { organName } from "@/lib/signals-panel-engine";
 import {
-  getSignalScoreHeatmapColor,
+  getNeutralHeatColor,
   getSignificanceStars,
   getDomainDotColor,
 } from "@/lib/severity-colors";
@@ -247,8 +247,6 @@ export function OrganGroupedHeatmap({
   }, [pendingNavigation, expandedOrgans, onToggleOrgan, onNavigationConsumed]);
 
   // Hover state for neutral-at-rest cells
-  const [hoveredCell, setHoveredCell] = useState<string | null>(null);
-  const clearHover = useCallback(() => setHoveredCell(null), []);
 
   if (organGroups.length === 0) {
     return (
@@ -364,30 +362,20 @@ export function OrganGroupedHeatmap({
                         const isCellSelected =
                           selection?.endpoint_label === ep.label &&
                           selection?.dose_level === dl.level;
-                        const cellKey = `${ep.label}-${dl.level}`;
-                        const isHovered = hoveredCell === cellKey;
 
                         return (
                           <div
                             key={dl.level}
                             className="flex cursor-pointer items-center justify-center py-1 text-[10px] font-medium tabular-nums transition-colors"
                             style={{
-                              backgroundColor: isHovered && score > 0
-                                ? getSignalScoreHeatmapColor(score)
-                                : score > 0
-                                  ? "rgba(0,0,0,0.04)"
-                                  : "rgba(0,0,0,0.02)",
-                              color: isHovered && score >= 0.5
-                                ? "#fff"
-                                : "#1F2937",
+                              backgroundColor: getNeutralHeatColor(score).bg,
+                              color: getNeutralHeatColor(score).text,
                               outline: isCellSelected
                                 ? "2px solid #3b82f6"
                                 : "1px solid rgba(0,0,0,0.05)",
                               outlineOffset: isCellSelected ? "-2px" : "0",
                             }}
                             title={cell ? `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}${stars ? ` (${stars})` : ""}${cell.direction && cell.direction !== "none" ? ` ${cell.direction === "up" ? "↑" : "↓"}` : ""}${cell.effect_size != null ? ` |d|=${Math.abs(cell.effect_size).toFixed(2)}` : ""}${cell.trend_p != null ? ` trend_p=${cell.trend_p < 0.0001 ? "<0.0001" : cell.trend_p.toFixed(3)}` : ""}${cell.dose_response_pattern ? ` (${cell.dose_response_pattern})` : ""}` : `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}`}
-                            onMouseEnter={() => setHoveredCell(cellKey)}
-                            onMouseLeave={clearHover}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (!cell) return;

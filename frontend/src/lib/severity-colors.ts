@@ -179,6 +179,17 @@ export function getSignalScoreHeatmapColor(score: number): string {
   return "rgba(0,0,0,0.03)";
 }
 
+/** Neutral grayscale heat for heatmap matrices — same palette as histopath severity matrix.
+ *  Maps signal score (0–1) to a 5-step neutral ramp. Always-on at rest. */
+export function getNeutralHeatColor(score: number): { bg: string; text: string } {
+  if (score >= 0.8) return { bg: "#4B5563", text: "white" };
+  if (score >= 0.6) return { bg: "#6B7280", text: "white" };
+  if (score >= 0.4) return { bg: "#9CA3AF", text: "var(--foreground)" };
+  if (score >= 0.2) return { bg: "#D1D5DB", text: "var(--foreground)" };
+  if (score > 0) return { bg: "#E5E7EB", text: "var(--foreground)" };
+  return { bg: "rgba(0,0,0,0.02)", text: "var(--muted-foreground)" };
+}
+
 /** Dose group color by level index. */
 export function getDoseGroupColor(level: number): string {
   const colors = ["#6b7280", "#3b82f6", "#f59e0b", "#ef4444"];

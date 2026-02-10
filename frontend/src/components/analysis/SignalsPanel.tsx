@@ -10,7 +10,6 @@ import {
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { organName } from "@/lib/signals-panel-engine";
 import type {
   OrganBlock,
   PanelStatement,
@@ -81,33 +80,6 @@ function StatementIcon({ icon }: { icon: PanelStatement["icon"] }) {
     case "review-flag":
       return <span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u26A0"}</span>;
   }
-}
-
-function ClickableOrganText({
-  text,
-  organKey,
-  onClick,
-}: {
-  text: string;
-  organKey: string;
-  onClick: () => void;
-}) {
-  const displayName = organName(organKey);
-  const idx = text.indexOf(displayName);
-  if (idx === -1) {
-    return (
-      <span className="cursor-pointer text-primary hover:underline" onClick={onClick}>{text}</span>
-    );
-  }
-  const before = text.slice(0, idx);
-  const after = text.slice(idx + displayName.length);
-  return (
-    <span>
-      {before}
-      <button className="font-medium text-primary hover:underline" onClick={(e) => { e.stopPropagation(); onClick(); }}>{displayName}</button>
-      {after}
-    </span>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -200,8 +172,8 @@ export function SignalsOrganRail({ organs, organBlocksMap, selectedOrgan, maxEvi
 
 interface DomainBreakdown { domain: string; endpoints: number; significant: number; treatmentRelated: number; }
 
-function SignalsOverviewTab({ organ, signalData, ruleResults, modifiers, caveats, onOrganSelect, studyId }: {
-  organ: TargetOrganRow; signalData: SignalSummaryRow[]; ruleResults: RuleResult[]; modifiers: PanelStatement[]; caveats: PanelStatement[]; onOrganSelect?: (organKey: string) => void; studyId: string;
+function SignalsOverviewTab({ organ, signalData, ruleResults, modifiers, caveats, studyId }: {
+  organ: TargetOrganRow; signalData: SignalSummaryRow[]; ruleResults: RuleResult[]; modifiers: PanelStatement[]; caveats: PanelStatement[]; studyId: string;
 }) {
   const navigate = useNavigate();
   const organRules = useMemo(() => { const key = organ.organ_system; return ruleResults.filter((r) => r.organ_system === key || r.context_key?.startsWith(`organ_${key}`)); }, [ruleResults, organ.organ_system]);
@@ -219,17 +191,11 @@ function SignalsOverviewTab({ organ, signalData, ruleResults, modifiers, caveats
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {organRules.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Insights</h4><InsightsList rules={organRules} /></div>)}
-        {organModifiers.length > 0 && (<div className="mb-4"><div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><span className="text-[10px] text-amber-600">{"\u25B2"}</span>Modifiers<span className="font-normal text-muted-foreground/60">({organModifiers.length})</span></div><div className="space-y-0.5">{organModifiers.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u25B2"}</span><span>{s.clickOrgan ? <ClickableOrganText text={s.text} organKey={s.clickOrgan} onClick={() => onOrganSelect?.(s.clickOrgan!)} /> : s.text}</span></div>))}</div></div>)}
-        {organCaveats.length > 0 && (<div className="mb-4"><div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><span className="text-[10px] text-amber-600">{"\u26A0"}</span>Review flags<span className="font-normal text-muted-foreground/60">({organCaveats.length})</span></div><div className="space-y-0.5">{organCaveats.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u26A0"}</span><span>{s.clickOrgan ? <ClickableOrganText text={s.text} organKey={s.clickOrgan} onClick={() => onOrganSelect?.(s.clickOrgan!)} /> : s.text}</span></div>))}</div></div>)}
+        {organModifiers.length > 0 && (<div className="mb-4"><div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><span className="text-[10px] text-amber-600">{"\u25B2"}</span>Modifiers<span className="font-normal text-muted-foreground/60">({organModifiers.length})</span></div><div className="space-y-0.5">{organModifiers.map((s, i) => (<div key={i} className="text-xs leading-relaxed text-foreground/80">{s.text}</div>))}</div></div>)}
+        {organCaveats.length > 0 && (<div className="mb-4"><div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><span className="text-[10px] text-amber-600">{"\u26A0"}</span>Review flags<span className="font-normal text-muted-foreground/60">({organCaveats.length})</span></div><div className="space-y-0.5">{organCaveats.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u26A0"}</span><span>{s.text}</span></div>))}</div></div>)}
         {domainBreakdown.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Domain breakdown</h4><table className="w-full text-xs"><thead><tr className="border-b bg-muted/50 text-left text-muted-foreground"><th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Domain</th><th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Endpoints</th><th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Significant</th><th className="pb-1 text-[10px] font-semibold uppercase tracking-wider">TR</th></tr></thead><tbody>{domainBreakdown.map((d) => (<tr key={d.domain} className="border-b border-border/30"><td className="py-1.5 pr-3"><DomainLabel domain={d.domain} /></td><td className="py-1.5 pr-3">{d.endpoints}</td><td className="py-1.5 pr-3"><span className={d.significant > 0 ? "font-semibold" : ""}>{d.significant}</span></td><td className="py-1.5"><span className={d.treatmentRelated > 0 ? "font-semibold" : ""}>{d.treatmentRelated}</span></td></tr>))}</tbody></table></div>)}
         {topFindings.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Top findings by effect size</h4><div className="space-y-0">{topFindings.map((row, i) => (<div key={`${row.endpoint_label}-${row.dose_level}-${row.sex}-${i}`} data-evidence-row="" className="group/finding flex cursor-pointer items-center gap-2 border-b border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30" onClick={() => navigate(`/studies/${studyId}/dose-response`, { state: { endpoint_label: row.endpoint_label, organ_system: organ.organ_system } })}><span className="min-w-[120px] truncate font-medium" title={row.endpoint_label}>{row.endpoint_label}</span><span className="shrink-0 text-sm text-muted-foreground/50">{getDirectionSymbol(row.direction)}</span><span className={cn("shrink-0 font-mono ev", Math.abs(row.effect_size ?? 0) >= 0.8 ? "font-semibold" : "font-normal")}>{formatEffectSize(row.effect_size)}</span><span className={cn("shrink-0 font-mono ev", row.p_value != null && row.p_value < 0.001 ? "font-semibold" : row.p_value != null && row.p_value < 0.01 ? "font-medium" : "font-normal")}>{formatPValue(row.p_value)}</span>{row.trend_p != null && <span className={cn("shrink-0 font-mono text-muted-foreground", row.trend_p < 0.01 && "font-semibold")} title="Trend p-value">t:{formatPValue(row.trend_p)}</span>}{row.dose_response_pattern && row.dose_response_pattern !== "none" && row.dose_response_pattern !== "flat" && <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">{row.dose_response_pattern.split("_")[0]}</span>}<span className="shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">{row.severity}</span>{row.treatment_related && <span className="shrink-0 text-[9px] font-medium text-muted-foreground">TR</span>}<span className="ml-auto shrink-0 text-muted-foreground">{row.sex} &middot; {row.dose_label.split(",")[0]}</span></div>))}</div></div>)}
         {signalData.length === 0 && <div className="py-8 text-center text-xs text-muted-foreground">No signal data for this organ.</div>}
-      </div>
-      <div className="shrink-0 border-t px-4 py-2 flex flex-wrap gap-3">
-        <button className="text-[11px] text-primary hover:underline" onClick={() => navigate(`/studies/${studyId}/target-organs`, { state: { organ_system: organ.organ_system } })}>Target Organs: {titleCase(organ.organ_system)} &#x2192;</button>
-        <button className="text-[11px] text-primary hover:underline" onClick={() => navigate(`/studies/${studyId}/dose-response`, { state: { organ_system: organ.organ_system } })}>Dose-response: {titleCase(organ.organ_system)} &#x2192;</button>
-        <button className="text-[11px] text-primary hover:underline" onClick={() => navigate(`/studies/${studyId}/histopathology`, { state: { organ_system: organ.organ_system } })}>Histopathology: {titleCase(organ.organ_system)} &#x2192;</button>
-        <button className="text-[11px] text-primary hover:underline" onClick={() => navigate(`/studies/${studyId}/noael-decision`, { state: { organ_system: organ.organ_system } })}>NOAEL Decision &#x2192;</button>
       </div>
     </div>
   );
@@ -429,8 +395,8 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
 
 type EvidenceTab = "overview" | "matrix" | "metrics";
 
-export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers, caveats, selection, onSelect, onOrganSelect, studyId }: {
-  organ: TargetOrganRow; signalData: SignalSummaryRow[]; ruleResults: RuleResult[]; modifiers: PanelStatement[]; caveats: PanelStatement[]; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void; onOrganSelect?: (organKey: string) => void; studyId: string;
+export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers, caveats, selection, onSelect, studyId }: {
+  organ: TargetOrganRow; signalData: SignalSummaryRow[]; ruleResults: RuleResult[]; modifiers: PanelStatement[]; caveats: PanelStatement[]; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void; studyId: string;
 }) {
   const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
   const organSignalData = useMemo(() => signalData.filter((r) => r.organ_system === organ.organ_system), [signalData, organ.organ_system]);
@@ -445,7 +411,7 @@ export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers
         <div className="mt-0.5 flex flex-wrap gap-x-1.5 text-[11px] text-muted-foreground tabular-nums"><span>{organ.n_domains} domains</span><span>&middot;</span><span>{organ.n_significant}/{organ.n_endpoints} sig ({significantPct}%)</span><span>&middot;</span><span>{organ.n_treatment_related} TR</span><span>&middot;</span><span>Max {organ.max_signal_score.toFixed(2)}</span><span>&middot;</span><span>Evidence <span className={cn(organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium")}>{organ.evidence_score.toFixed(2)}</span></span><span>&middot;</span><span className={cn("font-mono", headerStats.maxAbsEffectSize >= 0.8 && "font-semibold")}>|d| {headerStats.maxAbsEffectSize.toFixed(2)}</span>{headerStats.minTrendP != null && (<><span>&middot;</span><span className={cn("font-mono", headerStats.minTrendP < 0.01 && "font-semibold")}>trend p {formatPValue(headerStats.minTrendP)}</span></>)}</div>
       </div>
       <div className="flex border-b bg-muted/30">{([{ key: "overview" as EvidenceTab, label: "Evidence" }, { key: "matrix" as EvidenceTab, label: "Signal matrix" }, { key: "metrics" as EvidenceTab, label: "Metrics" }]).map(({ key, label }) => (<button key={key} onClick={() => setActiveTab(key)} className={cn("relative px-4 py-1.5 text-xs font-medium transition-colors", activeTab === key ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>{label}{activeTab === key && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />}</button>))}</div>
-      {activeTab === "overview" && <SignalsOverviewTab organ={organ} signalData={organSignalData} ruleResults={ruleResults} modifiers={modifiers} caveats={caveats} onOrganSelect={onOrganSelect} studyId={studyId} />}
+      {activeTab === "overview" && <SignalsOverviewTab organ={organ} signalData={organSignalData} ruleResults={ruleResults} modifiers={modifiers} caveats={caveats} studyId={studyId} />}
       {activeTab === "matrix" && <SignalsMatrixTab signalData={organSignalData} targetOrgan={organ} selection={selection} onSelect={onSelect} />}
       {activeTab === "metrics" && <SignalsMetricsTab signalData={organSignalData} selection={selection} onSelect={onSelect} />}
     </div>
