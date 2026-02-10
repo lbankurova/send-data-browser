@@ -22,6 +22,10 @@ import {
   ReferenceLine,
   ResponsiveContainer,
   Customized,
+  ScatterChart as RScatterChart,
+  Scatter,
+  ZAxis,
+  Cell,
 } from "recharts";
 import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import { useTimecourseGroup, useTimecourseSubject } from "@/hooks/useTimecourse";
@@ -912,6 +916,7 @@ export function DoseResponseView({
               studyId={studyId}
               ruleResults={ruleResults}
               signalSummary={signalSummary}
+              onSelectEndpoint={selectEndpoint}
             />
           )}
         </div>
@@ -1168,6 +1173,16 @@ function ChartOverviewContent({
         )}
       </div>
 
+      {/* Time-course — peer visualization, visible by default when data exists */}
+      {selectedEndpoint && selectedSummary && (
+        <TimecourseSection
+          studyId={studyId}
+          selectedEndpoint={selectedEndpoint}
+          selectedSummary={selectedSummary}
+          onSubjectClick={onSubjectClick}
+        />
+      )}
+
       {/* Pairwise comparison table */}
       {pairwiseRows.length > 0 && (
         <div className="p-4">
@@ -1222,16 +1237,6 @@ function ChartOverviewContent({
           </div>
         </div>
       )}
-
-      {/* Time-course toggle section */}
-      {selectedEndpoint && selectedSummary && (
-        <TimecourseSection
-          studyId={studyId}
-          selectedEndpoint={selectedEndpoint}
-          selectedSummary={selectedSummary}
-          onSubjectClick={onSubjectClick}
-        />
-      )}
     </div>
   );
 }
@@ -1248,7 +1253,7 @@ interface TimecourseSectionProps {
 }
 
 function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubjectClick }: TimecourseSectionProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [yAxisMode, setYAxisMode] = useState<YAxisMode>("absolute");
   const [showSubjects, setShowSubjects] = useState(false);
 
@@ -1257,7 +1262,7 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubje
   const isContinuous = selectedSummary.data_type === "continuous";
   const isCL = domain === "CL";
 
-  // Continuous temporal data — only fetch when expanded and continuous
+  // Continuous temporal data — fetch when expanded and continuous
   const { data: tcData, isLoading: tcLoading, error: tcError } = useTimecourseGroup(
     expanded && isContinuous ? studyId : undefined,
     expanded && isContinuous ? domain : undefined,
@@ -1271,38 +1276,22 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubje
     expanded && showSubjects && isContinuous ? testCode : undefined,
   );
 
-  // CL temporal data — only fetch when expanded and CL domain
+  // CL temporal data — fetch when expanded and CL domain
   const { data: clData, isLoading: clLoading } = useClinicalObservations(
     expanded && isCL ? studyId : undefined,
     expanded && isCL ? selectedEndpoint : undefined,
   );
 
-  // Non-CL categorical endpoints have no temporal data
+  // Non-CL categorical endpoints have no temporal data — render nothing
   const hasTimecourse = isContinuous || isCL;
-
-  if (!hasTimecourse) {
-    return (
-      <div className="border-t px-4 py-3">
-        <button
-          className="flex cursor-not-allowed items-center gap-1.5 text-xs font-medium text-muted-foreground/50"
-          disabled
-        >
-          <ChevronRight className="h-3 w-3 shrink-0" />
-          Time-course
-          <span className="ml-1 text-[10px] font-normal">
-            (not available for {domain} categorical endpoints)
-          </span>
-        </button>
-      </div>
-    );
-  }
+  if (!hasTimecourse) return null;
 
   return (
     <div className="border-t">
-      {/* Toggle bar */}
+      {/* Section header with collapse option */}
       <div className="flex items-center justify-between px-4 py-2">
         <button
-          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
           onClick={() => setExpanded(!expanded)}
         >
           {expanded
@@ -2103,9 +2092,10 @@ interface HypothesesTabProps {
   studyId: string | undefined;
   ruleResults: RuleResult[];
   signalSummary: SignalSummaryRow[];
+  onSelectEndpoint?: (label: string) => void;
 }
 
-function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSummaries, studyId, ruleResults, signalSummary }: HypothesesTabProps) {
+function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSummaries, studyId, ruleResults, signalSummary, onSelectEndpoint }: HypothesesTabProps) {
   const [intent, setIntent] = useState<HypothesisIntent>("shape");
   const [favorites, setFavorites] = useState<HypothesisIntent[]>(DEFAULT_FAVORITES);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -2284,7 +2274,7 @@ function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSumma
         )}
         {intent === "model" && <ModelPlaceholder />}
         {intent === "pareto" && (
-          <ParetoPlaceholder endpointSummaries={endpointSummaries} selectedEndpoint={selectedEndpoint} />
+          <VolcanoScatter endpointSummaries={endpointSummaries} selectedEndpoint={selectedEndpoint} onSelectEndpoint={onSelectEndpoint} />
         )}
         {intent === "correlation" && <CorrelationPlaceholder />}
         {intent === "outliers" && (
@@ -2426,57 +2416,152 @@ function ModelPlaceholder() {
   );
 }
 
-function ParetoPlaceholder({
+/** Deterministic hue for organ system names (pastel-ish, well-spaced). */
+const ORGAN_COLORS: Record<string, string> = {};
+function getOrganColor(organ: string): string {
+  if (ORGAN_COLORS[organ]) return ORGAN_COLORS[organ];
+  // Golden-angle hue spacing seeded by organ string hash
+  let h = 0;
+  for (let i = 0; i < organ.length; i++) h = (h * 31 + organ.charCodeAt(i)) | 0;
+  const hue = ((h % 360) + 360) % 360;
+  const color = `hsl(${hue}, 55%, 50%)`;
+  ORGAN_COLORS[organ] = color;
+  return color;
+}
+
+interface VolcanoPoint {
+  endpoint_label: string;
+  organ_system: string;
+  x: number; // |effect_size|
+  y: number; // -log10(trend_p)
+  color: string;
+}
+
+function VolcanoScatter({
   endpointSummaries,
   selectedEndpoint,
+  onSelectEndpoint,
 }: {
   endpointSummaries: EndpointSummary[];
   selectedEndpoint: string | null;
+  onSelectEndpoint?: (label: string) => void;
 }) {
-  const organSystems = [...new Set(endpointSummaries.map((e) => e.organ_system))];
+  const points = useMemo<VolcanoPoint[]>(() => {
+    return endpointSummaries
+      .filter((ep) => ep.max_effect_size != null && ep.min_trend_p != null && ep.min_trend_p > 0)
+      .map((ep) => ({
+        endpoint_label: ep.endpoint_label,
+        organ_system: ep.organ_system,
+        x: Math.abs(ep.max_effect_size!),
+        y: -Math.log10(ep.min_trend_p!),
+        color: getOrganColor(ep.organ_system),
+      }));
+  }, [endpointSummaries]);
+
+  const organSystems = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const p of points) seen.set(p.organ_system, p.color);
+    return [...seen.entries()];
+  }, [points]);
+
+  if (points.length === 0) {
+    return (
+      <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
+        No endpoints with both effect size and trend p-value.
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-3">
-      <ViewerPlaceholder
-        icon={ScatterChart}
-        viewerType="DG Scatter Plot"
-        context={`${endpointSummaries.length} endpoints \u00b7 ${organSystems.length} organ systems`}
-      />
-
-      <p className="text-xs text-muted-foreground">
-        Volcano-style scatter: all endpoints plotted by effect size (X) vs. statistical significance (Y).
-        Identifies endpoints with both biological magnitude and statistical confidence.
-      </p>
-
-      <div className="rounded-md border bg-card p-3">
-        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
-        <ConfigLine items={[
-          ["X", "max |effect_size|"],
-          ["Y", "-log10(trend_p)"],
-          ["Color", "organ_system (hue-from-hash)"],
-          ["Selection", "syncs with endpoint rail"],
-        ]} />
-        <div className="mt-1.5">
-          <ConfigLine items={[
-            ["Ref lines", "|d|=0.5, |d|=0.8, p=0.05, p=0.01"],
-          ]} />
-        </div>
-        {organSystems.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {organSystems.map((os) => (
-              <span key={os} className="rounded border px-1.5 py-0.5 text-[10px] text-foreground/70">
-                {titleCase(os)}
-              </span>
-            ))}
-          </div>
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between">
+        <p className="text-[10px] text-muted-foreground">
+          {points.length} endpoints &middot; click to select
+        </p>
+        {selectedEndpoint && (
+          <p className="text-[10px] text-muted-foreground">
+            <span className="font-mono font-medium text-foreground">{selectedEndpoint}</span>
+          </p>
         )}
       </div>
 
-      {selectedEndpoint && (
-        <p className="text-[10px] text-muted-foreground">
-          <span className="font-mono font-medium text-foreground">{selectedEndpoint}</span> highlighted with ring marker
-        </p>
-      )}
+      <ResponsiveContainer width="100%" height={320}>
+        <RScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <XAxis
+            type="number"
+            dataKey="x"
+            name="Effect size"
+            label={{ value: "|Effect size| (Cohen's d)", position: "bottom", offset: 12, style: { fontSize: 10, fill: "#9CA3AF" } }}
+            tick={{ fontSize: 10 }}
+            domain={[0, "auto"]}
+          />
+          <YAxis
+            type="number"
+            dataKey="y"
+            name="Significance"
+            label={{ value: "-log\u2081\u2080(trend p)", angle: -90, position: "insideLeft", offset: 5, style: { fontSize: 10, fill: "#9CA3AF" } }}
+            tick={{ fontSize: 10 }}
+            domain={[0, "auto"]}
+          />
+          <ZAxis range={[40, 40]} />
+          {/* Reference lines: effect size thresholds */}
+          <ReferenceLine x={0.5} stroke="#D1D5DB" strokeDasharray="4 4" label={{ value: "d=0.5", position: "top", style: { fontSize: 9, fill: "#9CA3AF" } }} />
+          <ReferenceLine x={0.8} stroke="#9CA3AF" strokeDasharray="4 4" label={{ value: "d=0.8", position: "top", style: { fontSize: 9, fill: "#6B7280" } }} />
+          {/* Reference lines: significance thresholds */}
+          <ReferenceLine y={-Math.log10(0.05)} stroke="#D1D5DB" strokeDasharray="4 4" label={{ value: "p=0.05", position: "right", style: { fontSize: 9, fill: "#9CA3AF" } }} />
+          <ReferenceLine y={-Math.log10(0.01)} stroke="#9CA3AF" strokeDasharray="4 4" label={{ value: "p=0.01", position: "right", style: { fontSize: 9, fill: "#6B7280" } }} />
+          <Tooltip
+            content={({ payload }) => {
+              if (!payload || payload.length === 0) return null;
+              const d = payload[0].payload as VolcanoPoint;
+              return (
+                <div className="rounded border bg-popover px-2.5 py-1.5 text-xs shadow-md">
+                  <p className="font-medium">{d.endpoint_label}</p>
+                  <p className="text-[10px] text-muted-foreground">{titleCase(d.organ_system)}</p>
+                  <div className="mt-1 flex gap-3 font-mono text-[10px]">
+                    <span>|d|={d.x.toFixed(2)}</span>
+                    <span>p={Math.pow(10, -d.y).toExponential(1)}</span>
+                  </div>
+                </div>
+              );
+            }}
+          />
+          <Scatter
+            data={points}
+            cursor="pointer"
+            onClick={(data: VolcanoPoint) => {
+              if (data?.endpoint_label && onSelectEndpoint) {
+                onSelectEndpoint(data.endpoint_label);
+              }
+            }}
+          >
+            {points.map((pt) => {
+              const isSelected = pt.endpoint_label === selectedEndpoint;
+              return (
+                <Cell
+                  key={pt.endpoint_label}
+                  fill={pt.color}
+                  fillOpacity={isSelected ? 1 : 0.65}
+                  stroke={isSelected ? "#1F2937" : pt.color}
+                  strokeWidth={isSelected ? 2 : 0.5}
+                  r={isSelected ? 7 : 4}
+                />
+              );
+            })}
+          </Scatter>
+        </RScatterChart>
+      </ResponsiveContainer>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-3 gap-y-1 px-1">
+        {organSystems.map(([os, color]) => (
+          <span key={os} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+            {titleCase(os)}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
