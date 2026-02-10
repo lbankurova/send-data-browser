@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
 import { cn } from "@/lib/utils";
@@ -535,20 +535,9 @@ export function AppLandingPage() {
 
       {/* Studies table */}
       <div className="px-8 py-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Studies ({allStudies.length})
-          </h2>
-          <button
-            className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-            title="Collapse/expand all studies in tree"
-            onClick={() => {
-              /* Tree expand/collapse — wired when shared state is available */
-            }}
-          >
-            <ChevronsDownUp className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Studies ({allStudies.length})
+        </h2>
 
         {isLoading ? (
           <div className="space-y-2">
