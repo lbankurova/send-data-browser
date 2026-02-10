@@ -71,7 +71,7 @@ Container: `border-b px-8 py-4`
 ### Toggle Button
 `flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-foreground`
 - Chevron: `ChevronRight h-3 w-3`, rotates 90deg when open
-- Label: "Import New Study"
+- Label: "Import new study" (rendered uppercase via CSS `uppercase` class)
 - Default: closed (opens by default when no studies loaded)
 
 ### Expanded Content (when open)
@@ -81,7 +81,7 @@ Container: `border-b px-8 py-4`
 `flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 py-8`
 - Upload icon: `Upload h-8 w-8 text-muted-foreground/50`
 - Text: `text-sm text-muted-foreground` — "Drop SEND study folder here"
-- Browse button: `rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent` — "BROWSE..." (alert in prototype)
+- Browse button: `rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent` — "Browse..." (sentence case, alert in prototype)
 
 #### Metadata Fields
 `space-y-2`, three rows each with:
@@ -97,7 +97,7 @@ Fields: Study ID, Protocol, Description (no auto-detect checkbox)
 - "Attempt automatic fixes" — checkbox unchecked, disabled
 
 #### Import Button
-`rounded-md bg-primary/50 px-4 py-2 text-xs font-medium text-primary-foreground/70 cursor-not-allowed` — "IMPORT STUDY" (disabled)
+`rounded-md bg-primary/50 px-4 py-2 text-xs font-medium text-primary-foreground/70 cursor-not-allowed` — "Import study" (sentence case, disabled)
 
 ---
 
@@ -122,7 +122,7 @@ Container: `px-8 py-6`
 
 Plain HTML table, `w-full text-sm`
 
-**Header row:** `border-b`, background `#f8f8f8`
+**Header row:** `border-b bg-muted/30`
 
 | Column | Header | Alignment | Width |
 |--------|--------|-----------|-------|
@@ -136,7 +136,7 @@ Plain HTML table, `w-full text-sm`
 | status | Status | Left | auto |
 | validation | Val | Center | auto |
 
-Header cells: `px-3 py-2.5 text-xs font-medium text-muted-foreground`
+Header cells: `px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
 
 ### Cell Rendering
 
@@ -161,8 +161,8 @@ Header cells: `px-3 py-2.5 text-xs font-medium text-muted-foreground`
 | Not Run | em dash text | `text-muted-foreground` |
 
 ### Row Interactions
-- Hover: CSS variable `var(--hover-bg)` via inline style
-- Selected: CSS variable `var(--selection-bg)` via inline style
+- Hover: `hover:bg-accent/50` (Tailwind class, matching all other views)
+- Selected: `bg-accent` (Tailwind class)
 - Single click: selects study (250ms delayed to differentiate from double-click)
 - Double-click: navigates to `/studies/{studyId}` (only for real studies, not demos)
 - Right-click: opens context menu at cursor position
@@ -195,7 +195,7 @@ Overlay: `fixed inset-0 z-40` click-to-close
 | --- separator --- | | |
 | Delete | (stub) | Always |
 
-Item styling: `flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-[var(--hover-bg)] disabled:opacity-40`
+Item styling: `flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent`
 
 ---
 
@@ -268,7 +268,7 @@ The validation icon in the studies table shows a tooltip with status text (e.g.,
 - Entirely a stub — no actual import functionality
 - All fields disabled, all checkboxes hardcoded
 - Drop zone doesn't accept drops
-- BROWSE button shows alert
+- Browse button shows alert
 
 ### Studies Table
 - No sorting — studies listed in server order then demos appended
@@ -279,7 +279,6 @@ The validation icon in the studies table shows a tooltip with status text (e.g.,
 - Demo studies mixed with real studies — no visual grouping
 
 ### Context Menu
-- Uses CSS variable `var(--hover-bg)` — may not be defined in all themes
 - Delete action is always disabled — no confirmation UX designed
 - "Share..." is a stub with no plans
 

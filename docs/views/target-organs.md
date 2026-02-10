@@ -150,9 +150,11 @@ Example: *"Convergent evidence across 3 domains, 8/15 significant (53%), both se
 
 Three tabs: **Evidence**, **Hypotheses**, **Metrics**
 
-Active tab: `border-b-2 border-primary text-foreground`
+Each tab button: `relative px-4 py-1.5 text-xs font-medium transition-colors`
+Active tab: `text-foreground` + `<span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />`
 Inactive tab: `text-muted-foreground hover:text-foreground`
-All tabs: `px-4 py-1.5 text-xs font-medium transition-colors`
+
+This matches the canonical tab bar pattern (CLAUDE.md hard rule).
 
 Metrics tab shows row count indicator: right-aligned `ml-auto mr-3 text-[10px] text-muted-foreground` -- "{organ_rows} of {total_rows} rows".
 
@@ -183,7 +185,7 @@ Rows sorted by significant count descending. Computed by grouping `organEvidence
 
 ### Top Findings by Effect Size
 
-Section header: `text-xs font-medium uppercase tracking-wider text-muted-foreground` -- "Top findings by effect size"
+Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` -- "Top findings by effect size"
 
 Shows up to 10 evidence rows with the largest absolute effect size (filtered to effect_size > 0, sorted desc).
 
@@ -381,7 +383,13 @@ Per-domain endpoint count summary (not individual endpoints — that lives in th
 - Footer: "See Evidence tab for full endpoint list."
 - Empty state: "No endpoints for this organ."
 
-#### Pane 3: Related Views (default closed)
+#### Pane 3: Tox Assessment (conditionally shown — annotation before navigation)
+
+Only shown when `selection.endpoint_label` exists (i.e., a specific endpoint row is selected in the evidence table, not just an organ).
+
+Standard `ToxFindingForm` component -- keyed by `endpointLabel` (the selected endpoint). Not wrapped in a `CollapsiblePane`.
+
+#### Pane 4: Related Views (default closed)
 
 Cross-view navigation links in `text-[11px]`:
 - "View dose-response" -- navigates to `/studies/{studyId}/dose-response` with `{ state: { organ_system } }`
@@ -389,12 +397,6 @@ Cross-view navigation links in `text-[11px]`:
 - "View NOAEL decision" -- navigates to `/studies/{studyId}/noael-decision` with `{ state: { organ_system } }`
 
 All links: `block hover:underline`, color `#3a7bd5`, arrow suffix.
-
-#### Pane 4: Tox Assessment (conditionally shown)
-
-Only shown when `selection.endpoint_label` exists (i.e., a specific endpoint row is selected in the evidence table, not just an organ).
-
-Standard `ToxFindingForm` component -- keyed by `endpointLabel` (the selected endpoint). Not wrapped in a `CollapsiblePane`.
 
 ---
 
