@@ -210,7 +210,7 @@ export function StudySummaryView({
             onClick={() => studyId && generateStudyReport(studyId)}
           >
             <FileText className="h-3.5 w-3.5" />
-            Generate Report
+            Generate report
           </button>
         </div>
       </div>

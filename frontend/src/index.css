@@ -4,42 +4,45 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Datagrok UI Color System (DG-UI-COLORS v1) */
-  --background: #f5f5f5;
-  --foreground: #1f1f1f;
+  /* Datagrok UI Color System (DG-UI-KIT v2)
+     Derived from datagrok-ui-kit-figma-community.
+     Steel palette for chrome, grey-1 for muted surfaces,
+     white background per Datagrok platform convention. */
+  --background: #ffffff;
+  --foreground: #2b2b2b;
   --card: #ffffff;
-  --card-foreground: #1f1f1f;
+  --card-foreground: #2b2b2b;
   --popover: #ffffff;
-  --popover-foreground: #1f1f1f;
-  --primary: #3a7bd5;
+  --popover-foreground: #2b2b2b;
+  --primary: #2083d5;
   --primary-foreground: #ffffff;
-  --secondary: #f0f0f0;
-  --secondary-foreground: #1f1f1f;
-  --muted: #f0f0f0;
-  --muted-foreground: #5f5f5f;
-  --accent: rgba(58, 123, 213, 0.15);
-  --accent-foreground: #1f1f1f;
-  --destructive: #e53935;
-  --destructive-foreground: #e53935;
-  --border: #d0d0d0;
-  --input: #d0d0d0;
-  --ring: #3a7bd5;
+  --secondary: #f2f2f5;
+  --secondary-foreground: #2b2b2b;
+  --muted: #f2f2f5;
+  --muted-foreground: #6b7280;
+  --accent: rgba(32, 131, 213, 0.10);
+  --accent-foreground: #2b2b2b;
+  --destructive: #bb0000;
+  --destructive-foreground: #bb0000;
+  --border: #d7dfe7;
+  --input: #d7dfe7;
+  --ring: #2083d5;
   --radius: 0.375rem;
 
-  /* Semantic status */
-  --success: #4caf50;
-  --warning: #ffb300;
-  --info: #5c8fdc;
+  /* Semantic status (kit palette) */
+  --success: #3cb173;
+  --warning: #f7a36a;
+  --info: #2083d5;
 
   /* Selection */
-  --selection-bg: rgba(58, 123, 213, 0.15);
-  --selection-border: #3a7bd5;
-  --hover-bg: #f2f6fc;
+  --selection-bg: rgba(32, 131, 213, 0.10);
+  --selection-border: #2083d5;
+  --hover-bg: #f0f5fa;
 
-  /* Subtle separator */
-  --border-subtle: #e6e6e6;
+  /* Subtle separator — steel-1 */
+  --border-subtle: #eceff2;
 
-  /* Severity colors for analysis */
+  /* Severity colors for analysis (app-specific, unchanged) */
   --adverse-bg: rgba(239, 68, 68, 0.08);
   --adverse-text: #dc2626;
   --warning-bg: rgba(245, 158, 11, 0.08);
@@ -48,16 +51,16 @@
   --normal-text: #16a34a;
 
   --sidebar-background: #ffffff;
-  --sidebar-foreground: #1f1f1f;
-  --sidebar-primary: #3a7bd5;
+  --sidebar-foreground: #2b2b2b;
+  --sidebar-primary: #2083d5;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(58, 123, 213, 0.15);
-  --sidebar-accent-foreground: #1f1f1f;
-  --sidebar-border: #e6e6e6;
-  --sidebar-ring: #3a7bd5;
+  --sidebar-accent: rgba(32, 131, 213, 0.10);
+  --sidebar-accent-foreground: #2b2b2b;
+  --sidebar-border: #eceff2;
+  --sidebar-ring: #2083d5;
   --sidebar: #ffffff;
 
-  --chart-1: #3a7bd5;
+  --chart-1: #2083d5;
   --chart-2: #f28e2b;
   --chart-3: #59a14f;
   --chart-4: #e15759;

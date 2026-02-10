@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { formatPValue, getPValueColor } from "@/lib/severity-colors";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 import type { FindingContext } from "@/types/analysis";
 import { InsightBlock } from "./InsightBlock";
 
@@ -39,10 +40,8 @@ export function CorrelationsPane({ data }: Props) {
                 className="border-b border-border/50"
               >
                 <td className="max-w-[140px] truncate py-1" title={c.endpoint}>
-                  <span className="mr-1 rounded bg-muted px-1 py-0.5 text-[9px] font-medium">
-                    {c.domain}
-                  </span>
-                  {c.endpoint}
+                  <DomainLabel domain={c.domain} />
+                  {" "}{c.endpoint}
                 </td>
                 <td
                   className={cn(

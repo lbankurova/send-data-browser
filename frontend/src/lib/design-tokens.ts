@@ -164,7 +164,7 @@ export const surface = {
 
 export const link = {
   /** Inline navigation link color */
-  color: "#3a7bd5",
+  color: "#2083d5",
   /** Cross-view link in context panel */
   crossView: "block text-[11px] hover:underline",
   /** Issue ID link */
