@@ -94,12 +94,15 @@ interface EndpointSummary {
   direction: "up" | "down" | "mixed" | null;
   sexes: string[];
   signal_score: number;
+  min_n: number | null;
+  has_timecourse: boolean;
 }
 
 interface OrganGroup {
   organ_system: string;
   endpoints: EndpointSummary[];
   max_signal_score: number;
+  domains: string[];
 }
 
 // ─── Helpers ───────────────────────────────────────────────
@@ -128,10 +131,12 @@ function deriveEndpointSummaries(data: DoseResponseRow[]): EndpointSummary[] {
     let hasUp = false;
     let hasDown = false;
 
+    let minN: number | null = null;
     for (const r of rows) {
       sexSet.add(r.sex);
       if (r.p_value != null && (minP === null || r.p_value < minP)) minP = r.p_value;
       if (r.trend_p != null && (minTrendP === null || r.trend_p < minTrendP)) minTrendP = r.trend_p;
+      if (r.n != null && (minN === null || r.n < minN)) minN = r.n;
       if (r.effect_size != null) {
         const abs = Math.abs(r.effect_size);
         if (maxEffect === null || abs > maxEffect) maxEffect = abs;
@@ -178,6 +183,8 @@ function deriveEndpointSummaries(data: DoseResponseRow[]): EndpointSummary[] {
       direction,
       sexes: [...sexSet].sort(),
       signal_score: computeSignalScore(minTrendP, maxEffect),
+      min_n: minN,
+      has_timecourse: first.data_type === "continuous" || first.domain === "CL",
     });
   }
 
@@ -195,10 +202,13 @@ function deriveOrganGroups(summaries: EndpointSummary[]): OrganGroup[] {
   const groups: OrganGroup[] = [];
   for (const [organ, endpoints] of map) {
     // Endpoints are already sorted by signal_score desc from deriveEndpointSummaries
+    const domainSet = new Set<string>();
+    for (const ep of endpoints) domainSet.add(ep.domain);
     groups.push({
       organ_system: organ,
       endpoints,
       max_signal_score: endpoints[0]?.signal_score ?? 0,
+      domains: [...domainSet].sort(),
     });
   }
 
@@ -698,10 +708,26 @@ export function DoseResponseView({
                   ) : (
                     <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
                   )}
-                  <span className="flex-1 truncate">{titleCase(group.organ_system)}</span>
-                  <span className="text-[10px] font-normal text-muted-foreground">
-                    {group.endpoints.length}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      <span className="truncate">{titleCase(group.organ_system)}</span>
+                      <span className="text-[10px] font-normal text-muted-foreground">
+                        {group.endpoints.length}
+                      </span>
+                    </div>
+                    {group.domains.length > 0 && (
+                      <div className="flex gap-1.5">
+                        {group.domains.map((d) => {
+                          const dc = getDomainBadgeColor(d);
+                          return (
+                            <span key={d} className={cn("text-[9px] font-semibold", dc.text)}>
+                              {d}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </button>
 
                 {/* Endpoint items */}
@@ -766,6 +792,16 @@ export function DoseResponseView({
                               ep.max_effect_size >= 0.8 ? "font-semibold" : ""
                             )}>
                               |d|={ep.max_effect_size.toFixed(1)}
+                            </span>
+                          )}
+                          {ep.min_n != null && (
+                            <span className="text-[10px] font-mono text-muted-foreground/60">
+                              n={ep.min_n}
+                            </span>
+                          )}
+                          {ep.has_timecourse && (
+                            <span className="text-[10px] text-muted-foreground/40" title="Temporal data available">
+                              ◷
                             </span>
                           )}
                         </div>
