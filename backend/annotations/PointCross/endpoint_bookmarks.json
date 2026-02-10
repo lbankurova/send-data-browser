@@ -1,0 +1,30 @@
+{
+  "Aspartate Aminotransferase": {
+    "bookmarked": true,
+    "note": "",
+    "bookmarkedDate": "2026-02-09T19:42:18.812Z",
+    "pathologist": "User",
+    "reviewDate": "2026-02-09T19:42:18.832464+00:00"
+  },
+  "Alkaline Phosphatase": {
+    "bookmarked": false,
+    "note": "",
+    "bookmarkedDate": "2026-02-09T18:55:35.764Z",
+    "pathologist": "User",
+    "reviewDate": "2026-02-09T18:55:35.769360+00:00"
+  },
+  "LIVER \u2014 DISCOLORATION": {
+    "bookmarked": false,
+    "note": "",
+    "bookmarkedDate": "2026-02-09T18:55:38.846Z",
+    "pathologist": "User",
+    "reviewDate": "2026-02-09T18:55:38.851577+00:00"
+  },
+  "LIVER \u2014 ADENOMA, HEPATOCELLULAR": {
+    "bookmarked": true,
+    "note": "",
+    "bookmarkedDate": "2026-02-09T19:42:21.204Z",
+    "pathologist": "User",
+    "reviewDate": "2026-02-09T19:42:21.212761+00:00"
+  }
+}
