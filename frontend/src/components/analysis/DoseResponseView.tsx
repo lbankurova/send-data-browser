@@ -33,6 +33,7 @@ import { useClinicalObservations } from "@/hooks/useClinicalObservations";
 import { useEndpointBookmarks, useToggleBookmark } from "@/hooks/useEndpointBookmarks";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
+import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { BookmarkStar } from "@/components/ui/BookmarkStar";
 import { cn } from "@/lib/utils";
@@ -46,7 +47,7 @@ import {
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
-import type { DoseResponseRow, RuleResult, SignalSummaryRow } from "@/types/analysis-views";
+import type { DoseResponseRow, RuleResult, SignalSummaryRow, NoaelSummaryRow } from "@/types/analysis-views";
 import type { TimecourseResponse } from "@/types/timecourse";
 
 // ─── Public types ──────────────────────────────────────────
@@ -272,8 +273,10 @@ export function DoseResponseView({
   // Data for Causality tool (fetched at view level, passed to Hypotheses tab)
   const { data: ruleResultsData } = useRuleResults(studyId);
   const { data: signalSummaryData } = useStudySignalSummary(studyId);
+  const { data: noaelData } = useNoaelSummary(studyId);
   const ruleResults: RuleResult[] = ruleResultsData ?? [];
   const signalSummary: SignalSummaryRow[] = signalSummaryData ?? [];
+  const noaelSummary: NoaelSummaryRow[] = noaelData ?? [];
 
   // Metrics tab state
   const [metricsFilters, setMetricsFilters] = useState<{
@@ -850,6 +853,19 @@ export function DoseResponseView({
                 <span className="text-muted-foreground">Data: </span>
                 <span>{selectedSummary.data_type}</span>
               </span>
+              {noaelSummary.length > 0 && (() => {
+                // Show combined NOAEL, or first available
+                const noael = noaelSummary.find((n) => n.sex === "Combined") ?? noaelSummary[0];
+                return (
+                  <span>
+                    <span className="text-muted-foreground">NOAEL: </span>
+                    <span className="font-mono">
+                      {noael.noael_dose_value} {noael.noael_dose_unit}
+                    </span>
+                    <span className="text-muted-foreground/60"> (Dose {noael.noael_dose_level})</span>
+                  </span>
+                );
+              })()}
             </div>
           </div>
         ) : (
@@ -897,6 +913,7 @@ export function DoseResponseView({
               studyId={studyId}
               selectedSummary={selectedSummary}
               onSubjectClick={onSubjectClick}
+              noaelDoseLevel={noaelSummary.length > 0 ? (noaelSummary.find((n) => n.sex === "Combined") ?? noaelSummary[0]).noael_dose_level : null}
             />
           ) : activeTab === "metrics" ? (
             <MetricsTableContent
@@ -940,6 +957,7 @@ interface ChartOverviewProps {
   studyId: string | undefined;
   selectedSummary: EndpointSummary | null;
   onSubjectClick?: (usubjid: string) => void;
+  noaelDoseLevel?: number | null;
 }
 
 function ChartOverviewContent({
@@ -950,6 +968,7 @@ function ChartOverviewContent({
   studyId,
   selectedSummary,
   onSubjectClick,
+  noaelDoseLevel,
 }: ChartOverviewProps) {
   const chartRowRef = useRef<HTMLDivElement>(null);
   const [splitPct, setSplitPct] = useState(50); // default 50/50
@@ -991,6 +1010,11 @@ function ChartOverviewContent({
   const hasEffect = chartData.sexes.some((s) =>
     chartData.mergedPoints.some((p) => p[`effect_${s}`] != null)
   );
+
+  // Find NOAEL dose label for reference line
+  const noaelLabel = noaelDoseLevel != null
+    ? (chartData.mergedPoints.find((p) => p.dose_level === noaelDoseLevel) as Record<string, unknown> | undefined)?.dose_label as string | undefined
+    : undefined;
 
   return (
     <div>
@@ -1054,6 +1078,9 @@ function ChartOverviewContent({
                     />
                   </Line>
                 ))}
+                {noaelLabel && (
+                  <ReferenceLine x={noaelLabel} stroke="#6B7280" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: "NOAEL", position: "top", style: { fontSize: 9, fill: "#6B7280", fontWeight: 600 } }} />
+                )}
               </LineChart>
             ) : (
               <BarChart data={chartData.mergedPoints} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -1095,6 +1122,9 @@ function ChartOverviewContent({
                     }}
                   />
                 ))}
+                {noaelLabel && (
+                  <ReferenceLine x={noaelLabel} stroke="#6B7280" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: "NOAEL", position: "top", style: { fontSize: 9, fill: "#6B7280", fontWeight: 600 } }} />
+                )}
               </BarChart>
             )}
           </ResponsiveContainer>
