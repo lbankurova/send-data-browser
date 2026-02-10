@@ -36,7 +36,7 @@
 | `design-system/datagrok-visual-design-guide.md` | `frontend/src/lib/severity-colors.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/index.css` | 2026-02-09 | Current — §1.1 rewritten (conclusion-tier-only colors), §1.10 expanded (emphasis tiers, color budget, info hierarchy, cognitive modes, visual hierarchy) |
 | `design-system/datagrok-app-design-patterns.md` | `design-system/user-personas-and-view-analysis-original.md` | 2026-02-09 | Current — condensed, personas integrated from §1 |
 | `design-system/datagrok-llm-development-guide.md` | None (meta-guide) | 2026-02-09 | Current — condensed |
-| `design-system/audit-checklist.md` | All design system docs, CLAUDE.md | 2026-02-09 | Current — 66 testable rules across 7 categories (C/T/S/X/K/I/A), C-28 through C-33 added from external gap analysis |
+| `design-system/audit-checklist.md` | All design system docs, CLAUDE.md, `incoming/design-rules-consolidated.md` | 2026-02-09 | Current — 75 testable rules + 3 principles across 7 categories (C: 27, T: 9, S: 6, X: 7, K: 6, I: 10, A: 10). All 15 master-rule gaps resolved. |
 | `design-system/user-personas-and-view-analysis.md` | — | 2026-02-09 | Redirect → `datagrok-app-design-patterns.md` §1 |
 
 > **Rollback:** All 4 design system docs were condensed 2026-02-09 (2,333→490 lines). Full originals preserved as `*-original.md` in the same directory. To restore: `cp docs/design-system/{name}-original.md docs/design-system/{name}.md` for each file.
