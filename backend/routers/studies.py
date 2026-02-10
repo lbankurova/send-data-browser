@@ -28,6 +28,20 @@ def init_studies(studies: dict[str, StudyInfo]):
         _full_metadata[study_id] = extract_full_ts_metadata(study)
 
 
+def register_study(study: StudyInfo):
+    """Register a single study at runtime (used by import)."""
+    _studies[study.study_id] = study
+    _study_metadata[study.study_id] = extract_ts_metadata(study)
+    _full_metadata[study.study_id] = extract_full_ts_metadata(study)
+
+
+def unregister_study(study_id: str):
+    """Remove a study from runtime caches (used by delete)."""
+    _studies.pop(study_id, None)
+    _study_metadata.pop(study_id, None)
+    _full_metadata.pop(study_id, None)
+
+
 def _get_study(study_id: str) -> StudyInfo:
     if study_id not in _studies:
         raise HTTPException(status_code=404, detail=f"Study '{study_id}' not found")

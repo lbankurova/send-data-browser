@@ -26,7 +26,18 @@ def get_cached_csv_path(study_id: str, domain: str) -> Path:
 
 
 def read_xpt(xpt_path: Path) -> tuple[pd.DataFrame, pyreadstat.metadata_container]:
-    df, meta = pyreadstat.read_xport(str(xpt_path))
+    try:
+        df, meta = pyreadstat.read_xport(str(xpt_path))
+    except Exception:
+        # Retry with encoding fallback chain for non-ASCII XPT files
+        for enc in ("cp1252", "iso-8859-1"):
+            try:
+                df, meta = pyreadstat.read_xport(str(xpt_path), encoding=enc)
+                break
+            except Exception:
+                continue
+        else:
+            raise
     return df, meta
 
 

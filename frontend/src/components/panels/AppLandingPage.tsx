@@ -1,11 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload } from "lucide-react";
+import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
 import { cn } from "@/lib/utils";
 import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
+import { importStudy, deleteStudy } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StudySummary } from "@/types";
 
@@ -29,15 +30,17 @@ function StudyContextMenu({
   study,
   onClose,
   onOpen,
+  onDelete,
 }: {
   position: { x: number; y: number };
   study: DisplayStudy;
   onClose: () => void;
   onOpen: () => void;
+  onDelete: () => void;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const items: { label: string; action: () => void; disabled?: boolean; separator?: boolean }[] = [
+  const items: { label: string; action: () => void; disabled?: boolean; separator?: boolean; danger?: boolean }[] = [
     { label: "Open Study", action: onOpen },
     {
       label: "Open Validation Report",
@@ -73,7 +76,7 @@ function StudyContextMenu({
           });
       },
     },
-    { label: "Delete", action: () => onClose(), disabled: true, separator: true },
+    { label: "Delete", action: onDelete, separator: true, danger: true },
   ];
 
   return (
@@ -87,7 +90,10 @@ function StudyContextMenu({
           <div key={i}>
             {item.separator && <div className="my-1 border-t" />}
             <button
-              className="flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent"
+              className={cn(
+                "flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent",
+                item.danger && "text-red-600 hover:bg-red-50"
+              )}
               onClick={item.action}
               disabled={item.disabled}
             >
@@ -102,6 +108,37 @@ function StudyContextMenu({
 
 function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [isDragging, setIsDragging] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+
+  const handleFile = useCallback(async (file: File) => {
+    setImportError(null);
+    setImportSuccess(null);
+    setImporting(true);
+    try {
+      const result = await importStudy(file);
+      setImportSuccess(`Imported ${result.study_id} (${result.domain_count} domains)`);
+      queryClient.invalidateQueries({ queryKey: ["studies"] });
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setImporting(false);
+    }
+  }, [queryClient]);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    },
+    [handleFile]
+  );
 
   return (
     <div className="border-b px-8 py-4">
@@ -119,87 +156,105 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
       {open && (
         <div className="mt-4 space-y-4">
           {/* Drop zone */}
-          <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 py-8">
-            <Upload className="h-8 w-8 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">
-              Drop SEND study folder here
-            </p>
-            <button
-              className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
-              onClick={() => alert("File browser is not available in this prototype. Drop a SEND folder above.")}
-            >
-              Browse...
-            </button>
-          </div>
-
-          {/* Metadata fields */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <label className="w-20 shrink-0 text-xs text-muted-foreground">Study ID</label>
-              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <input type="checkbox" checked disabled className="h-3 w-3" />
-                Auto-detect
-              </label>
-              <input
-                type="text"
-                disabled
-                placeholder="Detected from DM domain"
-                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="w-20 shrink-0 text-xs text-muted-foreground">Protocol</label>
-              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <input type="checkbox" checked disabled className="h-3 w-3" />
-                Auto-detect
-              </label>
-              <input
-                type="text"
-                disabled
-                placeholder="Detected from TS domain"
-                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="w-20 shrink-0 text-xs text-muted-foreground">Description</label>
-              <input
-                type="text"
-                disabled
-                placeholder="Optional description"
-                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
-              />
-            </div>
-          </div>
-
-          {/* Validation options */}
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              <input type="checkbox" checked disabled className="h-3 w-3" />
-              Validate SEND compliance
-            </label>
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              <input type="checkbox" disabled className="h-3 w-3" />
-              Attempt automatic fixes
-            </label>
-          </div>
-
-          {/* Import button */}
-          <button
-            disabled
-            title="Import not available in prototype"
-            className="rounded-md bg-primary/50 px-4 py-2 text-xs font-medium text-primary-foreground/70 cursor-not-allowed"
+          <div
+            className={cn(
+              "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-8 transition-colors",
+              isDragging
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 bg-muted/30"
+            )}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
           >
-            Import study
-          </button>
+            {importing ? (
+              <>
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Importing study...</p>
+              </>
+            ) : (
+              <>
+                <Upload className="h-8 w-8 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">
+                  Drop a .zip file with SEND .xpt files here
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".zip"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFile(file);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Browse...
+                </button>
+              </>
+            )}
+          </div>
+
+          {importError && (
+            <p className="text-xs text-red-600">{importError}</p>
+          )}
+          {importSuccess && (
+            <p className="text-xs" style={{ color: "#16a34a" }}>{importSuccess}</p>
+          )}
         </div>
       )}
     </div>
   );
 }
 
+function DeleteConfirmDialog({
+  studyId,
+  onConfirm,
+  onCancel,
+}: {
+  studyId: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-50 bg-black/30" onClick={onCancel} />
+      <div className="fixed left-1/2 top-1/2 z-50 w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-popover p-6 shadow-xl">
+        <h3 className="text-sm font-semibold">Confirm Deletion</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Delete study <span className="font-medium text-foreground">{studyId}</span> and all
+          associated data? This cannot be undone.
+        </p>
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+          <button
+            className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+            onClick={onConfirm}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function AppLandingPage() {
   const { data: studies, isLoading } = useStudies();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { selectedStudyId, selectStudy } = useSelection();
   const allStudies: DisplayStudy[] = (studies ?? []).map((s) => ({
     ...s,
@@ -211,6 +266,8 @@ export function AppLandingPage() {
     x: number;
     y: number;
   } | null>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -257,6 +314,17 @@ export function AppLandingPage() {
     },
     [selectStudy]
   );
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteStudy(deleteTarget);
+      queryClient.invalidateQueries({ queryKey: ["studies"] });
+    } catch {
+      alert("Failed to delete study.");
+    }
+    setDeleteTarget(null);
+  }, [deleteTarget, queryClient]);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -412,6 +480,20 @@ export function AppLandingPage() {
               `/studies/${encodeURIComponent(contextMenu.study.study_id)}`
             );
           }}
+          onDelete={() => {
+            const id = contextMenu.study.study_id;
+            setContextMenu(null);
+            setDeleteTarget(id);
+          }}
+        />
+      )}
+
+      {/* Delete confirmation */}
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          studyId={deleteTarget}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
         />
       )}
     </div>
