@@ -5,7 +5,7 @@ import pandas as pd
 import pyreadstat
 
 from config import CACHE_DIR
-from models.schemas import ColumnInfo, DomainData, DomainSummary, StudyMetadata
+from models.schemas import ColumnInfo, DomainData, DomainSummary, DoseGroupSchema, StudyMetadata
 from services.study_discovery import StudyInfo
 
 
@@ -183,6 +183,18 @@ def extract_full_ts_metadata(study: StudyInfo) -> StudyMetadata:
     def g(key: str) -> str | None:
         return ts_map.get(key)
 
+    # Build dose groups if DM domain is available
+    dose_groups_list: list[DoseGroupSchema] | None = None
+    if "dm" in study.xpt_files:
+        try:
+            from services.analysis.dose_groups import build_dose_groups
+            dg_data = build_dose_groups(study)
+            dose_groups_list = [
+                DoseGroupSchema(**dg) for dg in dg_data["dose_groups"]
+            ]
+        except Exception:
+            pass
+
     return StudyMetadata(
         study_id=study.study_id,
         title=g("STITLE"),
@@ -207,4 +219,5 @@ def extract_full_ts_metadata(study: StudyInfo) -> StudyMetadata:
         send_version=g("SNDIGVER"),
         domain_count=len(study.xpt_files),
         domains=sorted(study.xpt_files.keys()),
+        dose_groups=dose_groups_list,
     )
