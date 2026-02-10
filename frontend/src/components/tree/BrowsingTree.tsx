@@ -1,35 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
-  Home,
   FlaskConical,
   Folder,
   FolderOpen,
   FileSpreadsheet,
   Loader2,
-  BarChart3,
-  AlertTriangle,
-  TrendingUp,
-  Crosshair,
-  Microscope,
-  Target,
-  ShieldCheck,
-  Minus,
 } from "lucide-react";
 import { useStudies } from "@/hooks/useStudies";
 import { useCategorizedDomains } from "@/hooks/useDomainsByStudy";
 import { getDomainDescription } from "@/lib/send-categories";
 import { ANALYSIS_VIEWS } from "@/lib/analysis-definitions";
 import { TreeNode } from "./TreeNode";
-
-const VIEW_ICONS: Record<string, React.ReactNode> = {
-  "study-summary": <BarChart3 className="h-4 w-4 text-muted-foreground" />,
-  "dose-response": <TrendingUp className="h-4 w-4 text-muted-foreground" />,
-  "target-organs": <Crosshair className="h-4 w-4 text-muted-foreground" />,
-  histopathology: <Microscope className="h-4 w-4 text-muted-foreground" />,
-  "noael-decision": <Target className="h-4 w-4 text-muted-foreground" />,
-  validation: <ShieldCheck className="h-4 w-4 text-muted-foreground" />,
-};
 
 /** Map view key to route path segment */
 function viewRoute(studyId: string, viewKey: string): string {
@@ -44,12 +26,14 @@ function StudyBranch({
   onToggle,
   activeStudyId,
   activeDomainName,
+  emphasize,
 }: {
   studyId: string;
   isExpanded: boolean;
   onToggle: () => void;
   activeStudyId: string | undefined;
   activeDomainName: string | undefined;
+  emphasize?: boolean;
 }) {
   const { categories, isLoading } = useCategorizedDomains(
     isExpanded ? studyId : undefined
@@ -132,9 +116,10 @@ function StudyBranch({
       <TreeNode
         label={`Study: ${studyId}`}
         depth={1}
-        icon={<FlaskConical className="h-4 w-4 text-muted-foreground" />}
+        icon={<FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />}
         isExpanded={isExpanded}
         isActive={isStudyActive}
+        className={emphasize ? "font-medium" : undefined}
         onClick={handleStudyClick}
         onToggle={onToggle}
       />
@@ -149,11 +134,6 @@ function StudyBranch({
                   key={view.key}
                   label={view.label}
                   depth={2}
-                  icon={
-                    VIEW_ICONS[view.key] ?? (
-                      <Minus className="h-4 w-4 text-muted-foreground" />
-                    )
-                  }
                   isActive={isActive}
                   onClick={() => {
                     if (view.implemented) {
@@ -176,9 +156,9 @@ function StudyBranch({
             depth={2}
             icon={
               isDomainsExpanded ? (
-                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
               ) : (
-                <Folder className="h-4 w-4 text-muted-foreground" />
+                <Folder className="h-3.5 w-3.5 text-muted-foreground" />
               )
             }
             isExpanded={isDomainsExpanded}
@@ -190,7 +170,7 @@ function StudyBranch({
               {isLoading && (
                 <div
                   className="flex items-center gap-2 py-1"
-                  style={{ paddingLeft: "56px" }}
+                  style={{ paddingLeft: "62px" }}
                 >
                   <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">
@@ -207,9 +187,9 @@ function StudyBranch({
                       depth={3}
                       icon={
                         isCatExpanded ? (
-                          <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
                         ) : (
-                          <Folder className="h-4 w-4 text-muted-foreground" />
+                          <Folder className="h-3.5 w-3.5 text-muted-foreground" />
                         )
                       }
                       isExpanded={isCatExpanded}
@@ -226,7 +206,7 @@ function StudyBranch({
                             label={`${domain.name.toUpperCase()} \u2014 ${getDomainDescription(domain)}`}
                             depth={4}
                             icon={
-                              <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+                              <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground" />
                             }
                             isActive={isActive}
                             onClick={() =>
@@ -248,7 +228,6 @@ function StudyBranch({
           <TreeNode
             label="Adverse effects"
             depth={2}
-            icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
             isActive={activeView === "analyses-adverse-effects"}
             onClick={() =>
               navigate(
@@ -271,6 +250,7 @@ export function BrowsingTree() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [rootExpanded, setRootExpanded] = useState(true);
   const [expandedStudies, setExpandedStudies] = useState<Set<string>>(
     new Set()
   );
@@ -308,34 +288,55 @@ export function BrowsingTree() {
 
   if (isLoading) {
     return (
-      <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+      <div className="p-4 text-xs text-muted-foreground">Loading...</div>
     );
   }
 
   const isHomeActive = location.pathname === "/";
 
+  const MOCK_STUDY_IDS = [
+    "ToxStudy-28D-Rat",
+    "CardioSafety-Dog",
+    "Carcino-Mouse-2Y",
+    "EFD-Rabbit-GLP",
+    "NeuroTox-NHP-13W",
+  ];
+
+  const allStudyIds = [
+    ...(studies ?? []).map((s) => s.study_id),
+    ...MOCK_STUDY_IDS,
+  ];
+
   return (
-    <nav className="py-2">
+    <nav>
+      {/* Datagrok-style tree header — icons hidden in app focus mode */}
+      <div className="flex h-5 items-center border-b px-2">
+        {/* Reserved icon slots (hidden in focus mode, configurable later) */}
+      </div>
+
+      <div className="py-2">
       <TreeNode
-        label="Home"
+        label="Preclinical Case"
         depth={0}
-        icon={<Home className="h-4 w-4 text-muted-foreground" />}
+        icon={<FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />}
+        isExpanded={rootExpanded}
         isActive={isHomeActive}
         onClick={() => navigate("/")}
+        onToggle={() => setRootExpanded((p) => !p)}
       />
-      <div className="mb-1 mt-3 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Studies
+      {rootExpanded &&
+        allStudyIds.map((id) => (
+          <StudyBranch
+            key={id}
+            studyId={id}
+            isExpanded={expandedStudies.has(id)}
+            onToggle={() => toggleStudy(id)}
+            activeStudyId={activeStudyId}
+            activeDomainName={activeDomainName}
+            emphasize={expandedStudies.size > 0}
+          />
+        ))}
       </div>
-      {studies?.map((study) => (
-        <StudyBranch
-          key={study.study_id}
-          studyId={study.study_id}
-          isExpanded={expandedStudies.has(study.study_id)}
-          onToggle={() => toggleStudy(study.study_id)}
-          activeStudyId={activeStudyId}
-          activeDomainName={activeDomainName}
-        />
-      ))}
     </nav>
   );
 }

@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2 } from "lucide-react";
+import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
 import { cn } from "@/lib/utils";
@@ -363,10 +363,71 @@ export function AppLandingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { selectedStudyId, selectStudy } = useSelection();
-  const allStudies: DisplayStudy[] = (studies ?? []).map((s) => ({
+  const realStudies: DisplayStudy[] = (studies ?? []).map((s) => ({
     ...s,
     validation: "Not Run",
   }));
+
+  const demoStudies: DisplayStudy[] = [
+    {
+      study_id: "DEMO-Pass",
+      name: "DEMO-Pass",
+      domain_count: 12,
+      species: "Rat",
+      study_type: "28-Day Oral Toxicity",
+      protocol: "PRO-2025-001",
+      standard: "3.1",
+      subjects: 80,
+      start_date: "2025-01-15",
+      end_date: "2025-03-10",
+      status: "Complete",
+      validation: "Pass",
+    },
+    {
+      study_id: "DEMO-Warnings",
+      name: "DEMO-Warnings",
+      domain_count: 9,
+      species: "Dog",
+      study_type: "13-Week Oral Toxicity",
+      protocol: "PRO-2025-002",
+      standard: "3.1",
+      subjects: 32,
+      start_date: "2025-02-01",
+      end_date: "2025-05-20",
+      status: "Complete",
+      validation: "Warnings",
+    },
+    {
+      study_id: "DEMO-Fail",
+      name: "DEMO-Fail",
+      domain_count: 7,
+      species: "Mouse",
+      study_type: "Carcinogenicity",
+      protocol: "PRO-2024-018",
+      standard: "3.0",
+      subjects: 200,
+      start_date: "2024-06-01",
+      end_date: "2025-01-30",
+      status: "Complete",
+      validation: "Fail",
+    },
+    {
+      study_id: "DEMO-NotRun",
+      name: "DEMO-NotRun",
+      domain_count: 5,
+      species: "Rabbit",
+      study_type: "Embryo-Fetal Development",
+      protocol: "PRO-2025-007",
+      standard: "3.1",
+      subjects: 44,
+      start_date: "2025-04-01",
+      end_date: null,
+      status: "Ongoing",
+      validation: "Not Run",
+    },
+  ];
+
+  const allStudies: DisplayStudy[] = [...realStudies, ...demoStudies];
 
   const [contextMenu, setContextMenu] = useState<{
     study: DisplayStudy;
@@ -442,12 +503,12 @@ export function AppLandingPage() {
             <FlaskConical className="mt-0.5 h-12 w-12 text-primary" />
             <div>
               <h1 className="text-xl font-semibold tracking-tight">Preclinical Case</h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Analyze and validate your SEND data
               </p>
             </div>
           </div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             <ul className="list-disc space-y-0.5 pl-4">
               <li>Visualize and explore SEND data</li>
               <li>Identify patterns and trends</li>
@@ -457,7 +518,7 @@ export function AppLandingPage() {
             </ul>
             <a
               href="#"
-              className="mt-2 inline-block pl-4 text-sm text-primary hover:underline"
+              className="mt-2 inline-block pl-4 text-xs text-primary hover:underline"
               onClick={(e) => {
                 e.preventDefault();
                 alert("Documentation is not available in this prototype.");
@@ -474,9 +535,20 @@ export function AppLandingPage() {
 
       {/* Studies table */}
       <div className="px-8 py-6">
-        <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Studies ({allStudies.length})
-        </h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Studies ({allStudies.length})
+          </h2>
+          <button
+            className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+            title="Collapse/expand all studies in tree"
+            onClick={() => {
+              /* Tree expand/collapse — wired when shared state is available */
+            }}
+          >
+            <ChevronsDownUp className="h-3.5 w-3.5" />
+          </button>
+        </div>
 
         {isLoading ? (
           <div className="space-y-2">
@@ -485,18 +557,18 @@ export function AppLandingPage() {
           </div>
         ) : allStudies.length > 0 ? (
           <div className="overflow-x-auto rounded-md border bg-card">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/30">
-                  <th className="w-8 px-2 py-2"></th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Standard</th>
-                  <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subjects</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">End</th>
-                  <th className="pl-5 pr-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                  <th className="px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Val</th>
+                  <th className="w-8 px-2 py-1.5"></th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Standard</th>
+                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subjects</th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">End</th>
+                  <th className="pl-5 pr-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                  <th className="px-3 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Val</th>
                 </tr>
               </thead>
               <tbody>
@@ -513,7 +585,7 @@ export function AppLandingPage() {
                       onDoubleClick={() => handleDoubleClick(study)}
                       onContextMenu={(e) => handleContextMenu(e, study)}
                     >
-                      <td className="px-2 py-2 text-center">
+                      <td className="px-2 py-1 text-center">
                         <button
                           className="rounded p-0.5 hover:bg-accent"
                           onClick={(e) => handleActionsClick(e, study)}
@@ -522,25 +594,25 @@ export function AppLandingPage() {
                           <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
                       </td>
-                      <td className="px-3 py-2 font-medium">{study.study_id}</td>
-                      <td className="px-3 py-2 text-muted-foreground">
+                      <td className="px-3 py-1 font-medium">{study.study_id}</td>
+                      <td className="px-3 py-1 text-muted-foreground">
                         {study.protocol && study.protocol !== "NOT AVAILABLE"
                           ? study.protocol
                           : "—"}
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground">
+                      <td className="px-3 py-1 text-muted-foreground">
                         {formatStandard(study.standard)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                      <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
                         {study.subjects ?? "—"}
                       </td>
-                      <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                      <td className="px-3 py-1 tabular-nums text-muted-foreground">
                         {study.start_date ?? "—"}
                       </td>
-                      <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                      <td className="px-3 py-1 tabular-nums text-muted-foreground">
                         {study.end_date ?? "—"}
                       </td>
-                      <td className="relative pl-5 pr-3 py-2 text-xs text-muted-foreground">
+                      <td className="relative pl-5 pr-3 py-1 text-xs text-muted-foreground">
                         {study.status === "Complete" && (
                           <span
                             className="absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full"
@@ -549,7 +621,7 @@ export function AppLandingPage() {
                         )}
                         {study.status}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-1">
                         <div
                           className="flex items-center justify-center"
                           title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}
