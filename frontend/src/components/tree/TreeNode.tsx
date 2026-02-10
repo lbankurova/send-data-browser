@@ -5,6 +5,7 @@ interface TreeNodeProps {
   label: string;
   depth: number;
   icon?: React.ReactNode;
+  action?: React.ReactNode;
   isExpanded?: boolean;
   isActive?: boolean;
   className?: string;
@@ -16,6 +17,7 @@ export function TreeNode({
   label,
   depth,
   icon,
+  action,
   isExpanded,
   isActive,
   className,
@@ -54,7 +56,15 @@ export function TreeNode({
         <span className="w-3.5 shrink-0" />
       )}
       {icon && <span className="shrink-0">{icon}</span>}
-      <span className="truncate">{label}</span>
+      <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+      {action && (
+        <span
+          className="ml-auto shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {action}
+        </span>
+      )}
     </button>
   );
 }

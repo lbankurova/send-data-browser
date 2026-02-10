@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   FlaskConical,
@@ -6,11 +6,14 @@ import {
   FolderOpen,
   FileSpreadsheet,
   Loader2,
+  ChevronsDownUp,
+  ChevronsUpDown,
 } from "lucide-react";
 import { useStudies } from "@/hooks/useStudies";
 import { useCategorizedDomains } from "@/hooks/useDomainsByStudy";
 import { getDomainDescription } from "@/lib/send-categories";
 import { ANALYSIS_VIEWS } from "@/lib/analysis-definitions";
+import { useTreeControl } from "@/contexts/TreeControlContext";
 import { TreeNode } from "./TreeNode";
 
 /** Map view key to route path segment */
@@ -251,11 +254,15 @@ export function BrowsingTree() {
   const location = useLocation();
 
   const [rootExpanded, setRootExpanded] = useState(true);
-  const [expandedStudies, setExpandedStudies] = useState<Set<string>>(
-    new Set()
-  );
-  // Track studies the user has manually collapsed — don't auto-expand these
-  const manuallyCollapsed = useRef<Set<string>>(new Set());
+  const {
+    hasExpanded,
+    expandAll,
+    collapseAll,
+    expandedStudies,
+    setExpandedStudies,
+    manuallyCollapsed,
+    register,
+  } = useTreeControl();
 
   // Auto-expand: if only one study, expand it; also expand study from URL
   useEffect(() => {
@@ -270,7 +277,7 @@ export function BrowsingTree() {
       }
       return next;
     });
-  }, [studies, activeStudyId]);
+  }, [studies, activeStudyId, setExpandedStudies, manuallyCollapsed]);
 
   const toggleStudy = useCallback((id: string) => {
     setExpandedStudies((prev) => {
@@ -284,13 +291,7 @@ export function BrowsingTree() {
       }
       return next;
     });
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="p-4 text-xs text-muted-foreground">Loading...</div>
-    );
-  }
+  }, [setExpandedStudies, manuallyCollapsed]);
 
   const isHomeActive = location.pathname === "/";
 
@@ -306,6 +307,18 @@ export function BrowsingTree() {
     ...(studies ?? []).map((s) => s.study_id),
     ...MOCK_STUDY_IDS,
   ];
+
+  // Register IDs so the landing page expand/collapse control can use them
+  const idsKey = allStudyIds.join(",");
+  useEffect(() => {
+    register(allStudyIds);
+  }, [idsKey, register]);
+
+  if (isLoading) {
+    return (
+      <div className="p-4 text-xs text-muted-foreground">Loading...</div>
+    );
+  }
 
   return (
     <nav>
@@ -323,6 +336,21 @@ export function BrowsingTree() {
         isActive={isHomeActive}
         onClick={() => navigate("/")}
         onToggle={() => setRootExpanded((p) => !p)}
+        action={
+          rootExpanded ? (
+            <button
+              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+              title={hasExpanded ? "Collapse all studies" : "Expand all studies"}
+              onClick={() => (hasExpanded ? collapseAll() : expandAll())}
+            >
+              {hasExpanded ? (
+                <ChevronsDownUp className="h-3 w-3" />
+              ) : (
+                <ChevronsUpDown className="h-3 w-3" />
+              )}
+            </button>
+          ) : undefined
+        }
       />
       {rootExpanded &&
         allStudyIds.map((id) => (
