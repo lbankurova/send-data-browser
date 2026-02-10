@@ -181,7 +181,7 @@ export function StudySummaryView({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-center border-b">
+      <div className="flex items-center border-b bg-muted/30">
         <div className="flex">
           {([
             { key: "details" as Tab, label: "Study Details" },
@@ -191,7 +191,7 @@ export function StudySummaryView({
               key={key}
               onClick={() => setTab(key)}
               className={cn(
-                "relative px-4 py-2.5 text-xs font-medium transition-colors",
+                "relative px-4 py-1.5 text-xs font-medium transition-colors",
                 tab === key
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"

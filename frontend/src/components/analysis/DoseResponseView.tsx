@@ -864,14 +864,17 @@ export function DoseResponseView({
             <button
               key={tab}
               className={cn(
-                "px-4 py-1.5 text-xs font-medium transition-colors",
+                "relative px-4 py-1.5 text-xs font-medium transition-colors",
                 activeTab === tab
-                  ? "border-b-2 border-primary text-foreground"
+                  ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
               onClick={() => setActiveTab(tab)}
             >
               {{ evidence: "Evidence", hypotheses: "Hypotheses", metrics: "Metrics" }[tab]}
+              {activeTab === tab && (
+                <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
+              )}
             </button>
           ))}
           {activeTab === "metrics" && (
