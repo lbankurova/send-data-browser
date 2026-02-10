@@ -12,11 +12,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from services.study_discovery import StudyInfo
 from services.xpt_processor import ensure_cached, read_xpt
-from services.analysis.dose_groups import (
-    ARMCD_TO_DOSE_LEVEL,
-    RECOVERY_ARMCDS,
-    build_dose_groups,
-)
+from services.analysis.dose_groups import build_dose_groups
 
 router = APIRouter(prefix="/api", tags=["temporal"])
 
