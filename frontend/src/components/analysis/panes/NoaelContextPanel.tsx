@@ -119,7 +119,12 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
         </div>
       </div>
 
-      {/* 1. Adversity rationale */}
+      {/* 1. Endpoint insights */}
+      <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <InsightsList rules={endpointRules} tierFilter={tierFilter} />
+      </CollapsiblePane>
+
+      {/* 2. Adversity rationale */}
       <CollapsiblePane title="Adversity rationale" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {selectedRows.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No data for selected endpoint.</p>
@@ -148,12 +153,12 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
         )}
       </CollapsiblePane>
 
-      {/* 2. Endpoint insights */}
-      <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <InsightsList rules={endpointRules} tierFilter={tierFilter} />
-      </CollapsiblePane>
+      {/* 3. Tox Assessment */}
+      {studyId && (
+        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
+      )}
 
-      {/* 3. Related views (with context) */}
+      {/* 4. Related views (with context) */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
           <a
@@ -200,11 +205,6 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
           </a>
         </div>
       </CollapsiblePane>
-
-      {/* 4. Tox Assessment */}
-      {studyId && (
-        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
-      )}
     </div>
   );
 }
