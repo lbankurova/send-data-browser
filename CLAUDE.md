@@ -60,6 +60,8 @@ These rules are non-negotiable. No agent may override, reinterpret, or skip them
 
 3. **CLAUDE.md hard rules must be checked directly.** The reviewer must re-read the Design Decisions section of this file and verify each hard rule is satisfied. Checking against view specs or design guides is NOT sufficient — those documents may have been incorrectly modified. CLAUDE.md is the source of truth for hard rules.
 
+4. **View spec changes that affect UI/UX require explicit user approval.** No agent may modify view specs (`docs/views/*.md`) in ways that affect the UI or UX without the user's prior explicit approval. Agents must propose changes, then stop and wait for approval before writing. Self-approving is never permitted. Agents may NOT infer, add implicit meaning, or "improve" the design on their own — vague instructions like "improve the design" require the user to approve every individual change. **Exception:** changes that are explicitly requested or directly required to implement a user-requested feature do not need separate approval. "Change the color to X", "remove element Y", "add a filter for Z" are explicit enough to proceed. "Make it look better" or "clean up the view" are not.
+
 ## Agent Commit Protocol
 
 Before committing changes that alter system or view behavior:
