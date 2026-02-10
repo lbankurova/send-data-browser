@@ -200,7 +200,12 @@ export function TargetOrgansContextPanel({
         )}
       </CollapsiblePane>
 
-      {/* 3. Related views */}
+      {/* 3. Tox Assessment (only when endpoint selected — annotation before navigation) */}
+      {studyId && selection.endpoint_label && (
+        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
+      )}
+
+      {/* 4. Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
           <a
@@ -238,11 +243,6 @@ export function TargetOrgansContextPanel({
           </a>
         </div>
       </CollapsiblePane>
-
-      {/* 4. Tox Assessment (only when endpoint selected) */}
-      {studyId && selection.endpoint_label && (
-        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
-      )}
     </div>
   );
 }
