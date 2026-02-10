@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
@@ -122,14 +122,13 @@ function StudyBranch({
 
   const handleStudyClick = useCallback(() => {
     navigate(`/studies/${encodeURIComponent(studyId)}`);
-    if (!isExpanded) onToggle();
-  }, [navigate, studyId, isExpanded, onToggle]);
+  }, [navigate, studyId]);
 
   const isDomainsExpanded = expandedCategories.has("domains");
 
   return (
     <>
-      {/* Study root node — click = Study Summary */}
+      {/* Study root node — click = Study Summary, chevron = toggle */}
       <TreeNode
         label={`Study: ${studyId}`}
         depth={1}
@@ -137,6 +136,7 @@ function StudyBranch({
         isExpanded={isExpanded}
         isActive={isStudyActive}
         onClick={handleStudyClick}
+        onToggle={onToggle}
       />
       {isExpanded && (
         <>
@@ -274,14 +274,20 @@ export function BrowsingTree() {
   const [expandedStudies, setExpandedStudies] = useState<Set<string>>(
     new Set()
   );
+  // Track studies the user has manually collapsed — don't auto-expand these
+  const manuallyCollapsed = useRef<Set<string>>(new Set());
 
   // Auto-expand: if only one study, expand it; also expand study from URL
   useEffect(() => {
     if (!studies) return;
     setExpandedStudies((prev) => {
       const next = new Set(prev);
-      if (studies.length === 1) next.add(studies[0].study_id);
-      if (activeStudyId) next.add(activeStudyId);
+      if (studies.length === 1 && !manuallyCollapsed.current.has(studies[0].study_id)) {
+        next.add(studies[0].study_id);
+      }
+      if (activeStudyId && !manuallyCollapsed.current.has(activeStudyId)) {
+        next.add(activeStudyId);
+      }
       return next;
     });
   }, [studies, activeStudyId]);
@@ -289,8 +295,13 @@ export function BrowsingTree() {
   const toggleStudy = useCallback((id: string) => {
     setExpandedStudies((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        manuallyCollapsed.current.add(id);
+      } else {
+        next.add(id);
+        manuallyCollapsed.current.delete(id);
+      }
       return next;
     });
   }, []);
