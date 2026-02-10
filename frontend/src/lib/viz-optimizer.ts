@@ -1,8 +1,11 @@
 /**
  * Persona-Driven Visualization Scoring Engine
  *
- * Computes the optimal visualization mix for the dose-response view using a
- * 22-question × 22-viz scoring matrix driven by 7 persona weights.
+ * 22-question × 58-viz scoring matrix driven by 7 persona weights.
+ * 9-slot layout system with pruned exhaustive search.
+ *
+ * Catalog: 42 Datagrok-native vizzes (R/G/S/C/T/X) + 16 extended (E)
+ * covering temporal, individual animal, pathology, NOAEL detail, and audit gaps.
  *
  * Key features:
  *   - Per-persona importance scores (0-10) for 22 regulatory questions
@@ -11,7 +14,7 @@
  *   - Data profile distribution modeling (4 endpoint types weighted by prevalence)
  *   - Temporal boost (1.4x) and Q19 minimum (0.7x) penalties
  *   - Score-per-pixel efficiency tracking
- *   - Datagrok migration targets for layout comparison
+ *   - Data-needs pruning (tc, rec, sl soft; me, md hard thresholds)
  */
 
 // ─── Types ──────────────────────────────────────────────────
@@ -24,36 +27,26 @@ export type QuestionId =
   | "Q17" | "Q18" | "Q19" | "Q20" | "Q21" | "Q22";
 
 export type VizId =
-  | "dr-line" | "dr-bar" | "time-course" | "volcano"
-  | "pairwise-table" | "metrics-grid" | "noael-ref"
-  | "shape-explorer" | "causality"
-  | "insights-pane" | "stats-pane" | "correlations-pane" | "assessment-pane" | "related-pane"
-  | "dg-scatter" | "dg-box" | "dg-trellis" | "dg-correlation"
-  | "dg-pc" | "dg-histogram" | "dg-group" | "dg-grid";
+  | "R1" | "R2" | "R3" | "R4" | "R5"
+  | "G1" | "G2" | "G3" | "G4" | "G5"
+  | "S1" | "S2" | "S3" | "S4" | "S5" | "S6" | "S7"
+  | "C1" | "C2" | "C3" | "C4" | "C5" | "C6" | "C7" | "C8" | "C9" | "C10"
+  | "T1" | "T2" | "T3" | "T4" | "T5"
+  | "X1" | "X2" | "X3" | "X4" | "X5" | "X6" | "X7" | "X8" | "X9" | "X10"
+  | "E1" | "E2" | "E3" | "E4" | "E5" | "E6" | "E7" | "E8"
+  | "E9" | "E10" | "E11" | "E12" | "E13" | "E14" | "E15" | "E16";
 
-export type SlotId =
-  | "chart" | "overlay" | "temporal" | "scanning" | "table"
-  | "rail" | "insights" | "stats" | "correlations" | "assessment" | "related"
-  | "dg-primary" | "dg-secondary" | "dg-tertiary";
-
-export type Platform = "recharts" | "custom" | "panel" | "datagrok";
-
-export type TargetPlatform = "recharts" | "datagrok";
+export type SlotId = "ri" | "rh" | "og" | "sv" | "dc" | "dt" | "cu" | "cm" | "cl";
 
 export type LayoutConfig = Partial<Record<SlotId, VizId>>;
 
 export interface VizEntry {
-  label: string;
-  /** Answer quality per question (0-1) */
-  a: Partial<Record<QuestionId, number>>;
-  /** Data needs: tc = time-course, noael = NOAEL, rec = recovery */
-  n?: Partial<Record<string, number>>;
-  /** Relative pixel cost (0 = overlay, 2 = full grid) */
+  nm: string;
+  cat: string;
   px: number;
-  platform: Platform;
-  slots: SlotId[];
-  excludes?: VizId[];
-  dgViewer?: string;
+  dg: string;
+  n: Record<string, number>;
+  a: Partial<Record<QuestionId, number>>;
 }
 
 export interface ScoreResult {
@@ -63,11 +56,11 @@ export interface ScoreResult {
 }
 
 export interface LayoutOptions {
-  dataType: "continuous" | "categorical";
   hasTemporal: boolean;
-  hasNoael: boolean;
   hasRecovery: boolean;
-  target?: TargetPlatform;
+  hasSubjectLevel: boolean;
+  nEndpoints: number;
+  nDomains: number;
 }
 
 export interface LayoutResult {
@@ -83,12 +76,6 @@ export interface CoverageResult {
   gaps: { q: QuestionId; label: string; importance: number }[];
   coveragePercent: number;
   blockersCovered: boolean;
-}
-
-export interface CompareResult {
-  recharts: LayoutResult;
-  datagrok: LayoutResult;
-  improvement: number;
 }
 
 // ─── Scoring Matrices ───────────────────────────────────────
@@ -144,199 +131,311 @@ export const BLOCKERS: Partial<Record<QuestionId, number>> = {
 export const TEMPORAL_QS: QuestionId[] = ["Q3", "Q4", "Q15"];
 export const Q19_MIN = 0.6;
 
-// ─── Visualization Catalog ──────────────────────────────────
+// ─── Visualization Catalog (58 entries) ─────────────────────
+// nm = name, cat = category, px = pixel cost, dg = Datagrok component
+// n = data needs (≤1: soft degradation, >1: hard minimum threshold)
+// a = answer quality per question (0-1)
 
 export const VIZ_CATALOG: Record<VizId, VizEntry> = {
-  "dr-line": {
-    label: "Dose-response line chart",
-    a: { Q1: 0.9, Q2: 0.9, Q5: 0.6, Q8: 0.5, Q12: 0.8 },
-    px: 1.0,
-    platform: "recharts",
-    slots: ["chart"],
-    excludes: ["dr-bar"],
-  },
-  "dr-bar": {
-    label: "Incidence bar chart",
-    a: { Q1: 0.8, Q2: 0.5, Q8: 0.4, Q12: 0.6 },
-    px: 1.0,
-    platform: "recharts",
-    slots: ["chart"],
-    excludes: ["dr-line"],
-  },
-  "time-course": {
-    label: "Time-course line chart",
-    a: { Q3: 0.9, Q4: 1.0, Q15: 0.9, Q1: 0.4 },
-    n: { tc: 0.8 },
-    px: 1.2,
-    platform: "recharts",
-    slots: ["temporal"],
-  },
-  "volcano": {
-    label: "Volcano scatter (effect vs. significance)",
-    a: { Q7: 1.0, Q1: 0.3, Q6: 0.4, Q17: 0.4 },
-    px: 1.3,
-    platform: "recharts",
-    slots: ["scanning"],
-  },
-  "pairwise-table": {
-    label: "Pairwise comparison table",
-    a: { Q5: 0.8, Q12: 0.7, Q13: 0.6, Q14: 0.5, Q16: 0.5, Q20: 0.6 },
-    px: 0.6,
-    platform: "custom",
-    slots: ["table"],
-  },
-  "metrics-grid": {
-    label: "Metrics data grid",
-    a: { Q20: 0.9, Q16: 0.7, Q14: 0.6, Q18: 0.5 },
-    px: 2.0,
-    platform: "custom",
-    slots: ["table"],
-  },
-  "noael-ref": {
-    label: "NOAEL reference line overlay",
-    a: { Q5: 0.9 },
-    n: { noael: 0.9 },
-    px: 0.0,
-    platform: "recharts",
-    slots: ["overlay"],
-  },
-  "shape-explorer": {
-    label: "Dose-response model fit explorer",
-    a: { Q2: 0.9, Q11: 0.8, Q1: 0.5 },
-    px: 1.5,
-    platform: "datagrok",
-    slots: ["dg-primary"],
-  },
-  "causality": {
-    label: "Bradford Hill causality assessment",
-    a: { Q10: 1.0, Q17: 0.7, Q9: 0.6, Q18: 0.5 },
-    px: 2.0,
-    platform: "custom",
-    slots: ["table"],
-  },
-  "insights-pane": {
-    label: "Insights synthesis pane",
-    a: { Q9: 0.9, Q17: 0.5, Q6: 0.4 },
-    px: 0.4,
-    platform: "panel",
-    slots: ["insights"],
-  },
-  "stats-pane": {
-    label: "Statistical summary pane",
-    a: { Q12: 0.5, Q1: 0.4, Q17: 0.4 },
-    px: 0.3,
-    platform: "panel",
-    slots: ["stats"],
-  },
-  "correlations-pane": {
-    label: "Cross-domain correlations pane",
-    a: { Q6: 0.9, Q19: 0.5 },
-    px: 0.4,
-    platform: "panel",
-    slots: ["correlations"],
-  },
-  "assessment-pane": {
-    label: "Assessment & review pane",
-    a: { Q9: 0.8, Q18: 0.7, Q17: 0.6, Q22: 0.8, Q21: 0.6 },
-    px: 0.5,
-    platform: "panel",
-    slots: ["assessment"],
-  },
-  "related-pane": {
-    label: "Related findings pane",
-    a: { Q6: 0.3, Q19: 0.3 },
-    px: 0.2,
-    platform: "panel",
-    slots: ["related"],
-  },
-  "dg-scatter": {
-    label: "Datagrok scatter plot",
-    a: { Q7: 1.0, Q6: 0.6, Q12: 0.5, Q1: 0.5 },
-    px: 1.3,
-    platform: "datagrok",
-    slots: ["dg-primary", "dg-secondary"],
-    dgViewer: "Scatterplot",
-  },
-  "dg-box": {
-    label: "Datagrok box plot",
-    a: { Q14: 0.9, Q8: 0.8, Q1: 0.7, Q12: 0.6 },
-    px: 1.0,
-    platform: "datagrok",
-    slots: ["dg-primary", "dg-secondary"],
-    dgViewer: "Box plot",
-  },
-  "dg-trellis": {
-    label: "Datagrok trellis plot",
-    a: { Q8: 0.9, Q6: 0.8, Q1: 0.5 },
-    px: 1.5,
-    platform: "datagrok",
-    slots: ["dg-primary", "dg-secondary"],
-    dgViewer: "Trellis plot",
-  },
-  "dg-correlation": {
-    label: "Datagrok correlation matrix",
-    a: { Q6: 1.0, Q19: 0.7 },
-    px: 1.2,
-    platform: "datagrok",
-    slots: ["dg-secondary", "dg-tertiary"],
-    dgViewer: "Correlation plot",
-  },
-  "dg-pc": {
-    label: "Datagrok parallel coordinates",
-    a: { Q6: 0.7, Q7: 0.5, Q8: 0.4 },
-    px: 1.5,
-    platform: "datagrok",
-    slots: ["dg-secondary", "dg-tertiary"],
-    dgViewer: "PC plot",
-  },
-  "dg-histogram": {
-    label: "Datagrok distribution histogram",
-    a: { Q14: 0.8, Q2: 0.3, Q8: 0.3 },
-    px: 0.8,
-    platform: "datagrok",
-    slots: ["dg-secondary", "dg-tertiary"],
-    dgViewer: "Histogram",
-  },
-  "dg-group": {
-    label: "Datagrok group analysis",
-    a: { Q13: 0.9, Q16: 0.8, Q14: 0.7, Q1: 0.5 },
-    px: 1.0,
-    platform: "datagrok",
-    slots: ["dg-primary", "dg-secondary"],
-    dgViewer: "Group Analysis",
-  },
-  "dg-grid": {
-    label: "Datagrok data grid",
-    a: { Q20: 1.0, Q16: 0.8, Q14: 0.7, Q18: 0.6 },
-    px: 2.0,
-    platform: "datagrok",
-    slots: ["dg-primary"],
-    dgViewer: "Grid",
-  },
+
+  /* ─── Rail ──────────────────────────────────────────────────── */
+
+  R1: { nm: "Text only (badge+p+d)", cat: "rail", px: 10560,
+    dg: "Custom cell renderer", n: {},
+    a: { Q1: .3, Q2: .3, Q10: .5, Q11: .5, Q12: .3 } },
+  R2: { nm: "D-R sparkline + text", cat: "rail", px: 11200,
+    dg: "Grid sparkline renderer", n: {},
+    a: { Q1: .7, Q2: .7, Q9: .3, Q10: .5, Q11: .5, Q12: .7 } },
+  R3: { nm: "D-R spark + TC spark", cat: "rail", px: 12320,
+    dg: "Grid dual sparkline renderer", n: { tc: .7 },
+    a: { Q1: .7, Q2: .7, Q4: .7, Q9: .5, Q10: .5, Q11: .5, Q12: .7 } },
+  R4: { nm: "D-R + TC spark + recovery flag", cat: "rail", px: 12800,
+    dg: "Grid dual sparkline+icon", n: { tc: .7, rec: .5 },
+    a: { Q1: .7, Q2: .7, Q3: .3, Q4: .7, Q9: .5, Q10: .5, Q11: .5, Q12: .7 } },
+  R5: { nm: "Organ header + signal histogram", cat: "rail", px: 7040,
+    dg: "Grid summary row+histogram", n: { me: 10 },
+    a: { Q6: .7, Q9: .5, Q18: .3 } },
+
+  /* ─── Overview Grid ─────────────────────────────────────────── */
+
+  G1: { nm: "Plain metrics grid", cat: "overview", px: 460800,
+    dg: "Grid viewer", n: {},
+    a: { Q10: .7, Q11: .5, Q12: .3, Q22: .3 } },
+  G2: { nm: "Grid+D-R sparklines+hist headers", cat: "overview", px: 460800,
+    dg: "Grid+sparklines+col histograms", n: { me: 10 },
+    a: { Q1: .7, Q2: .7, Q9: .7, Q10: .7, Q11: .7, Q12: .7, Q14: .3, Q22: .3 } },
+  G3: { nm: "G2+TC sparklines+effect bars", cat: "overview", px: 460800,
+    dg: "Grid+dual spark+bar-in-cell+hist", n: { tc: .7, me: 10 },
+    a: { Q1: .7, Q2: .7, Q4: .7, Q7: .5, Q9: .7, Q10: .7, Q11: .7, Q12: .7, Q14: .3, Q22: .3 } },
+  G4: { nm: "G3+Pareto flag+cluster labels", cat: "overview", px: 460800,
+    dg: "Grid+spark+bar+hist+computed cols", n: { tc: .7, me: 15 },
+    a: { Q1: .7, Q2: .7, Q4: .7, Q6: .7, Q7: .5, Q9: .9, Q10: .7, Q11: .7,
+         Q12: .7, Q14: .5, Q18: .3, Q22: .3 } },
+  G5: { nm: "G2+Pareto flag (no TC)", cat: "overview", px: 460800,
+    dg: "Grid+spark+hist+Pareto col", n: { me: 15 },
+    a: { Q1: .7, Q2: .7, Q7: .5, Q9: .9, Q10: .7, Q11: .7, Q12: .7, Q14: .3, Q22: .3 } },
+
+  /* ─── Study-Level Viz ───────────────────────────────────────── */
+
+  S1: { nm: "Scatter — Volcano/Pareto", cat: "study", px: 75000,
+    dg: "Scatter Plot+Pareto Front", n: { me: 10 },
+    a: { Q7: 1, Q9: 1, Q14: .5, Q18: .5 } },
+  S2: { nm: "Scatter — Dim reduction (UMAP)", cat: "study", px: 75000,
+    dg: "Scatter Plot (precomp coords)", n: { me: 15 },
+    a: { Q6: .9, Q14: .7, Q18: .7 } },
+  S3: { nm: "Dendrogram — Hierarchical cluster", cat: "study", px: 90000,
+    dg: "Dendrogram viewer", n: { me: 8 },
+    a: { Q6: .8, Q14: .7, Q18: .5 } },
+  S4: { nm: "Correlation Plot — Endpoint×endpoint", cat: "study", px: 160000,
+    dg: "Correlation Plot viewer", n: { me: 8 },
+    a: { Q14: 1, Q19: .7, Q6: .5 } },
+  S5: { nm: "Heatmap — Signal (ep×dose×sex)", cat: "study", px: 120000,
+    dg: "Heatmap viewer", n: { me: 8 },
+    a: { Q1: .7, Q8: .7, Q9: .7, Q18: .5 } },
+  S6: { nm: "Parallel Coords — Multi-ep profiles", cat: "study", px: 96000,
+    dg: "PC Plot viewer", n: { me: 10 },
+    a: { Q1: .5, Q6: .5, Q12: .5, Q14: .5 } },
+  S7: { nm: "Matrix Plot — Pairwise distributions", cat: "study", px: 140000,
+    dg: "Matrix Plot viewer", n: { me: 8 },
+    a: { Q14: .7, Q13: .5, Q16: .3 } },
+
+  /* ─── Detail Chart ──────────────────────────────────────────── */
+
+  C1: { nm: "Line Chart — D-R", cat: "detail_chart", px: 140800,
+    dg: "Line Chart viewer", n: {},
+    a: { Q1: 1, Q2: 1, Q5: .7, Q8: .7, Q12: .7, Q19: .5 } },
+  C2: { nm: "Stacked D-R+TC Lines", cat: "detail_chart", px: 268800,
+    dg: "Two Line Charts stacked", n: { tc: 1 },
+    a: { Q1: 1, Q2: 1, Q3: .7, Q4: 1, Q5: .7, Q8: .7, Q12: .7, Q15: .7, Q19: .5 } },
+  C3: { nm: "Trellis — Dose×Time (Line inner)", cat: "detail_chart", px: 179200,
+    dg: "Trellis Plot (Line Chart)", n: { tc: 1, md: 3 },
+    a: { Q1: 1, Q2: 1, Q3: .7, Q4: 1, Q5: 1, Q8: 1, Q12: .8, Q15: .8, Q19: .5 } },
+  C4: { nm: "Trellis+Box overlay (spaghetti)", cat: "detail_chart", px: 192000,
+    dg: "Trellis Plot (Box/Line hybrid)", n: { tc: 1, sl: 1, md: 3 },
+    a: { Q1: 1, Q2: 1, Q3: .7, Q4: 1, Q5: 1, Q8: 1, Q12: .8,
+         Q13: .8, Q15: .8, Q16: .7, Q19: .5 } },
+  C5: { nm: "Box Plot — Per-dose distribution", cat: "detail_chart", px: 128000,
+    dg: "Box Plot viewer", n: { sl: 1 },
+    a: { Q1: .8, Q5: .7, Q8: .7, Q13: 1, Q16: .8 } },
+  C6: { nm: "Multi Curve — Overlaid D-R", cat: "detail_chart", px: 140800,
+    dg: "Multi Curve Viewer", n: {},
+    a: { Q1: 1, Q2: 1, Q5: .7, Q8: .5, Q12: .9 } },
+  C7: { nm: "Bar Chart — Means±SE", cat: "detail_chart", px: 128000,
+    dg: "Bar Chart viewer", n: {},
+    a: { Q1: .8, Q5: .7, Q8: .7, Q11: .5 } },
+  C8: { nm: "Heatmap strip — Dose×Time×Sex", cat: "detail_chart", px: 64000,
+    dg: "Heatmap (compact)", n: { tc: 1 },
+    a: { Q1: .7, Q3: .5, Q4: .7, Q8: .7, Q15: .5 } },
+  C9: { nm: "Histogram — Dist per dose", cat: "detail_chart", px: 128000,
+    dg: "Histogram (split)", n: { sl: 1 },
+    a: { Q13: .9, Q16: .7 } },
+  C10: { nm: "Scatter — Individual values", cat: "detail_chart", px: 140800,
+    dg: "Scatter Plot", n: { sl: 1 },
+    a: { Q1: .8, Q8: .7, Q13: .7, Q16: .9 } },
+
+  /* ─── Detail Table ──────────────────────────────────────────── */
+
+  T1: { nm: "Pairwise table (plain)", cat: "detail_table", px: 153600,
+    dg: "Grid viewer", n: {},
+    a: { Q1: .7, Q5: .7, Q10: 1, Q11: .7, Q13: .5 } },
+  T2: { nm: "Enriched pairwise (bars+color)", cat: "detail_table", px: 153600,
+    dg: "Grid+bar-in-cell+color+sparklines", n: {},
+    a: { Q1: .7, Q5: .7, Q7: .5, Q10: 1, Q11: .9, Q12: .5, Q13: .5 } },
+  T3: { nm: "Statistics Viewer", cat: "detail_table", px: 96000,
+    dg: "Statistics viewer", n: {},
+    a: { Q10: .7, Q11: .5, Q13: .7 } },
+  T4: { nm: "Pivot Table — Dose×Time×Sex", cat: "detail_table", px: 153600,
+    dg: "Pivot Table viewer", n: { tc: .8 },
+    a: { Q1: .5, Q4: .5, Q5: .5, Q8: .5, Q10: .7, Q13: .5 } },
+  T5: { nm: "Group Analysis + in-cell charts", cat: "detail_table", px: 153600,
+    dg: "Group Analysis viewer", n: {},
+    a: { Q1: .7, Q5: .7, Q10: .8, Q11: .7, Q13: .6, Q19: .3 } },
+
+  /* ─── Context Panes ─────────────────────────────────────────── */
+
+  X1: { nm: "Insights text (rule engine)", cat: "context", px: 48000,
+    dg: "Markup viewer / Info pane", n: {},
+    a: { Q1: .5, Q5: .5, Q7: .5, Q9: .5, Q17: .7, Q18: .5, Q21: .5, Q22: .3 } },
+  X2: { nm: "Causality form (Bradford Hill)", cat: "context", px: 64000,
+    dg: "Custom JsViewer (form)", n: {},
+    a: { Q17: 1, Q1: .3, Q21: .7 } },
+  X3: { nm: "Radar — Bradford Hill criteria", cat: "context", px: 51200,
+    dg: "Radar viewer", n: {},
+    a: { Q17: .7, Q1: .3, Q3: .3, Q4: .3 } },
+  X4: { nm: "Correlation pane — Related endpoints", cat: "context", px: 48000,
+    dg: "Grid (compact, filtered)", n: { me: 5 },
+    a: { Q6: .8, Q14: .5, Q19: .8 } },
+  X5: { nm: "Statistics pane", cat: "context", px: 44800,
+    dg: "Statistics viewer (compact)", n: {},
+    a: { Q10: .7, Q11: .5, Q13: .7 } },
+  X6: { nm: "Historical control comparison", cat: "context", px: 51200,
+    dg: "Box Plot (vs historical)", n: {},
+    a: { Q20: 1, Q17: .3, Q7: .3 } },
+  X7: { nm: "Mini scatter — Effect vs p", cat: "context", px: 38400,
+    dg: "Scatter Plot (compact)", n: { me: 5 },
+    a: { Q7: .7, Q9: .5, Q18: .3 } },
+  X8: { nm: "Mini line — TC selected", cat: "context", px: 38400,
+    dg: "Line Chart (compact)", n: { tc: 1 },
+    a: { Q3: .5, Q4: .7, Q15: .5 } },
+  X9: { nm: "Tile viewer — Related findings", cat: "context", px: 51200,
+    dg: "Tile Viewer", n: { me: 5 },
+    a: { Q6: .5, Q18: .5, Q19: .5 } },
+  X10: { nm: "Mini box — NOAEL dose dist", cat: "context", px: 38400,
+    dg: "Box Plot (compact, NOAEL)", n: { sl: .8 },
+    a: { Q5: .5, Q13: .5, Q16: .5 } },
+
+  /* ─── Extended: Temporal / Recovery / Reversibility ──────────── */
+
+  E1: { nm: "Recovery Overlay Plot (Treatment vs Recovery)", cat: "detail_chart", px: 160000,
+    dg: "Custom Line Chart (phase-annotated)", n: { tc: 1, rec: 1 },
+    a: { Q3: 1.0, Q4: 0.8, Q15: 1.0, Q17: 0.6 } },
+  E2: { nm: "Delta-from-Baseline Time Course", cat: "detail_chart", px: 140000,
+    dg: "Line Chart (baseline-normalized)", n: { tc: 1 },
+    a: { Q4: 1.0, Q3: 0.7, Q12: 0.6 } },
+  E3: { nm: "Slope-of-Change Plot (Early vs Late Phase)", cat: "detail_chart", px: 120000,
+    dg: "Scatter / Line Hybrid", n: { tc: 1 },
+    a: { Q4: 0.8, Q15: 0.9, Q12: 0.6 } },
+
+  /* ─── Extended: Distribution / Outlier / Individual Animal ──── */
+
+  E4: { nm: "Spaghetti Plot (Individuals over Time)", cat: "detail_chart", px: 180000,
+    dg: "Multi-line (individual trajectories)", n: { tc: 1, sl: 1 },
+    a: { Q13: 1.0, Q16: 1.0, Q4: 0.7 } },
+  E5: { nm: "Waterfall Plot (Individual Response Magnitude)", cat: "detail_chart", px: 110000,
+    dg: "Ordered Bar Chart", n: { sl: 1 },
+    a: { Q16: 0.9, Q13: 0.7, Q7: 0.6 } },
+  E6: { nm: "Shift Function (Quantile Comparison vs Control)", cat: "detail_chart", px: 150000,
+    dg: "Quantile Plot", n: { sl: 1 },
+    a: { Q13: 0.9, Q7: 0.7, Q16: 0.7 } },
+
+  /* ─── Extended: NOAEL / Dose Justification ──────────────────── */
+
+  E7: { nm: "NOAEL Boundary Plot (Annotated Dose Response)", cat: "detail_chart", px: 140000,
+    dg: "Line Chart + Reference Band", n: {},
+    a: { Q5: 1.0, Q1: 0.7, Q17: 0.6 } },
+  E8: { nm: "Adjacent Dose Contrast Plot (NOAEL vs LOAEL)", cat: "detail_chart", px: 120000,
+    dg: "Paired Difference Plot", n: {},
+    a: { Q5: 0.9, Q7: 0.7, Q11: 0.6 } },
+
+  /* ─── Extended: Cross-Endpoint / Organ Convergence ──────────── */
+
+  E9: { nm: "Organ-Level Signal Summary Matrix", cat: "study", px: 130000,
+    dg: "Matrix / Heatmap", n: { me: 5 },
+    a: { Q6: 1.0, Q18: 0.7, Q9: 0.6 } },
+  E10: { nm: "Domain Convergence Chord Diagram", cat: "study", px: 160000,
+    dg: "Chord Diagram", n: { me: 5 },
+    a: { Q6: 0.9, Q14: 0.7 } },
+
+  /* ─── Extended: Pathology-Specific ──────────────────────────── */
+
+  E11: { nm: "Histopath Incidence × Severity Heatmap", cat: "detail_chart", px: 120000,
+    dg: "Heatmap", n: {},
+    a: { Q19: 1.0, Q6: 0.7, Q17: 0.6 } },
+  E12: { nm: "ClinChem vs Histopath Scatter (Per Animal)", cat: "detail_chart", px: 140000,
+    dg: "Scatter Plot (linked)", n: { sl: 1 },
+    a: { Q19: 1.0, Q14: 0.7, Q16: 0.6 } },
+
+  /* ─── Extended: Statistical Interpretability ────────────────── */
+
+  E13: { nm: "Effect Size vs N Context Plot", cat: "study", px: 110000,
+    dg: "Scatter Plot (contextualized)", n: {},
+    a: { Q10: 1.0, Q7: 0.8, Q11: 0.7 } },
+  E14: { nm: "P-Value Stability Plot (Jackknife / Leave-One-Out)", cat: "detail_chart", px: 150000,
+    dg: "Line / Dot Plot", n: { sl: 1 },
+    a: { Q10: 0.9, Q16: 0.7, Q7: 0.6 } },
+
+  /* ─── Extended: Audit / Review / Completeness ───────────────── */
+
+  E15: { nm: "Endpoint Review Coverage Map", cat: "overview", px: 90000,
+    dg: "Matrix / Checklist Viewer", n: {},
+    a: { Q22: 1.0, Q21: 0.8, Q18: 0.6 } },
+  E16: { nm: "Decision Provenance Timeline", cat: "context", px: 80000,
+    dg: "Timeline Viewer", n: {},
+    a: { Q21: 0.9, Q22: 0.9, Q17: 0.5 } },
+};
+
+// ─── Layout Constraints & Metadata ──────────────────────────
+
+export const SLOT_OPTS: Record<SlotId, (VizId | null)[]> = {
+  ri: ["R1", "R2", "R3", "R4"],
+  rh: [null, "R5"],
+  og: ["G1", "G2", "G3", "G4", "G5", "E15"],
+  sv: [null, "S1", "S2", "S3", "S4", "S5", "S6", "S7", "E9", "E10", "E13"],
+  dc: ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10",
+       "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E11", "E12", "E14"],
+  dt: ["T1", "T2", "T3", "T4", "T5"],
+  cu: [null, "X1", "X2"],
+  cm: [null, "X3", "X4", "X5", "X6", "E16"],
+  cl: [null, "X7", "X8", "X9", "X10"],
+};
+
+export const SLOT_NAMES: Record<SlotId, string> = {
+  ri: "Rail Item",
+  rh: "Rail Header",
+  og: "Overview Grid",
+  sv: "Study-Level Viz",
+  dc: "Detail Chart",
+  dt: "Detail Table",
+  cu: "Context Upper",
+  cm: "Context Mid",
+  cl: "Context Lower",
+};
+
+export const CATS: Record<string, string> = {
+  dr:          "D-R Core",
+  temporal:    "Temporal",
+  noael:       "NOAEL",
+  convergence: "Convergence",
+  stat:        "Statistical",
+  adversity:   "Adversity",
+  triage:      "Triage",
+  complete:    "Completeness",
+  path:        "Pathology",
+  context:     "Context",
+  audit:       "Audit",
+};
+
+export const AC: Record<string, { bg: string; bd: string; tx: string }> = {
+  rail:         { bg: "#fef3c7", bd: "#d97706", tx: "#92400e" },
+  overview:     { bg: "#dbeafe", bd: "#2563eb", tx: "#1e3a5f" },
+  study:        { bg: "#ede9fe", bd: "#7c3aed", tx: "#4c1d95" },
+  detail_chart: { bg: "#d1fae5", bd: "#059669", tx: "#064e3b" },
+  detail_table: { bg: "#e0f2fe", bd: "#0284c7", tx: "#0c4a6e" },
+  context:      { bg: "#fce7f3", bd: "#db2777", tx: "#831843" },
 };
 
 // ─── Scoring Engine ─────────────────────────────────────────
 
 const QUESTION_IDS = Object.keys(QUESTIONS) as QuestionId[];
+const SLOT_ORDER = Object.keys(SLOT_OPTS) as SlotId[];
 
 /** Data-availability weighted capability for a viz across the study distribution. */
-function avail(vid: VizId, V: Partial<Record<VizId, VizEntry>>): number {
+function avail(
+  vid: string,
+  V: Record<string, VizEntry>,
+  ctx?: { hasTemporal?: boolean; hasRecovery?: boolean; hasSubjectLevel?: boolean },
+): number {
   const v = V[vid];
   if (!v) return 0;
   let total = 0;
   for (const dp of Object.values(DATA_PROFILES)) {
     let c = 1;
-    const tcNeed = v.n?.tc;
-    if (tcNeed != null && !dp.tc) c *= (1 - tcNeed);
-    const recNeed = v.n?.rec;
-    if (recNeed != null && !dp.rec) c *= (1 - recNeed);
+    const tcNeed = v.n.tc;
+    const hasTc = dp.tc && (ctx?.hasTemporal ?? true);
+    if (tcNeed != null && !hasTc) c *= (1 - tcNeed);
+    const recNeed = v.n.rec;
+    const hasRec = dp.rec && (ctx?.hasRecovery ?? true);
+    if (recNeed != null && !hasRec) c *= (1 - recNeed);
     total += dp.w * c;
   }
+  // Subject-level: study-level flag, not endpoint-type dependent
+  const slNeed = v.n.sl;
+  if (slNeed != null && ctx && !ctx.hasSubjectLevel) total *= (1 - slNeed);
   return total;
 }
 
 /** Best question coverage map across all vizzes in a config. */
-function qCov(cfg: LayoutConfig, V: Partial<Record<VizId, VizEntry>>): Partial<Record<QuestionId, number>> {
+function qCov(cfg: LayoutConfig, V: Record<string, VizEntry>): Partial<Record<QuestionId, number>> {
   const ids = Object.values(cfg).filter((v): v is VizId => v != null);
   const c: Partial<Record<QuestionId, number>> = {};
   for (const q of QUESTION_IDS) {
@@ -351,7 +450,7 @@ function qCov(cfg: LayoutConfig, V: Partial<Record<VizId, VizEntry>>): Partial<R
 }
 
 /** Multiplicative penalty for uncovered regulatory blocker questions. */
-function blockerPenalty(cfg: LayoutConfig, V: Partial<Record<VizId, VizEntry>>): number {
+function blockerPenalty(cfg: LayoutConfig, V: Record<string, VizEntry>): number {
   const cov = qCov(cfg, V);
   let penalty = 1;
   for (const [q, min] of Object.entries(BLOCKERS) as [QuestionId, number][]) {
@@ -361,7 +460,7 @@ function blockerPenalty(cfg: LayoutConfig, V: Partial<Record<VizId, VizEntry>>):
 }
 
 /** Penalty when histopathology confirmation (Q19) is under-covered. */
-function q19Penalty(cfg: LayoutConfig, V: Partial<Record<VizId, VizEntry>>): number {
+function q19Penalty(cfg: LayoutConfig, V: Record<string, VizEntry>): number {
   const cov = qCov(cfg, V);
   return (cov.Q19 ?? 0) >= Q19_MIN ? 1 : 0.7;
 }
@@ -372,11 +471,12 @@ function q19Penalty(cfg: LayoutConfig, V: Partial<Record<VizId, VizEntry>>): num
  */
 export function score(
   cfg: LayoutConfig,
-  V: Partial<Record<VizId, VizEntry>> = VIZ_CATALOG,
+  V: Record<string, VizEntry> = VIZ_CATALOG,
+  ctx?: { hasTemporal?: boolean; hasRecovery?: boolean; hasSubjectLevel?: boolean },
 ): ScoreResult {
   const ids = Object.values(cfg).filter((v): v is VizId => v != null);
 
-  // Best-per-question map: for each question, the highest quality across all vizzes
+  // Best-per-question map
   const qb: Partial<Record<QuestionId, number>> = {};
   for (const id of ids) {
     const v = V[id];
@@ -393,7 +493,7 @@ export function score(
     const v = V[id];
     if (!v) continue;
 
-    const av = avail(id as VizId, V);
+    const av = avail(id, V, ctx);
     let vizScore = 0;
 
     for (const [pid, per] of Object.entries(PERSONAS) as [PersonaId, { name: string; weight: number }][]) {
@@ -414,7 +514,6 @@ export function score(
           }
         }
 
-        // Best-viz discrimination: only the best answerer gets full credit
         const discrimination = qual >= (qb[q] ?? 0) ? 1 : 0.3;
         personaScore += qual * w * discrimination;
       }
@@ -439,95 +538,108 @@ export function score(
 
 // ─── Layout Search ──────────────────────────────────────────
 
+const MAX_COMBOS = 100_000;
+const PRUNE_K = 4;
+const MAX_ALT = 5;
+
 /**
- * Exhaustive search over valid slot combinations to find the optimal layout.
- * Deterministic slots (chart, overlay, panels) are fixed; optional slots
- * (temporal, scanning, table, DG viewers) are enumerated.
+ * Pruned exhaustive search over the 9-slot layout system.
+ * Filters candidates by data-needs, prunes to top-K per slot if the
+ * combo count exceeds MAX_COMBOS, then scores all remaining configs.
  */
 export function findOptimalLayout(options: LayoutOptions): LayoutResult {
-  const { dataType, hasTemporal, hasNoael, target = "recharts" } = options;
+  const { hasTemporal, hasRecovery, hasSubjectLevel, nEndpoints, nDomains } = options;
+  const ctx = { hasTemporal, hasRecovery, hasSubjectLevel };
 
-  // Base config: deterministic slots
-  const base: LayoutConfig = {};
-  base.chart = dataType === "continuous" ? "dr-line" : "dr-bar";
-  if (hasNoael) base.overlay = "noael-ref";
-  base.insights = "insights-pane";
-  base.stats = "stats-pane";
-  base.correlations = "correlations-pane";
-  base.assessment = "assessment-pane";
-  base.related = "related-pane";
-
-  // Variable slots with candidates
-  const varSlots: { slot: SlotId; options: (VizId | null)[] }[] = [];
-
-  if (hasTemporal) {
-    varSlots.push({ slot: "temporal", options: ["time-course", null] });
-  }
-  varSlots.push({ slot: "scanning", options: ["volcano", null] });
-  varSlots.push({ slot: "table", options: ["pairwise-table", "metrics-grid", "causality", null] });
-
-  if (target === "datagrok") {
-    const dgBySlot = (slot: SlotId) =>
-      (Object.entries(VIZ_CATALOG) as [VizId, VizEntry][])
-        .filter(([, v]) => v.platform === "datagrok" && v.slots.includes(slot))
-        .map(([id]) => id);
-    varSlots.push({ slot: "dg-primary", options: [...dgBySlot("dg-primary"), null] });
-    varSlots.push({ slot: "dg-secondary", options: [...dgBySlot("dg-secondary"), null] });
-    varSlots.push({ slot: "dg-tertiary", options: [...dgBySlot("dg-tertiary"), null] });
+  // Filter candidates per slot by data availability
+  const filtered: Record<string, (VizId | null)[]> = {};
+  for (const slot of SLOT_ORDER) {
+    filtered[slot] = SLOT_OPTS[slot].filter(id => {
+      if (id == null) return true;
+      const v = VIZ_CATALOG[id];
+      if (!v) return false;
+      // Hard threshold filters
+      if (v.n.me != null && nEndpoints < v.n.me) return false;
+      if (v.n.md != null && nDomains < v.n.md) return false;
+      // Hard data-need filters (need = 1 means absolute requirement)
+      if (v.n.tc === 1 && !hasTemporal) return false;
+      if (v.n.rec === 1 && !hasRecovery) return false;
+      if (v.n.sl === 1 && !hasSubjectLevel) return false;
+      return true;
+    }) as (VizId | null)[];
+    // Ensure non-optional slots have at least one candidate
+    if (filtered[slot].length === 0) filtered[slot] = [null];
   }
 
-  // Track best and top alternatives
-  let bestResult: ScoreResult = { score: -Infinity, px: 0, spp: 0 };
-  let bestConfig: LayoutConfig = base;
-  const topN: { config: LayoutConfig; result: ScoreResult }[] = [];
+  // Combo count check — prune to top-K per slot if needed
+  let totalCombos = 1;
+  for (const slot of SLOT_ORDER) totalCombos *= filtered[slot].length;
 
-  function recordResult(config: LayoutConfig, result: ScoreResult) {
-    if (result.score > bestResult.score) {
-      if (bestResult.score > -Infinity) {
-        topN.push({ config: bestConfig, result: bestResult });
-      }
-      bestResult = result;
-      bestConfig = { ...config };
-    } else {
-      topN.push({ config: { ...config }, result });
+  if (totalCombos > MAX_COMBOS) {
+    for (const slot of SLOT_ORDER) {
+      const cands = filtered[slot];
+      if (cands.length <= PRUNE_K) continue;
+      // Score each candidate independently for marginal ranking
+      const scored = cands.map(id => {
+        if (id == null) return { id, s: 0 };
+        const cfg: LayoutConfig = {};
+        cfg[slot as SlotId] = id;
+        return { id, s: score(cfg, VIZ_CATALOG, ctx).score };
+      }).sort((a, b) => b.s - a.s);
+      const hasNull = cands.includes(null);
+      const top = scored.slice(0, hasNull ? PRUNE_K - 1 : PRUNE_K).map(s => s.id);
+      if (hasNull && !top.includes(null)) top.push(null);
+      filtered[slot] = top;
     }
   }
 
-  function enumerate(idx: number, current: LayoutConfig, used: Set<VizId>) {
-    if (idx >= varSlots.length) {
-      recordResult(current, score(current));
+  // Exhaustive enumeration with bounded alternative tracking
+  let bestResult: ScoreResult = { score: -Infinity, px: 0, spp: 0 };
+  let bestConfig: LayoutConfig = {};
+  const alts: { config: LayoutConfig; result: ScoreResult }[] = [];
+
+  function addAlt(config: LayoutConfig, result: ScoreResult) {
+    if (alts.length < MAX_ALT) {
+      alts.push({ config, result });
+      alts.sort((a, b) => b.result.score - a.result.score);
+    } else if (result.score > alts[alts.length - 1].result.score) {
+      alts[alts.length - 1] = { config, result };
+      alts.sort((a, b) => b.result.score - a.result.score);
+    }
+  }
+
+  function enumerate(idx: number, current: LayoutConfig) {
+    if (idx >= SLOT_ORDER.length) {
+      const result = score(current, VIZ_CATALOG, ctx);
+      if (result.score > bestResult.score) {
+        if (bestResult.score > -Infinity) addAlt(bestConfig, bestResult);
+        bestResult = result;
+        bestConfig = { ...current };
+      } else {
+        addAlt({ ...current }, result);
+      }
       return;
     }
-    const { slot, options: candidates } = varSlots[idx];
-    for (const vizId of candidates) {
+    const slot = SLOT_ORDER[idx];
+    for (const vizId of filtered[slot]) {
       if (vizId == null) {
-        enumerate(idx + 1, current, used);
-        continue;
+        enumerate(idx + 1, current);
+      } else {
+        current[slot as SlotId] = vizId;
+        enumerate(idx + 1, current);
+        delete current[slot as SlotId];
       }
-      if (used.has(vizId)) continue;
-      const entry = VIZ_CATALOG[vizId];
-      if (entry.excludes?.some(ex => used.has(ex as VizId))) continue;
-      used.add(vizId);
-      current[slot] = vizId;
-      enumerate(idx + 1, current, used);
-      delete current[slot];
-      used.delete(vizId);
     }
   }
 
-  const usedBase = new Set(
-    Object.values(base).filter((v): v is VizId => v != null),
-  );
-  enumerate(0, { ...base }, usedBase);
-
-  topN.sort((a, b) => b.result.score - a.result.score);
+  enumerate(0, {});
 
   return {
     config: bestConfig,
     score: bestResult.score,
     px: bestResult.px,
     spp: bestResult.spp,
-    alternatives: topN.slice(0, 5).map(t => t.config),
+    alternatives: alts.map(a => a.config),
   };
 }
 
@@ -536,7 +648,7 @@ export function findOptimalLayout(options: LayoutOptions): LayoutResult {
 /** Gap analysis: which questions are covered and which are missing. */
 export function analyzeCoverage(
   cfg: LayoutConfig,
-  V: Partial<Record<VizId, VizEntry>> = VIZ_CATALOG,
+  V: Record<string, VizEntry> = VIZ_CATALOG,
 ): CoverageResult {
   const ids = Object.values(cfg).filter((v): v is VizId => v != null);
   const covered: CoverageResult["covered"] = [];
@@ -544,7 +656,7 @@ export function analyzeCoverage(
 
   for (const q of QUESTION_IDS) {
     let bestQual = 0;
-    let bestViz: VizId = "dr-line";
+    let bestViz: VizId = "R1";
     for (const id of ids) {
       const quality = V[id]?.a?.[q];
       if (quality != null && quality > bestQual) {
@@ -555,7 +667,6 @@ export function analyzeCoverage(
     if (bestQual > 0) {
       covered.push({ q, bestViz, quality: bestQual });
     } else {
-      // Compute importance as max persona weight × importance across all personas
       let importance = 0;
       const qd = QUESTIONS[q];
       for (const [pid, w] of Object.entries(qd.p) as [PersonaId, number][]) {
@@ -587,16 +698,19 @@ export function diagnosticReport(options: LayoutOptions): string {
   const coverage = analyzeCoverage(result.config);
   const lines: string[] = [];
 
-  lines.push(`=== Viz Optimizer: ${options.target ?? "recharts"} ===`);
-  lines.push(`Data: ${options.dataType}, temporal=${options.hasTemporal}, noael=${options.hasNoael}, recovery=${options.hasRecovery}`);
-  lines.push(`Score: ${result.score.toFixed(1)}  Pixels: ${result.px.toFixed(1)}  SPP: ${result.spp.toFixed(2)}`);
+  lines.push("=== Viz Optimizer ===");
+  lines.push(`Study: tc=${options.hasTemporal} rec=${options.hasRecovery} sl=${options.hasSubjectLevel} ep=${options.nEndpoints} dom=${options.nDomains}`);
+  lines.push(`Score: ${result.score.toFixed(1)}  Pixels: ${result.px}  SPP: ${result.spp.toFixed(4)}`);
   lines.push("");
 
   lines.push("Layout:");
-  for (const [slot, vizId] of Object.entries(result.config) as [SlotId, VizId][]) {
-    const v = VIZ_CATALOG[vizId];
-    if (v) {
-      lines.push(`  [${slot.padEnd(14)}] ${v.label} (${v.platform}, ${v.px}px)`);
+  for (const slot of SLOT_ORDER) {
+    const vizId = result.config[slot];
+    if (vizId) {
+      const v = VIZ_CATALOG[vizId];
+      lines.push(`  [${SLOT_NAMES[slot].padEnd(16)}] ${vizId.padEnd(4)} ${v.nm} (${v.px}px)`);
+    } else {
+      lines.push(`  [${SLOT_NAMES[slot].padEnd(16)}] —`);
     }
   }
   lines.push("");
@@ -614,18 +728,8 @@ export function diagnosticReport(options: LayoutOptions): string {
 
   if (result.alternatives.length > 0) {
     lines.push("");
-    lines.push(`Alternatives: ${result.alternatives.length} configs scored`);
+    lines.push(`Alternatives: ${result.alternatives.length} configs within reach`);
   }
 
   return lines.join("\n");
-}
-
-/** Side-by-side comparison of Recharts (current) vs Datagrok (migration) layouts. */
-export function compareLayouts(options: Omit<LayoutOptions, "target">): CompareResult {
-  const recharts = findOptimalLayout({ ...options, target: "recharts" });
-  const datagrok = findOptimalLayout({ ...options, target: "datagrok" });
-  const improvement = recharts.score > 0
-    ? ((datagrok.score - recharts.score) / recharts.score) * 100
-    : 0;
-  return { recharts, datagrok, improvement };
 }
