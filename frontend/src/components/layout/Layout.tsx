@@ -8,6 +8,7 @@ import { SelectionProvider } from "@/contexts/SelectionContext";
 import { FindingSelectionProvider } from "@/contexts/FindingSelectionContext";
 import { SignalSelectionProvider } from "@/contexts/SignalSelectionContext";
 import { ViewSelectionProvider } from "@/contexts/ViewSelectionContext";
+import { TreeControlProvider } from "@/contexts/TreeControlContext";
 
 const LEFT_DEFAULT = 260;
 const RIGHT_DEFAULT = 280;
@@ -86,6 +87,7 @@ export function Layout() {
       <FindingSelectionProvider>
         <SignalSelectionProvider>
         <ViewSelectionProvider>
+        <TreeControlProvider>
         <div className="flex h-screen flex-col">
           <Header />
           <div className="flex min-h-0 flex-1">
@@ -109,6 +111,7 @@ export function Layout() {
             </aside>
           </div>
         </div>
+        </TreeControlProvider>
         </ViewSelectionProvider>
         </SignalSelectionProvider>
       </FindingSelectionProvider>
