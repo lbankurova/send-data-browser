@@ -54,7 +54,7 @@ cd C:/pg/pcc/frontend && npm run lint     # ESLint
 
 These rules are non-negotiable. No agent may override, reinterpret, or skip them.
 
-1. **Design system changes require explicit user approval.** No agent may modify design system documents (`docs/design-system/*.md`), design tokens (`design-tokens.ts`), CSS custom properties (`index.css`), CLAUDE.md design decisions, or the audit checklist without presenting the proposed change to the user and receiving explicit approval. This includes adding, removing, or rewording rules, exceptions, or classifications. Agents may READ design system docs freely but must NEVER write to them autonomously.
+1. **Design system changes require explicit user approval.** No agent may modify design system documents (`docs/design-system/*.md`), design tokens (`design-tokens.ts`), CSS custom properties (`index.css`), CLAUDE.md design decisions, or the audit checklist under any circumstances without the user's prior explicit approval. Agents must propose changes, then stop and wait for the user to approve before writing. Self-approving ("this seems fine, I'll just do it") is never permitted. This includes adding, removing, or rewording rules, exceptions, or classifications. Agents may READ design system docs freely but must NEVER write to them autonomously.
 
 2. **Audit checklist is mandatory and cannot be skipped.** Every design audit must run the full checklist at `docs/design-system/audit-checklist.md`. Partial checks, spot-checks, or "it looks compliant" without running the checklist are not acceptable. Every rule must be evaluated and recorded as PASS, FAIL, or N/A. The reviewer must verify the checklist was run.
 
