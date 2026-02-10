@@ -107,18 +107,28 @@ export function InsightsList({ rules, tierFilter }: Props) {
 // Sub-components
 // ---------------------------------------------------------------------------
 
+const MAX_ENDPOINTS_COLLAPSED = 5;
+
 function SynthLineItem({ line }: { line: SynthLine }) {
+  const [expanded, setExpanded] = useState(false);
+
   // Structured endpoint signals
   if (line.endpoints && line.endpoints.length > 0) {
+    const hasMore = line.endpoints.length > MAX_ENDPOINTS_COLLAPSED;
+    const visible = expanded ? line.endpoints : line.endpoints.slice(0, MAX_ENDPOINTS_COLLAPSED);
+    const extraCount = line.endpoints.length - MAX_ENDPOINTS_COLLAPSED;
     return (
       <div className="space-y-0.5">
-        {line.endpoints.map((ep, i) => (
+        {visible.map((ep, i) => (
           <EndpointRow key={i} ep={ep} />
         ))}
-        {line.extraCount != null && line.extraCount > 0 && (
-          <div className="pl-1 text-[10px] text-muted-foreground/50">
-            +{line.extraCount} more
-          </div>
+        {hasMore && (
+          <button
+            className="pl-1 text-[10px] text-muted-foreground/50 hover:text-muted-foreground"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? "Show less" : `+${extraCount} more`}
+          </button>
         )}
         {line.qualifiers && line.qualifiers.length > 0 && (
           <div className="mt-0.5 flex flex-wrap gap-1 pl-1">

@@ -253,7 +253,6 @@ export function StudySummaryView({
                 caveats={panelData.caveats}
                 selection={selection}
                 onSelect={handleSetSelection}
-                onOrganSelect={handleOrganClick}
                 studyId={studyId!}
               />
             )}
@@ -302,12 +301,12 @@ function DecisionBar({
           {metrics.noaelConfidence != null && (
             <span
               className={cn(
-                "ml-1 rounded px-1.5 py-0.5 text-[10px] font-medium",
+                "ml-1 text-[10px] font-medium",
                 metrics.noaelConfidence >= 0.8
-                  ? "bg-green-100 text-green-700"
+                  ? "text-green-700"
                   : metrics.noaelConfidence >= 0.6
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-red-100 text-red-700"
+                    ? "text-amber-700"
+                    : "text-red-700"
               )}
             >
               {Math.round(metrics.noaelConfidence * 100)}%

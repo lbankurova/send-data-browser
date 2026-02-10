@@ -170,13 +170,10 @@ export interface SynthLine {
   chips?: string[];
   /** If set, render as structured endpoint rows + qualifier tags */
   endpoints?: SynthEndpoint[];
-  extraCount?: number;
   qualifiers?: string[];
   /** If set, render as header + vertical item list */
   listItems?: string[];
 }
-
-const MAX_ENDPOINTS_IN_LINE = 5;
 
 export function synthesize(rules: RuleResult[]): SynthLine[] {
   const lines: SynthLine[] = [];
@@ -184,10 +181,7 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
   // 1. Signal summary from R10/R11 effect sizes + R04 adverse + R01 direction
   const signals = extractEndpointSignals(rules);
   if (signals.length > 0) {
-    const shown = signals.slice(0, MAX_ENDPOINTS_IN_LINE);
-    const extra = signals.length - shown.length;
-
-    const endpoints: SynthEndpoint[] = shown.map((s) => ({
+    const endpoints: SynthEndpoint[] = signals.map((s) => ({
       name: s.name,
       direction: s.direction,
       effectSizes: [...s.effectSizes.entries()]
@@ -210,7 +204,6 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
       text: "",
       isWarning: true,
       endpoints,
-      extraCount: extra > 0 ? extra : undefined,
       qualifiers: quals.length > 0 ? quals : undefined,
     });
   }

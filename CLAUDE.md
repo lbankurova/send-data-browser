@@ -117,6 +117,7 @@ Before committing changes that alter system or view behavior:
 - **Information hierarchy — six categories.** Every derived information element belongs to exactly one: Decision, Finding, Qualifier, Caveat, Evidence, or Context. Mixing categories in one visual unit (e.g., a finding + caveat in the same sentence) is forbidden. Present them separately with distinct visual treatment.
 - **Emphasis tier system.** Tier 1 (always colored at rest) = conclusions: TARGET ORGAN, Critical flags, tier dots. Tier 2 (visible, muted) = labels: "adverse" outline badge, direction arrows. Tier 3 (on interaction only) = evidence: p-values, effect sizes, signal score fills. Lower tiers never compete with higher tiers.
 - **No decision red repetition per row.** `#DC2626` (status/conclusion color) must not appear more than once in any single table row. Table density lint: if >30% of rows contain red at rest, the view has alarm fatigue.
+- **Heatmap matrices use neutral grayscale heat by default.** All heatmap/matrix views use a 5-step neutral gray ramp (`#E5E7EB` → `#D1D5DB` → `#9CA3AF` → `#6B7280` → `#4B5563`) as the default color scheme. Color is always-on at rest (not hover-only). Shared function `getNeutralHeatColor()` in `severity-colors.ts`. Legend goes below the matrix.
 - **The system computes what it can.** Don't make users derive conclusions from raw data. If a statistical comparison, count, or summary can be computed, show the result directly.
 
 ## UI Casing Conventions
