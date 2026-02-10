@@ -267,7 +267,7 @@ function EndpointPanel({
           {selection.organ_system && (
             <a
               href="#"
-              className="block text-[#3a7bd5] hover:underline"
+              className="block text-[#2083d5] hover:underline"
               onClick={(e) => {
                 e.preventDefault();
                 if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: selection.organ_system } });
@@ -278,7 +278,7 @@ function EndpointPanel({
           )}
           <a
             href="#"
-            className="block text-[#3a7bd5] hover:underline"
+            className="block text-[#2083d5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, {
@@ -293,7 +293,7 @@ function EndpointPanel({
           </a>
           <a
             href="#"
-            className="block text-[#3a7bd5] hover:underline"
+            className="block text-[#2083d5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, {
@@ -305,7 +305,7 @@ function EndpointPanel({
           </a>
           <a
             href="#"
-            className="block text-[#3a7bd5] hover:underline"
+            className="block text-[#2083d5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, {
@@ -538,7 +538,7 @@ function OrganPanel({
         <div className="space-y-1 text-[11px]">
           <a
             href="#"
-            className="block text-[#3a7bd5] hover:underline"
+            className="block text-[#2083d5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: organSystem } });
@@ -548,7 +548,7 @@ function OrganPanel({
           </a>
           <a
             href="#"
-            className="block text-[#3a7bd5] hover:underline"
+            className="block text-[#2083d5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organSystem } });
@@ -558,7 +558,7 @@ function OrganPanel({
           </a>
           <a
             href="#"
-            className="block text-[#3a7bd5] hover:underline"
+            className="block text-[#2083d5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: organSystem } });
@@ -568,7 +568,7 @@ function OrganPanel({
           </a>
           <a
             href="#"
-            className="block text-[#3a7bd5] hover:underline"
+            className="block text-[#2083d5] hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: organSystem } });

@@ -1,8 +1,6 @@
 import { cn } from "@/lib/utils";
 import {
   getSeverityBadgeClasses,
-  getPValueColor,
-  getEffectSizeColor,
   formatPValue,
   formatEffectSize,
   getDirectionSymbol,
@@ -24,15 +22,15 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead className="sticky top-0 z-10 bg-background">
-          <tr className="border-b bg-muted/50">
-            <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Domain</th>
-            <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Finding</th>
-            <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Sex</th>
-            <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Day</th>
+          <tr className="border-b bg-muted/30">
+            <th className="px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Domain</th>
+            <th className="px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Finding</th>
+            <th className="px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sex</th>
+            <th className="px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Day</th>
             {doseGroups.map((dg) => (
               <th
                 key={dg.dose_level}
-                className="px-2 py-1.5 text-right font-medium text-muted-foreground"
+                className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                 title={dg.label}
               >
                 {dg.dose_value != null
@@ -40,11 +38,11 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                   : dg.label}
               </th>
             ))}
-            <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">p-value</th>
-            <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">Trend</th>
-            <th className="px-2 py-1.5 text-center font-medium text-muted-foreground">Dir</th>
-            <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">Effect</th>
-            <th className="px-2 py-1.5 text-center font-medium text-muted-foreground">Severity</th>
+            <th className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">p-value</th>
+            <th className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Trend</th>
+            <th className="px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dir</th>
+            <th className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Effect</th>
+            <th className="px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Severity</th>
           </tr>
         </thead>
         <tbody>
@@ -58,6 +56,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                   "cursor-pointer border-b transition-colors hover:bg-accent/50",
                   isSelected && "bg-accent"
                 )}
+                data-selected={isSelected ? "" : undefined}
                 onClick={() => selectFinding(isSelected ? null : f)}
               >
                 {/* Domain label — colored text only per design rule */}
@@ -118,23 +117,17 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                 })}
 
                 {/* Min p-value */}
-                <td
-                  className={cn(
-                    "px-2 py-1 text-right font-mono",
-                    getPValueColor(f.min_p_adj)
-                  )}
-                >
-                  {formatPValue(f.min_p_adj)}
+                <td className="px-2 py-1 text-right" data-evidence="">
+                  <span className="ev font-mono text-muted-foreground">
+                    {formatPValue(f.min_p_adj)}
+                  </span>
                 </td>
 
                 {/* Trend p */}
-                <td
-                  className={cn(
-                    "px-2 py-1 text-right font-mono",
-                    getPValueColor(f.trend_p)
-                  )}
-                >
-                  {formatPValue(f.trend_p)}
+                <td className="px-2 py-1 text-right" data-evidence="">
+                  <span className="ev font-mono text-muted-foreground">
+                    {formatPValue(f.trend_p)}
+                  </span>
                 </td>
 
                 {/* Direction */}
@@ -148,13 +141,10 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                 </td>
 
                 {/* Effect size */}
-                <td
-                  className={cn(
-                    "px-2 py-1 text-right font-mono",
-                    getEffectSizeColor(f.max_effect_size)
-                  )}
-                >
-                  {formatEffectSize(f.max_effect_size)}
+                <td className="px-2 py-1 text-right" data-evidence="">
+                  <span className="ev font-mono text-muted-foreground">
+                    {formatEffectSize(f.max_effect_size)}
+                  </span>
                 </td>
 
                 {/* Severity */}

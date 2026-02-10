@@ -98,7 +98,7 @@ function ClickableOrganText({
   const idx = text.indexOf(displayName);
   if (idx === -1) {
     return (
-      <span className="cursor-pointer text-[#3a7bd5] hover:underline" onClick={onClick}>{text}</span>
+      <span className="cursor-pointer text-[#2083d5] hover:underline" onClick={onClick}>{text}</span>
     );
   }
   const before = text.slice(0, idx);
@@ -106,7 +106,7 @@ function ClickableOrganText({
   return (
     <span>
       {before}
-      <button className="font-medium text-[#3a7bd5] hover:underline" onClick={(e) => { e.stopPropagation(); onClick(); }}>{displayName}</button>
+      <button className="font-medium text-[#2083d5] hover:underline" onClick={(e) => { e.stopPropagation(); onClick(); }}>{displayName}</button>
       {after}
     </span>
   );
@@ -249,10 +249,10 @@ function SignalsOverviewTab({ organ, signalData, ruleResults, modifiers, caveats
         {signalData.length === 0 && <div className="py-8 text-center text-xs text-muted-foreground">No signal data for this organ.</div>}
       </div>
       <div className="shrink-0 border-t px-4 py-2 flex flex-wrap gap-3">
-        <button className="text-[11px] text-[#3a7bd5] hover:underline" onClick={() => navigate(`/studies/${studyId}/target-organs`, { state: { organ_system: organ.organ_system } })}>Target Organs: {titleCase(organ.organ_system)} &#x2192;</button>
-        <button className="text-[11px] text-[#3a7bd5] hover:underline" onClick={() => navigate(`/studies/${studyId}/dose-response`, { state: { organ_system: organ.organ_system } })}>Dose-response: {titleCase(organ.organ_system)} &#x2192;</button>
-        <button className="text-[11px] text-[#3a7bd5] hover:underline" onClick={() => navigate(`/studies/${studyId}/histopathology`, { state: { organ_system: organ.organ_system } })}>Histopathology: {titleCase(organ.organ_system)} &#x2192;</button>
-        <button className="text-[11px] text-[#3a7bd5] hover:underline" onClick={() => navigate(`/studies/${studyId}/noael-decision`, { state: { organ_system: organ.organ_system } })}>NOAEL Decision &#x2192;</button>
+        <button className="text-[11px] text-[#2083d5] hover:underline" onClick={() => navigate(`/studies/${studyId}/target-organs`, { state: { organ_system: organ.organ_system } })}>Target Organs: {titleCase(organ.organ_system)} &#x2192;</button>
+        <button className="text-[11px] text-[#2083d5] hover:underline" onClick={() => navigate(`/studies/${studyId}/dose-response`, { state: { organ_system: organ.organ_system } })}>Dose-response: {titleCase(organ.organ_system)} &#x2192;</button>
+        <button className="text-[11px] text-[#2083d5] hover:underline" onClick={() => navigate(`/studies/${studyId}/histopathology`, { state: { organ_system: organ.organ_system } })}>Histopathology: {titleCase(organ.organ_system)} &#x2192;</button>
+        <button className="text-[11px] text-[#2083d5] hover:underline" onClick={() => navigate(`/studies/${studyId}/noael-decision`, { state: { organ_system: organ.organ_system } })}>NOAEL Decision &#x2192;</button>
       </div>
     </div>
   );

@@ -217,7 +217,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
           <a
             href="#"
             className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
+            style={{ color: "#2083d5" }}
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: selection.specimen } });
@@ -228,7 +228,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
           <a
             href="#"
             className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
+            style={{ color: "#2083d5" }}
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: selection.specimen } });
@@ -239,7 +239,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
           <a
             href="#"
             className="block hover:underline"
-            style={{ color: "#3a7bd5" }}
+            style={{ color: "#2083d5" }}
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: selection.specimen } });

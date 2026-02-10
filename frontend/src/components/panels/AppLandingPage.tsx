@@ -334,7 +334,7 @@ export function AppLandingPage() {
       <div className="border-b bg-card px-8 py-8">
         <div className="flex items-start gap-10">
           <div className="flex shrink-0 items-start gap-4">
-            <FlaskConical className="mt-0.5 h-12 w-12" style={{ color: "#3a7bd5" }} />
+            <FlaskConical className="mt-0.5 h-12 w-12" style={{ color: "#2083d5" }} />
             <div>
               <h1 className="text-xl font-semibold tracking-tight">Preclinical Case</h1>
               <p className="mt-0.5 text-sm text-muted-foreground">
@@ -353,7 +353,7 @@ export function AppLandingPage() {
             <a
               href="#"
               className="mt-2 inline-block pl-4 text-sm hover:underline"
-              style={{ color: "#3a7bd5" }}
+              style={{ color: "#2083d5" }}
               onClick={(e) => {
                 e.preventDefault();
                 alert("Documentation is not available in this prototype.");
