@@ -170,7 +170,7 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
           {/* Drop zone */}
           <div
             className={cn(
-              "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-8 transition-colors",
+              "flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed py-5 transition-colors",
               isDragging
                 ? "border-primary bg-primary/5"
                 : selectedFile
@@ -186,13 +186,13 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
           >
             {importing ? (
               <>
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Importing study...</p>
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <p className="text-xs text-muted-foreground">Importing study...</p>
               </>
             ) : selectedFile ? (
               <>
-                <Upload className="h-8 w-8 text-primary/60" />
-                <p className="text-sm font-medium">{selectedFile.name}</p>
+                <Upload className="h-5 w-5 text-primary/60" />
+                <p className="text-xs font-medium">{selectedFile.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {(selectedFile.size / 1024 / 1024).toFixed(1)} MB &mdash; ready to import
                 </p>
@@ -205,8 +205,8 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
               </>
             ) : (
               <>
-                <Upload className="h-8 w-8 text-muted-foreground/50" />
-                <p className="text-sm text-muted-foreground">
+                <Upload className="h-5 w-5 text-muted-foreground/50" />
+                <p className="text-xs text-muted-foreground">
                   Drop SEND study folder here
                 </p>
                 <input
@@ -500,7 +500,7 @@ export function AppLandingPage() {
       <div className="border-b bg-card px-8 py-8">
         <div className="flex items-start gap-10">
           <div className="flex shrink-0 items-start gap-4">
-            <FlaskConical className="mt-0.5 h-12 w-12 text-primary" />
+            <FlaskConical className="h-11 w-11 text-primary" />
             <div>
               <h1 className="text-xl font-semibold tracking-tight">Preclinical Case</h1>
               <p className="mt-0.5 text-xs text-muted-foreground">

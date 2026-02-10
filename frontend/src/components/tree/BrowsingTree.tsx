@@ -2,9 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   FlaskConical,
-  Folder,
-  FolderOpen,
-  FileSpreadsheet,
   Loader2,
   ChevronsDownUp,
   ChevronsUpDown,
@@ -119,7 +116,6 @@ function StudyBranch({
       <TreeNode
         label={`Study: ${studyId}`}
         depth={1}
-        icon={<FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />}
         isExpanded={isExpanded}
         isActive={isStudyActive}
         className={emphasize ? "font-medium" : undefined}
@@ -136,7 +132,7 @@ function StudyBranch({
                 <TreeNode
                   key={view.key}
                   label={view.label}
-                  depth={2}
+                  depth={1}
                   isActive={isActive}
                   onClick={() => {
                     if (view.implemented) {
@@ -156,14 +152,7 @@ function StudyBranch({
           {/* Domains section */}
           <TreeNode
             label={`Domains`}
-            depth={2}
-            icon={
-              isDomainsExpanded ? (
-                <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
-              ) : (
-                <Folder className="h-3.5 w-3.5 text-muted-foreground" />
-              )
-            }
+            depth={1}
             isExpanded={isDomainsExpanded}
             onClick={() => toggleCategory("domains")}
           />
@@ -173,7 +162,7 @@ function StudyBranch({
               {isLoading && (
                 <div
                   className="flex items-center gap-2 py-1"
-                  style={{ paddingLeft: "62px" }}
+                  style={{ paddingLeft: "44px" }}
                 >
                   <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">
@@ -187,14 +176,7 @@ function StudyBranch({
                   <div key={cat.key}>
                     <TreeNode
                       label={`${cat.label} (${cat.domains.length})`}
-                      depth={3}
-                      icon={
-                        isCatExpanded ? (
-                          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                        ) : (
-                          <Folder className="h-3.5 w-3.5 text-muted-foreground" />
-                        )
-                      }
+                      depth={2}
                       isExpanded={isCatExpanded}
                       onClick={() => toggleCategory(cat.key)}
                     />
@@ -207,10 +189,7 @@ function StudyBranch({
                           <TreeNode
                             key={domain.name}
                             label={`${domain.name.toUpperCase()} \u2014 ${getDomainDescription(domain)}`}
-                            depth={4}
-                            icon={
-                              <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground" />
-                            }
+                            depth={3}
                             isActive={isActive}
                             onClick={() =>
                               navigate(
@@ -230,7 +209,7 @@ function StudyBranch({
           <div className="mx-4 my-1 border-t" />
           <TreeNode
             label="Adverse effects"
-            depth={2}
+            depth={1}
             isActive={activeView === "analyses-adverse-effects"}
             onClick={() =>
               navigate(
