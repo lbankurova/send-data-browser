@@ -347,6 +347,34 @@ class ValidationEngine:
             logger.warning(f"Failed to load cached results: {e}")
             return None
 
+    def apply_auto_fixes(self, study: StudyInfo) -> dict[str, int]:
+        """Apply all fix scripts to study data, save to CSV cache, re-validate.
+
+        Returns dict of {script_key: cells_changed}.
+        """
+        from validation.scripts.registry import apply_all_fixes
+        from services.xpt_processor import get_cached_csv_path
+
+        domains = self.load_study_domains(study)
+        fix_counts = apply_all_fixes(domains)
+
+        if fix_counts:
+            # Write fixed DataFrames to CSV cache
+            for domain_code, df in domains.items():
+                csv_path = get_cached_csv_path(study.study_id, domain_code.lower())
+                df.to_csv(csv_path, index=False)
+
+            # Re-validate with fixed data
+            logger.info(
+                "Auto-fix applied %d fixes for %s, re-validating...",
+                sum(fix_counts.values()),
+                study.study_id,
+            )
+            results = self.validate(study)
+            self.save_results(study.study_id, results)
+
+        return fix_counts
+
     def _get_cache_path(self, study_id: str) -> Path:
         generated_dir = Path(__file__).parent.parent / "generated" / study_id
         return generated_dir / "validation_results.json"

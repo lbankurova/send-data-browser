@@ -34,11 +34,16 @@ export function fetchDomainData(
 }
 
 export async function importStudy(
-  file: File
+  file: File,
+  options?: { validate?: boolean; autoFix?: boolean }
 ): Promise<{ study_id: string; domain_count: number; domains: string[] }> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/import`, { method: "POST", body: form });
+  const params = new URLSearchParams();
+  if (options?.validate === false) params.set("validate", "false");
+  if (options?.autoFix) params.set("auto_fix", "true");
+  const qs = params.toString();
+  const res = await fetch(`${API_BASE}/import${qs ? `?${qs}` : ""}`, { method: "POST", body: form });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(body.detail || `Import failed: ${res.status}`);
