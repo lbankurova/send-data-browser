@@ -316,9 +316,7 @@ Functions: `getDomainBadgeColor()`, `getDomainDotColor()`.
 
 Two independent status tracks for validation records. Badge base: `inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold`.
 
-**All workflow status badges use neutral gray:** `bg-gray-100 text-gray-600 border-gray-200`. Fix status and review status are categorical workflow states, not signal. Per §1.10, categorical identity does not get per-category color. The text content ("Auto-fixed", "Approved", etc.) communicates the state; color is reserved for severity classification (Error/Warning/Info).
-
-**Severity badges** (Error/Warning/Info) are signal — they use `status.*` tokens from `design-tokens.ts` (see §1.1).
+**ALL categorical badges use neutral gray:** `bg-gray-100 text-gray-600 border-gray-200`. This includes severity level (Error/Warning/Info), fix status, review status, and any other fixed classification. Severity is categorical — each rule has a fixed severity that does not vary with data. The text label alone communicates the category. Per §1.10 and CLAUDE.md hard rule, categorical identity NEVER gets per-category color.
 
 ### 1.9 Effect Size Scale
 

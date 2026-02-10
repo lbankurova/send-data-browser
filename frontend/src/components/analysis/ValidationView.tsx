@@ -88,9 +88,9 @@ export function extractRuleDetail(rule: ValidationRuleResult): RuleDetail {
 // ── Severity styles ────────────────────────────────────────────────────
 
 const SEVERITY_STYLES: Record<string, string> = {
-  Error: "bg-red-100 text-red-800 border-red-200",
-  Warning: "bg-amber-100 text-amber-800 border-amber-200",
-  Info: "bg-blue-100 text-blue-800 border-blue-200",
+  Error: "bg-gray-100 text-gray-600 border-gray-200",
+  Warning: "bg-gray-100 text-gray-600 border-gray-200",
+  Info: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
 // ── Fix & Review status badges ─────────────────────────────────────────
@@ -445,39 +445,39 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
           <button
             className={cn(
               "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
-              severityFilter === "Error" && "ring-1 ring-red-300 bg-red-50",
+              severityFilter === "Error" && "ring-1 ring-border bg-muted/50",
               severityFilter && severityFilter !== "Error" && "opacity-40"
             )}
             onClick={() => setSeverityFilter((prev) => (prev === "Error" ? "" : "Error"))}
             title="Filter by errors"
           >
-            <span className="inline-block h-2 w-2 rounded-full bg-red-600" />
+            <span className="text-[10px] text-muted-foreground">&#x2716;</span>
             <span className="font-medium">{counts.errors}</span>
             <span className="text-muted-foreground">errors</span>
           </button>
           <button
             className={cn(
               "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
-              severityFilter === "Warning" && "ring-1 ring-amber-300 bg-amber-50",
+              severityFilter === "Warning" && "ring-1 ring-border bg-muted/50",
               severityFilter && severityFilter !== "Warning" && "opacity-40"
             )}
             onClick={() => setSeverityFilter((prev) => (prev === "Warning" ? "" : "Warning"))}
             title="Filter by warnings"
           >
-            <span className="inline-block h-2 w-2 rounded-full bg-amber-600" />
+            <span className="text-[10px] text-muted-foreground">&#x26A0;</span>
             <span className="font-medium">{counts.warnings}</span>
             <span className="text-muted-foreground">warnings</span>
           </button>
           <button
             className={cn(
               "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
-              severityFilter === "Info" && "ring-1 ring-blue-300 bg-blue-50",
+              severityFilter === "Info" && "ring-1 ring-border bg-muted/50",
               severityFilter && severityFilter !== "Info" && "opacity-40"
             )}
             onClick={() => setSeverityFilter((prev) => (prev === "Info" ? "" : "Info"))}
             title="Filter by info"
           >
-            <span className="inline-block h-2 w-2 rounded-full bg-blue-600" />
+            <span className="text-[10px] text-muted-foreground">&#x2139;</span>
             <span className="font-medium">{counts.info}</span>
             <span className="text-muted-foreground">info</span>
           </button>

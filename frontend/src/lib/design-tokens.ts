@@ -219,14 +219,16 @@ export const workflowBadge = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Semantic status colors (status)
+// Semantic status tokens (status) — neutral badges, NOT colored
+// Severity categories (Error/Warning/Info) are categorical identity, not signal.
+// Per CLAUDE.md hard rule: no colored badges for categorical identity in tables.
 // ---------------------------------------------------------------------------
 
 export const status = {
-  error:   { hex: "#dc2626", bg: "bg-red-100",    text: "text-red-800",    border: "border-red-200" },
-  warning: { hex: "#d97706", bg: "bg-amber-100",  text: "text-amber-800",  border: "border-amber-200" },
-  info:    { hex: "#2563eb", bg: "bg-blue-100",   text: "text-blue-800",   border: "border-blue-200" },
-  success: { hex: "#16a34a", bg: "bg-green-100",  text: "text-green-800",  border: "border-green-200" },
+  error:   { bg: "bg-gray-100",  text: "text-gray-600",  border: "border-gray-200" },
+  warning: { bg: "bg-gray-100",  text: "text-gray-600",  border: "border-gray-200" },
+  info:    { bg: "bg-gray-100",  text: "text-gray-600",  border: "border-gray-200" },
+  success: { bg: "bg-gray-100",  text: "text-gray-600",  border: "border-gray-200" },
 } as const;
 
 // ---------------------------------------------------------------------------

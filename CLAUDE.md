@@ -50,6 +50,16 @@ cd C:/pg/pcc/frontend && npm run lint     # ESLint
 - Run Python/pip via full venv path: `C:/pg/pcc/backend/venv/Scripts/python.exe`
 - When starting backend in PowerShell, set `$env:OPENBLAS_NUM_THREADS = 1` first
 
+## Hard Process Rules
+
+These rules are non-negotiable. No agent may override, reinterpret, or skip them.
+
+1. **Design system changes require explicit user approval.** No agent may modify design system documents (`docs/design-system/*.md`), design tokens (`design-tokens.ts`), CSS custom properties (`index.css`), CLAUDE.md design decisions, or the audit checklist without presenting the proposed change to the user and receiving explicit approval. This includes adding, removing, or rewording rules, exceptions, or classifications. Agents may READ design system docs freely but must NEVER write to them autonomously.
+
+2. **Audit checklist is mandatory and cannot be skipped.** Every design audit must run the full checklist at `docs/design-system/audit-checklist.md`. Partial checks, spot-checks, or "it looks compliant" without running the checklist are not acceptable. Every rule must be evaluated and recorded as PASS, FAIL, or N/A. The reviewer must verify the checklist was run.
+
+3. **CLAUDE.md hard rules must be checked directly.** The reviewer must re-read the Design Decisions section of this file and verify each hard rule is satisfied. Checking against view specs or design guides is NOT sufficient — those documents may have been incorrectly modified. CLAUDE.md is the source of truth for hard rules.
+
 ## Agent Commit Protocol
 
 Before committing changes that alter system or view behavior:
@@ -91,7 +101,7 @@ Before committing changes that alter system or view behavior:
 - **No breadcrumb navigation in context panel panes.** Use `< >` icon buttons at the top of the context panel for back/forward navigation between pane modes. This mirrors Datagrok's native context panel behavior. If breadcrumbs are added later, update this section and the implementation accordingly.
 - **Mode 2 (issue pane) never recreates rule context.** No rationale, no "how to fix" guidance, no standard references. Those belong in Mode 1. The issue pane shows only: record identity, finding evidence, action buttons, and review form. The rule ID is a clickable link back to Mode 1, with a one-line summary from "how to fix" for quick reference.
 - **Domain labels — colored text only.** Domain codes (LB, BW, MI, MA, OM, CL, etc.) are always rendered as plain colored text using `getDomainBadgeColor(domain).text` from `severity-colors.ts` with `text-[9px] font-semibold`. Never use dot badges, outline pills, bordered badges, or any other treatment for domain labels. This is a hard rule — do not change it.
-- **No colored badges for categorical identity in tables.** Color in tables encodes signal strength (p-value, effect size, signal score), not categorical meaning (dose group, domain, sex). Dose groups use plain `font-mono` text in tables, never colored badge pills. Domain labels use colored-text-only (see above). This is a hard rule — can only be overridden after explicit user confirmation.
+- **No colored badges for categorical identity.** Color encodes signal strength (p-value, effect size, signal score) — measured values that vary with data. Categorical identity NEVER gets color. Categorical identity includes: dose group, domain, sex, severity level (Error/Warning/Info), fix status, review status, workflow state, and any other fixed label or classification. All categorical badges use neutral gray (`bg-gray-100 text-gray-600 border-gray-200`). The text label alone communicates the category. This applies everywhere — tables, context panels, headers, legends. This is a hard rule — can only be overridden after explicit user confirmation.
 - **Canonical tab bar pattern.** All views use: active indicator `h-0.5 bg-primary` underline, active text `text-foreground`, inactive text `text-muted-foreground`, padding `px-4 py-1.5`, tab text `text-xs font-medium`. Tab bar container includes `bg-muted/30`. This is a hard rule — all views must use this exact pattern.
 - **Evidence panel background.** All evidence panels (right of rail, left of context panel) use `bg-muted/5` for subtle visual distinction from the crisp-white context panel.
 - **Rail header font-weight.** All rail headers use `font-semibold` (not `font-medium`). Full class: `text-xs font-semibold uppercase tracking-wider text-muted-foreground`.
@@ -166,14 +176,16 @@ Full migration guide with file paths and line numbers: `docs/reference/demo-stub
 | ToxFinding / PathologyReview forms | **Real** | Functional forms, persist via API (storage is file-based) |
 | Annotation API contract | **Real** | GET/PUT endpoints, 4 schema types — only storage backend needs changing |
 | React Query data hooks | **Real** | All hooks are production-ready, no mocking |
-| Landing page demo studies | **Demo** | 4 fake entries, remove entirely |
+| Landing page | **Real** | Shows all discovered studies, no demo entries |
 | Validation engine & rules | **Real** | 18 YAML rules, Python engine reads XPT data, API serves results via hooks |
-| Import section | **Stub** | Non-functional UI, all controls disabled |
+| Import section | **Real** | Drag-and-drop .zip upload, backend extraction, auto-registration |
+| Delete study | **Real** | Context menu delete with confirmation, removes all dirs |
+| Treatment arms | **Real** | Dynamic ARMCD detection from TX/DM, treatment arms table in details |
+| Multi-study support | **Real** | ALLOWED_STUDIES empty, all studies in send/ served |
 | Export (CSV/Excel) | **Stub** | alert() placeholder |
-| Share / Re-validate / Delete | **Stub** | Disabled menu items, no implementation |
+| Share | **Stub** | Disabled menu item, no implementation |
 | Authentication | **Missing** | No auth anywhere, hardcoded "User" identity |
 | Database storage | **Missing** | Annotations use JSON files on disk |
-| Multi-study support | **Blocked** | ALLOWED_STUDIES restricts to PointCross |
 
 ---
 

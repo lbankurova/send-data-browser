@@ -27,9 +27,9 @@ interface Props {
 }
 
 const SEVERITY_BORDER: Record<string, string> = {
-  Error: "border-l-red-500",
-  Warning: "border-l-amber-500",
-  Info: "border-l-blue-500",
+  Error: "border-l-gray-400",
+  Warning: "border-l-gray-400",
+  Info: "border-l-gray-400",
 };
 
 // Count text — neutral font-mono per "quiet context panel" rule (§1.10)
@@ -172,9 +172,9 @@ function RuleReviewSummary({
           <span
             className={cn(
               "rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold",
-              selection.severity === "Error" && "border-red-200 bg-red-100 text-red-800",
-              selection.severity === "Warning" && "border-amber-200 bg-amber-100 text-amber-800",
-              selection.severity === "Info" && "border-blue-200 bg-blue-100 text-blue-800"
+              selection.severity === "Error" && "border-gray-200 bg-gray-100 text-gray-600",
+              selection.severity === "Warning" && "border-gray-200 bg-gray-100 text-gray-600",
+              selection.severity === "Info" && "border-gray-200 bg-gray-100 text-gray-600"
             )}
           >
             {selection.severity}
@@ -1423,9 +1423,9 @@ function IssueReview({
           <span
             className={cn(
               "rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold",
-              selection.severity === "Error" && "border-red-200 bg-red-100 text-red-800",
-              selection.severity === "Warning" && "border-amber-200 bg-amber-100 text-amber-800",
-              selection.severity === "Info" && "border-blue-200 bg-blue-100 text-blue-800"
+              selection.severity === "Error" && "border-gray-200 bg-gray-100 text-gray-600",
+              selection.severity === "Warning" && "border-gray-200 bg-gray-100 text-gray-600",
+              selection.severity === "Info" && "border-gray-200 bg-gray-100 text-gray-600"
             )}
           >
             {selection.severity}
@@ -1534,15 +1534,15 @@ export function ValidationContextPanel({ selection, studyId, setSelection }: Pro
             </p>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-red-600" />
+                <span className="text-[10px] text-muted-foreground">&#x2716;</span>
                 <span><strong>Error</strong> — Must fix before submission</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-amber-600" />
+                <span className="text-[10px] text-muted-foreground">&#x26A0;</span>
                 <span><strong>Warning</strong> — Review recommended</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-blue-600" />
+                <span className="text-[10px] text-muted-foreground">&#x2139;</span>
                 <span><strong>Info</strong> — Best practice suggestion</span>
               </div>
             </div>
