@@ -112,6 +112,9 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [validate, setValidate] = useState(true);
+  const [autoFix, setAutoFix] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
@@ -120,25 +123,34 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
     setImportSuccess(null);
     setImporting(true);
     try {
-      const result = await importStudy(file);
+      const result = await importStudy(file, { validate, autoFix: autoFix });
       setImportSuccess(`Imported ${result.study_id} (${result.domain_count} domains)`);
+      setSelectedFile(null);
       queryClient.invalidateQueries({ queryKey: ["studies"] });
     } catch (err) {
       setImportError(err instanceof Error ? err.message : "Import failed");
     } finally {
       setImporting(false);
     }
-  }, [queryClient]);
+  }, [queryClient, validate, autoFix]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+      if (file) {
+        setSelectedFile(file);
+        setImportError(null);
+        setImportSuccess(null);
+      }
     },
-    [handleFile]
+    []
   );
+
+  const detectedStudyId = selectedFile
+    ? selectedFile.name.replace(/\.zip$/i, "")
+    : null;
 
   return (
     <div className="border-b px-8 py-4">
@@ -161,7 +173,9 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
               "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-8 transition-colors",
               isDragging
                 ? "border-primary bg-primary/5"
-                : "border-muted-foreground/25 bg-muted/30"
+                : selectedFile
+                  ? "border-primary/50 bg-primary/5"
+                  : "border-muted-foreground/25 bg-muted/30"
             )}
             onDragOver={(e) => {
               e.preventDefault();
@@ -175,11 +189,25 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-sm text-muted-foreground">Importing study...</p>
               </>
+            ) : selectedFile ? (
+              <>
+                <Upload className="h-8 w-8 text-primary/60" />
+                <p className="text-sm font-medium">{selectedFile.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {(selectedFile.size / 1024 / 1024).toFixed(1)} MB &mdash; ready to import
+                </p>
+                <button
+                  className="mt-1 text-xs text-muted-foreground underline hover:text-foreground"
+                  onClick={() => { setSelectedFile(null); setImportError(null); setImportSuccess(null); }}
+                >
+                  Remove
+                </button>
+              </>
             ) : (
               <>
                 <Upload className="h-8 w-8 text-muted-foreground/50" />
                 <p className="text-sm text-muted-foreground">
-                  Drop a .zip file with SEND .xpt files here
+                  Drop SEND study folder here
                 </p>
                 <input
                   ref={fileInputRef}
@@ -188,7 +216,11 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleFile(file);
+                    if (file) {
+                      setSelectedFile(file);
+                      setImportError(null);
+                      setImportSuccess(null);
+                    }
                     e.target.value = "";
                   }}
                 />
@@ -201,6 +233,81 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
               </>
             )}
           </div>
+
+          {/* Metadata fields */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <label className="w-20 shrink-0 text-xs text-muted-foreground">Study ID</label>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <input type="checkbox" checked disabled className="h-3 w-3" />
+                Auto-detect
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={detectedStudyId ?? ""}
+                placeholder="Detected from filename"
+                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="w-20 shrink-0 text-xs text-muted-foreground">Protocol</label>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <input type="checkbox" checked disabled className="h-3 w-3" />
+                Auto-detect
+              </label>
+              <input
+                type="text"
+                readOnly
+                placeholder="Detected from TS domain"
+                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="w-20 shrink-0 text-xs text-muted-foreground">Description</label>
+              <input
+                type="text"
+                placeholder="Optional description"
+                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
+              />
+            </div>
+          </div>
+
+          {/* Validation options */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={validate}
+                onChange={(e) => setValidate(e.target.checked)}
+                className="h-3 w-3"
+              />
+              Validate SEND compliance
+            </label>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={autoFix}
+                onChange={(e) => setAutoFix(e.target.checked)}
+                className="h-3 w-3"
+              />
+              Attempt automatic fixes
+            </label>
+          </div>
+
+          {/* Import button */}
+          <button
+            disabled={!selectedFile || importing}
+            onClick={() => selectedFile && handleFile(selectedFile)}
+            className={cn(
+              "rounded-md px-4 py-2 text-xs font-medium",
+              selectedFile && !importing
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "bg-primary/50 text-primary-foreground/70 cursor-not-allowed"
+            )}
+          >
+            {importing ? "Importing..." : "Import study"}
+          </button>
 
           {importError && (
             <p className="text-xs text-red-600">{importError}</p>
@@ -332,7 +439,7 @@ export function AppLandingPage() {
       <div className="border-b bg-card px-8 py-8">
         <div className="flex items-start gap-10">
           <div className="flex shrink-0 items-start gap-4">
-            <FlaskConical className="mt-0.5 h-12 w-12" style={{ color: "#2083d5" }} />
+            <FlaskConical className="mt-0.5 h-12 w-12 text-primary" />
             <div>
               <h1 className="text-xl font-semibold tracking-tight">Preclinical Case</h1>
               <p className="mt-0.5 text-sm text-muted-foreground">
@@ -350,8 +457,7 @@ export function AppLandingPage() {
             </ul>
             <a
               href="#"
-              className="mt-2 inline-block pl-4 text-sm hover:underline"
-              style={{ color: "#2083d5" }}
+              className="mt-2 inline-block pl-4 text-sm text-primary hover:underline"
               onClick={(e) => {
                 e.preventDefault();
                 alert("Documentation is not available in this prototype.");

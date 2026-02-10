@@ -312,29 +312,13 @@ Functions: `getDomainBadgeColor()`, `getDomainDotColor()`.
 
 **Domain labels** are always plain colored text: `getDomainBadgeColor(d).text` + `text-[9px] font-semibold`. Never dot badges, outline pills, or bordered treatments. (Hard rule — see CLAUDE.md.)
 
-### 1.8 Validation Status Palettes
+### 1.8 Validation Status Badges
 
 Two independent status tracks for validation records. Badge base: `inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold`.
 
-**Fix status** (tracks what happened to the data):
+**All workflow status badges use neutral gray:** `bg-gray-100 text-gray-600 border-gray-200`. Fix status and review status are categorical workflow states, not signal. Per §1.10, categorical identity does not get per-category color. The text content ("Auto-fixed", "Approved", etc.) communicates the state; color is reserved for severity classification (Error/Warning/Info).
 
-| Status | Classes |
-|--------|---------|
-| Not fixed | `bg-gray-100 text-gray-600 border-gray-200` |
-| Auto-fixed | `bg-teal-100 text-teal-800 border-teal-200` |
-| Manually fixed | `bg-green-100 text-green-800 border-green-200` |
-| Accepted as-is | `bg-blue-100 text-blue-800 border-blue-200` |
-| Flagged | `bg-orange-100 text-orange-800 border-orange-200` |
-
-**Review status** (tracks human sign-off):
-
-| Status | Classes |
-|--------|---------|
-| Not reviewed | `bg-gray-100 text-gray-600 border-gray-200` |
-| Reviewed | `bg-blue-100 text-blue-800 border-blue-200` |
-| Approved | `bg-green-100 text-green-800 border-green-200` |
-
-Note: these palettes use `text-{color}-800` (not 700) for higher contrast in the triage context.
+**Severity badges** (Error/Warning/Info) are signal — they use `status.*` tokens from `design-tokens.ts` (see §1.1).
 
 ### 1.9 Effect Size Scale
 

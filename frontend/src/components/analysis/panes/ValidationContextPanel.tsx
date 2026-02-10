@@ -32,21 +32,8 @@ const SEVERITY_BORDER: Record<string, string> = {
   Info: "border-l-blue-500",
 };
 
-// Fix status count colors (colored count numbers, muted text)
-const FIX_COUNT_COLOR: Record<string, string> = {
-  "Not fixed": "text-gray-500",
-  "Auto-fixed": "text-teal-700",
-  "Manually fixed": "text-green-700",
-  "Accepted as-is": "text-blue-700",
-  "Flagged": "text-orange-700",
-};
-
-// Review status count colors
-const REVIEW_COUNT_COLOR: Record<string, string> = {
-  "Not reviewed": "text-gray-500",
-  "Reviewed": "text-blue-700",
-  "Approved": "text-green-700",
-};
+// Count text — neutral font-mono per "quiet context panel" rule (§1.10)
+const COUNT_TEXT = "text-foreground font-mono";
 
 // ── Domain link helper ────────────────────────────────────────────────
 
@@ -80,7 +67,7 @@ function DomainLink({
   const navigate = useNavigate();
   return (
     <button
-      className="font-mono text-[#2083d5] hover:underline"
+      className="font-mono text-primary hover:underline"
       onClick={() =>
         navigate(
           `/studies/${encodeURIComponent(studyId)}/domains/${encodeURIComponent(domain)}`
@@ -256,7 +243,7 @@ function RuleReviewSummary({
                 {i > 0 && <span className="mx-1">&middot;</span>}
                 {status}{" "}
                 <button
-                  className={cn("font-medium hover:underline", REVIEW_COUNT_COLOR[status])}
+                  className={cn("font-medium hover:underline", COUNT_TEXT)}
                   onClick={() => setSelection?.({
                     ...selection,
                     recordReviewStatusFilter: status,
@@ -275,7 +262,7 @@ function RuleReviewSummary({
                 {i > 0 && <span className="mx-1">&middot;</span>}
                 {status}{" "}
                 <button
-                  className={cn("font-medium hover:underline", FIX_COUNT_COLOR[status])}
+                  className={cn("font-medium hover:underline", COUNT_TEXT)}
                   onClick={() => setSelection?.({
                     ...selection,
                     recordFixStatusFilter: status,

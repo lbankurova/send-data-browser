@@ -184,8 +184,7 @@ function StudyInspector({ studyId }: { studyId: string }) {
         <div className="space-y-0.5">
           <a
             href="#"
-            className="block text-xs hover:underline"
-            style={{ color: "#2083d5" }}
+            className="block text-xs text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
               navigate(`/studies/${encodeURIComponent(meta.study_id)}`);
@@ -195,8 +194,7 @@ function StudyInspector({ studyId }: { studyId: string }) {
           </a>
           <a
             href="#"
-            className="block text-xs hover:underline"
-            style={{ color: "#2083d5" }}
+            className="block text-xs text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
               navigate(`/studies/${encodeURIComponent(meta.study_id)}/validation`);
@@ -206,8 +204,7 @@ function StudyInspector({ studyId }: { studyId: string }) {
           </a>
           <a
             href="#"
-            className="block text-xs hover:underline"
-            style={{ color: "#2083d5" }}
+            className="block text-xs text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
               generateStudyReport(meta.study_id);
@@ -217,8 +214,7 @@ function StudyInspector({ studyId }: { studyId: string }) {
           </a>
           <a
             href="#"
-            className="block text-xs hover:underline"
-            style={{ color: "#2083d5" }}
+            className="block text-xs text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
               alert("CSV/Excel export coming soon.");

@@ -163,8 +163,7 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
         <div className="space-y-1 text-[11px]">
           <a
             href="#"
-            className="block hover:underline"
-            style={{ color: "#2083d5" }}
+            className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, {
@@ -179,8 +178,7 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
           </a>
           <a
             href="#"
-            className="block hover:underline"
-            style={{ color: "#2083d5" }}
+            className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, {
@@ -192,8 +190,7 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
           </a>
           <a
             href="#"
-            className="block hover:underline"
-            style={{ color: "#2083d5" }}
+            className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
               if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, {
