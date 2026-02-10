@@ -191,3 +191,90 @@ PREVIEW_HANDLERS = {
     "fix-domain-value": _preview_fix_domain,
     "fix-date-format": _preview_fix_dates,
 }
+
+
+# ---------------------------------------------------------------------------
+# Apply handlers — mutate DataFrames in-place, return count of cells changed
+# ---------------------------------------------------------------------------
+
+def _apply_strip_whitespace(domains: dict[str, pd.DataFrame]) -> int:
+    """Strip leading/trailing whitespace from all string columns."""
+    changed = 0
+    for df in domains.values():
+        for col in df.select_dtypes(include=["object"]).columns:
+            stripped = df[col].astype(str).str.strip()
+            mask = df[col].notna() & (df[col].astype(str) != stripped)
+            changed += int(mask.sum())
+            df.loc[mask, col] = stripped[mask]
+    return changed
+
+
+def _apply_uppercase_ct(domains: dict[str, pd.DataFrame]) -> int:
+    """Uppercase controlled terminology columns."""
+    ct_cols = {"EXROUTE", "EXDOSFRM", "SEX", "SPECIES", "STRAIN"}
+    changed = 0
+    for df in domains.values():
+        for col in df.columns:
+            if col.upper() not in ct_cols:
+                continue
+            upper = df[col].astype(str).str.upper()
+            mask = df[col].notna() & (df[col].astype(str).str.strip() != "") & (df[col].astype(str) != upper)
+            changed += int(mask.sum())
+            df.loc[mask, col] = upper[mask]
+    return changed
+
+
+def _apply_fix_domain(domains: dict[str, pd.DataFrame]) -> int:
+    """Set DOMAIN column to expected domain code."""
+    changed = 0
+    for dc, df in domains.items():
+        if "DOMAIN" not in df.columns:
+            continue
+        expected = dc.upper()
+        mask = df["DOMAIN"].astype(str).str.strip() != expected
+        changed += int(mask.sum())
+        df.loc[mask, "DOMAIN"] = expected
+    return changed
+
+
+def _apply_fix_dates(domains: dict[str, pd.DataFrame]) -> int:
+    """Convert non-ISO dates to ISO 8601 format."""
+    import re
+    from datetime import datetime
+
+    non_iso = re.compile(r"^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$")
+    changed = 0
+    for df in domains.values():
+        dtc_cols = [c for c in df.columns if c.upper().endswith("DTC")]
+        for col in dtc_cols:
+            for idx, val in df[col].dropna().items():
+                v = str(val).strip()
+                if not non_iso.match(v):
+                    continue
+                for fmt in ["%m/%d/%Y", "%d-%b-%Y", "%d.%m.%Y"]:
+                    try:
+                        dt = datetime.strptime(v, fmt)
+                        df.at[idx, col] = dt.strftime("%Y-%m-%d")
+                        changed += 1
+                        break
+                    except ValueError:
+                        continue
+    return changed
+
+
+APPLY_HANDLERS: dict[str, callable] = {
+    "strip-whitespace": _apply_strip_whitespace,
+    "uppercase-ct": _apply_uppercase_ct,
+    "fix-domain-value": _apply_fix_domain,
+    "fix-date-format": _apply_fix_dates,
+}
+
+
+def apply_all_fixes(domains: dict[str, pd.DataFrame]) -> dict[str, int]:
+    """Run all fix scripts on the given domains. Returns {script_key: cells_changed}."""
+    results: dict[str, int] = {}
+    for key, handler in APPLY_HANDLERS.items():
+        count = handler(domains)
+        if count > 0:
+            results[key] = count
+    return results
