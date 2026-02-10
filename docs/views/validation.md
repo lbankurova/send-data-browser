@@ -140,7 +140,7 @@ interface FixScriptDef {
 
 `flex items-center gap-4 border-b px-4 py-3`
 
-- Title: `text-sm font-semibold` -- "SEND Validation"
+- Title: `text-lg font-semibold` -- "SEND Validation"
 - Severity filter pills (wrapped in `flex items-center gap-3 text-xs`):
   - Each pill is a `<button>` with `flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity`
   - Contents: colored dot (`inline-block h-2 w-2 rounded-full`) + count (`font-medium`) + label (`text-muted-foreground`)

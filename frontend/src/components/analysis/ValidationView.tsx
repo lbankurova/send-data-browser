@@ -406,7 +406,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     return (
       <div className="flex h-full flex-col overflow-hidden">
         <div className="flex items-center gap-4 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">SEND Validation</h2>
+          <h2 className="text-lg font-semibold">SEND Validation</h2>
         </div>
         <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
           Loading validation results...
@@ -420,7 +420,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     return (
       <div className="flex h-full flex-col overflow-hidden">
         <div className="flex items-center gap-4 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">SEND Validation</h2>
+          <h2 className="text-lg font-semibold">SEND Validation</h2>
           <button
             className="ml-auto rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             disabled={isValidating}
@@ -440,7 +440,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     <div className="flex h-full flex-col overflow-hidden">
       {/* Summary header */}
       <div className="flex items-center gap-4 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">SEND Validation</h2>
+        <h2 className="text-lg font-semibold">SEND Validation</h2>
         <div className="flex items-center gap-3 text-xs">
           <button
             className={cn(
