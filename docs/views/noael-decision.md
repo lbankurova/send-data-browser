@@ -3,7 +3,7 @@
 **Route:** `/studies/:studyId/noael-decision`
 **Component:** `NoaelDecisionView.tsx` (wrapped by `NoaelDecisionViewWrapper.tsx`)
 **Scientific question:** "What is the NOAEL and what are the dose-limiting adverse findings?"
-**Role:** Decision-level summary. Two-panel master-detail layout with persistent NOAEL banner, organ rail, and evidence panel (Overview + Adversity matrix tabs).
+**Role:** Decision-level summary. Two-panel master-detail layout with persistent NOAEL banner, organ rail, and evidence panel (Evidence + Adversity matrix tabs).
 
 ---
 
@@ -31,10 +31,10 @@ The view itself is a flex column: persistent NOAEL Banner at top, then a two-pan
 | Organ      |e|  organ name, adverse count, summary text,     |
 | Rail       |s|  compact metrics (max |d|, min p, endpoints)  |
 |            |i+------------------------------------------------+
-| search     |z| [Overview] [Adversity matrix]  <── tab bar     |
+| search     |z| [Evidence] [Adversity matrix]  <── tab bar     |
 | organ 1    |e+------------------------------------------------+
 | organ 2    | | Tab content:                                    |
-| organ 3    | |  Overview: endpoint summary, insights, links    |
+| organ 3    | |  Evidence: endpoint summary, insights            |
 | ...        | |  Adversity matrix: filters, matrix, grid        |
 |            | |                                                  |
 +------------+-+------------------------------------------------+
@@ -90,7 +90,7 @@ Card surface is always neutral (plain `border`). Color is confined to the small 
 Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWidth` comes from `useResizePanel(300, 180, 500)`. On narrow viewports: `max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto`.
 
 ### Header
-- Label: `text-xs font-medium uppercase tracking-wider text-muted-foreground` — "Organ systems ({N})"
+- Label: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Organ systems ({N})"
 - Search input: `mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs` with placeholder "Search organs..."
 
 ### Rail Items
@@ -133,35 +133,37 @@ Filters organs by name (case-insensitive substring match, underscores treated as
 
 ## Tab Bar
 
-`flex shrink-0 items-center gap-0 border-b px-4`
+`flex shrink-0 items-center gap-0 border-b bg-muted/30`
 
-Two tabs: **Overview** and **Adversity matrix**
+Two tabs: **Evidence** and **Adversity matrix**
 
-Active tab: `border-b-2 border-primary text-primary`
-Inactive tab: `border-transparent text-muted-foreground hover:text-foreground`
-All tabs: `px-3 py-2 text-xs font-medium transition-colors`
+Each tab button: `relative px-4 py-1.5 text-xs font-medium transition-colors`
+Active tab: `text-foreground` + `<span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />`
+Inactive tab: `text-muted-foreground hover:text-foreground`
+
+This matches the canonical tab bar pattern (CLAUDE.md hard rule).
 
 ---
 
-## Overview Tab
+## Evidence Tab (formerly "Overview")
 
 `flex-1 overflow-y-auto px-4 py-3` — scrollable content.
 
 ### Endpoint Summary
 
-Section header: `text-xs font-medium uppercase tracking-wide text-muted-foreground` — "Endpoint summary"
+Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Endpoint summary"
 
 Each endpoint is a clickable `<button>` row:
 - Container: `group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] hover:bg-accent/30`
 - Selected: `bg-accent`
-- Domain code: `shrink-0 text-[9px] text-muted-foreground` (plain text, no color)
+- Domain code: `<DomainLabel>` component — plain colored text `text-[9px] font-semibold` with `getDomainBadgeColor().text`
 - Endpoint name: `min-w-0 flex-1 truncate`
 - Direction symbol: `shrink-0 text-[10px] text-muted-foreground` — via `getDirectionSymbol()`
 - Max effect size: `shrink-0 font-mono text-[10px] text-muted-foreground`
 - Severity label: `shrink-0 text-[9px] text-muted-foreground` — plain text (adverse/warning/normal)
 - TR badge (if treatment-related): `shrink-0 text-[9px] font-medium text-muted-foreground` — "TR"
 
-All evidence columns use neutral muted text — no categorical coloring in the overview.
+All evidence columns use neutral muted text except domain codes, which use colored text via `<DomainLabel>` per the domain label hard rule.
 
 Sorted by: severity (adverse first) → treatment-related → max effect size desc. Click sets endpoint-level selection (finds representative row, updates context panel). Click again to deselect.
 
@@ -209,9 +211,9 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 
 | Condition | Color |
 |-----------|-------|
-| Adverse + treatment-related | `#DC2626` (red) |
-| Warning | `#fbbf24` (amber) |
-| Normal / other | `#4ade80` (green) |
+| Adverse + treatment-related | `#DC2626` (red — semantic Error/Critical) |
+| Warning | `#D97706` (amber — semantic Warning) |
+| Normal / other | `#16a34a` (green — semantic Success) |
 | No data | `#e5e7eb` (gray) |
 
 **Legend:** 4 color swatches with labels (Adverse, Warning, Normal, N/A).
@@ -230,8 +232,8 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 | domain | Domain | Plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` |
 | dose_level | Dose | `text-muted-foreground`, shows `dose_label.split(",")[0]` |
 | sex | Sex | Plain text |
-| p_value | P-value | `font-mono text-muted-foreground` |
-| effect_size | Effect | `font-mono text-muted-foreground` |
+| p_value | P-value | `ev font-mono` — interaction-driven evidence color (neutral at rest, `#DC2626` on row hover/selection via `ev` CSS class) |
+| effect_size | Effect | `ev font-mono` — interaction-driven evidence color |
 | direction | Dir | `text-sm text-muted-foreground` via `getDirectionSymbol()` |
 | severity | Severity | `text-muted-foreground` (plain text) |
 | treatment_related | TR | `text-muted-foreground` — "Yes" or "No" |
@@ -261,11 +263,11 @@ Note: NOAEL summary table and confidence factors were removed (RED-02) — the p
 
 Header: sticky, endpoint name (`text-sm font-semibold`) + `CollapseAllButtons`. Below: sex + dose level info. `TierCountBadges` for tier filtering.
 
-Panes:
-1. **Adversity rationale** (default open) — dose-level rows for selected endpoint + sex, with p-value, effect size, severity badge (`getSeverityBadgeClasses`)
-2. **Insights** (default open) — `InsightsList` with endpoint-scoped rules + `tierFilter` from header badges
-3. **Related views** (default closed) — "View dose-response" (passes endpoint_label + organ_system), "View target organs", "View histopathology" (pass organ_system)
-4. **Tox Assessment** — `ToxFindingForm` keyed by endpoint_label
+Panes (ordered per design system priority — insights → stats → annotation → navigation):
+1. **Insights** (default open) — `InsightsList` with endpoint-scoped rules + `tierFilter` from header badges
+2. **Adversity rationale** (default open) — dose-level rows for selected endpoint + sex, with p-value, effect size, severity badge (`getSeverityBadgeClasses`)
+3. **Tox Assessment** — `ToxFindingForm` keyed by endpoint_label (annotation before navigation)
+4. **Related views** (default closed) — "View dose-response" (passes endpoint_label + organ_system), "View target organs", "View histopathology" (pass organ_system)
 
 ---
 
@@ -274,7 +276,7 @@ Panes:
 | State | Scope | Managed By |
 |-------|-------|------------|
 | Selected organ | Local | `useState<string \| null>` — which organ is active in the rail |
-| Active tab | Local | `useState<EvidenceTab>` — "overview" or "matrix" |
+| Active tab | Local | `useState<EvidenceTab>` — "overview" (Evidence tab) or "matrix" (Adversity matrix tab) |
 | Selection (endpoint) | Shared via context | `ViewSelectionContext` with `_view: "noael"` tag |
 | Sex filter | Local | `useState<string \| null>` — for Adversity matrix tab |
 | TR filter | Local | `useState<string \| null>` — for Adversity matrix tab |
