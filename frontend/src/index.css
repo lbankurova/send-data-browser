@@ -138,3 +138,7 @@ button[data-rail-item]:hover .ev,
 button[data-rail-item][data-selected] .ev {
   color: #DC2626;
 }
+/* Generic evidence rows (findings lists, non-table layouts) */
+[data-evidence-row]:hover .ev {
+  color: #DC2626;
+}

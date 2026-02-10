@@ -163,10 +163,10 @@ export const surface = {
 // ---------------------------------------------------------------------------
 
 export const link = {
-  /** Inline navigation link color */
-  color: "#2083d5",
+  /** Inline navigation link class */
+  color: "text-primary",
   /** Cross-view link in context panel */
-  crossView: "block text-[11px] hover:underline",
+  crossView: "block text-primary text-[11px] hover:underline",
   /** Issue ID link */
   issueId: "font-mono text-xs hover:underline",
 } as const;
@@ -211,14 +211,11 @@ export const menu = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Review status colors (reviewStatus)
+// Workflow status badge (neutral — categorical identity, not signal)
 // ---------------------------------------------------------------------------
 
-export const reviewStatus = {
-  "not-reviewed": { bg: "bg-gray-100", text: "text-gray-600", border: "border-gray-200", countText: "text-gray-500" },
-  accepted:       { bg: "bg-green-100", text: "text-green-800", border: "border-green-200", countText: "text-green-700" },
-  flagged:        { bg: "bg-red-100", text: "text-red-800", border: "border-red-200", countText: "text-red-700" },
-  resolved:       { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-200", countText: "text-blue-700" },
+export const workflowBadge = {
+  base: "inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-600 border-gray-200",
 } as const;
 
 // ---------------------------------------------------------------------------
