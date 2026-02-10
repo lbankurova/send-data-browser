@@ -4,3 +4,4 @@ pyreadstat
 pandas
 scipy>=1.11
 scikit-posthocs
+python-multipart

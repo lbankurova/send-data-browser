@@ -45,6 +45,21 @@ def init_validation(studies: dict):
             logger.exception("Auto-validation failed for %s", study_id)
 
 
+def register_validation_study(study):
+    """Register a study for validation at runtime."""
+    _studies[study.study_id] = study
+    if _engine:
+        try:
+            results = _engine.validate(study)
+            _engine.save_results(study.study_id, results)
+        except Exception:
+            logger.exception("Validation failed for imported study %s", study.study_id)
+
+
+def unregister_validation_study(study_id: str):
+    _studies.pop(study_id, None)
+
+
 def _get_study(study_id: str):
     study = _studies.get(study_id)
     if not study:

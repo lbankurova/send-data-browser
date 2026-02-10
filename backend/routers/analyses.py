@@ -25,6 +25,14 @@ def init_analysis_studies(studies: dict[str, StudyInfo]):
     _studies.update(studies)
 
 
+def register_analysis_study(study: StudyInfo):
+    _studies[study.study_id] = study
+
+
+def unregister_analysis_study(study_id: str):
+    _studies.pop(study_id, None)
+
+
 def _get_study(study_id: str) -> StudyInfo:
     if study_id not in _studies:
         raise HTTPException(status_code=404, detail=f"Study '{study_id}' not found")
