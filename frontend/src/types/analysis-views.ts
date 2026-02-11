@@ -141,6 +141,15 @@ export interface OrganEvidenceRow {
   treatment_related: boolean;
 }
 
+// --- Provenance Messages (Study Summary enrichment) ---
+
+export interface ProvenanceMessage {
+  rule_id: string;
+  icon: "info" | "warning";
+  message: string;
+  link_to_rule: string | null;
+}
+
 // --- Histopathology (View 4) ---
 
 export interface LesionSeverityRow {

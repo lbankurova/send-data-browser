@@ -1,0 +1,26 @@
+[
+  {
+    "rule_id": "Prov-001",
+    "icon": "info",
+    "message": "Dose values extracted from EX domain.",
+    "link_to_rule": null
+  },
+  {
+    "rule_id": "Prov-002",
+    "icon": "info",
+    "message": "Route of administration from EX domain.",
+    "link_to_rule": null
+  },
+  {
+    "rule_id": "Prov-004",
+    "icon": "info",
+    "message": "Recovery groups detected in 4 arm(s). Recovery-phase data is analyzed separately.",
+    "link_to_rule": null
+  },
+  {
+    "rule_id": "Prov-006",
+    "icon": "warning",
+    "message": "2 control groups detected: Vehicle Control, Vehicle Control with recovery. 'Vehicle Control' used as primary comparator for statistical tests.",
+    "link_to_rule": "SD-003"
+  }
+]

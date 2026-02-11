@@ -27,6 +27,8 @@ from generator.view_dataframes import (
 )
 from generator.scores_and_rules import evaluate_rules
 from generator.static_charts import generate_target_organ_bar_chart
+from services.analysis.subject_context import build_subject_context
+from services.analysis.provenance import generate_provenance_messages
 
 
 OUTPUT_DIR = Path(__file__).parent.parent / "generated"
@@ -98,6 +100,21 @@ def generate(study_id: str):
     findings, dg_data = compute_all_findings(study)
     dose_groups = dg_data["dose_groups"]
     print(f"  {len(findings)} findings across {len(set(f['domain'] for f in findings))} domains")
+
+    # Phase 1b: Build enriched subject context + provenance messages
+    print("Phase 1b: Building subject context...")
+    try:
+        context_result = build_subject_context(study)
+        provenance_msgs = generate_provenance_messages(context_result)
+        # Write subject context (one row per subject, as list of dicts)
+        ctx_df = context_result["subject_context"]
+        _write_json(out_dir / "subject_context.json", ctx_df.to_dict(orient="records"))
+        _write_json(out_dir / "provenance_messages.json", provenance_msgs)
+        _write_json(out_dir / "study_metadata_enriched.json", context_result["study_metadata"])
+        print(f"  {len(ctx_df)} subjects, {len(provenance_msgs)} provenance messages")
+    except Exception as e:
+        print(f"  WARNING: Subject context failed: {e}")
+        provenance_msgs = []
 
     # Phase 2: Assemble view-specific data
     print("Phase 2: Assembling view DataFrames...")

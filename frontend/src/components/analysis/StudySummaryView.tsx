@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Loader2, FileText } from "lucide-react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
+import { useProvenanceMessages } from "@/hooks/useProvenanceMessages";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { generateStudyReport } from "@/lib/report-generator";
@@ -17,7 +18,7 @@ import {
   SignalsEvidencePanel,
   StudyStatementsBar,
 } from "./SignalsPanel";
-import type { SignalSelection } from "@/types/analysis-views";
+import type { SignalSelection, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMetadata } from "@/types";
 
 interface StudySummaryViewProps {
@@ -37,6 +38,7 @@ export function StudySummaryView({
   const { data: noaelData } = useNoaelSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: meta } = useStudyMetadata(studyId!);
+  const { data: provenanceData } = useProvenanceMessages(studyId);
 
   const [tab, setTab] = useState<Tab>("signals");
   const [selection, setSelection] = useState<SignalSelection | null>(null);
@@ -216,7 +218,7 @@ export function StudySummaryView({
       </div>
 
       {/* Tab content */}
-      {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} />}
+      {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} />}
       {tab === "signals" && panelData && (
         <div className="flex h-full flex-col overflow-hidden">
           {/* Decision Bar — persistent */}
@@ -402,10 +404,13 @@ function formatSubjects(
 function DetailsTab({
   meta,
   studyId,
+  provenanceMessages,
 }: {
   meta: StudyMetadata | undefined;
   studyId: string;
+  provenanceMessages: ProvenanceMessage[] | undefined;
 }) {
+  const navigate = useNavigate();
   if (!meta) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -503,6 +508,45 @@ function DetailsTab({
               </tbody>
             </table>
           </div>
+
+          {/* Provenance messages — below treatment arms table */}
+          {provenanceMessages && provenanceMessages.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {provenanceMessages.map((msg) => (
+                <div
+                  key={msg.rule_id + msg.message}
+                  className="flex items-start gap-2 text-xs leading-snug"
+                >
+                  {msg.icon === "warning" ? (
+                    <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+                  ) : (
+                    <Info className="mt-0.5 h-3 w-3 shrink-0 text-blue-400" />
+                  )}
+                  <span
+                    className={cn(
+                      msg.icon === "warning"
+                        ? "text-amber-700"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {msg.message}
+                    {msg.link_to_rule && (
+                      <button
+                        className="ml-1.5 text-primary hover:underline"
+                        onClick={() =>
+                          navigate(
+                            `/studies/${studyId}/validation?mode=study-design&rule=${msg.link_to_rule}`
+                          )
+                        }
+                      >
+                        Review &rarr;
+                      </button>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 

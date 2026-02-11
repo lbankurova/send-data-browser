@@ -41,6 +41,7 @@ from validation.checks.data_integrity import (
     check_value_ranges,
     check_exposure,
 )
+from validation.checks.study_design import check_study_design
 from validation.scripts.registry import get_scripts
 
 logger = logging.getLogger(__name__)
@@ -64,6 +65,8 @@ CHECK_DISPATCH: dict[str, callable] = {
     "duplicate_detection": check_duplicates,
     "value_ranges": check_value_ranges,
     "exposure_validation": check_exposure,
+    # Study design (needs StudyInfo, not just domains)
+    "study_design": check_study_design,
 }
 
 BASE_DIR = Path(__file__).parent
@@ -138,6 +141,10 @@ class ValidationEngine:
         start = time.time()
         logger.info(f"Starting validation for {study.study_id}...")
 
+        # Clear study design cache for fresh computation
+        from validation.checks.study_design import clear_cache as clear_sd_cache
+        clear_sd_cache()
+
         domains = self.load_study_domains(study)
         loaded_domain_codes = set(domains.keys())
 
@@ -146,7 +153,7 @@ class ValidationEngine:
 
         for rule in self.rules:
             try:
-                records = self._run_rule(rule, domains)
+                records = self._run_rule(rule, domains, study=study)
                 if not records:
                     continue
 
@@ -219,7 +226,8 @@ class ValidationEngine:
         )
 
     def _run_rule(
-        self, rule: RuleDefinition, domains: dict[str, pd.DataFrame]
+        self, rule: RuleDefinition, domains: dict[str, pd.DataFrame],
+        *, study: StudyInfo | None = None,
     ) -> list[AffectedRecordResult]:
         """Run a single rule and return affected records."""
         handler = CHECK_DISPATCH.get(rule.check_type)
@@ -237,6 +245,10 @@ class ValidationEngine:
         # Special args for CT check
         if rule.check_type == "controlled_terminology":
             kwargs["ct_data"] = self.ct_data
+
+        # Study design checks need StudyInfo for build_subject_context
+        if rule.check_type == "study_design":
+            kwargs["study"] = study
 
         return handler(**kwargs)
 
@@ -261,6 +273,8 @@ class ValidationEngine:
             return f"{n} subject{'s' if n != 1 else ''} in {domain} not found in DM"
         elif rule.check_type == "studyid_consistency":
             return f"STUDYID mismatch in {domain}"
+        elif rule.check_type == "study_design":
+            return f"{rule.name} — {n} issue{'s' if n != 1 else ''}"
         else:
             return f"{rule.name} — {n} issue{'s' if n != 1 else ''} in {domain}"
 

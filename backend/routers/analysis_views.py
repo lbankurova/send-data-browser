@@ -17,6 +17,9 @@ VALID_VIEW_NAMES = {
     "adverse-effect-summary",
     "noael-summary",
     "rule-results",
+    "subject-context",
+    "provenance-messages",
+    "study-metadata-enriched",
 }
 
 # Map URL slugs to file names (slug uses hyphens, files use underscores)

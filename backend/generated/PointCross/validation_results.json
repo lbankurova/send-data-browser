@@ -90,6 +90,19 @@
       "rationale": "Validates that variable values match CDISC controlled terminology where applicable. Checks coded values against the published CT lists for the SEND standard.",
       "how_to_fix": "Map values to CDISC controlled terminology",
       "cdisc_reference": "SENDIG 3.1, Section 2.3"
+    },
+    {
+      "rule_id": "SD-004",
+      "severity": "Info",
+      "domain": "TS",
+      "category": "Study design",
+      "description": "Missing trial summary parameters \u2014 1 issue",
+      "records_affected": 1,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, Section 3.1",
+      "rationale": "Checks that TS contains required parameters: SPECIES, STRAIN, ROUTE, SSTDTC, SSTYP. Missing parameters reduce study metadata completeness.",
+      "how_to_fix": "Add missing TS parameters. Values may be inferred from other domains (DM.SPECIES, EX.EXROUTE) where available.",
+      "cdisc_reference": "SENDIG 3.1, Section 3.1"
     }
   ],
   "records": {
@@ -546,14 +559,36 @@
         },
         "diagnosis": "MIRESCAT value 'MALIGNANT' is not in the RESULT_CATEGORY codelist."
       }
+    ],
+    "SD-004": [
+      {
+        "issue_id": "SD-004-001",
+        "rule_id": "SD-004",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: SSTDTC)",
+        "expected_value": "Required TS parameter",
+        "fix_tier": 1,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "SSTDTC",
+          "derivation": "TS domain TSPARMCD"
+        },
+        "diagnosis": "Trial Summary (TS) is missing parameter 'SSTDTC'. Study metadata will be incomplete."
+      }
     ]
   },
   "scripts": [],
   "summary": {
-    "total_issues": 7,
+    "total_issues": 8,
     "errors": 6,
     "warnings": 1,
-    "info": 0,
+    "info": 1,
     "domains_affected": [
       "CL",
       "DM",
@@ -561,7 +596,7 @@
       "MI",
       "TS"
     ],
-    "elapsed_seconds": 1.52,
-    "validated_at": "2026-02-11T02:18:24.153471+00:00"
+    "elapsed_seconds": 1.93,
+    "validated_at": "2026-02-11T14:29:34.301312+00:00"
   }
 }

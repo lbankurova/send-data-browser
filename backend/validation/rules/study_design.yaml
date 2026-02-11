@@ -1,0 +1,116 @@
+# Study design validation rules (SD-001 through SD-007)
+# These rules evaluate the subject context enrichment pipeline results.
+# All require the study_design check handler which calls build_subject_context().
+
+rules:
+  - id: "SD-001"
+    core_ref: null
+    name: "Orphaned subjects"
+    description: "Checks that all ARMCD values in DM exist in TA. Subjects with unmatched ARMCD cannot be mapped to a trial arm structure, so epoch-level information (treatment duration, recovery period) will be unavailable."
+    severity: "Warning"
+    category: "Study design"
+    applicable_domains: ["DM", "TA"]
+    check_type: "study_design"
+    parameters:
+      sd_rule: "SD-001"
+    fix_guidance: "Verify whether TA is incomplete or DM.ARMCD contains a typo. Subjects will still be included in analysis using DM.ARM label."
+    auto_fixable: false
+    default_fix_tier: 2
+    evidence_type: "cross-domain"
+    cdisc_reference: "SENDIG 3.1, Section 5.1"
+
+  - id: "SD-002"
+    core_ref: null
+    name: "Empty arms"
+    description: "Checks for arms defined in TA that have no subjects in DM. Common for TK satellite groups or unused arms."
+    severity: "Info"
+    category: "Study design"
+    applicable_domains: ["TA", "DM"]
+    check_type: "study_design"
+    parameters:
+      sd_rule: "SD-002"
+    fix_guidance: "Empty arms are common for TK satellite groups that were planned but not enrolled. No action needed unless subjects are expected."
+    auto_fixable: false
+    default_fix_tier: 1
+    evidence_type: "metadata"
+    cdisc_reference: "SENDIG 3.1, Section 5.1"
+
+  - id: "SD-003"
+    core_ref: null
+    name: "Ambiguous control status"
+    description: "Checks for inconsistencies in control group identification: subjects with dose=0 not flagged as control, control subjects with non-zero dose, or no control group detected."
+    severity: "Warning"
+    category: "Study design"
+    applicable_domains: ["DM", "EX", "TX"]
+    check_type: "study_design"
+    parameters:
+      sd_rule: "SD-003"
+    fix_guidance: "Assign the correct control group using the dropdown in the Study Design validation mode. Comparative statistics require a control group."
+    auto_fixable: false
+    default_fix_tier: 2
+    evidence_type: "cross-domain"
+    cdisc_reference: "SENDIG 3.1, Section 5.3"
+
+  - id: "SD-004"
+    core_ref: null
+    name: "Missing trial summary parameters"
+    description: "Checks that TS contains required parameters: SPECIES, STRAIN, ROUTE, SSTDTC, SSTYP. Missing parameters reduce study metadata completeness."
+    severity: "Info"
+    category: "Study design"
+    applicable_domains: ["TS"]
+    check_type: "study_design"
+    parameters:
+      sd_rule: "SD-004"
+    fix_guidance: "Add missing TS parameters. Values may be inferred from other domains (DM.SPECIES, EX.EXROUTE) where available."
+    auto_fixable: false
+    default_fix_tier: 1
+    evidence_type: "missing-value"
+    cdisc_reference: "SENDIG 3.1, Section 3.1"
+
+  - id: "SD-005"
+    core_ref: null
+    name: "Dose inconsistency within subject"
+    description: "Checks for subjects with multiple distinct EXDOSE values in EX, suggesting dose escalation or modification. Maximum dose is used for group assignment."
+    severity: "Warning"
+    category: "Study design"
+    applicable_domains: ["EX"]
+    check_type: "study_design"
+    parameters:
+      sd_rule: "SD-005"
+    fix_guidance: "Review whether max dose is the appropriate grouping strategy for this study. Per-timepoint dose is preserved in EX for time-resolved analysis."
+    auto_fixable: false
+    default_fix_tier: 2
+    evidence_type: "cross-domain"
+    cdisc_reference: "SENDIG 3.1, Section 5.2"
+
+  - id: "SD-006"
+    core_ref: null
+    name: "Orphaned sets"
+    description: "Checks for trial sets (SETCD) in TX that have no matching subjects in DM. Similar to empty arms."
+    severity: "Info"
+    category: "Study design"
+    applicable_domains: ["TX", "DM"]
+    check_type: "study_design"
+    parameters:
+      sd_rule: "SD-006"
+    fix_guidance: "Similar to empty arms (SD-002). Common for planned-but-unused TK or satellite groups."
+    auto_fixable: false
+    default_fix_tier: 1
+    evidence_type: "metadata"
+    cdisc_reference: "SENDIG 3.1, Section 5.1"
+
+  - id: "SD-007"
+    core_ref: null
+    name: "ARM/ARMCD mismatch across domains"
+    description: "Checks that the same ARMCD maps to the same ARM label in both DM and TA. Mismatches indicate data integrity issues."
+    severity: "Error"
+    category: "Study design"
+    applicable_domains: ["DM", "TA"]
+    check_type: "study_design"
+    parameters:
+      sd_rule: "SD-007"
+    fix_guidance: "Investigate the ARMCD-to-ARM mapping in both DM and TA. The DM value is used for subject assignment."
+    auto_fixable: false
+    default_fix_tier: 3
+    evidence_type: "cross-domain"
+    cdisc_reference: "SENDIG 3.1, Section 5.1"

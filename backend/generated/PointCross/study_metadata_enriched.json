@@ -1,0 +1,12 @@
+{
+  "species": "RAT",
+  "strain": "SPRAGUE-DAWLEY",
+  "route": "ORAL GAVAGE",
+  "study_start": null,
+  "study_end": null,
+  "study_type": "REPEAT DOSE TOXICITY",
+  "study_design": "PARALLEL",
+  "vehicle": "Saline",
+  "sponsor": null,
+  "test_article": null
+}
