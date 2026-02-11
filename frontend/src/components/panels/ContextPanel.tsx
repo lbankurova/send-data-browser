@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { useSelection } from "@/contexts/SelectionContext";
@@ -24,6 +24,7 @@ import { SubjectProfilePanel } from "@/components/analysis/panes/SubjectProfileP
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import type { ToxFinding, PathologyReview, ValidationRecordReview } from "@/types/annotations";
+import { Wrench } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function CollapsibleSection({
@@ -322,6 +323,92 @@ function HistopathologyContextPanelWrapper({ studyId }: { studyId: string }) {
   );
 }
 
+function ScenarioInspector({ scenarioId }: { scenarioId: string }) {
+  const navigate = useNavigate();
+  const [expected, setExpected] = useState<{
+    name: string;
+    description: string;
+    validation_status: string;
+    expected_issues: Record<string, { severity: string; count: number }>;
+    what_to_check: string[];
+  } | null>(null);
+
+  // Fetch expected issues on mount
+  useEffect(() => {
+    fetch(`/api/scenarios/${scenarioId}/expected-issues`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setExpected)
+      .catch(() => {});
+  }, [scenarioId]);
+
+  return (
+    <div className="p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Wrench className="h-4 w-4 text-muted-foreground/60" />
+        <h3 className="text-sm font-semibold">{expected?.name ?? scenarioId}</h3>
+      </div>
+      {expected && (
+        <>
+          <p className="mb-3 text-xs text-muted-foreground">{expected.description}</p>
+
+          <CollapsibleSection title="Expected issues" defaultOpen>
+            {Object.keys(expected.expected_issues).length === 0 ? (
+              <p className="text-xs text-muted-foreground">No issues expected (clean study).</p>
+            ) : (
+              <div className="space-y-1">
+                {Object.entries(expected.expected_issues).map(([ruleId, info]) => (
+                  <div key={ruleId} className="flex items-center justify-between text-xs">
+                    <span className="font-mono text-[10px]">{ruleId}</span>
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
+                      {info.severity} ({info.count})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="What to check" defaultOpen>
+            <ul className="space-y-1">
+              {expected.what_to_check.map((item, i) => (
+                <li key={i} className="flex gap-1.5 text-xs text-muted-foreground">
+                  <span className="shrink-0">-</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Actions">
+            <div className="space-y-0.5">
+              <a
+                href="#"
+                className="block text-xs text-primary hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(`/studies/${encodeURIComponent(scenarioId)}`);
+                }}
+              >
+                Open scenario
+              </a>
+              <a
+                href="#"
+                className="block text-xs text-primary hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(`/studies/${encodeURIComponent(scenarioId)}/validation`);
+                }}
+              >
+                Validation report
+              </a>
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function ContextPanel() {
   const { selectedStudyId } = useSelection();
   const { studyId } = useParams<{ studyId: string }>();
@@ -390,6 +477,10 @@ export function ContextPanel() {
         </p>
       </div>
     );
+  }
+
+  if (selectedStudyId.startsWith("SCENARIO-")) {
+    return <ScenarioInspector scenarioId={selectedStudyId} />;
   }
 
   return <StudyInspector studyId={selectedStudyId} />;

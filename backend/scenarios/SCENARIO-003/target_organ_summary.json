@@ -1,0 +1,150 @@
+[
+  {
+    "organ_system": "general",
+    "evidence_score": 1.402,
+    "n_endpoints": 107,
+    "n_domains": 8,
+    "domains": [
+      "BW",
+      "CL",
+      "DS",
+      "FW",
+      "LB",
+      "MA",
+      "MI",
+      "OM"
+    ],
+    "max_signal_score": 1.0,
+    "n_significant": 46,
+    "n_treatment_related": 44,
+    "target_organ_flag": true
+  },
+  {
+    "organ_system": "hepatic",
+    "evidence_score": 0.765,
+    "n_endpoints": 30,
+    "n_domains": 4,
+    "domains": [
+      "LB",
+      "MA",
+      "MI",
+      "OM"
+    ],
+    "max_signal_score": 1.0,
+    "n_significant": 14,
+    "n_treatment_related": 14,
+    "target_organ_flag": true
+  },
+  {
+    "organ_system": "hematologic",
+    "evidence_score": 0.728,
+    "n_endpoints": 41,
+    "n_domains": 4,
+    "domains": [
+      "LB",
+      "MA",
+      "MI",
+      "OM"
+    ],
+    "max_signal_score": 0.94,
+    "n_significant": 11,
+    "n_treatment_related": 11,
+    "target_organ_flag": true
+  },
+  {
+    "organ_system": "neurological",
+    "evidence_score": 0.709,
+    "n_endpoints": 2,
+    "n_domains": 1,
+    "domains": [
+      "OM"
+    ],
+    "max_signal_score": 0.715,
+    "n_significant": 2,
+    "n_treatment_related": 2,
+    "target_organ_flag": true
+  },
+  {
+    "organ_system": "cardiovascular",
+    "evidence_score": 0.697,
+    "n_endpoints": 4,
+    "n_domains": 2,
+    "domains": [
+      "MI",
+      "OM"
+    ],
+    "max_signal_score": 0.86,
+    "n_significant": 1,
+    "n_treatment_related": 1,
+    "target_organ_flag": true
+  },
+  {
+    "organ_system": "renal",
+    "evidence_score": 0.673,
+    "n_endpoints": 24,
+    "n_domains": 4,
+    "domains": [
+      "LB",
+      "MA",
+      "MI",
+      "OM"
+    ],
+    "max_signal_score": 0.8,
+    "n_significant": 7,
+    "n_treatment_related": 7,
+    "target_organ_flag": true
+  },
+  {
+    "organ_system": "metabolic",
+    "evidence_score": 0.502,
+    "n_endpoints": 6,
+    "n_domains": 1,
+    "domains": [
+      "LB"
+    ],
+    "max_signal_score": 0.546,
+    "n_significant": 2,
+    "n_treatment_related": 2,
+    "target_organ_flag": true
+  },
+  {
+    "organ_system": "respiratory",
+    "evidence_score": 0.411,
+    "n_endpoints": 20,
+    "n_domains": 2,
+    "domains": [
+      "MA",
+      "MI"
+    ],
+    "max_signal_score": 0.435,
+    "n_significant": 0,
+    "n_treatment_related": 0,
+    "target_organ_flag": false
+  },
+  {
+    "organ_system": "endocrine",
+    "evidence_score": 0.376,
+    "n_endpoints": 2,
+    "n_domains": 1,
+    "domains": [
+      "MI"
+    ],
+    "max_signal_score": 0.376,
+    "n_significant": 0,
+    "n_treatment_related": 0,
+    "target_organ_flag": false
+  },
+  {
+    "organ_system": "ocular",
+    "evidence_score": 0.367,
+    "n_endpoints": 4,
+    "n_domains": 1,
+    "domains": [
+      "MI"
+    ],
+    "max_signal_score": 0.393,
+    "n_significant": 0,
+    "n_treatment_related": 0,
+    "target_organ_flag": false
+  }
+]

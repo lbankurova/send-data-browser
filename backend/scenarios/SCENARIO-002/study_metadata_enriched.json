@@ -1,0 +1,12 @@
+{
+  "species": "RAT",
+  "strain": "SPRAGUE-DAWLEY",
+  "route": "ORAL GAVAGE",
+  "study_start": "2025-01-15",
+  "study_end": "2025-03-10",
+  "study_type": "REPEAT DOSE TOXICITY",
+  "study_design": "PARALLEL",
+  "vehicle": "Saline",
+  "sponsor": "Acme Pharma",
+  "test_article": "PCDRUG"
+}

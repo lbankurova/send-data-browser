@@ -1,0 +1,47 @@
+[
+  {
+    "sex": "M",
+    "noael_dose_level": 0,
+    "noael_label": "Group 1, Control",
+    "noael_dose_value": 0.0,
+    "noael_dose_unit": "mg/kg",
+    "loael_dose_level": 1,
+    "loael_label": "Group 1, Control",
+    "n_adverse_at_loael": 3,
+    "adverse_domains_at_loael": [
+      "DS",
+      "MI"
+    ],
+    "noael_confidence": 0.8
+  },
+  {
+    "sex": "F",
+    "noael_dose_level": 0,
+    "noael_label": "Group 1, Control",
+    "noael_dose_value": 0.0,
+    "noael_dose_unit": "mg/kg",
+    "loael_dose_level": 1,
+    "loael_label": "Group 1, Control",
+    "n_adverse_at_loael": 3,
+    "adverse_domains_at_loael": [
+      "DS",
+      "MI"
+    ],
+    "noael_confidence": 0.8
+  },
+  {
+    "sex": "Combined",
+    "noael_dose_level": 0,
+    "noael_label": "Group 1, Control",
+    "noael_dose_value": 0.0,
+    "noael_dose_unit": "mg/kg",
+    "loael_dose_level": 1,
+    "loael_label": "Group 1, Control",
+    "n_adverse_at_loael": 6,
+    "adverse_domains_at_loael": [
+      "DS",
+      "MI"
+    ],
+    "noael_confidence": 0.8
+  }
+]

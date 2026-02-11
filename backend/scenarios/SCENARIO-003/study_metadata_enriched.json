@@ -1,0 +1,12 @@
+{
+  "species": "RAT",
+  "strain": "SPRAGUE-DAWLEY",
+  "route": "ORAL GAVAGE",
+  "study_start": "2025-03-01",
+  "study_end": "2025-04-15",
+  "study_type": "REPEAT DOSE TOXICITY",
+  "study_design": "PARALLEL",
+  "vehicle": null,
+  "sponsor": "BioGen Corp",
+  "test_article": "COMPOUND-X"
+}
