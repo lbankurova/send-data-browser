@@ -43,7 +43,7 @@ function FindingItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 px-3 py-2 transition-colors",
+        "w-full text-left border-b border-border/40 px-2 py-1 transition-colors",
         isSelected ? "bg-blue-50/60 dark:bg-blue-950/20" : "hover:bg-accent/30",
       )}
       onClick={onClick}
@@ -86,7 +86,7 @@ function OrganGroup({
   return (
     <div>
       <button
-        className="flex w-full items-center gap-1 bg-muted/30 px-3 py-1.5 text-left"
+        className="flex w-full items-center gap-1 bg-muted/30 px-2 py-1 text-left"
         onClick={() => setExpanded((p) => !p)}
       >
         <span className="text-[10px] text-muted-foreground">{expanded ? "▾" : "▸"}</span>
@@ -168,8 +168,8 @@ function FindingsRail({
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
-      <div className="border-b px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="border-b px-2 py-1.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           All findings ({rows.length})
         </span>
         <input
@@ -177,9 +177,9 @@ function FindingsRail({
           placeholder="Search findings\u2026"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
+          className="mt-1 w-full rounded border bg-background px-2 py-0.5 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
         />
-        <div className="mt-1.5 flex flex-wrap gap-1">
+        <div className="mt-1 flex flex-wrap gap-1">
           <select
             className="rounded border bg-background px-1.5 py-0.5 text-[10px]"
             value={domainFilter ?? ""}
@@ -382,12 +382,12 @@ function EvidenceTable({
 
 function EndpointSummaryHeader({ row }: { row: SignalSummaryRow }) {
   return (
-    <div className="shrink-0 border-b px-4 py-3">
+    <div className="shrink-0 border-b px-3 py-1.5">
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold">{row.endpoint_label}</h3>
+        <h3 className="text-xs font-semibold">{row.endpoint_label}</h3>
         <DomainLabel domain={row.domain} />
       </div>
-      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]">
+      <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0 text-[10px]">
         <span>
           <span className="text-muted-foreground">Organ: </span>
           <span className="font-medium">{titleCase(row.organ_system)}</span>
@@ -509,7 +509,7 @@ export function AllFindingsOverviewView({
           <>
             <EndpointSummaryHeader row={selectedRow} />
             <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
-              <span className="relative px-4 py-1.5 text-xs font-medium text-foreground">
+              <span className="relative px-3 py-1 text-xs font-medium text-foreground">
                 Evidence
                 <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
               </span>

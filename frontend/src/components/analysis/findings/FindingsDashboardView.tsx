@@ -14,10 +14,10 @@ import type { SignalSummaryRow, TargetOrganRow } from "@/types/analysis-views";
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="rounded-lg border bg-card px-4 py-3">
+    <div className="rounded border bg-card px-3 py-2">
       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
-      {sub && <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>}
+      <p className="mt-0.5 text-xl font-semibold tabular-nums">{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
     </div>
   );
 }
@@ -30,7 +30,7 @@ const GRAY_RAMP = ["#4B5563", "#6B7280", "#9CA3AF", "#D1D5DB", "#E5E7EB"];
 function buildOrganBarOption(organs: TargetOrganRow[]): EChartsOption {
   const sorted = [...organs].sort((a, b) => a.evidence_score - b.evidence_score).slice(-10);
   return {
-    grid: { left: 120, right: 20, top: 10, bottom: 30 },
+    grid: { left: 110, right: 12, top: 6, bottom: 24 },
     xAxis: { type: "value", axisLabel: { fontSize: 10 } },
     yAxis: {
       type: "category",
@@ -58,7 +58,7 @@ function buildScoreHistogramOption(rows: SignalSummaryRow[]): EChartsOption {
   }
   const labels = bins.slice(0, -1).map((b, i) => `${b.toFixed(1)}-${bins[i + 1].toFixed(1)}`);
   return {
-    grid: { left: 50, right: 10, top: 10, bottom: 30 },
+    grid: { left: 40, right: 8, top: 6, bottom: 24 },
     xAxis: { type: "category", data: labels, axisLabel: { fontSize: 9, rotate: 45 } },
     yAxis: { type: "value", axisLabel: { fontSize: 10 } },
     tooltip: { trigger: "axis", textStyle: { fontSize: 11 } },
@@ -101,7 +101,7 @@ function buildDomainBarOption(rows: SignalSummaryRow[]): EChartsOption {
   }
   const sorted = [...domainCounts.entries()].sort((a, b) => b[1] - a[1]);
   return {
-    grid: { left: 50, right: 10, top: 10, bottom: 30 },
+    grid: { left: 40, right: 8, top: 6, bottom: 24 },
     xAxis: {
       type: "category",
       data: sorted.map(([d]) => d),
@@ -133,21 +133,21 @@ function TopFindingsTable({ rows }: { rows: SignalSummaryRow[] }) {
     <table className="w-full text-xs">
       <thead>
         <tr className="border-b bg-muted/50 text-left">
-          <th className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Endpoint</th>
-          <th className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Domain</th>
-          <th className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Organ</th>
-          <th className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Score</th>
-          <th className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Severity</th>
+          <th className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Endpoint</th>
+          <th className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Domain</th>
+          <th className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Organ</th>
+          <th className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Score</th>
+          <th className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Severity</th>
         </tr>
       </thead>
       <tbody>
         {top.map((r, i) => (
           <tr key={`${r.endpoint_label}-${r.dose_level}-${r.sex}-${i}`} className="border-b border-border/30 hover:bg-accent/30">
-            <td className="max-w-[200px] truncate px-2 py-1.5 font-medium" title={r.endpoint_label}>{r.endpoint_label}</td>
-            <td className="px-2 py-1.5"><DomainLabel domain={r.domain} /></td>
-            <td className="px-2 py-1.5 text-muted-foreground">{titleCase(r.organ_system)}</td>
-            <td className="px-2 py-1.5 font-mono font-semibold">{r.signal_score.toFixed(2)}</td>
-            <td className="px-2 py-1.5">
+            <td className="max-w-[200px] truncate px-2 py-0.5 font-medium" title={r.endpoint_label}>{r.endpoint_label}</td>
+            <td className="px-2 py-0.5"><DomainLabel domain={r.domain} /></td>
+            <td className="px-2 py-0.5 text-muted-foreground">{titleCase(r.organ_system)}</td>
+            <td className="px-2 py-0.5 font-mono font-semibold">{r.signal_score.toFixed(2)}</td>
+            <td className="px-2 py-0.5">
               <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                 {r.severity}
               </span>
@@ -211,10 +211,10 @@ export function FindingsDashboardView() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-[1400px] space-y-6 p-6">
+      <div className="mx-auto max-w-[1400px] space-y-3 p-3">
         {/* Summary cards */}
         {stats && (
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-2">
             <StatCard label="Total findings" value={stats.total} sub={`${signalData?.length ?? 0} signal rows`} />
             <StatCard label="Adverse" value={stats.adverse} sub={`${((stats.adverse / Math.max(stats.total, 1)) * 100).toFixed(0)}% of total`} />
             <StatCard label="Target organs" value={stats.targetOrgans} sub={`of ${organData?.length ?? 0} organs`} />
@@ -224,9 +224,9 @@ export function FindingsDashboardView() {
 
         {/* Top findings table */}
         {signalData && signalData.length > 0 && (
-          <div className="rounded-lg border bg-card">
-            <div className="border-b px-4 py-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="rounded border bg-card">
+            <div className="border-b px-3 py-1">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Top 10 findings by signal score
               </h3>
             </div>
@@ -235,60 +235,52 @@ export function FindingsDashboardView() {
         )}
 
         {/* Charts — 2-col grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2">
           {/* Organ breakdown */}
           {organBarOpt && (
-            <div className="rounded-lg border bg-card">
-              <div className="border-b px-4 py-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="rounded border bg-card">
+              <div className="border-b px-3 py-1">
+                <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Organ system evidence scores
                 </h3>
               </div>
-              <div className="p-2">
-                <EChartsWrapper option={organBarOpt} style={{ height: 280 }} />
-              </div>
+              <EChartsWrapper option={organBarOpt} style={{ height: 220 }} />
             </div>
           )}
 
           {/* Signal score distribution */}
           {histOpt && (
-            <div className="rounded-lg border bg-card">
-              <div className="border-b px-4 py-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="rounded border bg-card">
+              <div className="border-b px-3 py-1">
+                <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Signal score distribution
                 </h3>
               </div>
-              <div className="p-2">
-                <EChartsWrapper option={histOpt} style={{ height: 280 }} />
-              </div>
+              <EChartsWrapper option={histOpt} style={{ height: 220 }} />
             </div>
           )}
 
           {/* Severity donut */}
           {donutOpt && (
-            <div className="rounded-lg border bg-card">
-              <div className="border-b px-4 py-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="rounded border bg-card">
+              <div className="border-b px-3 py-1">
+                <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Severity breakdown
                 </h3>
               </div>
-              <div className="p-2">
-                <EChartsWrapper option={donutOpt} style={{ height: 280 }} />
-              </div>
+              <EChartsWrapper option={donutOpt} style={{ height: 220 }} />
             </div>
           )}
 
           {/* Domain distribution */}
           {domainOpt && (
-            <div className="rounded-lg border bg-card">
-              <div className="border-b px-4 py-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="rounded border bg-card">
+              <div className="border-b px-3 py-1">
+                <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Domain distribution
                 </h3>
               </div>
-              <div className="p-2">
-                <EChartsWrapper option={domainOpt} style={{ height: 280 }} />
-              </div>
+              <EChartsWrapper option={domainOpt} style={{ height: 220 }} />
             </div>
           )}
         </div>
