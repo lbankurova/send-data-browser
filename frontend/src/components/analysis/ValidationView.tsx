@@ -157,6 +157,21 @@ const ruleColumns = [
       );
     },
   }),
+  ruleColumnHelper.accessor("source", {
+    header: "Source",
+    size: 60,
+    cell: (info) => {
+      const src = info.getValue();
+      return (
+        <span
+          className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground"
+          title={src === "core" ? "CDISC CORE conformance rule" : "Custom study design rule"}
+        >
+          {src}
+        </span>
+      );
+    },
+  }),
   ruleColumnHelper.accessor("domain", {
     header: "Domain",
     size: 70,
@@ -202,6 +217,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>({ fixStatus: "", reviewStatus: "", subjectId: "" });
   const [severityFilter, setSeverityFilter] = useState<"" | "Error" | "Warning" | "Info">("");
+  const [sourceFilter, setSourceFilter] = useState<"" | "core" | "custom">("");
 
   // Mode: data-quality (default) or study-design
   const [mode, setMode] = useState<ValidationMode>(() => {
@@ -219,11 +235,23 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const { mutate: runValidation, isPending: isValidating } = useRunValidation(studyId);
 
   // Split rules by mode
-  const allRules = validationData?.rules ?? [];
-  const modeRules = mode === "study-design"
-    ? allRules.filter((r) => r.category === STUDY_DESIGN_CATEGORY)
-    : allRules.filter((r) => r.category !== STUDY_DESIGN_CATEGORY);
-  const rules = severityFilter ? modeRules.filter((r) => r.severity === severityFilter) : modeRules;
+  const allRules = useMemo(() => validationData?.rules ?? [], [validationData?.rules]);
+  const modeRules = useMemo(
+    () => mode === "study-design"
+      ? allRules.filter((r) => r.category === STUDY_DESIGN_CATEGORY)
+      : allRules.filter((r) => r.category !== STUDY_DESIGN_CATEGORY),
+    [allRules, mode]
+  );
+  const rules = useMemo(() => {
+    let filtered = modeRules;
+    if (severityFilter) {
+      filtered = filtered.filter((r) => r.severity === severityFilter);
+    }
+    if (sourceFilter) {
+      filtered = filtered.filter((r) => r.source === sourceFilter);
+    }
+    return filtered;
+  }, [modeRules, severityFilter, sourceFilter]);
 
   // Counts per mode
   const modeCounts = useMemo(() => {
@@ -263,6 +291,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     setSelectedRule(null);
     setSelectedIssueId(null);
     setSeverityFilter("");
+    setSourceFilter("");
     setRecordFilters({ fixStatus: "", reviewStatus: "", subjectId: "" });
     onSelectionChange?.(null);
     // Update URL param without navigation
@@ -285,6 +314,8 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
       errors: modeRules.filter((r) => r.severity === "Error").length,
       warnings: modeRules.filter((r) => r.severity === "Warning").length,
       info: modeRules.filter((r) => r.severity === "Info").length,
+      core: modeRules.filter((r) => r.source === "core").length,
+      custom: modeRules.filter((r) => r.source === "custom").length,
     };
   }, [modeRules]);
 
@@ -618,16 +649,64 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
             </span>
           )}
         </div>
+        {/* Source filter (CORE vs Custom) */}
+        {(counts.core > 0 || counts.custom > 0) && (
+          <div className="ml-auto flex items-center gap-2 border-l pl-4 text-xs">
+            <span className="text-muted-foreground">Source:</span>
+            <button
+              className={cn(
+                "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
+                sourceFilter === "core" && "ring-1 ring-border bg-muted/50",
+                sourceFilter && sourceFilter !== "core" && "opacity-40"
+              )}
+              onClick={() => setSourceFilter((prev) => (prev === "core" ? "" : "core"))}
+              title="Show only CDISC CORE rules"
+            >
+              <span className="font-medium">{counts.core}</span>
+              <span className="text-muted-foreground">CORE</span>
+            </button>
+            <button
+              className={cn(
+                "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
+                sourceFilter === "custom" && "ring-1 ring-border bg-muted/50",
+                sourceFilter && sourceFilter !== "custom" && "opacity-40"
+              )}
+              onClick={() => setSourceFilter((prev) => (prev === "custom" ? "" : "custom"))}
+              title="Show only custom rules"
+            >
+              <span className="font-medium">{counts.custom}</span>
+              <span className="text-muted-foreground">Custom</span>
+            </button>
+          </div>
+        )}
+        {/* CORE conformance metadata */}
+        {validationData.core_conformance && (
+          <div className="ml-auto flex items-center gap-2 border-l pl-4 text-[10px] text-muted-foreground">
+            <span title={`CORE Engine ${validationData.core_conformance.engine_version}`}>
+              {validationData.core_conformance.standard}
+            </span>
+            {validationData.core_conformance.ct_version && (
+              <span title="Controlled Terminology Version">
+                CT: {validationData.core_conformance.ct_version}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {rules.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
-          {severityFilter && modeRules.length > 0 ? (
+          {(severityFilter || sourceFilter) && modeRules.length > 0 ? (
             <>
-              <span>No {severityFilter.toLowerCase()} rules found.</span>
+              <span>
+                No {severityFilter && severityFilter.toLowerCase()} {sourceFilter && sourceFilter} rules found.
+              </span>
               <button
                 className="rounded border px-2 py-1 text-xs hover:bg-muted/50"
-                onClick={() => setSeverityFilter("")}
+                onClick={() => {
+                  setSeverityFilter("");
+                  setSourceFilter("");
+                }}
               >
                 Show all
               </button>

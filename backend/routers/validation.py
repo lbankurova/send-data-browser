@@ -116,6 +116,7 @@ async def get_validation_results(study_id: str):
         rules=cached.rules,
         scripts=cached.scripts,
         summary=cached.summary,
+        core_conformance=cached.core_conformance,
     )
 
 
