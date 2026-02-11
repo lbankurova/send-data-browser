@@ -362,8 +362,8 @@ function MetadataRow({
 }) {
   if (!value) return null;
   return (
-    <div className="flex gap-3 py-1 text-sm">
-      <span className="w-36 shrink-0 text-muted-foreground">{label}</span>
+    <div className="flex gap-2 py-0.5 text-xs">
+      <span className="w-28 shrink-0 text-muted-foreground">{label}</span>
       <span className="select-all">{value}</span>
     </div>
   );
@@ -410,16 +410,16 @@ function DetailsTab({
   }
 
   return (
-    <div className="flex-1 overflow-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Study: {meta.study_id}</h1>
+    <div className="flex-1 overflow-auto p-4">
+      <div className="mb-3">
+        <h1 className="text-base font-semibold">Study: {meta.study_id}</h1>
         {meta.title && (
-          <p className="mt-1 text-muted-foreground">{meta.title}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{meta.title}</p>
         )}
       </div>
 
-      <section className="mb-6">
-        <h2 className="mb-3 border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <section className="mb-4">
+        <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Study overview
         </h2>
         <MetadataRow label="Species" value={meta.species} />
@@ -440,8 +440,8 @@ function DetailsTab({
         />
       </section>
 
-      <section className="mb-6">
-        <h2 className="mb-3 border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <section className="mb-4">
+        <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Treatment
         </h2>
         <MetadataRow label="Test article" value={meta.treatment} />
@@ -451,35 +451,35 @@ function DetailsTab({
 
 
       {meta.dose_groups && meta.dose_groups.length > 0 && (
-        <section className="mb-6">
-          <h2 className="mb-3 border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <section className="mb-4">
+          <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Treatment arms ({meta.dose_groups.length})
           </h2>
           <div className="overflow-x-auto rounded-md border">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="border-b bg-muted/30">
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Arm code</th>
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Label</th>
-                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dose</th>
-                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">M</th>
-                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">F</th>
-                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Arm code</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Label</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dose</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">M</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">F</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {meta.dose_groups.map((dg) => (
                   <tr key={dg.armcd} className="border-b last:border-b-0">
-                    <td className="px-3 py-1.5 font-mono text-xs">{dg.armcd}</td>
-                    <td className="px-3 py-1.5">{dg.label}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
+                    <td className="px-2 py-1 font-mono text-xs">{dg.armcd}</td>
+                    <td className="px-2 py-1">{dg.label}</td>
+                    <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
                       {dg.dose_value != null
                         ? `${dg.dose_value}${dg.dose_unit ? ` ${dg.dose_unit}` : ""}`
                         : "—"}
                     </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{dg.n_male}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{dg.n_female}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums font-medium">{dg.n_total}</td>
+                    <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{dg.n_male}</td>
+                    <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{dg.n_female}</td>
+                    <td className="px-2 py-1 text-right tabular-nums font-medium">{dg.n_total}</td>
                   </tr>
                 ))}
               </tbody>
@@ -488,7 +488,7 @@ function DetailsTab({
 
           {/* Provenance messages — below treatment arms table */}
           {provenanceMessages && provenanceMessages.length > 0 && (
-            <div className="mt-3 space-y-1">
+            <div className="mt-2 space-y-0.5">
               {provenanceMessages.map((msg) => (
                 <div
                   key={msg.rule_id + msg.message}
@@ -528,10 +528,10 @@ function DetailsTab({
       )}
 
       <section>
-        <h2 className="mb-3 border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Domains ({meta.domain_count})
         </h2>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {meta.domains.map((d) => (
             <Link
               key={d}
