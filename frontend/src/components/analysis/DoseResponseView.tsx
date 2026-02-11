@@ -9,24 +9,16 @@ import {
   createColumnHelper,
 } from "@tanstack/react-table";
 import type { SortingState, Table, ColumnSizingState } from "@tanstack/react-table";
+import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ErrorBar,
-  ReferenceLine,
-  ResponsiveContainer,
-  Customized,
-  ScatterChart as RScatterChart,
-  Scatter,
-  ZAxis,
-  Cell,
-} from "recharts";
+  buildDoseResponseLineOption,
+  buildIncidenceBarOption,
+  buildEffectSizeBarOption,
+  buildCLTimecourseBarOption,
+  buildTimecourseLineOption,
+  buildVolcanoScatterOption,
+} from "@/components/analysis/charts/dose-response-charts";
+import type { MergedPoint, SubjectTrace, VolcanoPoint } from "@/components/analysis/charts/dose-response-charts";
 import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import { useTimecourseGroup, useTimecourseSubject } from "@/hooks/useTimecourse";
 import { useClinicalObservations } from "@/hooks/useClinicalObservations";
@@ -365,10 +357,10 @@ export function DoseResponseView({
     const lookup = new Map<string, DoseResponseRow>();
     for (const r of rows) lookup.set(`${r.sex}_${r.dose_level}`, r);
 
-    const mergedPoints = doseLevels.map((dl) => {
+    const mergedPoints: MergedPoint[] = doseLevels.map((dl) => {
       // Find any row for the dose label
       const anyRow = rows.find((r) => r.dose_level === dl);
-      const point: Record<string, unknown> = {
+      const point: MergedPoint = {
         dose_level: dl,
         dose_label: anyRow?.dose_label.split(",")[0] ?? `Dose ${dl}`,
       };
@@ -1009,7 +1001,7 @@ interface ChartOverviewProps {
     dataType: string;
     sexes: string[];
     doseLevels: number[];
-    mergedPoints: Record<string, unknown>[];
+    mergedPoints: MergedPoint[];
   } | null;
   selectedEndpoint: string | null;
   pairwiseRows: DoseResponseRow[];
@@ -1088,106 +1080,17 @@ function ChartOverviewContent({
           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             {chartData.dataType === "continuous" ? "Mean \u00b1 SD by dose" : "Incidence by dose"}
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            {chartData.dataType === "continuous" ? (
-              <LineChart data={chartData.mergedPoints} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip
-                  contentStyle={{ fontSize: 11 }}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  formatter={(value: any, name: any) => {
-                    const n = String(name ?? "");
-                    const label = n.startsWith("mean_") ? `Mean (${sexLabels[n.slice(5)] ?? n.slice(5)})` : n;
-                    return [value != null ? Number(value).toFixed(2) : "\u2014", label];
-                  }}
-                />
-                {chartData.sexes.map((sex) => (
-                  <Line
-                    key={sex}
-                    type="monotone"
-                    dataKey={`mean_${sex}`}
-                    stroke={sexColors[sex] ?? "#666"}
-                    strokeWidth={2}
-                    name={`mean_${sex}`}
-                    dot={({ cx, cy, payload }: { cx?: number; cy?: number; payload: Record<string, unknown> }) => {
-                      if (cx == null || cy == null) return null;
-                      const pVal = payload[`p_${sex}`] as number | null;
-                      const sig = pVal != null && pVal < 0.05;
-                      const color = sexColors[sex] ?? "#666";
-                      return (
-                        <circle
-                          key={`${sex}-${cx}-${cy}`}
-                          cx={cx}
-                          cy={cy}
-                          r={sig ? 5 : 3}
-                          fill={color}
-                          stroke={sig ? "#374151" : color}
-                          strokeWidth={sig ? 2 : 1}
-                        />
-                      );
-                    }}
-                    connectNulls
-                  >
-                    <ErrorBar
-                      dataKey={`sd_${sex}`}
-                      width={4}
-                      strokeWidth={1}
-                      stroke={sexColors[sex] ?? "#666"}
-                    />
-                  </Line>
-                ))}
-                {noaelLabel && (
-                  <ReferenceLine x={noaelLabel} stroke="#6B7280" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: "NOAEL", position: "top", style: { fontSize: 9, fill: "#6B7280", fontWeight: 600 } }} />
-                )}
-              </LineChart>
-            ) : (
-              <BarChart data={chartData.mergedPoints} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} domain={[0, 1]} />
-                <Tooltip
-                  contentStyle={{ fontSize: 11 }}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  formatter={(value: any, name: any) => {
-                    const n = String(name ?? "");
-                    const label = `Incidence (${sexLabels[n.slice(10)] ?? n.slice(10)})`;
-                    return [value != null ? (Number(value) * 100).toFixed(0) + "%" : "\u2014", label];
-                  }}
-                />
-                {chartData.sexes.map((sex) => (
-                  <Bar
-                    key={sex}
-                    dataKey={`incidence_${sex}`}
-                    fill={sexColors[sex] ?? "#666"}
-                    name={`incidence_${sex}`}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    shape={(props: any) => {
-                      const pVal = props.payload?.[`p_${sex}`] as number | null;
-                      const sig = pVal != null && pVal < 0.05;
-                      const color = sexColors[sex] ?? "#666";
-                      return (
-                        <rect
-                          x={props.x}
-                          y={props.y}
-                          width={props.width}
-                          height={props.height}
-                          fill={color}
-                          stroke={sig ? "#1F2937" : "none"}
-                          strokeWidth={sig ? 1.5 : 0}
-                          rx={2}
-                        />
-                      );
-                    }}
-                  />
-                ))}
-                {noaelLabel && (
-                  <ReferenceLine x={noaelLabel} stroke="#6B7280" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: "NOAEL", position: "top", style: { fontSize: 9, fill: "#6B7280", fontWeight: 600 } }} />
-                )}
-              </BarChart>
-            )}
-          </ResponsiveContainer>
+          {chartData.dataType === "continuous" ? (
+            <EChartsWrapper
+              option={buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, noaelLabel)}
+              style={{ width: "100%", height: 260 }}
+            />
+          ) : (
+            <EChartsWrapper
+              option={buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, noaelLabel)}
+              style={{ width: "100%", height: 260 }}
+            />
+          )}
           {/* Legend — dose-response */}
           <div className="mt-1 flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
             {chartData.sexes.map((sex) => (
@@ -1220,35 +1123,10 @@ function ChartOverviewContent({
             <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Effect size (Cohen&apos;s d)
             </div>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={chartData.mergedPoints} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="dose_label" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip
-                  contentStyle={{ fontSize: 11 }}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  formatter={(value: any, name: any) => {
-                    const n = String(name ?? "");
-                    const label = sexLabels[n.slice(7)] ?? n.slice(7);
-                    return [value != null ? Number(value).toFixed(2) : "\u2014", label];
-                  }}
-                />
-                <ReferenceLine y={0.8} stroke="#9ca3af" strokeDasharray="4 4" strokeWidth={1} />
-                <ReferenceLine y={0.5} stroke="#d1d5db" strokeDasharray="4 4" strokeWidth={1} />
-                <ReferenceLine y={-0.8} stroke="#9ca3af" strokeDasharray="4 4" strokeWidth={1} />
-                <ReferenceLine y={-0.5} stroke="#d1d5db" strokeDasharray="4 4" strokeWidth={1} />
-                {chartData.sexes.map((sex) => (
-                  <Bar
-                    key={sex}
-                    dataKey={`effect_${sex}`}
-                    fill={sexColors[sex] ?? "#666"}
-                    name={`effect_${sex}`}
-                    opacity={0.8}
-                  />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
+            <EChartsWrapper
+              option={buildEffectSizeBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels)}
+              style={{ width: "100%", height: 260 }}
+            />
             {/* Legend — effect size */}
             <div className="mt-1 flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
               {chartData.sexes.map((sex) => (
@@ -1549,41 +1427,10 @@ function CLTimecourseCharts({
             <p className="mb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {sexLabels[sex] ?? sex}
             </p>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={points} margin={{ top: 5, right: 10, bottom: 25, left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="day"
-                  tick={{ fontSize: 10 }}
-                  label={{ value: "Study day", position: "insideBottom", offset: -15, fontSize: 10, fill: "#9CA3AF" }}
-                />
-                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ fontSize: 11, borderRadius: 6 }}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  formatter={(value: any, name: any, _props: any, _idx: any, payload: any) => {
-                    const n = String(name ?? "");
-                    const item = payload?.[0]?.payload ?? {};
-                    const total = item[`${n}_total`] ?? "?";
-                    const subjectList = item[`${n}_subjects`] ?? "";
-                    const doseLabel = item[`${n}_label`] ?? n;
-                    const incPct = total > 0 ? ((Number(value) / Number(total)) * 100).toFixed(0) : "0";
-                    const tip = `${value}/${total} (${incPct}%)`;
-                    return [subjectList ? `${tip}\n${subjectList}` : tip, String(doseLabel)];
-                  }}
-                  labelFormatter={(label) => `Day ${label}`}
-                />
-                {doseLevels.map(([dl]) => (
-                  <Bar
-                    key={dl}
-                    dataKey={`dose_${dl}`}
-                    fill={getDoseGroupColor(dl)}
-                    name={`dose_${dl}`}
-                    radius={[2, 2, 0, 0]}
-                  />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
+            <EChartsWrapper
+              option={buildCLTimecourseBarOption(points, doseLevels, getDoseGroupColor)}
+              style={{ width: "100%", height: 220 }}
+            />
           </div>
         ))}
       </div>
@@ -1767,110 +1614,15 @@ function TimecourseCharts({
             <p className="mb-1 text-center text-[10px] font-medium" style={{ color: sexChartColors[sex] }}>
               {sexLabels[sex] ?? sex}
             </p>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={points} margin={{ top: 5, right: 20, bottom: 25, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="day"
-                  tick={{ fontSize: 10 }}
-                  label={{ value: "Study day", position: "insideBottom", offset: -15, fontSize: 10, fill: "#9CA3AF" }}
-                />
-                <YAxis
-                  tick={{ fontSize: 10 }}
-                  label={{ value: yLabel, angle: -90, position: "insideLeft", offset: -5, fontSize: 10, fill: "#9CA3AF" }}
-                />
-                <Tooltip
-                  contentStyle={{ fontSize: 11, borderRadius: 6 }}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  formatter={(value: any, name: any, _props: any, _idx: any, payload: any) => {
-                    const n = String(name ?? "");
-                    const item = payload?.[0]?.payload ?? {};
-                    const doseLabel = item[`${n}_label`] ?? `Dose ${parseInt(n.replace("dose_", ""))}`;
-                    const sd = item[`${n}_sd`];
-                    const count = item[`${n}_n`];
-                    const valStr = value != null ? Number(value).toFixed(2) : "\u2014";
-                    const sdStr = sd != null ? ` \u00b1 ${Number(sd).toFixed(2)}` : "";
-                    const nStr = count != null ? `  n=${count}` : "";
-                    return [`${valStr}${sdStr}${nStr}`, String(doseLabel)];
-                  }}
-                  labelFormatter={(label) => `Day ${label}`}
-                />
-                {yAxisMode === "pct_change" && (
-                  <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="8 4" />
-                )}
-                {yAxisMode === "pct_vs_control" && (
-                  <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="8 4" />
-                )}
-                {yAxisMode === "absolute" && baselineRefValue != null && (
-                  <ReferenceLine y={baselineRefValue} stroke="#9CA3AF" strokeDasharray="8 4" />
-                )}
-                {/* Subject lines rendered as SVG paths via Customized */}
-                {showSubjects && subjectTraces.length > 0 && (
-                  <Customized
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    component={(props: any) => {
-                      const { xAxisMap, yAxisMap } = props;
-                      const xAxis = xAxisMap && Object.values(xAxisMap)[0] as { scale?: (v: number) => number } | undefined;
-                      const yAxis = yAxisMap && Object.values(yAxisMap)[0] as { scale?: (v: number) => number } | undefined;
-                      if (!xAxis?.scale || !yAxis?.scale) return null;
-                      return (
-                        <g className="subject-lines">
-                          {subjectTraces.map((trace) => {
-                            const sorted = [...trace.values].sort((a, b) => a.day - b.day);
-                            if (sorted.length < 2) return null;
-                            const d = sorted.map((v, i) => {
-                              const x = xAxis.scale!(v.day);
-                              const y = yAxis.scale!(v.value);
-                              return `${i === 0 ? "M" : "L"}${x},${y}`;
-                            }).join(" ");
-                            return (
-                              <path
-                                key={trace.usubjid}
-                                d={d}
-                                fill="none"
-                                stroke={getDoseGroupColor(trace.dose_level)}
-                                strokeWidth={1}
-                                opacity={0.3}
-                                style={{ cursor: onSubjectClick ? "pointer" : undefined }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onSubjectClick?.(trace.usubjid);
-                                }}
-                              >
-                                <title>{trace.usubjid} ({trace.dose_label})</title>
-                              </path>
-                            );
-                          })}
-                        </g>
-                      );
-                    }}
-                  />
-                )}
-                {/* Group mean lines */}
-                {doseLevels.map((dl) => (
-                  <Line
-                    key={dl}
-                    type="monotone"
-                    dataKey={`dose_${dl}`}
-                    stroke={getDoseGroupColor(dl)}
-                    strokeWidth={showSubjects ? 3 : 2}
-                    name={`dose_${dl}`}
-                    connectNulls
-                    dot={{ r: showSubjects ? 2 : 3, fill: getDoseGroupColor(dl) }}
-                    isAnimationActive={!showSubjects}
-                  >
-                    {!showSubjects && (
-                      <ErrorBar
-                        dataKey={`dose_${dl}_sd`}
-                        width={4}
-                        strokeWidth={1}
-                        stroke={getDoseGroupColor(dl)}
-                      />
-                    )}
-                  </Line>
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
+            <EChartsWrapper
+              option={buildTimecourseLineOption(points, doseLevels, getDoseGroupColor, yLabel, baselineRefValue, yAxisMode, showSubjects, subjectTraces)}
+              style={{ width: "100%", height: 300 }}
+              onClick={(params) => {
+                if (onSubjectClick && params.seriesName && subjectTraces.some((t: SubjectTrace) => t.usubjid === params.seriesName)) {
+                  onSubjectClick(params.seriesName);
+                }
+              }}
+            />
           </div>
         ))}
       </div>
@@ -2545,14 +2297,6 @@ function getOrganColor(organ: string): string {
   return color;
 }
 
-interface VolcanoPoint {
-  endpoint_label: string;
-  organ_system: string;
-  x: number; // |effect_size|
-  y: number; // -log10(trend_p)
-  color: string;
-}
-
 function VolcanoScatter({
   endpointSummaries,
   selectedEndpoint,
@@ -2601,73 +2345,15 @@ function VolcanoScatter({
         )}
       </div>
 
-      <ResponsiveContainer width="100%" height={320}>
-        <RScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis
-            type="number"
-            dataKey="x"
-            name="Effect size"
-            label={{ value: "|Effect size| (Cohen's d)", position: "bottom", offset: 12, style: { fontSize: 10, fill: "#9CA3AF" } }}
-            tick={{ fontSize: 10 }}
-            domain={[0, "auto"]}
-          />
-          <YAxis
-            type="number"
-            dataKey="y"
-            name="Significance"
-            label={{ value: "-log\u2081\u2080(trend p)", angle: -90, position: "insideLeft", offset: 5, style: { fontSize: 10, fill: "#9CA3AF" } }}
-            tick={{ fontSize: 10 }}
-            domain={[0, "auto"]}
-          />
-          <ZAxis range={[40, 40]} />
-          {/* Reference lines: effect size thresholds */}
-          <ReferenceLine x={0.5} stroke="#D1D5DB" strokeDasharray="4 4" label={{ value: "d=0.5", position: "top", style: { fontSize: 9, fill: "#9CA3AF" } }} />
-          <ReferenceLine x={0.8} stroke="#9CA3AF" strokeDasharray="4 4" label={{ value: "d=0.8", position: "top", style: { fontSize: 9, fill: "#6B7280" } }} />
-          {/* Reference lines: significance thresholds */}
-          <ReferenceLine y={-Math.log10(0.05)} stroke="#D1D5DB" strokeDasharray="4 4" label={{ value: "p=0.05", position: "right", style: { fontSize: 9, fill: "#9CA3AF" } }} />
-          <ReferenceLine y={-Math.log10(0.01)} stroke="#9CA3AF" strokeDasharray="4 4" label={{ value: "p=0.01", position: "right", style: { fontSize: 9, fill: "#6B7280" } }} />
-          <Tooltip
-            content={({ payload }) => {
-              if (!payload || payload.length === 0) return null;
-              const d = payload[0].payload as VolcanoPoint;
-              return (
-                <div className="rounded border bg-popover px-2.5 py-1.5 text-xs shadow-md">
-                  <p className="font-medium">{d.endpoint_label}</p>
-                  <p className="text-[10px] text-muted-foreground">{titleCase(d.organ_system)}</p>
-                  <div className="mt-1 flex gap-3 font-mono text-[10px]">
-                    <span>|d|={d.x.toFixed(2)}</span>
-                    <span>p={Math.pow(10, -d.y).toExponential(1)}</span>
-                  </div>
-                </div>
-              );
-            }}
-          />
-          <Scatter
-            data={points}
-            cursor="pointer"
-            onClick={(data: VolcanoPoint) => {
-              if (data?.endpoint_label && onSelectEndpoint) {
-                onSelectEndpoint(data.endpoint_label);
-              }
-            }}
-          >
-            {points.map((pt) => {
-              const isSelected = pt.endpoint_label === selectedEndpoint;
-              return (
-                <Cell
-                  key={pt.endpoint_label}
-                  fill={pt.color}
-                  fillOpacity={isSelected ? 1 : 0.65}
-                  stroke={isSelected ? "#1F2937" : pt.color}
-                  strokeWidth={isSelected ? 2 : 0.5}
-                  r={isSelected ? 7 : 4}
-                />
-              );
-            })}
-          </Scatter>
-        </RScatterChart>
-      </ResponsiveContainer>
+      <EChartsWrapper
+        option={buildVolcanoScatterOption(points, selectedEndpoint, organSystems)}
+        style={{ width: "100%", height: 320 }}
+        onClick={(params) => {
+          if (params.name && onSelectEndpoint) {
+            onSelectEndpoint(String(params.name));
+          }
+        }}
+      />
 
       {/* Legend */}
       <div className="flex flex-wrap gap-x-3 gap-y-1 px-1">

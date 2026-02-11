@@ -9,7 +9,7 @@ import {
 import { useStudies } from "@/hooks/useStudies";
 import { useCategorizedDomains } from "@/hooks/useDomainsByStudy";
 import { getDomainDescription } from "@/lib/send-categories";
-import { ANALYSIS_VIEWS } from "@/lib/analysis-definitions";
+import { ANALYSIS_VIEWS, ANALYSIS_VIEW_GROUPS } from "@/lib/analysis-definitions";
 import { useTreeControl } from "@/contexts/TreeControlContext";
 import { TreeNode } from "./TreeNode";
 
@@ -56,9 +56,6 @@ function StudyBranch({
         return v.key;
       }
     }
-    // Check old analyses routes
-    const analysisMatch = path.match(/\/analyses\/([^/]+)/);
-    if (analysisMatch) return `analyses-${analysisMatch[1]}`;
     return undefined;
   };
   const activeView = getActiveView();
@@ -95,6 +92,21 @@ function StudyBranch({
     }
   }, [activeDomainName, activeStudyId, studyId]);
 
+  // Auto-expand view group when navigating to a grouped view
+  useEffect(() => {
+    if (!activeView || activeStudyId !== studyId) return;
+    const viewDef = ANALYSIS_VIEWS.find((v) => v.key === activeView);
+    if (viewDef?.group) {
+      const groupKey = `viewgroup-${viewDef.group}`;
+      setExpandedCategories((prev) => {
+        if (prev.has(groupKey)) return prev;
+        const next = new Set(prev);
+        next.add(groupKey);
+        return next;
+      });
+    }
+  }, [activeView, activeStudyId, studyId]);
+
   const toggleCategory = useCallback((key: string) => {
     setExpandedCategories((prev) => {
       const next = new Set(prev);
@@ -124,27 +136,61 @@ function StudyBranch({
       />
       {isExpanded && (
         <>
-          {/* Analysis views */}
-          {ANALYSIS_VIEWS.filter((v) => v.key !== "study-summary").map(
-            (view) => {
-              const isActive = activeView === view.key;
-              return (
-                <TreeNode
-                  key={view.key}
-                  label={view.label}
-                  depth={1}
-                  isActive={isActive}
-                  onClick={() => {
-                    if (view.implemented) {
-                      navigate(viewRoute(studyId, view.key));
-                    } else {
-                      navigate(viewRoute(studyId, view.key));
-                    }
-                  }}
-                />
-              );
+          {/* Analysis views — grouped + ungrouped */}
+          {(() => {
+            const rendered: React.ReactNode[] = [];
+
+            // Track which groups we've already rendered (preserve definition order)
+            const renderedGroups = new Set<string>();
+
+            for (const view of ANALYSIS_VIEWS) {
+              if (view.key === "study-summary") continue;
+
+              if (view.group && !renderedGroups.has(view.group)) {
+                // Render the group folder at the position of its first member
+                renderedGroups.add(view.group);
+                const groupDef = ANALYSIS_VIEW_GROUPS.find((g) => g.key === view.group);
+                const groupViews = ANALYSIS_VIEWS.filter((v) => v.group === view.group);
+                const isGroupExpanded = expandedCategories.has(`viewgroup-${view.group}`);
+                const groupHasActive = groupViews.some((v) => activeView === v.key);
+
+                rendered.push(
+                  <div key={`group-${view.group}`}>
+                    <TreeNode
+                      label={groupDef?.label ?? view.group}
+                      depth={1}
+                      isExpanded={isGroupExpanded}
+                      isActive={false}
+                      className={groupHasActive ? "text-foreground" : undefined}
+                      onClick={() => toggleCategory(`viewgroup-${view.group}`)}
+                    />
+                    {isGroupExpanded &&
+                      groupViews.map((gv) => (
+                        <TreeNode
+                          key={gv.key}
+                          label={gv.label}
+                          depth={2}
+                          isActive={activeView === gv.key}
+                          onClick={() => navigate(viewRoute(studyId, gv.key))}
+                        />
+                      ))}
+                  </div>,
+                );
+              } else if (!view.group) {
+                rendered.push(
+                  <TreeNode
+                    key={view.key}
+                    label={view.label}
+                    depth={1}
+                    isActive={activeView === view.key}
+                    onClick={() => navigate(viewRoute(studyId, view.key))}
+                  />,
+                );
+              }
             }
-          )}
+
+            return rendered;
+          })()}
 
           {/* Separator */}
           <div className="mx-4 my-1 border-t" />
@@ -205,18 +251,6 @@ function StudyBranch({
             </>
           )}
 
-          {/* Legacy analyses link */}
-          <div className="mx-4 my-1 border-t" />
-          <TreeNode
-            label="Adverse effects"
-            depth={1}
-            isActive={activeView === "analyses-adverse-effects"}
-            onClick={() =>
-              navigate(
-                `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects`
-              )
-            }
-          />
         </>
       )}
     </>
