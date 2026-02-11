@@ -955,6 +955,8 @@ function FindingSection({
         );
       case "metadata":
         return <MetadataEvidence lines={evidence.lines} studyId={studyId} />;
+      case "cross-domain":
+        return <MetadataEvidence lines={evidence.lines} studyId={studyId} />;
     }
   };
 
@@ -1049,9 +1051,14 @@ function FindingSection({
       evidence?.type === "value-correction" ||
       evidence?.type === "code-mapping" ||
       (evidence?.type === "missing-value" && evidence.suggested) ||
-      (evidence?.type === "metadata" && record.suggestions?.length === 1);
+      ((evidence?.type === "metadata" || evidence?.type === "cross-domain") && record.suggestions?.length === 1);
 
     const hasMultipleCandidates = evidence?.type === "value-correction-multi";
+
+    const hasMultipleSuggestions =
+      !hasSingleSuggestion &&
+      !hasMultipleCandidates &&
+      (record.suggestions?.length ?? 0) > 1;
 
     // Build Fix ▾ dropdown options
     const fixOptions: { label: string; action: () => void }[] = [];
@@ -1060,6 +1067,23 @@ function FindingSection({
     }
     if (hasMultipleCandidates) {
       fixOptions.push({ label: "Apply selected", action: applySelected });
+    }
+    if (hasMultipleSuggestions) {
+      for (const suggestion of record.suggestions!) {
+        fixOptions.push({
+          label: suggestion,
+          action: () => {
+            save({
+              entityKey: record.issue_id,
+              data: {
+                fixStatus: "Manually fixed",
+                comment: `Fix applied: ${suggestion}`,
+              },
+            });
+            setFixResult(`Fix applied — ${suggestion}.`);
+          },
+        });
+      }
     }
     fixOptions.push({
       label: "Enter value\u2026",
