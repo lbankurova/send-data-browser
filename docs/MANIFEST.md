@@ -3,6 +3,7 @@
 > **Purpose:** Registry of documentation assets with code dependencies for staleness detection.
 > **Scope:** System specs, view specs, and design system. Portability docs are frozen snapshots — not tracked here.
 > **Last full audit:** 2026-02-09
+> **Last incoming/ validation:** 2026-02-11 (9 specs archived, 2 remain active)
 
 ---
 
@@ -53,3 +54,23 @@
 | `scaffold/*.md` | Templates — no code dependencies |
 | `platform/datagrok-patterns.ts` | DG SDK pattern reference — frozen |
 | `portability/dg-knowledge-gaps.md` | DG-01 through DG-15 platform research tasks |
+
+## Incoming Feature Specs
+
+Specs in `incoming/` represent pending or in-progress features. Specs in `incoming/archive/` are fully implemented.
+
+**Last archival:** 2026-02-11
+
+| Asset | Status | Notes |
+|-------|--------|-------|
+| `incoming/cdisc-core-integration.md` | Not started | CDISC CORE engine integration (400+ rules). Requires Python 3.12 venv, separate repo clone. |
+| `incoming/dose-response-redesign.md` | Phase 1 partial (2.5/4) | NOAEL ✅, time-course default-expanded ✅, time-course repositioning ❌, sticky header ❌, volcano scatter ❌ |
+| `incoming/archive/send-study-context-enrichment.md` | ✅ Archived 2026-02-11 | Subject context enrichment layer fully implemented |
+| `incoming/archive/send-enrichment-validation-provenance.md` | ✅ Archived 2026-02-11 | SD-001 to SD-007 validation rules + Prov-001 to Prov-007 messages |
+| `incoming/archive/treatment-arms.md` | ✅ Archived 2026-02-11 | Dynamic dose groups with ARMCD mapping |
+| `incoming/archive/multi-study-discovery.md` | ✅ Archived 2026-02-11 | ALLOWED_STUDIES empty, all studies served |
+| `incoming/archive/study-import.md` | ✅ Archived 2026-02-11 | POST /api/import with zip extraction + DELETE |
+| `incoming/archive/ndarray-json-serialization.md` | ✅ Archived 2026-02-11 | ndarray serialization fix in unified_findings.py |
+| `incoming/archive/tree-chevron-toggle.md` | ✅ Archived 2026-02-11 | Separate chevron/row click handlers in TreeNode |
+| `incoming/archive/subject-count-fallback.md` | ✅ Archived 2026-02-11 | DM domain fallback for subject count |
+| `incoming/archive/portable-config.md` | ✅ Archived 2026-02-11 | Path(__file__) instead of hardcoded paths |

@@ -20,52 +20,20 @@ from validation.models import (
     ValidationRuleResult,
     RuleDefinition,
 )
-from validation.checks.required_variables import check_required_variables
-from validation.checks.variable_format import check_variable_format
-from validation.checks.data_type_check import check_data_types
-from validation.checks.controlled_terminology import check_controlled_terminology
-from validation.checks.timing import check_date_format, check_study_day
-from validation.checks.referential_integrity import (
-    check_usubjid_integrity,
-    check_studyid_consistency,
-    check_baseline_consistency,
-    check_supp_integrity,
-)
-from validation.checks.completeness import (
-    check_required_domains,
-    check_ts_required_params,
-    check_subject_count,
-)
-from validation.checks.data_integrity import (
-    check_duplicates,
-    check_value_ranges,
-    check_exposure,
-)
 from validation.checks.study_design import check_study_design
 from validation.scripts.registry import get_scripts
+from validation.core_runner import (
+    is_core_available,
+    run_core_validation,
+    normalize_core_report,
+    get_sendig_version_from_ts,
+)
 
 logger = logging.getLogger(__name__)
 
 # Map check_type -> handler function
 CHECK_DISPATCH: dict[str, callable] = {
-    "required_variables": check_required_variables,
-    "variable_format": check_variable_format,
-    "data_type_check": check_data_types,
-    "controlled_terminology": check_controlled_terminology,
-    "date_format": check_date_format,
-    "study_day_check": check_study_day,
-    "usubjid_integrity": check_usubjid_integrity,
-    "studyid_consistency": check_studyid_consistency,
-    "baseline_consistency": check_baseline_consistency,
-    "supp_integrity": check_supp_integrity,
-    "required_domains": check_required_domains,
-    "ts_required_params": check_ts_required_params,
-    "subject_count": check_subject_count,
-    # Phase 2
-    "duplicate_detection": check_duplicates,
-    "value_ranges": check_value_ranges,
-    "exposure_validation": check_exposure,
-    # Study design (needs StudyInfo, not just domains)
+    # Study design enrichment rules (needs StudyInfo for build_subject_context)
     "study_design": check_study_design,
 }
 
@@ -193,6 +161,91 @@ class ValidationEngine:
                 logger.error(f"Error running rule {rule.id}: {e}", exc_info=True)
                 continue
 
+        # Mark all custom rules with source="custom"
+        for rule in all_rule_results:
+            rule.source = "custom"
+
+        # Run CDISC CORE if available
+        core_conformance = None
+        if is_core_available():
+            logger.info(f"CORE available, running CORE validation for {study.study_id}...")
+            try:
+                # Get SENDIG version from TS
+                ts_df = domains.get("TS")
+                ts_metadata = {}
+                if ts_df is not None and not ts_df.empty:
+                    ts_metadata = dict(zip(ts_df["TSPARMCD"], ts_df["TSVAL"]))
+                sendig_version = get_sendig_version_from_ts(ts_metadata)
+
+                # Run CORE
+                core_report = run_core_validation(
+                    study_dir=Path(study.directory),
+                    study_id=study.study_id,
+                    sendig_version=sendig_version,
+                    timeout=120,
+                )
+
+                if core_report:
+                    # Normalize CORE results
+                    core_data = normalize_core_report(core_report, study.study_id)
+                    core_rules = core_data.get("rules", [])
+                    core_records = core_data.get("records", {})
+                    core_conformance = core_data.get("core_conformance")
+
+                    logger.info(f"CORE returned {len(core_rules)} rules for {study.study_id}")
+
+                    # Merge CORE results with custom results
+                    # CORE takes precedence: remove custom rules that overlap with CORE
+                    core_rule_keys = set()
+
+                    # First, add all CORE rules
+                    for core_rule in core_rules:
+                        # Convert dict to ValidationRuleResult if needed
+                        if isinstance(core_rule, dict):
+                            core_rule = ValidationRuleResult(**core_rule)
+
+                        core_key = (core_rule.domain, core_rule.category)
+                        core_rule_keys.add(core_key)
+
+                        all_rule_results.append(core_rule)
+                        if core_rule.rule_id in core_records:
+                            # Convert dicts to AffectedRecordResult if needed
+                            records = core_records[core_rule.rule_id]
+                            if records and isinstance(records[0], dict):
+                                records = [AffectedRecordResult(**r) for r in records]
+                            all_records[core_rule.rule_id] = records
+
+                    # Remove custom rules that overlap with CORE rules (CORE takes precedence)
+                    custom_rules_before = len([r for r in all_rule_results if r.source == "custom"])
+                    all_rule_results = [
+                        r for r in all_rule_results
+                        if r.source != "custom" or (r.domain, r.category) not in core_rule_keys
+                    ]
+
+                    # Also remove records for removed custom rules
+                    removed_rule_ids = [
+                        rule_id for rule_id in list(all_records.keys())
+                        if any(r.rule_id == rule_id and r.source == "custom" for r in all_rule_results)
+                        and not any(r.rule_id == rule_id for r in all_rule_results)
+                    ]
+                    for rule_id in removed_rule_ids:
+                        del all_records[rule_id]
+
+                    custom_rules_after = len([r for r in all_rule_results if r.source == "custom"])
+                    if custom_rules_before > custom_rules_after:
+                        logger.info(
+                            f"CORE precedence: removed {custom_rules_before - custom_rules_after} "
+                            f"overlapping custom rules"
+                        )
+
+                    logger.info(f"Merged results: {len(all_rule_results)} total rules "
+                               f"({len([r for r in all_rule_results if r.source == 'core'])} CORE, "
+                               f"{custom_rules_after} custom)")
+
+            except Exception as e:
+                logger.warning(f"CORE validation failed for {study.study_id}: {e}", exc_info=True)
+                # Continue with custom results only
+
         # Sort rules: Error first, then Warning, then Info
         severity_order = {"Error": 0, "Warning": 1, "Info": 2}
         all_rule_results.sort(key=lambda r: (severity_order.get(r.severity, 9), r.rule_id))
@@ -223,6 +276,7 @@ class ValidationEngine:
                 "domains_affected": domains_affected,
                 "elapsed_seconds": round(elapsed, 2),
             },
+            core_conformance=core_conformance,
         )
 
     def _run_rule(
@@ -235,20 +289,14 @@ class ValidationEngine:
             logger.warning(f"No handler for check_type '{rule.check_type}' (rule {rule.id})")
             return []
 
+        # Study design checks need StudyInfo for build_subject_context
         kwargs = {
             "rule": rule,
             "domains": domains,
             "metadata": self.metadata,
             "rule_id_prefix": rule.id,
+            "study": study,
         }
-
-        # Special args for CT check
-        if rule.check_type == "controlled_terminology":
-            kwargs["ct_data"] = self.ct_data
-
-        # Study design checks need StudyInfo for build_subject_context
-        if rule.check_type == "study_design":
-            kwargs["study"] = study
 
         return handler(**kwargs)
 
@@ -257,26 +305,8 @@ class ValidationEngine:
     ) -> str:
         """Build a human-readable description for a rule result."""
         n = len(records)
-        if rule.check_type == "required_variables":
-            vars_missing = sorted(set(r.variable for r in records))
-            return f"{', '.join(vars_missing[:5])} {'and more ' if len(vars_missing) > 5 else ''}missing or null in {domain} ({n} variable{'s' if n != 1 else ''})"
-        elif rule.check_type == "controlled_terminology":
-            bad_vals = sorted(set(r.actual_value for r in records))[:3]
-            return f"Non-standard values in {domain}: {', '.join(repr(v) for v in bad_vals)} ({n} record{'s' if n != 1 else ''})"
-        elif rule.check_type == "required_domains":
-            missing = sorted(set(r.domain for r in records))
-            return f"Missing domains: {', '.join(missing)}"
-        elif rule.check_type == "ts_required_params":
-            params = sorted(set(r.variable for r in records))
-            return f"Missing TS parameters: {', '.join(params[:5])}"
-        elif rule.check_type == "usubjid_integrity":
-            return f"{n} subject{'s' if n != 1 else ''} in {domain} not found in DM"
-        elif rule.check_type == "studyid_consistency":
-            return f"STUDYID mismatch in {domain}"
-        elif rule.check_type == "study_design":
-            return f"{rule.name} — {n} issue{'s' if n != 1 else ''}"
-        else:
-            return f"{rule.name} — {n} issue{'s' if n != 1 else ''} in {domain}"
+        # All remaining custom rules are study_design rules
+        return f"{rule.name} — {n} issue{'s' if n != 1 else ''}"
 
     def _build_scripts(
         self, all_records: dict[str, list[AffectedRecordResult]]

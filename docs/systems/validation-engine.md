@@ -2,7 +2,13 @@
 
 ## Purpose
 
-The validation engine checks SEND (Standard for Exchange of Nonclinical Data) study datasets for conformance issues -- missing required variables, controlled terminology violations, data type errors, timing inconsistencies, cross-domain referential integrity failures, and completeness gaps. It uses YAML-defined rules evaluated by Python check functions against in-memory pandas DataFrames loaded from XPT files, producing structured results consumed by a React frontend with a triage-and-dispatch UX.
+The validation engine provides comprehensive SEND (Standard for Exchange of Nonclinical Data) validation through a two-engine architecture:
+
+1. **CDISC CORE Engine** (400+ rules) — Official CDISC conformance validation (required variables, controlled terminology, referential integrity, metadata completeness). This is the regulatory gold standard.
+
+2. **Custom Study Design Rules** (7 rules) — Domain-specific enrichment rules that interpret trial design domains (DM, TA, TE, TX, EX) to build subject context and flag study design interpretation issues (orphaned subjects, ambiguous controls, dose inconsistencies).
+
+Results are merged (CORE takes precedence on overlaps), cached as JSON, and consumed by a React frontend with a triage-and-dispatch UX.
 
 ## Architecture
 
@@ -16,19 +22,36 @@ xpt_processor.read_xpt() --> pandas DataFrames (one per domain)
     |
     v
 ValidationEngine.validate(study)
-    |-- _load_rules()      --> reads rules/*.yaml into RuleDefinition models
-    |-- _load_metadata()   --> reads metadata/sendig_31_variables.yaml
-    |-- _load_ct()         --> reads metadata/controlled_terms.yaml
-    |-- load_study_domains(study) --> dict[str, DataFrame]
     |
-    |   For each rule:
-    |     CHECK_DISPATCH[rule.check_type](**kwargs) --> list[AffectedRecordResult]
-    |     Group by domain-qualified rule_id
-    |     Assign sequential issue_ids
-    |     Build ValidationRuleResult
+    |-- Custom Engine (Study Design Rules)
+    |   |-- _load_rules()  --> reads rules/study_design.yaml (7 SD-* rules)
+    |   |-- load_study_domains(study) --> dict[str, DataFrame]
+    |   |-- For each rule:
+    |   |     CHECK_DISPATCH["study_design"](**kwargs) --> list[AffectedRecordResult]
+    |   |     Mark with source="custom"
+    |   |
+    |   v
+    |   Custom ValidationRuleResults (SD-001 through SD-007)
     |
-    v
-ValidationResults (rules + records + scripts + summary)
+    |-- CDISC CORE Engine (if available)
+    |   |-- is_core_available() --> check for .venv-core/, core.py, cache/*.pkl
+    |   |-- get_sendig_version_from_ts() --> derive -v argument from TS.SNDIGVER
+    |   |-- run_core_validation() --> subprocess call to CORE CLI
+    |   |     python core.py validate -s send -v 3-1 -d /path/to/study
+    |   |-- normalize_core_report() --> convert CORE JSON to our schema
+    |   |     Mark with source="core"
+    |   |
+    |   v
+    |   CORE ValidationRuleResults (CORE-{rule_id}-{domain})
+    |
+    |-- Merge Results (CORE takes precedence)
+    |   |-- Add all CORE rules
+    |   |-- Remove custom rules that overlap (same domain + category)
+    |   |-- Log deduplication stats
+    |   |
+    |   v
+    |
+ValidationResults (rules + records + scripts + summary + core_conformance)
     |
     v
 save_results() --> generated/{study_id}/validation_results.json (cached)
@@ -45,34 +68,67 @@ Frontend React Query hooks --> TanStack tables + context panel
 ```
 backend/validation/
 +-- __init__.py
-+-- engine.py              # ValidationEngine class, CHECK_DISPATCH, orchestration
-+-- models.py              # Pydantic models (rule definitions, results, API responses)
++-- engine.py              # ValidationEngine class, CHECK_DISPATCH, two-engine orchestration
++-- models.py              # Pydantic models (rule definitions, results, ConformanceDetails)
++-- core_runner.py         # CDISC CORE subprocess wrapper + result normalizer
 +-- checks/
 |   +-- __init__.py
-|   +-- required_variables.py      # check_required_variables
-|   +-- variable_format.py         # check_variable_format
-|   +-- data_type_check.py         # check_data_types
-|   +-- controlled_terminology.py  # check_controlled_terminology
-|   +-- timing.py                  # check_date_format, check_study_day
-|   +-- referential_integrity.py   # check_usubjid_integrity, check_studyid_consistency,
-|   |                              # check_baseline_consistency, check_supp_integrity
-|   +-- completeness.py            # check_required_domains, check_ts_required_params,
-|   |                              # check_subject_count
-|   +-- data_integrity.py          # check_duplicates, check_value_ranges, check_exposure
+|   +-- study_design.py    # check_study_design (SD-001 through SD-007)
+|   +-- [legacy check modules removed - CORE handles conformance]
 +-- rules/
-|   +-- domain_level.yaml          # SEND-VAL-001 through SEND-VAL-006
-|   +-- cross_domain.yaml          # SEND-VAL-007 through SEND-VAL-010, plus Phase 2 (014, 015, 017)
-|   +-- completeness.yaml          # SEND-VAL-011 through SEND-VAL-013
+|   +-- study_design.yaml  # SD-001 through SD-007 (study design enrichment)
+|   +-- [domain_level.yaml, cross_domain.yaml, completeness.yaml REMOVED]
 +-- metadata/
-|   +-- sendig_31_variables.yaml   # Required/Expected/Permissible variables per domain
-|   +-- controlled_terms.yaml      # 14 CT codelists
+|   +-- sendig_31_variables.yaml   # [No longer used - CORE has authoritative metadata]
+|   +-- controlled_terms.yaml      # [No longer used - CORE has CT]
 +-- scripts/
-    +-- registry.py                # 4 fix script definitions + preview computation
+    +-- registry.py        # 4 fix script definitions + preview computation
+
+backend/_core_engine/      # CDISC CORE rules engine (git submodule)
++-- core.py               # CORE CLI entry point
++-- resources/
+    +-- cache/            # 208 .pkl files (SENDIG 3.0, 3.1, CT versions)
+    +-- templates/        # report-template.xlsx
+
+backend/.venv-core/       # Python 3.12 venv for CORE (separate from main backend venv)
 ```
 
 ### Key Initialization
 
 The validation router (`routers/validation.py`) exposes `init_validation(studies)`, called during FastAPI lifespan startup. This creates a singleton `ValidationEngine`, then auto-runs validation for every study so results are cached on startup. Subsequent GET requests serve cached JSON; POST `/validate` triggers a fresh run.
+
+### CDISC CORE Integration
+
+**Installation:**
+- CORE requires Python 3.12 (our main backend uses Python 3.13)
+- Separate venv at `backend/.venv-core/` with CORE dependencies
+- CORE repo cloned to `backend/_core_engine/`
+- Pre-populated rules cache (208 .pkl files) for SENDIG 3.0, 3.1
+
+**Runtime Behavior:**
+1. `is_core_available()` checks for venv, script, and cache
+2. If available: runs `core.py validate -s send -v {version} -d {study_dir}`
+3. Subprocess runs in `_core_engine/` directory (required for resource paths)
+4. Timeout: 120 seconds (typical runtime: 10-60s depending on study size)
+5. If CORE fails: logs warning, continues with custom rules only (graceful degradation)
+
+**Result Normalization:**
+- CORE JSON → our `ValidationRuleResult` schema
+- Rule IDs: `CORE-{core_id}-{domain}` (e.g., "CORE-000252-BW")
+- All CORE rules marked with `source="core"`
+- Evidence type: `{"type": "metadata", "lines": [...]}`
+- Fix tier: defaults to 1 (Accept as-is)
+
+**Precedence & Deduplication:**
+- CORE rules added first
+- Custom rules checked for overlap (domain + category match)
+- Overlapping custom rules removed (CORE is authoritative)
+- Non-overlapping custom rules retained (enrichment)
+
+**Conformance Metadata:**
+- If CORE runs: `core_conformance` object added to results
+- Contains: `engine_version`, `standard` (e.g., "SEND V3.1"), `ct_version`
+- Displayed in frontend for regulatory context
 
 ---
 
@@ -125,7 +181,7 @@ From `validation/models.py` -- one per fired rule (domain-qualified):
 
 ```python
 class ValidationRuleResult(BaseModel):
-    rule_id: str                           # e.g. "SEND-VAL-001-DM"
+    rule_id: str                           # e.g. "SD-004" or "CORE-000252-BW"
     severity: Literal["Error", "Warning", "Info"]
     domain: str
     category: str
@@ -137,6 +193,7 @@ class ValidationRuleResult(BaseModel):
     rationale: str                         # Rule's description field from YAML
     how_to_fix: str                        # Rule's fix_guidance field from YAML
     cdisc_reference: str | None = None
+    source: Literal["custom", "core"] = "custom"  # Rule origin (CORE vs custom)
 ```
 
 ### AffectedRecordResult Schema
@@ -183,6 +240,12 @@ class RuleDefinition(BaseModel):
     evidence_type: str = "metadata"
     cdisc_reference: str = ""
 
+class ConformanceDetails(BaseModel):
+    """CDISC CORE engine conformance metadata."""
+    engine_version: str       # e.g., "0.14.2"
+    standard: str             # e.g., "SEND V3.1"
+    ct_version: str           # e.g., "sendct-2023-12-15"
+
 class FixScriptDefinition(BaseModel):
     key: str
     name: str
@@ -201,6 +264,7 @@ class ValidationResults(BaseModel):
     records: dict[str, list[AffectedRecordResult]]  # rule_id -> records
     scripts: list[FixScriptDefinition]
     summary: dict[str, Any]
+    core_conformance: ConformanceDetails | None = None  # CORE engine metadata
 
 class ValidationResultsResponse(BaseModel):
     rules: list[ValidationRuleResult]
@@ -250,99 +314,58 @@ class ValidationSummaryResponse(BaseModel):
 
 ## Rules
 
-### domain_level.yaml (6 rules)
+### study_design.yaml (7 rules)
+
+**Note**: All CDISC conformance rules (required variables, controlled terminology, referential integrity, etc.) are now handled by CDISC CORE. Only study design enrichment rules remain as custom rules.
 
 | Rule ID | Name | Check Type | Applicable Domains | Severity | Default Fix Tier | Evidence Type |
 |---------|------|------------|-------------------|----------|-----------------|---------------|
-| SEND-VAL-001 | Required variables present | `required_variables` | ALL | Error | 3 | missing-value |
-| SEND-VAL-002 | Variable naming conventions | `variable_format` | ALL | Warning | 2 | value-correction |
-| SEND-VAL-003 | Data type validation | `data_type_check` | ALL | Error | 2 | value-correction |
-| SEND-VAL-004 | Controlled terminology validation | `controlled_terminology` | ALL | Warning | 2 | value-correction |
-| SEND-VAL-005 | Date/time format validation | `date_format` | ALL | Error | 2 | value-correction |
-| SEND-VAL-006 | Study day consistency | `study_day_check` | ALL | Warning | 2 | range-check |
-
-### cross_domain.yaml (7 rules)
-
-| Rule ID | Name | Check Type | Applicable Domains | Severity | Default Fix Tier | Evidence Type |
-|---------|------|------------|-------------------|----------|-----------------|---------------|
-| SEND-VAL-007 | USUBJID referential integrity | `usubjid_integrity` | ALL | Error | 3 | metadata |
-| SEND-VAL-008 | STUDYID consistency across domains | `studyid_consistency` | ALL | Error | 2 | value-correction |
-| SEND-VAL-009 | Baseline flag consistency | `baseline_consistency` | LB, BW, CL, EG, FW, OM, VS | Warning | 2 | metadata |
-| SEND-VAL-010 | SUPP-- domain referential integrity | `supp_integrity` | ALL | Error | 3 | metadata |
-| SEND-VAL-014 | Duplicate record detection | `duplicate_detection` | ALL | Error | 3 | metadata |
-| SEND-VAL-015 | Value range checks | `value_ranges` | BW, OM | Warning | 1 | range-check |
-| SEND-VAL-017 | Exposure domain validation | `exposure_validation` | EX | Warning | 1 | range-check |
-
-### completeness.yaml (3 rules)
-
-| Rule ID | Name | Check Type | Applicable Domains | Severity | Default Fix Tier | Evidence Type |
-|---------|------|------------|-------------------|----------|-----------------|---------------|
-| SEND-VAL-011 | Required domains present | `required_domains` | STUDY | Error | 3 | metadata |
-| SEND-VAL-012 | TS required parameters | `ts_required_params` | TS | Error | 3 | missing-value |
-| SEND-VAL-013 | Subject count consistency across domains | `subject_count` | ALL | Info | 1 | metadata |
-
-**Note**: Rule IDs SEND-VAL-016 and SEND-VAL-018 are not defined (gaps in the numbering). The total is **16 rule definitions** in YAML, but the build prompt references 18 rules. The two planned-but-not-implemented rules were SEND-VAL-016 (visit day alignment) and SEND-VAL-018 (domain-specific findings checks).
+| SD-001 | Orphaned subjects | `study_design` | STUDY | Warning | 1 | metadata |
+| SD-002 | Ambiguous control assignments | `study_design` | STUDY | Info | 1 | metadata |
+| SD-003 | Unmatched dose level | `study_design` | STUDY | Warning | 1 | metadata |
+| SD-004 | Missing trial summary parameters | `study_design` | TS | Info | 1 | missing-value |
+| SD-005 | Dose inconsistency | `study_design` | STUDY | Warning | 1 | metadata |
+| SD-006 | Subject without exposure | `study_design` | STUDY | Warning | 1 | metadata |
+| SD-007 | Incomplete trial design elements | `study_design` | STUDY | Info | 1 | metadata |
 
 ### What Each Rule Checks
 
-1. **SEND-VAL-001** -- For each loaded domain, checks that all variables marked `core: "Req"` in `sendig_31_variables.yaml` exist as columns and are not entirely null/empty.
-2. **SEND-VAL-002** -- Checks variable name length <= 8 chars and uppercase alphanumeric only. For findings domains (MI, MA, CL, LB, OM, BW, FW), checks that non-standard variables use the expected 2-character domain prefix. Validates against SENDIG metadata via `_get_domain_variables()` to avoid false positives on known standard variables.
-3. **SEND-VAL-003** -- Checks columns ending in STRESN, SEQ, DY, DOSE, VISITDY, VISITNUM contain numeric values. Reports each unique non-numeric value with its count.
-4. **SEND-VAL-004** -- Validates 10 CT check mappings: SEX, SPECIES, STRAIN (in DM); DOMAIN (all); MIRESCAT/MARESCAT; --BLFL; EXROUTE, EXDOSFRM, EXDOSFRQ (in EX). Uses `_find_suggestions()` for fuzzy matching. STRAIN validation is per-species: reads SPECIES from DM, builds valid terms from species-specific sublists in YAML. Uses `_classify_match()` to distinguish case/whitespace-only mismatches (emits `code-mapping` evidence) from real value errors (emits `value-correction`).
-5. **SEND-VAL-005** -- Checks all `--DTC` columns match ISO 8601 regex. Detects MM/DD/YYYY, DD-Mon-YYYY, DD.MM.YYYY formats. Attempts conversion to suggest fix.
-6. **SEND-VAL-006** -- Compares `--DY` values against calculated study day from `--DTC` and DM.RFSTDTC. Tolerance configurable (default +/-1 day).
-7. **SEND-VAL-007** -- Every USUBJID in non-DM domains must exist in DM.USUBJID.
-8. **SEND-VAL-008** -- STUDYID must be identical across all domains. Finds the most common value, flags deviations.
-9. **SEND-VAL-009** -- Checks --BLFL is only "Y" or null (not "N"). Checks at most one baseline per subject/testcode combination.
-10. **SEND-VAL-010** -- SUPP-- domains' USUBJIDs must exist in the parent domain (e.g., SUPPMI subjects must be in MI).
-11. **SEND-VAL-011** -- Required domains: DM, TS, TA, TE, TX, EX. Recommended: SE, DS. Also checks at least one findings domain exists.
-12. **SEND-VAL-012** -- TS must contain required TSPARMCD values: STUDYID, SSTDTC, SENDTC, SENDVER, SPECIES, STRAIN, ROUTE. Recommended: SSESSION, SDESIGN, TRT, TRTV, SPONSOR.
-13. **SEND-VAL-013** -- Flags domains where unique USUBJID count exceeds DM's count (may indicate orphan subjects).
-14. **SEND-VAL-014** -- Detects duplicate USUBJID + --SEQ combinations within a domain.
-15. **SEND-VAL-015** -- Body weight (BW) and organ measurement (OM) --STRESN values must be positive (> 0).
-16. **SEND-VAL-017** -- EX-specific: EXDOSE must be >= 0. EXDOSU must be consistent (single unit value across all records).
+These rules interpret trial design domains (DM, TA, TE, TX, EX) to build subject context and flag study design interpretation issues:
+
+1. **SD-001** -- Subjects in DM without corresponding ARM assignments in TA or TX
+2. **SD-002** -- Subjects assigned to control groups with ambiguous or missing vehicle information
+3. **SD-003** -- Subjects with exposure records (EX) that don't match any defined dose level in TX
+4. **SD-004** -- TS domain missing required parameters (SPECIES, STRAIN, ROUTE, SSTDTC, SSTYP) that reduce study metadata completeness
+5. **SD-005** -- Subjects with exposure dose values that differ from their assigned treatment arm dose in TX
+6. **SD-006** -- Subjects in DM with ARM assignments but no corresponding exposure records (EX)
+7. **SD-007** -- Trial design with incomplete element definitions in TA/TE or missing SET-level parameters in TX
 
 ---
 
 ## Check Types
 
-The `CHECK_DISPATCH` dict in `engine.py` maps 15 check type strings to handler functions:
+The `CHECK_DISPATCH` dict in `engine.py` maps check type strings to handler functions. Since CDISC CORE now handles all conformance validation, only custom study design enrichment checks remain:
 
 | Check Type Key | Handler Function | File | What It Does | Parameters |
 |---------------|-----------------|------|-------------|------------|
-| `required_variables` | `check_required_variables` | `required_variables.py` | Checks all "Req" variables per domain from SENDIG metadata are present as columns and not entirely null | None |
-| `variable_format` | `check_variable_format` | `variable_format.py` | Variable name length <= 8, uppercase alphanumeric | `max_length` (default 8) |
-| `data_type_check` | `check_data_types` | `data_type_check.py` | Columns ending in STRESN/SEQ/DY/DOSE/VISITDY/VISITNUM must be numeric | None |
-| `controlled_terminology` | `check_controlled_terminology` | `controlled_terminology.py` | Validates values against CT codelists. Fuzzy matching for suggestions. | Receives extra `ct_data` kwarg |
-| `date_format` | `check_date_format` | `timing.py` | All --DTC columns must match ISO 8601 regex | None |
-| `study_day_check` | `check_study_day` | `timing.py` | --DY = calculated from --DTC minus DM.RFSTDTC | `tolerance` (default 1) |
-| `usubjid_integrity` | `check_usubjid_integrity` | `referential_integrity.py` | Every USUBJID in non-DM domains exists in DM.USUBJID | None |
-| `studyid_consistency` | `check_studyid_consistency` | `referential_integrity.py` | STUDYID identical across all domains | None |
-| `baseline_consistency` | `check_baseline_consistency` | `referential_integrity.py` | --BLFL only "Y" or null; at most one baseline per subject/testcode | None |
-| `supp_integrity` | `check_supp_integrity` | `referential_integrity.py` | SUPP-- domain USUBJIDs exist in parent domain | None |
-| `required_domains` | `check_required_domains` | `completeness.py` | Required domains (DM, TS, TA, TE, TX, EX) are present | `required`, `recommended`, `findings_required` |
-| `ts_required_params` | `check_ts_required_params` | `completeness.py` | TS contains required TSPARMCD values | `required`, `recommended` |
-| `subject_count` | `check_subject_count` | `completeness.py` | Domain USUBJID count not greater than DM | None |
-| `duplicate_detection` | `check_duplicates` | `data_integrity.py` | Duplicate USUBJID + --SEQ within a domain | None |
-| `value_ranges` | `check_value_ranges` | `data_integrity.py` | BW/OM --STRESN must be > 0 | None |
-| `exposure_validation` | `check_exposure` | `data_integrity.py` | EXDOSE >= 0, EXDOSU consistent | None |
+| `study_design` | `check_study_design` | `study_design.py` | Interprets trial design domains (DM, TA, TE, TX, EX) to build subject context and flag study design interpretation issues (orphaned subjects, ambiguous controls, dose inconsistencies, missing trial parameters) | Receives extra `study` kwarg (StudyInfo) for provenance metadata |
+
+**Note**: All CDISC conformance checks (required variables, controlled terminology, referential integrity, data types, date formats, etc.) are now handled by CDISC CORE (400+ rules). Legacy check handlers for these have been removed.
 
 ### Handler Function Signature
 
-All check handlers share this signature:
-
 ```python
-def check_xxx(
+def check_study_design(
     rule: RuleDefinition,
     domains: dict[str, pd.DataFrame],
     metadata: dict,
     *,
     rule_id_prefix: str,
-    # optional: ct_data for controlled_terminology check
+    study: StudyInfo | None = None,
 ) -> list[AffectedRecordResult]:
 ```
 
-Each handler constructs `AffectedRecordResult` objects with `issue_id=""` (assigned later by engine), a domain-qualified `rule_id` (e.g., `f"{rule_id_prefix}-{domain_code}"`), and properly typed `evidence` dicts. Results are capped to prevent flooding (typically 20-200 per check).
+The handler constructs `AffectedRecordResult` objects with `issue_id=""` (assigned later by engine), a domain-qualified `rule_id` (e.g., `f"{rule_id_prefix}"`), and properly typed `evidence` dicts. Results are capped to prevent flooding (typically 20-200 per check).
 
 ---
 
@@ -408,30 +431,19 @@ export type RecordEvidence =
 
 | Check Type | Evidence Type(s) Produced |
 |-----------|--------------------------|
-| `required_variables` | `missing-value` |
-| `variable_format` | `value-correction` |
-| `data_type_check` | `value-correction` |
-| `controlled_terminology` | `value-correction` (single match), `value-correction-multi` (multiple candidates), `value-correction` with generic "to" (no match) |
-| `date_format` | `value-correction` |
-| `study_day_check` | `range-check` |
-| `usubjid_integrity` | `metadata` |
-| `studyid_consistency` | `value-correction` |
-| `baseline_consistency` | `value-correction` (invalid flag value), `metadata` (multiple baselines) |
-| `supp_integrity` | `metadata` |
-| `required_domains` | `metadata` |
-| `ts_required_params` | `missing-value` |
-| `subject_count` | `metadata` |
-| `duplicate_detection` | `metadata` |
-| `value_ranges` | `range-check` |
-| `exposure_validation` | `range-check` (EXDOSE), `metadata` (EXDOSU consistency) |
+| `study_design` | `metadata` (orphaned subjects, ambiguous controls, dose inconsistencies, subject without exposure, incomplete trial elements), `missing-value` (missing TS parameters) |
+
+**Note**: CDISC CORE rules produce evidence of type `metadata` with a `lines` array containing structured key-value pairs. Evidence types like `value-correction`, `range-check`, and other specialized types are no longer used in custom rules.
 
 ---
 
 ## SENDIG Metadata
 
-### sendig_31_variables.yaml
+**Note**: The `sendig_31_variables.yaml` and `controlled_terms.yaml` files in `validation/metadata/` are legacy files no longer used by the validation engine. CDISC CORE now provides authoritative metadata from its pre-cached rules (208 .pkl files in `_core_engine/resources/cache/`). These YAML files are preserved for reference but are not loaded by the engine.
 
-Defines required, expected, and permissible variables for **17 domains**:
+### sendig_31_variables.yaml (Legacy)
+
+Previously defined required, expected, and permissible variables for **17 domains**:
 
 | Domain | Class | Required (Req) Variable Count | Expected (Exp) Variable Count |
 |--------|-------|------|------|
@@ -454,9 +466,9 @@ Defines required, expected, and permissible variables for **17 domains**:
 | PC | Findings | 12 (STUDYID, DOMAIN, USUBJID, PCSEQ, PCTESTCD, PCTEST, PCORRES, PCORRESU, PCSTRESC, PCSTRESN, PCSTRESU, PCSPEC) | 2 (PCBLFL, PCDY) |
 | PP | Findings | 11 (STUDYID, DOMAIN, USUBJID, PPSEQ, PPTESTCD, PPTEST, PPORRES, PPORRESU, PPSTRESC, PPSTRESN, PPSTRESU) | 0 |
 
-### controlled_terms.yaml
+### controlled_terms.yaml (Legacy)
 
-Defines **14 codelists**:
+Previously defined **14 codelists**:
 
 | Codelist | Extensible | Term Count | Description |
 |----------|-----------|------------|-------------|
@@ -483,35 +495,36 @@ Defines **14 codelists**:
 
 ### What is Real (Working)
 
-- **Full validation engine**: 16 rule definitions across 3 YAML files, 15 check types with handler functions
+- **Two-engine validation architecture**: CDISC CORE (400+ conformance rules) + 7 custom study design enrichment rules
+- **CDISC CORE integration**: Python 3.12 subprocess with 208 pre-cached rules (.pkl files), automatic version detection from TS.SNDIGVER, result normalization, graceful degradation if unavailable
+- **Study design enrichment**: 7 SD-* rules that interpret trial design domains (DM, TA, TE, TX, EX) to flag orphaned subjects, ambiguous controls, dose inconsistencies
 - **Reads actual XPT data**: Uses existing `xpt_processor.read_xpt()`, loads all domains into DataFrames
-- **Structured results**: Domain-qualified rule IDs, deterministic issue IDs, typed evidence objects
-- **Result caching**: JSON cache in `generated/{study_id}/validation_results.json`
+- **Structured results**: Domain-qualified rule IDs, deterministic issue IDs, typed evidence objects, source tracking ("core" vs "custom")
+- **Result caching**: JSON cache in `generated/{study_id}/validation_results.json` with core_conformance metadata
 - **Auto-validation on startup**: `init_validation()` runs validation for all studies at server start
 - **4 API endpoints**: Run validation, get results, get affected records (paginated), get fix script preview
 - **3 frontend hooks**: `useValidationResults`, `useAffectedRecords`, `useRunValidation` (React Query)
-- **Fix scripts**: 4 generic scripts with live preview computation from actual data
-- **SENDIG metadata**: 17 domains defined with variable designations, 14 CT codelists
-- **PointCross results**: ~7 rules fire, ~22 affected records, ~1.2s execution time
+- **Fix scripts**: 4 generic scripts with live preview computation from actual data (annotation-only, no data modification)
+- **Precedence & deduplication**: CORE takes precedence over custom rules when (domain, category) overlap, with logging of removed duplicates
+- **PointCross results**: 1 custom rule fires (SD-004 - missing TS parameters), 0 CORE rules (study is conformant), ~0.5s execution time
 
 ### What is Stub or Missing
 
-- **SPECIMEN CT check**: Commented out in `controlled_terminology.py` CT_CHECKS list with note: "SEND uses compound TYPE, SITE format... requires the full CDISC Library codelist"
-- **Visit day alignment (SEND-VAL-016)**: Not implemented
-- **Domain-specific findings checks (SEND-VAL-018)**: Not implemented
 - **Fix scripts do not write back**: Applying a "fix" only updates annotation status, no XPT modification
-- **Official CDISC CT not embedded**: Metadata compiled from public SENDIG 3.1 documentation, not from CDISC Library API
-- **No comprehensive test suite**: `backend/tests/test_validation.py` was specified but may not cover all check types
+- **CORE not installed by default**: Requires manual setup (Python 3.12, clone cdisc-rules-engine, install dependencies, cache rules)
+- **No comprehensive test suite**: `backend/tests/test_validation.py` may not cover all check types or CORE integration scenarios
+- **CORE timeout**: Hardcoded to 120s, may need tuning for very large studies
 
 ### Production Needs
 
-1. **CDISC Library integration**: Replace hand-compiled CT lists with official CDISC Library API data
-2. **SENDIG metadata verification**: Verify variable core designations line-by-line against published standard
-3. **More rules**: Implement SEND-VAL-016, SEND-VAL-018, and additional domain-specific checks
-4. **Write-back capability**: Fix scripts currently only annotate; production needs actual data modification
-5. **Multi-study testing**: Validate against 5-10 real SEND submissions, compare with Pinnacle 21/CDISC CORE output
-7. **Performance profiling**: Test with large studies (millions of records)
-8. **Domain expert review**: Have SEND domain expert review every rule definition
+1. **CORE installation automation**: Add setup script to automate Python 3.12 installation, repo cloning, venv creation, dependency installation, and cache population
+2. **CORE version updates**: Establish process for updating CORE engine and rule cache when new SENDIG/SEND versions are published
+3. **Study design rule refinement**: Domain expert review of SD-* rules to ensure they accurately detect real study design issues without false positives
+4. **Write-back capability**: Fix scripts currently only annotate; production needs actual data modification (requires XPT write support)
+5. **Multi-study testing**: Validate against 10-20 real SEND submissions to verify CORE integration and custom rule quality
+6. **Performance profiling**: Test with large studies (millions of records) to identify bottlenecks in CORE subprocess and result normalization
+7. **Error handling**: Add retry logic, better timeout handling, and fallback strategies for CORE failures
+8. **Conformance metadata display**: Frontend UI to show CORE engine version, SENDIG version, CT version from core_conformance object
 
 ---
 
@@ -519,22 +532,16 @@ Defines **14 codelists**:
 
 | File | What It Does | Key Classes/Functions |
 |------|-------------|----------------------|
-| `validation/engine.py` | Main engine: loads rules/metadata/CT, orchestrates validation, dispatches checks, builds results, manages cache | `ValidationEngine`, `CHECK_DISPATCH` (dict), `validate()`, `_run_rule()`, `_build_description()`, `_build_scripts()`, `get_affected_records()`, `save_results()`, `load_cached_results()`, `load_study_domains()` |
-| `validation/models.py` | All Pydantic models for rules, results, and API responses | `RuleDefinition`, `ValidationRuleResult`, `AffectedRecordResult`, `FixScriptDefinition`, `FixScriptPreviewRow`, `ValidationResults`, `ValidationResultsResponse`, `AffectedRecordsResponse`, `FixScriptPreviewResponse`, `ValidationSummaryResponse` |
-| `validation/checks/required_variables.py` | Checks Required variables present and not entirely null per domain | `check_required_variables()` |
-| `validation/checks/variable_format.py` | Variable naming conventions: length, case, alphanumeric | `check_variable_format()`, `STANDARD_VARS` (set), `FINDINGS_DOMAINS` (set) |
-| `validation/checks/data_type_check.py` | Numeric columns contain numeric data | `check_data_types()`, `NUMERIC_SUFFIXES` (set) |
-| `validation/checks/controlled_terminology.py` | CT field validation with fuzzy suggestion matching | `check_controlled_terminology()`, `CT_CHECKS` (list of tuples), `_find_suggestions()`, `_find_column()`, `_get_visit()` |
-| `validation/checks/timing.py` | Date format (ISO 8601) and study day consistency | `check_date_format()`, `check_study_day()`, `ISO_DATE_RE` (regex), `_try_convert_to_iso()`, `_get_visit_for_row()` |
-| `validation/checks/referential_integrity.py` | USUBJID integrity, STUDYID consistency, baseline flags, SUPP-- references | `check_usubjid_integrity()`, `check_studyid_consistency()`, `check_baseline_consistency()`, `check_supp_integrity()` |
-| `validation/checks/completeness.py` | Required domains, TS parameters, subject counts | `check_required_domains()`, `check_ts_required_params()`, `check_subject_count()`, `FINDINGS_DOMAINS` (set) |
-| `validation/checks/data_integrity.py` | Duplicate detection, value ranges, exposure validation | `check_duplicates()`, `check_value_ranges()`, `check_exposure()`, `_get_visit()` |
-| `validation/rules/domain_level.yaml` | 6 rules: SEND-VAL-001 through SEND-VAL-006 | -- |
-| `validation/rules/cross_domain.yaml` | 7 rules: SEND-VAL-007 through SEND-VAL-010, SEND-VAL-014, SEND-VAL-015, SEND-VAL-017 | -- |
-| `validation/rules/completeness.yaml` | 3 rules: SEND-VAL-011 through SEND-VAL-013 | -- |
-| `validation/metadata/sendig_31_variables.yaml` | Required/Expected variable definitions for 17 SEND domains | -- |
-| `validation/metadata/controlled_terms.yaml` | 14 CT codelists (SEX, SPECIES, STRAIN, ROUTE, DOSE_FORM, etc.) | -- |
-| `validation/scripts/registry.py` | Fix script definitions and preview computation | `SCRIPTS` (list), `get_scripts()`, `get_script()`, `compute_preview()`, `PREVIEW_HANDLERS` (dict), `_preview_strip_whitespace()`, `_preview_uppercase_ct()`, `_preview_fix_domain()`, `_preview_fix_dates()` |
+| `validation/engine.py` | Main engine: loads custom rules, orchestrates two-engine validation (CORE + custom), dispatches checks, merges results with precedence, builds results, manages cache | `ValidationEngine`, `CHECK_DISPATCH` (dict with 1 handler), `validate()`, `_run_rule()`, `_build_description()`, `_build_scripts()`, `get_affected_records()`, `save_results()`, `load_cached_results()`, `load_study_domains()` |
+| `validation/core_runner.py` | CDISC CORE subprocess wrapper and result normalizer | `is_core_available()`, `run_core_validation()`, `normalize_core_report()`, `get_sendig_version_from_ts()`, `_map_severity()`, `_map_category()` |
+| `validation/models.py` | All Pydantic models for rules, results, and API responses | `RuleDefinition`, `ValidationRuleResult`, `AffectedRecordResult`, `FixScriptDefinition`, `FixScriptPreviewRow`, `ValidationResults`, `ConformanceDetails`, `ValidationResultsResponse`, `AffectedRecordsResponse`, `FixScriptPreviewResponse`, `ValidationSummaryResponse` |
+| `validation/checks/study_design.py` | Study design enrichment checks: orphaned subjects, ambiguous controls, dose inconsistencies, missing TS parameters | `check_study_design()`, `build_subject_context()`, helper functions (cached) |
+| `validation/rules/study_design.yaml` | 7 SD-* rules for study design interpretation issues | -- |
+| `validation/metadata/sendig_31_variables.yaml` | **LEGACY** — No longer used (CORE has authoritative metadata) | -- |
+| `validation/metadata/controlled_terms.yaml` | **LEGACY** — No longer used (CORE has authoritative CT) | -- |
+| `validation/scripts/registry.py` | Fix script definitions and preview computation | `SCRIPTS` (list), `get_scripts()`, `get_script()`, `compute_preview()`, `PREVIEW_HANDLERS` (dict), `_preview_strip_whitespace()`, `_preview_uppercase_ct()`, `_preview_fix_domain()`, `_preview_fix_dates()`, `apply_all_fixes()` |
+| `_core_engine/core.py` | CDISC CORE CLI entry point (separate Python 3.12 venv) | CORE commands (validate, etc.) |
+| `_core_engine/resources/cache/` | Pre-cached CORE rules (208 .pkl files for SENDIG 3.0, 3.1) | -- |
 | `routers/validation.py` | FastAPI router: 4 endpoints + initialization | `router`, `init_validation()`, `run_validation()`, `get_validation_results()`, `get_affected_records()`, `get_script_preview()` |
 | `frontend/src/hooks/useValidationResults.ts` | React Query hook for cached validation results | `useValidationResults()`, `ValidationRuleResult` (interface), `FixScriptDef` (interface), `ValidationResultsData` (interface) |
 | `frontend/src/hooks/useAffectedRecords.ts` | React Query hook for paginated affected records | `useAffectedRecords()`, `AffectedRecordData` (interface), `AffectedRecordsResponse` (interface) |
@@ -557,4 +564,5 @@ Defines **14 codelists**:
 
 ## Changelog
 
+- 2026-02-11: CDISC CORE integration — Removed 16 redundant SEND-VAL-* conformance rules (completeness.yaml, cross_domain.yaml, domain_level.yaml), integrated CDISC CORE engine (400+ rules via Python 3.12 subprocess), implemented two-engine architecture with CORE precedence, updated all documentation sections to reflect custom rules now only handle study design enrichment (SD-*)
 - 2026-02-08: Consolidated from `validation-engine-build-prompt.md`, `validation-redesign-prompt.md`, `validation-engine-audit-prompt.md`, `views/validation.md`, CLAUDE.md (validation sections), and all backend/frontend code

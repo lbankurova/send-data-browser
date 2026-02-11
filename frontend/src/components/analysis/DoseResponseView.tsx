@@ -41,6 +41,7 @@ import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import type { DoseResponseRow, RuleResult, SignalSummaryRow, NoaelSummaryRow } from "@/types/analysis-views";
 import type { TimecourseResponse } from "@/types/timecourse";
+import type { ToxFinding } from "@/types/annotations";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -88,6 +89,8 @@ interface EndpointSummary {
   signal_score: number;
   min_n: number | null;
   has_timecourse: boolean;
+  sex_divergence: number | null; // |d_M - d_F|
+  divergent_sex: "M" | "F" | null; // Which sex has larger effect
 }
 
 interface OrganGroup {
@@ -162,6 +165,32 @@ function deriveEndpointSummaries(data: DoseResponseRow[]): EndpointSummary[] {
 
     const direction = hasUp && hasDown ? "mixed" : hasUp ? "up" : hasDown ? "down" : null;
 
+    // Compute sex divergence: |d_M - d_F|
+    let sexDivergence: number | null = null;
+    let divergentSex: "M" | "F" | null = null;
+    if (sexSet.has("M") && sexSet.has("F")) {
+      const mRows = rows.filter((r) => r.sex === "M");
+      const fRows = rows.filter((r) => r.sex === "F");
+      let maxEffectM: number | null = null;
+      let maxEffectF: number | null = null;
+      for (const r of mRows) {
+        if (r.effect_size != null) {
+          const abs = Math.abs(r.effect_size);
+          if (maxEffectM === null || abs > maxEffectM) maxEffectM = abs;
+        }
+      }
+      for (const r of fRows) {
+        if (r.effect_size != null) {
+          const abs = Math.abs(r.effect_size);
+          if (maxEffectF === null || abs > maxEffectF) maxEffectF = abs;
+        }
+      }
+      if (maxEffectM != null && maxEffectF != null) {
+        sexDivergence = Math.abs(maxEffectM - maxEffectF);
+        divergentSex = maxEffectM > maxEffectF ? "M" : "F";
+      }
+    }
+
     summaries.push({
       endpoint_label: label,
       organ_system: first.organ_system,
@@ -177,6 +206,8 @@ function deriveEndpointSummaries(data: DoseResponseRow[]): EndpointSummary[] {
       signal_score: computeSignalScore(minTrendP, maxEffect),
       min_n: minN,
       has_timecourse: first.data_type === "continuous" || first.domain === "CL",
+      sex_divergence: sexDivergence,
+      divergent_sex: divergentSex,
     });
   }
 
@@ -279,6 +310,9 @@ export function DoseResponseView({
   const ruleResults: RuleResult[] = ruleResultsData ?? [];
   const signalSummary: SignalSummaryRow[] = signalSummaryData ?? [];
   const noaelSummary: NoaelSummaryRow[] = noaelData ?? [];
+
+  // ToxFinding annotations (for assessment status display)
+  const { data: toxFindingAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-finding");
 
   // Metrics tab state
   const [metricsFilters, setMetricsFilters] = useState<{
@@ -780,6 +814,17 @@ export function DoseResponseView({
                               {directionArrow(ep.direction)}
                             </span>
                           )}
+                          {ep.sex_divergence != null && ep.sex_divergence > 0.5 && (
+                            <span
+                              className={cn(
+                                "text-[10px] font-semibold",
+                                ep.divergent_sex === "M" ? "text-[#3B82F6]" : "text-[#EC4899]"
+                              )}
+                              title={`Sex divergence: |d_M - d_F| = ${ep.sex_divergence.toFixed(2)} (${ep.divergent_sex} has larger effect)`}
+                            >
+                              {ep.divergent_sex}
+                            </span>
+                          )}
                         </div>
                         {/* Row 2: pattern badge + min p + max |d| */}
                         <div className="mt-0.5 flex items-center gap-1.5">
@@ -816,6 +861,12 @@ export function DoseResponseView({
                               ◷
                             </span>
                           )}
+                          {toxFindingAnnotations?.[ep.endpoint_label] &&
+                           toxFindingAnnotations[ep.endpoint_label].treatmentRelated !== "Not Evaluated" && (
+                            <span className="text-[10px] text-muted-foreground/40" title="Assessment complete">
+                              ✓
+                            </span>
+                          )}
                         </div>
                       </button>
                     );
@@ -834,7 +885,7 @@ export function DoseResponseView({
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Summary header */}
         {selectedSummary ? (
-          <div className="shrink-0 border-b px-3 py-1.5">
+          <div className="sticky top-0 z-10 shrink-0 border-b bg-background px-3 py-1.5">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <h2 className="text-sm font-semibold">{selectedSummary.endpoint_label}</h2>
@@ -911,6 +962,19 @@ export function DoseResponseView({
                       {noael.noael_dose_value} {noael.noael_dose_unit}
                     </span>
                     <span className="text-muted-foreground/60"> (Dose {noael.noael_dose_level})</span>
+                  </span>
+                );
+              })()}
+              {selectedEndpoint && toxFindingAnnotations?.[selectedEndpoint] && (() => {
+                const ann = toxFindingAnnotations[selectedEndpoint];
+                // Only show if assessment has been started (not "Not Evaluated")
+                if (ann.treatmentRelated === "Not Evaluated") return null;
+                const trLabel = ann.treatmentRelated.toLowerCase();
+                const advLabel = ann.adversity.toLowerCase();
+                return (
+                  <span>
+                    <span className="text-muted-foreground">Assessed: </span>
+                    <span>{trLabel}, {advLabel}</span>
                   </span>
                 );
               })()}
