@@ -1,0 +1,32 @@
+[
+  {
+    "rule_id": "Prov-001",
+    "icon": "info",
+    "message": "Dose values extracted from EX domain.",
+    "link_to_rule": null
+  },
+  {
+    "rule_id": "Prov-BM1",
+    "icon": "warning",
+    "message": "2 subjects in DM have ARMCD not defined in TA. These subjects are excluded from group statistics.",
+    "link_to_rule": "SD-001"
+  },
+  {
+    "rule_id": "Prov-BM2",
+    "icon": "warning",
+    "message": "ARM label mismatch for ARMCD \"2\": DM says \"Low Dose\", TA says \"2 mg/kg PCDRUG\".",
+    "link_to_rule": "SD-007"
+  },
+  {
+    "rule_id": "Prov-BM3",
+    "icon": "warning",
+    "message": "TS domain is missing SPECIES, STRAIN, and ROUTE. Study metadata is incomplete.",
+    "link_to_rule": "SD-004"
+  },
+  {
+    "rule_id": "Prov-BM4",
+    "icon": "warning",
+    "message": "DOSE=0 group labeled \"Sham Group\" (ambiguous control). Using as comparator with caution.",
+    "link_to_rule": "SD-003"
+  }
+]

@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 
 GENERATED_DIR = Path(__file__).parent.parent / "generated"
+SCENARIOS_DIR = Path(__file__).parent.parent / "scenarios"
 
 VALID_VIEW_NAMES = {
     "study-signal-summary",
@@ -55,6 +56,10 @@ async def get_analysis_view(study_id: str, view_name: str):
 
     file_name = _slug_to_file[view_name]
     file_path = GENERATED_DIR / study_id / file_name
+
+    # Fallback to scenario fixtures for SCENARIO-* IDs
+    if not file_path.exists():
+        file_path = SCENARIOS_DIR / study_id / file_name
 
     if not file_path.exists():
         raise HTTPException(

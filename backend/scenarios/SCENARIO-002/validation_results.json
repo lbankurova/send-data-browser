@@ -1,0 +1,19 @@
+{
+  "rules": [],
+  "records": {},
+  "scripts": [],
+  "summary": {
+    "total_issues": 0,
+    "errors": 0,
+    "warnings": 0,
+    "info": 0,
+    "domains_affected": [],
+    "elapsed_seconds": 0.38,
+    "validated_at": "2026-02-01T00:00:00+00:00"
+  },
+  "core_conformance": {
+    "engine_version": "0.7.0",
+    "standard": "SENDIG 3.1",
+    "ct_version": "2024-06-28"
+  }
+}

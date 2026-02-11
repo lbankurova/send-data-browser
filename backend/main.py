@@ -13,6 +13,7 @@ from routers.annotations import router as annotations_router
 from routers.validation import init_validation, router as validation_router
 from routers.temporal import init_temporal, router as temporal_router
 from routers.import_study import router as import_router
+from routers.scenarios import router as scenarios_router
 from services.study_discovery import discover_studies
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -48,6 +49,7 @@ app.include_router(annotations_router)
 app.include_router(validation_router)
 app.include_router(temporal_router)
 app.include_router(import_router)
+app.include_router(scenarios_router)
 
 # Serve built React frontend if static/ directory exists
 if STATIC_DIR.is_dir():

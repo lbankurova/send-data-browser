@@ -65,6 +65,7 @@ Specs in `incoming/` represent pending or in-progress features. Specs in `incomi
 |-------|--------|-------|
 | `incoming/cdisc-core-integration.md` | Not started | CDISC CORE engine integration (400+ rules). Requires Python 3.12 venv, separate repo clone. |
 | `incoming/dose-response-redesign.md` | Phase 1 partial (2.5/4) | NOAEL ✅, time-course default-expanded ✅, time-course repositioning ❌, sticky header ❌, volcano scatter ❌ |
+| `incoming/send-browser-design-mode.md` | v1 implemented 2026-02-11 | Toggle + 4 core scenarios (SCN-001–SCN-004). Checklist overlay (v2) and state simulator (v3) deferred. |
 | `incoming/archive/send-study-context-enrichment.md` | ✅ Archived 2026-02-11 | Subject context enrichment layer fully implemented |
 | `incoming/archive/send-enrichment-validation-provenance.md` | ✅ Archived 2026-02-11 | SD-001 to SD-007 validation rules + Prov-001 to Prov-007 messages |
 | `incoming/archive/treatment-arms.md` | ✅ Archived 2026-02-11 | Dynamic dose groups with ARMCD mapping |

@@ -1,0 +1,222 @@
+[
+  {
+    "rule_id": "R01",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALB_F",
+    "organ_system": "hepatic",
+    "output_text": "Albumin: significant dose-dependent down in F (monotonic_decrease).",
+    "evidence_refs": [
+      "LB: Albumin (F)"
+    ]
+  },
+  {
+    "rule_id": "R02",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALB_F",
+    "organ_system": "hepatic",
+    "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0001, d=-2.58).",
+    "evidence_refs": [
+      "LB: Albumin (F)"
+    ]
+  },
+  {
+    "rule_id": "R03",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALB_F",
+    "organ_system": "hepatic",
+    "output_text": "Significant dose-response trend (p=0.0000).",
+    "evidence_refs": [
+      "LB: Albumin (F)"
+    ]
+  },
+  {
+    "rule_id": "R04",
+    "scope": "endpoint",
+    "severity": "warning",
+    "context_key": "LB_ALB_F",
+    "organ_system": "hepatic",
+    "output_text": "Albumin classified as adverse in F (p=0.0001).",
+    "evidence_refs": [
+      "LB: Albumin (F)"
+    ]
+  },
+  {
+    "rule_id": "R05",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALB_F",
+    "organ_system": "hepatic",
+    "output_text": "Albumin: monotonic_decrease across dose groups in F.",
+    "evidence_refs": [
+      "LB: Albumin (F)"
+    ]
+  },
+  {
+    "rule_id": "R10",
+    "scope": "endpoint",
+    "severity": "warning",
+    "context_key": "LB_ALB_F",
+    "organ_system": "hepatic",
+    "output_text": "Albumin: Cohen's d = -2.58 at high dose in F.",
+    "evidence_refs": [
+      "LB: Albumin (F)"
+    ]
+  },
+  {
+    "rule_id": "R07",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALB_M",
+    "organ_system": "hepatic",
+    "output_text": "Albumin: inconsistent dose-response in M.",
+    "evidence_refs": [
+      "LB: Albumin (M)"
+    ]
+  },
+  {
+    "rule_id": "R07",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALB_F",
+    "organ_system": "hepatic",
+    "output_text": "Albumin: inconsistent dose-response in F.",
+    "evidence_refs": [
+      "LB: Albumin (F)"
+    ]
+  },
+  {
+    "rule_id": "R07",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALB_M",
+    "organ_system": "hepatic",
+    "output_text": "Albumin: inconsistent dose-response in M.",
+    "evidence_refs": [
+      "LB: Albumin (M)"
+    ]
+  },
+  {
+    "rule_id": "R01",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALBGLOB_F",
+    "organ_system": "general",
+    "output_text": "Albumin/Globulin: significant dose-dependent down in F (monotonic_decrease).",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (F)"
+    ]
+  },
+  {
+    "rule_id": "R02",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALBGLOB_F",
+    "organ_system": "general",
+    "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0319, d=-1.29).",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (F)"
+    ]
+  },
+  {
+    "rule_id": "R02",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALBGLOB_F",
+    "organ_system": "general",
+    "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0028, d=-1.77).",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (F)"
+    ]
+  },
+  {
+    "rule_id": "R03",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALBGLOB_F",
+    "organ_system": "general",
+    "output_text": "Significant dose-response trend (p=0.0000).",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (F)"
+    ]
+  },
+  {
+    "rule_id": "R04",
+    "scope": "endpoint",
+    "severity": "warning",
+    "context_key": "LB_ALBGLOB_F",
+    "organ_system": "general",
+    "output_text": "Albumin/Globulin classified as adverse in F (p=0.0028).",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (F)"
+    ]
+  },
+  {
+    "rule_id": "R05",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALBGLOB_F",
+    "organ_system": "general",
+    "output_text": "Albumin/Globulin: monotonic_decrease across dose groups in F.",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (F)"
+    ]
+  },
+  {
+    "rule_id": "R10",
+    "scope": "endpoint",
+    "severity": "warning",
+    "context_key": "LB_ALBGLOB_F",
+    "organ_system": "general",
+    "output_text": "Albumin/Globulin: Cohen's d = -1.77 at high dose in F.",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (F)"
+    ]
+  },
+  {
+    "rule_id": "R02",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALBGLOB_M",
+    "organ_system": "general",
+    "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0446, d=1.24).",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (M)"
+    ]
+  },
+  {
+    "rule_id": "R04",
+    "scope": "endpoint",
+    "severity": "warning",
+    "context_key": "LB_ALBGLOB_M",
+    "organ_system": "general",
+    "output_text": "Albumin/Globulin classified as adverse in M (p=0.0446).",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (M)"
+    ]
+  },
+  {
+    "rule_id": "R07",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "LB_ALBGLOB_M",
+    "organ_system": "general",
+    "output_text": "Albumin/Globulin: inconsistent dose-response in M.",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (M)"
+    ]
+  },
+  {
+    "rule_id": "R10",
+    "scope": "endpoint",
+    "severity": "warning",
+    "context_key": "LB_ALBGLOB_M",
+    "organ_system": "general",
+    "output_text": "Albumin/Globulin: Cohen's d = 1.24 at high dose in M.",
+    "evidence_refs": [
+      "LB: Albumin/Globulin (M)"
+    ]
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "rule_id": "Prov-001",
+    "icon": "info",
+    "message": "Dose values extracted from EX domain.",
+    "link_to_rule": null
+  },
+  {
+    "rule_id": "Prov-002",
+    "icon": "info",
+    "message": "Route of administration from EX domain.",
+    "link_to_rule": null
+  },
+  {
+    "rule_id": "Prov-003",
+    "icon": "info",
+    "message": "Control group identified: Vehicle Control.",
+    "link_to_rule": null
+  }
+]

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -18,6 +20,18 @@ from validation.scripts.registry import compute_preview
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
+
+SCENARIOS_DIR = Path(__file__).parent.parent / "scenarios"
+
+
+def _load_scenario_validation(scenario_id: str) -> dict | None:
+    """Load pre-built validation results from scenario fixtures."""
+    path = SCENARIOS_DIR / scenario_id / "validation_results.json"
+    if path.exists():
+        with open(path) as f:
+            return json.load(f)
+    return None
+
 
 # Module-level state (initialized by main.py lifespan)
 _studies: dict = {}
@@ -102,6 +116,13 @@ async def run_validation(study_id: str):
 @router.get("/studies/{study_id}/validation/results")
 async def get_validation_results(study_id: str):
     """Serve cached validation results."""
+    # Fallback to scenario fixtures for SCENARIO-* IDs
+    if study_id.startswith("SCENARIO-"):
+        data = _load_scenario_validation(study_id)
+        if data is None:
+            raise HTTPException(status_code=404, detail=f"Scenario '{study_id}' not found")
+        return data
+
     _get_study(study_id)
     engine = _get_engine()
 
@@ -128,6 +149,20 @@ async def get_affected_records(
     page_size: int = Query(50, ge=1, le=500),
 ):
     """Get paginated affected records for a specific rule."""
+    # Fallback to scenario fixtures for SCENARIO-* IDs
+    if study_id.startswith("SCENARIO-"):
+        data = _load_scenario_validation(study_id)
+        if data is None:
+            raise HTTPException(status_code=404, detail=f"Scenario '{study_id}' not found")
+        all_records = data.get("records", {}).get(rule_id, [])
+        start = (page - 1) * page_size
+        return AffectedRecordsResponse(
+            records=all_records[start : start + page_size],
+            total=len(all_records),
+            page=page,
+            page_size=page_size,
+        )
+
     _get_study(study_id)
     engine = _get_engine()
 

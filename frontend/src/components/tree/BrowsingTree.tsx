@@ -7,6 +7,8 @@ import {
   ChevronsUpDown,
 } from "lucide-react";
 import { useStudies } from "@/hooks/useStudies";
+import { useDesignMode } from "@/contexts/DesignModeContext";
+import { useScenarios } from "@/hooks/useScenarios";
 import { useCategorizedDomains } from "@/hooks/useDomainsByStudy";
 import { getDomainDescription } from "@/lib/send-categories";
 import { ANALYSIS_VIEWS, ANALYSIS_VIEW_GROUPS } from "@/lib/analysis-definitions";
@@ -308,17 +310,12 @@ export function BrowsingTree() {
 
   const isHomeActive = location.pathname === "/";
 
-  const MOCK_STUDY_IDS = [
-    "ToxStudy-28D-Rat",
-    "CardioSafety-Dog",
-    "Carcino-Mouse-2Y",
-    "EFD-Rabbit-GLP",
-    "NeuroTox-NHP-13W",
-  ];
+  const { designMode } = useDesignMode();
+  const { data: scenarios } = useScenarios(designMode);
 
   const allStudyIds = [
     ...(studies ?? []).map((s) => s.study_id),
-    ...MOCK_STUDY_IDS,
+    ...(designMode ? (scenarios ?? []).map((s) => s.scenario_id) : []),
   ];
 
   // Register IDs so the landing page expand/collapse control can use them

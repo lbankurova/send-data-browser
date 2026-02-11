@@ -1,0 +1,14 @@
+[
+  {
+    "rule_id": "Prov-DM0",
+    "icon": "warning",
+    "message": "No subjects found in DM domain. All analysis views will be empty.",
+    "link_to_rule": null
+  },
+  {
+    "rule_id": "Prov-FD0",
+    "icon": "info",
+    "message": "No findings domains loaded.",
+    "link_to_rule": null
+  }
+]

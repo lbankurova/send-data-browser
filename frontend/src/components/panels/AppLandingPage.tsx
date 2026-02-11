@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2 } from "lucide-react";
+import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2, Wrench } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,9 @@ import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
 import { importStudy, deleteStudy } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDesignMode } from "@/contexts/DesignModeContext";
+import { useScenarios } from "@/hooks/useScenarios";
+import type { ScenarioSummary } from "@/hooks/useScenarios";
 import type { StudySummary } from "@/types";
 
 function formatStandard(raw: string | null): string {
@@ -328,71 +331,32 @@ export function AppLandingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { selectedStudyId, selectStudy } = useSelection();
+  const { designMode, toggleDesignMode } = useDesignMode();
+  const { data: scenarios } = useScenarios(designMode);
+
   const realStudies: DisplayStudy[] = (studies ?? []).map((s) => ({
     ...s,
     validation: "Not Run",
   }));
 
-  const demoStudies: DisplayStudy[] = [
-    {
-      study_id: "DEMO-Pass",
-      name: "DEMO-Pass",
-      domain_count: 12,
-      species: "Rat",
-      study_type: "28-Day Oral Toxicity",
-      protocol: "PRO-2025-001",
-      standard: "3.1",
-      subjects: 80,
-      start_date: "2025-01-15",
-      end_date: "2025-03-10",
-      status: "Complete",
-      validation: "Pass",
-    },
-    {
-      study_id: "DEMO-Warnings",
-      name: "DEMO-Warnings",
-      domain_count: 9,
-      species: "Dog",
-      study_type: "13-Week Oral Toxicity",
-      protocol: "PRO-2025-002",
-      standard: "3.1",
-      subjects: 32,
-      start_date: "2025-02-01",
-      end_date: "2025-05-20",
-      status: "Complete",
-      validation: "Warnings",
-    },
-    {
-      study_id: "DEMO-Fail",
-      name: "DEMO-Fail",
-      domain_count: 7,
-      species: "Mouse",
-      study_type: "Carcinogenicity",
-      protocol: "PRO-2024-018",
-      standard: "3.0",
-      subjects: 200,
-      start_date: "2024-06-01",
-      end_date: "2025-01-30",
-      status: "Complete",
-      validation: "Fail",
-    },
-    {
-      study_id: "DEMO-NotRun",
-      name: "DEMO-NotRun",
-      domain_count: 5,
-      species: "Rabbit",
-      study_type: "Embryo-Fetal Development",
-      protocol: "PRO-2025-007",
-      standard: "3.1",
-      subjects: 44,
-      start_date: "2025-04-01",
-      end_date: null,
-      status: "Ongoing",
-      validation: "Not Run",
-    },
-  ];
+  const scenarioStudies: DisplayStudy[] = designMode
+    ? (scenarios ?? []).map((s: ScenarioSummary) => ({
+        study_id: s.scenario_id,
+        name: s.name,
+        domain_count: s.domain_count,
+        species: s.species,
+        study_type: s.study_type,
+        protocol: null,
+        standard: null,
+        subjects: s.subjects,
+        start_date: null,
+        end_date: null,
+        status: "Scenario",
+        validation: s.validation_status,
+      }))
+    : [];
 
-  const allStudies: DisplayStudy[] = [...realStudies, ...demoStudies];
+  const allStudies: DisplayStudy[] = realStudies;
 
   const [contextMenu, setContextMenu] = useState<{
     study: DisplayStudy;
@@ -501,7 +465,7 @@ export function AppLandingPage() {
       {/* Studies table */}
       <div className="px-8 py-6">
         <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Studies ({allStudies.length})
+          Studies ({allStudies.length + scenarioStudies.length})
         </h2>
 
         {isLoading ? (
@@ -509,7 +473,7 @@ export function AppLandingPage() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
-        ) : allStudies.length > 0 ? (
+        ) : allStudies.length > 0 || scenarioStudies.length > 0 ? (
           <div className="overflow-x-auto rounded-md border bg-card">
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-background">
@@ -532,14 +496,14 @@ export function AppLandingPage() {
                     <tr
                       key={study.study_id}
                       className={cn(
-                        "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
+                        "border-b last:border-b-0 transition-colors",
                         isSelected && "bg-accent"
                       )}
                       onClick={() => handleClick(study)}
                       onDoubleClick={() => handleDoubleClick(study)}
                       onContextMenu={(e) => handleContextMenu(e, study)}
                     >
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-2 py-1 text-center hover:bg-accent/50">
                         <button
                           className="rounded p-0.5 hover:bg-accent"
                           onClick={(e) => handleActionsClick(e, study)}
@@ -548,25 +512,25 @@ export function AppLandingPage() {
                           <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
                       </td>
-                      <td className="px-3 py-1 font-medium">{study.study_id}</td>
-                      <td className="px-3 py-1 text-muted-foreground">
+                      <td className="px-3 py-1 font-medium text-primary hover:bg-accent/50">{study.study_id}</td>
+                      <td className="px-3 py-1 text-muted-foreground hover:bg-accent/50">
                         {study.protocol && study.protocol !== "NOT AVAILABLE"
                           ? study.protocol
                           : "—"}
                       </td>
-                      <td className="px-3 py-1 text-muted-foreground">
+                      <td className="px-3 py-1 text-muted-foreground hover:bg-accent/50">
                         {formatStandard(study.standard)}
                       </td>
-                      <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
+                      <td className="px-3 py-1 text-right tabular-nums text-muted-foreground hover:bg-accent/50">
                         {study.subjects ?? "—"}
                       </td>
-                      <td className="px-3 py-1 tabular-nums text-muted-foreground">
+                      <td className="px-3 py-1 tabular-nums text-muted-foreground hover:bg-accent/50">
                         {study.start_date ?? "—"}
                       </td>
-                      <td className="px-3 py-1 tabular-nums text-muted-foreground">
+                      <td className="px-3 py-1 tabular-nums text-muted-foreground hover:bg-accent/50">
                         {study.end_date ?? "—"}
                       </td>
-                      <td className="relative pl-5 pr-3 py-1 text-xs text-muted-foreground">
+                      <td className="relative pl-5 pr-3 py-1 text-xs text-muted-foreground hover:bg-accent/50">
                         {study.status === "Complete" && (
                           <span
                             className="absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full"
@@ -575,7 +539,7 @@ export function AppLandingPage() {
                         )}
                         {study.status}
                       </td>
-                      <td className="px-3 py-1">
+                      <td className="px-3 py-1 hover:bg-accent/50">
                         <div
                           className="flex items-center justify-center"
                           title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}
@@ -586,6 +550,51 @@ export function AppLandingPage() {
                     </tr>
                   );
                 })}
+                {scenarioStudies.length > 0 && (
+                  <>
+                    <tr>
+                      <td colSpan={9} className="px-3 py-0">
+                        <div className="border-t border-dashed" />
+                      </td>
+                    </tr>
+                    {scenarioStudies.map((study) => {
+                      const isSelected = selectedStudyId === study.study_id;
+                      return (
+                        <tr
+                          key={study.study_id}
+                          className={cn(
+                            "border-b last:border-b-0 transition-colors",
+                            isSelected && "bg-accent"
+                          )}
+                          onClick={() => handleClick(study)}
+                          onDoubleClick={() => handleDoubleClick(study)}
+                          onContextMenu={(e) => handleContextMenu(e, study)}
+                        >
+                          <td className="px-2 py-1 text-center">
+                            <Wrench className="mx-auto h-3.5 w-3.5 text-muted-foreground/60" />
+                          </td>
+                          <td className="px-3 py-1 font-medium text-muted-foreground hover:bg-accent/50">{study.name}</td>
+                          <td className="px-3 py-1 text-muted-foreground/60 hover:bg-accent/50">{study.study_type ?? "—"}</td>
+                          <td className="px-3 py-1 text-muted-foreground/60 hover:bg-accent/50">—</td>
+                          <td className="px-3 py-1 text-right tabular-nums text-muted-foreground/60 hover:bg-accent/50">
+                            {study.subjects ?? "—"}
+                          </td>
+                          <td className="px-3 py-1 text-muted-foreground/60 hover:bg-accent/50">—</td>
+                          <td className="px-3 py-1 text-muted-foreground/60 hover:bg-accent/50">—</td>
+                          <td className="px-3 py-1 text-xs text-muted-foreground/60 hover:bg-accent/50">Scenario</td>
+                          <td className="px-3 py-1 hover:bg-accent/50">
+                            <div
+                              className="flex items-center justify-center"
+                              title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}
+                            >
+                              {VAL_DISPLAY[study.validation]?.icon ?? <span className="text-xs text-muted-foreground">—</span>}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </>
+                )}
               </tbody>
             </table>
           </div>
@@ -598,6 +607,20 @@ export function AppLandingPage() {
             </p>
           </div>
         )}
+
+        {/* Design mode toggle */}
+        <div className="mt-3 flex items-center gap-2">
+          <Wrench className="h-3 w-3 text-muted-foreground/50" />
+          <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={designMode}
+              onChange={toggleDesignMode}
+              className="h-3 w-3"
+            />
+            Design mode
+          </label>
+        </div>
       </div>
 
       {/* Context menu */}

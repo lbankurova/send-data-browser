@@ -10,6 +10,7 @@ import { FindingSelectionProvider } from "@/contexts/FindingSelectionContext";
 import { SignalSelectionProvider } from "@/contexts/SignalSelectionContext";
 import { ViewSelectionProvider } from "@/contexts/ViewSelectionContext";
 import { TreeControlProvider } from "@/contexts/TreeControlContext";
+import { DesignModeProvider } from "@/contexts/DesignModeContext";
 
 const LEFT_DEFAULT = 260;
 const RIGHT_DEFAULT = 280;
@@ -84,6 +85,7 @@ export function Layout() {
   const right = useResize(RIGHT_DEFAULT, RIGHT_MIN, RIGHT_MAX, "right");
 
   return (
+    <DesignModeProvider>
     <SelectionProvider>
       <FindingSelectionProvider>
         <SignalSelectionProvider>
@@ -163,5 +165,6 @@ export function Layout() {
         </SignalSelectionProvider>
       </FindingSelectionProvider>
     </SelectionProvider>
+    </DesignModeProvider>
   );
 }
