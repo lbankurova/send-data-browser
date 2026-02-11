@@ -47,17 +47,18 @@ The Study Summary View itself is split into two tabs with a shared tab bar:
 
 ## Tab 1: Study Details
 
-Full-width scrollable metadata display. Padding `p-6`.
+Full-width scrollable metadata display. Padding `p-4`.
 
 ### Header
-- `text-2xl font-bold`: "Study: {study_id}"
-- Optional subtitle in `text-muted-foreground`: study title from TS domain
+- `text-base font-semibold`: "Study: {study_id}" (`mb-3` wrapper)
+- Optional subtitle: `mt-0.5 text-xs text-muted-foreground` — study title from TS domain
 
 ### Sections
 
 Each section has:
-- Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` with `border-b pb-1 mb-3`
-- Key-value rows: label (w-36, `text-muted-foreground`) + value (`select-all`), `text-sm`, `py-1`
+- Section wrapper: `mb-4` (last section omits margin)
+- Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` with `border-b pb-0.5 mb-2`
+- Key-value rows (`MetadataRow`): label (`w-28 shrink-0 text-muted-foreground`) + value (`select-all`), `text-xs`, `gap-2 py-0.5`
 
 #### Study overview
 | Label | Source |
@@ -78,17 +79,26 @@ Each section has:
 | Vehicle | `meta.vehicle` |
 | Route | `meta.route` |
 
-#### Administration
-| Label | Source |
-|-------|--------|
-| Sponsor | `meta.sponsor` |
-| Test facility | `meta.test_facility` |
-| Study director | `meta.study_director` |
-| GLP | `meta.glp` |
-| SEND version | `meta.send_version` |
+#### Treatment arms ({count})
+Conditional — only renders if `meta.dose_groups` is non-empty.
+
+Table in `overflow-x-auto rounded-md border`, `text-xs`:
+- Header row: `border-b bg-muted/30`, all `<th>` use `px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
+- Body rows: `border-b last:border-b-0`, all `<td>` use `px-2 py-1`
+
+| Column | Align | Cell rendering |
+|--------|-------|----------------|
+| Arm code | left | `font-mono text-xs` |
+| Label | left | plain |
+| Dose | right | `tabular-nums text-muted-foreground` — "{value} {unit}" or em dash |
+| M | right | `tabular-nums text-muted-foreground` |
+| F | right | `tabular-nums text-muted-foreground` |
+| Total | right | `tabular-nums font-medium` |
+
+**Provenance messages** — below the treatment arms table (`mt-2 space-y-0.5`). Each message: `flex items-start gap-2 text-xs leading-snug`. Icon: `AlertTriangle` (amber-500) for warnings, `Info` (blue-400) for info. Text: `text-amber-700` for warnings, `text-muted-foreground` for info. Optional "Review →" link button navigates to validation view with rule pre-selected.
 
 #### Domains ({count})
-- Flex-wrap row of domain chips
+- Flex-wrap row of domain chips (`gap-1.5`)
 - Each chip: `<Link>` to `/studies/{studyId}/domains/{domain}`
 - Styling: `rounded-md bg-muted px-2 py-0.5 font-mono text-xs`
 - Hover: `hover:bg-primary/20 transition-colors` (blue tint)
