@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   useReactTable,
   getCoreRowModel,
@@ -17,6 +18,10 @@ import { useAffectedRecords } from "@/hooks/useAffectedRecords";
 import { useRunValidation } from "@/hooks/useRunValidation";
 import type { AffectedRecordData } from "@/hooks/useAffectedRecords";
 import type { ValidationRecordReview } from "@/types/annotations";
+
+type ValidationMode = "data-quality" | "study-design";
+
+const STUDY_DESIGN_CATEGORY = "Study design";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -188,6 +193,7 @@ interface Props {
 }
 
 export function ValidationView({ studyId, onSelectionChange, viewSelection }: Props) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [ruleSorting, setRuleSorting] = useState<SortingState>([]);
   const [recordSorting, setRecordSorting] = useState<SortingState>([]);
   const [ruleColumnSizing, setRuleColumnSizing] = useState<ColumnSizingState>({});
@@ -197,26 +203,90 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>({ fixStatus: "", reviewStatus: "", subjectId: "" });
   const [severityFilter, setSeverityFilter] = useState<"" | "Error" | "Warning" | "Info">("");
 
+  // Mode: data-quality (default) or study-design
+  const [mode, setMode] = useState<ValidationMode>(() => {
+    const urlMode = searchParams.get("mode");
+    return urlMode === "study-design" ? "study-design" : "data-quality";
+  });
+
+  // Track if we've consumed the initial ?rule= param
+  const [initialRuleConsumed, setInitialRuleConsumed] = useState(false);
+  const urlRuleParam = searchParams.get("rule");
+
   // API hooks
   const { data: validationData, isLoading: resultsLoading } = useValidationResults(studyId);
   const { data: affectedData } = useAffectedRecords(studyId, selectedRule?.rule_id);
   const { mutate: runValidation, isPending: isValidating } = useRunValidation(studyId);
 
+  // Split rules by mode
   const allRules = validationData?.rules ?? [];
-  const rules = severityFilter ? allRules.filter((r) => r.severity === severityFilter) : allRules;
+  const modeRules = mode === "study-design"
+    ? allRules.filter((r) => r.category === STUDY_DESIGN_CATEGORY)
+    : allRules.filter((r) => r.category !== STUDY_DESIGN_CATEGORY);
+  const rules = severityFilter ? modeRules.filter((r) => r.severity === severityFilter) : modeRules;
+
+  // Counts per mode
+  const modeCounts = useMemo(() => {
+    const sd = allRules.filter((r) => r.category === STUDY_DESIGN_CATEGORY);
+    const dq = allRules.filter((r) => r.category !== STUDY_DESIGN_CATEGORY);
+    return {
+      studyDesign: sd.length,
+      dataQuality: dq.length,
+    };
+  }, [allRules]);
+
+  // Auto-select rule from URL param (e.g., ?rule=SD-003)
+  useEffect(() => {
+    if (initialRuleConsumed || !urlRuleParam || !validationData) return;
+    const target = allRules.find(
+      (r) => r.rule_id === urlRuleParam || r.rule_id.startsWith(urlRuleParam)
+    );
+    if (target) {
+      setSelectedRule(target);
+      onSelectionChange?.({
+        _view: "validation",
+        mode: "rule",
+        rule_id: target.rule_id,
+        severity: target.severity,
+        domain: target.domain,
+        category: target.category,
+        description: target.description,
+        records_affected: target.records_affected,
+      });
+    }
+    setInitialRuleConsumed(true);
+  }, [urlRuleParam, initialRuleConsumed, allRules, validationData, onSelectionChange]);
+
+  // Sync mode to URL
+  const handleModeChange = (newMode: ValidationMode) => {
+    setMode(newMode);
+    setSelectedRule(null);
+    setSelectedIssueId(null);
+    setSeverityFilter("");
+    setRecordFilters({ fixStatus: "", reviewStatus: "", subjectId: "" });
+    onSelectionChange?.(null);
+    // Update URL param without navigation
+    const params = new URLSearchParams(searchParams);
+    if (newMode === "study-design") {
+      params.set("mode", "study-design");
+    } else {
+      params.delete("mode");
+    }
+    params.delete("rule");
+    setSearchParams(params, { replace: true });
+  };
 
   // Load record annotations
   const { data: recordAnnotations } = useAnnotations<ValidationRecordReview>(studyId, "validation-records");
 
-  // Severity counts from API summary
+  // Severity counts — scoped to current mode
   const counts = useMemo(() => {
-    if (!validationData?.summary) return { errors: 0, warnings: 0, info: 0 };
     return {
-      errors: validationData.summary.errors ?? 0,
-      warnings: validationData.summary.warnings ?? 0,
-      info: validationData.summary.info ?? 0,
+      errors: modeRules.filter((r) => r.severity === "Error").length,
+      warnings: modeRules.filter((r) => r.severity === "Warning").length,
+      info: modeRules.filter((r) => r.severity === "Info").length,
     };
-  }, [validationData]);
+  }, [modeRules]);
 
   // Records for selected rule, enriched with annotation data
   const recordRows = useMemo<RecordRowData[]>(() => {
@@ -401,13 +471,39 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     }
   };
 
+  // Shared mode tab bar for loading/empty states
+  const modeTabBar = (
+    <div className="flex items-center border-b bg-muted/30">
+      <div className="flex">
+        {([
+          { key: "data-quality" as ValidationMode, label: "Data quality" },
+          { key: "study-design" as ValidationMode, label: "Study design" },
+        ]).map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => handleModeChange(key)}
+            className={cn(
+              "relative px-4 py-1.5 text-xs font-medium transition-colors",
+              mode === key
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {label}
+            {mode === key && (
+              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   // ── Loading state ──
   if (resultsLoading) {
     return (
       <div className="flex h-full flex-col overflow-hidden">
-        <div className="flex items-center gap-4 border-b px-4 py-3">
-          <h2 className="text-lg font-semibold">SEND Validation</h2>
-        </div>
+        {modeTabBar}
         <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
           Loading validation results...
         </div>
@@ -419,18 +515,16 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   if (!validationData) {
     return (
       <div className="flex h-full flex-col overflow-hidden">
-        <div className="flex items-center gap-4 border-b px-4 py-3">
-          <h2 className="text-lg font-semibold">SEND Validation</h2>
+        {modeTabBar}
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-xs text-muted-foreground">
+          <span>No validation results available for this study.</span>
           <button
-            className="ml-auto rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             disabled={isValidating}
             onClick={() => runValidation()}
           >
-            {isValidating ? "RUNNING..." : "RUN VALIDATION"}
+            {isValidating ? "RUNNING..." : "RUN"}
           </button>
-        </div>
-        <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
-          No validation results available for this study.
         </div>
       </div>
     );
@@ -438,9 +532,46 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Summary header */}
-      <div className="flex items-center gap-4 border-b px-4 py-3">
-        <h2 className="text-lg font-semibold">SEND Validation</h2>
+      {/* Mode tab bar */}
+      <div className="flex items-center border-b bg-muted/30">
+        <div className="flex">
+          {([
+            { key: "data-quality" as ValidationMode, label: "Data quality", count: modeCounts.dataQuality },
+            { key: "study-design" as ValidationMode, label: "Study design", count: modeCounts.studyDesign },
+          ]).map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => handleModeChange(key)}
+              className={cn(
+                "relative px-4 py-1.5 text-xs font-medium transition-colors",
+                mode === key
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {label}
+              {count > 0 && (
+                <span className="ml-1.5 text-[10px] text-muted-foreground">
+                  ({count})
+                </span>
+              )}
+              {mode === key && (
+                <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
+              )}
+            </button>
+          ))}
+        </div>
+        <button
+          className="ml-auto mr-3 rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          disabled={isValidating}
+          onClick={() => runValidation()}
+        >
+          {isValidating ? "RUNNING..." : "RUN"}
+        </button>
+      </div>
+
+      {/* Severity filter bar */}
+      <div className="flex items-center gap-4 border-b px-4 py-2">
         <div className="flex items-center gap-3 text-xs">
           <button
             className={cn(
@@ -487,18 +618,11 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
             </span>
           )}
         </div>
-        <button
-          className="ml-auto rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          disabled={isValidating}
-          onClick={() => runValidation()}
-        >
-          {isValidating ? "RUNNING..." : "RUN VALIDATION"}
-        </button>
       </div>
 
       {rules.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
-          {severityFilter && allRules.length > 0 ? (
+          {severityFilter && modeRules.length > 0 ? (
             <>
               <span>No {severityFilter.toLowerCase()} rules found.</span>
               <button
@@ -508,6 +632,8 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                 Show all
               </button>
             </>
+          ) : mode === "study-design" ? (
+            <span>No study design issues detected.</span>
           ) : (
             <span>No validation issues found. Dataset passed all checks.</span>
           )}
