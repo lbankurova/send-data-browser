@@ -9,6 +9,9 @@ import {
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
+import { ViewTabBar } from "@/components/ui/ViewTabBar";
+import { EvidenceBar } from "@/components/ui/EvidenceBar";
+import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import type {
   OrganBlock,
@@ -89,7 +92,6 @@ function StatementIcon({ icon }: { icon: PanelStatement["icon"] }) {
 function SignalsOrganRailItem({ organ, organBlock, isSelected, maxEvidenceScore, stats, onClick }: {
   organ: TargetOrganRow; organBlock: OrganBlock | undefined; isSelected: boolean; maxEvidenceScore: number; stats: OrganRailStats | null; onClick: () => void;
 }) {
-  const barWidth = maxEvidenceScore > 0 ? Math.max(4, (organ.evidence_score / maxEvidenceScore) * 100) : 0;
   return (
     <button className={cn("w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors", isSelected ? "bg-blue-50/60 dark:bg-blue-950/20" : "hover:bg-accent/30")} onClick={onClick}>
       <div className="flex items-center gap-2">
@@ -97,10 +99,12 @@ function SignalsOrganRailItem({ organ, organBlock, isSelected, maxEvidenceScore,
         {stats?.dominantDirection && <span className="text-[10px] text-muted-foreground/60">{stats.dominantDirection}</span>}
         {organ.target_organ_flag && <span className="text-[9px] font-semibold uppercase text-red-600">TARGET</span>}
       </div>
-      <div className="mt-1.5 flex items-center gap-2">
-        <div className="h-1.5 flex-1 rounded-full bg-gray-200"><div className="h-full rounded-full bg-gray-300 transition-all" style={{ width: `${barWidth}%` }} /></div>
-        <span className={cn("shrink-0 font-mono text-[10px] tabular-nums", organ.evidence_score >= 0.5 ? "font-semibold" : organ.evidence_score >= 0.3 ? "font-medium" : "")}>{organ.evidence_score.toFixed(2)}</span>
-      </div>
+      <EvidenceBar
+        value={organ.evidence_score}
+        max={maxEvidenceScore}
+        label={organ.evidence_score.toFixed(2)}
+        labelClassName={organ.evidence_score >= 0.5 ? "font-semibold" : organ.evidence_score >= 0.3 ? "font-medium" : ""}
+      />
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
         <span>{organ.n_significant} sig</span><span>&middot;</span><span>{organ.n_treatment_related} TR</span><span>&middot;</span><span>{organ.n_domains} domains</span>
         {organ.domains.map((d) => (<DomainLabel key={d} domain={d} />))}
@@ -335,7 +339,7 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2">
+      <FilterBar className="flex-wrap">
         <select className="rounded border bg-background px-2 py-1 text-xs" value={filters.sex ?? ""} onChange={(e) => setFilters((f) => ({ ...f, sex: e.target.value || null }))}>
           <option value="">All sexes</option>
           <option value="M">Male</option>
@@ -348,8 +352,8 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
           <option value="normal">Normal</option>
         </select>
         <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={filters.significant_only} onChange={(e) => setFilters((f) => ({ ...f, significant_only: e.target.checked }))} className="rounded border" /><span>Significant only</span></label>
-        <span className="ml-auto text-[10px] text-muted-foreground">{filteredData.length} rows</span>
-      </div>
+        <FilterBarCount>{filteredData.length} rows</FilterBarCount>
+      </FilterBar>
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
@@ -410,7 +414,15 @@ export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers
         <div className="flex items-center gap-2"><h3 className="text-sm font-semibold">{titleCase(organ.organ_system)}</h3>{organ.target_organ_flag && <span className="text-[10px] font-semibold uppercase text-red-600">TARGET</span>}</div>
         <div className="mt-0.5 flex flex-wrap gap-x-1.5 text-[11px] text-muted-foreground tabular-nums"><span>{organ.n_domains} domains</span><span>&middot;</span><span>{organ.n_significant}/{organ.n_endpoints} sig ({significantPct}%)</span><span>&middot;</span><span>{organ.n_treatment_related} TR</span><span>&middot;</span><span>Max {organ.max_signal_score.toFixed(2)}</span><span>&middot;</span><span>Evidence <span className={cn(organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium")}>{organ.evidence_score.toFixed(2)}</span></span><span>&middot;</span><span className={cn("font-mono", headerStats.maxAbsEffectSize >= 0.8 && "font-semibold")}>|d| {headerStats.maxAbsEffectSize.toFixed(2)}</span>{headerStats.minTrendP != null && (<><span>&middot;</span><span className={cn("font-mono", headerStats.minTrendP < 0.01 && "font-semibold")}>trend p {formatPValue(headerStats.minTrendP)}</span></>)}</div>
       </div>
-      <div className="flex border-b bg-muted/30">{([{ key: "overview" as EvidenceTab, label: "Evidence" }, { key: "matrix" as EvidenceTab, label: "Signal matrix" }, { key: "metrics" as EvidenceTab, label: "Metrics" }]).map(({ key, label }) => (<button key={key} onClick={() => setActiveTab(key)} className={cn("relative px-4 py-1.5 text-xs font-medium transition-colors", activeTab === key ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>{label}{activeTab === key && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />}</button>))}</div>
+      <ViewTabBar
+        tabs={[
+          { key: "overview", label: "Evidence" },
+          { key: "matrix", label: "Signal matrix" },
+          { key: "metrics", label: "Metrics" },
+        ]}
+        value={activeTab}
+        onChange={(k) => setActiveTab(k as EvidenceTab)}
+      />
       {activeTab === "overview" && <SignalsOverviewTab organ={organ} signalData={organSignalData} ruleResults={ruleResults} modifiers={modifiers} caveats={caveats} studyId={studyId} />}
       {activeTab === "matrix" && <SignalsMatrixTab signalData={organSignalData} targetOrgan={organ} selection={selection} onSelect={onSelect} />}
       {activeTab === "metrics" && <SignalsMetricsTab signalData={organSignalData} selection={selection} onSelect={onSelect} />}

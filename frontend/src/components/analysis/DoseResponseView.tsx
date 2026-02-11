@@ -29,6 +29,8 @@ import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { BookmarkStar } from "@/components/ui/BookmarkStar";
 import { cn } from "@/lib/utils";
+import { ViewTabBar } from "@/components/ui/ViewTabBar";
+import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
 import {
   formatPValue,
   formatEffectSize,
@@ -989,30 +991,20 @@ export function DoseResponseView({
         )}
 
         {/* Tab bar */}
-        <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
-          {(["evidence", "hypotheses", "metrics"] as const).map((tab) => (
-            <button
-              key={tab}
-              className={cn(
-                "relative px-4 py-1.5 text-xs font-medium transition-colors",
-                activeTab === tab
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              onClick={() => setActiveTab(tab)}
-            >
-              {{ evidence: "Evidence", hypotheses: "Hypotheses", metrics: "Metrics" }[tab]}
-              {activeTab === tab && (
-                <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
-              )}
-            </button>
-          ))}
-          {activeTab === "metrics" && (
-            <span className="ml-auto mr-3 text-[10px] text-muted-foreground">
+        <ViewTabBar
+          tabs={[
+            { key: "evidence", label: "Evidence" },
+            { key: "hypotheses", label: "Hypotheses" },
+            { key: "metrics", label: "Metrics" },
+          ]}
+          value={activeTab}
+          onChange={(k) => setActiveTab(k as typeof activeTab)}
+          right={activeTab === "metrics" ? (
+            <span className="mr-3 text-[10px] text-muted-foreground">
               {metricsData.length} of {drData?.length ?? 0} rows
             </span>
-          )}
-        </div>
+          ) : undefined}
+        />
 
         {/* Tab content */}
         <div className="flex-1 overflow-auto">
@@ -1876,7 +1868,7 @@ function MetricsTableContent({
   return (
     <div className="flex h-full flex-col">
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-1">
+      <FilterBar className="flex-wrap px-3 py-1">
         <select
           className="rounded border bg-background px-1.5 py-0.5 text-xs"
           value={metricsFilters.sex ?? ""}
@@ -1925,10 +1917,8 @@ function MetricsTableContent({
           />
           Color
         </label>
-        <span className="ml-auto text-[10px] text-muted-foreground">
-          {metricsData.length} rows
-        </span>
-      </div>
+        <FilterBarCount>{metricsData.length} rows</FilterBarCount>
+      </FilterBar>
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
