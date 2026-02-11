@@ -12,6 +12,7 @@ export interface ValidationRuleResult {
   rationale: string;
   how_to_fix: string;
   cdisc_reference: string | null;
+  source: "custom" | "core";
 }
 
 export interface FixScriptDef {
@@ -19,6 +20,12 @@ export interface FixScriptDef {
   name: string;
   description: string;
   applicable_rules: string[];
+}
+
+export interface ConformanceDetails {
+  engine_version: string;
+  standard: string;
+  ct_version: string;
 }
 
 export interface ValidationResultsData {
@@ -33,6 +40,7 @@ export interface ValidationResultsData {
     elapsed_seconds?: number;
     validated_at?: string;
   };
+  core_conformance: ConformanceDetails | null;
 }
 
 export function useValidationResults(studyId: string | undefined) {

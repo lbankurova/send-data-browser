@@ -6,6 +6,7 @@ import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import {
   titleCase,
   formatPValue,
@@ -48,6 +49,9 @@ export function DoseResponseContextPanel({
   const navigate = useNavigate();
   const [tierFilter, setTierFilter] = useState<Tier | null>(null);
 
+  // Dose-response metrics for dose-level breakdown table
+  const { data: metricsData } = useDoseResponseMetrics(studyId);
+
   // Rules for selected endpoint — filter by organ system + domain prefix
   const endpointRules = useMemo(() => {
     if (!selection) return [];
@@ -60,18 +64,19 @@ export function DoseResponseContextPanel({
   }, [ruleResults, selection]);
 
   // Best signal row for selected endpoint (highest signal_score across doses)
-  const selectedSignalRow = useMemo(() => {
-    if (!selection) return null;
-    const candidates = signalData.filter(
-      (r) =>
-        r.endpoint_label === selection.endpoint_label &&
-        (!selection.sex || r.sex === selection.sex)
-    );
-    if (candidates.length === 0) return null;
-    return candidates.reduce((best, r) =>
-      r.signal_score > best.signal_score ? r : best
-    );
-  }, [signalData, selection]);
+  // (Currently unused - kept for potential future use)
+  // const selectedSignalRow = useMemo(() => {
+  //   if (!selection) return null;
+  //   const candidates = signalData.filter(
+  //     (r) =>
+  //       r.endpoint_label === selection.endpoint_label &&
+  //       (!selection.sex || r.sex === selection.sex)
+  //   );
+  //   if (candidates.length === 0) return null;
+  //   return candidates.reduce((best, r) =>
+  //     r.signal_score > best.signal_score ? r : best
+  //   );
+  // }, [signalData, selection]);
 
   // Correlations: other endpoints in same organ, sorted by signal score
   const correlatedFindings = useMemo(() => {
@@ -90,6 +95,54 @@ export function DoseResponseContextPanel({
       .sort((a, b) => b.signal_score - a.signal_score)
       .slice(0, 10);
   }, [signalData, selection]);
+
+  // Dose-level breakdown for selected endpoint
+  const doseLevelBreakdown = useMemo(() => {
+    if (!selection || !metricsData) return null;
+    const rows = metricsData.filter((r) => r.endpoint_label === selection.endpoint_label);
+    if (rows.length === 0) return null;
+    // Group by dose level, aggregate across sexes if needed
+    const byDose = new Map<number, typeof rows[0][]>();
+    for (const r of rows) {
+      const existing = byDose.get(r.dose_level);
+      if (existing) existing.push(r);
+      else byDose.set(r.dose_level, [r]);
+    }
+    const aggregated = Array.from(byDose.entries()).map(([dose_level, levelRows]) => {
+      // Combine data across sexes for this dose level
+      const totalN = levelRows.reduce((sum, r) => sum + (r.n ?? 0), 0);
+      const avgMean = levelRows.every((r) => r.mean != null)
+        ? levelRows.reduce((sum, r) => sum + (r.mean ?? 0), 0) / levelRows.length
+        : null;
+      const avgSd = levelRows.every((r) => r.sd != null)
+        ? levelRows.reduce((sum, r) => sum + (r.sd ?? 0), 0) / levelRows.length
+        : null;
+      const totalAffected = levelRows.reduce((sum, r) => sum + (r.affected ?? 0), 0);
+      const avgIncidence = levelRows.every((r) => r.incidence != null)
+        ? levelRows.reduce((sum, r) => sum + (r.incidence ?? 0), 0) / levelRows.length
+        : null;
+      const minP = levelRows.reduce((min, r) => {
+        if (r.p_value == null) return min;
+        return min === null || r.p_value < min ? r.p_value : min;
+      }, null as number | null);
+      return {
+        dose_level,
+        label: levelRows[0].dose_label,
+        n: totalN,
+        mean: avgMean,
+        sd: avgSd,
+        affected: totalAffected,
+        incidence: avgIncidence,
+        p_value: minP,
+        data_type: levelRows[0].data_type,
+      };
+    }).sort((a, b) => a.dose_level - b.dose_level);
+    return {
+      rows: aggregated,
+      data_type: rows[0].data_type,
+      test_method: rows[0].data_type === "continuous" ? "Dunnett" : "Fisher",
+    };
+  }, [metricsData, selection]);
 
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
@@ -127,30 +180,71 @@ export function DoseResponseContextPanel({
         <InsightsList rules={endpointRules} tierFilter={tierFilter} />
       </CollapsiblePane>
 
-      {/* 2. Statistics — only items NOT already in the evidence panel header */}
+      {/* 2. Statistics — dose-level breakdown with N per group */}
       <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        {selectedSignalRow ? (
-          <div className="space-y-1.5 text-[11px] tabular-nums">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Signal score</span>
-              <span className="font-mono">{selectedSignalRow.signal_score.toFixed(3)}</span>
+        {doseLevelBreakdown ? (
+          <div className="space-y-2">
+            {/* Test method */}
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="text-muted-foreground">Test method:</span>
+              <span className="font-medium">{doseLevelBreakdown.test_method}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Direction</span>
-              <span>{selectedSignalRow.direction ?? "\u2014"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Severity</span>
-              <span>{selectedSignalRow.severity}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Treatment-related</span>
-              <span>{selectedSignalRow.treatment_related ? "yes" : "no"}</span>
+
+            {/* Dose-level breakdown table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="py-1 text-left font-medium">Dose</th>
+                    <th className="py-1 text-right font-semibold">N</th>
+                    {doseLevelBreakdown.data_type === "continuous" ? (
+                      <>
+                        <th className="py-1 text-right font-medium">Mean</th>
+                        <th className="py-1 text-right font-medium">SD</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="py-1 text-right font-medium">Aff</th>
+                        <th className="py-1 text-right font-medium">Inc%</th>
+                      </>
+                    )}
+                    <th className="py-1 text-right font-medium">p-value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {doseLevelBreakdown.rows.map((row) => (
+                    <tr key={row.dose_level} className="border-b border-border/50">
+                      <td className="py-1 font-mono text-[10px]">{row.label}</td>
+                      <td className="py-1 text-right font-mono font-semibold">{row.n}</td>
+                      {doseLevelBreakdown.data_type === "continuous" ? (
+                        <>
+                          <td className="py-1 text-right font-mono">
+                            {row.mean != null ? row.mean.toFixed(2) : "\u2014"}
+                          </td>
+                          <td className="py-1 text-right font-mono text-muted-foreground">
+                            {row.sd != null ? row.sd.toFixed(2) : "\u2014"}
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="py-1 text-right font-mono">{row.affected ?? "\u2014"}</td>
+                          <td className="py-1 text-right font-mono">
+                            {row.incidence != null ? `${(row.incidence * 100).toFixed(0)}%` : "\u2014"}
+                          </td>
+                        </>
+                      )}
+                      <td className="py-1 text-right font-mono">
+                        {formatPValue(row.p_value)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         ) : (
           <p className="text-[11px] text-muted-foreground">
-            No signal data for selected endpoint.
+            No dose-level data for selected endpoint.
           </p>
         )}
       </CollapsiblePane>

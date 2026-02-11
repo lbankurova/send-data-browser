@@ -29,7 +29,7 @@ class RuleDefinition(BaseModel):
 # ── Engine output models ────────────────────────────────────────────────
 
 class ValidationRuleResult(BaseModel):
-    rule_id: str  # e.g. "SEND-VAL-001-DM"
+    rule_id: str  # e.g. "SEND-VAL-001-DM" or "CORE-000252-BW"
     severity: Literal["Error", "Warning", "Info"]
     domain: str
     category: str
@@ -41,6 +41,7 @@ class ValidationRuleResult(BaseModel):
     rationale: str
     how_to_fix: str
     cdisc_reference: str | None = None
+    source: Literal["custom", "core"] = "custom"  # Rule origin
 
 
 class AffectedRecordResult(BaseModel):
@@ -74,12 +75,20 @@ class FixScriptPreviewRow(BaseModel):
     to_val: str
 
 
+class ConformanceDetails(BaseModel):
+    """CDISC CORE engine conformance metadata."""
+    engine_version: str
+    standard: str
+    ct_version: str
+
+
 class ValidationResults(BaseModel):
     """Full validation run output — cached as JSON."""
     rules: list[ValidationRuleResult]
     records: dict[str, list[AffectedRecordResult]]  # rule_id -> records
     scripts: list[FixScriptDefinition]
     summary: dict[str, Any]
+    core_conformance: ConformanceDetails | None = None
 
 
 # ── API response models ─────────────────────────────────────────────────
@@ -88,6 +97,7 @@ class ValidationResultsResponse(BaseModel):
     rules: list[ValidationRuleResult]
     scripts: list[FixScriptDefinition]
     summary: dict[str, Any]
+    core_conformance: ConformanceDetails | None = None
 
 
 class AffectedRecordsResponse(BaseModel):
