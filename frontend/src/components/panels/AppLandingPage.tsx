@@ -148,10 +148,6 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
     []
   );
 
-  const detectedStudyId = selectedFile
-    ? selectedFile.name.replace(/\.zip$/i, "")
-    : null;
-
   return (
     <div className="border-b px-8 py-4">
       <button
@@ -170,7 +166,7 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
           {/* Drop zone */}
           <div
             className={cn(
-              "flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed py-5 transition-colors",
+              "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-5 transition-colors",
               isDragging
                 ? "border-primary bg-primary/5"
                 : selectedFile
@@ -195,20 +191,18 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
                 <p className="text-xs font-medium">{selectedFile.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {(selectedFile.size / 1024 / 1024).toFixed(1)} MB &mdash; ready to import
+                  {" "}<button
+                    className="text-muted-foreground underline hover:text-foreground"
+                    onClick={() => { setSelectedFile(null); setImportError(null); setImportSuccess(null); }}
+                  >
+                    Remove
+                  </button>
                 </p>
-                <button
-                  className="mt-1 text-xs text-muted-foreground underline hover:text-foreground"
-                  onClick={() => { setSelectedFile(null); setImportError(null); setImportSuccess(null); }}
-                >
-                  Remove
-                </button>
               </>
             ) : (
-              <>
+              <div className="flex flex-col items-center gap-1.5">
                 <Upload className="h-5 w-5 text-muted-foreground/50" />
-                <p className="text-xs text-muted-foreground">
-                  Drop SEND study folder here
-                </p>
+                <p className="text-xs font-medium text-muted-foreground">drop SEND study folder</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -230,47 +224,18 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
                 >
                   Browse...
                 </button>
-              </>
+              </div>
             )}
           </div>
 
-          {/* Metadata fields */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <label className="w-20 shrink-0 text-xs text-muted-foreground">Study ID</label>
-              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <input type="checkbox" checked disabled className="h-3 w-3" />
-                Auto-detect
-              </label>
-              <input
-                type="text"
-                readOnly
-                value={detectedStudyId ?? ""}
-                placeholder="Detected from filename"
-                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="w-20 shrink-0 text-xs text-muted-foreground">Protocol</label>
-              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <input type="checkbox" checked disabled className="h-3 w-3" />
-                Auto-detect
-              </label>
-              <input
-                type="text"
-                readOnly
-                placeholder="Detected from TS domain"
-                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="w-20 shrink-0 text-xs text-muted-foreground">Description</label>
-              <input
-                type="text"
-                placeholder="Optional description"
-                className="h-7 flex-1 rounded-md border bg-muted/50 px-2 text-xs text-muted-foreground placeholder:text-muted-foreground/50"
-              />
-            </div>
+          {/* Description field */}
+          <div className="flex items-start gap-3">
+            <label className="shrink-0 pt-1.5 text-xs text-muted-foreground">Description</label>
+            <textarea
+              rows={2}
+              placeholder="Optional study notes..."
+              className="w-[260px] max-w-full resize rounded-md border border-border/50 bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+            />
           </div>
 
           {/* Validation options */}
