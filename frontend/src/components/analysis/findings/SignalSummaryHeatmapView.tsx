@@ -84,9 +84,9 @@ function buildHeatmapOption(
   return {
     grid: {
       left: leftMargin,
-      right: 30,
-      top: 10,
-      bottom: 80,
+      right: 16,
+      top: 6,
+      bottom: 60,
     },
     xAxis: {
       type: "category",
@@ -162,7 +162,7 @@ export function SignalSummaryHeatmapView({
     if (!signalData) return 400;
     const filtered = sexFilter ? signalData.filter((r: SignalSummaryRow) => r.sex === sexFilter) : signalData;
     const endpoints = new Set(filtered.map((r: SignalSummaryRow) => r.endpoint_label));
-    return Math.max(400, endpoints.size * 18 + 100);
+    return Math.max(300, endpoints.size * 16 + 70);
   }, [signalData, sexFilter]);
 
   const handleClick = useMemo(() => {
@@ -221,12 +221,12 @@ export function SignalSummaryHeatmapView({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Filter bar */}
-      <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
+      <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-1">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Signal heatmap
         </span>
         <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+          className="rounded border bg-background px-1.5 py-0.5 text-[11px]"
           value={sexFilter ?? ""}
           onChange={(e) => setSexFilter(e.target.value || null)}
         >

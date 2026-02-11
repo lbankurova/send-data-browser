@@ -622,7 +622,7 @@ export function CopyDoseResponseView({
         style={{ width: railWidth }}
       >
         {/* Rail header */}
-        <div className="shrink-0 border-b px-3 py-2">
+        <div className="shrink-0 border-b px-2 py-1.5">
           <div className="mb-0.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <span>Endpoints ({totalEndpoints})</span>
             <CollapseAllButtons
@@ -775,7 +775,7 @@ export function CopyDoseResponseView({
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Summary header */}
         {selectedSummary ? (
-          <div className="shrink-0 border-b px-4 py-3">
+          <div className="shrink-0 border-b px-3 py-1.5">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <h2 className="text-sm font-semibold">{selectedSummary.endpoint_label}</h2>
@@ -845,7 +845,7 @@ export function CopyDoseResponseView({
             </div>
           </div>
         ) : (
-          <div className="shrink-0 border-b px-4 py-3">
+          <div className="shrink-0 border-b px-3 py-1.5">
             <p className="text-xs text-muted-foreground">
               Select an endpoint from the list to view dose-response details.
             </p>
@@ -990,7 +990,7 @@ function ChartOverviewContent({
       <div ref={chartRowRef} className="flex border-b">
         {/* ── Dose-response chart container ── */}
         <div
-          className="flex shrink-0 flex-col overflow-hidden p-3"
+          className="flex shrink-0 flex-col overflow-hidden px-2 py-1.5"
           style={{ width: hasEffect ? `${splitPct}%` : "100%" }}
         >
           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -999,12 +999,12 @@ function ChartOverviewContent({
           {chartData.dataType === "continuous" ? (
             <EChartsWrapper
               option={buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, null)}
-              style={{ width: "100%", height: 260 }}
+              style={{ width: "100%", height: 220 }}
             />
           ) : (
             <EChartsWrapper
               option={buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, null)}
-              style={{ width: "100%", height: 260 }}
+              style={{ width: "100%", height: 220 }}
             />
           )}
           {/* Legend — dose-response */}
@@ -1035,13 +1035,13 @@ function ChartOverviewContent({
 
         {/* ── Effect size chart container ── */}
         {hasEffect && (
-          <div className="flex min-w-0 flex-1 flex-col p-3">
+          <div className="flex min-w-0 flex-1 flex-col px-2 py-1.5">
             <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Effect size (Cohen&apos;s d)
             </div>
             <EChartsWrapper
               option={buildEffectSizeBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels)}
-              style={{ width: "100%", height: 260 }}
+              style={{ width: "100%", height: 220 }}
             />
             {/* Legend — effect size */}
             <div className="mt-1 flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
@@ -1173,7 +1173,7 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubje
   return (
     <div className="border-t">
       {/* Section header with collapse option */}
-      <div className="flex items-center justify-between px-4 py-2">
+      <div className="flex items-center justify-between px-3 py-1">
         <button
           className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
           onClick={() => setExpanded(!expanded)}
@@ -1337,22 +1337,22 @@ function CLTimecourseCharts({
 
   return (
     <div>
-      <div className="flex gap-4 border-b p-4">
+      <div className="flex gap-2 border-b px-2 py-1.5">
         {chartsBySex.map(({ sex, points }) => (
           <div key={sex} className="flex-1 min-w-[300px]">
-            <p className="mb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="mb-0.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {sexLabels[sex] ?? sex}
             </p>
             <EChartsWrapper
               option={buildCLTimecourseBarOption(points, doseLevels, getDoseGroupColor)}
-              style={{ width: "100%", height: 220 }}
+              style={{ width: "100%", height: 180 }}
             />
           </div>
         ))}
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-3 px-4 py-2 text-[10px] text-muted-foreground">
+      <div className="flex items-center justify-center gap-3 px-2 py-1 text-[10px] text-muted-foreground">
         {doseLevels.map(([dl, label]) => (
           <span key={dl} className="flex items-center gap-1">
             <span
@@ -1524,15 +1524,15 @@ function TimecourseCharts({
   return (
     <div>
       {/* Charts */}
-      <div className="flex gap-4 border-b p-4">
+      <div className="flex gap-2 border-b px-2 py-1.5">
         {chartsBySex.map(({ sex, points, subjectTraces }) => (
           <div key={sex} className="flex-1">
-            <p className="mb-1 text-center text-[10px] font-medium" style={{ color: sexChartColors[sex] }}>
+            <p className="mb-0.5 text-center text-[10px] font-medium" style={{ color: sexChartColors[sex] }}>
               {sexLabels[sex] ?? sex}
             </p>
             <EChartsWrapper
               option={buildTimecourseLineOption(points, doseLevels, getDoseGroupColor, yLabel, baselineRefValue, yAxisMode, showSubjects, subjectTraces)}
-              style={{ width: "100%", height: 300 }}
+              style={{ width: "100%", height: 240 }}
               onClick={(params) => {
                 if (onSubjectClick && params.seriesName && subjectTraces.some((t) => t.usubjid === params.seriesName)) {
                   onSubjectClick(params.seriesName);
@@ -1544,7 +1544,7 @@ function TimecourseCharts({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-3 border-b px-4 py-2 text-[10px] text-muted-foreground">
+      <div className="flex items-center justify-center gap-3 px-2 py-1 text-[10px] text-muted-foreground">
         {doseLevels.map((dl) => {
           // Get label from first available timepoint
           const label = tcData.timepoints[0]?.groups.find((g) => g.dose_level === dl)?.dose_label ?? `Dose ${dl}`;
@@ -1720,7 +1720,7 @@ function MetricsTableContent({
   return (
     <div className="flex h-full flex-col">
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2">
+      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-1">
         <select
           className="rounded border bg-background px-2 py-1 text-xs"
           value={metricsFilters.sex ?? ""}
@@ -2120,7 +2120,7 @@ function ShapePlaceholder({
         and per-sex series toggling. No static annotations or significance encoding.
       </p>
 
-      <div className="rounded-md border bg-card p-3">
+      <div className="rounded-md border bg-card px-2 py-1.5">
         <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
         <ConfigLine items={[
           ["X", "dose_group"],
@@ -2151,7 +2151,7 @@ function ModelPlaceholder() {
         Model parameters are session-scoped and never stored as authoritative.
       </p>
 
-      <div className="rounded-md border bg-card p-3">
+      <div className="rounded-md border bg-card px-2 py-1.5">
         <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Available models</p>
         <div className="flex flex-wrap gap-1.5">
           {["Linear", "4PL sigmoid", "Emax", "Polynomial (2-3)"].map((m) => (
@@ -2236,7 +2236,7 @@ function VolcanoScatter({
 
       <EChartsWrapper
         option={buildVolcanoScatterOption(points, selectedEndpoint, organSystems)}
-        style={{ width: "100%", height: 320 }}
+        style={{ width: "100%", height: 260 }}
         onClick={(params) => {
           if (params.name && onSelectEndpoint) {
             onSelectEndpoint(String(params.name));
@@ -2266,7 +2266,7 @@ function CorrelationPlaceholder() {
         Determines whether signals are independent or share an underlying mechanism.
       </p>
 
-      <div className="rounded-md border bg-card p-3">
+      <div className="rounded-md border bg-card px-2 py-1.5">
         <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
         <ConfigLine items={[
           ["X", "endpoint A (per subject)"],
@@ -2311,7 +2311,7 @@ function OutliersPlaceholder({
         Distinguishes outlier-driven signals from consistent group shifts.
       </p>
 
-      <div className="rounded-md border bg-card p-3">
+      <div className="rounded-md border bg-card px-2 py-1.5">
         <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
         <ConfigLine items={[
           ["X", "dose_group"],
