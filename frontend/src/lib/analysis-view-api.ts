@@ -9,6 +9,7 @@ import type {
   DoseResponseRow,
   OrganEvidenceRow,
   LesionSeverityRow,
+  ProvenanceMessage,
 } from "@/types/analysis-views";
 
 const API_BASE = "/api";
@@ -80,6 +81,14 @@ export function fetchLesionSeveritySummary(
 ): Promise<LesionSeverityRow[]> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/lesion-severity-summary`
+  );
+}
+
+export function fetchProvenanceMessages(
+  studyId: string
+): Promise<ProvenanceMessage[]> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/provenance-messages`
   );
 }
 
