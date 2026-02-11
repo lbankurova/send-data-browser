@@ -12,6 +12,9 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useOrganEvidenceDetail } from "@/hooks/useOrganEvidenceDetail";
 import { cn } from "@/lib/utils";
+import { ViewTabBar } from "@/components/ui/ViewTabBar";
+import { EvidenceBar } from "@/components/ui/EvidenceBar";
+import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import {
   formatPValue,
@@ -173,10 +176,6 @@ function OrganListItem({
   stats: OrganStats | undefined;
   onClick: () => void;
 }) {
-  const barWidth = maxEvidenceScore > 0
-    ? Math.max(4, (organ.evidence_score / maxEvidenceScore) * 100)
-    : 0;
-
   return (
     <button
       className={cn(
@@ -207,22 +206,12 @@ function OrganListItem({
       </div>
 
       {/* Row 2: evidence bar (neutral gray) */}
-      <div className="mt-1.5 flex items-center gap-2">
-        <div className="h-1.5 flex-1 rounded-full bg-[#E5E7EB]">
-          <div
-            className="h-full rounded-full bg-[#D1D5DB] transition-all"
-            style={{ width: `${barWidth}%` }}
-          />
-        </div>
-        <span
-          className={cn(
-            "shrink-0 font-mono text-[10px] tabular-nums",
-            organ.evidence_score >= 0.5 ? "font-semibold" : organ.evidence_score >= 0.3 ? "font-medium" : ""
-          )}
-        >
-          {organ.evidence_score.toFixed(2)}
-        </span>
-      </div>
+      <EvidenceBar
+        value={organ.evidence_score}
+        max={maxEvidenceScore}
+        label={organ.evidence_score.toFixed(2)}
+        labelClassName={organ.evidence_score >= 0.5 ? "font-semibold" : organ.evidence_score >= 0.3 ? "font-medium" : ""}
+      />
 
       {/* Row 3: signal metrics — min p, max |d|, dose consistency */}
       {stats && (
@@ -787,7 +776,7 @@ function EvidenceTableTab({
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Filter bar */}
-      <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
+      <FilterBar>
         <select
           className="rounded border bg-background px-2 py-1 text-xs"
           value={domainFilter ?? ""}
@@ -807,10 +796,8 @@ function EvidenceTableTab({
           <option value="M">Male</option>
           <option value="F">Female</option>
         </select>
-        <span className="ml-auto text-[10px] text-muted-foreground">
-          {filteredEvidence.length} findings
-        </span>
-      </div>
+        <FilterBarCount>{filteredEvidence.length} findings</FilterBarCount>
+      </FilterBar>
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
@@ -1449,30 +1436,20 @@ export function TargetOrgansView({
             <OrganSummaryHeader organ={selectedOrganData} evidenceRows={organEvidenceRows} organRules={organRules} />
 
             {/* Tab bar */}
-            <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
-              {(["evidence", "hypotheses", "metrics"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  className={cn(
-                    "relative px-4 py-1.5 text-xs font-medium transition-colors",
-                    activeTab === tab
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {{ evidence: "Evidence", hypotheses: "Hypotheses", metrics: "Metrics" }[tab]}
-                  {activeTab === tab && (
-                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
-                  )}
-                </button>
-              ))}
-              {activeTab === "metrics" && (
-                <span className="ml-auto mr-3 text-[10px] text-muted-foreground">
+            <ViewTabBar
+              tabs={[
+                { key: "evidence", label: "Evidence" },
+                { key: "hypotheses", label: "Hypotheses" },
+                { key: "metrics", label: "Metrics" },
+              ]}
+              value={activeTab}
+              onChange={(k) => setActiveTab(k as typeof activeTab)}
+              right={activeTab === "metrics" ? (
+                <span className="mr-3 text-[10px] text-muted-foreground">
                   {organEvidenceRows.length} of {evidenceData?.length ?? 0} rows
                 </span>
-              )}
-            </div>
+              ) : undefined}
+            />
 
             {/* Tab content */}
             {activeTab === "evidence" && (

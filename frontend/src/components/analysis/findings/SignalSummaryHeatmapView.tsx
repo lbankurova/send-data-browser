@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
+import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
 // getNeutralHeatColor thresholds are used inline in buildHeatmapOption
 import type { EChartsOption } from "echarts";
@@ -221,7 +222,7 @@ export function SignalSummaryHeatmapView({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Filter bar */}
-      <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-1">
+      <FilterBar className="px-3 py-1">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Signal heatmap
         </span>
@@ -235,10 +236,8 @@ export function SignalSummaryHeatmapView({
             <option key={s} value={s}>{s === "M" ? "Male" : s === "F" ? "Female" : s}</option>
           ))}
         </select>
-        <span className="ml-auto text-[10px] text-muted-foreground">
-          {signalData?.length ?? 0} signal rows
-        </span>
-      </div>
+        <FilterBarCount>{signalData?.length ?? 0} signal rows</FilterBarCount>
+      </FilterBar>
 
       {/* Heatmap */}
       <div className="flex-1 overflow-auto">
