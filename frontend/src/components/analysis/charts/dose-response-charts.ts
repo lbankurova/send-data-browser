@@ -14,7 +14,7 @@ const AXIS_LABEL_SIZE = 10;
 const TOOLTIP_TEXT_SIZE = 11;
 const REF_LINE_LABEL_SIZE = 9;
 
-const BASE_GRID = { left: 50, right: 20, top: 25, bottom: 35 };
+const BASE_GRID = { left: 44, right: 12, top: 16, bottom: 28 };
 
 function axisLabel(fontSize = AXIS_LABEL_SIZE) {
   return { fontSize, color: "#6B7280" };
@@ -474,7 +474,7 @@ export function buildCLTimecourseBarOption(
   }));
 
   return {
-    grid: { left: 50, right: 20, top: 10, bottom: 50 },
+    grid: { left: 44, right: 12, top: 8, bottom: 40 },
     xAxis: {
       type: "category",
       data: days,
@@ -687,14 +687,14 @@ export function buildTimecourseLineOption(
   }
 
   return {
-    grid: { left: 60, right: 20, top: 10, bottom: 50 },
+    grid: { left: 52, right: 12, top: 8, bottom: 40 },
     xAxis: {
       type: "category",
       data: days.map(String),
       axisLabel: axisLabel(),
       name: "Study day",
       nameLocation: "center",
-      nameGap: 30,
+      nameGap: 24,
       nameTextStyle: { fontSize: 10, color: "#9CA3AF" },
     },
     yAxis: {
@@ -703,7 +703,7 @@ export function buildTimecourseLineOption(
       splitLine: splitLineStyle(),
       name: yLabel,
       nameLocation: "center",
-      nameGap: 40,
+      nameGap: 34,
       nameTextStyle: { fontSize: 10, color: "#9CA3AF" },
     },
     tooltip: {
@@ -878,7 +878,7 @@ export function buildVolcanoScatterOption(
   const legendData = organSystems.map(([organ]) => organ);
 
   return {
-    grid: { left: 50, right: 20, top: 10, bottom: 50 },
+    grid: { left: 44, right: 12, top: 8, bottom: 40 },
     xAxis: {
       type: "value",
       min: 0,
@@ -886,7 +886,7 @@ export function buildVolcanoScatterOption(
       splitLine: splitLineStyle(),
       name: "|Effect size| (Cohen's d)",
       nameLocation: "center",
-      nameGap: 30,
+      nameGap: 24,
       nameTextStyle: { fontSize: 10, color: "#9CA3AF" },
     },
     yAxis: {
@@ -896,7 +896,7 @@ export function buildVolcanoScatterOption(
       splitLine: splitLineStyle(),
       name: "-log\u2081\u2080(trend p)",
       nameLocation: "center",
-      nameGap: 35,
+      nameGap: 28,
       nameTextStyle: { fontSize: 10, color: "#9CA3AF" },
     },
     tooltip: {
