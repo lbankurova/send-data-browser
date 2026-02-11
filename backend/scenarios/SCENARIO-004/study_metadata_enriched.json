@@ -1,0 +1,12 @@
+{
+  "species": null,
+  "strain": null,
+  "route": null,
+  "study_start": "2025-06-01",
+  "study_end": null,
+  "study_type": "REPEAT DOSE TOXICITY",
+  "study_design": "PARALLEL",
+  "vehicle": null,
+  "sponsor": "PharmaCorp",
+  "test_article": "COMPOUND-Z"
+}

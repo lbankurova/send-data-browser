@@ -1,0 +1,248 @@
+{
+  "rules": [
+    {
+      "rule_id": "SD-004",
+      "severity": "Error",
+      "domain": "TS",
+      "category": "Study design",
+      "description": "Missing trial summary parameters — 5 issues",
+      "records_affected": 5,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, Section 3.1",
+      "rationale": "Required TS parameters SPECIES, STRAIN, ROUTE, SSTDTC, SSTYP are missing.",
+      "how_to_fix": "Add missing TS parameters.",
+      "cdisc_reference": "SENDIG 3.1, Section 3.1",
+      "source": "custom"
+    },
+    {
+      "rule_id": "CORE-SEND0035-TS",
+      "severity": "Error",
+      "domain": "TS",
+      "category": "CDISC conformance",
+      "description": "Missing required TS parameters for SEND submission",
+      "records_affected": 3,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, TS Domain",
+      "rationale": "TS domain is missing required parameters SPECIES, ROUTE, SSTDTC per SENDIG 3.1.",
+      "how_to_fix": "Add TSPARMCD rows for SPECIES, ROUTE, and SSTDTC to the TS domain.",
+      "cdisc_reference": "SENDIG 3.1",
+      "source": "core"
+    },
+    {
+      "rule_id": "CORE-SEND0036-DM",
+      "severity": "Error",
+      "domain": "DM",
+      "category": "CDISC conformance",
+      "description": "DM domain contains 0 subjects",
+      "records_affected": 1,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, DM Domain",
+      "rationale": "Demographics (DM) domain must contain at least one subject record.",
+      "how_to_fix": "Verify DM domain was exported correctly. DM must contain one row per subject.",
+      "cdisc_reference": "SENDIG 3.1",
+      "source": "core"
+    }
+  ],
+  "records": {
+    "SD-004": [
+      {
+        "issue_id": "SD-004-001",
+        "rule_id": "SD-004",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: SPECIES)",
+        "expected_value": "Required TS parameter",
+        "fix_tier": 1,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "SPECIES",
+          "derivation": "TS domain TSPARMCD"
+        },
+        "diagnosis": "TS is missing parameter SPECIES."
+      },
+      {
+        "issue_id": "SD-004-002",
+        "rule_id": "SD-004",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: STRAIN)",
+        "expected_value": "Required TS parameter",
+        "fix_tier": 1,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "STRAIN",
+          "derivation": "TS domain TSPARMCD"
+        },
+        "diagnosis": "TS is missing parameter STRAIN."
+      },
+      {
+        "issue_id": "SD-004-003",
+        "rule_id": "SD-004",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: ROUTE)",
+        "expected_value": "Required TS parameter",
+        "fix_tier": 1,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "ROUTE",
+          "derivation": "TS domain TSPARMCD"
+        },
+        "diagnosis": "TS is missing parameter ROUTE."
+      },
+      {
+        "issue_id": "SD-004-004",
+        "rule_id": "SD-004",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: SSTDTC)",
+        "expected_value": "Required TS parameter",
+        "fix_tier": 1,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "SSTDTC",
+          "derivation": "TS domain TSPARMCD"
+        },
+        "diagnosis": "TS is missing parameter SSTDTC."
+      },
+      {
+        "issue_id": "SD-004-005",
+        "rule_id": "SD-004",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: SSTYP)",
+        "expected_value": "Required TS parameter",
+        "fix_tier": 1,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "SSTYP",
+          "derivation": "TS domain TSPARMCD"
+        },
+        "diagnosis": "TS is missing parameter SSTYP."
+      }
+    ],
+    "CORE-SEND0035-TS": [
+      {
+        "issue_id": "CORE-SEND0035-TS-001",
+        "rule_id": "CORE-SEND0035-TS",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: SPECIES)",
+        "expected_value": "Required per SENDIG",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "SPECIES"
+        },
+        "diagnosis": "CORE: Required TS parameter SPECIES is missing."
+      },
+      {
+        "issue_id": "CORE-SEND0035-TS-002",
+        "rule_id": "CORE-SEND0035-TS",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: ROUTE)",
+        "expected_value": "Required per SENDIG",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "ROUTE"
+        },
+        "diagnosis": "CORE: Required TS parameter ROUTE is missing."
+      },
+      {
+        "issue_id": "CORE-SEND0035-TS-003",
+        "rule_id": "CORE-SEND0035-TS",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: SSTDTC)",
+        "expected_value": "Required per SENDIG",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "SSTDTC"
+        },
+        "diagnosis": "CORE: Required TS parameter SSTDTC is missing."
+      }
+    ],
+    "CORE-SEND0036-DM": [
+      {
+        "issue_id": "CORE-SEND0036-DM-001",
+        "rule_id": "CORE-SEND0036-DM",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "DM",
+        "variable": "USUBJID",
+        "actual_value": "0 records",
+        "expected_value": ">= 1 record",
+        "fix_tier": 3,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "row-count",
+          "count": 0
+        },
+        "diagnosis": "CORE: DM domain has 0 records. At least one subject is required."
+      }
+    ]
+  },
+  "scripts": [],
+  "summary": {
+    "total_issues": 9,
+    "errors": 9,
+    "warnings": 0,
+    "info": 0,
+    "domains_affected": [
+      "TS",
+      "DM"
+    ],
+    "elapsed_seconds": 0.12,
+    "validated_at": "2026-02-01T00:00:00+00:00"
+  },
+  "core_conformance": {
+    "engine_version": "0.7.0",
+    "standard": "SENDIG 3.1",
+    "ct_version": "2024-06-28"
+  }
+}

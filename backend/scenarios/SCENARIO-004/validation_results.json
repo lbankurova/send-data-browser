@@ -1,0 +1,339 @@
+{
+  "rules": [
+    {
+      "rule_id": "SD-001",
+      "severity": "Error",
+      "domain": "DM",
+      "category": "Study design",
+      "description": "Orphaned subjects: ARMCD in DM not defined in TA",
+      "records_affected": 2,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, Section 6.1",
+      "rationale": "2 subjects have ARMCD values in DM that do not appear in TA.ARMCD. These subjects cannot be mapped to treatment arms.",
+      "how_to_fix": "Add the missing ARMCD entries to TA, or correct the ARMCD values in DM.",
+      "cdisc_reference": "SENDIG 3.1, Section 6.1",
+      "source": "custom"
+    },
+    {
+      "rule_id": "SD-004",
+      "severity": "Error",
+      "domain": "TS",
+      "category": "Study design",
+      "description": "Missing trial summary parameters \u2014 3 issues",
+      "records_affected": 3,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, Section 3.1",
+      "rationale": "TS is missing required parameters: SPECIES, STRAIN, ROUTE.",
+      "how_to_fix": "Add missing TS parameters. Values may be inferred from other domains.",
+      "cdisc_reference": "SENDIG 3.1, Section 3.1",
+      "source": "custom"
+    },
+    {
+      "rule_id": "SD-007",
+      "severity": "Error",
+      "domain": "DM",
+      "category": "Study design",
+      "description": "ARM label mismatch between DM and TA",
+      "records_affected": 1,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, Section 6.1",
+      "rationale": "ARMCD \"2\" has different ARM labels in DM (\"Low Dose\") and TA (\"2 mg/kg PCDRUG\"). This causes inconsistency in arm identification.",
+      "how_to_fix": "Correct the ARM label in either DM or TA so they match for ARMCD \"2\".",
+      "cdisc_reference": "SENDIG 3.1, Section 6.1",
+      "source": "custom"
+    },
+    {
+      "rule_id": "CORE-SEND0035-TS",
+      "severity": "Error",
+      "domain": "TS",
+      "category": "CDISC conformance",
+      "description": "Missing required TS parameters: SPECIES, ROUTE",
+      "records_affected": 2,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, TS Domain",
+      "rationale": "TS domain is missing required parameters SPECIES and ROUTE per SENDIG 3.1.",
+      "how_to_fix": "Add TSPARMCD rows for SPECIES and ROUTE to the TS domain.",
+      "cdisc_reference": "SENDIG 3.1",
+      "source": "core"
+    },
+    {
+      "rule_id": "CORE-SEND0074-DM",
+      "severity": "Warning",
+      "domain": "DM",
+      "category": "CDISC conformance",
+      "description": "ARMCD values in DM not present in TA",
+      "records_affected": 2,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, DM/TA Domains",
+      "rationale": "2 ARMCD values in DM do not have corresponding entries in TA. Subjects cannot be mapped.",
+      "how_to_fix": "Ensure all ARMCD values in DM exist in TA.ARMCD.",
+      "cdisc_reference": "SENDIG 3.1",
+      "source": "core"
+    },
+    {
+      "rule_id": "CORE-SEND0075-DM",
+      "severity": "Warning",
+      "domain": "DM",
+      "category": "CDISC conformance",
+      "description": "ARM label mismatch between DM and TA for ARMCD \"2\"",
+      "records_affected": 1,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, DM/TA Domains",
+      "rationale": "ARM label for ARMCD \"2\" differs: DM=\"Low Dose\", TA=\"2 mg/kg PCDRUG\".",
+      "how_to_fix": "Align ARM labels in DM and TA for ARMCD \"2\".",
+      "cdisc_reference": "SENDIG 3.1",
+      "source": "core"
+    }
+  ],
+  "records": {
+    "SD-001": [
+      {
+        "issue_id": "SD-001-001",
+        "rule_id": "SD-001",
+        "subject_id": "SUBJ-042",
+        "visit": "--",
+        "domain": "DM",
+        "variable": "ARMCD",
+        "actual_value": "6",
+        "expected_value": "Defined in TA",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "orphan-ref",
+          "variable": "ARMCD",
+          "value": "6"
+        },
+        "diagnosis": "Subject SUBJ-042 has ARMCD=6, which is not defined in TA."
+      },
+      {
+        "issue_id": "SD-001-002",
+        "rule_id": "SD-001",
+        "subject_id": "SUBJ-043",
+        "visit": "--",
+        "domain": "DM",
+        "variable": "ARMCD",
+        "actual_value": "7",
+        "expected_value": "Defined in TA",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "orphan-ref",
+          "variable": "ARMCD",
+          "value": "7"
+        },
+        "diagnosis": "Subject SUBJ-043 has ARMCD=7, which is not defined in TA."
+      }
+    ],
+    "SD-004": [
+      {
+        "issue_id": "SD-004-001",
+        "rule_id": "SD-004",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: SPECIES)",
+        "expected_value": "Required TS parameter",
+        "fix_tier": 1,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "SPECIES",
+          "derivation": "TS domain TSPARMCD"
+        },
+        "diagnosis": "TS is missing parameter SPECIES."
+      },
+      {
+        "issue_id": "SD-004-002",
+        "rule_id": "SD-004",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: STRAIN)",
+        "expected_value": "Required TS parameter",
+        "fix_tier": 1,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "STRAIN",
+          "derivation": "TS domain TSPARMCD"
+        },
+        "diagnosis": "TS is missing parameter STRAIN."
+      },
+      {
+        "issue_id": "SD-004-003",
+        "rule_id": "SD-004",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: ROUTE)",
+        "expected_value": "Required TS parameter",
+        "fix_tier": 1,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "ROUTE",
+          "derivation": "TS domain TSPARMCD"
+        },
+        "diagnosis": "TS is missing parameter ROUTE."
+      }
+    ],
+    "SD-007": [
+      {
+        "issue_id": "SD-007-001",
+        "rule_id": "SD-007",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "DM",
+        "variable": "ARM",
+        "actual_value": "DM=\"Low Dose\", TA=\"2 mg/kg PCDRUG\"",
+        "expected_value": "Matching labels",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": [
+          "Low Dose",
+          "2 mg/kg PCDRUG"
+        ],
+        "script_key": null,
+        "evidence": {
+          "type": "mismatch",
+          "armcd": "2",
+          "dm_label": "Low Dose",
+          "ta_label": "2 mg/kg PCDRUG"
+        },
+        "diagnosis": "ARM label mismatch for ARMCD 2: DM=\"Low Dose\", TA=\"2 mg/kg PCDRUG\"."
+      }
+    ],
+    "CORE-SEND0035-TS": [
+      {
+        "issue_id": "CORE-SEND0035-TS-001",
+        "rule_id": "CORE-SEND0035-TS",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: SPECIES)",
+        "expected_value": "Required per SENDIG",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "SPECIES"
+        },
+        "diagnosis": "CORE: Required TS parameter SPECIES is missing."
+      },
+      {
+        "issue_id": "CORE-SEND0035-TS-002",
+        "rule_id": "CORE-SEND0035-TS",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: ROUTE)",
+        "expected_value": "Required per SENDIG",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "ROUTE"
+        },
+        "diagnosis": "CORE: Required TS parameter ROUTE is missing."
+      }
+    ],
+    "CORE-SEND0074-DM": [
+      {
+        "issue_id": "CORE-SEND0074-DM-001",
+        "rule_id": "CORE-SEND0074-DM",
+        "subject_id": "SUBJ-042",
+        "visit": "--",
+        "domain": "DM",
+        "variable": "ARMCD",
+        "actual_value": "6",
+        "expected_value": "Present in TA",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "orphan-ref",
+          "value": "6"
+        },
+        "diagnosis": "CORE: ARMCD=6 in DM not found in TA."
+      },
+      {
+        "issue_id": "CORE-SEND0074-DM-002",
+        "rule_id": "CORE-SEND0074-DM",
+        "subject_id": "SUBJ-043",
+        "visit": "--",
+        "domain": "DM",
+        "variable": "ARMCD",
+        "actual_value": "7",
+        "expected_value": "Present in TA",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "orphan-ref",
+          "value": "7"
+        },
+        "diagnosis": "CORE: ARMCD=7 in DM not found in TA."
+      }
+    ],
+    "CORE-SEND0075-DM": [
+      {
+        "issue_id": "CORE-SEND0075-DM-001",
+        "rule_id": "CORE-SEND0075-DM",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "DM",
+        "variable": "ARM",
+        "actual_value": "DM=\"Low Dose\"",
+        "expected_value": "TA=\"2 mg/kg PCDRUG\"",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "mismatch",
+          "armcd": "2"
+        },
+        "diagnosis": "CORE: ARM label mismatch for ARMCD 2."
+      }
+    ]
+  },
+  "scripts": [],
+  "summary": {
+    "total_issues": 11,
+    "errors": 8,
+    "warnings": 3,
+    "info": 0,
+    "domains_affected": [
+      "DM",
+      "TS"
+    ],
+    "elapsed_seconds": 0.41,
+    "validated_at": "2026-02-01T00:00:00+00:00"
+  },
+  "core_conformance": {
+    "engine_version": "0.7.0",
+    "standard": "SENDIG 3.1",
+    "ct_version": "2024-06-28"
+  }
+}

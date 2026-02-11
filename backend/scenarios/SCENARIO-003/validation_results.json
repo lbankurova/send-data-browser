@@ -1,0 +1,179 @@
+{
+  "rules": [
+    {
+      "rule_id": "SD-003",
+      "severity": "Warning",
+      "domain": "DM",
+      "category": "Study design",
+      "description": "No control group detected",
+      "records_affected": 1,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, Section 6.2",
+      "rationale": "A control (vehicle) group is required for comparative statistical analysis. No ARMCD with dose=0 or label containing control/vehicle was found.",
+      "how_to_fix": "Assign one group as the control via the inline resolution control, or add a vehicle control arm to the study.",
+      "cdisc_reference": "SENDIG 3.1, Section 6.2",
+      "source": "custom"
+    },
+    {
+      "rule_id": "CORE-SEND0073-EX",
+      "severity": "Warning",
+      "domain": "EX",
+      "category": "CDISC conformance",
+      "description": "EXDOSE consistency check -- all doses non-zero, no control",
+      "records_affected": 3,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, EX Domain",
+      "rationale": "All EXDOSE values are non-zero. SENDIG recommends a vehicle control group (EXDOSE=0).",
+      "how_to_fix": "Verify study design includes a control group. If not, document the omission.",
+      "cdisc_reference": "SENDIG 3.1",
+      "source": "core"
+    },
+    {
+      "rule_id": "CORE-SEND0035-TS",
+      "severity": "Info",
+      "domain": "TS",
+      "category": "CDISC conformance",
+      "description": "Optional TS parameters not populated",
+      "records_affected": 1,
+      "standard": "SENDIG v3.1",
+      "section": "SENDIG 3.1, TS Domain",
+      "rationale": "Some recommended TS parameters are not populated. This is informational.",
+      "how_to_fix": "Consider adding optional TS parameters for completeness.",
+      "cdisc_reference": "SENDIG 3.1",
+      "source": "core"
+    }
+  ],
+  "records": {
+    "SD-003": [
+      {
+        "issue_id": "SD-003-001",
+        "rule_id": "SD-003",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "DM",
+        "variable": "ARMCD",
+        "actual_value": "No control ARMCD found",
+        "expected_value": "At least one ARMCD with dose=0",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": [
+          "Group A - 5 mg/kg",
+          "Group B - 15 mg/kg",
+          "Group C - 50 mg/kg"
+        ],
+        "script_key": null,
+        "evidence": {
+          "type": "missing-group",
+          "groups": [
+            "Group A",
+            "Group B",
+            "Group C"
+          ]
+        },
+        "diagnosis": "No control group detected. Comparative statistics cannot be computed."
+      }
+    ],
+    "CORE-SEND0073-EX": [
+      {
+        "issue_id": "CORE-SEND0073-EX-001",
+        "rule_id": "CORE-SEND0073-EX",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "EX",
+        "variable": "EXDOSE",
+        "actual_value": "All non-zero (5, 15, 50)",
+        "expected_value": "At least one EXDOSE=0",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "value-check",
+          "values": [
+            5,
+            15,
+            50
+          ]
+        },
+        "diagnosis": "CORE: All EXDOSE values are non-zero. No vehicle control detected."
+      },
+      {
+        "issue_id": "CORE-SEND0073-EX-002",
+        "rule_id": "CORE-SEND0073-EX",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "EX",
+        "variable": "EXDOSE",
+        "actual_value": "3 unique non-zero doses",
+        "expected_value": "Include dose=0",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "value-check",
+          "n_groups": 3
+        },
+        "diagnosis": "CORE: Study has 3 dose groups, all non-zero."
+      },
+      {
+        "issue_id": "CORE-SEND0073-EX-003",
+        "rule_id": "CORE-SEND0073-EX",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "EX",
+        "variable": "EXDOSE",
+        "actual_value": "No vehicle arm",
+        "expected_value": "Vehicle/control arm",
+        "fix_tier": 2,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "arm-check"
+        },
+        "diagnosis": "CORE: No arm labeled as vehicle or control."
+      }
+    ],
+    "CORE-SEND0035-TS": [
+      {
+        "issue_id": "CORE-SEND0035-TS-001",
+        "rule_id": "CORE-SEND0035-TS",
+        "subject_id": "--",
+        "visit": "--",
+        "domain": "TS",
+        "variable": "TSPARMCD",
+        "actual_value": "(missing: SPONSOR)",
+        "expected_value": "Recommended per SENDIG",
+        "fix_tier": 1,
+        "auto_fixed": false,
+        "suggestions": null,
+        "script_key": null,
+        "evidence": {
+          "type": "missing-value",
+          "variable": "SPONSOR"
+        },
+        "diagnosis": "CORE: Optional TS parameter SPONSOR not populated."
+      }
+    ]
+  },
+  "scripts": [],
+  "summary": {
+    "total_issues": 5,
+    "errors": 0,
+    "warnings": 4,
+    "info": 1,
+    "domains_affected": [
+      "DM",
+      "EX",
+      "TS"
+    ],
+    "elapsed_seconds": 0.29,
+    "validated_at": "2026-02-01T00:00:00+00:00"
+  },
+  "core_conformance": {
+    "engine_version": "0.7.0",
+    "standard": "SENDIG 3.1",
+    "ct_version": "2024-06-28"
+  }
+}

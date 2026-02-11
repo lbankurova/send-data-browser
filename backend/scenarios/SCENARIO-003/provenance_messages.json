@@ -1,0 +1,20 @@
+[
+  {
+    "rule_id": "Prov-001",
+    "icon": "info",
+    "message": "Dose values extracted from EX domain.",
+    "link_to_rule": null
+  },
+  {
+    "rule_id": "Prov-002",
+    "icon": "info",
+    "message": "Route of administration from EX domain.",
+    "link_to_rule": null
+  },
+  {
+    "rule_id": "Prov-NC1",
+    "icon": "warning",
+    "message": "No control group detected. Comparative statistics (Dunnett p-values, % vs control, Cohen d) are unavailable.",
+    "link_to_rule": "SD-003"
+  }
+]

@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Query
 
 from config import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
@@ -11,6 +14,8 @@ from services.xpt_processor import (
 )
 
 router = APIRouter(prefix="/api")
+
+SCENARIOS_DIR = Path(__file__).parent.parent / "scenarios"
 
 # Populated at startup
 _studies: dict[str, StudyInfo] = {}
@@ -75,14 +80,53 @@ def list_studies():
     return results
 
 
-@router.get("/studies/{study_id}/metadata", response_model=StudyMetadata)
+@router.get("/studies/{study_id}/metadata")
 def get_study_metadata(study_id: str):
+    # Fallback to scenario fixtures for SCENARIO-* IDs
+    if study_id.startswith("SCENARIO-"):
+        path = SCENARIOS_DIR / study_id / "study_metadata_enriched.json"
+        if not path.exists():
+            raise HTTPException(status_code=404, detail=f"Scenario '{study_id}' not found")
+        with open(path) as f:
+            enriched = json.load(f)
+        # Return a StudyMetadata-compatible shape
+        from scenarios.registry import get_scenario
+        scn = get_scenario(study_id)
+        return StudyMetadata(
+            study_id=study_id,
+            title=scn.name if scn else study_id,
+            protocol=None,
+            species=enriched.get("species"),
+            strain=enriched.get("strain"),
+            study_type=enriched.get("study_type"),
+            design=enriched.get("study_design"),
+            route=enriched.get("route"),
+            treatment=enriched.get("test_article"),
+            vehicle=enriched.get("vehicle"),
+            dosing_duration=None,
+            start_date=enriched.get("study_start"),
+            end_date=enriched.get("study_end"),
+            subjects=str(scn.subjects) if scn and scn.subjects else None,
+            males=None,
+            females=None,
+            sponsor=enriched.get("sponsor"),
+            test_facility=None,
+            study_director=None,
+            glp=None,
+            send_version=None,
+            domain_count=scn.domain_count if scn else 0,
+            domains=[],
+            dose_groups=None,
+        )
     _get_study(study_id)  # validates existence
     return _full_metadata[study_id]
 
 
 @router.get("/studies/{study_id}/domains", response_model=list[DomainSummary])
 def list_domains(study_id: str):
+    # Scenarios have no XPT files to browse
+    if study_id.startswith("SCENARIO-"):
+        return []
     study = _get_study(study_id)
     return get_all_domain_summaries(study)
 
