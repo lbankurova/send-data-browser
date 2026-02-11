@@ -27,7 +27,8 @@ export type RecordEvidence =
   | { type: "code-mapping"; value: string; code: string }
   | { type: "range-check"; lines: { label: string; value: string }[] }
   | { type: "missing-value"; variable: string; derivation?: string; suggested?: string }
-  | { type: "metadata"; lines: { label: string; value: string }[] };
+  | { type: "metadata"; lines: { label: string; value: string }[] }
+  | { type: "cross-domain"; lines: { label: string; value: string }[] };
 
 export interface AffectedRecord {
   issue_id: string;

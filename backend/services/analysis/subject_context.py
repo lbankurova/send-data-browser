@@ -256,6 +256,7 @@ def _detect_issues(
                     "armcd": armcd,
                     "subjects": [str(s) for s in affected],
                     "n": len(affected),
+                    "valid_armcds": sorted(ta_armcds),
                 })
 
     # SD-002: Empty arms — TA ARMCD with no subjects in DM
@@ -302,9 +303,14 @@ def _detect_issues(
         })
 
     if len(control_subjects) == 0:
+        # Collect available arm labels for suggestion dropdown
+        available_arms = []
+        if "ARM" in dm_df.columns:
+            available_arms = sorted(set(_str_col(dm_df, "ARM").unique()) - {"", "nan"})
         issues.append({
             "rule": "SD-003",
             "variant": "c",
+            "available_arms": available_arms,
         })
 
     # SD-004: Missing TS parameters
@@ -313,9 +319,26 @@ def _detect_issues(
     if missing_ts:
         # Map back to TSPARMCD names for the message
         reverse_map = {v: k for k, v in _TS_PARAMS.items()}
+        # Try to infer missing values from other domains
+        inferred: dict[str, str] = {}
+        if "species" in missing_ts and "SPECIES" in dm_df.columns:
+            vals = set(_str_col(dm_df, "SPECIES").unique()) - {"", "nan"}
+            if len(vals) == 1:
+                inferred["SPECIES"] = vals.pop()
+        if "strain" in missing_ts and "STRAIN" in dm_df.columns:
+            vals = set(_str_col(dm_df, "STRAIN").unique()) - {"", "nan"}
+            if len(vals) == 1:
+                inferred["STRAIN"] = vals.pop()
+        if "route" in missing_ts:
+            for eid, edata in ex_info.items():
+                route = edata.get("route")
+                if route:
+                    inferred["ROUTE"] = route
+                    break
         issues.append({
             "rule": "SD-004",
             "missing": [reverse_map.get(m, m) for m in missing_ts],
+            "inferred": inferred,
         })
 
     # SD-005: Dose inconsistency within subject

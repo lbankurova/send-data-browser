@@ -34,7 +34,8 @@ export type RecordEvidence =
   | { type: "code-mapping"; value: string; code: string }
   | { type: "range-check"; lines: { label: string; value: string }[] }
   | { type: "missing-value"; variable: string; derivation?: string; suggested?: string }
-  | { type: "metadata"; lines: { label: string; value: string }[] };
+  | { type: "metadata"; lines: { label: string; value: string }[] }
+  | { type: "cross-domain"; lines: { label: string; value: string }[] };
 
 export interface AffectedRecord {
   issue_id: string;
@@ -755,7 +756,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
               <div className="ml-auto flex items-center gap-1.5">
                 {/* Fix status filter */}
                 <select
-                  className="rounded border bg-background px-2 py-1 text-xs"
+                  className="bg-transparent py-0.5 text-xs cursor-pointer focus:outline-none"
                   value={recordFilters.fixStatus}
                   onChange={(e) => setRecordFilters((prev) => ({ ...prev, fixStatus: e.target.value }))}
                 >
@@ -768,7 +769,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                 </select>
                 {/* Review status filter */}
                 <select
-                  className="rounded border bg-background px-2 py-1 text-xs"
+                  className="bg-transparent py-0.5 text-xs cursor-pointer focus:outline-none"
                   value={recordFilters.reviewStatus}
                   onChange={(e) => setRecordFilters((prev) => ({ ...prev, reviewStatus: e.target.value }))}
                 >
@@ -779,7 +780,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                 </select>
                 {/* Subject filter */}
                 <select
-                  className="rounded border bg-background px-2 py-1 text-xs"
+                  className="bg-transparent py-0.5 text-xs cursor-pointer focus:outline-none"
                   value={recordFilters.subjectId}
                   onChange={(e) => setRecordFilters((prev) => ({ ...prev, subjectId: e.target.value }))}
                 >

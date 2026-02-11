@@ -99,7 +99,7 @@ def _map_sd001(issue: dict, prefix: str) -> list[AffectedRecordResult]:
     """SD-001: Orphaned subjects — DM ARMCD not in TA."""
     armcd = issue.get("armcd", "")
     subjects = issue.get("subjects", [])
-    n = issue.get("n", len(subjects))
+    valid_armcds = issue.get("valid_armcds", [])
 
     results = []
     for subj in subjects:
@@ -114,11 +114,12 @@ def _map_sd001(issue: dict, prefix: str) -> list[AffectedRecordResult]:
             expected_value="ARMCD present in TA",
             fix_tier=2,
             auto_fixed=False,
+            suggestions=valid_armcds if valid_armcds else None,
             evidence={
                 "type": "cross-domain",
                 "lines": [
                     {"label": "DM ARMCD", "value": armcd},
-                    {"label": "TA ARMCDs", "value": "Does not include this value"},
+                    {"label": "Valid TA ARMCDs", "value": ", ".join(valid_armcds) if valid_armcds else "(none)"},
                     {"label": "Impact", "value": "Epoch-level information unavailable"},
                 ],
             },
@@ -146,6 +147,7 @@ def _map_sd002(issue: dict, prefix: str) -> list[AffectedRecordResult]:
         expected_value="At least one subject in DM",
         fix_tier=1,
         auto_fixed=False,
+        suggestions=["Remove arm from TA", "Keep as TK satellite"],
         evidence={
             "type": "metadata",
             "lines": [
@@ -183,6 +185,7 @@ def _map_sd003(issue: dict, prefix: str) -> list[AffectedRecordResult]:
                 expected_value="Control status consistent with dose",
                 fix_tier=2,
                 auto_fixed=False,
+                suggestions=["Flag as control"],
                 evidence={
                     "type": "cross-domain",
                     "lines": [
@@ -214,6 +217,7 @@ def _map_sd003(issue: dict, prefix: str) -> list[AffectedRecordResult]:
                 expected_value="Control subjects should have dose=0",
                 fix_tier=2,
                 auto_fixed=False,
+                suggestions=["Remove control flag", "Set dose to 0"],
                 evidence={
                     "type": "cross-domain",
                     "lines": [
@@ -230,7 +234,8 @@ def _map_sd003(issue: dict, prefix: str) -> list[AffectedRecordResult]:
         return results
 
     if variant == "c":
-        # No control group detected
+        # No control group detected — suggest available arms
+        available_arms = issue.get("available_arms", [])
         return [AffectedRecordResult(
             issue_id="",
             rule_id=prefix,
@@ -242,10 +247,12 @@ def _map_sd003(issue: dict, prefix: str) -> list[AffectedRecordResult]:
             expected_value="At least one control group",
             fix_tier=2,
             auto_fixed=False,
+            suggestions=available_arms if available_arms else None,
             evidence={
                 "type": "cross-domain",
                 "lines": [
                     {"label": "Control groups", "value": "None detected"},
+                    {"label": "Available arms", "value": ", ".join(available_arms) if available_arms else "(none)"},
                     {"label": "Impact", "value": "Comparative statistics unavailable"},
                 ],
             },
@@ -261,9 +268,11 @@ def _map_sd003(issue: dict, prefix: str) -> list[AffectedRecordResult]:
 def _map_sd004(issue: dict, prefix: str) -> list[AffectedRecordResult]:
     """SD-004: Missing TS parameters."""
     missing = issue.get("missing", [])
+    inferred = issue.get("inferred", {})
 
     results = []
     for param in missing:
+        inferred_val = inferred.get(param)
         results.append(AffectedRecordResult(
             issue_id="",
             rule_id=prefix,
@@ -275,12 +284,18 @@ def _map_sd004(issue: dict, prefix: str) -> list[AffectedRecordResult]:
             expected_value="Required TS parameter",
             fix_tier=1,
             auto_fixed=False,
+            suggestions=[inferred_val] if inferred_val else None,
             evidence={
                 "type": "missing-value",
                 "variable": param,
                 "derivation": "TS domain TSPARMCD",
+                "suggested": inferred_val,
             },
-            diagnosis=f"Trial Summary (TS) is missing parameter '{param}'. Study metadata will be incomplete.",
+            diagnosis=(
+                f"Trial Summary (TS) is missing parameter '{param}'."
+                + (f" Inferred from other domains: '{inferred_val}'." if inferred_val else "")
+                + " Study metadata will be incomplete."
+            ),
         ))
     return results
 
@@ -296,6 +311,7 @@ def _map_sd005(issue: dict, prefix: str) -> list[AffectedRecordResult]:
         unit = entry.get("unit", "")
         dose_str = ", ".join(str(d) for d in doses)
 
+        max_dose = str(max(doses)) if doses else ""
         results.append(AffectedRecordResult(
             issue_id="",
             rule_id=prefix,
@@ -307,6 +323,7 @@ def _map_sd005(issue: dict, prefix: str) -> list[AffectedRecordResult]:
             expected_value="Single dose level per subject",
             fix_tier=2,
             auto_fixed=False,
+            suggestions=[f"Use max dose ({max_dose} {unit})".strip()],
             evidence={
                 "type": "cross-domain",
                 "lines": [
@@ -339,6 +356,7 @@ def _map_sd006(issue: dict, prefix: str) -> list[AffectedRecordResult]:
         expected_value="At least one subject in DM",
         fix_tier=1,
         auto_fixed=False,
+        suggestions=["Remove set from TX", "Verify DM SETCD mapping"],
         evidence={
             "type": "metadata",
             "lines": [
@@ -360,6 +378,13 @@ def _map_sd007(issue: dict, prefix: str) -> list[AffectedRecordResult]:
     ta_arm = issue.get("ta_arm", "")
     subjects = issue.get("subjects", [])
 
+    # Offer both labels so user can pick which is correct
+    suggestions = []
+    if dm_arm:
+        suggestions.append(f"Use DM label: {dm_arm}")
+    if ta_arm:
+        suggestions.append(f"Use TA label: {ta_arm}")
+
     results = []
     for subj in subjects:
         results.append(AffectedRecordResult(
@@ -373,6 +398,7 @@ def _map_sd007(issue: dict, prefix: str) -> list[AffectedRecordResult]:
             expected_value="Same ARM label in DM and TA",
             fix_tier=3,
             auto_fixed=False,
+            suggestions=suggestions if suggestions else None,
             evidence={
                 "type": "cross-domain",
                 "lines": [
