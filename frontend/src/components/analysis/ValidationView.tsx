@@ -10,6 +10,8 @@ import {
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
 import { cn } from "@/lib/utils";
+import { ViewTabBar } from "@/components/ui/ViewTabBar";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
@@ -504,30 +506,14 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
 
   // Shared mode tab bar for loading/empty states
   const modeTabBar = (
-    <div className="flex items-center border-b bg-muted/30">
-      <div className="flex">
-        {([
-          { key: "data-quality" as ValidationMode, label: "Data quality" },
-          { key: "study-design" as ValidationMode, label: "Study design" },
-        ]).map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => handleModeChange(key)}
-            className={cn(
-              "relative px-4 py-1.5 text-xs font-medium transition-colors",
-              mode === key
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {label}
-            {mode === key && (
-              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
+    <ViewTabBar
+      tabs={[
+        { key: "data-quality", label: "Data quality" },
+        { key: "study-design", label: "Study design" },
+      ]}
+      value={mode}
+      onChange={(k) => handleModeChange(k as ValidationMode)}
+    />
   );
 
   // ── Loading state ──
@@ -564,42 +550,23 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Mode tab bar */}
-      <div className="flex items-center border-b bg-muted/30">
-        <div className="flex">
-          {([
-            { key: "data-quality" as ValidationMode, label: "Data quality", count: modeCounts.dataQuality },
-            { key: "study-design" as ValidationMode, label: "Study design", count: modeCounts.studyDesign },
-          ]).map(({ key, label, count }) => (
-            <button
-              key={key}
-              onClick={() => handleModeChange(key)}
-              className={cn(
-                "relative px-4 py-1.5 text-xs font-medium transition-colors",
-                mode === key
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {label}
-              {count > 0 && (
-                <span className="ml-1.5 text-[10px] text-muted-foreground">
-                  ({count})
-                </span>
-              )}
-              {mode === key && (
-                <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
-              )}
-            </button>
-          ))}
-        </div>
-        <button
-          className="ml-auto mr-3 rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          disabled={isValidating}
-          onClick={() => runValidation()}
-        >
-          {isValidating ? "RUNNING..." : "RUN"}
-        </button>
-      </div>
+      <ViewTabBar
+        tabs={[
+          { key: "data-quality", label: "Data quality", count: modeCounts.dataQuality },
+          { key: "study-design", label: "Study design", count: modeCounts.studyDesign },
+        ]}
+        value={mode}
+        onChange={(k) => handleModeChange(k as ValidationMode)}
+        right={
+          <button
+            className="mr-3 rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            disabled={isValidating}
+            onClick={() => runValidation()}
+          >
+            {isValidating ? "RUNNING..." : "RUN"}
+          </button>
+        }
+      />
 
       {/* Severity filter bar */}
       <div className="flex items-center gap-4 border-b px-4 py-2">
@@ -775,7 +742,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
 
           {/* Divider bar */}
           {selectedRule && (
-            <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
+            <FilterBar>
               <span className="text-xs font-medium">
                 {recordFilters.fixStatus || recordFilters.reviewStatus || recordFilters.subjectId
                   ? <>{filteredRecords.length} of {recordRows.length} record{recordRows.length !== 1 ? "s" : ""}</>
@@ -822,7 +789,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                   ))}
                 </select>
               </div>
-            </div>
+            </FilterBar>
           )}
 
           {/* Bottom table — Affected Records (60%) */}

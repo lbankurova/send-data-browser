@@ -13,6 +13,9 @@ import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { cn } from "@/lib/utils";
+import { ViewTabBar } from "@/components/ui/ViewTabBar";
+import { EvidenceBar } from "@/components/ui/EvidenceBar";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -252,10 +255,6 @@ function SpecimenRailItem({
   maxGlobalSeverity: number;
   onClick: () => void;
 }) {
-  const barWidth = maxGlobalSeverity > 0
-    ? Math.max(4, (summary.maxSeverity / maxGlobalSeverity) * 100)
-    : 0;
-
   return (
     <button
       className={cn(
@@ -278,17 +277,12 @@ function SpecimenRailItem({
       </div>
 
       {/* Row 2: severity bar (neutral) */}
-      <div className="mt-1.5 flex items-center gap-2">
-        <div className="h-1.5 flex-1 rounded-full bg-[#E5E7EB]">
-          <div
-            className="h-full rounded-full bg-[#D1D5DB] transition-all"
-            style={{ width: `${barWidth}%` }}
-          />
-        </div>
-        <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-          {summary.maxSeverity.toFixed(1)}
-        </span>
-      </div>
+      <EvidenceBar
+        value={summary.maxSeverity}
+        max={maxGlobalSeverity}
+        label={summary.maxSeverity.toFixed(1)}
+        labelClassName="text-muted-foreground"
+      />
 
       {/* Row 3: stats + domain chips */}
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
@@ -1033,7 +1027,7 @@ function SeverityMatrixTab({
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Filter bar */}
-      <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
+      <FilterBar>
         <select
           className="rounded border bg-background px-2 py-1 text-xs"
           value={sexFilter ?? ""}
@@ -1070,7 +1064,7 @@ function SeverityMatrixTab({
             </button>
           ))}
         </div>
-      </div>
+      </FilterBar>
 
       {/* Main content */}
       <div className="flex-1 overflow-auto">
@@ -1792,25 +1786,15 @@ export function HistopathologyView({
             <SpecimenHeader summary={selectedSummary} specimenData={specimenData} specimenRules={specimenRules} />
 
             {/* Tab bar */}
-            <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
-              {(["overview", "matrix", "hypotheses"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  className={cn(
-                    "relative px-4 py-1.5 text-xs font-medium transition-colors",
-                    activeTab === tab
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {{ overview: "Evidence", matrix: "Severity matrix", hypotheses: "Hypotheses" }[tab]}
-                  {activeTab === tab && (
-                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
-                  )}
-                </button>
-              ))}
-            </div>
+            <ViewTabBar
+              tabs={[
+                { key: "overview", label: "Evidence" },
+                { key: "matrix", label: "Severity matrix" },
+                { key: "hypotheses", label: "Hypotheses" },
+              ]}
+              value={activeTab}
+              onChange={(k) => setActiveTab(k as typeof activeTab)}
+            />
 
             {/* Tab content */}
             {activeTab === "overview" && (

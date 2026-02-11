@@ -13,6 +13,9 @@ import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
+import { ViewTabBar } from "@/components/ui/ViewTabBar";
+import { EvidenceBar } from "@/components/ui/EvidenceBar";
+import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import {
   formatPValue,
@@ -284,10 +287,6 @@ function OrganRailItem({
   maxAdverse: number;
   onClick: () => void;
 }) {
-  const barWidth = maxAdverse > 0
-    ? Math.max(4, (summary.adverseCount / maxAdverse) * 100)
-    : 0;
-
   return (
     <button
       className={cn(
@@ -311,17 +310,12 @@ function OrganRailItem({
       </div>
 
       {/* Row 2: bar */}
-      <div className="mt-1.5 flex items-center gap-2">
-        <div className="h-1.5 flex-1 rounded-full bg-[#E5E7EB]">
-          <div
-            className="h-full rounded-full bg-[#D1D5DB] transition-all"
-            style={{ width: `${barWidth}%` }}
-          />
-        </div>
-        <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-          {summary.adverseCount}/{summary.totalEndpoints}
-        </span>
-      </div>
+      <EvidenceBar
+        value={summary.adverseCount}
+        max={maxAdverse}
+        label={<>{summary.adverseCount}/{summary.totalEndpoints}</>}
+        labelClassName="text-muted-foreground"
+      />
 
       {/* Row 3: stats + domain chips */}
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
@@ -699,7 +693,7 @@ function AdversityMatrixTab({
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Filter bar */}
-      <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
+      <FilterBar>
         <select
           className="rounded border bg-background px-2 py-1 text-xs"
           value={sexFilter ?? ""}
@@ -718,10 +712,8 @@ function AdversityMatrixTab({
           <option value="yes">Treatment-related</option>
           <option value="no">Not treatment-related</option>
         </select>
-        <span className="ml-auto text-[10px] text-muted-foreground">
-          {filteredData.length} of {organData.length} findings
-        </span>
-      </div>
+        <FilterBarCount>{filteredData.length} of {organData.length} findings</FilterBarCount>
+      </FilterBar>
 
       {/* Main content */}
       <div className="flex-1 overflow-auto">
@@ -1054,36 +1046,14 @@ export function NoaelDecisionView({
               <OrganHeader summary={selectedSummary} />
 
               {/* Tab bar */}
-              <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
-                <button
-                  className={cn(
-                    "relative px-4 py-1.5 text-xs font-medium transition-colors",
-                    activeTab === "overview"
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                  onClick={() => setActiveTab("overview")}
-                >
-                  Evidence
-                  {activeTab === "overview" && (
-                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
-                  )}
-                </button>
-                <button
-                  className={cn(
-                    "relative px-4 py-1.5 text-xs font-medium transition-colors",
-                    activeTab === "matrix"
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                  onClick={() => setActiveTab("matrix")}
-                >
-                  Adversity matrix
-                  {activeTab === "matrix" && (
-                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
-                  )}
-                </button>
-              </div>
+              <ViewTabBar
+                tabs={[
+                  { key: "overview", label: "Evidence" },
+                  { key: "matrix", label: "Adversity matrix" },
+                ]}
+                value={activeTab}
+                onChange={(k) => setActiveTab(k as typeof activeTab)}
+              />
 
               {/* Tab content */}
               {activeTab === "overview" ? (

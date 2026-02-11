@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
@@ -40,7 +41,7 @@ export function StudySummaryView({
   const { data: meta } = useStudyMetadata(studyId!);
   const { data: provenanceData } = useProvenanceMessages(studyId);
 
-  const [tab, setTab] = useState<Tab>("signals");
+  const [tab, setTab] = useState<Tab>("details");
   const [selection, setSelection] = useState<SignalSelection | null>(null);
   const [selectedOrgan, setSelectedOrganState] = useState<string | null>(null);
 
@@ -183,39 +184,25 @@ export function StudySummaryView({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-center border-b bg-muted/30">
-        <div className="flex">
-          {([
-            { key: "details" as Tab, label: "Study details" },
-            { key: "signals" as Tab, label: "Signals" },
-          ]).map(({ key, label }) => (
+      <ViewTabBar
+        tabs={[
+          { key: "details", label: "Study details" },
+          { key: "signals", label: "Signals" },
+        ]}
+        value={tab}
+        onChange={(k) => setTab(k as Tab)}
+        right={
+          <div className="px-3 py-2">
             <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={cn(
-                "relative px-4 py-1.5 text-xs font-medium transition-colors",
-                tab === key
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent/50"
+              onClick={() => studyId && generateStudyReport(studyId)}
             >
-              {label}
-              {tab === key && (
-                <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
-              )}
+              <FileText className="h-3.5 w-3.5" />
+              Generate report
             </button>
-          ))}
-        </div>
-        <div className="ml-auto px-3 py-2">
-          <button
-            className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent/50"
-            onClick={() => studyId && generateStudyReport(studyId)}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            Generate report
-          </button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Tab content */}
       {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} />}
@@ -462,16 +449,6 @@ function DetailsTab({
         <MetadataRow label="Route" value={meta.route} />
       </section>
 
-      <section className="mb-6">
-        <h2 className="mb-3 border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Administration
-        </h2>
-        <MetadataRow label="Sponsor" value={meta.sponsor} />
-        <MetadataRow label="Test facility" value={meta.test_facility} />
-        <MetadataRow label="Study director" value={meta.study_director} />
-        <MetadataRow label="GLP" value={meta.glp} />
-        <MetadataRow label="SEND version" value={meta.send_version} />
-      </section>
 
       {meta.dose_groups && meta.dose_groups.length > 0 && (
         <section className="mb-6">
