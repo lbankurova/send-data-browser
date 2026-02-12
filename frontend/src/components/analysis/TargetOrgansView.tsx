@@ -622,13 +622,13 @@ function OverviewTab({
                   {getDirectionSymbol(row.direction)}
                 </span>
                 <span className={cn(
-                  "shrink-0 font-mono group-hover/finding:text-[#DC2626]",
+                  "shrink-0 font-mono text-muted-foreground group-hover/finding:text-[#DC2626]",
                   Math.abs(row.effect_size ?? 0) >= 0.8 ? "font-semibold" : "font-normal"
                 )}>
                   {formatEffectSize(row.effect_size)}
                 </span>
                 <span className={cn(
-                  "shrink-0 font-mono group-hover/finding:text-[#DC2626]",
+                  "shrink-0 font-mono text-muted-foreground group-hover/finding:text-[#DC2626]",
                   row.p_value != null && row.p_value < 0.001 ? "font-semibold" :
                   row.p_value != null && row.p_value < 0.01 ? "font-medium" : "font-normal"
                 )}>
@@ -858,7 +858,7 @@ function EvidenceTableTab({
                     onDoubleClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
-                    {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
+                    {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                     <div
                       onMouseDown={header.getResizeHandler()}
                       onTouchStart={header.getResizeHandler()}
