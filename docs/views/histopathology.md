@@ -63,7 +63,7 @@ Each `SpecimenRailItem` is a `<button>` with:
 - Not selected: `hover:bg-accent/30`
 - Left border: `border-l-2 border-l-transparent` always (neutral-at-rest design; no severity coloring on rail borders)
 
-**Row 1:** Specimen name (`text-xs font-semibold`, underscores replaced with spaces for display) + dose-trend glyph (Strong: `▲`, Moderate: `▴`, Weak: no glyph — `text-[9px] text-muted-foreground`) + finding count badge (`text-[10px] text-muted-foreground`). The glyph supports sub-3-second triage scanning; Weak specimens show no glyph to keep the rail clean.
+**Row 1:** Specimen name (`text-xs font-semibold`, underscores replaced with spaces for display) + dose-trend glyph (Strong: `▲`, Moderate: `▴`, Weak: no glyph — `text-[9px] text-muted-foreground`) + review status glyph (Confirmed: `✓`, Revised: `~`, Preliminary/In review: no glyph — `text-[9px] text-muted-foreground`) + finding count badge (`text-[10px] text-muted-foreground`). Glyphs support sub-3-second triage scanning; most specimens show no review glyph to keep the rail clean.
 
 **Row 2:** Severity bar — neutral gray alignment matching Signals rail. Track: `h-1.5 flex-1 rounded-full bg-[#E5E7EB]`, fill color encodes max severity via `getNeutralHeatColor(maxSeverity).bg` (passed as `fillColor` prop to `EvidenceBar`). Numeric value: `shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground`.
 
@@ -92,7 +92,12 @@ Filters specimens by name (case-insensitive substring match). Empty state: "No m
 - Specimen name: `text-sm font-semibold`
 - Adverse badge (if adverseCount > 0): `rounded-sm border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground` — "{N} adverse" (neutral bordered pill, matching other metadata badges)
 - Sex specificity badge: `rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground` — "Male only" | "Female only" | "Both sexes". Derived from unique `sex` values in `specimenData`.
-- Review-status badge (stub): `rounded border border-border/50 px-1 py-0.5 text-[10px] text-muted-foreground/60` — always shows "Preliminary". TODO: derive from `useAnnotations<PathologyReview>` aggregate `peerReviewStatus` (Preliminary/Confirmed/Adjusted).
+- Review-status badge: `rounded border px-1 py-0.5 text-[10px]` — derived from `useAnnotations<PathologyReview>` via `deriveSpecimenReviewStatus()`. Aggregates `peerReviewStatus` across all findings in the specimen:
+  - **Preliminary** (`border-border/50 text-muted-foreground/60`): no annotations or all "Not Reviewed"
+  - **In review** (`border-border text-muted-foreground/80`): mix of reviewed + unreviewed, no "Disagreed"
+  - **Confirmed** (`border-border text-muted-foreground`): all findings "Agreed"
+  - **Revised** (`border-border text-muted-foreground`): any finding "Disagreed"
+  All badges neutral gray (design system: no colored categorical badges). Tooltip shows explanation.
 
 ### Domain subtitle
 
@@ -280,6 +285,16 @@ Row cap: 200 rows. Row interactions: click to select/deselect, hover highlight.
 
 Pathologist-oriented exploratory tools, matching the Hypotheses tab pattern from Target Organs and Dose-Response views. Provides structural consistency across analysis views.
 
+### Finding-aware context (D-3)
+
+The tab accepts `selectedFinding` from the parent's `selection?.finding`. When a finding is selected:
+- **Auto-switch intent:** `useEffect` switches intent to "treatment" (most relevant tool for a specific finding).
+- **Contextual placeholders:** Each tool placeholder enriches its display text:
+  - `SeverityDistributionPlaceholder`: context line appends `"· Focus: {finding}"`
+  - `TreatmentRelatedPlaceholder`: description changes to `"Assess whether "{finding}" is treatment-related…"`
+  - `DoseSeverityTrendPlaceholder`: context line appends `"· Focus: {finding}"`
+- Clearing selection (Escape) does **not** reset the intent — the user stays on whichever tool they were viewing.
+
 ### Toolbar
 
 `flex items-center gap-1 border-b bg-muted/20 px-4 py-1.5`
@@ -322,6 +337,13 @@ Per-finding version of `getDoseConsistency`. Filters rows to one finding, groups
 
 ### `deriveSpecimenConclusion(summary, specimenData, specimenRules): string`
 Builds a deterministic 1-line conclusion from incidence range, severity, sex, and dose relationship.
+
+### `deriveSpecimenReviewStatus(findingNames, reviews): SpecimenReviewStatus`
+Aggregates peer review annotations across all findings in a specimen. Returns one of:
+- **Preliminary**: no reviews record or all "Not Reviewed"
+- **Revised**: any finding has "Disagreed"
+- **Confirmed**: all findings have "Agreed"
+- **In review**: mix of reviewed + unreviewed (no "Disagreed")
 
 ---
 
@@ -373,6 +395,8 @@ Panes in order (follows design system priority: insights > stats > related > ann
 | Lesion data | Server | `useLesionSeveritySummary` hook (React Query, 5min stale) |
 | Subject data | Server | `useHistopathSubjects` hook (fetched on demand in subject mode only) |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
+| Path reviews | Server | `useAnnotations<PathologyReview>(studyId, "pathology-reviews")` — shared cache with context panel PathologyReviewForm |
+| Finding names by specimen | Derived | `useMemo` — Map<string, string[]> from lesionData, used for review status aggregation |
 
 ---
 
@@ -383,11 +407,14 @@ Panes in order (follows design system priority: insights > stats > related > ann
 ```
 useLesionSeveritySummary(studyId) ──> lesionData (728 rows)
 useRuleResults(studyId) ──> ruleResults (shared React Query cache)
+useAnnotations<PathologyReview> ──> pathReviews (shared cache with context panel)
                                 |
                     deriveSpecimenSummaries() → SpecimenSummary[]
+                    findingNamesBySpecimen → Map<specimen, finding[]>
                     (skips rows with null specimen)
                                 |
-                        SpecimenRail (sorted by maxSeverity desc)
+                        SpecimenRail (sorted by risk-density desc)
+                        + deriveSpecimenReviewStatus() per rail item
                                 |
                     [selectedSpecimen] → filter lesionData
                                 |
@@ -396,14 +423,12 @@ useRuleResults(studyId) ──> ruleResults (shared React Query cache)
                         deriveFindingSummaries()
                         deriveSexLabel() / getDoseConsistency()
                         deriveSpecimenConclusion()
-                           /              \
-                  OverviewTab          SeverityMatrixTab
-                  (observed findings,  (Group / Subject toggle)
-                   coherence hint,      /                    \
-                   insights)      Group mode             Subject mode
-                        |        (group heatmap +       (SubjectHeatmap
-                        |         collapsible grid,      from useHistopath-
-                        |         sex/severity filter)   Subjects on demand)
+                           /         |          \
+                  OverviewTab   SeverityMatrix  HypothesesTab
+                  (observed      (Group/Subject  (selectedFinding
+                   findings,      toggle)         auto-focus)
+                   coherence,         |
+                   insights)     Group / Subject
                         \              /
                     HistopathSelection (shared)
                                 |
@@ -453,4 +478,4 @@ useRuleResults(studyId) ──> ruleResults (shared React Query cache)
 
 | Item | What's needed | Priority |
 |------|--------------|----------|
-| Review-status confidence cue (full) | `useAnnotations<PathologyReview>` call, aggregate `peerReviewStatus` across specimen findings, replace static "Preliminary" with derived Preliminary/Confirmed/Adjusted | P3 |
+| Cross-domain correlating evidence (D-2) | Backend/generator changes to link clinical pathology (CL, LB) findings to histopathology specimens | P3 |
