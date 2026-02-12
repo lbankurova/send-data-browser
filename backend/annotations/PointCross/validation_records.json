@@ -60,5 +60,11 @@
     "comment": "Fix applied: MIRESCAT \u2192 '(valid RESULT_CATEGORY term)'",
     "pathologist": "User",
     "reviewDate": "2026-02-09T21:52:04.214597+00:00"
+  },
+  "SD-004-001": {
+    "fixStatus": "Manually fixed",
+    "comment": "Manual value entered: TSPARMCD \u2192 'test entry'",
+    "pathologist": "User",
+    "reviewDate": "2026-02-12T17:20:21.724512+00:00"
   }
 }
