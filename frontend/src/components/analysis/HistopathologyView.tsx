@@ -606,11 +606,24 @@ function OverviewTab({
   const [affectedOnly, setAffectedOnly] = useState(true);
   const [subjectSort, setSubjectSort] = useState<"dose" | "severity">("dose");
   const [doseGroupFilter, setDoseGroupFilter] = useState<ReadonlySet<string> | null>(null);
+  const [doseDepThreshold, setDoseDepThreshold] = useState<"moderate" | "strong">("moderate");
+  const [doseDepMenu, setDoseDepMenu] = useState<{ x: number; y: number } | null>(null);
+  const doseDepMenuRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sections = useAutoFitSections(containerRef, "histopathology", [
     { id: "findings", min: 80, max: 500, defaultHeight: 200 },
   ]);
   const findingsSection = sections[0];
+
+  // Close dose-dep context menu on outside click
+  useEffect(() => {
+    if (!doseDepMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (doseDepMenuRef.current && !doseDepMenuRef.current.contains(e.target as Node)) setDoseDepMenu(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [doseDepMenu]);
 
   // Reset heatmap view state when specimen changes
   useEffect(() => {
@@ -745,12 +758,12 @@ function OverviewTab({
   // Combined table data
   const tableData = useMemo<FindingTableRow[]>(
     () =>
-      findingSummaries.map((fs) => ({
-        ...fs,
-        isDoseDriven: findingConsistency.get(fs.finding) === "Strong",
-        relatedOrgans: findingRelatedOrgans.get(fs.finding),
-      })),
-    [findingSummaries, findingConsistency, findingRelatedOrgans]
+      findingSummaries.map((fs) => {
+        const c = findingConsistency.get(fs.finding) ?? "Weak";
+        const isDoseDriven = doseDepThreshold === "strong" ? c === "Strong" : c !== "Weak";
+        return { ...fs, isDoseDriven, relatedOrgans: findingRelatedOrgans.get(fs.finding) };
+      }),
+    [findingSummaries, findingConsistency, findingRelatedOrgans, doseDepThreshold]
   );
 
   const findingColumns = useMemo(
@@ -817,7 +830,13 @@ function OverviewTab({
         ),
       }),
       findingColHelper.accessor("isDoseDriven", {
-        header: "Dose-driven",
+        header: () => (
+          <span title={doseDepThreshold === "strong"
+            ? "Monotonic incidence + 3+ dose groups affected. Right-click to change threshold."
+            : "Monotonic incidence OR 2+ dose groups affected. Right-click to change threshold."}>
+            Dose-dep.{doseDepThreshold === "strong" ? " (strict)" : ""}
+          </span>
+        ),
         size: 78,
         minSize: 50,
         maxSize: 120,
@@ -825,7 +844,9 @@ function OverviewTab({
           info.getValue() ? (
             <span
               className="text-muted-foreground"
-              title="Incidence increases monotonically with dose across 3+ groups"
+              title={doseDepThreshold === "strong"
+                ? "Monotonic incidence increase across 3+ dose groups"
+                : "Incidence increases with dose or finding present in 2+ dose groups"}
             >
               ✓
             </span>
@@ -894,7 +915,11 @@ function OverviewTab({
                         header.column.id === "isDoseDriven" && "text-center",
                       )}
                       style={{ width: header.getSize() }}
-                      onClick={header.column.getToggleSortingHandler()}
+                      onDoubleClick={header.column.getToggleSortingHandler()}
+                      onContextMenu={header.column.id === "isDoseDriven" ? (e) => {
+                        e.preventDefault();
+                        setDoseDepMenu({ x: e.clientX, y: e.clientY });
+                      } : undefined}
                     >
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       {{ asc: " \u25B2", desc: " \u25BC" }[header.column.getIsSorted() as string] ?? ""}
@@ -944,6 +969,38 @@ function OverviewTab({
               })}
             </tbody>
           </table>
+        )}
+        {/* Dose-dependent threshold context menu */}
+        {doseDepMenu && (
+          <div
+            ref={doseDepMenuRef}
+            className="fixed z-50 min-w-[200px] rounded-md border bg-popover py-1 shadow-md"
+            style={{ left: doseDepMenu.x, top: doseDepMenu.y }}
+          >
+            <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Dose-dependence threshold
+            </div>
+            <div className="my-0.5 border-t" />
+            {([
+              { value: "moderate" as const, label: "Moderate+", desc: "Monotonic incidence OR 2+ dose groups" },
+              { value: "strong" as const, label: "Strong only", desc: "Monotonic incidence AND 3+ dose groups" },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={cn(
+                  "flex w-full flex-col px-3 py-1.5 text-left hover:bg-accent/50",
+                  doseDepThreshold === opt.value && "bg-accent/30",
+                )}
+                onClick={() => { setDoseDepThreshold(opt.value); setDoseDepMenu(null); }}
+              >
+                <span className="text-xs font-medium">
+                  {doseDepThreshold === opt.value && "✓ "}{opt.label}
+                </span>
+                <span className="text-[10px] text-muted-foreground">{opt.desc}</span>
+              </button>
+            ))}
+          </div>
         )}
       </div>
       </ViewSection>
@@ -1094,11 +1151,36 @@ function OverviewTab({
                   ))}
                 </div>
               </FilterBar>
-              <p className="mb-1 text-[10px] text-muted-foreground">
+              <p className="mb-0.5 text-[10px] text-muted-foreground">
                 {heatmapView === "incidence"
                   ? "Cells show % animals affected per dose group."
                   : "Cells show average severity grade per dose group."}
               </p>
+              {/* Legend */}
+              <div className="mb-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span>{heatmapView === "incidence" ? "Incidence:" : "Severity:"}</span>
+                {(heatmapView === "incidence"
+                  ? [
+                      { label: "1\u201319%", color: "#E5E7EB" },
+                      { label: "20\u201339%", color: "#D1D5DB" },
+                      { label: "40\u201359%", color: "#9CA3AF" },
+                      { label: "60\u201379%", color: "#6B7280" },
+                      { label: "80\u2013100%", color: "#4B5563" },
+                    ]
+                  : [
+                      { label: "Minimal", color: getNeutralHeatColor(1).bg },
+                      { label: "Mild", color: getNeutralHeatColor(2).bg },
+                      { label: "Moderate", color: getNeutralHeatColor(3).bg },
+                      { label: "Marked", color: getNeutralHeatColor(4).bg },
+                      { label: "Severe", color: getNeutralHeatColor(5).bg },
+                    ]
+                ).map(({ label, color }) => (
+                  <span key={label} className="flex items-center gap-0.5">
+                    <span className={cn("inline-block h-3 w-3 rounded-sm", color === "transparent" && "border border-border")} style={{ backgroundColor: color }} />
+                    {label}
+                  </span>
+                ))}
+              </div>
               <div className="overflow-x-auto">
                 <div className="inline-block">
                   {/* Header row */}
@@ -1165,31 +1247,6 @@ function OverviewTab({
                     </div>
                   ))}
                 </div>
-              </div>
-              {/* Legend */}
-              <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
-                <span>{heatmapView === "incidence" ? "Incidence:" : "Severity:"}</span>
-                {(heatmapView === "incidence"
-                  ? [
-                      { label: "1\u201319%", color: "#E5E7EB" },
-                      { label: "20\u201339%", color: "#D1D5DB" },
-                      { label: "40\u201359%", color: "#9CA3AF" },
-                      { label: "60\u201379%", color: "#6B7280" },
-                      { label: "80\u2013100%", color: "#4B5563" },
-                    ]
-                  : [
-                      { label: "Minimal", color: getNeutralHeatColor(1).bg },
-                      { label: "Mild", color: getNeutralHeatColor(2).bg },
-                      { label: "Moderate", color: getNeutralHeatColor(3).bg },
-                      { label: "Marked", color: getNeutralHeatColor(4).bg },
-                      { label: "Severe", color: getNeutralHeatColor(5).bg },
-                    ]
-                ).map(({ label, color }) => (
-                  <span key={label} className="flex items-center gap-0.5">
-                    <span className={cn("inline-block h-3 w-3 rounded-sm", color === "transparent" && "border border-border")} style={{ backgroundColor: color }} />
-                    {label}
-                  </span>
-                ))}
               </div>
             </div>
           ) : (
@@ -1737,7 +1794,7 @@ function MetricsTab({
                     key={header.id}
                     className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                     style={{ width: header.getSize() }}
-                    onClick={header.column.getToggleSortingHandler()}
+                    onDoubleClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                     {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}

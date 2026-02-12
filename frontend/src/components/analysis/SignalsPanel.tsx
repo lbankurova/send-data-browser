@@ -372,7 +372,7 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b bg-muted/50">
                 {hg.headers.map((header) => (
-                  <th key={header.id} className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50" style={{ width: header.getSize() }} onClick={header.column.getToggleSortingHandler()}>
+                  <th key={header.id} className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50" style={{ width: header.getSize() }} onDoubleClick={header.column.getToggleSortingHandler()}>
                     {flexRender(header.column.columnDef.header, header.getContext())}
                     {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
                     <div onMouseDown={header.getResizeHandler()} onTouchStart={header.getResizeHandler()} className={cn("absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none", header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30")} />
