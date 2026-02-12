@@ -4,7 +4,6 @@ import { Settings, HelpCircle, Compass } from "lucide-react";
 import { Header } from "./Header";
 import { BrowsingTree } from "@/components/tree/BrowsingTree";
 import { ContextPanel } from "@/components/panels/ContextPanel";
-import { PlaygroundToggle } from "./PlaygroundToggle";
 import { SelectionProvider } from "@/contexts/SelectionContext";
 import { FindingSelectionProvider } from "@/contexts/FindingSelectionContext";
 import { SignalSelectionProvider } from "@/contexts/SignalSelectionContext";
@@ -143,7 +142,6 @@ export function Layout() {
                 <ResizeHandle onPointerDown={left.onPointerDown} />
                 <main className="relative min-w-0 flex-1 overflow-y-auto">
                   <Outlet />
-                  <PlaygroundToggle />
                 </main>
                 <ResizeHandle onPointerDown={right.onPointerDown} />
                 <aside
