@@ -35,6 +35,43 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       .sort((a, b) => a.dose_level - b.dose_level || a.sex.localeCompare(b.sex));
   }, [lesionData, selection]);
 
+  // Header metrics for selected finding
+  const headerMetrics = useMemo(() => {
+    if (!findingRows.length) return null;
+    let totalAffected = 0;
+    let totalN = 0;
+    let maxSev = 0;
+    const sexes = new Set<string>();
+    for (const r of findingRows) {
+      totalAffected += r.affected;
+      totalN += r.n;
+      if ((r.avg_severity ?? 0) > maxSev) maxSev = r.avg_severity ?? 0;
+      sexes.add(r.sex);
+    }
+    // Dose consistency for this finding
+    const doseMap = new Map<number, { affected: number; n: number }>();
+    for (const r of findingRows) {
+      const existing = doseMap.get(r.dose_level);
+      if (existing) { existing.affected += r.affected; existing.n += r.n; }
+      else doseMap.set(r.dose_level, { affected: r.affected, n: r.n });
+    }
+    const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
+    let doseTrend: "Weak" | "Moderate" | "Strong" = "Weak";
+    if (sorted.length >= 2) {
+      const incidences = sorted.map(([, v]) => (v.n > 0 ? v.affected / v.n : 0));
+      let isMonotonic = true;
+      for (let i = 1; i < incidences.length; i++) {
+        if (incidences[i] < incidences[i - 1] - 0.001) { isMonotonic = false; break; }
+      }
+      const doseGroupsAffected = sorted.filter(([, v]) => v.affected > 0).length;
+      if (isMonotonic && doseGroupsAffected >= 3) doseTrend = "Strong";
+      else if (isMonotonic || doseGroupsAffected >= 2) doseTrend = "Moderate";
+    }
+    const sexLabel = sexes.size === 1 ? ([...sexes][0] === "M" ? "M" : "F") : "M/F";
+    const incPct = totalN > 0 ? Math.round((totalAffected / totalN) * 100) : 0;
+    return { totalAffected, totalN, incPct, maxSev, doseTrend, sexLabel };
+  }, [findingRows]);
+
   // Rules matching finding
   const findingRules = useMemo(() => {
     if (!selection) return [];
@@ -107,6 +144,14 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
           <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
         </div>
         <p className="text-xs text-muted-foreground">{selection.specimen}</p>
+        {headerMetrics && (
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+            <span>Incidence: <span className="font-mono font-medium">{headerMetrics.totalAffected}/{headerMetrics.totalN} ({headerMetrics.incPct}%)</span></span>
+            <span>Max sev: <span className="font-mono font-medium">{headerMetrics.maxSev.toFixed(1)}</span></span>
+            <span>Dose: <span className="font-medium">{headerMetrics.doseTrend}</span></span>
+            <span>Sex: <span className="font-medium">{headerMetrics.sexLabel}</span></span>
+          </div>
+        )}
       </div>
 
       {/* Insights */}
@@ -125,30 +170,43 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
                 <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Dose</th>
                 <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Sex</th>
                 <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Incid.</th>
+                <th className="w-12 pb-0.5 text-[10px] font-semibold uppercase tracking-wider" />
                 <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Avg sev</th>
                 <th className="pb-0.5 text-center text-[10px] font-semibold uppercase tracking-wider">Sev</th>
               </tr>
             </thead>
             <tbody>
-              {findingRows.map((row, i) => (
-                <tr key={i} className="border-b border-dashed">
-                  <td className="py-0.5">{row.dose_label.split(",")[0]}</td>
-                  <td className="py-0.5">{row.sex}</td>
-                  <td className="py-0.5 text-right font-mono">
-                    {row.affected}/{row.n}
-                  </td>
-                  <td className="py-0.5 text-right">
-                    <span className="rounded px-1 font-mono text-[9px]">
-                      {row.avg_severity != null ? row.avg_severity.toFixed(1) : "\u2014"}
-                    </span>
-                  </td>
-                  <td className="py-0.5 text-center">
-                    <span className="rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground">
-                      {row.severity}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {findingRows.map((row, i) => {
+                const incPct = row.n > 0 ? (row.affected / row.n) * 100 : 0;
+                return (
+                  <tr key={i} className="border-b border-dashed">
+                    <td className="py-0.5">{row.dose_label.split(",")[0]}</td>
+                    <td className="py-0.5">{row.sex}</td>
+                    <td className="py-0.5 text-right font-mono">
+                      {row.affected}/{row.n}
+                    </td>
+                    <td className="py-0.5 px-1">
+                      <div className="h-1.5 w-full rounded-full bg-gray-100">
+                        <div
+                          className="h-1.5 rounded-full bg-gray-400"
+                          style={{ width: `${Math.min(incPct, 100)}%` }}
+                          title={`${Math.round(incPct)}%`}
+                        />
+                      </div>
+                    </td>
+                    <td className="py-0.5 text-right">
+                      <span className="rounded px-1 font-mono text-[9px]">
+                        {row.avg_severity != null ? row.avg_severity.toFixed(1) : "\u2014"}
+                      </span>
+                    </td>
+                    <td className="py-0.5 text-center">
+                      <span className="rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground">
+                        {row.severity}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
