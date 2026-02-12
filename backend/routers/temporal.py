@@ -42,13 +42,20 @@ def _read_domain_df(study: StudyInfo, domain: str) -> pd.DataFrame:
     return df
 
 
-def _get_subjects_df(study: StudyInfo) -> pd.DataFrame:
-    """Get subject roster with dose info, excluding recovery arms."""
+def _get_subjects_df(study: StudyInfo, *, include_recovery: bool = False) -> pd.DataFrame:
+    """Get subject roster with dose info.
+
+    Args:
+        include_recovery: If True, keep recovery arm subjects and add is_recovery column.
+                         If False (default), exclude recovery arms for backwards compat.
+    """
     info = build_dose_groups(study)
     subjects: pd.DataFrame = info["subjects"]
     tx_map: dict = info["tx_map"]
-    # Exclude recovery
-    subjects = subjects[~subjects["is_recovery"]].copy()
+    if not include_recovery:
+        subjects = subjects[~subjects["is_recovery"]].copy()
+    else:
+        subjects = subjects.copy()
     # Add dose_label
     subjects["dose_label"] = subjects["ARMCD"].map(
         lambda a: tx_map.get(a, {}).get("label", f"Group {a}")
@@ -499,7 +506,7 @@ async def get_histopath_subjects(
         raise HTTPException(status_code=404, detail="MI domain not found in study")
 
     mi_df = _read_domain_df(study, "MI")
-    subjects_df = _get_subjects_df(study)
+    subjects_df = _get_subjects_df(study, include_recovery=True)
 
     spec_col = "MISPEC" if "MISPEC" in mi_df.columns else None
     finding_col = "MISTRESC" if "MISTRESC" in mi_df.columns else "MIORRES"
@@ -523,7 +530,7 @@ async def get_histopath_subjects(
 
     # Join specimen findings with subject metadata
     specimen_df = specimen_df.merge(
-        subjects_df[["USUBJID", "SEX", "dose_level", "dose_label"]],
+        subjects_df[["USUBJID", "SEX", "dose_level", "dose_label", "is_recovery"]],
         on="USUBJID", how="inner",
     )
 
@@ -550,6 +557,7 @@ async def get_histopath_subjects(
             "sex": str(row["SEX"]),
             "dose_level": int(row["dose_level"]),
             "dose_label": str(row["dose_label"]),
+            "is_recovery": bool(row.get("is_recovery", False)),
             "findings": findings_by_subj.get(usubjid, {}),
         })
 
