@@ -187,11 +187,11 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 Shows up to 10 evidence rows with the largest absolute effect size (filtered to effect_size > 0, sorted desc).
 
 Each finding is a row:
-- Container: `flex items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30`
+- Container: `flex items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30` with `data-evidence-row` attribute for canonical evidence hover pattern
 - Endpoint name: `min-w-[140px] truncate font-medium`
-- Direction symbol: `shrink-0 text-sm text-[#9CA3AF]`
-- Effect size: `shrink-0 font-mono`, font-semibold if |d| >= 0.8; `group-hover/finding:text-[#DC2626]`
-- P-value: `shrink-0 font-mono`, font-semibold if < 0.001, font-medium if < 0.01; `group-hover/finding:text-[#DC2626]`
+- Direction symbol: `shrink-0 text-sm text-muted-foreground`
+- Effect size: `ev shrink-0 font-mono text-muted-foreground`, font-semibold if |d| >= 0.8. Uses `ev` class + `data-evidence` for interaction-driven `#DC2626` on hover/selection.
+- P-value: `ev shrink-0 font-mono text-muted-foreground`, font-semibold if < 0.001, font-medium if < 0.01. Uses `ev` class + `data-evidence` for interaction-driven `#DC2626` on hover/selection.
 - Severity badge: `shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground`
 - TR label (if treatment_related): `shrink-0 text-[9px] font-medium text-muted-foreground`
 - Sex and dose: `ml-auto shrink-0 text-muted-foreground` -- "{sex} · {dose}"
@@ -488,6 +488,11 @@ useRuleResults(studyId)         --> ruleResults (shared React Query cache)
 ---
 
 ## Changelog
+
+### 2026-02-12 -- 78-rule audit fixes (Phase 4)
+
+- **Top findings evidence pattern:** Replaced `group-hover/finding:text-[#DC2626]` with canonical `ev` class + `data-evidence-row`/`data-evidence` attributes (C-03). Effect size and p-value now use interaction-driven evidence coloring consistent with all other views.
+- **Direction symbol token:** Replaced `text-[#9CA3AF]` with `text-muted-foreground` on direction symbols in top findings (C-10).
 
 ### 2026-02-12 -- Color audit C-01 through C-36
 

@@ -102,7 +102,7 @@ Carries `data-rail-item=""` and `data-selected` attributes.
 **Row 1:** `flex items-center gap-1`
 - Endpoint name: `flex-1 truncate text-xs`, `font-semibold` when selected, `font-medium` otherwise. Full name shown as `title` tooltip.
 - Bookmark star: `BookmarkStar` component. Toggles bookmark on click via `useToggleBookmark`.
-- Direction arrow (right-aligned): `text-xs text-[#9CA3AF]`. Color encodes signal strength, not direction meaning -- arrows are categorical identity, so they stay neutral.
+- Direction arrow (right-aligned): `text-xs text-muted-foreground`. Arrows are categorical identity, so they stay neutral.
 
 | Direction | Arrow |
 |-----------|-------|
@@ -115,8 +115,8 @@ Carries `data-rail-item=""` and `data-selected` attributes.
 
 **Row 2:** `mt-0.5 flex items-center gap-1.5`
 - Pattern badge: first word of the pattern label, `rounded px-1 py-0.5 text-[9px] font-medium leading-tight`. **Neutral gray for all patterns** (`bg-gray-100 text-gray-600`, `text-gray-500` for flat, `text-gray-400` for insufficient). Pattern-specific colors were removed: the pattern text communicates the category; signal strength is encoded by p-value and effect size in the same row.
-- Trend p-value: `ev text-[10px] font-mono`, `font-semibold` when `min_trend_p < 0.01` -- "p={value}"
-- Max effect size: `ev text-[10px] font-mono`, `font-semibold` when `max_effect_size >= 0.8` -- "|d|={value}" (2 decimal places), shown only when non-null
+- Trend p-value: `ev text-[10px] font-mono text-muted-foreground`, `font-semibold` when `min_trend_p < 0.01` -- "p={value}". Neutral at rest via `text-muted-foreground`, interaction-driven `#DC2626` via `ev` class.
+- Max effect size: `ev text-[10px] font-mono text-muted-foreground`, `font-semibold` when `max_effect_size >= 0.8` -- "|d|={value}" (2 decimal places), shown only when non-null. Neutral at rest, interaction-driven color.
 - Min N: `text-[10px] font-mono text-muted-foreground/60` -- "n={min_n}", shown only when non-null
 - Timecourse indicator: `text-[10px] text-muted-foreground/40` -- unicode clock symbol, shown when `ep.has_timecourse` is true, with title "Temporal data available"
 - Assessment checkmark: `text-[10px] text-muted-foreground/40` -- checkmark, shown when a ToxFinding annotation exists for the endpoint with `treatmentRelated !== "Not Evaluated"`, with title "Assessment complete"
@@ -302,7 +302,7 @@ Shows a loading spinner when subject data is being fetched (`subjLoading`).
 **Layout:** Sex-faceted, side-by-side (`flex gap-2 border-b px-2 py-1.5`), one chart per sex. Each chart in a `flex-1` div.
 
 **Per-sex chart:**
-- Header: `mb-0.5 text-center text-[10px] font-medium`, colored by sex (`#3b82f6` M, `#ec4899` F)
+- Header: `mb-0.5 text-center text-[10px] font-medium`, colored by sex via `getSexColor()` (`#3b82f6` M, `#ec4899` F)
 - Container: `<EChartsWrapper style={{ width: "100%", height: 240 }}>` using `buildTimecourseLineOption()`
 - X-axis: study day (category), with "Study day" axis name
 - Y-axis: depends on mode ("Value" or unit for absolute, "% change from baseline" for pct_change, "% vs control" for pct_vs_control)
@@ -389,7 +389,7 @@ Hidden when no endpoint is selected (table only renders when `pairwiseRows.lengt
 
 ### Filter Bar
 
-Uses the shared `FilterBar` component. `flex-wrap px-3 py-1`.
+Uses the shared `FilterBar` component. `flex-wrap` (default `px-4 py-2` padding).
 
 Four filter controls:
 
@@ -1174,6 +1174,13 @@ All Hypotheses tab state is session-scoped:
 ---
 
 ## Changelog
+
+### 2026-02-12 -- 78-rule audit fixes (Phase 4)
+
+- **Sex colors centralized:** Replaced hardcoded `sexColors`/`sexChartColors` maps (`{ M: "#3b82f6", F: "#ec4899" }`) with `getSexColor()` from `severity-colors.ts` (C-10). Timecourse chart headers now use `getSexColor(sex)` instead of local map (C-11).
+- **Direction arrow token:** Replaced `text-[#9CA3AF]` with `text-muted-foreground` on rail direction arrows (C-10).
+- **Rail evidence items neutral at rest:** Added `text-muted-foreground` to rail `ev` items (p-value, effect size) so they render neutral at rest instead of inheriting foreground color (C-34).
+- **FilterBar standard padding:** Removed `px-3 py-1` override from metrics FilterBar, now uses default `px-4 py-2` (S-01).
 
 ### 2026-02-12 -- Color audit C-01 through C-36 (Phase 3)
 
