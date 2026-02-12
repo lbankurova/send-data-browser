@@ -30,6 +30,7 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { InsightsList } from "./panes/InsightsList";
+import { EvidenceScorePopover } from "./ScoreBreakdown";
 import type { TargetOrganRow, OrganEvidenceRow, RuleResult } from "@/types/analysis-views";
 
 export interface OrganSelection {
@@ -209,13 +210,25 @@ function OrganListItem({
         )}
       </div>
 
-      {/* Row 2: evidence bar (neutral gray) */}
-      <EvidenceBar
-        value={organ.evidence_score}
-        max={maxEvidenceScore}
-        label={organ.evidence_score.toFixed(2)}
-        labelClassName={organ.evidence_score >= 0.5 ? "font-semibold" : organ.evidence_score >= 0.3 ? "font-medium" : ""}
-      />
+      {/* Row 2: evidence bar (neutral gray) + breakdown popover */}
+      <div className="flex items-center gap-1">
+        <div className="flex-1">
+          <EvidenceBar
+            value={organ.evidence_score}
+            max={maxEvidenceScore}
+            label={organ.evidence_score.toFixed(2)}
+            labelClassName={organ.evidence_score >= 0.5 ? "font-semibold" : organ.evidence_score >= 0.3 ? "font-medium" : ""}
+          />
+        </div>
+        <span
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <EvidenceScorePopover organ={organ}>
+            <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] text-muted-foreground hover:bg-accent">?</span>
+          </EvidenceScorePopover>
+        </span>
+      </div>
 
       {/* Row 3: signal metrics — min p, max |d|, dose consistency */}
       {stats && (

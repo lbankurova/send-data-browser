@@ -20,7 +20,8 @@ import {
   SignalsEvidencePanel,
   StudyStatementsBar,
 } from "./SignalsPanel";
-import type { SignalSelection, ProvenanceMessage } from "@/types/analysis-views";
+import { ConfidencePopover } from "./ScoreBreakdown";
+import type { SignalSelection, ProvenanceMessage, NoaelSummaryRow } from "@/types/analysis-views";
 import type { StudyMetadata } from "@/types";
 import type { Insight } from "@/hooks/useInsights";
 
@@ -252,6 +253,7 @@ export function StudySummaryView({
           <DecisionBar
             statements={panelData.decisionBar}
             metrics={panelData.metrics}
+            noaelData={noaelData}
           />
 
           {/* Study-level statements + study-level flags */}
@@ -402,9 +404,11 @@ function InsightCard({ insight }: { insight: Insight }) {
 function DecisionBar({
   statements,
   metrics,
+  noaelData,
 }: {
   statements: PanelStatement[];
   metrics: MetricsLine;
+  noaelData?: NoaelSummaryRow[];
 }) {
   // Separate the main NOAEL fact (first priority 990+ fact) from alerts/warnings
   const alertStatements = statements.filter(
@@ -430,20 +434,31 @@ function DecisionBar({
           {metrics.noaelSex && (
             <span className="text-[10px] text-muted-foreground"> ({metrics.noaelSex})</span>
           )}
-          {metrics.noaelConfidence != null && (
-            <span
-              className={cn(
-                "ml-1 text-[10px] font-medium",
-                metrics.noaelConfidence >= 0.8
-                  ? "text-green-700"
-                  : metrics.noaelConfidence >= 0.6
-                    ? "text-amber-700"
-                    : "text-red-700"
-              )}
-            >
-              {Math.round(metrics.noaelConfidence * 100)}%
-            </span>
-          )}
+          {metrics.noaelConfidence != null && (() => {
+            const confidenceEl = (
+              <span
+                className={cn(
+                  "ml-1 text-[10px] font-medium",
+                  metrics.noaelConfidence >= 0.8
+                    ? "text-green-700"
+                    : metrics.noaelConfidence >= 0.6
+                      ? "text-amber-700"
+                      : "text-red-700"
+                )}
+              >
+                {Math.round(metrics.noaelConfidence * 100)}%
+              </span>
+            );
+            const combinedRow = noaelData?.find((r) => r.sex === "Combined");
+            if (combinedRow && noaelData) {
+              return (
+                <ConfidencePopover row={combinedRow} allNoael={noaelData}>
+                  {confidenceEl}
+                </ConfidencePopover>
+              );
+            }
+            return confidenceEl;
+          })()}
         </span>
         <span>
           <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">LOAEL</span>{" "}
