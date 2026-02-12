@@ -190,7 +190,7 @@ Filter controls render below each heatmap's header (between header and matrix co
 - Severity/Incidence toggle: segmented control (`rounded-full` pills)
 
 **Subject mode adds:**
-- Dose group filter: `<FilterSelect>` — "All dose groups" / main arm options / `<optgroup label="Recovery arms">` with recovery options. Values: `"0"`, `"1"` etc. for main arms, `"R0"`, `"R1"` etc. for recovery arms. Computed from `subjData.subjects`, separated by `is_recovery` flag, each sorted by dose_level ascending. Recovery options show `"{label} (Recovery)"` text.
+- Dose group filter: multi-select toggle chips (`rounded-full` pills). Each chip represents one dose group; selected: `bg-foreground text-background`, excluded: `text-muted-foreground/50`. Recovery arms have `border border-dashed border-current` and display `"{shortLabel} R"`. Short labels strip "Group N," prefix and drug name (e.g., "Group 2, 2 mg/kg PCDRUG" → "2 mg/kg"; "Group 1, Control" → "Control"). Clicking a chip toggles it on/off (minimum 1 must remain selected). "All" reset button appears when any chip is excluded. State: `ReadonlySet<string> | null` (null = all selected). Composite keys: `"0"`, `"1"` etc. for main arms, `"R0"`, `"R1"` etc. for recovery arms. Computed from `subjData.subjects`, separated by `is_recovery` flag, each sorted by dose_level ascending.
 - Subject sort: `<FilterSelect>` — "Sort: dose group" / "Sort: max severity". Severity sort sorts within each dose group (dose groups always ascending, severity descending within group).
 - Affected only: checkbox + "Affected only" label (default: checked)
 
@@ -224,7 +224,7 @@ Rendered when `heatmapData` exists and has findings.
 
 #### Subject-Level Heatmap (matrixMode === "subject")
 
-Fetches individual subject data via `useHistopathSubjects(studyId, specimen)` on demand (only when `matrixMode === "subject"`). API response includes recovery arm subjects with `is_recovery: boolean` field. Container: `border-b p-3`. Accepts `affectedOnly` (default true), `doseGroupFilter` (string|null, default null), `sortMode`, and `controls` (ReactNode rendered between header and matrix) props. Filters: dose group (parsed from string — "R0" = recovery dose_level 0), sex, affected-only (`Object.keys(findings).length > 0`). Sort: main arms before recovery, dose_level ascending within each category, then within-group by severity (if sortMode=severity) or sex+ID (if sortMode=dose). Dose groups grouped by composite key (dose_level + is_recovery); recovery group labels appended with "(Recovery)".
+Fetches individual subject data via `useHistopathSubjects(studyId, specimen)` on demand (only when `matrixMode === "subject"`). API response includes recovery arm subjects with `is_recovery: boolean` field. Container: `border-b p-3`. Accepts `affectedOnly` (default true), `doseGroupFilter` (`ReadonlySet<string> | null`, default null = show all), `sortMode`, and `controls` (ReactNode rendered between header and matrix) props. Filters: dose group (Set.has() with composite key), sex, affected-only (`Object.keys(findings).length > 0`). Sort: main arms before recovery, dose_level ascending within each category, then within-group by severity (if sortMode=severity) or sex+ID (if sortMode=dose). Dose groups grouped by composite key (dose_level + is_recovery); recovery group labels appended with "(Recovery)".
 
 **Structure:** Four-tier header:
 1. **Dose group headers** — horizontal bar above each dose group with colored indicator stripe (`getDoseGroupColor(doseLevel)`), label "({N})" subjects.
@@ -388,7 +388,7 @@ Panes in order (follows design system priority: insights > stats > related > ann
 | Matrix mode | Local (OverviewTab) | `useState<"group" \| "subject">` — toggles between group and subject heatmaps (default "group", resets on specimen change) |
 | Affected only | Local (OverviewTab) | `useState<boolean>` — filter subjects to affected only in subject mode (default true, resets to true on specimen change) |
 | Subject sort | Local (OverviewTab) | `useState<"dose" \| "severity">` — subject heatmap sort mode (default "dose", resets on specimen change). Severity sort orders within dose groups, not across them. |
-| Dose group filter | Local (OverviewTab) | `useState<number \| null>` — filter subjects to specific dose group (default null = all, resets on specimen change) |
+| Dose group filter | Local (OverviewTab) | `useState<ReadonlySet<string> \| null>` — multi-select filter with toggle chips (null = all shown, Set of composite keys when filtered, resets on specimen change) |
 | Findings height | Local (OverviewTab) | `useResizePanelY(200, 80, 500)` — resizable findings table height (default 200px, range 80-500px) |
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in OverviewTab and MetricsTab) |
 | Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in OverviewTab and MetricsTab) |
