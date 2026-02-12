@@ -264,7 +264,7 @@ export function StudySummaryView({
 // ---------------------------------------------------------------------------
 
 function CrossStudyInsightsTab({ studyId }: { studyId: string }) {
-  const { data: insights, isLoading } = useInsights(studyId);
+  const { data: insights, isLoading, error } = useInsights(studyId);
   const [showAll, setShowAll] = useState(false);
 
   if (isLoading) {
@@ -274,6 +274,22 @@ function CrossStudyInsightsTab({ studyId }: { studyId: string }) {
         <span className="text-sm text-muted-foreground">
           Loading insights...
         </span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-12 text-center">
+        <div>
+          <Info className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">
+            Cross-study insights are not available for this study.
+          </p>
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            (Only portfolio studies with metadata have insights)
+          </p>
+        </div>
       </div>
     );
   }
