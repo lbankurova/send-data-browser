@@ -190,9 +190,11 @@ Filter controls render below each heatmap's header (between header and matrix co
 - Severity/Incidence toggle: segmented control (`rounded-full` pills)
 
 **Subject mode adds:**
-- Dose group filter: `<FilterSelect>` — "All dose groups" / per-group options (computed from `subjData.subjects`, deduped by dose_level, sorted ascending)
+- Dose group filter: `<FilterSelect>` — "All dose groups" / main arm options / `<optgroup label="Recovery arms">` with recovery options. Values: `"0"`, `"1"` etc. for main arms, `"R0"`, `"R1"` etc. for recovery arms. Computed from `subjData.subjects`, separated by `is_recovery` flag, each sorted by dose_level ascending. Recovery options show `"{label} (Recovery)"` text.
 - Subject sort: `<FilterSelect>` — "Sort: dose group" / "Sort: max severity". Severity sort sorts within each dose group (dose groups always ascending, severity descending within group).
 - Affected only: checkbox + "Affected only" label (default: checked)
+
+**Filter ordering:** Dose group filter applies first, then sex, then affected-only. This ensures control group subjects (who typically have no findings) survive the dose group filter even when "Affected only" is checked — the user can uncheck it to see the full baseline roster.
 
 **Implementation:** Subject mode passes all controls as a `controls` ReactNode prop to `SubjectHeatmap`, which renders them between its header and the matrix. Group mode renders the `FilterBar` inline between the header and the description text.
 
@@ -222,7 +224,7 @@ Rendered when `heatmapData` exists and has findings.
 
 #### Subject-Level Heatmap (matrixMode === "subject")
 
-Fetches individual subject data via `useHistopathSubjects(studyId, specimen)` on demand (only when `matrixMode === "subject"`). Container: `border-b p-3`. Accepts `affectedOnly` (default true), `doseGroupFilter` (default null), `sortMode`, and `controls` (ReactNode rendered between header and matrix) props. Filters: sex, affected-only (`Object.keys(findings).length > 0`), dose group. Sort: dose group ascending always, then within-group by severity (if sortMode=severity) or sex+ID (if sortMode=dose).
+Fetches individual subject data via `useHistopathSubjects(studyId, specimen)` on demand (only when `matrixMode === "subject"`). API response includes recovery arm subjects with `is_recovery: boolean` field. Container: `border-b p-3`. Accepts `affectedOnly` (default true), `doseGroupFilter` (string|null, default null), `sortMode`, and `controls` (ReactNode rendered between header and matrix) props. Filters: dose group (parsed from string — "R0" = recovery dose_level 0), sex, affected-only (`Object.keys(findings).length > 0`). Sort: main arms before recovery, dose_level ascending within each category, then within-group by severity (if sortMode=severity) or sex+ID (if sortMode=dose). Dose groups grouped by composite key (dose_level + is_recovery); recovery group labels appended with "(Recovery)".
 
 **Structure:** Four-tier header:
 1. **Dose group headers** — horizontal bar above each dose group with colored indicator stripe (`getDoseGroupColor(doseLevel)`), label "({N})" subjects.
@@ -242,7 +244,7 @@ Selected subject column highlighted with `bg-blue-50/50`.
 **Loading/empty states:**
 - Loading: spinner + "Loading subject data..."
 - No subjects: "Subject-level data not available for this specimen."
-- No findings after filter: "No findings match the current severity filter."
+- No findings after filter: "No findings match the current filters."
 
 ---
 

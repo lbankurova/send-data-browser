@@ -116,5 +116,6 @@ export interface SubjectHistopathEntry {
   sex: string;
   dose_level: number;
   dose_label: string;
+  is_recovery: boolean;
   findings: Record<string, { severity: string | null; severity_num: number }>;
 }
