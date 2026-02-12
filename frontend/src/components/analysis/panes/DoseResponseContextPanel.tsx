@@ -12,6 +12,7 @@ import {
   formatPValue,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
+import { deriveToxSuggestion } from "@/types/annotations";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import type { RuleResult, SignalSummaryRow } from "@/types/analysis-views";
@@ -64,19 +65,18 @@ export function DoseResponseContextPanel({
   }, [ruleResults, selection]);
 
   // Best signal row for selected endpoint (highest signal_score across doses)
-  // (Currently unused - kept for potential future use)
-  // const selectedSignalRow = useMemo(() => {
-  //   if (!selection) return null;
-  //   const candidates = signalData.filter(
-  //     (r) =>
-  //       r.endpoint_label === selection.endpoint_label &&
-  //       (!selection.sex || r.sex === selection.sex)
-  //   );
-  //   if (candidates.length === 0) return null;
-  //   return candidates.reduce((best, r) =>
-  //     r.signal_score > best.signal_score ? r : best
-  //   );
-  // }, [signalData, selection]);
+  const selectedSignalRow = useMemo(() => {
+    if (!selection) return null;
+    const candidates = signalData.filter(
+      (r) =>
+        r.endpoint_label === selection.endpoint_label &&
+        (!selection.sex || r.sex === selection.sex)
+    );
+    if (candidates.length === 0) return null;
+    return candidates.reduce((best, r) =>
+      r.signal_score > best.signal_score ? r : best
+    );
+  }, [signalData, selection]);
 
   // Correlations: other endpoints in same organ, sorted by signal score
   const correlatedFindings = useMemo(() => {
@@ -308,7 +308,11 @@ export function DoseResponseContextPanel({
 
       {/* 4. Tox Assessment */}
       {studyId && (
-        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
+        <ToxFindingForm
+          studyId={studyId}
+          endpointLabel={selection.endpoint_label}
+          systemSuggestion={selectedSignalRow ? deriveToxSuggestion(selectedSignalRow.treatment_related, selectedSignalRow.severity) : undefined}
+        />
       )}
 
       {/* 5. Related views */}

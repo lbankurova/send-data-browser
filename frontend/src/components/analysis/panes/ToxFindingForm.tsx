@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
-import type { ToxFinding } from "@/types/annotations";
+import type { ToxFinding, ToxSystemSuggestion } from "@/types/annotations";
 
 const TREATMENT_OPTIONS = ["Yes", "No", "Equivocal", "Not Evaluated"] as const;
 const ADVERSITY_OPTIONS = ["Adverse", "Non-Adverse/Adaptive", "Not Determined"] as const;
@@ -10,9 +10,11 @@ interface Props {
   studyId: string;
   endpointLabel: string;
   defaultOpen?: boolean;
+  /** System suggestion from signal analysis — enables override tracking */
+  systemSuggestion?: ToxSystemSuggestion;
 }
 
-export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false }: Props) {
+export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, systemSuggestion }: Props) {
   const { data: annotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
   const { mutate: save, isPending, isSuccess, reset } = useSaveAnnotation<ToxFinding>(studyId, "tox-findings");
 
@@ -42,10 +44,31 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false }: 
     }
   }, [existing, endpointLabel]);
 
+  // Override detection — does the expert's current value disagree with the system suggestion?
+  const treatmentOverridden =
+    systemSuggestion?.treatmentRelated != null &&
+    treatmentRelated !== "Not Evaluated" &&
+    treatmentRelated !== "Equivocal" &&
+    treatmentRelated !== systemSuggestion.treatmentRelated;
+  const adversityOverridden =
+    systemSuggestion?.adversity != null &&
+    adversity !== "Not Determined" &&
+    adversity !== systemSuggestion.adversity;
+  const hasOverride = treatmentOverridden || adversityOverridden;
+
   const handleSave = () => {
     save({
       entityKey: endpointLabel,
-      data: { treatmentRelated, adversity, comment },
+      data: {
+        treatmentRelated,
+        adversity,
+        comment,
+        // Persist system suggestions at time of review for audit trail
+        ...(systemSuggestion && {
+          systemSuggestedTreatment: systemSuggestion.treatmentRelated,
+          systemSuggestedAdversity: systemSuggestion.adversity,
+        }),
+      },
     });
   };
 
@@ -55,11 +78,25 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false }: 
     comment !== (existing?.comment ?? "");
 
   return (
-    <CollapsiblePane title="Tox assessment" defaultOpen={defaultOpen}>
+    <CollapsiblePane
+      title="Tox assessment"
+      defaultOpen={defaultOpen}
+      headerRight={hasOverride ? <span className="text-[9px] text-amber-600">(overridden)</span> : undefined}
+    >
       <div className="space-y-2 text-[11px]">
         {/* Treatment Related */}
         <div>
-          <label className="mb-0.5 block font-medium text-muted-foreground">Treatment related</label>
+          <div className="mb-0.5 flex items-baseline gap-1.5">
+            <label className="font-medium text-muted-foreground">Treatment related</label>
+            {systemSuggestion?.treatmentRelated != null && (
+              <span className="text-[10px] text-muted-foreground/70">
+                System: {systemSuggestion.treatmentRelated}
+              </span>
+            )}
+            {treatmentOverridden && (
+              <span className="text-[9px] text-amber-600">(overridden)</span>
+            )}
+          </div>
           <select
             className="w-full rounded border bg-background px-2 py-1 text-[11px]"
             value={treatmentRelated}
@@ -73,7 +110,17 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false }: 
 
         {/* Adversity */}
         <div>
-          <label className="mb-0.5 block font-medium text-muted-foreground">Adversity</label>
+          <div className="mb-0.5 flex items-baseline gap-1.5">
+            <label className="font-medium text-muted-foreground">Adversity</label>
+            {systemSuggestion?.adversity != null && (
+              <span className="text-[10px] text-muted-foreground/70">
+                System: {systemSuggestion.adversity}
+              </span>
+            )}
+            {adversityOverridden && (
+              <span className="text-[9px] text-amber-600">(overridden)</span>
+            )}
+          </div>
           <select
             className={`w-full rounded border bg-background px-2 py-1 text-[11px] ${treatmentRelated === "No" ? "opacity-40" : ""}`}
             value={adversity}
@@ -85,15 +132,24 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false }: 
           </select>
         </div>
 
+        {/* Override justification hint */}
+        {hasOverride && !comment.trim() && (
+          <p className="text-[10px] text-amber-600">
+            Consider adding a justification for overriding the system suggestion.
+          </p>
+        )}
+
         {/* Comment */}
         <div>
-          <label className="mb-0.5 block font-medium text-muted-foreground">Comment</label>
+          <label className="mb-0.5 block font-medium text-muted-foreground">
+            {hasOverride ? "Justification / comment" : "Comment"}
+          </label>
           <textarea
-            className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+            className={`w-full rounded border bg-background px-2 py-1 text-[11px] ${hasOverride && !comment.trim() ? "border-amber-300" : ""}`}
             rows={2}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Notes..."
+            placeholder={hasOverride ? "Reason for overriding system suggestion..." : "Notes..."}
           />
         </div>
 
@@ -111,6 +167,13 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false }: 
           <p className="text-[10px] text-muted-foreground">
             Reviewed by {existing.reviewedBy} on{" "}
             {new Date(existing.reviewedDate).toLocaleDateString()}
+          </p>
+        )}
+
+        {/* System basis tooltip */}
+        {systemSuggestion && (
+          <p className="text-[9px] text-muted-foreground/60">
+            {systemSuggestion.basis}
           </p>
         )}
       </div>

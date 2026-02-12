@@ -437,7 +437,7 @@ export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers
       {activeTab === "overview" && <SignalsOverviewTab organ={organ} signalData={organSignalData} ruleResults={ruleResults} modifiers={modifiers} caveats={caveats} studyId={studyId} />}
       {activeTab === "matrix" && <SignalsMatrixTab signalData={organSignalData} targetOrgan={organ} selection={selection} onSelect={onSelect} />}
       {activeTab === "metrics" && <SignalsMetricsTab signalData={organSignalData} selection={selection} onSelect={onSelect} />}
-      {activeTab === "rules" && <RuleInspectorTab ruleResults={ruleResults} organFilter={organ.organ_system} />}
+      {activeTab === "rules" && <RuleInspectorTab ruleResults={ruleResults} organFilter={organ.organ_system} studyId={studyId} />}
     </div>
   );
 }

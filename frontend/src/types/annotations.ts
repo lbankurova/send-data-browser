@@ -28,6 +28,66 @@ export interface ToxFinding {
   comment: string;
   reviewedBy: string;
   reviewedDate: string;
+  /** System-suggested value at time of expert review (for audit trail) */
+  systemSuggestedTreatment?: "Yes" | "No" | null;
+  systemSuggestedAdversity?: "Adverse" | "Non-Adverse/Adaptive" | null;
+}
+
+/** System suggestion derived from signal analysis data. */
+export interface ToxSystemSuggestion {
+  treatmentRelated: "Yes" | "No" | null;
+  adversity: "Adverse" | "Non-Adverse/Adaptive" | null;
+  basis: string;
+}
+
+/** Derive a system suggestion from signal data fields. */
+export function deriveToxSuggestion(
+  treatmentRelated: boolean,
+  severity: "adverse" | "warning" | "normal",
+): ToxSystemSuggestion {
+  return {
+    treatmentRelated: treatmentRelated ? "Yes" : "No",
+    adversity:
+      severity === "adverse"
+        ? "Adverse"
+        : severity === "warning"
+          ? "Non-Adverse/Adaptive"
+          : null,
+    basis: `Signal analysis: treatment_related=${treatmentRelated}, severity=${severity}`,
+  };
+}
+
+/** Expert-configured thresholds for signal scoring (TRUST-01p2). */
+export interface ThresholdConfig {
+  signalScoreWeights: {
+    pValue: number;
+    trend: number;
+    effectSize: number;
+    pattern: number;
+  };
+  patternScores: Record<string, number>;
+  pValueSignificance: number;
+  largeEffect: number;
+  moderateEffect: number;
+  targetOrganEvidence: number;
+  targetOrganSignificant: number;
+  noaelPenalties: {
+    singleEndpoint: number;
+    sexInconsistency: number;
+    pathologyDisagreement: number;
+    largeEffectNonSig: number;
+  };
+  modifiedBy: string;
+  modifiedDate: string;
+}
+
+/** Per-rule override for validation rule customization (TRUST-05p2). */
+export interface ValidationRuleOverride {
+  enabled: boolean;
+  severityOverride: "Error" | "Warning" | "Info" | null;
+  comment: string;
+  modifiedBy: string;
+  modifiedDate: string;
 }
 
 export interface PathologyReview {
