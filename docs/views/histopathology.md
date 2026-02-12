@@ -190,10 +190,11 @@ Contains both group-level and subject-level heatmaps, toggled via a Group/Subjec
 - Severity/Incidence toggle: segmented control (`rounded-full` pills)
 
 **Subject mode only:**
-- Subject sort: `<FilterSelect>` — "Sort: dose group" / "Sort: max severity"
-- Affected only: checkbox + "Affected only" label
+- Dose group filter: `<FilterSelect>` — "All dose groups" / per-group options (computed from `subjData.subjects`, deduped by dose_level, sorted ascending)
+- Subject sort: `<FilterSelect>` — "Sort: dose group" / "Sort: max severity". Severity sort sorts within each dose group (dose groups always ascending, severity descending within group).
+- Affected only: checkbox + "Affected only" label (default: checked)
 
-Matrix mode, affected only, and subject sort reset on specimen change via `useEffect`.
+Matrix mode, affected only, subject sort, and dose group filter reset on specimen change via `useEffect`. Affected only resets to `true`; others reset to defaults.
 
 #### Group-Level Heatmap (matrixMode === "group")
 
@@ -219,7 +220,7 @@ Rendered when `heatmapData` exists and has findings.
 
 #### Subject-Level Heatmap (matrixMode === "subject")
 
-Fetches individual subject data via `useHistopathSubjects(studyId, specimen)` on demand (only when `matrixMode === "subject"`). Container: `border-b p-3`. Accepts `affectedOnly` prop — when true, filters subjects to those with `Object.keys(findings).length > 0`.
+Fetches individual subject data via `useHistopathSubjects(studyId, specimen)` on demand (only when `matrixMode === "subject"`). Container: `border-b p-3`. Accepts `affectedOnly` (default true), `doseGroupFilter` (default null), and `sortMode` props. Filters: sex, affected-only (`Object.keys(findings).length > 0`), dose group. Sort: dose group ascending always, then within-group by severity (if sortMode=severity) or sex+ID (if sortMode=dose).
 
 **Structure:** Four-tier header:
 1. **Dose group headers** — horizontal bar above each dose group with colored indicator stripe (`getDoseGroupColor(doseLevel)`), label "({N})" subjects.
@@ -381,8 +382,9 @@ Panes in order (follows design system priority: insights > stats > related > ann
 | Min severity | Local (parent) | `useState<number>` — shared between Evidence and Metrics tabs |
 | Heatmap view | Local (OverviewTab) | `useState<"severity" \| "incidence">` — group heatmap coloring mode (default "severity") |
 | Matrix mode | Local (OverviewTab) | `useState<"group" \| "subject">` — toggles between group and subject heatmaps (default "group", resets on specimen change) |
-| Affected only | Local (OverviewTab) | `useState<boolean>` — filter subjects to affected only in subject mode (default false, resets on specimen change) |
-| Subject sort | Local (OverviewTab) | `useState<"dose" \| "severity">` — subject heatmap sort mode (default "dose", resets on specimen change) |
+| Affected only | Local (OverviewTab) | `useState<boolean>` — filter subjects to affected only in subject mode (default true, resets to true on specimen change) |
+| Subject sort | Local (OverviewTab) | `useState<"dose" \| "severity">` — subject heatmap sort mode (default "dose", resets on specimen change). Severity sort orders within dose groups, not across them. |
+| Dose group filter | Local (OverviewTab) | `useState<number \| null>` — filter subjects to specific dose group (default null = all, resets on specimen change) |
 | Findings height | Local (OverviewTab) | `useResizePanelY(200, 80, 500)` — resizable findings table height (default 200px, range 80-500px) |
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in OverviewTab and MetricsTab) |
 | Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in OverviewTab and MetricsTab) |
