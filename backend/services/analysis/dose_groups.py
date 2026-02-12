@@ -48,6 +48,14 @@ def _parse_tx(study: StudyInfo) -> dict[str, dict]:
             "is_satellite": is_satellite,
         }
 
+    # Post-process: detect recovery arms by ARMCD suffix convention
+    # e.g., "1R" pairs with "1", "2R" pairs with "2"
+    for armcd, info in tx_map.items():
+        if not info["is_recovery"] and armcd.endswith("R") and len(armcd) >= 2:
+            base_armcd = armcd[:-1]
+            if base_armcd in tx_map and not tx_map[base_armcd]["is_recovery"]:
+                info["is_recovery"] = True
+
     return tx_map
 
 

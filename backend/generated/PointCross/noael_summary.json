@@ -6,10 +6,10 @@
     "noael_dose_value": 0.0,
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
-    "loael_label": "Group 1, Control",
+    "loael_label": "Group 2,2 mg/kg PCDRUG",
     "n_adverse_at_loael": 3,
     "adverse_domains_at_loael": [
-      "DS",
+      "LB",
       "MI"
     ],
     "noael_confidence": 0.8
@@ -21,11 +21,12 @@
     "noael_dose_value": 0.0,
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
-    "loael_label": "Group 1, Control",
-    "n_adverse_at_loael": 3,
+    "loael_label": "Group 2,2 mg/kg PCDRUG",
+    "n_adverse_at_loael": 6,
     "adverse_domains_at_loael": [
-      "DS",
-      "MI"
+      "LB",
+      "MI",
+      "OM"
     ],
     "noael_confidence": 0.8
   },
@@ -36,11 +37,12 @@
     "noael_dose_value": 0.0,
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
-    "loael_label": "Group 1, Control",
-    "n_adverse_at_loael": 6,
+    "loael_label": "Group 2,2 mg/kg PCDRUG",
+    "n_adverse_at_loael": 9,
     "adverse_domains_at_loael": [
-      "DS",
-      "MI"
+      "LB",
+      "MI",
+      "OM"
     ],
     "noael_confidence": 0.8
   }
