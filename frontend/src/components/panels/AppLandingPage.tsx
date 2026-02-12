@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2, Wrench } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
+import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
 import { cn } from "@/lib/utils";
 import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
@@ -328,6 +329,7 @@ function DeleteConfirmDialog({
 
 export function AppLandingPage() {
   const { data: studies, isLoading } = useStudies();
+  const { data: portfolioStudies } = useStudyPortfolio();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { selectedStudyId, selectStudy } = useSelection();
@@ -337,6 +339,22 @@ export function AppLandingPage() {
   const realStudies: DisplayStudy[] = (studies ?? []).map((s) => ({
     ...s,
     validation: "Not Run",
+  }));
+
+  // Add portfolio studies (mock studies with metadata) to the list
+  const portfolioDisplayStudies: DisplayStudy[] = (portfolioStudies ?? []).map((s) => ({
+    study_id: s.id,
+    name: s.title,
+    domain_count: s.domains?.length ?? 0,
+    species: s.species,
+    study_type: s.study_type,
+    protocol: s.protocol,
+    standard: null, // Portfolio studies don't have SEND standard in mock data
+    subjects: s.subjects,
+    start_date: null,
+    end_date: null,
+    status: s.status,
+    validation: s.validation ? (s.validation.errors > 0 ? "Fail" : s.validation.warnings > 0 ? "Warnings" : "Pass") : "Not Run",
   }));
 
   const scenarioStudies: DisplayStudy[] = designMode
@@ -356,7 +374,7 @@ export function AppLandingPage() {
       }))
     : [];
 
-  const allStudies: DisplayStudy[] = realStudies;
+  const allStudies: DisplayStudy[] = [...realStudies, ...portfolioDisplayStudies];
 
   const [contextMenu, setContextMenu] = useState<{
     study: DisplayStudy;
