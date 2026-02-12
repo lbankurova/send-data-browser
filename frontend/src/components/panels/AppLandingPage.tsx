@@ -496,14 +496,14 @@ export function AppLandingPage() {
                     <tr
                       key={study.study_id}
                       className={cn(
-                        "border-b last:border-b-0 transition-colors",
+                        "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
                         isSelected && "bg-accent"
                       )}
                       onClick={() => handleClick(study)}
                       onDoubleClick={() => handleDoubleClick(study)}
                       onContextMenu={(e) => handleContextMenu(e, study)}
                     >
-                      <td className="px-2 py-1 text-center hover:bg-accent/50">
+                      <td className="px-2 py-1 text-center">
                         <button
                           className="rounded p-0.5 hover:bg-accent"
                           onClick={(e) => handleActionsClick(e, study)}
@@ -512,25 +512,25 @@ export function AppLandingPage() {
                           <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
                       </td>
-                      <td className="px-3 py-1 font-medium text-primary hover:bg-accent/50">{study.study_id}</td>
-                      <td className="px-3 py-1 text-muted-foreground hover:bg-accent/50">
+                      <td className="px-3 py-1 font-medium text-primary">{study.study_id}</td>
+                      <td className="px-3 py-1 text-muted-foreground">
                         {study.protocol && study.protocol !== "NOT AVAILABLE"
                           ? study.protocol
                           : "—"}
                       </td>
-                      <td className="px-3 py-1 text-muted-foreground hover:bg-accent/50">
+                      <td className="px-3 py-1 text-muted-foreground">
                         {formatStandard(study.standard)}
                       </td>
-                      <td className="px-3 py-1 text-right tabular-nums text-muted-foreground hover:bg-accent/50">
+                      <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
                         {study.subjects ?? "—"}
                       </td>
-                      <td className="px-3 py-1 tabular-nums text-muted-foreground hover:bg-accent/50">
+                      <td className="px-3 py-1 tabular-nums text-muted-foreground">
                         {study.start_date ?? "—"}
                       </td>
-                      <td className="px-3 py-1 tabular-nums text-muted-foreground hover:bg-accent/50">
+                      <td className="px-3 py-1 tabular-nums text-muted-foreground">
                         {study.end_date ?? "—"}
                       </td>
-                      <td className="relative pl-5 pr-3 py-1 text-xs text-muted-foreground hover:bg-accent/50">
+                      <td className="relative pl-5 pr-3 py-1 text-xs text-muted-foreground">
                         {study.status === "Complete" && (
                           <span
                             className="absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full"
@@ -539,7 +539,7 @@ export function AppLandingPage() {
                         )}
                         {study.status}
                       </td>
-                      <td className="px-3 py-1 hover:bg-accent/50">
+                      <td className="px-3 py-1">
                         <div
                           className="flex items-center justify-center"
                           title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}
@@ -563,7 +563,7 @@ export function AppLandingPage() {
                         <tr
                           key={study.study_id}
                           className={cn(
-                            "border-b last:border-b-0 transition-colors",
+                            "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
                             isSelected && "bg-accent"
                           )}
                           onClick={() => handleClick(study)}
@@ -573,16 +573,16 @@ export function AppLandingPage() {
                           <td className="px-2 py-1 text-center">
                             <Wrench className="mx-auto h-3.5 w-3.5 text-muted-foreground/60" />
                           </td>
-                          <td className="px-3 py-1 font-medium text-muted-foreground hover:bg-accent/50">{study.name}</td>
-                          <td className="px-3 py-1 text-muted-foreground/60 hover:bg-accent/50">{study.study_type ?? "—"}</td>
-                          <td className="px-3 py-1 text-muted-foreground/60 hover:bg-accent/50">—</td>
-                          <td className="px-3 py-1 text-right tabular-nums text-muted-foreground/60 hover:bg-accent/50">
+                          <td className="px-3 py-1 font-medium text-muted-foreground">{study.name}</td>
+                          <td className="px-3 py-1 text-muted-foreground/60">{study.study_type ?? "—"}</td>
+                          <td className="px-3 py-1 text-muted-foreground/60">—</td>
+                          <td className="px-3 py-1 text-right tabular-nums text-muted-foreground/60">
                             {study.subjects ?? "—"}
                           </td>
-                          <td className="px-3 py-1 text-muted-foreground/60 hover:bg-accent/50">—</td>
-                          <td className="px-3 py-1 text-muted-foreground/60 hover:bg-accent/50">—</td>
-                          <td className="px-3 py-1 text-xs text-muted-foreground/60 hover:bg-accent/50">Scenario</td>
-                          <td className="px-3 py-1 hover:bg-accent/50">
+                          <td className="px-3 py-1 text-muted-foreground/60">—</td>
+                          <td className="px-3 py-1 text-muted-foreground/60">—</td>
+                          <td className="px-3 py-1 text-xs text-muted-foreground/60">Scenario</td>
+                          <td className="px-3 py-1">
                             <div
                               className="flex items-center justify-center"
                               title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}
