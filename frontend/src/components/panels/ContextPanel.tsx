@@ -21,6 +21,8 @@ import { DoseResponseContextPanel } from "@/components/analysis/panes/DoseRespon
 import { HistopathologyContextPanel } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { ValidationContextPanel } from "@/components/analysis/panes/ValidationContextPanel";
 import { SubjectProfilePanel } from "@/components/analysis/panes/SubjectProfilePanel";
+import { StudyPortfolioContextPanel } from "@/components/portfolio/StudyPortfolioContextPanel";
+import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import type { ToxFinding, PathologyReview, ValidationRecordReview } from "@/types/annotations";
@@ -414,6 +416,7 @@ export function ContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
   const { selectedSubject, setSelectedSubject } = useViewSelection();
+  const { data: allStudies } = useStudyPortfolio();
 
   const activeStudyId = studyId ?? selectedStudyId;
 
@@ -429,6 +432,7 @@ export function ContextPanel() {
   }
 
   // Route detection
+  const isLandingPageRoute = location.pathname === "/";
   const isAdverseEffectsRoute = /\/studies\/[^/]+\/analyses\/adverse-effects/.test(
     location.pathname
   );
@@ -440,6 +444,19 @@ export function ContextPanel() {
   const isDoseResponseRoute = /\/studies\/[^/]+\/dose-response/.test(location.pathname);
   const isHistopathologyRoute = /\/studies\/[^/]+\/histopathology/.test(location.pathname);
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);
+
+  // Landing page with study selected - show portfolio context panel
+  if (isLandingPageRoute && selectedStudyId && allStudies) {
+    const selectedStudy = allStudies.find((s) => s.id === selectedStudyId);
+    if (selectedStudy) {
+      return (
+        <StudyPortfolioContextPanel
+          selectedStudy={selectedStudy}
+          allStudies={allStudies}
+        />
+      );
+    }
+  }
 
   if (isAdverseEffectsRoute) {
     return <AdverseEffectsContextPanel />;
