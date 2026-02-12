@@ -855,7 +855,7 @@ function EvidenceTableTab({
                     key={header.id}
                     className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                     style={{ width: header.getSize() }}
-                    onClick={header.column.getToggleSortingHandler()}
+                    onDoubleClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                     {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
