@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HorizontalResizeHandle } from "@/components/ui/PanelResizeHandle";
@@ -17,6 +17,7 @@ interface ViewSectionFixed extends ViewSectionBaseProps {
   mode: "fixed";
   height: number;
   onResizePointerDown: (e: React.PointerEvent) => void;
+  contentRef?: RefObject<HTMLDivElement | null>;
 }
 
 interface ViewSectionFlex extends ViewSectionBaseProps {
@@ -72,7 +73,10 @@ export function ViewSection(props: ViewSectionProps) {
           )}
           style={mode === "fixed" ? { height: props.height } : undefined}
         >
-          <div className={cn("h-full overflow-auto", mode === "flex" && "flex min-h-0 flex-1 flex-col")}>
+          <div
+            ref={mode === "fixed" ? props.contentRef : undefined}
+            className={cn("h-full overflow-auto", mode === "flex" && "flex min-h-0 flex-1 flex-col")}
+          >
             {children}
           </div>
         </div>

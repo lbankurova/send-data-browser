@@ -16,7 +16,7 @@ import { useAnnotations } from "@/hooks/useAnnotations";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { EvidenceBar } from "@/components/ui/EvidenceBar";
-import { FilterBar, FilterSelect } from "@/components/ui/FilterBar";
+import { FilterBar, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { getDoseGroupColor, getNeutralHeatColor as getNeutralHeatColor01 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -641,10 +641,9 @@ function OverviewTab({
     };
   }, [subjData]);
 
-  // All group keys + short labels for toggle chips
-  const groupChips = useMemo(() => {
+  // Dose group options for multi-select dropdown
+  const doseGroupOptions = useMemo(() => {
     const shortLabel = (label: string) => {
-      // "Group 1, Control" → "Control", "Group 2,2 mg/kg PCDRUG" → "2 mg/kg"
       const parts = label.split(/,\s*/);
       if (parts.length < 2) return label;
       return parts.slice(1).join(", ").replace(/\s+\S*DRUG\S*/i, "").trim() || label;
@@ -652,35 +651,15 @@ function OverviewTab({
     return [
       ...availableDoseGroups.main.map(([level, label]) => ({
         key: String(level),
-        shortLabel: shortLabel(label),
-        isRecovery: false,
+        label: shortLabel(label),
       })),
       ...availableDoseGroups.recovery.map(([level, label]) => ({
         key: `R${level}`,
-        shortLabel: shortLabel(label),
-        isRecovery: true,
+        label: shortLabel(label),
+        group: "Recovery",
       })),
     ];
   }, [availableDoseGroups]);
-
-  const allGroupKeys = useMemo(() => new Set(groupChips.map((c) => c.key)), [groupChips]);
-
-  const toggleDoseGroup = useCallback(
-    (key: string) => {
-      setDoseGroupFilter((prev) => {
-        const current = prev ?? new Set(allGroupKeys);
-        const next = new Set(current);
-        if (next.has(key)) {
-          if (next.size > 1) next.delete(key); // prevent empty
-        } else {
-          next.add(key);
-        }
-        // If all selected, return null (no filter)
-        return next.size === allGroupKeys.size ? null : next;
-      });
-    },
-    [allGroupKeys],
-  );
 
   // Per-finding dose consistency
   const findingConsistency = useMemo(() => {
@@ -1023,36 +1002,12 @@ function OverviewTab({
                     <option value={2}>Min severity: 2+</option>
                     <option value={3}>Min severity: 3+</option>
                   </FilterSelect>
-                  <div className="flex items-center gap-0.5">
-                    {groupChips.map((chip) => {
-                      const isSelected = doseGroupFilter === null || doseGroupFilter.has(chip.key);
-                      return (
-                        <button
-                          key={chip.key}
-                          className={cn(
-                            "rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
-                            isSelected
-                              ? "bg-foreground text-background"
-                              : "text-muted-foreground/50 hover:bg-accent/50",
-                            chip.isRecovery && "border border-dashed border-current",
-                          )}
-                          onClick={() => toggleDoseGroup(chip.key)}
-                          title={`${chip.isRecovery ? "Recovery: " : ""}${chip.shortLabel}${isSelected ? " (click to hide)" : " (click to show)"}`}
-                        >
-                          {chip.isRecovery ? `${chip.shortLabel} R` : chip.shortLabel}
-                        </button>
-                      );
-                    })}
-                    {doseGroupFilter !== null && (
-                      <button
-                        className="ml-0.5 rounded-full px-1.5 py-0.5 text-[9px] text-muted-foreground hover:bg-accent/50"
-                        onClick={() => setDoseGroupFilter(null)}
-                        title="Show all dose groups"
-                      >
-                        All
-                      </button>
-                    )}
-                  </div>
+                  <FilterMultiSelect
+                    options={doseGroupOptions}
+                    selected={doseGroupFilter}
+                    onChange={setDoseGroupFilter}
+                    allLabel="All dose groups"
+                  />
                   <FilterSelect
                     value={subjectSort}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSubjectSort(e.target.value as "dose" | "severity")}

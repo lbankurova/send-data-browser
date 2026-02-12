@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   useReactTable,
@@ -14,7 +14,7 @@ import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { FilterBar, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { useResizePanelY } from "@/hooks/useResizePanel";
+import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { useAnnotations } from "@/hooks/useAnnotations";
@@ -225,7 +225,11 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>({ fixStatus: "", reviewStatus: "", subjectId: "" });
   const [severityFilter, setSeverityFilter] = useState<"" | "Error" | "Warning" | "Info">("");
   const [sourceFilter, setSourceFilter] = useState<"" | "core" | "custom">("");
-  const { height: ruleSectionHeight, onPointerDown: onRuleSectionResize } = useResizePanelY(280, 100, 500);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sections = useAutoFitSections(containerRef, "validation", [
+    { id: "rules", min: 100, max: 500, defaultHeight: 280 },
+  ]);
+  const rulesSection = sections[0];
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // Mode: data-quality (default) or study-design
@@ -695,13 +699,14 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
           )}
         </div>
       ) : (
-        <>
+        <div ref={containerRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Top table — Rule Summary */}
           <ViewSection
             mode="fixed"
             title={`Rule summary (${rules.length})`}
-            height={ruleSectionHeight}
-            onResizePointerDown={onRuleSectionResize}
+            height={rulesSection.height}
+            onResizePointerDown={rulesSection.onPointerDown}
+            contentRef={rulesSection.contentRef}
             expandGen={expandGen}
             collapseGen={collapseGen}
           >
@@ -900,7 +905,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
               Select a rule above to view affected records
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );
