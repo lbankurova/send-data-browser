@@ -65,9 +65,9 @@ Each `SpecimenRailItem` is a `<button>` with:
 
 **Row 1:** Specimen name (`text-xs font-semibold`) + finding count badge (`text-[10px] text-muted-foreground`)
 
-**Row 2:** Severity bar — neutral gray alignment matching Signals rail. Track: `h-1.5 flex-1 rounded-full bg-[#E5E7EB]`, fill: `bg-[#D1D5DB]`. Numeric value: `shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground`.
+**Row 2:** Severity bar — neutral gray alignment matching Signals rail. Track: `h-1.5 flex-1 rounded-full bg-[#E5E7EB]`, fill color encodes max severity via `getNeutralHeatColor(maxSeverity).bg` (passed as `fillColor` prop to `EvidenceBar`). Numeric value: `shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground`.
 
-**Row 3:** Stats line — `{N} findings · {M} adverse` + domain chips (plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` color class).
+**Row 3:** Stats line — `{N} findings · {M} adverse ({pct}%)` + domain chips (plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` color class). Adverse percentage is `adverseCount / findingCount * 100`, guarded when `findingCount === 0`.
 
 ### Sorting
 
@@ -139,6 +139,7 @@ Each finding is a clickable `<button>` row:
 - Max severity: `shrink-0 font-mono text-[10px] text-muted-foreground`
 - Incidence summary: `{totalAffected}/{totalN}`, `shrink-0 font-mono text-[10px] text-muted-foreground`
 - Severity category badge: `shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground`
+- "Dose-driven" badge (conditional): shown only when `getFindingDoseConsistency()` returns "Strong" for that finding. Neutral gray: `rounded-sm border border-border px-1 py-0.5 text-[9px] text-muted-foreground`. Per-finding consistency is precomputed in a `useMemo` keyed to `findingSummaries` and `specimenData`.
 
 Sorted by max avg_severity descending. Click sets finding-level selection (updates context panel). Click again to deselect.
 
@@ -174,6 +175,10 @@ Preserves the existing heatmap + collapsible grid, scoped to the selected specim
 
 No specimen dropdown (specimen already selected via rail).
 
+**Affected only checkbox** (subject mode only) — `<label>` with checkbox + "Affected only" text. Filters subjects to those with at least one finding. Resets to unchecked on specimen change via `useEffect` keyed to `specimen`.
+
+**Severity / Incidence segmented control** (group mode only) — two `rounded-full` pills matching the Group/Subject pattern. Default: "Severity". In incidence mode: cell values show `{pct}%`, cell colors use `getNeutralHeatColor01(incidence)` from `severity-colors.ts` (0-1 scale), header reads "Incidence heatmap", legend shows incidence ranges (1-19%, 20-39%, 40-59%, 60-79%, 80-100%).
+
 **Group / Subject segmented control** — right-aligned `ml-auto`, two `rounded-full` pills:
 - Active: `bg-foreground text-background`
 - Inactive: `text-muted-foreground hover:bg-accent/50`
@@ -183,7 +188,7 @@ The filter bar applies to both modes (sex filter + min severity both affect subj
 
 ### Subject-Level Heatmap (subject mode)
 
-Shown when `matrixMode === "subject"`. Fetches individual subject data via `useHistopathSubjects(studyId, specimen)`. Container: `border-b p-4`.
+Shown when `matrixMode === "subject"`. Fetches individual subject data via `useHistopathSubjects(studyId, specimen)`. Container: `border-b p-4`. Accepts `affectedOnly` prop — when true, filters subjects to those with `Object.keys(findings).length > 0`.
 
 **Structure:** Three-tier header:
 1. **Dose group headers** — horizontal bar above each dose group with colored indicator stripe (`getDoseGroupColor(doseLevel)`), label "({N})" subjects.
@@ -290,6 +295,12 @@ Groups rows by finding, computes incidence-per-dose-level, checks monotonicity.
 - **Moderate**: some monotonic OR ≥2 dose groups affected
 - **Weak**: everything else
 
+### `getFindingDoseConsistency(rows: LesionSeverityRow[], finding: string): "Weak" | "Moderate" | "Strong"`
+Per-finding version of `getDoseConsistency`. Filters rows to one finding, groups by dose_level, checks incidence monotonicity.
+- **Strong**: monotonic incidence AND ≥3 dose groups affected
+- **Moderate**: monotonic OR ≥2 dose groups affected
+- **Weak**: everything else
+
 ### `deriveSpecimenConclusion(summary, specimenData, specimenRules): string`
 Builds a deterministic 1-line conclusion from incidence range, severity, sex, and dose relationship.
 
@@ -329,6 +340,8 @@ Panes in order (follows design system priority: insights > stats > related > ann
 | Sex filter | Local | `useState<string \| null>` — for Severity Matrix tab |
 | Min severity | Local | `useState<number>` — for Severity Matrix tab |
 | Matrix mode | Local | `useState<"group" \| "subject">` — heatmap mode in SeverityMatrixTab (default "group") |
+| Heatmap view | Local | `useState<"severity" \| "incidence">` — group heatmap coloring mode (default "severity") |
+| Affected only | Local | `useState<boolean>` — filter subjects to affected only in subject mode (default false, resets on specimen change) |
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in SeverityMatrixTab) |
 | Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in SeverityMatrixTab) |
 | Selected subject | Local | `useState<string \| null>` — column highlight in SubjectHeatmap |

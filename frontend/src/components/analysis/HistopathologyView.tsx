@@ -15,9 +15,9 @@ import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { EvidenceBar } from "@/components/ui/EvidenceBar";
-import { FilterBar } from "@/components/ui/FilterBar";
+import { FilterBar, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { getDoseGroupColor } from "@/lib/severity-colors";
+import { getDoseGroupColor, getNeutralHeatColor as getNeutralHeatColor01 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
@@ -205,6 +205,37 @@ function getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderate" | "S
   return "Weak";
 }
 
+/** Per-finding dose consistency: filters rows to one finding, groups by dose_level, checks monotonicity. */
+function getFindingDoseConsistency(rows: LesionSeverityRow[], finding: string): "Weak" | "Moderate" | "Strong" {
+  const findingRows = rows.filter((r) => r.finding === finding);
+  const doseMap = new Map<number, { affected: number; n: number }>();
+  for (const r of findingRows) {
+    const existing = doseMap.get(r.dose_level);
+    if (existing) {
+      existing.affected += r.affected;
+      existing.n += r.n;
+    } else {
+      doseMap.set(r.dose_level, { affected: r.affected, n: r.n });
+    }
+  }
+  const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
+  if (sorted.length < 2) return "Weak";
+
+  const incidences = sorted.map(([, v]) => (v.n > 0 ? v.affected / v.n : 0));
+  let isMonotonic = true;
+  for (let i = 1; i < incidences.length; i++) {
+    if (incidences[i] < incidences[i - 1] - 0.001) {
+      isMonotonic = false;
+      break;
+    }
+  }
+
+  const doseGroupsAffected = sorted.filter(([, v]) => v.affected > 0).length;
+  if (isMonotonic && doseGroupsAffected >= 3) return "Strong";
+  if (isMonotonic || doseGroupsAffected >= 2) return "Moderate";
+  return "Weak";
+}
+
 function deriveSpecimenConclusion(
   summary: SpecimenSummary,
   specimenData: LesionSeverityRow[],
@@ -258,7 +289,7 @@ function SpecimenRailItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors",
+        "w-full text-left border-b border-border/40 px-3 py-2 transition-colors",
         "border-l-2 border-l-transparent",
         isSelected
           ? "bg-blue-50/60 dark:bg-blue-950/20"
@@ -276,19 +307,23 @@ function SpecimenRailItem({
         </span>
       </div>
 
-      {/* Row 2: severity bar (neutral) */}
+      {/* Row 2: severity bar (neutral, fill darkness encodes severity) */}
       <EvidenceBar
         value={summary.maxSeverity}
         max={maxGlobalSeverity}
         label={summary.maxSeverity.toFixed(1)}
         labelClassName="text-muted-foreground"
+        fillColor={getNeutralHeatColor(summary.maxSeverity).bg}
       />
 
       {/* Row 3: stats + domain chips */}
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
         <span>{summary.findingCount} findings</span>
         <span>&middot;</span>
-        <span>{summary.adverseCount} adverse</span>
+        <span>
+          {summary.adverseCount} adverse
+          {summary.findingCount > 0 && ` (${Math.round((summary.adverseCount / summary.findingCount) * 100)}%)`}
+        </span>
         {summary.domains.map((d) => (
           <DomainLabel key={d} domain={d} />
         ))}
@@ -377,7 +412,7 @@ function SpecimenHeader({
           {summary.specimen.replace(/_/g, " ")}
         </h3>
         {summary.adverseCount > 0 && (
-          <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
+          <span className="rounded-sm border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
             {summary.adverseCount} adverse
           </span>
         )}
@@ -453,6 +488,15 @@ function OverviewTab({
   selection: HistopathSelection | null;
   onFindingClick: (finding: string) => void;
 }) {
+
+  // Per-finding dose consistency (for "Dose-driven" badge)
+  const findingConsistency = useMemo(() => {
+    const map = new Map<string, "Weak" | "Moderate" | "Strong">();
+    for (const fs of findingSummaries) {
+      map.set(fs.finding, getFindingDoseConsistency(specimenData, fs.finding));
+    }
+    return map;
+  }, [findingSummaries, specimenData]);
 
   // Cross-organ coherence: R16 rules matching this specimen
   const coherenceHints = useMemo(() => {
@@ -531,6 +575,11 @@ function OverviewTab({
                   <span className="shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
                     {fs.severity}
                   </span>
+                  {findingConsistency.get(fs.finding) === "Strong" && (
+                    <span className="shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] text-muted-foreground">
+                      Dose-driven
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -587,6 +636,7 @@ function SubjectHeatmap({
   selection,
   onHeatmapClick,
   onSubjectClick,
+  affectedOnly,
 }: {
   subjData: SubjectHistopathEntry[] | null;
   isLoading: boolean;
@@ -595,15 +645,17 @@ function SubjectHeatmap({
   selection: HistopathSelection | null;
   onHeatmapClick: (finding: string) => void;
   onSubjectClick?: (usubjid: string) => void;
+  affectedOnly?: boolean;
 }) {
   // Selected subject for column highlight
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
-  // Filter subjects by sex
+  // Filter subjects by sex and affected-only
   const subjects = useMemo(() => {
     if (!subjData) return [];
     let filtered = subjData;
     if (sexFilter) filtered = filtered.filter((s) => s.sex === sexFilter);
+    if (affectedOnly) filtered = filtered.filter((s) => Object.keys(s.findings).length > 0);
     // Sort: by dose_level asc, then sex (F, M), then usubjid asc
     return [...filtered].sort(
       (a, b) =>
@@ -611,7 +663,7 @@ function SubjectHeatmap({
         a.sex.localeCompare(b.sex) ||
         a.usubjid.localeCompare(b.usubjid)
     );
-  }, [subjData, sexFilter]);
+  }, [subjData, sexFilter, affectedOnly]);
 
   // All unique findings (rows) — filter by minSeverity
   const findings = useMemo(() => {
@@ -899,6 +951,13 @@ function SeverityMatrixTab({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [matrixMode, setMatrixMode] = useState<"group" | "subject">("group");
+  const [heatmapView, setHeatmapView] = useState<"severity" | "incidence">("severity");
+  const [affectedOnly, setAffectedOnly] = useState(false);
+
+  // Reset affectedOnly when specimen changes
+  useEffect(() => {
+    setAffectedOnly(false);
+  }, [specimen]);
 
   // Subject-level data (only fetch when in subject mode)
   const { data: subjData, isLoading: subjLoading } = useHistopathSubjects(
@@ -1028,17 +1087,15 @@ function SeverityMatrixTab({
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Filter bar */}
       <FilterBar>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+        <FilterSelect
           value={sexFilter ?? ""}
           onChange={(e) => setSexFilter(e.target.value || null)}
         >
           <option value="">All sexes</option>
           <option value="M">Male</option>
           <option value="F">Female</option>
-        </select>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+        </FilterSelect>
+        <FilterSelect
           value={minSeverity}
           onChange={(e) => setMinSeverity(Number(e.target.value))}
         >
@@ -1046,7 +1103,38 @@ function SeverityMatrixTab({
           <option value={1}>Min severity: 1+</option>
           <option value={2}>Min severity: 2+</option>
           <option value={3}>Min severity: 3+</option>
-        </select>
+        </FilterSelect>
+        {/* Affected only checkbox (subject mode only) */}
+        {matrixMode === "subject" && (
+          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={affectedOnly}
+              onChange={(e) => setAffectedOnly(e.target.checked)}
+              className="h-3 w-3 rounded border-border"
+            />
+            Affected only
+          </label>
+        )}
+        {/* Severity / Incidence toggle (group mode only) */}
+        {matrixMode === "group" && (
+          <div className="flex items-center gap-0.5">
+            {(["severity", "incidence"] as const).map((mode) => (
+              <button
+                key={mode}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  heatmapView === mode
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:bg-accent/50"
+                )}
+                onClick={() => setHeatmapView(mode)}
+              >
+                {mode === "severity" ? "Severity" : "Incidence"}
+              </button>
+            ))}
+          </div>
+        )}
         {/* Group / Subject segmented control */}
         <div className="ml-auto flex items-center gap-0.5">
           {(["group", "subject"] as const).map((mode) => (
@@ -1078,15 +1166,16 @@ function SeverityMatrixTab({
             selection={selection}
             onHeatmapClick={onHeatmapClick}
             onSubjectClick={onSubjectClick}
+            affectedOnly={affectedOnly}
           />
         )}
 
-        {/* Group-level severity heatmap */}
+        {/* Group-level heatmap (severity or incidence mode) */}
         {matrixMode === "group" && heatmapData && heatmapData.findings.length > 0 && (
           <div className="border-b p-4">
             <div className="mb-2 flex items-center gap-2">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Severity heatmap ({heatmapData.findings.length} findings)
+                {heatmapView === "incidence" ? "Incidence" : "Severity"} heatmap ({heatmapData.findings.length} findings)
               </h2>
               <span className="text-[10px] text-muted-foreground">
                 Dose consistency: {getDoseConsistency(specimenData)}
@@ -1124,25 +1213,34 @@ function SeverityMatrixTab({
                     </div>
                     {heatmapData.doseLevels.map((dl) => {
                       const cell = heatmapData.cells.get(`${finding}|${dl}`);
+                      if (!cell) {
+                        return (
+                          <div key={dl} className="flex h-6 w-20 shrink-0 items-center justify-center">
+                            <div className="h-5 w-16 rounded-sm bg-gray-100" />
+                          </div>
+                        );
+                      }
+                      const cellColors = heatmapView === "incidence"
+                        ? getNeutralHeatColor01(cell.incidence)
+                        : getNeutralHeatColor(cell.avg_severity ?? 0);
+                      const cellLabel = heatmapView === "incidence"
+                        ? `${(cell.incidence * 100).toFixed(0)}%`
+                        : `${cell.affected}/${cell.n}`;
                       return (
                         <div
                           key={dl}
                           className="flex h-6 w-20 shrink-0 items-center justify-center"
                         >
-                          {cell ? (
-                            <div
-                              className="flex h-5 w-16 items-center justify-center rounded-sm text-[9px] font-medium"
-                              style={{
-                                backgroundColor: getNeutralHeatColor(cell.avg_severity ?? 0).bg,
-                                color: getNeutralHeatColor(cell.avg_severity ?? 0).text,
-                              }}
-                              title={`Severity: ${cell.avg_severity != null ? cell.avg_severity.toFixed(1) : "N/A"}, Incidence: ${cell.affected}/${cell.n}`}
-                            >
-                              {cell.affected}/{cell.n}
-                            </div>
-                          ) : (
-                            <div className="h-5 w-16 rounded-sm bg-gray-100" />
-                          )}
+                          <div
+                            className="flex h-5 w-16 items-center justify-center rounded-sm text-[9px] font-medium"
+                            style={{
+                              backgroundColor: cellColors.bg,
+                              color: cellColors.text,
+                            }}
+                            title={`Severity: ${cell.avg_severity != null ? cell.avg_severity.toFixed(1) : "N/A"}, Incidence: ${cell.affected}/${cell.n}`}
+                          >
+                            {cellLabel}
+                          </div>
                         </div>
                       );
                     })}
@@ -1151,21 +1249,39 @@ function SeverityMatrixTab({
               </div>
             </div>
             {/* Legend */}
-            <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
-              <span>Severity:</span>
-              {[
-                { label: "Minimal", color: "#E5E7EB" },
-                { label: "Mild", color: "#D1D5DB" },
-                { label: "Moderate", color: "#9CA3AF" },
-                { label: "Marked", color: "#6B7280" },
-                { label: "Severe", color: "#4B5563" },
-              ].map(({ label, color }) => (
-                <span key={label} className="flex items-center gap-0.5">
-                  <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
-                  {label}
-                </span>
-              ))}
-            </div>
+            {heatmapView === "incidence" ? (
+              <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span>Incidence:</span>
+                {[
+                  { label: "1\u201319%", color: "#E5E7EB" },
+                  { label: "20\u201339%", color: "#D1D5DB" },
+                  { label: "40\u201359%", color: "#9CA3AF" },
+                  { label: "60\u201379%", color: "#6B7280" },
+                  { label: "80\u2013100%", color: "#4B5563" },
+                ].map(({ label, color }) => (
+                  <span key={label} className="flex items-center gap-0.5">
+                    <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
+                    {label}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span>Severity:</span>
+                {[
+                  { label: "Minimal", color: "#E5E7EB" },
+                  { label: "Mild", color: "#D1D5DB" },
+                  { label: "Moderate", color: "#9CA3AF" },
+                  { label: "Marked", color: "#6B7280" },
+                  { label: "Severe", color: "#4B5563" },
+                ].map(({ label, color }) => (
+                  <span key={label} className="flex items-center gap-0.5">
+                    <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
+                    {label}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
