@@ -157,13 +157,6 @@ function computeOrganStats(rows: OrganEvidenceRow[]): OrganStats {
   return { minPValue: minP, maxEffectSize: maxD, doseConsistency: getDoseConsistency(rows) };
 }
 
-// Tier classification for rail dots
-function organTierDot(organ: TargetOrganRow): { color: string } | null {
-  if (organ.target_organ_flag) return { color: "#DC2626" }; // Critical — red
-  if (organ.evidence_score >= 0.3) return { color: "#D97706" }; // Notable — amber
-  return null; // Observed — no dot
-}
-
 // ---------------------------------------------------------------------------
 // OrganListItem — enriched rail item with evidence bar + stats
 // ---------------------------------------------------------------------------
@@ -185,21 +178,14 @@ function OrganListItem({
     <button
       className={cn(
         "w-full text-left border-b border-border/40 px-3 py-2 transition-colors",
-        organ.target_organ_flag
-          ? "border-l-2 border-l-[#DC2626]"
-          : "border-l-2 border-l-transparent",
         isSelected
-          ? "bg-blue-50/60 dark:bg-blue-950/20"
+          ? "bg-accent"
           : "hover:bg-accent/30"
       )}
       onClick={onClick}
     >
-      {/* Row 1: tier dot + organ name + TARGET badge */}
+      {/* Row 1: organ name + TARGET badge (single Tier 1 conclusion indicator) */}
       <div className="flex items-center gap-2">
-        {(() => {
-          const dot = organTierDot(organ);
-          return dot ? <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: dot.color }} /> : null;
-        })()}
         <span className="text-xs font-semibold">
           {titleCase(organ.organ_system)}
         </span>

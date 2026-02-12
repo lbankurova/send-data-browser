@@ -60,14 +60,12 @@ Rail is resizable via `useResizePanel(300, 180, 500)` with a `PanelResizeHandle`
 
 Each `OrganListItem` is a `<button>` with:
 - Container: `w-full text-left border-b border-border/40 px-3 py-2 transition-colors`
-- Selected: `bg-blue-50/60 dark:bg-blue-950/20`
+- Selected: `bg-accent`
 - Not selected: `hover:bg-accent/30`
-- Left border: `border-l-2 border-l-[#DC2626]` for organs with `target_organ_flag`, `border-l-transparent` otherwise
 
-**Row 1:** Tier dot + organ name + TARGET badge.
-- Tier dot: `h-2 w-2 rounded-full`, colored by `organTierDot()`: `#DC2626` (red) if `target_organ_flag`, `#D97706` (amber) if `evidence_score >= 0.3`, omitted otherwise.
+**Row 1:** Organ name + TARGET badge.
 - Organ name: `text-xs font-semibold` (uses `titleCase()`)
-- TARGET badge: `text-[9px] font-semibold uppercase text-[#DC2626]` -- only shown if `target_organ_flag` is true
+- TARGET badge: `text-[9px] font-semibold uppercase text-[#DC2626]` -- only shown if `target_organ_flag` is true. Single Tier 1 conclusion indicator per card (no redundant colored left border or tier dots).
 
 **Row 2:** Evidence bar -- neutral gray alignment matching Signals and Histopathology rails. Track: `h-1.5 flex-1 rounded-full bg-[#E5E7EB]`, fill: `bg-[#D1D5DB]`. Width proportional to `evidence_score / maxEvidenceScore` (minimum 4%). Numeric value: `shrink-0 font-mono text-[10px] tabular-nums`, font-semibold for >= 0.5, font-medium for >= 0.3.
 
@@ -486,3 +484,11 @@ useRuleResults(studyId)         --> ruleResults (shared React Query cache)
 | No data at all | "No target organ data available." |
 | Empty search results (rail) | "No matches for '{search}'" |
 | No evidence rows (evidence tab) | "No evidence rows for this organ." |
+
+---
+
+## Changelog
+
+### 2026-02-12 -- Color audit C-01 through C-36
+
+- **Rail items:** Removed colored left border (`border-l-[#DC2626]`), tier dots (`organTierDot()`), and `bg-blue-50/60` selected state. Now: `bg-accent` selection, no left border, single "TARGET" badge as Tier 1 conclusion indicator per card. Eliminates decision-red repetition (was 3× `#DC2626` per target organ card).
