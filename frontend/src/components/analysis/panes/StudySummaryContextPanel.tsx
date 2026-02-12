@@ -5,6 +5,7 @@ import { CollapseAllButtons } from "./CollapseAllButtons";
 import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
+import { SignalScorePopover } from "../ScoreBreakdown";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
@@ -159,7 +160,9 @@ function EndpointPanel({
           <div className="space-y-1.5 text-[11px] tabular-nums">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Signal score</span>
-              <span className="font-mono">{selectedRow.signal_score.toFixed(3)}</span>
+              <SignalScorePopover row={selectedRow}>
+                <span className="font-mono">{selectedRow.signal_score.toFixed(3)}</span>
+              </SignalScorePopover>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Direction</span>

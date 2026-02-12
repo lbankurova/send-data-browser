@@ -24,6 +24,8 @@ import {
   titleCase,
 } from "@/lib/severity-colors";
 import { InsightsList } from "./panes/InsightsList";
+import { RuleInspectorTab } from "./RuleInspectorTab";
+import { SignalScorePopover, EvidenceScorePopover } from "./ScoreBreakdown";
 import { OrganGroupedHeatmap } from "./charts/OrganGroupedHeatmap";
 import { StudySummaryFilters } from "./StudySummaryFilters";
 import type {
@@ -41,7 +43,7 @@ import type {
 interface OrganRailStats {
   maxAbsEffectSize: number;
   minTrendP: number | null;
-  dominantDirection: "↑" | "↓" | "↕" | null;
+  dominantDirection: "\u2191" | "\u2193" | "\u2195" | null;
 }
 
 function computeOrganRailStats(signals: SignalSummaryRow[]): OrganRailStats {
@@ -60,11 +62,11 @@ function computeOrganRailStats(signals: SignalSummaryRow[]): OrganRailStats {
     }
   }
 
-  let dominantDirection: "↑" | "↓" | "↕" | null = null;
+  let dominantDirection: "\u2191" | "\u2193" | "\u2195" | null = null;
   if (upCount > 0 || downCount > 0) {
-    if (upCount > 0 && downCount > 0) dominantDirection = "↕";
-    else if (upCount > downCount) dominantDirection = "↑";
-    else dominantDirection = "↓";
+    if (upCount > 0 && downCount > 0) dominantDirection = "\u2195";
+    else if (upCount > downCount) dominantDirection = "\u2191";
+    else dominantDirection = "\u2193";
   }
 
   return { maxAbsEffectSize: maxAbs, minTrendP: minTP, dominantDirection };
@@ -229,6 +231,14 @@ function SignalsMatrixTab({ signalData, targetOrgan, selection, onSelect }: {
 
 const signalColHelper = createColumnHelper<SignalSummaryRow>();
 
+function SignalScoreCell({ row }: { row: SignalSummaryRow }) {
+  return (
+    <SignalScorePopover row={row}>
+      <span className="font-mono">{row.signal_score.toFixed(2)}</span>
+    </SignalScorePopover>
+  );
+}
+
 const SIGNAL_METRICS_COLUMNS = [
   signalColHelper.accessor("endpoint_label", {
     header: "Endpoint",
@@ -249,7 +259,7 @@ const SIGNAL_METRICS_COLUMNS = [
   signalColHelper.accessor("signal_score", {
     header: "Score",
     size: 60,
-    cell: (info) => <span className="font-mono">{info.getValue().toFixed(2)}</span>,
+    cell: (info) => <SignalScoreCell row={info.row.original} />,
   }),
   signalColHelper.accessor("direction", {
     header: "Dir",
@@ -286,7 +296,7 @@ const SIGNAL_METRICS_COLUMNS = [
     size: 90,
     cell: (info) => {
       const val = info.getValue();
-      if (!val || val === "none" || val === "flat") return <span className="text-muted-foreground/50">—</span>;
+      if (!val || val === "none" || val === "flat") return <span className="text-muted-foreground/50">&mdash;</span>;
       return <span className="truncate" title={val}>{val.replace(/_/g, " ")}</span>;
     },
   }),
@@ -397,7 +407,7 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
 // SignalsEvidencePanel
 // ---------------------------------------------------------------------------
 
-type EvidenceTab = "overview" | "matrix" | "metrics";
+type EvidenceTab = "overview" | "matrix" | "metrics" | "rules";
 
 export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers, caveats, selection, onSelect, studyId }: {
   organ: TargetOrganRow; signalData: SignalSummaryRow[]; ruleResults: RuleResult[]; modifiers: PanelStatement[]; caveats: PanelStatement[]; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void; studyId: string;
@@ -412,13 +422,14 @@ export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
       <div className="shrink-0 border-b px-4 py-2.5">
         <div className="flex items-center gap-2"><h3 className="text-sm font-semibold">{titleCase(organ.organ_system)}</h3>{organ.target_organ_flag && <span className="text-[10px] font-semibold uppercase text-red-600">TARGET</span>}</div>
-        <div className="mt-0.5 flex flex-wrap gap-x-1.5 text-[11px] text-muted-foreground tabular-nums"><span>{organ.n_domains} domains</span><span>&middot;</span><span>{organ.n_significant}/{organ.n_endpoints} sig ({significantPct}%)</span><span>&middot;</span><span>{organ.n_treatment_related} TR</span><span>&middot;</span><span>Max {organ.max_signal_score.toFixed(2)}</span><span>&middot;</span><span>Evidence <span className={cn(organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium")}>{organ.evidence_score.toFixed(2)}</span></span><span>&middot;</span><span className={cn("font-mono", headerStats.maxAbsEffectSize >= 0.8 && "font-semibold")}>|d| {headerStats.maxAbsEffectSize.toFixed(2)}</span>{headerStats.minTrendP != null && (<><span>&middot;</span><span className={cn("font-mono", headerStats.minTrendP < 0.01 && "font-semibold")}>trend p {formatPValue(headerStats.minTrendP)}</span></>)}</div>
+        <div className="mt-0.5 flex flex-wrap gap-x-1.5 text-[11px] text-muted-foreground tabular-nums"><span>{organ.n_domains} domains</span><span>&middot;</span><span>{organ.n_significant}/{organ.n_endpoints} sig ({significantPct}%)</span><span>&middot;</span><span>{organ.n_treatment_related} TR</span><span>&middot;</span><span>Max {organ.max_signal_score.toFixed(2)}</span><span>&middot;</span><EvidenceScorePopover organ={organ}><span>Evidence <span className={cn(organ.evidence_score >= 0.5 ? "font-semibold" : "font-medium")}>{organ.evidence_score.toFixed(2)}</span></span></EvidenceScorePopover><span>&middot;</span><span className={cn("font-mono", headerStats.maxAbsEffectSize >= 0.8 && "font-semibold")}>|d| {headerStats.maxAbsEffectSize.toFixed(2)}</span>{headerStats.minTrendP != null && (<><span>&middot;</span><span className={cn("font-mono", headerStats.minTrendP < 0.01 && "font-semibold")}>trend p {formatPValue(headerStats.minTrendP)}</span></>)}</div>
       </div>
       <ViewTabBar
         tabs={[
           { key: "overview", label: "Evidence" },
           { key: "matrix", label: "Signal matrix" },
           { key: "metrics", label: "Metrics" },
+          { key: "rules", label: "Rules" },
         ]}
         value={activeTab}
         onChange={(k) => setActiveTab(k as EvidenceTab)}
@@ -426,6 +437,7 @@ export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers
       {activeTab === "overview" && <SignalsOverviewTab organ={organ} signalData={organSignalData} ruleResults={ruleResults} modifiers={modifiers} caveats={caveats} studyId={studyId} />}
       {activeTab === "matrix" && <SignalsMatrixTab signalData={organSignalData} targetOrgan={organ} selection={selection} onSelect={onSelect} />}
       {activeTab === "metrics" && <SignalsMetricsTab signalData={organSignalData} selection={selection} onSelect={onSelect} />}
+      {activeTab === "rules" && <RuleInspectorTab ruleResults={ruleResults} organFilter={organ.organ_system} />}
     </div>
   );
 }

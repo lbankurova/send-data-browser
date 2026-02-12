@@ -30,6 +30,7 @@ import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { InsightsList } from "./panes/InsightsList";
+import { ConfidencePopover } from "./ScoreBreakdown";
 import type {
   NoaelSummaryRow,
   AdverseEffectSummaryRow,
@@ -250,16 +251,18 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
                 {r.noael_confidence != null && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Confidence</span>
-                    <span
-                      className={cn(
-                        "font-medium",
-                        r.noael_confidence >= 0.8 ? "text-green-700" :
-                        r.noael_confidence >= 0.6 ? "text-amber-700" :
-                        "text-red-700"
-                      )}
-                    >
-                      {Math.round(r.noael_confidence * 100)}%
-                    </span>
+                    <ConfidencePopover row={r} allNoael={data}>
+                      <span
+                        className={cn(
+                          "font-medium",
+                          r.noael_confidence >= 0.8 ? "text-green-700" :
+                          r.noael_confidence >= 0.6 ? "text-amber-700" :
+                          "text-red-700"
+                        )}
+                      >
+                        {Math.round(r.noael_confidence * 100)}%
+                      </span>
+                    </ConfidencePopover>
                   </div>
                 )}
                 {r.adverse_domains_at_loael.length > 0 && (
