@@ -58,6 +58,27 @@ const { width, onPointerDown } = useResizePanel(280, 180, 500);
 
 Typical defaults: 280px initial width, 180px minimum, 500px maximum. Each view may adjust these values.
 
+### Auto-Fit Sections
+
+Within evidence panels, `ViewSection` components stack vertically — some "fixed" (pixel height) and one "flex" (fills remaining space). The `useAutoFitSections` hook (`frontend/src/hooks/useAutoFitSections.ts`) measures actual content and distributes vertical space so fixed sections shrink to fit their content, giving maximum space to the flex section.
+
+**`useAutoFitSections(containerRef, viewKey, configs)` hook**:
+- Parameters: `containerRef` (evidence panel container), `viewKey` (localStorage namespace, e.g. `"target-organs"`), `configs` (array of `{ id, min, max, defaultHeight }` per fixed section)
+- Returns: `SectionResult[]` — each with `{ height, contentRef, onPointerDown }`
+- `contentRef` attaches to the `ViewSection` inner scroll container for content measurement
+- `onPointerDown` attaches to the `HorizontalResizeHandle` for manual drag
+
+**Algorithm**:
+1. On mount, load saved heights from `localStorage` for initial render sizing (avoids layout flash)
+2. After render, measure natural content height by summing `getBoundingClientRect().height` of each content ref's children (can't use `scrollHeight` — on `h-full overflow-auto` containers it returns `max(clientHeight, contentHeight)`, creating a feedback loop)
+3. Auto-fit: subtract overhead (headers + handles) from container height, then give each section its natural height if it fits, or distribute proportionally if not, clamped to `[min, max]`
+4. Two observers trigger re-fit: `ResizeObserver` on the container (window/layout changes) and `MutationObserver` on content refs (selection-driven DOM changes)
+5. Manual drag overrides auto-fit for that section this session and persists to `localStorage`
+
+**Persistence**: `localStorage` key `pcc.sections.{viewKey}` stores `{ sectionId: height }`. Only sections the user explicitly drags are persisted. On next mount, saved heights are used for initial sizing but do not block auto-fit — the hook always re-measures and adjusts.
+
+Used in 5 views: DoseResponseView (2 fixed), TargetOrgansView (2 fixed), HistopathologyView (1 fixed), NoaelDecisionView (1 fixed), ValidationView (1 fixed).
+
 ### Routing
 
 React Router 7 (`createBrowserRouter`) defines a single layout route with `<Layout />` as the element and all view routes as children rendered via `<Outlet />`. There is no nested routing -- all routes are flat children of the layout.
@@ -268,6 +289,8 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 | `frontend/src/types/analysis-views.ts` | `SignalSelection` interface |
 | `frontend/src/types/analysis.ts` | `UnifiedFinding` interface (used by FindingSelectionContext) |
 | `frontend/src/hooks/useResizePanel.ts` | Hook for resizable panels — returns `{ width, onPointerDown }` |
+| `frontend/src/hooks/useAutoFitSections.ts` | Hook for content-aware vertical section sizing — measures content, distributes space, persists manual drags |
+| `frontend/src/components/ui/ViewSection.tsx` | Collapsible section with "fixed" (pixel height + contentRef) and "flex" (fills remaining) modes |
 | `frontend/src/components/ui/PanelResizeHandle.tsx` | Visual drag handle (4px) placed between resizable panels |
 
 ## Datagrok Notes
@@ -285,5 +308,6 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 
 ## Changelog
 
+- 2026-02-12: Added auto-fit sections documentation (useAutoFitSections hook, ViewSection component, content measurement algorithm, persistence model). Added to code map.
 - 2026-02-09: Added resizable panel system documentation (useResizePanel hook, PanelResizeHandle component, usage in Views 2-5). Added to code map and current state.
 - 2026-02-08: Created from CLAUDE.md architecture section and frontend source code
