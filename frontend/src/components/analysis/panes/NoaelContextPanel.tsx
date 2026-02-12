@@ -145,7 +145,7 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
                   <span className="font-mono">{formatEffectSize(row.effect_size)}</span>
                   <span
                     className={cn(
-                      "rounded-sm px-1 py-0.5 text-[10px] font-medium",
+                      "rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
                       getSeverityBadgeClasses(row.severity)
                     )}
                   >

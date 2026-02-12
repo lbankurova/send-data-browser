@@ -129,7 +129,7 @@ Filters organs by name (case-insensitive substring match, underscores treated as
 `shrink-0 border-b px-4 py-3`
 
 - Organ name: `text-sm font-semibold` (displayed via `titleCase()` from `severity-colors.ts`)
-- Adverse badge (if adverseCount > 0): `rounded-sm border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground` — "{N} adverse" (neutral bordered pill, matching other metadata badges)
+- Adverse badge (if adverseCount > 0): `rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground` — "{N} adverse" (neutral bordered pill, matching S-05 badge padding)
 - Summary text: `mt-1 text-xs leading-relaxed text-muted-foreground` — "{N} endpoints across {D} domains, {M} adverse, {T} treatment-related."
 - Compact metrics: `mt-2 flex flex-wrap gap-3 text-[11px]` — max |d| (font-mono, font-semibold if >= 0.8), min p (font-mono, font-semibold if < 0.01). Typography-only, no color.
 
@@ -210,16 +210,20 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 
 **Aggregation:** Takes worst severity per endpoint × dose across sexes.
 
-**Severity cell colors:**
+**Severity cell colors — neutral grayscale ramp:**
 
-| Condition | Color |
-|-----------|-------|
-| Adverse + treatment-related | `#DC2626` (red — semantic Error/Critical) |
-| Warning | `#D97706` (amber — semantic Warning) |
-| Normal / other | `#16a34a` (green — semantic Success) |
-| No data | `#e5e7eb` (gray) |
+Uses `getNeutralHeatColor()` from `severity-colors.ts` with severity mapped to a 0-1 score:
 
-**Legend:** 4 color swatches with labels (Adverse, Warning, Normal, N/A).
+| Condition | Score | Color |
+|-----------|-------|-------|
+| Adverse + treatment-related | 0.9 | `#4B5563` (darkest gray) |
+| Warning | 0.5 | `#9CA3AF` (medium gray) |
+| Normal / other | 0.2 | `#D1D5DB` (light gray) |
+| No data | 0 | `rgba(0,0,0,0.02)` (near-transparent) |
+
+Each cell has a tooltip: `"{endpoint} at {dose}: {severity} [(TR)]"`.
+
+**Legend:** 4 grayscale swatches with labels (Adverse (TR), Warning, Normal, N/A).
 
 ### Adverse Effect Grid
 
