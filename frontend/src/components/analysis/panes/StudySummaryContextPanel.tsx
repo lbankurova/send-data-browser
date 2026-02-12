@@ -7,6 +7,8 @@ import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { SignalScorePopover } from "../ScoreBreakdown";
 import { SourceRecordsExpander } from "../SourceRecordsExpander";
+import { AuditTrailPanel } from "../AuditTrailPanel";
+import { MethodologyPanel } from "../MethodologyPanel";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
@@ -341,6 +343,14 @@ function EndpointPanel({
           </a>
         </div>
       </CollapsiblePane>
+
+      {/* Audit trail (TRUST-06) */}
+      {studyId && (
+        <AuditTrailPanel studyId={studyId} expandAll={expandGen} collapseAll={collapseGen} />
+      )}
+
+      {/* Statistical methodology (TRUST-03) */}
+      <MethodologyPanel expandAll={expandGen} collapseAll={collapseGen} />
     </div>
   );
 }

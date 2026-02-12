@@ -90,6 +90,33 @@ export interface ValidationRuleOverride {
   modifiedDate: string;
 }
 
+/** Custom insight engine rule authored by expert (TRUST-01p3). */
+export interface CustomInsightRule {
+  name: string;
+  scope: "endpoint" | "organ" | "study";
+  severity: "info" | "warning" | "critical";
+  conditionType: string;
+  conditionValue: string;
+  conditionHuman: string;
+  template: string;
+  enabled: boolean;
+  createdBy: string;
+  createdDate: string;
+}
+
+/** Custom validation rule authored by expert (TRUST-05p3). */
+export interface CustomValidationRule {
+  name: string;
+  description: string;
+  severity: "Error" | "Warning" | "Info";
+  category: string;
+  applicableDomains: string[];
+  fixGuidance: string;
+  enabled: boolean;
+  createdBy: string;
+  createdDate: string;
+}
+
 export interface PathologyReview {
   peerReviewStatus: "Not Reviewed" | "Agreed" | "Disagreed" | "Deferred";
   revisedSeverity: "Minimal" | "Mild" | "Moderate" | "Marked" | "Severe" | "N/A";

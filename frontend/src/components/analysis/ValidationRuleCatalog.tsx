@@ -17,6 +17,7 @@ import {
 } from "@/lib/validation-rule-catalog";
 import type { ValidationRuleDef } from "@/lib/validation-rule-catalog";
 import type { ValidationRuleResult, FixScriptDef } from "@/hooks/useValidationResults";
+import { CustomValidationRuleBuilder } from "./CustomValidationRuleBuilder";
 import type { ValidationRuleOverride } from "@/types/annotations";
 
 // ── Severity filter styles ────────────────────────────────────────────
@@ -533,6 +534,15 @@ export function ValidationRuleCatalog({ firedRules, scripts, coreConformance, st
           <p className="text-[11px] text-muted-foreground">No fix scripts available.</p>
         )}
       </CollapsiblePane>
+
+      {/* Custom validation rules (TRUST-05p3) */}
+      {studyId && (
+        <CustomValidationRuleBuilder
+          studyId={studyId}
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        />
+      )}
 
       {/* Configuration note */}
       {studyId && (
