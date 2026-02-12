@@ -10,6 +10,7 @@ import { SignalSelectionProvider } from "@/contexts/SignalSelectionContext";
 import { ViewSelectionProvider } from "@/contexts/ViewSelectionContext";
 import { TreeControlProvider } from "@/contexts/TreeControlContext";
 import { DesignModeProvider } from "@/contexts/DesignModeContext";
+import { GlobalTooltip } from "@/components/ui/GlobalTooltip";
 
 const LEFT_DEFAULT = 260;
 const RIGHT_DEFAULT = 280;
@@ -163,6 +164,7 @@ export function Layout() {
         </SignalSelectionProvider>
       </FindingSelectionProvider>
     </SelectionProvider>
+    <GlobalTooltip />
     </DesignModeProvider>
   );
 }
