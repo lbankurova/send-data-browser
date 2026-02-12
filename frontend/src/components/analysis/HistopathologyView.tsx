@@ -603,7 +603,7 @@ function OverviewTab({
   const [matrixMode, setMatrixMode] = useState<"group" | "subject">("group");
   const [affectedOnly, setAffectedOnly] = useState(true);
   const [subjectSort, setSubjectSort] = useState<"dose" | "severity">("dose");
-  const [doseGroupFilter, setDoseGroupFilter] = useState<number | null>(null);
+  const [doseGroupFilter, setDoseGroupFilter] = useState<string | null>(null);
   const { height: findingsHeight, onPointerDown: onResizeY } = useResizePanelY(200, 80, 500);
 
   // Reset heatmap view state when specimen changes
@@ -620,14 +620,19 @@ function OverviewTab({
     matrixMode === "subject" ? (specimen ?? null) : null,
   );
 
-  // Available dose groups for filter (from subject data)
+  // Available dose groups for filter (from subject data), separated main vs recovery
   const availableDoseGroups = useMemo(() => {
-    if (!subjData?.subjects) return [];
-    const groups = new Map<number, string>();
+    if (!subjData?.subjects) return { main: [] as [number, string][], recovery: [] as [number, string][] };
+    const mainGroups = new Map<number, string>();
+    const recoveryGroups = new Map<number, string>();
     for (const s of subjData.subjects) {
-      if (!groups.has(s.dose_level)) groups.set(s.dose_level, s.dose_label);
+      const target = s.is_recovery ? recoveryGroups : mainGroups;
+      if (!target.has(s.dose_level)) target.set(s.dose_level, s.dose_label);
     }
-    return [...groups.entries()].sort((a, b) => a[0] - b[0]);
+    return {
+      main: [...mainGroups.entries()].sort((a, b) => a[0] - b[0]),
+      recovery: [...recoveryGroups.entries()].sort((a, b) => a[0] - b[0]),
+    };
   }, [subjData]);
 
   // Per-finding dose consistency
@@ -969,15 +974,24 @@ function OverviewTab({
                   <FilterSelect
                     value={doseGroupFilter ?? ""}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                      setDoseGroupFilter(e.target.value === "" ? null : Number(e.target.value))
+                      setDoseGroupFilter(e.target.value || null)
                     }
                   >
                     <option value="">All dose groups</option>
-                    {availableDoseGroups.map(([level, label]) => (
-                      <option key={level} value={level}>
+                    {availableDoseGroups.main.map(([level, label]) => (
+                      <option key={level} value={String(level)}>
                         {label}
                       </option>
                     ))}
+                    {availableDoseGroups.recovery.length > 0 && (
+                      <optgroup label="Recovery arms">
+                        {availableDoseGroups.recovery.map(([level, label]) => (
+                          <option key={`R${level}`} value={`R${level}`}>
+                            {label} (Recovery)
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </FilterSelect>
                   <FilterSelect
                     value={subjectSort}
@@ -1221,33 +1235,41 @@ function SubjectHeatmap({
   onSubjectClick?: (usubjid: string) => void;
   affectedOnly?: boolean;
   sortMode?: "dose" | "severity";
-  doseGroupFilter?: number | null;
+  doseGroupFilter?: string | null;
   controls?: React.ReactNode;
 }) {
   // Selected subject for column highlight
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
-  // Filter subjects by sex, affected-only, and dose group
+  // Filter subjects: dose group first (so control subjects survive), then sex, then affected-only
   const subjects = useMemo(() => {
     if (!subjData) return [];
     let filtered = subjData;
+    if (doseGroupFilter !== null) {
+      // Parse filter: "R0" = recovery dose_level 0, "2" = main dose_level 2
+      const isRecoveryFilter = doseGroupFilter.startsWith("R");
+      const level = Number(isRecoveryFilter ? doseGroupFilter.slice(1) : doseGroupFilter);
+      filtered = filtered.filter((s) => s.dose_level === level && s.is_recovery === isRecoveryFilter);
+    }
     if (sexFilter) filtered = filtered.filter((s) => s.sex === sexFilter);
     if (affectedOnly) filtered = filtered.filter((s) => Object.keys(s.findings).length > 0);
-    if (doseGroupFilter !== null) filtered = filtered.filter((s) => s.dose_level === doseGroupFilter);
 
-    // Always group by dose_level ascending; within each group, sort by severity or default
+    // Sort: main arms first, then recovery; within each category, dose_level ascending
+    const recOrd = (s: SubjectHistopathEntry) => (s.is_recovery ? 1 : 0);
     if (sortMode === "severity") {
-      // Dose group asc, then max severity descending within group
       return [...filtered].sort((a, b) => {
+        const r = recOrd(a) - recOrd(b);
+        if (r !== 0) return r;
         if (a.dose_level !== b.dose_level) return a.dose_level - b.dose_level;
         const aMax = Math.max(0, ...Object.values(a.findings).map((f) => f.severity_num));
         const bMax = Math.max(0, ...Object.values(b.findings).map((f) => f.severity_num));
         return bMax - aMax || a.usubjid.localeCompare(b.usubjid);
       });
     }
-    // Default: dose_level asc, then sex, then usubjid
+    // Default: recovery last, dose_level asc, then sex, then usubjid
     return [...filtered].sort(
       (a, b) =>
+        recOrd(a) - recOrd(b) ||
         a.dose_level - b.dose_level ||
         a.sex.localeCompare(b.sex) ||
         a.usubjid.localeCompare(b.usubjid),
@@ -1271,14 +1293,16 @@ function SubjectHeatmap({
       .map(([f]) => f);
   }, [subjects, minSeverity]);
 
-  // Group subjects by dose level
+  // Group subjects by dose level + recovery status
   const doseGroups = useMemo(() => {
-    const groups: { doseLevel: number; doseLabel: string; subjects: typeof subjects }[] = [];
-    let currentDL = -999;
+    const groups: { doseLevel: number; doseLabel: string; isRecovery: boolean; subjects: typeof subjects }[] = [];
+    let currentKey = "";
     for (const subj of subjects) {
-      if (subj.dose_level !== currentDL) {
-        currentDL = subj.dose_level;
-        groups.push({ doseLevel: subj.dose_level, doseLabel: subj.dose_label, subjects: [] });
+      const key = `${subj.is_recovery ? "R" : ""}${subj.dose_level}`;
+      if (key !== currentKey) {
+        currentKey = key;
+        const label = subj.is_recovery ? `${subj.dose_label} (Recovery)` : subj.dose_label;
+        groups.push({ doseLevel: subj.dose_level, doseLabel: label, isRecovery: subj.is_recovery, subjects: [] });
       }
       groups[groups.length - 1].subjects.push(subj);
     }
