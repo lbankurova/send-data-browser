@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
-import { StudyPortfolioView } from "@/components/portfolio/StudyPortfolioView";
+import { AppLandingPage } from "@/components/panels/AppLandingPage";
 import { CenterPanel } from "@/components/panels/CenterPanel";
 import { PlaceholderAnalysisView } from "@/components/analysis/PlaceholderAnalysisView";
 import { StudySummaryViewWrapper } from "@/components/analysis/StudySummaryViewWrapper";
@@ -35,12 +35,9 @@ function LazyRoute({ children }: { children: React.ReactNode }) {
 
 const router = createBrowserRouter([
   {
-    path: "/",
-    element: <StudyPortfolioView />,
-  },
-  {
     element: <Layout />,
     children: [
+      { path: "/", element: <AppLandingPage /> },
       { path: "/studies/:studyId", element: <StudySummaryViewWrapper /> },
       {
         path: "/studies/:studyId/domains/:domainName",
