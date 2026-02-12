@@ -967,6 +967,7 @@ function OverviewTab({
               affectedOnly={affectedOnly}
               sortMode={subjectSort}
               doseGroupFilter={doseGroupFilter}
+              doseGroupOptions={doseGroupOptions}
               controls={
                 <FilterBar>
                   <div className="flex items-center gap-0.5">
@@ -1239,6 +1240,7 @@ function SubjectHeatmap({
   affectedOnly,
   sortMode = "dose",
   doseGroupFilter = null,
+  doseGroupOptions = [],
   controls,
 }: {
   subjData: SubjectHistopathEntry[] | null;
@@ -1251,6 +1253,7 @@ function SubjectHeatmap({
   affectedOnly?: boolean;
   sortMode?: "dose" | "severity";
   doseGroupFilter?: ReadonlySet<string> | null;
+  doseGroupOptions?: { key: string; label: string; group?: string }[];
   controls?: React.ReactNode;
 }) {
   // Selected subject for column highlight
@@ -1354,6 +1357,29 @@ function SubjectHeatmap({
 
       {/* Controls — always visible so user can adjust filters */}
       {controls}
+
+      {/* Active filter summary — always visible so user can glance at what they're looking at */}
+      {!isLoading && subjData && (() => {
+        const chips: string[] = [];
+        if (doseGroupFilter !== null) {
+          const labels = doseGroupOptions
+            .filter((o) => doseGroupFilter.has(o.key))
+            .map((o) => o.group ? `${o.label} (R)` : o.label);
+          chips.push(labels.join(", "));
+        }
+        if (sexFilter) chips.push(sexFilter === "M" ? "Male" : "Female");
+        if (minSeverity > 0) chips.push(`Severity ${minSeverity}+`);
+        if (affectedOnly) chips.push("Affected only");
+        if (chips.length === 0) return null;
+        return (
+          <div className="flex flex-wrap items-center gap-1 px-3 py-1 text-[10px] text-muted-foreground">
+            <span className="font-medium">Showing:</span>
+            {chips.map((chip) => (
+              <span key={chip} className="rounded bg-muted/60 px-1.5 py-0.5">{chip}</span>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Loading spinner */}
       {isLoading ? (
