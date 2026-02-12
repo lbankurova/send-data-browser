@@ -11,3 +11,17 @@ export function PanelResizeHandle({
     />
   );
 }
+
+export function HorizontalResizeHandle({
+  onPointerDown,
+}: {
+  onPointerDown: (e: React.PointerEvent) => void;
+}) {
+  return (
+    <div
+      onPointerDown={onPointerDown}
+      className="shrink-0 cursor-row-resize select-none border-b border-border bg-transparent transition-colors hover:bg-primary/10 active:bg-primary/20"
+      style={{ height: 4 }}
+    />
+  );
+}
