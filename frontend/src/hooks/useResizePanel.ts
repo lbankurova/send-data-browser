@@ -55,3 +55,45 @@ export function useResizePanel(
 
   return { width, onPointerDown };
 }
+
+/**
+ * Vertical variant — returns current height and a pointer-down handler.
+ * Dragging down increases height.
+ */
+export function useResizePanelY(initial: number, min: number, max: number) {
+  const [height, setHeight] = useState(initial);
+  const dragging = useRef(false);
+  const startY = useRef(0);
+  const startH = useRef(0);
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      dragging.current = true;
+      startY.current = e.clientY;
+      startH.current = height;
+      const el = e.currentTarget as HTMLElement;
+      el.setPointerCapture(e.pointerId);
+
+      const onMove = (ev: PointerEvent) => {
+        if (!dragging.current) return;
+        const delta = ev.clientY - startY.current;
+        setHeight(Math.max(min, Math.min(max, startH.current + delta)));
+      };
+
+      const onUp = () => {
+        dragging.current = false;
+        el.removeEventListener("pointermove", onMove);
+        el.removeEventListener("pointerup", onUp);
+        el.removeEventListener("pointercancel", onUp);
+      };
+
+      el.addEventListener("pointermove", onMove);
+      el.addEventListener("pointerup", onUp);
+      el.addEventListener("pointercancel", onUp);
+    },
+    [height, min, max],
+  );
+
+  return { height, onPointerDown };
+}
