@@ -917,94 +917,6 @@ function OverviewTab({
 
       {/* Bottom: Heatmap container (group + subject) */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {/* Heatmap filter bar */}
-        <FilterBar>
-          <div className="flex items-center gap-0.5">
-            {(["group", "subject"] as const).map((mode) => (
-              <button
-                key={mode}
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
-                  matrixMode === mode
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:bg-accent/50"
-                )}
-                onClick={() => setMatrixMode(mode)}
-              >
-                {mode === "group" ? "Group" : "Subject"}
-              </button>
-            ))}
-          </div>
-          <FilterSelect
-            value={sexFilter ?? ""}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexFilter(e.target.value || null)}
-          >
-            <option value="">All sexes</option>
-            <option value="M">Male</option>
-            <option value="F">Female</option>
-          </FilterSelect>
-          <FilterSelect
-            value={minSeverity}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMinSeverity(Number(e.target.value))}
-          >
-            <option value={0}>Min severity: any</option>
-            <option value={1}>Min severity: 1+</option>
-            <option value={2}>Min severity: 2+</option>
-            <option value={3}>Min severity: 3+</option>
-          </FilterSelect>
-          {matrixMode === "group" && (
-            <div className="flex items-center gap-0.5">
-              {(["severity", "incidence"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
-                    heatmapView === mode
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:bg-accent/50"
-                  )}
-                  onClick={() => setHeatmapView(mode)}
-                >
-                  {mode === "severity" ? "Severity" : "Incidence"}
-                </button>
-              ))}
-            </div>
-          )}
-          {matrixMode === "subject" && (
-            <>
-              <FilterSelect
-                value={doseGroupFilter ?? ""}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setDoseGroupFilter(e.target.value === "" ? null : Number(e.target.value))
-                }
-              >
-                <option value="">All dose groups</option>
-                {availableDoseGroups.map(([level, label]) => (
-                  <option key={level} value={level}>
-                    {label}
-                  </option>
-                ))}
-              </FilterSelect>
-              <FilterSelect
-                value={subjectSort}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSubjectSort(e.target.value as "dose" | "severity")}
-              >
-                <option value="dose">Sort: dose group</option>
-                <option value="severity">Sort: max severity</option>
-              </FilterSelect>
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={affectedOnly}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAffectedOnly(e.target.checked)}
-                  className="h-3 w-3 rounded border-border"
-                />
-                Affected only
-              </label>
-            </>
-          )}
-        </FilterBar>
-
         {/* Heatmap content */}
         <div className="flex-1 overflow-auto">
           {matrixMode === "subject" ? (
@@ -1019,6 +931,72 @@ function OverviewTab({
               affectedOnly={affectedOnly}
               sortMode={subjectSort}
               doseGroupFilter={doseGroupFilter}
+              controls={
+                <FilterBar>
+                  <div className="flex items-center gap-0.5">
+                    {(["group", "subject"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
+                          matrixMode === mode
+                            ? "bg-foreground text-background"
+                            : "text-muted-foreground hover:bg-accent/50"
+                        )}
+                        onClick={() => setMatrixMode(mode)}
+                      >
+                        {mode === "group" ? "Group" : "Subject"}
+                      </button>
+                    ))}
+                  </div>
+                  <FilterSelect
+                    value={sexFilter ?? ""}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexFilter(e.target.value || null)}
+                  >
+                    <option value="">All sexes</option>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                  </FilterSelect>
+                  <FilterSelect
+                    value={minSeverity}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMinSeverity(Number(e.target.value))}
+                  >
+                    <option value={0}>Min severity: any</option>
+                    <option value={1}>Min severity: 1+</option>
+                    <option value={2}>Min severity: 2+</option>
+                    <option value={3}>Min severity: 3+</option>
+                  </FilterSelect>
+                  <FilterSelect
+                    value={doseGroupFilter ?? ""}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      setDoseGroupFilter(e.target.value === "" ? null : Number(e.target.value))
+                    }
+                  >
+                    <option value="">All dose groups</option>
+                    {availableDoseGroups.map(([level, label]) => (
+                      <option key={level} value={level}>
+                        {label}
+                      </option>
+                    ))}
+                  </FilterSelect>
+                  <FilterSelect
+                    value={subjectSort}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSubjectSort(e.target.value as "dose" | "severity")}
+                  >
+                    <option value="dose">Sort: dose group</option>
+                    <option value="severity">Sort: max severity</option>
+                  </FilterSelect>
+                  <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={affectedOnly}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAffectedOnly(e.target.checked)}
+                      className="h-3 w-3 rounded border-border"
+                    />
+                    Affected only
+                  </label>
+                </FilterBar>
+              }
             />
           ) : heatmapData && heatmapData.findings.length > 0 ? (
             <div className="px-4 py-2">
@@ -1035,6 +1013,57 @@ function OverviewTab({
                   })()}
                 </span>
               </div>
+              <FilterBar>
+                <div className="flex items-center gap-0.5">
+                  {(["group", "subject"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
+                        matrixMode === mode
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:bg-accent/50"
+                      )}
+                      onClick={() => setMatrixMode(mode)}
+                    >
+                      {mode === "group" ? "Group" : "Subject"}
+                    </button>
+                  ))}
+                </div>
+                <FilterSelect
+                  value={sexFilter ?? ""}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexFilter(e.target.value || null)}
+                >
+                  <option value="">All sexes</option>
+                  <option value="M">Male</option>
+                  <option value="F">Female</option>
+                </FilterSelect>
+                <FilterSelect
+                  value={minSeverity}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMinSeverity(Number(e.target.value))}
+                >
+                  <option value={0}>Min severity: any</option>
+                  <option value={1}>Min severity: 1+</option>
+                  <option value={2}>Min severity: 2+</option>
+                  <option value={3}>Min severity: 3+</option>
+                </FilterSelect>
+                <div className="flex items-center gap-0.5">
+                  {(["severity", "incidence"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
+                        heatmapView === mode
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:bg-accent/50"
+                      )}
+                      onClick={() => setHeatmapView(mode)}
+                    >
+                      {mode === "severity" ? "Severity" : "Incidence"}
+                    </button>
+                  ))}
+                </div>
+              </FilterBar>
               <p className="mb-1 text-[10px] text-muted-foreground">
                 {heatmapView === "incidence"
                   ? "Cells show % animals affected per dose group."
@@ -1134,8 +1163,28 @@ function OverviewTab({
               </div>
             </div>
           ) : (
-            <div className="py-8 text-center text-xs text-muted-foreground">
-              {specimenData.length === 0 ? "No data for this specimen." : "No heatmap data available."}
+            <div className="px-4 py-2">
+              <FilterBar>
+                <div className="flex items-center gap-0.5">
+                  {(["group", "subject"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
+                        matrixMode === mode
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:bg-accent/50"
+                      )}
+                      onClick={() => setMatrixMode(mode)}
+                    >
+                      {mode === "group" ? "Group" : "Subject"}
+                    </button>
+                  ))}
+                </div>
+              </FilterBar>
+              <div className="py-8 text-center text-xs text-muted-foreground">
+                {specimenData.length === 0 ? "No data for this specimen." : "No heatmap data available."}
+              </div>
             </div>
           )}
         </div>
@@ -1161,6 +1210,7 @@ function SubjectHeatmap({
   affectedOnly,
   sortMode = "dose",
   doseGroupFilter = null,
+  controls,
 }: {
   subjData: SubjectHistopathEntry[] | null;
   isLoading: boolean;
@@ -1172,6 +1222,7 @@ function SubjectHeatmap({
   affectedOnly?: boolean;
   sortMode?: "dose" | "severity";
   doseGroupFilter?: number | null;
+  controls?: React.ReactNode;
 }) {
   // Selected subject for column highlight
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -1234,47 +1285,48 @@ function SubjectHeatmap({
     return groups;
   }, [subjects]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">Loading subject data\u2026</span>
-      </div>
-    );
-  }
-
-  if (!subjData || subjects.length === 0) {
-    return (
-      <div className="p-4 text-center text-xs text-muted-foreground">
-        Subject-level data not available for this specimen.
-      </div>
-    );
-  }
-
-  if (findings.length === 0) {
-    return (
-      <div className="p-4 text-center text-xs text-muted-foreground">
-        No findings match the current severity filter.
-      </div>
-    );
-  }
-
   const shortId = (id: string) => {
     const parts = id.split("-");
     return parts[parts.length - 1] || id.slice(-4);
   };
 
+  // Empty state message (null = show matrix)
+  const emptyMessage = isLoading
+    ? null
+    : !subjData || subjects.length === 0
+      ? "Subject-level data not available for this specimen."
+      : findings.length === 0
+        ? "No findings match the current filters."
+        : null;
+
   return (
     <div className="border-b p-3">
-      {/* Subject count */}
+      {/* Header — always visible so user sees context */}
       <div className="mb-1.5 flex items-center gap-2">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Subject-level matrix ({findings.length} findings)
+          Subject-level matrix{!isLoading && subjData ? ` (${findings.length} findings)` : ""}
         </h2>
-        <span className="text-[10px] text-muted-foreground">
-          {subjects.length} subjects across {doseGroups.length} dose groups &middot; Scroll horizontally &rarr;
-        </span>
+        {!isLoading && subjects.length > 0 && (
+          <span className="text-[10px] text-muted-foreground">
+            {subjects.length} subjects across {doseGroups.length} dose groups &middot; Scroll horizontally &rarr;
+          </span>
+        )}
       </div>
+
+      {/* Controls — always visible so user can adjust filters */}
+      {controls}
+
+      {/* Loading spinner */}
+      {isLoading ? (
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">Loading subject data&hellip;</span>
+        </div>
+      ) : emptyMessage ? (
+        <div className="p-4 text-center text-xs text-muted-foreground">
+          {emptyMessage}
+        </div>
+      ) : (<>
 
       <div className="overflow-x-auto">
         <div className="inline-block">
@@ -1458,6 +1510,7 @@ function SubjectHeatmap({
         <span className="ml-2">&mdash; = examined, no finding</span>
         <span className="ml-2">blank = not examined</span>
       </div>
+      </>)}
     </div>
   );
 }
