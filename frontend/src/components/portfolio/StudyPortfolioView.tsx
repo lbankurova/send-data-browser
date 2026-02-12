@@ -93,7 +93,7 @@ export function StudyPortfolioView() {
         {/* Table */}
         <div className="flex-1 overflow-auto">
           <table className="w-full">
-            <thead className="sticky top-0 bg-muted/30">
+            <thead className="sticky top-0 z-10 bg-muted/30">
               <tr className="border-b">
                 <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Study

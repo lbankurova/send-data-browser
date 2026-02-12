@@ -149,7 +149,7 @@ function LBTable({ measurements }: { measurements: SubjectMeasurement[] }) {
   return (
     <div>
       <table className="w-full text-[11px]">
-        <thead>
+        <thead className="sticky top-0 z-10 bg-background">
           <tr className="border-b">
             <th className="py-0.5 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Test</th>
             <th className="py-0.5 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Day</th>
@@ -249,7 +249,7 @@ function FindingsTable({ findings, label }: { findings: SubjectFinding[]; label:
 
   return (
     <table className="w-full text-[11px]">
-      <thead>
+      <thead className="sticky top-0 z-10 bg-background">
         <tr className="border-b">
           <th className="py-0.5 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Specimen</th>
           <th className="py-0.5 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Finding</th>

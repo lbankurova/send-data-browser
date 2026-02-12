@@ -191,9 +191,9 @@ export function DoseResponseContextPanel({
             </div>
 
             {/* Dose-level breakdown table */}
-            <div className="overflow-x-auto">
+            <div className="max-h-60 overflow-auto">
               <table className="w-full text-[10px]">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-background">
                   <tr className="border-b text-muted-foreground">
                     <th className="py-1 text-left font-medium">Dose</th>
                     <th className="py-1 text-right font-semibold">N</th>
@@ -262,7 +262,7 @@ export function DoseResponseContextPanel({
               <span className="font-medium">{titleCase(selection.organ_system)}</span>
             </p>
             <table className="w-full text-[10px] tabular-nums">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b text-muted-foreground">
                   <th className="pb-0.5 text-left font-medium">Endpoint</th>
                   <th className="pb-0.5 text-left font-medium">Dom</th>

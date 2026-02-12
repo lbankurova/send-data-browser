@@ -217,7 +217,7 @@ function EndpointPanel({
               </span>
             </p>
             <table className="w-full text-[10px] tabular-nums">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b text-muted-foreground">
                   <th className="pb-0.5 text-left font-medium">Endpoint</th>
                   <th className="pb-0.5 text-left font-medium">Dom</th>

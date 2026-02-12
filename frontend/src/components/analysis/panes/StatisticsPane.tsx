@@ -15,9 +15,9 @@ export function StatisticsPane({ data }: Props) {
       <InsightBlock insights={data.insights} />
 
       {/* Group comparison table */}
-      <div className="overflow-x-auto">
+      <div className="max-h-60 overflow-auto">
         <table className="w-full text-[11px]">
-          <thead>
+          <thead className="sticky top-0 z-10 bg-background">
             <tr className="border-b">
               <th className="py-1 text-left font-medium">Group</th>
               <th className="py-1 text-right font-medium">n</th>

@@ -1213,7 +1213,7 @@ function ChartOverviewContent({
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Pairwise comparison
           </h3>
-          <div className="overflow-x-auto">
+          <div className="max-h-80 overflow-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/50">
@@ -1756,7 +1756,7 @@ function TimecourseTable({
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         Day-by-dose detail
       </h3>
-      <div className="overflow-x-auto">
+      <div className="max-h-96 overflow-auto">
         <table className="w-full text-xs">
           <thead className="sticky top-0 z-10 bg-background">
             <tr className="border-b bg-muted/50">

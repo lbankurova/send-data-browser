@@ -562,7 +562,7 @@ export function AppLandingPage() {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : allStudies.length > 0 || scenarioStudies.length > 0 ? (
-          <div className="overflow-x-auto rounded-md border bg-card">
+          <div className="max-h-[60vh] overflow-auto rounded-md border bg-card">
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/30">

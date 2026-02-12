@@ -19,7 +19,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
   const { selectedFindingId, selectFinding } = useFindingSelection();
 
   return (
-    <div className="overflow-x-auto">
+    <div className="max-h-[60vh] overflow-auto">
       <table className="w-full text-xs">
         <thead className="sticky top-0 z-10 bg-background">
           <tr className="border-b bg-muted/30">
