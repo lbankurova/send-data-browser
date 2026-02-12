@@ -63,8 +63,8 @@ Specs in `incoming/` represent pending or in-progress features. Specs in `incomi
 
 | Asset | Status | Notes |
 |-------|--------|-------|
-| `incoming/send-study-intelligence-prompt.md` | Phases 1-4 complete (2026-02-11) | Cross-study intelligence with dual-layer data (reported/derived). Landing page table + adaptive context panel ✅. Rule 0 (discrepancy detection) ✅. Rules 1-18 pending (Phases 5-7). |
-| `incoming/IMPLEMENTATION_PLAN_study_intelligence_v2.md` | Phases 1-4 complete (2026-02-11) | Phase 1: Dual-layer models ✅. Phase 2: Study table ✅. Phase 3: Adaptive context panel ✅. Phase 4: Rule 0 insights engine + API endpoint ✅. |
+| `incoming/send-study-intelligence-prompt.md` | Phases 1-5 complete (2026-02-11) | Cross-study intelligence with dual-layer data (reported/derived). Landing page table + adaptive context panel ✅. All 19 rules (0-18) ✅. Insights tab + routing pending (Phases 6-7). |
+| `incoming/IMPLEMENTATION_PLAN_study_intelligence_v2.md` | Phases 1-5 complete (2026-02-11) | Phase 1-4 ✅. Phase 5: All 18 cross-study rules (1-18) ✅. Complete insights engine with 19 rules total. Test suite validates 5 scenarios. |
 | `incoming/cdisc-core-integration.md` | Not started | CDISC CORE engine integration (400+ rules). Requires Python 3.12 venv, separate repo clone. |
 | `incoming/dose-response-redesign.md` | Phase 1 partial (2.5/4) | NOAEL ✅, time-course default-expanded ✅, time-course repositioning ❌, sticky header ❌, volcano scatter ❌ |
 | `incoming/send-browser-design-mode.md` | v1 implemented 2026-02-11 | Toggle + 4 core scenarios (SCN-001–SCN-004). Checklist overlay (v2) and state simulator (v3) deferred. |
