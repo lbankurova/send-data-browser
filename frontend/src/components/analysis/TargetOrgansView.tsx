@@ -22,9 +22,10 @@ import {
   getDirectionSymbol,
   titleCase,
 } from "@/lib/severity-colors";
-import { useResizePanel, useResizePanelY } from "@/hooks/useResizePanel";
+import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { ViewSection } from "@/components/ui/ViewSection";
+import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { useRuleResults } from "@/hooks/useRuleResults";
@@ -456,8 +457,13 @@ function OverviewTab({
   collapseGen?: number;
 }) {
   const navigate = useNavigate();
-  const { height: domainHeight, onPointerDown: onDomainResize } = useResizePanelY(160, 60, 350);
-  const { height: findingsHeight, onPointerDown: onFindingsResize } = useResizePanelY(200, 80, 400);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sections = useAutoFitSections(containerRef, "target-organs", [
+    { id: "domains", min: 60, max: 350, defaultHeight: 160 },
+    { id: "findings", min: 80, max: 400, defaultHeight: 200 },
+  ]);
+  const domainsSection = sections[0];
+  const findingsSection = sections[1];
   // Cross-organ coherence: R16 rules matching this organ
   const coherenceHints = useMemo(() => {
     if (!allRuleResults.length || !organ) return null;
@@ -532,13 +538,14 @@ function OverviewTab({
   }, [evidenceRows]);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div ref={containerRef} className="flex flex-1 flex-col overflow-hidden">
       {/* Domain breakdown */}
       <ViewSection
         mode="fixed"
         title={`Domain breakdown (${domainBreakdown.length})`}
-        height={domainHeight}
-        onResizePointerDown={onDomainResize}
+        height={domainsSection.height}
+        onResizePointerDown={domainsSection.onPointerDown}
+        contentRef={domainsSection.contentRef}
         expandGen={expandGen}
         collapseGen={collapseGen}
         headerRight={<span className="text-[10px] text-muted-foreground">Dose consistency: {getDoseConsistency(evidenceRows)}</span>}
@@ -582,8 +589,9 @@ function OverviewTab({
         <ViewSection
           mode="fixed"
           title={`Top findings (${topFindings.length})`}
-          height={findingsHeight}
-          onResizePointerDown={onFindingsResize}
+          height={findingsSection.height}
+          onResizePointerDown={findingsSection.onPointerDown}
+          contentRef={findingsSection.contentRef}
           expandGen={expandGen}
           collapseGen={collapseGen}
         >

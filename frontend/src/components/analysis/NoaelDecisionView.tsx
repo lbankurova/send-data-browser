@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
@@ -23,9 +23,10 @@ import {
   getDirectionSymbol,
   titleCase,
 } from "@/lib/severity-colors";
-import { useResizePanel, useResizePanelY } from "@/hooks/useResizePanel";
+import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { ViewSection } from "@/components/ui/ViewSection";
+import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { InsightsList } from "./panes/InsightsList";
@@ -567,7 +568,11 @@ function AdversityMatrixTab({
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-  const { height: matrixHeight, onPointerDown: onMatrixResize } = useResizePanelY(250, 80, 500);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sections = useAutoFitSections(containerRef, "noael-matrix", [
+    { id: "matrix", min: 80, max: 500, defaultHeight: 250 },
+  ]);
+  const matrixSection = sections[0];
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -727,13 +732,15 @@ function AdversityMatrixTab({
       </FilterBar>
 
       {/* Main content */}
+      <div ref={containerRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Adversity Matrix */}
         {matrixData.endpoints.length > 0 && (
           <ViewSection
             mode="fixed"
             title={`Adversity matrix (${matrixData.endpoints.length} endpoints)`}
-            height={matrixHeight}
-            onResizePointerDown={onMatrixResize}
+            height={matrixSection.height}
+            onResizePointerDown={matrixSection.onPointerDown}
+            contentRef={matrixSection.contentRef}
             expandGen={expandGen}
             collapseGen={collapseGen}
           >
@@ -878,6 +885,7 @@ function AdversityMatrixTab({
             )}
           </div>
         </ViewSection>
+      </div>
     </div>
   );
 }
