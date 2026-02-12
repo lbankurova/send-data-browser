@@ -21,7 +21,6 @@ import { DomainLabel } from "@/components/ui/DomainLabel";
 import { getDoseGroupColor, getNeutralHeatColor as getNeutralHeatColor01 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
-import { InsightsList } from "./panes/InsightsList";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import type { PathologyReview } from "@/types/annotations";
@@ -64,6 +63,13 @@ interface FindingSummary {
   totalN: number;
   severity: "adverse" | "warning" | "normal";
 }
+
+interface FindingTableRow extends FindingSummary {
+  isDoseDriven: boolean;
+  relatedOrgans: string[] | undefined;
+}
+
+const findingColHelper = createColumnHelper<FindingTableRow>();
 
 // ─── Helpers ───────────────────────────────────────────────
 
@@ -328,7 +334,7 @@ function SpecimenRailItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 px-3 py-2 transition-colors",
+        "w-full text-left border-b border-border/40 px-2.5 py-1.5 transition-colors",
         "border-l-2 border-l-transparent",
         isSelected
           ? "bg-blue-50/60 dark:bg-blue-950/20"
@@ -370,7 +376,7 @@ function SpecimenRailItem({
       </div>
 
       {/* Row 3: stats + domain chips */}
-      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+      <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0 text-[10px] text-muted-foreground">
         <span>{summary.findingCount} findings</span>
         <span>&middot;</span>
         <span>
@@ -412,7 +418,7 @@ function SpecimenRail({
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
-      <div className="border-b px-3 py-2">
+      <div className="border-b px-2.5 py-1.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Specimens ({specimens.length})
         </span>
@@ -421,7 +427,7 @@ function SpecimenRail({
           placeholder="Search specimens\u2026"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
+          className="mt-1 w-full rounded border bg-background px-2 py-0.5 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
       <div className="flex-1 overflow-y-auto">
@@ -467,7 +473,7 @@ function SpecimenHeader({
   );
 
   return (
-    <div className="shrink-0 border-b px-4 py-3">
+    <div className="shrink-0 border-b px-4 py-2">
       {/* Title + badges */}
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold">
@@ -502,12 +508,12 @@ function SpecimenHeader({
       )}
 
       {/* 1-line conclusion */}
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
         {conclusion}
       </p>
 
       {/* Structured metrics */}
-      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+      <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px]">
         <div className="flex items-baseline justify-between">
           <span className="text-muted-foreground">Incidence</span>
           <span className="font-mono text-[10px] font-medium">
@@ -552,7 +558,6 @@ function SpecimenHeader({
 function OverviewTab({
   specimenData,
   findingSummaries,
-  specimenRules,
   allRuleResults,
   specimen,
   selection,
@@ -561,15 +566,16 @@ function OverviewTab({
 }: {
   specimenData: LesionSeverityRow[];
   findingSummaries: FindingSummary[];
-  specimenRules: RuleResult[];
   allRuleResults: RuleResult[];
   specimen: string;
   selection: HistopathSelection | null;
   onFindingClick: (finding: string) => void;
   onSwitchToMatrix?: (finding: string) => void;
 }) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [findingColSizing, setFindingColSizing] = useState<ColumnSizingState>({});
 
-  // Per-finding dose consistency (for "Dose-driven" badge)
+  // Per-finding dose consistency
   const findingConsistency = useMemo(() => {
     const map = new Map<string, "Weak" | "Moderate" | "Strong">();
     for (const fs of findingSummaries) {
@@ -578,138 +584,235 @@ function OverviewTab({
     return map;
   }, [findingSummaries, specimenData]);
 
-  // Cross-organ coherence: R16 rules matching this specimen
-  const coherenceHints = useMemo(() => {
-    if (!allRuleResults.length || !specimen) return null;
+  // Per-finding cross-organ coherence (R16)
+  const findingRelatedOrgans = useMemo(() => {
+    const map = new Map<string, string[]>();
+    if (!allRuleResults.length || !specimen) return map;
     const specLower = specimen.toLowerCase();
-
-    // R16 rules for this specimen
-    const r16Self = allRuleResults.filter(
-      (r) => r.rule_id === "R16" && r.organ_system.toLowerCase() === specLower
+    const otherR16 = allRuleResults.filter(
+      (r) => r.rule_id === "R16" && r.organ_system.toLowerCase() !== specLower
     );
-    // Extract convergent endpoint names from output_text
-    const convergentEndpoints: string[] = [];
-    for (const rule of r16Self) {
-      // Pattern: "{endpoints} show convergent pattern" or similar text with endpoint names
-      const match = rule.output_text.match(/^(.+?)\s+show\s+convergent/i);
-      if (match) {
-        convergentEndpoints.push(...match[1].split(/,\s*/).map((s) => s.trim()).filter(Boolean));
-      }
-    }
-
-    // Find other organs that share endpoint labels with this specimen's findings
-    const specimenFindings = new Set(findingSummaries.map((f) => f.finding.toLowerCase()));
-    const relatedOrgans: string[] = [];
-    if (specimenFindings.size > 0) {
-      const allR16 = allRuleResults.filter(
-        (r) => r.rule_id === "R16" && r.organ_system.toLowerCase() !== specLower
-      );
-      for (const rule of allR16) {
-        const otherOrgan = rule.organ_system;
-        // Check if this R16 mentions any of our specimen's findings
-        const textLower = rule.output_text.toLowerCase();
-        for (const finding of specimenFindings) {
-          if (textLower.includes(finding)) {
-            if (!relatedOrgans.includes(otherOrgan)) relatedOrgans.push(otherOrgan);
-            break;
-          }
+    for (const fs of findingSummaries) {
+      const findingLower = fs.finding.toLowerCase();
+      const organs: string[] = [];
+      for (const rule of otherR16) {
+        if (rule.output_text.toLowerCase().includes(findingLower)) {
+          if (!organs.includes(rule.organ_system)) organs.push(rule.organ_system);
         }
       }
+      if (organs.length > 0) map.set(fs.finding, organs);
     }
-
-    if (convergentEndpoints.length === 0 && relatedOrgans.length === 0) return null;
-    return { convergentEndpoints, relatedOrgans };
+    return map;
   }, [allRuleResults, specimen, findingSummaries]);
 
+  // Combined table data
+  const tableData = useMemo<FindingTableRow[]>(
+    () =>
+      findingSummaries.map((fs) => ({
+        ...fs,
+        isDoseDriven: findingConsistency.get(fs.finding) === "Strong",
+        relatedOrgans: findingRelatedOrgans.get(fs.finding),
+      })),
+    [findingSummaries, findingConsistency, findingRelatedOrgans]
+  );
+
+  // Stable ref for onSwitchToMatrix so columns don't re-create on every render
+  const switchRef = useRef(onSwitchToMatrix);
+  switchRef.current = onSwitchToMatrix;
+
+  const findingColumns = useMemo(
+    () => [
+      findingColHelper.accessor("finding", {
+        header: "Finding",
+        size: 160,
+        minSize: 100,
+        maxSize: 300,
+        cell: (info) => {
+          const v = info.getValue();
+          return (
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              <div
+                className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                style={{ backgroundColor: getNeutralHeatColor(info.row.original.maxSeverity).bg }}
+              />
+              <span className="truncate font-medium" title={v}>{v}</span>
+            </div>
+          );
+        },
+      }),
+      findingColHelper.accessor("maxSeverity", {
+        header: "Sev",
+        size: 40,
+        minSize: 35,
+        maxSize: 70,
+        cell: (info) => (
+          <span
+            className="font-mono text-[10px] text-muted-foreground"
+            title={`Max severity: ${info.getValue().toFixed(1)} (scale 1\u20135)`}
+          >
+            {info.getValue().toFixed(1)}
+          </span>
+        ),
+      }),
+      findingColHelper.display({
+        id: "incidence",
+        header: "Incid.",
+        size: 48,
+        minSize: 40,
+        maxSize: 80,
+        cell: (info) => {
+          const r = info.row.original;
+          return (
+            <span
+              className="font-mono text-[10px] text-muted-foreground"
+              title={`${r.totalAffected} affected of ${r.totalN}`}
+            >
+              {r.totalAffected}/{r.totalN}
+            </span>
+          );
+        },
+      }),
+      findingColHelper.accessor("severity", {
+        header: "Class",
+        size: 60,
+        minSize: 48,
+        maxSize: 100,
+        cell: (info) => (
+          <span className="rounded-sm border border-border px-1 py-px text-[9px] font-medium text-muted-foreground">
+            {info.getValue()}
+          </span>
+        ),
+      }),
+      findingColHelper.accessor("isDoseDriven", {
+        header: "Dose-driven",
+        size: 78,
+        minSize: 50,
+        maxSize: 120,
+        cell: (info) =>
+          info.getValue() ? (
+            <span
+              className="cursor-pointer text-muted-foreground hover:text-foreground"
+              title="Incidence increases monotonically with dose across 3+ groups — click to view in Severity matrix"
+              onClick={(e) => {
+                e.stopPropagation();
+                switchRef.current?.(info.row.original.finding);
+              }}
+            >
+              ✓
+            </span>
+          ) : null,
+      }),
+      findingColHelper.accessor("relatedOrgans", {
+        header: "Also in",
+        size: 160,
+        minSize: 60,
+        maxSize: 400,
+        cell: (info) => {
+          const organs = info.getValue();
+          if (!organs) return null;
+          const text = organs.join(", ");
+          return (
+            <span
+              className="block truncate text-[9px] italic text-muted-foreground/60"
+              title={`Cross-organ coherence (R16): also observed in ${text}`}
+            >
+              {text}
+            </span>
+          );
+        },
+      }),
+    ],
+    []
+  );
+
+  const findingsTable = useReactTable({
+    data: tableData,
+    columns: findingColumns,
+    state: { sorting, columnSizing: findingColSizing },
+    onSortingChange: setSorting,
+    onColumnSizingChange: setFindingColSizing,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+  });
+
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-3">
+    <div className="flex-1 overflow-y-auto px-4 py-2">
       {/* Finding summary */}
-      <div className="mb-4">
-        <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="mb-3">
+        <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Observed findings
         </h4>
         {findingSummaries.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No findings for this specimen.</p>
         ) : (
-          <div className="space-y-1">
-            {findingSummaries.map((fs) => {
-              const isSelected = selection?.finding === fs.finding && selection?.specimen === specimen;
-              return (
-                <button
-                  key={fs.finding}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-accent/30",
-                    isSelected && "bg-accent ring-1 ring-primary"
-                  )}
-                  onClick={() => onFindingClick(fs.finding)}
-                >
-                  <div
-                    className="h-3 w-3 shrink-0 rounded-sm"
-                    style={{ backgroundColor: getNeutralHeatColor(fs.maxSeverity).bg }}
-                    title={`Max severity: ${fs.maxSeverity.toFixed(1)}`}
-                  />
-                  <span className="min-w-0 flex-1 truncate font-medium" title={fs.finding}>
-                    {fs.finding.length > 40 ? fs.finding.slice(0, 40) + "\u2026" : fs.finding}
-                  </span>
-                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground" title={`Max severity: ${fs.maxSeverity.toFixed(1)} (scale 1\u20135)`}>
-                    {fs.maxSeverity.toFixed(1)}
-                  </span>
-                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground" title={`${fs.totalAffected} affected out of ${fs.totalN} subjects`}>
-                    {fs.totalAffected}/{fs.totalN}
-                  </span>
-                  <span className="shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground" title={`Severity classification: ${fs.severity}`}>
-                    {fs.severity}
-                  </span>
-                  {findingConsistency.get(fs.finding) === "Strong" && (
-                    <span
-                      className="shrink-0 cursor-pointer rounded-sm border border-border px-1 py-0.5 text-[9px] text-muted-foreground hover:bg-accent/50"
-                      title="Incidence increases monotonically with dose across 3+ groups — click to view in Severity matrix"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSwitchToMatrix?.(fs.finding);
-                      }}
+          <table className="w-full text-[11px]" style={{ tableLayout: "fixed" }}>
+            <thead>
+              {findingsTable.getHeaderGroups().map((hg) => (
+                <tr key={hg.id} className="border-b border-border/40">
+                  {hg.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className={cn(
+                        "relative cursor-pointer pb-2 pr-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground/70",
+                        header.column.id === "maxSeverity" && "text-right",
+                        header.column.id === "incidence" && "text-right",
+                        header.column.id === "isDoseDriven" && "text-center",
+                      )}
+                      style={{ width: header.getSize() }}
+                      onClick={header.column.getToggleSortingHandler()}
                     >
-                      Dose-driven
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {{ asc: " \u25B2", desc: " \u25BC" }[header.column.getIsSorted() as string] ?? ""}
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        className={cn(
+                          "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
+                          header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                        )}
+                      />
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {findingsTable.getRowModel().rows.map((row) => {
+                const orig = row.original;
+                const isSelected = selection?.finding === orig.finding && selection?.specimen === specimen;
+                return (
+                  <tr
+                    key={row.id}
+                    className={cn(
+                      "cursor-pointer border-b border-border/20 transition-colors hover:bg-accent/30",
+                      isSelected && "bg-accent"
+                    )}
+                    onClick={() => onFindingClick(orig.finding)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className={cn(
+                          "py-1 pr-2",
+                          cell.column.id === "maxSeverity" && "text-right",
+                          cell.column.id === "incidence" && "text-right",
+                          cell.column.id === "isDoseDriven" && "text-center",
+                          cell.column.id === "relatedOrgans" && "overflow-hidden",
+                        )}
+                        style={{ width: cell.column.getSize() }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
-
-      {/* Cross-organ coherence card (R16 signal) */}
-      {coherenceHints && (
-        <details className="mb-4 rounded border border-border/40 bg-muted/10" open>
-          <summary className="flex cursor-pointer items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground list-none [&::-webkit-details-marker]:hidden">
-            <span className="text-[9px] transition-transform [[open]>&]:rotate-90">{"\u25B6"}</span>
-            Cross-organ coherence (R16)
-          </summary>
-          <div className="space-y-0.5 px-2.5 pb-2">
-            {coherenceHints.convergentEndpoints.length > 0 && (
-              <p className="text-[11px] text-muted-foreground">
-                Convergent findings: {coherenceHints.convergentEndpoints.join(", ")}
-              </p>
-            )}
-            {coherenceHints.relatedOrgans.length > 0 && (
-              <p className="text-[11px] text-muted-foreground">
-                Related findings also observed in {coherenceHints.relatedOrgans.join(", ")}.
-              </p>
-            )}
-          </div>
-        </details>
-      )}
-
-      {/* Insights */}
-      {specimenRules.length > 0 && (
-        <div className="mb-4">
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Insights
-          </h4>
-          <InsightsList rules={specimenRules} />
-        </div>
-      )}
 
       {specimenData.length === 0 && findingSummaries.length === 0 && (
         <div className="py-8 text-center text-xs text-muted-foreground">
@@ -836,9 +939,9 @@ function SubjectHeatmap({
   };
 
   return (
-    <div className="border-b p-4">
+    <div className="border-b p-3">
       {/* Subject count */}
-      <div className="mb-2 flex items-center gap-2">
+      <div className="mb-1.5 flex items-center gap-2">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Subject-level matrix ({findings.length} findings)
         </h2>
@@ -963,7 +1066,7 @@ function SubjectHeatmap({
             >
               {/* Finding label — sticky */}
               <div
-                className="sticky left-0 z-10 w-52 shrink-0 truncate bg-background py-1 pr-2 text-[10px]"
+                className="sticky left-0 z-10 w-52 shrink-0 truncate bg-background py-0.5 pr-2 text-[10px]"
                 title={finding}
               >
                 {finding.length > 40 ? finding.slice(0, 40) + "\u2026" : finding}
@@ -1137,31 +1240,40 @@ function SeverityMatrixTab({
     () => [
       col.accessor("finding", {
         header: "Finding",
+        size: 200,
+        minSize: 120,
+        maxSize: 400,
         cell: (info) => (
           <span className="truncate" title={info.getValue()}>
-            {info.getValue().length > 25 ? info.getValue().slice(0, 25) + "\u2026" : info.getValue()}
+            {info.getValue().length > 30 ? info.getValue().slice(0, 30) + "\u2026" : info.getValue()}
           </span>
         ),
       }),
-      col.accessor("domain", { header: "Domain" }),
+      col.accessor("domain", { header: "Domain", size: 55, minSize: 40, maxSize: 80 }),
       col.accessor("dose_level", {
         header: "Dose",
+        size: 80,
+        minSize: 60,
+        maxSize: 120,
         cell: (info) => (
           <span className="text-muted-foreground">{info.row.original.dose_label.split(",")[0]}</span>
         ),
       }),
-      col.accessor("sex", { header: "Sex" }),
-      col.accessor("n", { header: "N" }),
-      col.accessor("affected", { header: "Affected" }),
+      col.accessor("sex", { header: "Sex", size: 40, minSize: 32, maxSize: 60 }),
+      col.accessor("n", { header: "N", size: 40, minSize: 32, maxSize: 60 }),
+      col.accessor("affected", { header: "Aff.", size: 45, minSize: 36, maxSize: 70 }),
       col.accessor("incidence", {
         header: () => (
           <span className="inline-flex items-center gap-0.5">
-            Incidence
+            Incid.
             <span title="Incidence = affected / N per dose group × sex. Numerator: subjects with at least one finding record. Denominator: total subjects in the group. Filtered by current sex and severity filters.">
               <Info className="inline h-2.5 w-2.5 text-muted-foreground/50" />
             </span>
           </span>
         ),
+        size: 60,
+        minSize: 50,
+        maxSize: 90,
         cell: (info) => {
           const v = info.getValue();
           return (
@@ -1173,6 +1285,9 @@ function SeverityMatrixTab({
       }),
       col.accessor("avg_severity", {
         header: "Avg sev",
+        size: 60,
+        minSize: 50,
+        maxSize: 90,
         cell: (info) => {
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground">{"\u2014"}</span>;
@@ -1185,8 +1300,11 @@ function SeverityMatrixTab({
       }),
       col.accessor("severity", {
         header: "Severity",
+        size: 72,
+        minSize: 60,
+        maxSize: 120,
         cell: (info) => (
-          <span className="inline-block rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="inline-block rounded-sm border border-border px-1 py-px text-[10px] font-medium text-muted-foreground">
             {info.getValue()}
           </span>
         ),
@@ -1256,7 +1374,7 @@ function SeverityMatrixTab({
               <button
                 key={mode}
                 className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
                   heatmapView === mode
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:bg-accent/50"
@@ -1274,7 +1392,7 @@ function SeverityMatrixTab({
             <button
               key={mode}
               className={cn(
-                "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
                 matrixMode === mode
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:bg-accent/50"
@@ -1287,8 +1405,8 @@ function SeverityMatrixTab({
         </div>
       </FilterBar>
 
-      {/* Main content */}
-      <div className="flex-1 overflow-auto">
+      {/* Heatmap — stays visible, scrolls horizontally only */}
+      <div className="shrink-0 overflow-x-auto">
         {/* Subject-level heatmap */}
         {matrixMode === "subject" && (
           <SubjectHeatmap
@@ -1306,8 +1424,8 @@ function SeverityMatrixTab({
 
         {/* Group-level heatmap (severity or incidence mode) */}
         {matrixMode === "group" && heatmapData && heatmapData.findings.length > 0 && (
-          <div className="border-b p-4">
-            <div className="mb-2 flex items-center gap-2">
+          <div className="border-b p-3">
+            <div className="mb-1.5 flex items-center gap-2">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {heatmapView === "incidence" ? "Incidence" : "Severity"} heatmap ({heatmapData.findings.length} findings)
               </h2>
@@ -1350,7 +1468,7 @@ function SeverityMatrixTab({
                     onClick={() => onHeatmapClick(finding)}
                   >
                     <div
-                      className="w-52 shrink-0 truncate py-1 pr-2 text-[10px]"
+                      className="w-52 shrink-0 truncate py-0.5 pr-2 text-[10px]"
                       title={finding}
                     >
                       {finding.length > 40 ? finding.slice(0, 40) + "\u2026" : finding}
@@ -1428,78 +1546,70 @@ function SeverityMatrixTab({
             )}
           </div>
         )}
+      </div>
 
-        {/* Grid — collapsible */}
-        <details className="group">
-          <summary className="flex cursor-pointer items-center justify-between px-4 pt-3 pb-1 list-none [&::-webkit-details-marker]:hidden">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Details ({filteredData.length} rows)
-            </h2>
-            <span className="text-[10px] text-muted-foreground transition-transform group-open:rotate-90">&#x25B6;</span>
-          </summary>
-          <div className="overflow-x-auto">
-            <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
-              <thead className="sticky top-0 z-10 bg-background">
-                {table.getHeaderGroups().map((hg) => (
-                  <tr key={hg.id} className="border-b bg-muted/50">
-                    {hg.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
-                        style={{ width: header.getSize() }}
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
-                        <div
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          className={cn(
-                            "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
-                            header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
-                          )}
-                        />
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.slice(0, 200).map((row) => {
-                  const orig = row.original;
-                  const isSelected =
-                    selection?.finding === orig.finding && selection?.specimen === orig.specimen;
-                  return (
-                    <tr
-                      key={row.id}
+      {/* Table — scrollable with frozen header */}
+      <div className="min-h-0 flex-1 overflow-auto">
+        <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
+          <thead className="sticky top-0 z-10 bg-background">
+            {table.getHeaderGroups().map((hg) => (
+              <tr key={hg.id} className="border-b bg-muted/50">
+                {hg.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                    style={{ width: header.getSize() }}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
                       className={cn(
-                        "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                        isSelected && "bg-accent"
+                        "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
+                        header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
                       )}
-                      onClick={() => onRowClick(orig)}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {filteredData.length > 200 && (
-              <div className="p-2 text-center text-[10px] text-muted-foreground">
-                Showing first 200 of {filteredData.length} rows. Use filters to narrow results.
-              </div>
-            )}
-            {filteredData.length === 0 && (
-              <div className="p-4 text-center text-xs text-muted-foreground">
-                No rows match the current filters.
-              </div>
-            )}
+                    />
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.slice(0, 200).map((row) => {
+              const orig = row.original;
+              const isSelected =
+                selection?.finding === orig.finding && selection?.specimen === orig.specimen;
+              return (
+                <tr
+                  key={row.id}
+                  className={cn(
+                    "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                    isSelected && "bg-accent"
+                  )}
+                  onClick={() => onRowClick(orig)}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-1.5 py-0.5" style={{ width: cell.column.getSize() }}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {filteredData.length > 200 && (
+          <div className="p-2 text-center text-[10px] text-muted-foreground">
+            Showing first 200 of {filteredData.length} rows. Use filters to narrow results.
           </div>
-        </details>
+        )}
+        {filteredData.length === 0 && (
+          <div className="p-4 text-center text-xs text-muted-foreground">
+            No rows match the current filters.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2105,7 +2215,6 @@ export function HistopathologyView({
               <OverviewTab
                 specimenData={specimenData}
                 findingSummaries={findingSummaries}
-                specimenRules={specimenRules}
                 allRuleResults={ruleResults ?? []}
                 specimen={selectedSpecimen!}
                 selection={selection}

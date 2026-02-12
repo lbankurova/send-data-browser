@@ -420,18 +420,65 @@ Key conventions: filter bar `px-4 py-2 gap-2`, context panel panes `px-4 py-2`, 
 
 Class strings: `btn.*`, `badge.*`, `tbl.*`, `pane.*`, `menu.*`, `surface.*`, `emptyState.*`, `link.*` from `design-tokens.ts`. See token file for exact values.
 
-### 4.1 Cell Alignment Rules
+### 4.1 Filter Controls
+
+**Component:** `<FilterSelect>` from `@/components/ui/FilterBar`. Token: `filter.select`.
+
+**Style:** Muted pill — `rounded-full bg-muted/50 px-2 py-0.5 text-xs cursor-pointer focus:outline-none`. Native `<select>` with browser chevron. No custom icons, no borders.
+
+**When to use:** All filter bar dropdowns in analysis views. Form selects (annotation forms, override editors) keep their bordered style (`rounded border bg-background`).
+
+**Naming rules — two patterns:**
+
+1. **Labeled filters** — wrapped in `<label>` with external text (e.g., `Sex [All▾]`). The label names the dimension; the default option can be just `"All"`.
+
+2. **Self-labeling filters** — no external label; the default option IS the label. Default must name the dimension: `"All {dimension}"` — specific enough that a user understands what's being filtered without any surrounding context.
+
+| Pattern | Default option | Example options |
+|---------|---------------|-----------------|
+| Labeled | `All` | `Male`, `Female` |
+| Self-labeling | `All sexes` | `Male`, `Female` |
+| Self-labeling | `All data types` | `Continuous`, `Categorical` |
+| Self-labeling | `All domains` | `LB`, `BW`, `MI` |
+| Self-labeling | `All subjects` | `SUB001`, `SUB002` |
+| Self-labeling | `All fix status` | `Not fixed`, `Auto-fixed` |
+
+**Naming principles:**
+- Default option always starts with `"All"` — never a bare category name as the unfiltered state (e.g., `"Subject"` alone is ambiguous — is it a label or a selected value?)
+- Dimension noun must match the data concept, not a generic term (`"All data types"` not `"All types"`)
+- Non-default options use sentence case
+- Abbreviations acceptable only when universally understood in context (`TR` for treatment-related in a tox app)
+
+**Companion components:** `<FilterBar>` (container: `border-b bg-muted/30 px-4 py-2 gap-2`), `<FilterBarCount>` (right-aligned record count: `text-[10px] text-muted-foreground`).
+
+### 4.2 Cell Alignment Rules
 
 - Icons before text: position absolutely (`absolute left-1 top-1/2 -translate-y-1/2`) so text aligns with header.
 - Centered icons: wrap in `flex items-center justify-center`.
 
-### 4.2 Tooltip Behavior
+### 4.3 Tooltip Behavior
 
 Always add tooltips for: truncated text (25-char cap), icon-only buttons, heatmap cells, abbreviated headers, disabled buttons (explain why). Content: `text-xs`, max 2-3 lines.
 
-### 4.3 Below-List Links
+### 4.4 Below-List Links
 
 When a link follows a `list-disc pl-4` bullet list, indent `pl-4` so link text aligns with bullet text.
+
+### 4.5 Compact Table Text Overflow
+
+In dense/compact tables (cell text `text-[11px]` or smaller), **never wrap text**. Instead: truncate with CSS ellipsis (`truncate` class = `overflow-hidden text-overflow-ellipsis whitespace-nowrap`) and expose the full value via a `title` attribute tooltip on hover. This keeps row height uniform at a single line and eliminates ragged multi-line cells that break scan rhythm.
+
+- The table container or `<td>` must constrain width (use `tableLayout: "fixed"` with percentage `w-[…%]` on `<th>` columns).
+- The truncating element needs `overflow-hidden` on itself or its parent `<td>` (use `block truncate` on `<span>`, or `overflow-hidden` on `<td>`).
+- Always provide `title={fullText}` so the untruncated value is accessible.
+
+### 4.6 Boolean Columns
+
+Boolean columns use a **centered glyph** (`✓` for true, empty for false) instead of repeating a text label in every cell. The column header names the attribute; the cell shows only presence or absence. This saves horizontal space and reduces visual noise.
+
+- Header: descriptive name in standard table-header casing (e.g., "Dose-driven").
+- True cell: `✓` centered, `text-muted-foreground`, `cursor-pointer` + tooltip if clickable.
+- False cell: empty (no glyph, no dash, no "—").
 
 ---
 
