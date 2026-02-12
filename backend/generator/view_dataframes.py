@@ -5,6 +5,8 @@ Produces the 7 view-specific JSON structures that the frontend consumes.
 
 from collections import defaultdict
 
+from services.analysis.statistics import severity_trend
+
 
 def build_study_signal_summary(findings: list[dict], dose_groups: list[dict]) -> list[dict]:
     """Build the study signal summary: one row per endpoint x dose x sex.
@@ -406,3 +408,55 @@ def _compute_signal_score(
         score += 0.20 * pattern_scores.get(dose_response_pattern, 0.0)
 
     return min(score, 1.0)
+
+
+def build_finding_dose_trends(findings: list[dict], dose_groups: list[dict]) -> list[dict]:
+    """Build per-finding dose trend statistics for histopathology.
+
+    One row per (specimen, finding), aggregated across sex.
+    Includes Cochran-Armitage trend p-value and severity-trend Spearman rho/p.
+    """
+    # Only MI/MA/CL domains
+    histo_findings = [f for f in findings if f.get("domain") in ("MI", "MA", "CL")]
+
+    # Group by (specimen, finding) — aggregate across sex
+    grouped: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for f in histo_findings:
+        key = (f.get("specimen", ""), f.get("finding", ""))
+        grouped[key].append(f)
+
+    rows = []
+    for (specimen, finding), group in grouped.items():
+        # --- CA trend p-value: take min across sex groups ---
+        ca_ps = [f.get("trend_p") for f in group if f.get("trend_p") is not None]
+        ca_trend_p = min(ca_ps) if ca_ps else None
+
+        # --- Severity trend: aggregate avg_severity per dose level ---
+        dose_sev: dict[int, list[float]] = defaultdict(list)
+        has_mi = any(f.get("domain") == "MI" for f in group)
+        for f in group:
+            for gs in f.get("group_stats", []):
+                sev = gs.get("avg_severity")
+                if sev is not None:
+                    dose_sev[gs["dose_level"]].append(sev)
+
+        sev_rho = None
+        sev_p = None
+        if len(dose_sev) >= 3 and has_mi:
+            # Average severity per dose level across sex
+            sorted_levels = sorted(dose_sev.keys())
+            dl_list = sorted_levels
+            sev_list = [sum(dose_sev[dl]) / len(dose_sev[dl]) for dl in sorted_levels]
+            result = severity_trend(dl_list, sev_list)
+            sev_rho = result["rho"]
+            sev_p = result["p_value"]
+
+        rows.append({
+            "specimen": specimen,
+            "finding": finding,
+            "ca_trend_p": ca_trend_p,
+            "severity_trend_rho": sev_rho,
+            "severity_trend_p": sev_p,
+        })
+
+    return rows

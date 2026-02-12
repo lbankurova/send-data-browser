@@ -18,6 +18,7 @@ VALID_VIEW_NAMES = {
     "adverse-effect-summary",
     "noael-summary",
     "rule-results",
+    "finding-dose-trends",
     "subject-context",
     "provenance-messages",
     "study-metadata-enriched",

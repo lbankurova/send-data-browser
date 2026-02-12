@@ -24,6 +24,7 @@ from generator.view_dataframes import (
     build_lesion_severity_summary,
     build_adverse_effect_summary,
     build_noael_summary,
+    build_finding_dose_trends,
 )
 from generator.scores_and_rules import evaluate_rules
 from generator.static_charts import generate_target_organ_bar_chart
@@ -125,6 +126,7 @@ def generate(study_id: str):
     lesion_severity = build_lesion_severity_summary(findings, dose_groups)
     adverse_effects = build_adverse_effect_summary(findings, dose_groups)
     noael = build_noael_summary(findings, dose_groups)
+    finding_dose_trends = build_finding_dose_trends(findings, dose_groups)
 
     # Phase 3: Signal scores + rules + adversity
     print("Phase 3: Evaluating rules...")
@@ -145,6 +147,7 @@ def generate(study_id: str):
     _write_json(out_dir / "adverse_effect_summary.json", adverse_effects)
     _write_json(out_dir / "noael_summary.json", noael)
     _write_json(out_dir / "rule_results.json", rule_results)
+    _write_json(out_dir / "finding_dose_trends.json", finding_dose_trends)
 
     # Write static HTML
     static_dir.mkdir(parents=True, exist_ok=True)

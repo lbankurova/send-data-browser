@@ -11,6 +11,7 @@ import {
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
+import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,7 @@ import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
-import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
+import type { LesionSeverityRow, RuleResult, FindingDoseTrend } from "@/types/analysis-views";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import type { PathologyReview } from "@/types/annotations";
 
@@ -71,6 +72,7 @@ interface FindingSummary {
 interface FindingTableRow extends FindingSummary {
   isDoseDriven: boolean;
   relatedOrgans: string[] | undefined;
+  trendData?: FindingDoseTrend;
 }
 
 const findingColHelper = createColumnHelper<FindingTableRow>();
@@ -584,6 +586,7 @@ function OverviewTab({
   setMinSeverity,
   studyId,
   onSubjectClick,
+  trendsByFinding,
 }: {
   specimenData: LesionSeverityRow[];
   findingSummaries: FindingSummary[];
@@ -598,6 +601,7 @@ function OverviewTab({
   setMinSeverity: (v: number) => void;
   studyId?: string;
   onSubjectClick?: (usubjid: string) => void;
+  trendsByFinding: Map<string, FindingDoseTrend>;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [findingColSizing, setFindingColSizing] = useState<ColumnSizingState>({});
@@ -606,7 +610,7 @@ function OverviewTab({
   const [affectedOnly, setAffectedOnly] = useState(true);
   const [subjectSort, setSubjectSort] = useState<"dose" | "severity">("dose");
   const [doseGroupFilter, setDoseGroupFilter] = useState<ReadonlySet<string> | null>(null);
-  const [doseDepThreshold, setDoseDepThreshold] = useState<"moderate" | "strong">("moderate");
+  const [doseDepThreshold, setDoseDepThreshold] = useState<"moderate" | "strong" | "ca_trend" | "severity_trend">("moderate");
   const [doseDepMenu, setDoseDepMenu] = useState<{ x: number; y: number } | null>(null);
   const doseDepMenuRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -760,10 +764,25 @@ function OverviewTab({
     () =>
       findingSummaries.map((fs) => {
         const c = findingConsistency.get(fs.finding) ?? "Weak";
-        const isDoseDriven = doseDepThreshold === "strong" ? c === "Strong" : c !== "Weak";
-        return { ...fs, isDoseDriven, relatedOrgans: findingRelatedOrgans.get(fs.finding) };
+        const trend = trendsByFinding.get(fs.finding);
+        let isDoseDriven: boolean;
+        switch (doseDepThreshold) {
+          case "strong":
+            isDoseDriven = c === "Strong";
+            break;
+          case "ca_trend":
+            isDoseDriven = trend?.ca_trend_p != null && trend.ca_trend_p < 0.05;
+            break;
+          case "severity_trend":
+            isDoseDriven = trend?.severity_trend_p != null && trend.severity_trend_p < 0.05;
+            break;
+          default: // "moderate"
+            isDoseDriven = c !== "Weak";
+            break;
+        }
+        return { ...fs, isDoseDriven, relatedOrgans: findingRelatedOrgans.get(fs.finding), trendData: trend };
       }),
-    [findingSummaries, findingConsistency, findingRelatedOrgans, doseDepThreshold]
+    [findingSummaries, findingConsistency, findingRelatedOrgans, doseDepThreshold, trendsByFinding]
   );
 
   const findingColumns = useMemo(
@@ -830,18 +849,50 @@ function OverviewTab({
         ),
       }),
       findingColHelper.accessor("isDoseDriven", {
-        header: () => (
-          <span title={doseDepThreshold === "strong"
-            ? "Monotonic incidence + 3+ dose groups affected. Right-click to change threshold."
-            : "Monotonic incidence OR 2+ dose groups affected. Right-click to change threshold."}>
-            Dose-dep.{doseDepThreshold === "strong" ? " (strict)" : ""}
-          </span>
-        ),
-        size: 78,
+        header: () => {
+          const labels: Record<typeof doseDepThreshold, { label: string; tooltip: string }> = {
+            moderate: { label: "Dose-dep.", tooltip: "Monotonic incidence OR 2+ dose groups affected. Click to change method." },
+            strong: { label: "Dose-dep. (strict)", tooltip: "Monotonic incidence + 3+ dose groups affected. Click to change method." },
+            ca_trend: { label: "CA trend", tooltip: "Cochran-Armitage trend test p < 0.05. Click to change method." },
+            severity_trend: { label: "Sev. trend", tooltip: "Spearman severity-dose correlation p < 0.05 (MI only). Click to change method." },
+          };
+          const { label, tooltip } = labels[doseDepThreshold];
+          return (
+            <span title={tooltip}>
+              {label} <span className="text-muted-foreground/40">▾</span>
+            </span>
+          );
+        },
+        size: 85,
         minSize: 50,
         maxSize: 120,
-        cell: (info) =>
-          info.getValue() ? (
+        cell: (info) => {
+          const isStatistical = doseDepThreshold === "ca_trend" || doseDepThreshold === "severity_trend";
+          const trend = info.row.original.trendData;
+          if (isStatistical) {
+            const pVal = doseDepThreshold === "ca_trend" ? trend?.ca_trend_p : trend?.severity_trend_p;
+            if (info.getValue()) {
+              return (
+                <span
+                  className="text-muted-foreground"
+                  title={`p = ${pVal != null ? pVal.toFixed(4) : "N/A"}`}
+                >
+                  ✓
+                </span>
+              );
+            }
+            // Not significant or no data
+            const reason = pVal == null
+              ? (doseDepThreshold === "severity_trend" ? "No severity data (MI domain only)" : "No trend data available")
+              : `p = ${pVal.toFixed(4)} (not significant)`;
+            return (
+              <span className="text-muted-foreground/40" title={reason}>
+                –
+              </span>
+            );
+          }
+          // Heuristic modes
+          return info.getValue() ? (
             <span
               className="text-muted-foreground"
               title={doseDepThreshold === "strong"
@@ -850,7 +901,8 @@ function OverviewTab({
             >
               ✓
             </span>
-          ) : null,
+          ) : null;
+        },
       }),
       findingColHelper.accessor("relatedOrgans", {
         header: "Also in",
@@ -872,7 +924,7 @@ function OverviewTab({
         },
       }),
     ],
-    []
+    [doseDepThreshold]
   );
 
   const findingsTable = useReactTable({
@@ -915,14 +967,14 @@ function OverviewTab({
                         header.column.id === "isDoseDriven" && "text-center",
                       )}
                       style={{ width: header.getSize() }}
-                      onDoubleClick={header.column.getToggleSortingHandler()}
-                      onContextMenu={header.column.id === "isDoseDriven" ? (e) => {
-                        e.preventDefault();
-                        setDoseDepMenu({ x: e.clientX, y: e.clientY });
+                      onDoubleClick={header.column.id === "isDoseDriven" ? undefined : header.column.getToggleSortingHandler()}
+                      onClick={header.column.id === "isDoseDriven" ? (e) => {
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setDoseDepMenu({ x: rect.left, y: rect.bottom + 2 });
                       } : undefined}
                     >
                       {flexRender(header.column.columnDef.header, header.getContext())}
-                      {{ asc: " \u25B2", desc: " \u25BC" }[header.column.getIsSorted() as string] ?? ""}
+                      {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                       <div
                         onMouseDown={header.getResizeHandler()}
                         onTouchStart={header.getResizeHandler()}
@@ -970,34 +1022,54 @@ function OverviewTab({
             </tbody>
           </table>
         )}
-        {/* Dose-dependent threshold context menu */}
+        {/* Dose-dependence method dropdown */}
         {doseDepMenu && (
           <div
             ref={doseDepMenuRef}
-            className="fixed z-50 min-w-[200px] rounded-md border bg-popover py-1 shadow-md"
+            className="fixed z-50 min-w-[190px] rounded border bg-popover py-0.5 shadow-md"
             style={{ left: doseDepMenu.x, top: doseDepMenu.y }}
           >
-            <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Dose-dependence threshold
+            <div className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+              Heuristic
             </div>
-            <div className="my-0.5 border-t" />
             {([
-              { value: "moderate" as const, label: "Moderate+", desc: "Monotonic incidence OR 2+ dose groups" },
-              { value: "strong" as const, label: "Strong only", desc: "Monotonic incidence AND 3+ dose groups" },
+              { value: "moderate" as const, label: "Moderate+", desc: "Monotonic OR 2+ groups" },
+              { value: "strong" as const, label: "Strong only", desc: "Monotonic AND 3+ groups" },
             ]).map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 className={cn(
-                  "flex w-full flex-col px-3 py-1.5 text-left hover:bg-accent/50",
+                  "flex w-full items-baseline gap-1.5 px-2 py-1 text-left hover:bg-accent/50",
                   doseDepThreshold === opt.value && "bg-accent/30",
                 )}
                 onClick={() => { setDoseDepThreshold(opt.value); setDoseDepMenu(null); }}
               >
-                <span className="text-xs font-medium">
-                  {doseDepThreshold === opt.value && "✓ "}{opt.label}
-                </span>
-                <span className="text-[10px] text-muted-foreground">{opt.desc}</span>
+                <span className="w-3 shrink-0 text-[10px] text-muted-foreground">{doseDepThreshold === opt.value ? "✓" : ""}</span>
+                <span className="text-[11px] font-medium">{opt.label}</span>
+                <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+              </button>
+            ))}
+            <div className="my-0.5 border-t border-border/40" />
+            <div className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+              Statistical
+            </div>
+            {([
+              { value: "ca_trend" as const, label: "CA trend", desc: "Incidence trend p < 0.05" },
+              { value: "severity_trend" as const, label: "Sev. trend", desc: "Severity × dose (MI only)" },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={cn(
+                  "flex w-full items-baseline gap-1.5 px-2 py-1 text-left hover:bg-accent/50",
+                  doseDepThreshold === opt.value && "bg-accent/30",
+                )}
+                onClick={() => { setDoseDepThreshold(opt.value); setDoseDepMenu(null); }}
+              >
+                <span className="w-3 shrink-0 text-[10px] text-muted-foreground">{doseDepThreshold === opt.value ? "✓" : ""}</span>
+                <span className="text-[11px] font-medium">{opt.label}</span>
+                <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
               </button>
             ))}
           </div>
@@ -1797,7 +1869,7 @@ function MetricsTab({
                     onDoubleClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
-                    {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
+                    {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                     <div
                       onMouseDown={header.getResizeHandler()}
                       onTouchStart={header.getResizeHandler()}
@@ -2225,6 +2297,7 @@ export function HistopathologyView({
   const location = useLocation();
   const { data: lesionData, isLoading, error } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
+  const { data: trendData } = useFindingDoseTrends(studyId);
   const { data: pathReviews } = useAnnotations<PathologyReview>(studyId, "pathology-reviews");
 
   const [selectedSpecimen, setSelectedSpecimen] = useState<string | null>(null);
@@ -2295,6 +2368,18 @@ export function HistopathologyView({
         r.organ_system.toLowerCase() === specLower
     );
   }, [ruleResults, selectedSpecimen]);
+
+  // Trends for selected specimen
+  const trendsByFinding = useMemo(() => {
+    const map = new Map<string, FindingDoseTrend>();
+    if (!trendData || !selectedSpecimen) return map;
+    for (const t of trendData) {
+      if (t.specimen === selectedSpecimen) {
+        map.set(t.finding, t);
+      }
+    }
+    return map;
+  }, [trendData, selectedSpecimen]);
 
   // Auto-select top specimen on load
   useEffect(() => {
@@ -2465,6 +2550,7 @@ export function HistopathologyView({
                 setMinSeverity={setMinSeverity}
                 studyId={studyId}
                 onSubjectClick={onSubjectClick}
+                trendsByFinding={trendsByFinding}
               />
             )}
             {activeTab === "metrics" && (

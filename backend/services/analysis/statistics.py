@@ -121,6 +121,25 @@ def spearman_correlation(x: list | np.ndarray, y: list | np.ndarray) -> dict:
     return {"rho": float(rho), "p_value": float(p_val)}
 
 
+def severity_trend(dose_levels: list, avg_severities: list) -> dict:
+    """Spearman correlation of avg_severity × dose level.
+
+    Returns {rho, p_value}, or {None, None} if fewer than 3 non-null pairs
+    or if severity is constant across doses.
+    """
+    dl = np.array(dose_levels, dtype=float)
+    sev = np.array(avg_severities, dtype=float)
+    mask = ~(np.isnan(dl) | np.isnan(sev))
+    dl, sev = dl[mask], sev[mask]
+    if len(dl) < 3:
+        return {"rho": None, "p_value": None}
+    # Constant input → correlation undefined
+    if np.all(sev == sev[0]):
+        return {"rho": None, "p_value": None}
+    rho, p_val = stats.spearmanr(dl, sev)
+    return {"rho": float(rho), "p_value": float(p_val)}
+
+
 def bonferroni_correct(p_values: list[float | None], n_tests: int | None = None) -> list[float | None]:
     """Apply Bonferroni correction to a list of p-values."""
     if n_tests is None:

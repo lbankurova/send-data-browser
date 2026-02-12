@@ -150,6 +150,16 @@ export interface ProvenanceMessage {
   link_to_rule: string | null;
 }
 
+// --- Histopathology: per-finding dose trend statistics ---
+
+export interface FindingDoseTrend {
+  specimen: string;
+  finding: string;
+  ca_trend_p: number | null;
+  severity_trend_rho: number | null;
+  severity_trend_p: number | null;
+}
+
 // --- Histopathology (View 4) ---
 
 export interface LesionSeverityRow {
