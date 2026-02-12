@@ -6,6 +6,7 @@ import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { SignalScorePopover } from "../ScoreBreakdown";
+import { SourceRecordsExpander } from "../SourceRecordsExpander";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
@@ -205,6 +206,19 @@ function EndpointPanel({
           </p>
         )}
       </CollapsiblePane>
+
+      {/* Source records — drill to individual animal data (TRUST-07p1) */}
+      {selection && selectedRow && studyId && (
+        <SourceRecordsExpander
+          studyId={studyId}
+          domain={selection.domain}
+          testCode={selection.test_code}
+          sex={selection.sex}
+          doseLevel={selectedRow.dose_level}
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        />
+      )}
 
       <CollapsiblePane title="Correlations" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {correlatedFindings.length === 0 ? (
