@@ -154,7 +154,7 @@ All tabs: `relative px-4 py-1.5 text-xs font-medium transition-colors`
 The Evidence tab uses `useResizePanelY(200, 80, 500)` to create a vertically resizable split:
 - **Top section** (findings table): `shrink-0 overflow-y-auto px-4 py-2` with `style={{ height: findingsHeight }}`. Default 200px, resizable 80-500px.
 - **HorizontalResizeHandle**: 4px tall drag strip (`cursor-row-resize`), `border-b border-border`.
-- **Bottom section** (heatmap container): `flex min-h-0 flex-1 flex-col overflow-hidden`. Contains a `FilterBar` and the heatmap content area.
+- **Bottom section** (heatmap container): `flex min-h-0 flex-1 flex-col overflow-hidden`. Filter controls render inside each heatmap (below the heatmap header, above the matrix).
 
 ### Observed Findings (top section)
 
@@ -177,22 +177,24 @@ Sorted by max avg_severity descending. Click sets finding-level selection (updat
 
 Contains both group-level and subject-level heatmaps, toggled via a Group/Subject segmented control. Shares sex/severity filters with the Metrics tab (lifted to parent state).
 
-#### Filter Bar
+#### Filter Controls
 
-`FilterBar` with controls that adapt based on the active matrix mode:
+Filter controls render below each heatmap's header (between header and matrix content), not in a shared bar above. Each mode includes the common controls plus mode-specific ones. When there's no heatmap data, the empty-state fallback still shows the Group/Subject toggle so users can switch modes.
 
-**Always visible:**
+**Common controls (both modes):**
 - Group/Subject toggle: segmented control (`rounded-full` pills, active: `bg-foreground text-background`) — switches `matrixMode` between "group" and "subject"
 - Sex filter: `<FilterSelect>` — "All sexes" / Male / Female
 - Min severity filter: `<FilterSelect>` — "Min severity: any" / "1+" / "2+" / "3+"
 
-**Group mode only:**
+**Group mode adds:**
 - Severity/Incidence toggle: segmented control (`rounded-full` pills)
 
-**Subject mode only:**
+**Subject mode adds:**
 - Dose group filter: `<FilterSelect>` — "All dose groups" / per-group options (computed from `subjData.subjects`, deduped by dose_level, sorted ascending)
 - Subject sort: `<FilterSelect>` — "Sort: dose group" / "Sort: max severity". Severity sort sorts within each dose group (dose groups always ascending, severity descending within group).
 - Affected only: checkbox + "Affected only" label (default: checked)
+
+**Implementation:** Subject mode passes all controls as a `controls` ReactNode prop to `SubjectHeatmap`, which renders them between its header and the matrix. Group mode renders the `FilterBar` inline between the header and the description text.
 
 Matrix mode, affected only, subject sort, and dose group filter reset on specimen change via `useEffect`. Affected only resets to `true`; others reset to defaults.
 
@@ -220,7 +222,7 @@ Rendered when `heatmapData` exists and has findings.
 
 #### Subject-Level Heatmap (matrixMode === "subject")
 
-Fetches individual subject data via `useHistopathSubjects(studyId, specimen)` on demand (only when `matrixMode === "subject"`). Container: `border-b p-3`. Accepts `affectedOnly` (default true), `doseGroupFilter` (default null), and `sortMode` props. Filters: sex, affected-only (`Object.keys(findings).length > 0`), dose group. Sort: dose group ascending always, then within-group by severity (if sortMode=severity) or sex+ID (if sortMode=dose).
+Fetches individual subject data via `useHistopathSubjects(studyId, specimen)` on demand (only when `matrixMode === "subject"`). Container: `border-b p-3`. Accepts `affectedOnly` (default true), `doseGroupFilter` (default null), `sortMode`, and `controls` (ReactNode rendered between header and matrix) props. Filters: sex, affected-only (`Object.keys(findings).length > 0`), dose group. Sort: dose group ascending always, then within-group by severity (if sortMode=severity) or sex+ID (if sortMode=dose).
 
 **Structure:** Four-tier header:
 1. **Dose group headers** — horizontal bar above each dose group with colored indicator stripe (`getDoseGroupColor(doseLevel)`), label "({N})" subjects.
