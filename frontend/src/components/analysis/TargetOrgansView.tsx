@@ -535,7 +535,7 @@ function OverviewTab({
           </span>
         </div>
         <table className="w-full text-xs">
-          <thead>
+          <thead className="sticky top-0 z-10 bg-background">
             <tr className="border-b bg-muted/50 text-left text-muted-foreground">
               <th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Domain</th>
               <th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Endpoints</th>

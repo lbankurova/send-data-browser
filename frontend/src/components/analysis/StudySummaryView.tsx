@@ -598,9 +598,9 @@ function DetailsTab({
           <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Treatment arms ({meta.dose_groups.length})
           </h2>
-          <div className="overflow-x-auto rounded-md border">
+          <div className="max-h-60 overflow-auto rounded-md border">
             <table className="w-full text-xs">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/30">
                   <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Arm code</th>
                   <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Label</th>

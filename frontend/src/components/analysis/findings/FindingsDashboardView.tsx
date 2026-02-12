@@ -131,7 +131,7 @@ function TopFindingsTable({ rows }: { rows: SignalSummaryRow[] }) {
 
   return (
     <table className="w-full text-xs">
-      <thead>
+      <thead className="sticky top-0 z-10 bg-background">
         <tr className="border-b bg-muted/50 text-left">
           <th className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Endpoint</th>
           <th className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Domain</th>

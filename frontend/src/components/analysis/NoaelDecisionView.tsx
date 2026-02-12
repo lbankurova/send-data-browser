@@ -794,7 +794,7 @@ function AdversityMatrixTab({
               Adverse effect summary ({filteredData.length} rows)
             </h2>
           </div>
-          <div className="overflow-x-auto">
+          <div className="max-h-[50vh] overflow-auto">
             <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
               <thead className="sticky top-0 z-10 bg-background">
                 {table.getHeaderGroups().map((hg) => (

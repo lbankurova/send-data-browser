@@ -1252,17 +1252,18 @@ function SubjectHeatmap({
               <div
                 key={dg.doseLevel}
                 className={cn(
-                  "flex-shrink-0 text-center border-b",
+                  "flex-shrink-0 border-b",
                   gi > 0 && "border-l-2 border-border"
                 )}
-                style={{ width: dg.subjects.length * 32 }}
               >
-                <div
-                  className="h-0.5"
-                  style={{ backgroundColor: getDoseGroupColor(dg.doseLevel) }}
-                />
-                <div className="px-1 py-0.5 text-[10px] font-semibold">
-                  {dg.doseLabel} ({dg.subjects.length})
+                <div className="text-center" style={{ width: dg.subjects.length * 32 }}>
+                  <div
+                    className="h-0.5"
+                    style={{ backgroundColor: getDoseGroupColor(dg.doseLevel) }}
+                  />
+                  <div className="px-1 py-0.5 text-[10px] font-semibold">
+                    {dg.doseLabel} ({dg.subjects.length})
+                  </div>
                 </div>
               </div>
             ))}

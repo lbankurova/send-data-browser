@@ -521,16 +521,15 @@ async def get_histopath_subjects(
         "MINIMAL": 1, "MILD": 2, "MODERATE": 3, "MARKED": 4, "SEVERE": 5,
     }
 
-    # Join with subjects
+    # Join specimen findings with subject metadata
     specimen_df = specimen_df.merge(
         subjects_df[["USUBJID", "SEX", "dose_level", "dose_label"]],
         on="USUBJID", how="inner",
     )
 
-    # Build per-subject entries
-    subject_list = []
+    # Build findings map per subject (only those with MI records)
+    findings_by_subj: dict[str, dict] = {}
     for usubjid, subj_grp in specimen_df.groupby("USUBJID"):
-        row0 = subj_grp.iloc[0]
         findings_map = {}
         for _, r in subj_grp.iterrows():
             f = str(r[finding_col])
@@ -540,13 +539,18 @@ async def get_histopath_subjects(
                 "severity": sev_str,
                 "severity_num": sev_num,
             }
+        findings_by_subj[usubjid] = findings_map
 
+    # Build per-subject entries from ALL subjects (not just those with findings)
+    subject_list = []
+    for _, row in subjects_df.iterrows():
+        usubjid = str(row["USUBJID"])
         subject_list.append({
             "usubjid": usubjid,
-            "sex": str(row0["SEX"]),
-            "dose_level": int(row0["dose_level"]),
-            "dose_label": str(row0["dose_label"]),
-            "findings": findings_map,
+            "sex": str(row["SEX"]),
+            "dose_level": int(row["dose_level"]),
+            "dose_label": str(row["dose_label"]),
+            "findings": findings_by_subj.get(usubjid, {}),
         })
 
     # Sort by dose_level then sex then USUBJID
