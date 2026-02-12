@@ -1,9 +1,10 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2, Wrench } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
+import { useProjects } from "@/hooks/useProjects";
 import { cn } from "@/lib/utils";
 import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
@@ -13,12 +14,9 @@ import { useDesignMode } from "@/contexts/DesignModeContext";
 import { useScenarios } from "@/hooks/useScenarios";
 import type { ScenarioSummary } from "@/hooks/useScenarios";
 import type { StudySummary } from "@/types";
-
-function formatStandard(raw: string | null): string {
-  if (!raw) return "—";
-  const match = raw.match(/(\d+\.\d+)/);
-  return match ? `SEND ${match[1]}` : raw;
-}
+import { getPipelineStageColor } from "@/lib/severity-colors";
+import { noael } from "@/lib/study-accessors";
+import type { StudyMetadata } from "@/hooks/useStudyPortfolio";
 
 const VAL_DISPLAY: Record<string, { icon: React.ReactNode; tooltip: string }> = {
   Pass: { icon: <Check className="h-3.5 w-3.5" style={{ color: "#16a34a" }} />, tooltip: "SEND validation passed" },
@@ -27,7 +25,14 @@ const VAL_DISPLAY: Record<string, { icon: React.ReactNode; tooltip: string }> = 
   "Not Run": { icon: <span className="text-xs text-muted-foreground">—</span>, tooltip: "Not validated" },
 };
 
-type DisplayStudy = StudySummary & { validation: string };
+type DisplayStudy = StudySummary & {
+  validation: string;
+  // Portfolio fields (may be null for non-portfolio studies)
+  pipeline_stage?: string;
+  duration_weeks?: number;
+  noael_value?: string;  // Resolved NOAEL display value
+  portfolio_metadata?: StudyMetadata;  // Full portfolio metadata if available
+};
 
 function StudyContextMenu({
   position,
@@ -330,11 +335,13 @@ function DeleteConfirmDialog({
 export function AppLandingPage() {
   const { data: studies, isLoading } = useStudies();
   const { data: portfolioStudies } = useStudyPortfolio();
+  const { data: projects } = useProjects();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { selectedStudyId, selectStudy } = useSelection();
   const { designMode, toggleDesignMode } = useDesignMode();
   const { data: scenarios } = useScenarios(designMode);
+  const [projectFilter, setProjectFilter] = useState<string>("");
 
   const realStudies: DisplayStudy[] = (studies ?? []).map((s) => ({
     ...s,
@@ -342,20 +349,35 @@ export function AppLandingPage() {
   }));
 
   // Add portfolio studies (mock studies with metadata) to the list
-  const portfolioDisplayStudies: DisplayStudy[] = (portfolioStudies ?? []).map((s) => ({
-    study_id: s.id,
-    name: s.title,
-    domain_count: s.domains?.length ?? 0,
-    species: s.species,
-    study_type: s.study_type,
-    protocol: s.protocol,
-    standard: null, // Portfolio studies don't have SEND standard in mock data
-    subjects: s.subjects,
-    start_date: null,
-    end_date: null,
-    status: s.status,
-    validation: s.validation ? (s.validation.errors > 0 ? "Fail" : s.validation.warnings > 0 ? "Warnings" : "Pass") : "Not Run",
-  }));
+  const portfolioDisplayStudies: DisplayStudy[] = (portfolioStudies ?? []).map((s) => {
+    const resolvedNoael = noael(s);
+    const noaelDisplay = resolvedNoael
+      ? `${resolvedNoael.dose} ${resolvedNoael.unit}`
+      : "—";
+    const noaelWithSuffix = resolvedNoael && s.noael_derived && !s.noael_reported
+      ? `${noaelDisplay} (d)`
+      : noaelDisplay;
+
+    return {
+      study_id: s.id,
+      name: s.title,
+      domain_count: s.domains?.length ?? 0,
+      species: s.species,
+      study_type: s.study_type,
+      protocol: s.protocol,
+      standard: null,
+      subjects: s.subjects,
+      start_date: null,
+      end_date: null,
+      status: s.status,
+      validation: s.validation ? (s.validation.errors > 0 ? "Fail" : s.validation.warnings > 0 ? "Warnings" : "Pass") : "Not Run",
+      // Portfolio-specific fields
+      pipeline_stage: s.pipeline_stage,
+      duration_weeks: s.duration_weeks,
+      noael_value: noaelWithSuffix,
+      portfolio_metadata: s,
+    };
+  });
 
   const scenarioStudies: DisplayStudy[] = designMode
     ? (scenarios ?? []).map((s: ScenarioSummary) => ({
@@ -374,7 +396,13 @@ export function AppLandingPage() {
       }))
     : [];
 
-  const allStudies: DisplayStudy[] = [...realStudies, ...portfolioDisplayStudies];
+  const allStudiesUnfiltered: DisplayStudy[] = [...realStudies, ...portfolioDisplayStudies];
+
+  // Filter by program if selected
+  const allStudies: DisplayStudy[] = useMemo(() => {
+    if (!projectFilter) return allStudiesUnfiltered;
+    return allStudiesUnfiltered.filter((s) => s.portfolio_metadata?.project === projectFilter);
+  }, [allStudiesUnfiltered, projectFilter]);
 
   const [contextMenu, setContextMenu] = useState<{
     study: DisplayStudy;
@@ -482,9 +510,30 @@ export function AppLandingPage() {
 
       {/* Studies table */}
       <div className="px-8 py-6">
-        <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Studies ({allStudies.length + scenarioStudies.length})
-        </h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Studies ({allStudies.length + scenarioStudies.length})
+          </h2>
+
+          {/* Program Filter */}
+          {projects && projects.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Program:</span>
+              <select
+                value={projectFilter}
+                onChange={(e) => setProjectFilter(e.target.value)}
+                className="rounded border border-border bg-background px-2 py-1 text-xs"
+              >
+                <option value="">All programs</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.compound})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
 
         {isLoading ? (
           <div className="space-y-2">
@@ -499,12 +548,13 @@ export function AppLandingPage() {
                   <th className="w-8 px-2 py-1.5"></th>
                   <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
                   <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Standard</th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</th>
                   <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subjects</th>
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">End</th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Duration</th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">NOAEL</th>
                   <th className="pl-5 pr-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                  <th className="px-3 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Val</th>
                 </tr>
               </thead>
               <tbody>
@@ -537,16 +587,28 @@ export function AppLandingPage() {
                           : "—"}
                       </td>
                       <td className="px-3 py-1 text-muted-foreground">
-                        {formatStandard(study.standard)}
+                        {study.species ?? "—"}
+                      </td>
+                      <td className="px-3 py-1">
+                        {study.pipeline_stage ? (
+                          <span style={{ color: getPipelineStageColor(study.pipeline_stage) }}>
+                            {study.pipeline_stage.charAt(0).toUpperCase() + study.pipeline_stage.slice(1).replace(/_/g, ' ')}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </td>
                       <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
                         {study.subjects ?? "—"}
                       </td>
-                      <td className="px-3 py-1 tabular-nums text-muted-foreground">
-                        {study.start_date ?? "—"}
+                      <td className="px-3 py-1 text-muted-foreground">
+                        {study.duration_weeks ? `${study.duration_weeks}w` : "—"}
                       </td>
-                      <td className="px-3 py-1 tabular-nums text-muted-foreground">
-                        {study.end_date ?? "—"}
+                      <td className="px-3 py-1 text-muted-foreground">
+                        {study.study_type ?? "—"}
+                      </td>
+                      <td className="px-3 py-1 text-right tabular-nums">
+                        {study.noael_value ?? "—"}
                       </td>
                       <td className="relative pl-5 pr-3 py-1 text-xs text-muted-foreground">
                         {study.status === "Complete" && (
@@ -556,14 +618,6 @@ export function AppLandingPage() {
                           />
                         )}
                         {study.status}
-                      </td>
-                      <td className="px-3 py-1">
-                        <div
-                          className="flex items-center justify-center"
-                          title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}
-                        >
-                          {VAL_DISPLAY[study.validation]?.icon ?? <span className="text-xs text-muted-foreground">—</span>}
-                        </div>
                       </td>
                     </tr>
                   );
