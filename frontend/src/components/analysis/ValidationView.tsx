@@ -733,7 +733,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                         key={header.id}
                         className="relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
                         style={{ width: header.getSize() }}
-                        onClick={header.column.getToggleSortingHandler()}
+                        onDoubleClick={header.column.getToggleSortingHandler()}
                       >
                         <span className="flex items-center gap-1">
                           {flexRender(header.column.columnDef.header, header.getContext())}
@@ -844,7 +844,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                           key={header.id}
                           className="relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
                           style={{ width: header.getSize() }}
-                          onClick={header.column.getToggleSortingHandler()}
+                          onDoubleClick={header.column.getToggleSortingHandler()}
                         >
                           <span className="flex items-center gap-1">
                             {flexRender(header.column.columnDef.header, header.getContext())}
