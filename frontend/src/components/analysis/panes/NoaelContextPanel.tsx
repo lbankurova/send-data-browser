@@ -13,6 +13,7 @@ import {
 } from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import { cn } from "@/lib/utils";
+import { deriveToxSuggestion } from "@/types/annotations";
 import type { Tier } from "@/lib/rule-synthesis";
 import type {
   AdverseEffectSummaryRow,
@@ -158,9 +159,16 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
       </CollapsiblePane>
 
       {/* 3. Tox Assessment */}
-      {studyId && (
-        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
-      )}
+      {studyId && (() => {
+        const bestRow = selectedRows.find((r) => r.severity === "adverse") ?? selectedRows[0];
+        return (
+          <ToxFindingForm
+            studyId={studyId}
+            endpointLabel={selection.endpoint_label}
+            systemSuggestion={bestRow ? deriveToxSuggestion(bestRow.treatment_related, bestRow.severity) : undefined}
+          />
+        );
+      })()}
 
       {/* 4. Related views (with context) */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>

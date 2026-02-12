@@ -1,11 +1,13 @@
 /**
- * TRUST-05p1: Validation Rule Catalog
+ * TRUST-05p1 + TRUST-05p2: Validation Rule Catalog & Customization
  * Browsable inspector showing all validation rules, fix tiers,
  * evidence types, and fix scripts.
+ * Phase 2 adds enable/disable and severity override per rule.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { cn } from "@/lib/utils";
 import {
@@ -15,6 +17,7 @@ import {
 } from "@/lib/validation-rule-catalog";
 import type { ValidationRuleDef } from "@/lib/validation-rule-catalog";
 import type { ValidationRuleResult, FixScriptDef } from "@/hooks/useValidationResults";
+import type { ValidationRuleOverride } from "@/types/annotations";
 
 // ── Severity filter styles ────────────────────────────────────────────
 
@@ -23,6 +26,8 @@ const SEV_ICON: Record<string, string> = {
   Warning: "\u26A0",
   Info: "\u2139",
 };
+
+const SEVERITY_OPTIONS = ["Error", "Warning", "Info"] as const;
 
 // ── Props ─────────────────────────────────────────────────────────────
 
@@ -33,28 +38,38 @@ interface Props {
   scripts: FixScriptDef[];
   /** CORE conformance info */
   coreConformance: { engine_version: string; standard: string; ct_version: string } | null;
+  /** Study ID for persisting rule customizations */
+  studyId?: string;
 }
 
-// ── Rule row (expandable) ────────────────────────────────────────────
+// ── Rule row (expandable, with customization) ────────────────────────
 
 function RuleRow({
   rule,
   firedCount,
   isExpanded,
   onToggle,
+  override,
+  onOverrideChange,
 }: {
   rule: ValidationRuleDef;
   firedCount: number;
   isExpanded: boolean;
   onToggle: () => void;
+  override?: ValidationRuleOverride;
+  onOverrideChange?: (ruleId: string, field: Partial<ValidationRuleOverride>) => void;
 }) {
   const fired = firedCount > 0;
+  const isDisabled = override?.enabled === false;
+  const hasSeverityOverride = override?.severityOverride != null;
+  const effectiveSeverity = override?.severityOverride ?? rule.severity;
 
   return (
     <div
       className={cn(
         "border-b last:border-b-0",
-        !fired && "opacity-50",
+        !fired && !isDisabled && "opacity-50",
+        isDisabled && "opacity-30",
       )}
     >
       {/* Header row */}
@@ -65,12 +80,16 @@ function RuleRow({
         <span className="text-[10px] text-muted-foreground">
           {isExpanded ? "\u25BC" : "\u25B6"}
         </span>
-        <span className="font-mono text-[11px] font-semibold">{rule.id}</span>
-        <span className="text-[11px]">{rule.name}</span>
+        <span className={cn("font-mono text-[11px] font-semibold", isDisabled && "line-through")}>{rule.id}</span>
+        <span className={cn("text-[11px]", isDisabled && "line-through")}>{rule.name}</span>
         <span
-          className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600"
+          className={cn(
+            "rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600",
+            hasSeverityOverride && "border-amber-300",
+          )}
         >
-          {rule.severity}
+          {effectiveSeverity}
+          {hasSeverityOverride && <span className="ml-0.5 text-[8px] text-amber-600">*</span>}
         </span>
         <span className="flex items-center gap-0.5">
           {rule.applicable_domains.map((d) => (
@@ -78,7 +97,9 @@ function RuleRow({
           ))}
         </span>
         <span className="ml-auto flex items-center gap-1">
-          {fired ? (
+          {isDisabled ? (
+            <span className="text-[9px] text-amber-600">disabled</span>
+          ) : fired ? (
             <span className="rounded-full bg-muted px-1.5 text-[9px] font-mono">
               {firedCount} issue{firedCount !== 1 ? "s" : ""}
             </span>
@@ -125,6 +146,53 @@ function RuleRow({
               <span>{rule.cdisc_reference}</span>
             </div>
           </div>
+
+          {/* Customization controls (TRUST-05p2) */}
+          {onOverrideChange && (
+            <div className="border-t pt-2">
+              <div className="mb-1.5 text-[10px] font-medium text-muted-foreground">Rule configuration</div>
+              <div className="flex items-center gap-4">
+                {/* Enable/disable toggle */}
+                <label className="flex items-center gap-1.5 text-[10px]">
+                  <input
+                    type="checkbox"
+                    checked={override?.enabled !== false}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onOverrideChange(rule.id, { enabled: e.target.checked });
+                    }}
+                    className="h-3 w-3"
+                  />
+                  <span>Enabled</span>
+                </label>
+
+                {/* Severity override */}
+                <label className="flex items-center gap-1.5 text-[10px]">
+                  <span className="text-muted-foreground">Severity:</span>
+                  <select
+                    className={cn(
+                      "rounded border bg-background px-1.5 py-0.5 text-[10px]",
+                      hasSeverityOverride && "border-amber-300",
+                    )}
+                    value={override?.severityOverride ?? ""}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      const val = e.target.value;
+                      onOverrideChange(rule.id, {
+                        severityOverride: val ? (val as "Error" | "Warning" | "Info") : null,
+                      });
+                    }}
+                  >
+                    <option value="">Default ({rule.severity})</option>
+                    {SEVERITY_OPTIONS.filter((s) => s !== rule.severity).map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -133,10 +201,26 @@ function RuleRow({
 
 // ── Main component ──────────────────────────────────────────────────
 
-export function ValidationRuleCatalog({ firedRules, scripts, coreConformance }: Props) {
+export function ValidationRuleCatalog({ firedRules, scripts, coreConformance, studyId }: Props) {
   const [severityFilter, setSeverityFilter] = useState<string>("");
   const [expandedRules, setExpandedRules] = useState<Set<string>>(new Set());
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
+  // Rule override annotations
+  const { data: overrideAnnotations } = useAnnotations<ValidationRuleOverride>(
+    studyId, "validation-rule-config",
+  );
+  const { mutate: saveOverride, isPending: overrideSaving, isSuccess: overrideSaved, reset: overrideReset } = useSaveAnnotation<ValidationRuleOverride>(
+    studyId, "validation-rule-config",
+  );
+
+  // Auto-reset success flash
+  useEffect(() => {
+    if (overrideSaved) {
+      const t = setTimeout(() => overrideReset(), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [overrideSaved, overrideReset]);
 
   // Count fired issues per custom rule
   const firedCountMap = useMemo(() => {
@@ -178,6 +262,14 @@ export function ValidationRuleCatalog({ firedRules, scripts, coreConformance }: 
     return count;
   }, [firedCountMap]);
 
+  // Count customized rules
+  const customizedCount = useMemo(() => {
+    if (!overrideAnnotations) return 0;
+    return Object.values(overrideAnnotations).filter(
+      (o) => o.enabled === false || o.severityOverride != null,
+    ).length;
+  }, [overrideAnnotations]);
+
   const toggleRule = (id: string) => {
     setExpandedRules((prev) => {
       const next = new Set(prev);
@@ -197,6 +289,22 @@ export function ValidationRuleCatalog({ firedRules, scripts, coreConformance }: 
     collapseAll();
   };
 
+  const handleOverrideChange = useCallback(
+    (ruleId: string, field: Partial<ValidationRuleOverride>) => {
+      const existing = overrideAnnotations?.[ruleId];
+      saveOverride({
+        entityKey: ruleId,
+        data: {
+          enabled: existing?.enabled ?? true,
+          severityOverride: existing?.severityOverride ?? null,
+          comment: existing?.comment ?? "",
+          ...field,
+        },
+      });
+    },
+    [overrideAnnotations, saveOverride],
+  );
+
   return (
     <div className="flex h-full flex-col overflow-auto">
       {/* Header */}
@@ -206,6 +314,11 @@ export function ValidationRuleCatalog({ firedRules, scripts, coreConformance }: 
           {coreRules.length > 0 && (
             <span className="text-muted-foreground">
               {" "}&middot; {coreRules.length} CORE rules
+            </span>
+          )}
+          {customizedCount > 0 && (
+            <span className="text-amber-600">
+              {" "}&middot; {customizedCount} customized
             </span>
           )}
         </span>
@@ -248,6 +361,16 @@ export function ValidationRuleCatalog({ firedRules, scripts, coreConformance }: 
         </div>
       </div>
 
+      {/* Save indicator */}
+      {(overrideSaving || overrideSaved) && (
+        <div className={cn(
+          "px-4 py-1 text-[10px]",
+          overrideSaved ? "text-green-600" : "text-muted-foreground",
+        )}>
+          {overrideSaving ? "Saving rule configuration..." : "Rule configuration saved"}
+        </div>
+      )}
+
       {/* Custom rules list */}
       <CollapsiblePane
         title={`Custom rules (${filteredCatalog.length})`}
@@ -263,6 +386,8 @@ export function ValidationRuleCatalog({ firedRules, scripts, coreConformance }: 
               firedCount={firedCountMap.get(rule.id) ?? 0}
               isExpanded={expandedRules.has(rule.id)}
               onToggle={() => toggleRule(rule.id)}
+              override={overrideAnnotations?.[rule.id]}
+              onOverrideChange={studyId ? handleOverrideChange : undefined}
             />
           ))}
           {filteredCatalog.length === 0 && (
@@ -408,6 +533,14 @@ export function ValidationRuleCatalog({ firedRules, scripts, coreConformance }: 
           <p className="text-[11px] text-muted-foreground">No fix scripts available.</p>
         )}
       </CollapsiblePane>
+
+      {/* Configuration note */}
+      {studyId && (
+        <div className="px-4 py-2 text-[9px] text-muted-foreground/60">
+          Rule configuration is saved per-study. Expand a rule to enable/disable or adjust severity.
+          Changes document expert preferences — they do not re-run validation.
+        </div>
+      )}
     </div>
   );
 }

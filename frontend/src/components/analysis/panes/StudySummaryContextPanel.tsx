@@ -21,6 +21,7 @@ import {
   titleCase,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
+import { deriveToxSuggestion } from "@/types/annotations";
 
 interface Props {
   signalData: SignalSummaryRow[];
@@ -277,7 +278,11 @@ function EndpointPanel({
       </CollapsiblePane>
 
       {studyId && (
-        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
+        <ToxFindingForm
+          studyId={studyId}
+          endpointLabel={selection.endpoint_label}
+          systemSuggestion={selectedRow ? deriveToxSuggestion(selectedRow.treatment_related, selectedRow.severity) : undefined}
+        />
       )}
 
       {/* Related views */}
