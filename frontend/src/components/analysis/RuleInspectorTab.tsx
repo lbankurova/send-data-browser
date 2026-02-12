@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
 import { ThresholdEditor } from "./ThresholdEditor";
+import { CustomInsightRuleBuilder } from "./CustomInsightRuleBuilder";
 import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import {
   RULE_CATALOG,
@@ -211,6 +212,9 @@ export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
 
         {/* Threshold editor (TRUST-01p2) */}
         {studyId && <ThresholdEditor studyId={studyId} />}
+
+        {/* Custom insight rules (TRUST-01p3) */}
+        {studyId && <CustomInsightRuleBuilder studyId={studyId} />}
       </div>
     </div>
   );
