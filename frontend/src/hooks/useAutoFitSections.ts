@@ -136,25 +136,40 @@ export function useAutoFitSections(
     });
   }, [containerRef, configs, count]);
 
-  // ResizeObserver on content refs — re-run auto-fit when content changes
+  // Two observers work together:
+  // 1. ResizeObserver on the container — handles window/layout resizes
+  // 2. MutationObserver on content refs — handles selection-driven re-renders
+  //    (content refs are h-full overflow-auto, so their border-box never changes
+  //     when children change — only scrollHeight does, which ResizeObserver ignores)
   useEffect(() => {
-    const observer = new ResizeObserver(() => {
-      autoFit();
-    });
+    let rafId = 0;
+    const scheduleAutoFit = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => autoFit());
+    };
 
-    for (const ref of contentRefs.current) {
-      if (ref.current) observer.observe(ref.current);
+    // Container resize (window resize, layout changes)
+    const resizeObs = new ResizeObserver(scheduleAutoFit);
+    if (containerRef.current) {
+      resizeObs.observe(containerRef.current);
     }
 
-    // Also observe container for size changes
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+    // Content mutations (selection changes, data loading, re-renders)
+    const mutationObs = new MutationObserver(scheduleAutoFit);
+    for (const ref of contentRefs.current) {
+      if (ref.current) {
+        mutationObs.observe(ref.current, { childList: true, subtree: true });
+      }
     }
 
     // Initial fit
     autoFit();
 
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(rafId);
+      resizeObs.disconnect();
+      mutationObs.disconnect();
+    };
   }, [autoFit, containerRef]);
 
   // Build pointer-down handlers (manual drag)
