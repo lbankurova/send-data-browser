@@ -35,9 +35,12 @@ function LazyRoute({ children }: { children: React.ReactNode }) {
 
 const router = createBrowserRouter([
   {
+    path: "/",
+    element: <StudyPortfolioView />,
+  },
+  {
     element: <Layout />,
     children: [
-      { path: "/", element: <StudyPortfolioView /> },
       { path: "/studies/:studyId", element: <StudySummaryViewWrapper /> },
       {
         path: "/studies/:studyId/domains/:domainName",
