@@ -557,6 +557,7 @@ function OverviewTab({
   specimen,
   selection,
   onFindingClick,
+  onSwitchToMatrix,
 }: {
   specimenData: LesionSeverityRow[];
   findingSummaries: FindingSummary[];
@@ -565,6 +566,7 @@ function OverviewTab({
   specimen: string;
   selection: HistopathSelection | null;
   onFindingClick: (finding: string) => void;
+  onSwitchToMatrix?: (finding: string) => void;
 }) {
 
   // Per-finding dose consistency (for "Dose-driven" badge)
@@ -659,7 +661,14 @@ function OverviewTab({
                     {fs.severity}
                   </span>
                   {findingConsistency.get(fs.finding) === "Strong" && (
-                    <span className="shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] text-muted-foreground" title="Incidence increases monotonically with dose across 3+ dose groups">
+                    <span
+                      className="shrink-0 cursor-pointer rounded-sm border border-border px-1 py-0.5 text-[9px] text-muted-foreground hover:bg-accent/50"
+                      title="Incidence increases monotonically with dose across 3+ groups — click to view in Severity matrix"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSwitchToMatrix?.(fs.finding);
+                      }}
+                    >
                       Dose-driven
                     </span>
                   )}
@@ -2101,6 +2110,10 @@ export function HistopathologyView({
                 specimen={selectedSpecimen!}
                 selection={selection}
                 onFindingClick={handleFindingClick}
+                onSwitchToMatrix={(finding) => {
+                  handleFindingClick(finding);
+                  setActiveTab("matrix");
+                }}
               />
             )}
             {activeTab === "matrix" && (
