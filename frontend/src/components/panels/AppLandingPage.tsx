@@ -343,10 +343,31 @@ export function AppLandingPage() {
   const { data: scenarios } = useScenarios(designMode);
   const [projectFilter, setProjectFilter] = useState<string>("");
 
-  const realStudies: DisplayStudy[] = (studies ?? []).map((s) => ({
-    ...s,
-    validation: "Not Run",
-  }));
+  const realStudies: DisplayStudy[] = (studies ?? []).map((s) => {
+    // Try to calculate duration from start/end dates if available
+    let durationWeeks: number | undefined = undefined;
+    if (s.start_date && s.end_date) {
+      try {
+        const start = new Date(s.start_date);
+        const end = new Date(s.end_date);
+        const diffMs = end.getTime() - start.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        durationWeeks = Math.round(diffDays / 7);
+      } catch (e) {
+        // Invalid date format, leave undefined
+      }
+    }
+
+    return {
+      ...s,
+      validation: "Not Run",
+      // Populate portfolio-style fields from regular study data where available
+      pipeline_stage: undefined, // Regular studies don't have pipeline stage
+      duration_weeks: durationWeeks,
+      noael_value: undefined, // Regular studies don't have NOAEL metadata
+      portfolio_metadata: undefined,
+    };
+  });
 
   // Add portfolio studies (mock studies with metadata) to the list
   const portfolioDisplayStudies: DisplayStudy[] = (portfolioStudies ?? []).map((s) => {
