@@ -33,7 +33,8 @@
         "evidence": {
           "type": "missing-value",
           "variable": "SSTDTC",
-          "derivation": "TS domain TSPARMCD"
+          "derivation": "TS domain TSPARMCD",
+          "suggested": null
         },
         "diagnosis": "Trial Summary (TS) is missing parameter 'SSTDTC'. Study metadata will be incomplete."
       }
@@ -48,8 +49,8 @@
     "domains_affected": [
       "TS"
     ],
-    "elapsed_seconds": 0.58,
-    "validated_at": "2026-02-11T22:09:29.629160+00:00"
+    "elapsed_seconds": 0.51,
+    "validated_at": "2026-02-12T00:39:52.490959+00:00"
   },
   "core_conformance": null
 }

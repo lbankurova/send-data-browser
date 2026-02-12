@@ -11,7 +11,7 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
-import { FilterBar } from "@/components/ui/FilterBar";
+import { FilterBar, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
@@ -755,40 +755,37 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
               </span>
               <div className="ml-auto flex items-center gap-1.5">
                 {/* Fix status filter */}
-                <select
-                  className="bg-transparent py-0.5 text-xs cursor-pointer focus:outline-none"
+                <FilterSelect
                   value={recordFilters.fixStatus}
                   onChange={(e) => setRecordFilters((prev) => ({ ...prev, fixStatus: e.target.value }))}
                 >
-                  <option value="">Fix status</option>
+                  <option value="">All fix status</option>
                   <option value="Not fixed">Not fixed</option>
                   <option value="Auto-fixed">Auto-fixed</option>
                   <option value="Manually fixed">Manually fixed</option>
                   <option value="Accepted as-is">Accepted as-is</option>
                   <option value="Flagged">Flagged</option>
-                </select>
+                </FilterSelect>
                 {/* Review status filter */}
-                <select
-                  className="bg-transparent py-0.5 text-xs cursor-pointer focus:outline-none"
+                <FilterSelect
                   value={recordFilters.reviewStatus}
                   onChange={(e) => setRecordFilters((prev) => ({ ...prev, reviewStatus: e.target.value }))}
                 >
-                  <option value="">Review status</option>
+                  <option value="">All review status</option>
                   <option value="Not reviewed">Not reviewed</option>
                   <option value="Reviewed">Reviewed</option>
                   <option value="Approved">Approved</option>
-                </select>
+                </FilterSelect>
                 {/* Subject filter */}
-                <select
-                  className="bg-transparent py-0.5 text-xs cursor-pointer focus:outline-none"
+                <FilterSelect
                   value={recordFilters.subjectId}
                   onChange={(e) => setRecordFilters((prev) => ({ ...prev, subjectId: e.target.value }))}
                 >
-                  <option value="">Subject</option>
+                  <option value="">All subjects</option>
                   {uniqueSubjects.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
-                </select>
+                </FilterSelect>
               </div>
             </FilterBar>
           )}

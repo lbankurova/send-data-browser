@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
-import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
+import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
 // getNeutralHeatColor thresholds are used inline in buildHeatmapOption
 import type { EChartsOption } from "echarts";
@@ -226,8 +226,7 @@ export function SignalSummaryHeatmapView({
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Signal heatmap
         </span>
-        <select
-          className="rounded border bg-background px-1.5 py-0.5 text-[11px]"
+        <FilterSelect
           value={sexFilter ?? ""}
           onChange={(e) => setSexFilter(e.target.value || null)}
         >
@@ -235,7 +234,7 @@ export function SignalSummaryHeatmapView({
           {sexes.map((s) => (
             <option key={s} value={s}>{s === "M" ? "Male" : s === "F" ? "Female" : s}</option>
           ))}
-        </select>
+        </FilterSelect>
         <FilterBarCount>{signalData?.length ?? 0} signal rows</FilterBarCount>
       </FilterBar>
 

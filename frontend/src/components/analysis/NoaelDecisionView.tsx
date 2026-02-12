@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -15,7 +15,7 @@ import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { EvidenceBar } from "@/components/ui/EvidenceBar";
-import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
+import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import {
   formatPValue,
@@ -290,7 +290,7 @@ function OrganRailItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 border-l-2 px-3 py-2.5 transition-colors",
+        "w-full text-left border-b border-border/40 border-l-2 px-3 py-2 transition-colors",
         isSelected
           ? "border-l-blue-500 bg-blue-50/60 dark:bg-blue-950/20"
           : "border-l-transparent hover:bg-accent/30"
@@ -395,8 +395,8 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
           {titleCase(summary.organ_system)}
         </h3>
         {summary.adverseCount > 0 && (
-          <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
-            {summary.adverseCount} ADVERSE
+          <span className="rounded-sm border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {summary.adverseCount} adverse
           </span>
         )}
       </div>
@@ -440,6 +440,7 @@ function OverviewTab({
   organ,
   selection,
   onEndpointClick,
+  studyId,
 }: {
   organData: AdverseEffectSummaryRow[];
   endpointSummaries: EndpointSummary[];
@@ -447,7 +448,9 @@ function OverviewTab({
   organ: string;
   selection: NoaelSelection | null;
   onEndpointClick: (endpoint: string) => void;
+  studyId?: string;
 }) {
+  const navigate = useNavigate();
 
   // Filter rule results to this organ
   const organRules = useMemo(() => {
@@ -517,7 +520,9 @@ function OverviewTab({
           <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Insights
           </h4>
-          <InsightsList rules={organRules} />
+          <InsightsList rules={organRules} onEndpointClick={(organ) => {
+            if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+          }} />
         </div>
       )}
 
@@ -694,24 +699,22 @@ function AdversityMatrixTab({
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Filter bar */}
       <FilterBar>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+        <FilterSelect
           value={sexFilter ?? ""}
           onChange={(e) => setSexFilter(e.target.value || null)}
         >
           <option value="">All sexes</option>
           <option value="M">Male</option>
           <option value="F">Female</option>
-        </select>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+        </FilterSelect>
+        <FilterSelect
           value={trFilter ?? ""}
           onChange={(e) => setTrFilter(e.target.value || null)}
         >
-          <option value="">TR: Any</option>
+          <option value="">All TR status</option>
           <option value="yes">Treatment-related</option>
           <option value="no">Not treatment-related</option>
-        </select>
+        </FilterSelect>
         <FilterBarCount>{filteredData.length} of {organData.length} findings</FilterBarCount>
       </FilterBar>
 
@@ -1064,6 +1067,7 @@ export function NoaelDecisionView({
                   organ={selectedOrgan!}
                   selection={selection}
                   onEndpointClick={handleEndpointClick}
+                  studyId={studyId}
                 />
               ) : (
                 <AdversityMatrixTab

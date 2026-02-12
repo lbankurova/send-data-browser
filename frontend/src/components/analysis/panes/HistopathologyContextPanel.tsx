@@ -103,7 +103,11 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
     return { totalAffected, totalN, incPct, maxSev, doseTrend, sexLabel };
   }, [findingRows]);
 
-  // Rules matching finding — filter by organ system first, then text match
+  // Rules matching finding — filter by organ system, then text match, exclude R12/R13
+  // R12/R13 are histopath incidence/severity rules — that data is already the primary
+  // content of this view (evidence panel, severity matrix, dose detail). Showing them
+  // again in insights is redundant. Keep cross-domain signals (LB, BW, OM) that add
+  // corroborating evidence the user can't see elsewhere.
   const findingRules = useMemo(() => {
     if (!selection) return [];
     const organSystem = specimenToOrganSystem(selection.specimen);
@@ -115,12 +119,13 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       ? ruleResults.filter((r) => r.organ_system === organSystem)
       : ruleResults; // "general" specimens: can't narrow by organ, use all
 
-    // Secondary: within organ-matched rules, require finding or specimen text match
+    // Secondary: text match + exclude R12/R13 (histopath — already in the view)
     return organFiltered.filter(
       (r) =>
-        r.output_text.toLowerCase().includes(findingLower) ||
+        r.rule_id !== "R12" && r.rule_id !== "R13" &&
+        (r.output_text.toLowerCase().includes(findingLower) ||
         r.output_text.toLowerCase().includes(specimenLower) ||
-        r.context_key.toLowerCase().includes(specimenLower.replace(/[, ]+/g, "_"))
+        r.context_key.toLowerCase().includes(specimenLower.replace(/[, ]+/g, "_")))
     );
   }, [ruleResults, selection]);
 
@@ -195,7 +200,9 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
 
       {/* Insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <InsightsList rules={findingRules} />
+        <InsightsList rules={findingRules} onEndpointClick={(organ) => {
+          if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+        }} />
       </CollapsiblePane>
 
       {/* Dose detail */}
