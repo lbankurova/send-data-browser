@@ -10,6 +10,7 @@ import type {
   OrganEvidenceRow,
   LesionSeverityRow,
   ProvenanceMessage,
+  FindingDoseTrend,
 } from "@/types/analysis-views";
 
 const API_BASE = "/api";
@@ -89,6 +90,14 @@ export function fetchProvenanceMessages(
 ): Promise<ProvenanceMessage[]> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/provenance-messages`
+  );
+}
+
+export function fetchFindingDoseTrends(
+  studyId: string
+): Promise<FindingDoseTrend[]> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/finding-dose-trends`
   );
 }
 
