@@ -9,6 +9,37 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { getSeverityHeatColor } from "@/lib/severity-colors";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 
+// ─── Specimen → organ_system mapping (mirrors backend ORGAN_SYSTEM_MAP) ──────
+const SPECIMEN_ORGAN_MAP: Record<string, string> = {
+  LIVER: "hepatic", KIDNEY: "renal", KIDNEYS: "renal", HEART: "cardiovascular",
+  AORTA: "cardiovascular", BRAIN: "neurological", "SPINAL CORD": "neurological",
+  LUNG: "respiratory", LUNGS: "respiratory", TRACHEA: "respiratory", LARYNX: "respiratory",
+  SPLEEN: "hematologic", THYMUS: "hematologic",
+  PANCREAS: "endocrine", STOMACH: "gastrointestinal", ESOPHAGUS: "gastrointestinal",
+  TONGUE: "gastrointestinal", TESTIS: "reproductive", TESTES: "reproductive",
+  EPIDIDYMIS: "reproductive", UTERUS: "reproductive", SKIN: "integumentary",
+  EYE: "ocular", EYES: "ocular", "URINARY BLADDER": "renal",
+};
+// Keywords for compound specimens: "GLAND, ADRENAL" → match "ADRENAL"
+const KEYWORD_ORGAN_MAP: [string, string][] = [
+  ["ADRENAL", "endocrine"], ["THYROID", "endocrine"], ["PITUITARY", "endocrine"],
+  ["PROSTATE", "reproductive"], ["MAMMARY", "reproductive"], ["OVARY", "reproductive"],
+  ["BONE MARROW", "hematologic"], ["LYMPH NODE", "hematologic"],
+  ["LARGE INTESTINE", "gastrointestinal"], ["SMALL INTESTINE", "gastrointestinal"],
+  ["COLON", "gastrointestinal"], ["CECUM", "gastrointestinal"], ["RECTUM", "gastrointestinal"],
+  ["DUODENUM", "gastrointestinal"], ["JEJUNUM", "gastrointestinal"], ["ILEUM", "gastrointestinal"],
+  ["MUSCLE", "musculoskeletal"], ["FEMUR", "musculoskeletal"], ["STERNUM", "musculoskeletal"],
+];
+
+function specimenToOrganSystem(specimen: string): string {
+  const upper = specimen.toUpperCase().trim();
+  if (SPECIMEN_ORGAN_MAP[upper]) return SPECIMEN_ORGAN_MAP[upper];
+  for (const [keyword, system] of KEYWORD_ORGAN_MAP) {
+    if (upper.includes(keyword)) return system;
+  }
+  return "general";
+}
+
 interface HistopathSelection {
   finding: string;
   specimen: string;
@@ -72,12 +103,20 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
     return { totalAffected, totalN, incPct, maxSev, doseTrend, sexLabel };
   }, [findingRows]);
 
-  // Rules matching finding
+  // Rules matching finding — filter by organ system first, then text match
   const findingRules = useMemo(() => {
     if (!selection) return [];
+    const organSystem = specimenToOrganSystem(selection.specimen);
     const findingLower = selection.finding.toLowerCase();
     const specimenLower = selection.specimen.toLowerCase();
-    return ruleResults.filter(
+
+    // Primary: rules whose organ_system matches the specimen's organ system
+    const organFiltered = organSystem !== "general"
+      ? ruleResults.filter((r) => r.organ_system === organSystem)
+      : ruleResults; // "general" specimens: can't narrow by organ, use all
+
+    // Secondary: within organ-matched rules, require finding or specimen text match
+    return organFiltered.filter(
       (r) =>
         r.output_text.toLowerCase().includes(findingLower) ||
         r.output_text.toLowerCase().includes(specimenLower) ||

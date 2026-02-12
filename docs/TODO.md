@@ -27,7 +27,7 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 0 | 5 | Incorrect behavior that should be fixed |
+| Bug | 1 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 4 | Spec'd but not implemented |
@@ -36,11 +36,21 @@
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **24** | **37** | |
+| **Total open** | **25** | **37** | |
 
 ## Defer to Production (Infrastructure Chain)
 
 HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewer identity, auth, PointCross guard), MF-03–06/08 (validation rules 016/018, CDISC Library, write-back, recovery arms, auth), GAP-01/02/04/05/07–09 (URL state, deep linking, concurrency, audit trail, SENDIG metadata, incremental recompute, SPECIMEN CT), SD-08/10 (FW domain, TypeScript cleanup). See individual entries below for details.
+
+---
+
+## Bugs (1 open)
+
+### BUG-06: Histopath findings table column resize not working
+- **Files:** `frontend/src/components/analysis/HistopathologyView.tsx` (`OverviewTab` component)
+- **Issue:** The observed findings table uses TanStack React Table with `enableColumnResizing: true` and `tableLayout: "fixed"`, but drag-to-resize on column headers does not work. The resize handle div (`.cursor-col-resize`) is present and highlights on hover, but dragging produces no visible column width change. Likely a conflict between `tableLayout: "fixed"` with percentage-free `width` styles and the TanStack resize state, or the `onClick` sort handler on `<th>` interfering with `onMouseDown` on the resize child. The severity matrix table in the same view uses the identical pattern and works — compare the two to find the difference.
+- **Status:** Open
+- **Owner hint:** frontend-dev
 
 ---
 
