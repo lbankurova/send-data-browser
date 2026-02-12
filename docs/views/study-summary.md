@@ -1,10 +1,13 @@
 # Study Summary View
 
 **Route:** `/studies/:studyId`
+**Query parameters:** `?tab=details|signals|insights` (optional — sets initial active tab)
 **Component:** `StudySummaryView.tsx` (wrapped by `StudySummaryViewWrapper.tsx`)
 **Cognitive mode:** Hybrid (conclusions stated in Decision Bar and TARGET badges; evidence available on drill-down)
 **Scientific question:** "What happened in this study?"
 **Role:** Entry point after opening a study. Orientation, signal detection, triage.
+
+**Deep linking:** The `tab` query parameter allows direct navigation to a specific tab. Example: `/studies/PC201708?tab=insights` opens the Cross-study insights tab directly. Used by landing page context panel navigation links.
 
 ---
 
