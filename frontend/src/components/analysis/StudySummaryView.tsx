@@ -155,17 +155,50 @@ export function StudySummaryView({
     return targetOrgans.find((o) => o.organ_system === selectedOrgan) ?? null;
   }, [selectedOrgan, targetOrgans]);
 
+  // If analysis data not available but insights tab requested, show insights
+  if (error && tab === "insights") {
+    return (
+      <div className="flex h-full flex-col">
+        <ViewTabBar
+          tabs={[
+            { key: "details", label: "Study details" },
+            { key: "signals", label: "Signals" },
+            { key: "insights", label: "Cross-study insights" },
+          ]}
+          value={tab}
+          onChange={(newTab: string) => setTab(newTab as Tab)}
+        />
+        <CrossStudyInsightsTab studyId={studyId!} />
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
-        <div className="mb-4 rounded-lg bg-red-50 p-6">
-          <h1 className="mb-2 text-xl font-semibold text-red-700">
+        <div className="mb-4 rounded-lg bg-amber-50 p-6">
+          <Info className="mx-auto mb-3 h-10 w-10 text-amber-600" />
+          <h1 className="mb-2 text-xl font-semibold text-amber-700">
             Analysis data not available
           </h1>
-          <p className="text-sm text-red-600">
-            Run the generator to produce analysis data:
+          <p className="text-sm text-amber-600">
+            This is a portfolio metadata study without analysis data.
           </p>
-          <code className="mt-2 block rounded bg-red-100 px-3 py-1.5 text-xs text-red-800">
+          <p className="mt-2 text-sm text-amber-600">
+            Try the <strong>Cross-study insights</strong> tab to see intelligence for this study.
+          </p>
+          <button
+            onClick={() => setTab("insights")}
+            className="mt-4 rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+          >
+            View cross-study insights →
+          </button>
+        </div>
+        <div className="mt-6 rounded-lg bg-gray-50 p-4 text-left">
+          <p className="text-xs text-gray-600">
+            <strong>For studies with XPT data:</strong> Run the generator to produce analysis data:
+          </p>
+          <code className="mt-2 block rounded bg-gray-100 px-3 py-1.5 text-xs text-gray-700">
             cd backend && python -m generator.generate {studyId}
           </code>
         </div>
