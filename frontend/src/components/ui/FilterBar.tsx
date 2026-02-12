@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import type { ReactNode, SelectHTMLAttributes } from "react";
+import { filter } from "@/lib/design-tokens";
 import { cn } from "@/lib/utils";
 
 export function FilterBar({
@@ -12,6 +13,24 @@ export function FilterBar({
     <div className={cn("flex items-center gap-2 border-b bg-muted/30 px-4 py-2", className)}>
       {children}
     </div>
+  );
+}
+
+export function FilterSelect({
+  className,
+  children,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
+  return (
+    <select
+      className={cn(
+        filter.select,
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </select>
   );
 }
 

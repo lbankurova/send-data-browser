@@ -471,6 +471,15 @@ function SpecimenHeader({
     () => deriveSpecimenConclusion(summary, specimenData, specimenRules),
     [summary, specimenData, specimenRules]
   );
+  // Merge domains from lesion data + rule results for complete coverage
+  const allDomains = useMemo(() => {
+    const set = new Set(summary.domains);
+    for (const r of specimenRules) {
+      const m = r.context_key.match(/^([A-Z]{2})_/);
+      if (m) set.add(m[1]);
+    }
+    return [...set].sort();
+  }, [summary.domains, specimenRules]);
 
   return (
     <div className="shrink-0 border-b px-4 py-2">
@@ -501,10 +510,12 @@ function SpecimenHeader({
       </div>
 
       {/* Domain subtitle */}
-      {summary.domains.length > 0 && (
-        <p className="text-[11px] text-muted-foreground">
-          {summary.domains.join(" \u00b7 ")}
-        </p>
+      {allDomains.length > 0 && (
+        <div className="mt-0.5 flex items-center gap-1">
+          {allDomains.map((d) => (
+            <DomainLabel key={d} domain={d} />
+          ))}
+        </div>
       )}
 
       {/* 1-line conclusion */}

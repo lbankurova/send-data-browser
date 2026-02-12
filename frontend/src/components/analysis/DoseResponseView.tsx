@@ -30,7 +30,7 @@ import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { BookmarkStar } from "@/components/ui/BookmarkStar";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
-import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
+import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import {
   formatPValue,
   formatEffectSize,
@@ -1869,26 +1869,23 @@ function MetricsTableContent({
     <div className="flex h-full flex-col">
       {/* Filter bar */}
       <FilterBar className="flex-wrap px-3 py-1">
-        <select
-          className="rounded border bg-background px-1.5 py-0.5 text-xs"
+        <FilterSelect
           value={metricsFilters.sex ?? ""}
           onChange={(e) => setMetricsFilters((f) => ({ ...f, sex: e.target.value || null }))}
         >
           <option value="">All sexes</option>
           <option value="M">Male</option>
           <option value="F">Female</option>
-        </select>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+        </FilterSelect>
+        <FilterSelect
           value={metricsFilters.data_type ?? ""}
           onChange={(e) => setMetricsFilters((f) => ({ ...f, data_type: e.target.value || null }))}
         >
-          <option value="">All types</option>
+          <option value="">All data types</option>
           <option value="continuous">Continuous</option>
           <option value="categorical">Categorical</option>
-        </select>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+        </FilterSelect>
+        <FilterSelect
           value={metricsFilters.organ_system ?? ""}
           onChange={(e) => setMetricsFilters((f) => ({ ...f, organ_system: e.target.value || null }))}
         >
@@ -1898,7 +1895,7 @@ function MetricsTableContent({
               {titleCase(os)}
             </option>
           ))}
-        </select>
+        </FilterSelect>
         <label className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">
           <input
             type="checkbox"

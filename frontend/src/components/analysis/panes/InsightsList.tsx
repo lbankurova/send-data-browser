@@ -7,6 +7,7 @@ import {
   type Tier,
   type SynthLine,
   type SynthEndpoint,
+  type OrganGroup,
 } from "@/lib/rule-synthesis";
 
 // ---------------------------------------------------------------------------
@@ -16,9 +17,11 @@ import {
 interface Props {
   rules: RuleResult[];
   tierFilter?: Tier | null;
+  /** Optional callback when user clicks the endpoint count — navigate to organ endpoints */
+  onEndpointClick?: (organ: string) => void;
 }
 
-export function InsightsList({ rules, tierFilter }: Props) {
+export function InsightsList({ rules, tierFilter, onEndpointClick }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const organGroups = useMemo(() => buildOrganGroups(rules), [rules]);
@@ -47,7 +50,12 @@ export function InsightsList({ rules, tierFilter }: Props) {
               </span>
               {g.endpointCount > 0 && (
                 <span className="text-[9px] text-muted-foreground/50">
-                  {g.endpointCount} ep{g.domainCount > 0 && ` · ${g.domainCount} dom`}
+                  <EpCount group={g} onEndpointClick={onEndpointClick} />
+                  {g.domainCount > 0 && (
+                    <span title={g.domains.join(", ")} className="cursor-default">
+                      {` · ${g.domainCount} dom`}
+                    </span>
+                  )}
                 </span>
               )}
             </div>
@@ -100,6 +108,37 @@ export function InsightsList({ rules, tierFilter }: Props) {
         </p>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Endpoint count with tooltip + optional click
+// ---------------------------------------------------------------------------
+
+/** Build a domain-grouped tooltip string, e.g. "LB: ALT, AST, GGT\nOM: Liver weight" */
+function buildEpTooltip(group: OrganGroup): string {
+  const entries = Object.entries(group.endpointsByDomain);
+  if (entries.length === 0) return `${group.endpointCount} endpoints`;
+  return entries.map(([d, names]) => `${d}: ${names.join(", ")}`).join("\n");
+}
+
+function EpCount({ group, onEndpointClick }: { group: OrganGroup; onEndpointClick?: (organ: string) => void }) {
+  const tooltip = buildEpTooltip(group);
+  if (onEndpointClick) {
+    return (
+      <button
+        title={tooltip}
+        className="cursor-pointer hover:text-foreground"
+        onClick={(e) => { e.stopPropagation(); onEndpointClick(group.organ); }}
+      >
+        {group.endpointCount} ep
+      </button>
+    );
+  }
+  return (
+    <span title={tooltip} className="cursor-default">
+      {group.endpointCount} ep
+    </span>
   );
 }
 

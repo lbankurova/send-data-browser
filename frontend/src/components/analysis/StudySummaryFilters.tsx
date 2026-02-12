@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { FilterSelect } from "@/components/ui/FilterBar";
 import type { SignalSummaryRow, StudySummaryFilters as Filters } from "@/types/analysis-views";
 
 interface Props {
@@ -17,8 +18,7 @@ export function StudySummaryFilters({ data, filters, onChange }: Props) {
     <div className="flex flex-wrap items-center gap-3">
       <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
         Endpoint
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+        <FilterSelect
           value={filters.endpoint_type ?? ""}
           onChange={(e) =>
             onChange({ ...filters, endpoint_type: e.target.value || null })
@@ -30,13 +30,12 @@ export function StudySummaryFilters({ data, filters, onChange }: Props) {
               {t.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())}
             </option>
           ))}
-        </select>
+        </FilterSelect>
       </label>
 
       <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
         Sex
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+        <FilterSelect
           value={filters.sex ?? ""}
           onChange={(e) =>
             onChange({ ...filters, sex: e.target.value || null })
@@ -45,7 +44,7 @@ export function StudySummaryFilters({ data, filters, onChange }: Props) {
           <option value="">All</option>
           <option value="M">Male</option>
           <option value="F">Female</option>
-        </select>
+        </FilterSelect>
       </label>
 
       <label className="flex items-center gap-1.5 text-xs text-muted-foreground">

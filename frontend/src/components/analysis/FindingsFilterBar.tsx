@@ -1,11 +1,4 @@
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FilterSelect } from "@/components/ui/FilterBar";
 import type { AdverseEffectsFilters } from "@/types/analysis";
 
 interface FindingsFilterBarProps {
@@ -14,7 +7,6 @@ interface FindingsFilterBarProps {
 }
 
 const DOMAINS = ["LB", "BW", "OM", "MI", "MA", "CL"];
-const SEXES = ["M", "F"];
 const SEVERITIES = ["adverse", "warning", "normal"];
 
 export function FindingsFilterBar({
@@ -22,71 +14,62 @@ export function FindingsFilterBar({
   onFiltersChange,
 }: FindingsFilterBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Select
-        value={filters.domain ?? "all"}
-        onValueChange={(v) =>
-          onFiltersChange({ ...filters, domain: v === "all" ? null : v })
-        }
-      >
-        <SelectTrigger className="h-8 w-[100px]">
-          <SelectValue placeholder="Domain" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All domains</SelectItem>
+    <div className="flex flex-wrap items-center gap-3">
+      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        Domain
+        <FilterSelect
+          value={filters.domain ?? ""}
+          onChange={(e) =>
+            onFiltersChange({ ...filters, domain: e.target.value || null })
+          }
+        >
+          <option value="">All</option>
           {DOMAINS.map((d) => (
-            <SelectItem key={d} value={d}>
+            <option key={d} value={d}>
               {d}
-            </SelectItem>
+            </option>
           ))}
-        </SelectContent>
-      </Select>
+        </FilterSelect>
+      </label>
 
-      <Select
-        value={filters.sex ?? "all"}
-        onValueChange={(v) =>
-          onFiltersChange({ ...filters, sex: v === "all" ? null : v })
-        }
-      >
-        <SelectTrigger className="h-8 w-[80px]">
-          <SelectValue placeholder="Sex" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All</SelectItem>
-          {SEXES.map((s) => (
-            <SelectItem key={s} value={s}>
-              {s === "M" ? "Male" : "Female"}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        Sex
+        <FilterSelect
+          value={filters.sex ?? ""}
+          onChange={(e) =>
+            onFiltersChange({ ...filters, sex: e.target.value || null })
+          }
+        >
+          <option value="">All</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </FilterSelect>
+      </label>
 
-      <Select
-        value={filters.severity ?? "all"}
-        onValueChange={(v) =>
-          onFiltersChange({ ...filters, severity: v === "all" ? null : v })
-        }
-      >
-        <SelectTrigger className="h-8 w-[110px]">
-          <SelectValue placeholder="Severity" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All severity</SelectItem>
+      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        Classification
+        <FilterSelect
+          value={filters.severity ?? ""}
+          onChange={(e) =>
+            onFiltersChange({ ...filters, severity: e.target.value || null })
+          }
+        >
+          <option value="">All</option>
           {SEVERITIES.map((s) => (
-            <SelectItem key={s} value={s}>
+            <option key={s} value={s}>
               {s.charAt(0).toUpperCase() + s.slice(1)}
-            </SelectItem>
+            </option>
           ))}
-        </SelectContent>
-      </Select>
+        </FilterSelect>
+      </label>
 
-      <Input
+      <input
         placeholder="Search findings..."
         value={filters.search}
         onChange={(e) =>
           onFiltersChange({ ...filters, search: e.target.value })
         }
-        className="h-8 w-[200px]"
+        className="rounded border bg-background px-2 py-0.5 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
       />
     </div>
   );

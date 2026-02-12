@@ -11,7 +11,7 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { EvidenceBar } from "@/components/ui/EvidenceBar";
-import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
+import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import type {
   OrganBlock,
@@ -194,7 +194,7 @@ function SignalsOverviewTab({ organ, signalData, ruleResults, modifiers, caveats
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto px-4 py-3">
-        {organRules.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Insights</h4><InsightsList rules={organRules} /></div>)}
+        {organRules.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Insights</h4><InsightsList rules={organRules} onEndpointClick={(organ) => navigate(`/studies/${studyId}/dose-response`, { state: { organ_system: organ } })} /></div>)}
         {organModifiers.length > 0 && (<div className="mb-4"><div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><span className="text-[10px] text-amber-600">{"\u25B2"}</span>Modifiers<span className="font-normal text-muted-foreground/60">({organModifiers.length})</span></div><div className="space-y-0.5">{organModifiers.map((s, i) => (<div key={i} className="text-xs leading-relaxed text-foreground/80">{s.text}</div>))}</div></div>)}
         {organCaveats.length > 0 && (<div className="mb-4"><div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><span className="text-[10px] text-amber-600">{"\u26A0"}</span>Review flags<span className="font-normal text-muted-foreground/60">({organCaveats.length})</span></div><div className="space-y-0.5">{organCaveats.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u26A0"}</span><span>{s.text}</span></div>))}</div></div>)}
         {domainBreakdown.length > 0 && (<div className="mb-4"><h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Domain breakdown</h4><table className="w-full text-xs"><thead><tr className="border-b bg-muted/50 text-left text-muted-foreground"><th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Domain</th><th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Endpoints</th><th className="pb-1 pr-3 text-[10px] font-semibold uppercase tracking-wider">Significant</th><th className="pb-1 text-[10px] font-semibold uppercase tracking-wider">TR</th></tr></thead><tbody>{domainBreakdown.map((d) => (<tr key={d.domain} className="border-b border-border/30"><td className="py-1.5 pr-3"><DomainLabel domain={d.domain} /></td><td className="py-1.5 pr-3">{d.endpoints}</td><td className="py-1.5 pr-3"><span className={d.significant > 0 ? "font-semibold" : ""}>{d.significant}</span></td><td className="py-1.5"><span className={d.treatmentRelated > 0 ? "font-semibold" : ""}>{d.treatmentRelated}</span></td></tr>))}</tbody></table></div>)}
@@ -212,7 +212,7 @@ function SignalsOverviewTab({ organ, signalData, ruleResults, modifiers, caveats
 function SignalsMatrixTab({ signalData, targetOrgan, selection, onSelect }: {
   signalData: SignalSummaryRow[]; targetOrgan: TargetOrganRow; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void;
 }) {
-  const [filters, setFilters] = useState<Filters>({ endpoint_type: null, organ_system: null, signal_score_min: 0, sex: null, significant_only: false });
+  const [filters, setFilters] = useState<Filters>({ endpoint_type: null, organ_system: null, signal_score_min: 0, sex: null, significant_only: true });
   const filteredData = useMemo(() => signalData.filter((row) => { if (filters.endpoint_type && row.endpoint_type !== filters.endpoint_type) return false; if (row.signal_score < filters.signal_score_min) return false; if (filters.sex && row.sex !== filters.sex) return false; if (filters.significant_only && (row.p_value === null || row.p_value >= 0.05)) return false; return true; }), [signalData, filters]);
   const emptySet = useMemo(() => new Set<string>(), []);
   return (
@@ -340,17 +340,17 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Filter bar */}
       <FilterBar className="flex-wrap">
-        <select className="rounded border bg-background px-2 py-1 text-xs" value={filters.sex ?? ""} onChange={(e) => setFilters((f) => ({ ...f, sex: e.target.value || null }))}>
+        <FilterSelect value={filters.sex ?? ""} onChange={(e) => setFilters((f) => ({ ...f, sex: e.target.value || null }))}>
           <option value="">All sexes</option>
           <option value="M">Male</option>
           <option value="F">Female</option>
-        </select>
-        <select className="rounded border bg-background px-2 py-1 text-xs" value={filters.severity ?? ""} onChange={(e) => setFilters((f) => ({ ...f, severity: e.target.value || null }))}>
+        </FilterSelect>
+        <FilterSelect value={filters.severity ?? ""} onChange={(e) => setFilters((f) => ({ ...f, severity: e.target.value || null }))}>
           <option value="">All severities</option>
           <option value="adverse">Adverse</option>
           <option value="warning">Warning</option>
           <option value="normal">Normal</option>
-        </select>
+        </FilterSelect>
         <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={filters.significant_only} onChange={(e) => setFilters((f) => ({ ...f, significant_only: e.target.checked }))} className="rounded border" /><span>Significant only</span></label>
         <FilterBarCount>{filteredData.length} rows</FilterBarCount>
       </FilterBar>

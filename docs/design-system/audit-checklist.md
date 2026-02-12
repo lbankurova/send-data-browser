@@ -3,7 +3,7 @@
 Testable rules extracted from `datagrok-visual-design-guide.md`, `datagrok-app-design-patterns.md`, and CLAUDE.md design decisions. Every rule is pass/fail with a clear test. Run this checklist against any view before declaring it compliant.
 
 > **Created:** 2026-02-09. Updated: 2026-02-09. Derived from all three design system docs + master rules consolidation.
-> **Rules:** 75 testable rules (C: 27, T: 9, S: 6, X: 7, K: 6, I: 10, A: 10) + 3 guiding principles.
+> **Rules:** 78 testable rules (C: 27, T: 9, S: 6, X: 7, K: 9, I: 10, A: 10) + 3 guiding principles.
 > **Usage:** The UX designer role MUST run this checklist (not just spot-check) during any design audit. Each rule has an ID for referencing in audit reports.
 
 ---
@@ -58,13 +58,13 @@ Testable rules extracted from `datagrok-visual-design-guide.md`, `datagrok-app-d
 
 | ID | Rule | Test | Severity |
 |----|------|------|----------|
-| T-01 | **Page title: `text-2xl font-bold`.** Exactly one per view. | Count L1 headers. ≠1 or wrong class → FAIL. | High |
+| T-01 | **View header.** Two patterns: (a) tab-bar views use `text-base font-semibold` as contextual header since identity is conveyed by the tab bar; (b) standalone views use `text-2xl font-bold` as L1 page title. At most one L1 header per view. | Check header against pattern (a) or (b). Mixed usage in one view → FAIL. | High |
 | T-02 | **Section header: `text-sm font-semibold`.** | Check pane headers. Wrong weight or size → FAIL. | Medium |
 | T-03 | **Section header (upper): `text-xs font-semibold uppercase tracking-wider text-muted-foreground`.** | Check uppercase section headers. Missing any part → FAIL. | Medium |
 | T-04 | **Table header (compact): `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`.** | Check analysis grid headers. Wrong spec → FAIL. | Medium |
 | T-05 | **Table header (spacious): `text-xs font-medium text-muted-foreground`.** | Check validation/landing table headers. Wrong spec → FAIL. | Medium |
 | T-06 | **Table cell: `text-xs`.** | Check grid cell text size. Not `text-xs` → FAIL. | Low |
-| T-07 | **`font-bold` only on page titles.** Not on section headers, badges, buttons, or anything else. | Search for `font-bold`. Any non-L1 usage → FAIL. | Medium |
+| T-07 | **`font-bold` only on standalone view page titles (T-01 pattern b).** Not on section headers, badges, buttons, or tab-bar view contextual headers. | Search for `font-bold`. Any non-L1 standalone usage → FAIL. | Medium |
 | T-08 | **`font-mono` only on data values.** P-values, effect sizes, IDs, domain codes, formatted numbers. Never on labels, descriptions, headers, buttons. | Search for `font-mono` on non-data elements. Present → FAIL. | Medium |
 | T-09 | **Rail headers: `font-semibold`** (not `font-medium`). Full class matches T-03. | Check rail header. `font-medium` → FAIL. Hard rule. | High |
 
@@ -107,6 +107,9 @@ Testable rules extracted from `datagrok-visual-design-guide.md`, `datagrok-app-d
 | K-04 | **Disabled buttons have tooltip** explaining why disabled. | Find disabled buttons. Missing tooltip → FAIL. | Low |
 | K-05 | **Tab bar: canonical pattern.** `h-0.5 bg-primary` underline, `text-foreground` active, `text-muted-foreground` inactive, `px-4 py-1.5`, `text-xs font-medium`, container `bg-muted/30`. | Check every tab bar. Any deviation → FAIL. Hard rule. | Critical |
 | K-06 | **Evidence tab named "Evidence"** (not "Overview"). | Check evidence/overview tabs. "Overview" → FAIL. Hard rule. | High |
+| K-07 | **Filter selects use `<FilterSelect>` pill component.** `rounded-full bg-muted/50 px-2 py-0.5 text-xs`. Token: `filter.select`. | Find `<select>` in filter bars. Raw `<select>` instead of `<FilterSelect>` → FAIL. Form selects (annotations, overrides) are exempt. | Medium |
+| K-08 | **Self-labeling filter default names the dimension.** Filters without an external `<label>` must use `"All {dimension}"` as the default option — specific enough to understand without context. | Check each self-labeling filter's default option. Generic like `"All types"` or bare noun like `"Subject"` → FAIL. Correct: `"All data types"`, `"All subjects"`. | Medium |
+| K-09 | **Labeled filter default can be just `"All"`.** Filters wrapped in a `<label>` with visible text already name the dimension. | Check labeled filters. Redundant dimension in default (e.g., label `Sex` + default `All sexes`) is not a fail but should prefer just `"All"`. | Low |
 
 ---
 

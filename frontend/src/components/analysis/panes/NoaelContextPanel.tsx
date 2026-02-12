@@ -86,7 +86,9 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
 
         {/* 1. NOAEL narrative (interpretive value — banner shows numbers, this shows meaning) */}
         <CollapsiblePane title="NOAEL narrative" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <InsightsList rules={noaelRules} />
+          <InsightsList rules={noaelRules} onEndpointClick={(organ) => {
+            if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+          }} />
         </CollapsiblePane>
 
         <div className="px-4 py-3 text-xs text-muted-foreground">
@@ -121,7 +123,9 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
 
       {/* 1. Endpoint insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <InsightsList rules={endpointRules} tierFilter={tierFilter} />
+        <InsightsList rules={endpointRules} tierFilter={tierFilter} onEndpointClick={(organ) => {
+          if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+        }} />
       </CollapsiblePane>
 
       {/* 2. Adversity rationale */}

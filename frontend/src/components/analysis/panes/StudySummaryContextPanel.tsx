@@ -149,7 +149,9 @@ function EndpointPanel({
       </div>
 
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <InsightsList rules={filteredRules} tierFilter={tierFilter} />
+        <InsightsList rules={filteredRules} tierFilter={tierFilter} onEndpointClick={(organ) => {
+          if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+        }} />
       </CollapsiblePane>
 
       <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
@@ -430,7 +432,9 @@ function OrganPanel({
 
       {/* Pane 1: Organ insights */}
       <CollapsiblePane title="Organ insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <InsightsList rules={organRules} tierFilter={tierFilter} />
+        <InsightsList rules={organRules} tierFilter={tierFilter} onEndpointClick={(organ) => {
+          if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+        }} />
       </CollapsiblePane>
 
       {/* Pane 2: Contributing endpoints */}
