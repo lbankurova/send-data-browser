@@ -21,16 +21,16 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The Study Summary View itself is split into two tabs with a shared tab bar:
+The Study Summary View itself is split into three tabs with a shared tab bar:
 
 ```
-+-----------------------------------------------------------+
-| [Study Details]  [Signals]              [Generate Report]  |  <-- tab bar, border-b
-+-----------------------------------------------------------+
-|                                                           |
-|  Tab content (fills remaining height, scrollable)         |
-|                                                           |
-+-----------------------------------------------------------+
++-------------------------------------------------------------------+
+| [Study Details]  [Signals]  [Cross-study insights]  [Gen Report] |  <-- tab bar, border-b
++-------------------------------------------------------------------+
+|                                                                   |
+|  Tab content (fills remaining height, scrollable)                 |
+|                                                                   |
++-------------------------------------------------------------------+
 ```
 
 ---
@@ -38,7 +38,7 @@ The Study Summary View itself is split into two tabs with a shared tab bar:
 ## Tab Bar
 
 - **Position:** Top of the view, full width, `border-b`
-- **Tabs:** "Study Details" (first) and "Signals" (second, default active)
+- **Tabs:** "Study details" (first), "Signals" (second), and "Cross-study insights" (third)
 - **Active indicator:** `h-0.5 bg-primary` underline at bottom of active tab
 - **Tab text:** `text-xs font-medium`. Active = `text-foreground`. Inactive = `text-muted-foreground`. Sentence case for tab labels.
 - **Generate Report button:** Right-aligned in tab bar. Border, `text-xs`, icon `FileText` (3.5x3.5) + "Generate Report" label. Opens HTML report in new tab.
@@ -265,6 +265,46 @@ Full sortable data table of all signals for the selected organ. TanStack React T
 
 ---
 
+## Tab 3: Cross-Study Insights
+
+Full-width scrollable insight cards display. Padding `p-4`.
+
+**Data source:** `useInsights(studyId)` hook fetches insights from `/api/portfolio/insights/{study_id}`. Returns array of `Insight` objects with `priority`, `rule`, `title`, `detail`, `ref_study`.
+
+**Priority filtering:**
+- **Priority 0-1 (critical/high):** Always visible at top
+- **Priority 2-3 (medium/low):** Collapsed by default behind "Show N more insights ▼" toggle button
+
+### Loading State
+Centered spinner `Loader2` (animate-spin) + "Loading insights..." (`text-sm text-muted-foreground`).
+
+### Empty State
+Centered message: "No cross-study insights available (no reference studies)." (`text-xs text-muted-foreground`).
+
+### Insight Card (`InsightCard`)
+
+Each insight renders as a card with `border-l-2 border-primary py-2 pl-3` (left accent bar), `space-y-2` between cards.
+
+**Card structure:**
+1. **Header row** — `flex items-baseline justify-between`:
+   - Title: `text-xs font-semibold` (left)
+   - Reference study ID: `text-[10px] text-muted-foreground` (right) — shows study ID if `ref_study` is present, or `"(this study)"` in italic if `ref_study` is null (self-referencing insights like Rule 0 and Rule 9)
+2. **Detail text** — `mt-1 text-[11px] text-foreground` — full insight detail paragraph
+
+### Toggle Button
+When priority 2-3 insights exist:
+- Button: `text-xs text-primary hover:underline`, `mt-4`
+- Collapsed state: `"Show ${priority23.length} more insights ▼"`
+- Expanded state: `"Show fewer insights ▲"`
+
+**Rules by priority (for reference):**
+- Priority 0: discrepancy, dose_selection, monitoring_watchlist, dose_overlap_warning
+- Priority 1: cross_species_noael, shared_target_organ, novel_target_organ, same_species_noael_trend, same_species_loael_trend, noael_loael_margin, mortality_signal, tumor_signal
+- Priority 2: reversibility_comparison, severity_comparison, sex_specific_finding
+- Priority 3: route_difference, study_type_difference, domain_coverage_gap, dose_range_context
+
+---
+
 ## Context Panel (Right Sidebar — 280px)
 
 Route-detected: when pathname matches `/studies/{studyId}`, shows `StudySummaryContextPanel`.
@@ -355,10 +395,11 @@ Links to Target Organs (with organ_system), Dose-Response (with endpoint_label +
 
 | State | Scope | Managed By |
 |-------|-------|-----------|
-| Active tab | Local | `useState<"details" \| "signals">` — defaults to "signals" |
+| Active tab | Local | `useState<"details" \| "signals" \| "insights">` — defaults to "details" |
 | Selected organ | Local | `useState<string \| null>` — auto-selects top organ on load |
 | Selection | Shared via context | `SignalSelectionContext` — syncs heatmap cells and context panel; mutually exclusive with organ selection |
 | Evidence panel tab | Local (SignalsEvidencePanel) | `useState<"overview" \| "matrix" \| "metrics">` — defaults to "overview" |
+| Show all insights | Local (CrossStudyInsightsTab) | `useState<boolean>` — toggles visibility of priority 2-3 insights |
 | Rail width | Local | `useResizePanel(300, 180, 500)` |
 | Rail search | Local (SignalsOrganRail) | `useState<string>` |
 | Metrics tab filters | Local (SignalsMetricsTab) | `useState<{ sex, severity, significant_only }>` |
@@ -368,6 +409,8 @@ Links to Target Organs (with organ_system), Dose-Response (with endpoint_label +
 | NOAEL data | Server | `useNoaelSummary` hook |
 | Rule results | Server | `useRuleResults` hook |
 | Study metadata | Server | `useStudyMetadata` hook |
+| Provenance messages | Server | `useProvenanceMessages` hook |
+| Insights | Server | `useInsights` hook — cross-study intelligence (19 rules, 0-18) |
 | Panel data | Derived | `buildSignalsPanelData(noaelData, targetOrgans, signalData)` |
 | Sorted organs | Derived | Targets first, then by `evidence_score` desc |
 | OrganBlocksMap | Derived | Map from `panelData.organBlocks` keyed by `organKey` |
