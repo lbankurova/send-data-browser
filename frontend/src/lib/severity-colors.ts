@@ -2,32 +2,39 @@
  *  Returns Tailwind-compatible class names or CSS color values.
  */
 
-export function getSeverityColor(severity: string): {
+// ── Pipeline Stage Colors ──────────────────────────────────────────────────
+
+/**
+ * Get pipeline stage color (font color only, no background).
+ */
+export function getPipelineStageColor(stage: string): string {
+  switch (stage) {
+    case "submitted":
+      return "#4A9B68"; // green
+    case "pre_submission":
+      return "#7CA8E8"; // blue
+    case "ongoing":
+      return "#E8D47C"; // amber
+    case "planned":
+      return "#C49BE8"; // purple
+    default:
+      return "#6B7280"; // gray
+  }
+}
+
+// ── Severity Colors ────────────────────────────────────────────────────────
+
+export function getSeverityColor(_severity: string): {
   bg: string;
   text: string;
   border: string;
 } {
-  switch (severity) {
-    case "adverse":
-      return {
-        bg: "bg-red-50",
-        text: "text-red-700",
-        border: "border-red-200",
-      };
-    case "warning":
-      return {
-        bg: "bg-amber-50",
-        text: "text-amber-700",
-        border: "border-amber-200",
-      };
-    case "normal":
-    default:
-      return {
-        bg: "bg-green-50",
-        text: "text-green-700",
-        border: "border-green-200",
-      };
-  }
+  // All adversity classifications are categorical identity → neutral gray (C-05)
+  return {
+    bg: "bg-gray-100",
+    text: "text-gray-600",
+    border: "border-gray-200",
+  };
 }
 
 export function getSeverityBadgeClasses(severity: string): string {
