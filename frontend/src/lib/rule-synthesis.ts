@@ -356,6 +356,10 @@ export interface OrganGroup {
   synthLines: SynthLine[];
   endpointCount: number;
   domainCount: number;
+  /** Distinct domain codes contributing to this organ group (e.g. ["LB","BW","OM"]) */
+  domains: string[];
+  /** Endpoint names grouped by domain code (e.g. { LB: ["ALT","AST"], OM: ["Liver weight"] }) */
+  endpointsByDomain: Record<string, string[]>;
 }
 
 export function buildOrganGroups(rules: RuleResult[]): OrganGroup[] {
@@ -371,27 +375,55 @@ export function buildOrganGroups(rules: RuleResult[]): OrganGroup[] {
   for (const [organ, organRules] of map) {
     let endpointCount = 0;
     let domainCount = 0;
+    let domainNames: string[] = [];
     const r09 = organRules.find((r) => r.rule_id === "R09");
     if (r09) {
       const m = r09.output_text.match(/(\d+) endpoints across (.+?)\.?$/);
       if (m) {
         endpointCount = parseInt(m[1], 10);
-        domainCount = m[2].split(",").length;
+        domainNames = m[2].split(",").map((s) => s.trim()).filter(Boolean);
+        domainCount = domainNames.length;
       }
     }
+    // Build endpoint names grouped by domain
+    const epByDomain = new Map<string, Map<string, string>>();
+    for (const r of organRules) {
+      const ctx = parseContextKey(r.context_key);
+      if (!ctx) continue;
+      let domMap = epByDomain.get(ctx.domain);
+      if (!domMap) { domMap = new Map(); epByDomain.set(ctx.domain, domMap); }
+      if (!domMap.has(ctx.testCode)) {
+        const epName = parseEndpointName(r.output_text);
+        domMap.set(ctx.testCode, epName ?? ctx.testCode);
+      } else if (!domMap.get(ctx.testCode)!.includes(" ")) {
+        // Prefer longer human-readable name over raw test code
+        const epName = parseEndpointName(r.output_text);
+        if (epName && epName.length > domMap.get(ctx.testCode)!.length) {
+          domMap.set(ctx.testCode, epName);
+        }
+      }
+    }
+
     if (endpointCount === 0) {
       const endpoints = new Set<string>();
-      const domains = new Set<string>();
+      const domainSet = new Set<string>();
       for (const r of organRules) {
         const ctx = parseContextKey(r.context_key);
         if (ctx) {
           endpoints.add(ctx.testCode);
-          domains.add(ctx.domain);
+          domainSet.add(ctx.domain);
         }
       }
       endpointCount = endpoints.size;
-      domainCount = domains.size;
+      domainNames = [...domainSet].sort();
+      domainCount = domainNames.length;
     }
+
+    const endpointsByDomain: Record<string, string[]> = {};
+    for (const [domain, epMap] of [...epByDomain.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      endpointsByDomain[domain] = [...new Set(epMap.values())].sort();
+    }
+
     groups.push({
       organ,
       displayName: capitalize(organ),
@@ -400,6 +432,8 @@ export function buildOrganGroups(rules: RuleResult[]): OrganGroup[] {
       synthLines: synthesize(organRules),
       endpointCount,
       domainCount,
+      domains: domainNames,
+      endpointsByDomain,
     });
   }
 

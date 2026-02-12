@@ -103,6 +103,17 @@ export const badge = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Filter controls (filter)
+// ---------------------------------------------------------------------------
+
+export const filter = {
+  /** Filter select pill — muted chip, native chevron */
+  select: "rounded-full bg-muted/50 px-2 py-0.5 text-xs cursor-pointer focus:outline-none",
+  /** Filter label wrapping a select */
+  label: "flex items-center gap-1.5 text-xs text-muted-foreground",
+} as const;
+
+// ---------------------------------------------------------------------------
 // Button classes (btn)
 // ---------------------------------------------------------------------------
 

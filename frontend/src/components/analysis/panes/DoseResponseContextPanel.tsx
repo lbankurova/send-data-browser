@@ -10,8 +10,8 @@ import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import {
   titleCase,
   formatPValue,
-  getDomainBadgeColor,
 } from "@/lib/severity-colors";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import type { RuleResult, SignalSummaryRow } from "@/types/analysis-views";
@@ -271,9 +271,7 @@ export function DoseResponseContextPanel({
                 </tr>
               </thead>
               <tbody>
-                {correlatedFindings.map((f, i) => {
-                  const dc = getDomainBadgeColor(f.domain);
-                  return (
+                {correlatedFindings.map((f, i) => (
                     <tr
                       key={i}
                       className="cursor-pointer border-b border-dashed hover:bg-accent/30"
@@ -291,8 +289,8 @@ export function DoseResponseContextPanel({
                           ? f.endpoint_label.slice(0, 22) + "\u2026"
                           : f.endpoint_label}
                       </td>
-                      <td className={`py-0.5 text-[9px] font-semibold ${dc.text}`}>
-                        {f.domain}
+                      <td className="py-0.5">
+                        <DomainLabel domain={f.domain} />
                       </td>
                       <td className="py-0.5 text-right font-mono">
                         {f.signal_score.toFixed(2)}
@@ -301,8 +299,7 @@ export function DoseResponseContextPanel({
                         {formatPValue(f.p_value)}
                       </td>
                     </tr>
-                  );
-                })}
+                ))}
               </tbody>
             </table>
           </div>

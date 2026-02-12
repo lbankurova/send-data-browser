@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Loader2, Grid3X3, PieChart, Columns2, GitBranch, Clock, Search, Plus, Pin } from "lucide-react";
 import {
   useReactTable,
@@ -14,7 +14,7 @@ import { useOrganEvidenceDetail } from "@/hooks/useOrganEvidenceDetail";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { EvidenceBar } from "@/components/ui/EvidenceBar";
-import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
+import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import {
   formatPValue,
@@ -179,7 +179,7 @@ function OrganListItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors",
+        "w-full text-left border-b border-border/40 px-3 py-2 transition-colors",
         organ.target_organ_flag
           ? "border-l-2 border-l-[#DC2626]"
           : "border-l-2 border-l-transparent",
@@ -440,12 +440,15 @@ function OverviewTab({
   evidenceRows,
   organRules,
   allRuleResults,
+  studyId,
 }: {
   organ: TargetOrganRow;
   evidenceRows: OrganEvidenceRow[];
   organRules: RuleResult[];
   allRuleResults: RuleResult[];
+  studyId?: string;
 }) {
+  const navigate = useNavigate();
   // Cross-organ coherence: R16 rules matching this organ
   const coherenceHints = useMemo(() => {
     if (!allRuleResults.length || !organ) return null;
@@ -631,7 +634,9 @@ function OverviewTab({
           <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Insights
           </h4>
-          <InsightsList rules={organRules} />
+          <InsightsList rules={organRules} onEndpointClick={(organ) => {
+            if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+          }} />
         </div>
       )}
 
@@ -777,8 +782,7 @@ function EvidenceTableTab({
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Filter bar */}
       <FilterBar>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+        <FilterSelect
           value={domainFilter ?? ""}
           onChange={(e) => setDomainFilter(e.target.value || null)}
         >
@@ -786,16 +790,15 @@ function EvidenceTableTab({
           {domainsInOrgan.map((d) => (
             <option key={d} value={d}>{d}</option>
           ))}
-        </select>
-        <select
-          className="rounded border bg-background px-2 py-1 text-xs"
+        </FilterSelect>
+        <FilterSelect
           value={sexFilter ?? ""}
           onChange={(e) => setSexFilter(e.target.value || null)}
         >
           <option value="">All sexes</option>
           <option value="M">Male</option>
           <option value="F">Female</option>
-        </select>
+        </FilterSelect>
         <FilterBarCount>{filteredEvidence.length} findings</FilterBarCount>
       </FilterBar>
 
@@ -1458,6 +1461,7 @@ export function TargetOrgansView({
                 evidenceRows={organEvidenceRows}
                 organRules={organRules}
                 allRuleResults={ruleResults ?? []}
+                studyId={studyId}
               />
             )}
             {activeTab === "hypotheses" && (

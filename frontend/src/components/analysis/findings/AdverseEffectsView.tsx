@@ -54,22 +54,22 @@ export function AdverseEffectsView() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold">Adverse Effects</h1>
-        <p className="text-sm text-muted-foreground">{studyId}</p>
+    <div className="p-4">
+      <div className="mb-3">
+        <h1 className="text-base font-semibold">Adverse Effects</h1>
+        <p className="mt-0.5 text-xs text-muted-foreground">{studyId}</p>
       </div>
 
       {/* Summary counts */}
       {data && (
         <div className="mb-4 flex items-center gap-2 text-xs">
-          <span className="rounded-sm border border-red-200 bg-red-50 px-1.5 py-0.5 font-semibold text-red-700">
+          <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
             {data.summary.total_adverse} adverse
           </span>
-          <span className="rounded-sm border border-amber-200 bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-700">
+          <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
             {data.summary.total_warning} warning
           </span>
-          <span className="rounded-sm border border-green-200 bg-green-50 px-1.5 py-0.5 font-semibold text-green-700">
+          <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
             {data.summary.total_normal} normal
           </span>
           <span className="ml-1 text-muted-foreground">

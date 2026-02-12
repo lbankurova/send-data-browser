@@ -12,6 +12,7 @@ import type { SortingState } from "@tanstack/react-table";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { cn } from "@/lib/utils";
 import { DomainLabel } from "@/components/ui/DomainLabel";
+import { FilterSelect } from "@/components/ui/FilterBar";
 import {
   formatPValue,
   formatEffectSize,
@@ -180,8 +181,7 @@ function FindingsRail({
           className="mt-1 w-full rounded border bg-background px-2 py-0.5 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <div className="mt-1 flex flex-wrap gap-1">
-          <select
-            className="rounded border bg-background px-1.5 py-0.5 text-[10px]"
+          <FilterSelect
             value={domainFilter ?? ""}
             onChange={(e) => setDomainFilter(e.target.value || null)}
           >
@@ -189,9 +189,8 @@ function FindingsRail({
             {domains.map((d) => (
               <option key={d} value={d}>{d}</option>
             ))}
-          </select>
-          <select
-            className="rounded border bg-background px-1.5 py-0.5 text-[10px]"
+          </FilterSelect>
+          <FilterSelect
             value={severityFilter ?? ""}
             onChange={(e) => setSeverityFilter(e.target.value || null)}
           >
@@ -199,9 +198,8 @@ function FindingsRail({
             <option value="adverse">Adverse</option>
             <option value="warning">Warning</option>
             <option value="normal">Normal</option>
-          </select>
-          <select
-            className="rounded border bg-background px-1.5 py-0.5 text-[10px]"
+          </FilterSelect>
+          <FilterSelect
             value={sexFilter ?? ""}
             onChange={(e) => setSexFilter(e.target.value || null)}
           >
@@ -209,7 +207,7 @@ function FindingsRail({
             {sexes.map((s) => (
               <option key={s} value={s}>{s === "M" ? "Male" : s === "F" ? "Female" : s}</option>
             ))}
-          </select>
+          </FilterSelect>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
