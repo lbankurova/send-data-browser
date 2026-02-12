@@ -81,7 +81,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
     <CollapsiblePane
       title="Tox assessment"
       defaultOpen={defaultOpen}
-      headerRight={hasOverride ? <span className="text-[9px] text-amber-600">(overridden)</span> : undefined}
+      headerRight={hasOverride ? <span className="text-[9px] text-muted-foreground">(overridden)</span> : undefined}
     >
       <div className="space-y-2 text-[11px]">
         {/* Treatment Related */}
@@ -94,7 +94,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
               </span>
             )}
             {treatmentOverridden && (
-              <span className="text-[9px] text-amber-600">(overridden)</span>
+              <span className="text-[9px] text-muted-foreground">(overridden)</span>
             )}
           </div>
           <select
@@ -118,7 +118,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
               </span>
             )}
             {adversityOverridden && (
-              <span className="text-[9px] text-amber-600">(overridden)</span>
+              <span className="text-[9px] text-muted-foreground">(overridden)</span>
             )}
           </div>
           <select
@@ -134,7 +134,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
 
         {/* Override justification hint */}
         {hasOverride && !comment.trim() && (
-          <p className="text-[10px] text-amber-600">
+          <p className="text-[10px] text-muted-foreground">
             Consider adding a justification for overriding the system suggestion.
           </p>
         )}
@@ -145,7 +145,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
             {hasOverride ? "Justification / comment" : "Comment"}
           </label>
           <textarea
-            className={`w-full rounded border bg-background px-2 py-1 text-[11px] ${hasOverride && !comment.trim() ? "border-amber-300" : ""}`}
+            className={`w-full rounded border bg-background px-2 py-1 text-[11px] ${hasOverride && !comment.trim() ? "border-muted-foreground/50" : ""}`}
             rows={2}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
@@ -155,7 +155,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
 
         {/* Save */}
         <button
-          className={`rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50 ${isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+          className={`rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50 ${isSuccess ? "bg-primary/80 text-primary-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
           onClick={handleSave}
           disabled={!dirty || isPending || isSuccess}
         >

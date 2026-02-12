@@ -822,13 +822,10 @@ export function DoseResponseView({
                           )}
                           {ep.sex_divergence != null && ep.sex_divergence > 0.5 && (
                             <span
-                              className={cn(
-                                "text-[10px] font-semibold",
-                                ep.divergent_sex === "M" ? "text-[#3B82F6]" : "text-[#EC4899]"
-                              )}
+                              className="text-[10px] font-semibold text-muted-foreground"
                               title={`Sex divergence: |d_M - d_F| = ${ep.sex_divergence.toFixed(2)} (${ep.divergent_sex} has larger effect)`}
                             >
-                              {ep.divergent_sex}
+                              {ep.divergent_sex === "M" ? "\u2642" : "\u2640"}{ep.divergent_sex}
                             </span>
                           )}
                         </div>
@@ -854,7 +851,7 @@ export function DoseResponseView({
                               "ev text-[10px] font-mono",
                               ep.max_effect_size >= 0.8 ? "font-semibold" : ""
                             )}>
-                              |d|={ep.max_effect_size.toFixed(1)}
+                              |d|={ep.max_effect_size.toFixed(2)}
                             </span>
                           )}
                           {ep.min_n != null && (
@@ -914,14 +911,14 @@ export function DoseResponseView({
             <p className="mt-1 text-xs text-foreground/80">
               {generateConclusion(selectedSummary)}
             </p>
-            {/* Compact metrics — active context, #DC2626 for strong signal only */}
+            {/* Compact metrics — font-weight emphasis only (Tier 3 evidence, no color at rest) */}
             <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]">
               <span>
                 <span className="text-muted-foreground">Trend p: </span>
                 <span className={cn(
                   "font-mono",
                   selectedSummary.min_trend_p != null && selectedSummary.min_trend_p < 0.01
-                    ? "font-semibold text-[#DC2626]"
+                    ? "font-semibold"
                     : selectedSummary.min_trend_p != null && selectedSummary.min_trend_p < 0.05
                       ? "font-medium" : ""
                 )}>
@@ -933,7 +930,7 @@ export function DoseResponseView({
                 <span className={cn(
                   "font-mono",
                   selectedSummary.min_p_value != null && selectedSummary.min_p_value < 0.01
-                    ? "font-semibold text-[#DC2626]"
+                    ? "font-semibold"
                     : selectedSummary.min_p_value != null && selectedSummary.min_p_value < 0.05
                       ? "font-medium" : ""
                 )}>
@@ -946,7 +943,7 @@ export function DoseResponseView({
                   <span className={cn(
                     "font-mono",
                     selectedSummary.max_effect_size >= 0.8
-                      ? "font-semibold text-[#DC2626]"
+                      ? "font-semibold"
                       : selectedSummary.max_effect_size >= 0.5
                         ? "font-medium" : ""
                   )}>
@@ -2750,7 +2747,7 @@ function CausalityWorksheet({
                   <span className="text-xs font-medium">{c.label}</span>
                   <div className="flex items-center gap-2">
                     {override && (
-                      <span className="text-[9px] text-amber-600">(overridden)</span>
+                      <span className="text-[9px] text-muted-foreground">(overridden)</span>
                     )}
                     <DotGauge level={displayLevel} />
                     <span className="w-20 text-right text-[10px] font-medium text-muted-foreground">

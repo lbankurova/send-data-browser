@@ -285,7 +285,7 @@ function HistopathItem({ text }: { text: string }) {
   return (
     <>
       <span className="font-medium">{m[1]}</span>
-      <span className="text-[#7C3AED]/70"> in </span>
+      <span className="text-muted-foreground/70"> in </span>
       {m[2]}
     </>
   );
