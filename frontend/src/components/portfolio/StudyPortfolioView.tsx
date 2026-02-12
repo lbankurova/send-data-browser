@@ -6,6 +6,7 @@ import { getPipelineStageColor } from "@/lib/severity-colors";
 import { noael } from "@/lib/study-accessors";
 import type { StudyMetadata } from "@/hooks/useStudyPortfolio";
 import { Loader2 } from "lucide-react";
+import { Header } from "@/components/layout/Header";
 
 export function StudyPortfolioView() {
   const { data: studies, isLoading: studiesLoading } = useStudyPortfolio();
@@ -39,22 +40,30 @@ export function StudyPortfolioView() {
 
   if (studiesLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex h-screen flex-col">
+        <Header />
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
       </div>
     );
   }
 
   if (!studies || studies.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center p-4 text-sm text-muted-foreground">
-        No studies available
+      <div className="flex h-screen flex-col">
+        <Header />
+        <div className="flex flex-1 items-center justify-center p-4 text-sm text-muted-foreground">
+          No studies available
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-screen flex-col">
+      <Header />
+      <div className="flex flex-1">
       {/* Left: Study Table */}
       <div className="flex flex-1 flex-col overflow-hidden border-r">
         {/* Header with filter */}
@@ -144,6 +153,7 @@ export function StudyPortfolioView() {
           allStudies={studies}
         />
       </div>
+    </div>
     </div>
   );
 }
