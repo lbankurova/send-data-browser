@@ -22,6 +22,7 @@ import {
   formatEffectSize,
   getDirectionSymbol,
   titleCase,
+  getNeutralHeatColor,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
@@ -402,7 +403,7 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
           {titleCase(summary.organ_system)}
         </h3>
         {summary.adverseCount > 0 && (
-          <span className="rounded-sm border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             {summary.adverseCount} adverse
           </span>
         )}
@@ -771,20 +772,26 @@ function AdversityMatrixTab({
                     </div>
                     {matrixData.doseLevels.map((dl) => {
                       const cell = matrixData.cells.get(`${ep}|${dl}`);
-                      let bg = "#e5e7eb";
-                      if (cell) {
-                        if (cell.severity === "adverse" && cell.treatment_related) bg = "#DC2626";
-                        else if (cell.severity === "warning") bg = "#D97706";
-                        else bg = "#16a34a";
-                      }
+                      // Neutral grayscale: adverse+TR = darkest, warning = mid, normal = light, N/A = lightest
+                      const score = cell
+                        ? cell.severity === "adverse" && cell.treatment_related ? 0.9
+                        : cell.severity === "warning" ? 0.5
+                        : 0.2
+                        : 0;
+                      const heat = getNeutralHeatColor(score);
+                      const severityLabel = cell
+                        ? `${cell.severity}${cell.treatment_related ? " (TR)" : ""}`
+                        : "N/A";
+                      const doseLabel = matrixData.doseLabels?.get(dl) ?? `Dose ${dl}`;
                       return (
                         <div
                           key={dl}
                           className="flex h-5 w-16 shrink-0 items-center justify-center"
+                          title={`${ep} at ${doseLabel}: ${severityLabel}`}
                         >
                           <div
                             className="h-4 w-12 rounded-sm"
-                            style={{ backgroundColor: bg }}
+                            style={{ backgroundColor: heat.bg }}
                           />
                         </div>
                       );
@@ -795,13 +802,13 @@ function AdversityMatrixTab({
             </div>
             <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
               {[
-                { label: "Adverse", color: "#DC2626" },
-                { label: "Warning", color: "#D97706" },
-                { label: "Normal", color: "#16a34a" },
-                { label: "N/A", color: "#e5e7eb" },
-              ].map(({ label, color }) => (
+                { label: "Adverse (TR)", score: 0.9 },
+                { label: "Warning", score: 0.5 },
+                { label: "Normal", score: 0.2 },
+                { label: "N/A", score: 0 },
+              ].map(({ label, score }) => (
                 <span key={label} className="flex items-center gap-1">
-                  <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
+                  <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: getNeutralHeatColor(score).bg }} />
                   {label}
                 </span>
               ))}
@@ -830,7 +837,7 @@ function AdversityMatrixTab({
                         onDoubleClick={header.column.getToggleSortingHandler()}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
+                        {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                         <div
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
