@@ -130,7 +130,7 @@ Carries `data-rail-item=""` and `data-selected` attributes.
 
 ## Evidence Panel (Right, flex-1)
 
-Container: `flex min-w-0 flex-1 flex-col overflow-hidden`
+Container: `flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5`
 
 ### Endpoint Summary Header
 
@@ -145,7 +145,7 @@ Container: `flex min-w-0 flex-1 flex-col overflow-hidden`
 - Right: full pattern badge (`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium` with neutral gray -- same `bg-gray-100 text-gray-600` as rail badges, or pattern-specific gray variant from `PATTERN_BG`)
 
 **Subtitle:** `text-[11px] text-muted-foreground`
-- Format: "{domain} &middot; {titleCase(organ_system)}"
+- Format: "`<DomainLabel domain={domain} />` &middot; {titleCase(organ_system)}" — domain code rendered as colored text via DomainLabel component
 - Appends " &middot; Categorical" if `data_type === "categorical"`
 
 **Conclusion text:** `mt-1 text-xs text-foreground/80`
@@ -327,7 +327,7 @@ Below the time-course chart. A compact day-by-dose comparison table.
 
 **Header row:** `sticky top-0 z-10 bg-background` wrapping `tr` with `border-b bg-muted/50`
 - Column headers: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
-- Dose columns: colored by `getDoseGroupColor(dl)`
+- Dose columns: `text-muted-foreground` (neutral — dose group colors reserved for chart series only)
 
 | Column | Header | Alignment | Cell Rendering |
 |--------|--------|-----------|----------------|
@@ -391,7 +391,7 @@ Hidden when no endpoint is selected (table only renders when `pairwiseRows.lengt
 
 Uses the shared `FilterBar` component. `flex-wrap px-3 py-1`.
 
-Five filter controls:
+Four filter controls:
 
 | Filter | Type | Options | Default |
 |--------|------|---------|---------|
@@ -399,7 +399,6 @@ Five filter controls:
 | Data type | `FilterSelect` dropdown | All data types / Continuous / Categorical | All data types |
 | Organ system | `FilterSelect` dropdown | All organs / {unique organ systems, displayed via `titleCase()`} | All organs |
 | Significant only | Checkbox | `p < 0.05` label | Unchecked (`sigOnly = false`) |
-| Color | Checkbox | "Color" label | Unchecked (`evidenceColor = false`) |
 
 Each checkbox: `flex cursor-pointer items-center gap-1 text-xs text-muted-foreground`, input `h-3 w-3 rounded border-gray-300`.
 
@@ -430,9 +429,9 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 | mean | Mean | `font-mono`, 2 decimal places, em dash if null |
 | sd | SD | `font-mono text-muted-foreground`, 2 decimal places, em dash if null |
 | incidence | Incid. | `font-mono`, displayed as percentage `{(value * 100).toFixed(0)}%`, em dash if null |
-| p_value | P-value | `ev font-mono` -- when `evidenceColor` is enabled and p < 0.05, applies `text-[#DC2626]`. Formatted via `formatPValue`. `<td>` carries `data-evidence=""`. |
-| effect_size | Effect | `ev font-mono` -- when `evidenceColor` is enabled and |d| > 0.8, applies `text-[#DC2626]`. Formatted via `formatEffectSize`. `<td>` carries `data-evidence=""`. |
-| trend_p | Trend p | `ev font-mono` -- when `evidenceColor` is enabled and p < 0.05, applies `text-[#DC2626]`. Formatted via `formatPValue`. `<td>` carries `data-evidence=""`. |
+| p_value | P-value | `ev font-mono text-muted-foreground` -- neutral at rest, `#DC2626` on row hover/selection (interaction-driven via `ev` CSS class). Formatted via `formatPValue`. `<td>` carries `data-evidence=""`. |
+| effect_size | Effect | `ev font-mono text-muted-foreground` -- neutral at rest, `#DC2626` on row hover/selection (interaction-driven via `ev` CSS class). Formatted via `formatEffectSize`. `<td>` carries `data-evidence=""`. |
+| trend_p | Trend p | `ev font-mono text-muted-foreground` -- neutral at rest, `#DC2626` on row hover/selection (interaction-driven via `ev` CSS class). Formatted via `formatPValue`. `<td>` carries `data-evidence=""`. |
 | dose_response_pattern | Pattern | `text-muted-foreground`, underscores replaced with spaces |
 | data_type | Method | `text-muted-foreground` -- displays "Dunnett" for continuous, "Fisher" for categorical |
 
@@ -504,7 +503,7 @@ Route-detected: when pathname matches `/studies/{studyId}/dose-response`, shows 
 - Top row: `flex items-center justify-between` with:
   - Endpoint label: `text-sm font-semibold`
   - `CollapseAllButtons` component for expand/collapse all panes
-- Subtitle: `mt-1 text-xs text-muted-foreground` -- "{domain} &middot; {titleCase(organ_system)}", optionally " &middot; {sex}" if sex is set in the selection
+- Subtitle: `mt-1 text-xs text-muted-foreground` -- "`<DomainLabel domain={domain} />` &middot; {titleCase(organ_system)}", optionally " &middot; {sex}" if sex is set. Domain code rendered as colored text via DomainLabel component.
 - `TierCountBadges`: `mt-1.5 text-xs` -- shows tier count badges from `computeTierCounts(endpointRules)`, with clickable tier filtering
 
 #### Pane 1: Insights (default open)
@@ -595,7 +594,6 @@ All links: `block text-primary hover:underline`, arrow suffix (`&#x2192;`).
 | Selection | Shared via context | `ViewSelectionContext` with `_view: "dose-response"` tag, propagated via `onSelectionChange` callback |
 | Metrics filters | Local | `useState` -- `{ sex, data_type, organ_system }`, each nullable string |
 | sigOnly | Local | `useState<boolean>(false)` -- checkbox filter for p < 0.05 rows |
-| evidenceColor | Local | `useState<boolean>(false)` -- checkbox to enable always-on color for p-value/effect columns |
 | Sorting | Local | `useState<SortingState>` -- TanStack sorting state for metrics table |
 | Column sizing | Local | `useState<ColumnSizingState>` -- TanStack column resize state for metrics table |
 | Rail width | Local | `useResizePanel(300, 180, 500)` -- resizable rail width (default 300px, range 180-500px) |
@@ -1176,6 +1174,14 @@ All Hypotheses tab state is session-scoped:
 ---
 
 ## Changelog
+
+### 2026-02-12 -- Design audit alignment (Phase 2)
+
+- **Evidence panel background:** Added `bg-muted/5` to evidence panel container per design system rule.
+- **Domain labels:** Evidence panel header and context panel subtitle now use `<DomainLabel>` (colored text) instead of plain text for domain codes.
+- **Metrics evidence columns:** Removed `evidenceColor` toggle checkbox. P-value, effect size, and trend p columns now use `text-muted-foreground` at rest with interaction-driven `ev` class for hover/selection color (`#DC2626`). This aligns with the grid evidence color strategy hard rule in CLAUDE.md.
+- **Timecourse table dose headers:** Removed `getDoseGroupColor()` coloring from dose column headers. Now neutral `text-muted-foreground` — dose group colors reserved for chart series only per categorical identity rule.
+- **State cleanup:** Removed `evidenceColor` state variable and `setEvidenceColor` setter from both `DoseResponseView` and `MetricsTableContent`.
 
 ### 2026-02-11 -- Code-accuracy rewrite
 

@@ -163,7 +163,7 @@ export function DoseResponseContextPanel({
           <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          {selection.domain} &middot; {titleCase(selection.organ_system)}
+          <DomainLabel domain={selection.domain ?? ""} /> &middot; {titleCase(selection.organ_system)}
           {selection.sex && <> &middot; {selection.sex}</>}
         </p>
         <div className="mt-1.5 text-xs">

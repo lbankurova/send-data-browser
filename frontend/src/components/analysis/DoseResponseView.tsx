@@ -31,6 +31,7 @@ import { BookmarkStar } from "@/components/ui/BookmarkStar";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 import {
   formatPValue,
   formatEffectSize,
@@ -327,7 +328,6 @@ export function DoseResponseView({
     organ_system: string | null;
   }>({ sex: null, data_type: null, organ_system: null });
   const [sigOnly, setSigOnly] = useState(false);
-  const [evidenceColor, setEvidenceColor] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
@@ -504,7 +504,7 @@ export function DoseResponseView({
         cell: (info) => {
           const v = info.getValue();
           return (
-            <span className={cn("ev font-mono", evidenceColor && v != null && v < 0.05 && "text-[#DC2626]")}>
+            <span className="ev font-mono text-muted-foreground">
               {formatPValue(v)}
             </span>
           );
@@ -515,7 +515,7 @@ export function DoseResponseView({
         cell: (info) => {
           const v = info.getValue();
           return (
-            <span className={cn("ev font-mono", evidenceColor && v != null && Math.abs(v) > 0.8 && "text-[#DC2626]")}>
+            <span className="ev font-mono text-muted-foreground">
               {formatEffectSize(v)}
             </span>
           );
@@ -526,7 +526,7 @@ export function DoseResponseView({
         cell: (info) => {
           const v = info.getValue();
           return (
-            <span className={cn("ev font-mono", evidenceColor && v != null && v < 0.05 && "text-[#DC2626]")}>
+            <span className="ev font-mono text-muted-foreground">
               {formatPValue(v)}
             </span>
           );
@@ -547,7 +547,7 @@ export function DoseResponseView({
         ),
       }),
     ],
-    [evidenceColor]
+    []
   );
 
   const table = useReactTable({
@@ -888,7 +888,7 @@ export function DoseResponseView({
       </div>
 
       {/* ───── Evidence Panel (right) ───── */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
         {/* Summary header */}
         {selectedSummary ? (
           <div className="sticky top-0 z-10 shrink-0 border-b bg-background px-3 py-1.5">
@@ -896,7 +896,7 @@ export function DoseResponseView({
               <div className="min-w-0">
                 <h2 className="text-sm font-semibold">{selectedSummary.endpoint_label}</h2>
                 <p className="text-[11px] text-muted-foreground">
-                  {selectedSummary.domain} &middot; {titleCase(selectedSummary.organ_system)}
+                  <DomainLabel domain={selectedSummary.domain} /> &middot; {titleCase(selectedSummary.organ_system)}
                   {selectedSummary.data_type === "categorical" && " &middot; Categorical"}
                 </p>
               </div>
@@ -1035,8 +1035,6 @@ export function DoseResponseView({
               setMetricsFilters={setMetricsFilters}
               sigOnly={sigOnly}
               setSigOnly={setSigOnly}
-              evidenceColor={evidenceColor}
-              setEvidenceColor={setEvidenceColor}
               organSystems={organSystems}
               selection={selection}
               handleRowClick={handleRowClick}
@@ -1793,8 +1791,7 @@ function TimecourseTable({
               {doseInfo.map(([dl, label]) => (
                 <th
                   key={dl}
-                  className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider"
-                  style={{ color: getDoseGroupColor(dl) }}
+                  className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                 >
                   {label.split(",")[0]}
                 </th>
@@ -1869,8 +1866,6 @@ interface MetricsTableProps {
   >;
   sigOnly: boolean;
   setSigOnly: React.Dispatch<React.SetStateAction<boolean>>;
-  evidenceColor: boolean;
-  setEvidenceColor: React.Dispatch<React.SetStateAction<boolean>>;
   organSystems: string[];
   selection: DoseResponseSelection | null;
   handleRowClick: (row: DoseResponseRow) => void;
@@ -1883,8 +1878,6 @@ function MetricsTableContent({
   setMetricsFilters,
   sigOnly,
   setSigOnly,
-  evidenceColor,
-  setEvidenceColor,
   organSystems,
   selection,
   handleRowClick,
@@ -1929,15 +1922,6 @@ function MetricsTableContent({
           />
           p &lt; 0.05
         </label>
-        <label className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={evidenceColor}
-            onChange={(e) => setEvidenceColor(e.target.checked)}
-            className="h-3 w-3 rounded border-gray-300"
-          />
-          Color
-        </label>
         <FilterBarCount>{metricsData.length} rows</FilterBarCount>
       </FilterBar>
 
@@ -1955,7 +1939,7 @@ function MetricsTableContent({
                     onDoubleClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
-                    {{ asc: " \u25b2", desc: " \u25bc" }[header.column.getIsSorted() as string] ?? ""}
+                    {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                     <div
                       onMouseDown={header.getResizeHandler()}
                       onTouchStart={header.getResizeHandler()}
