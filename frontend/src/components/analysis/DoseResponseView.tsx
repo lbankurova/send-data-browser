@@ -38,9 +38,10 @@ import {
   getDoseGroupColor,
   titleCase,
 } from "@/lib/severity-colors";
-import { useResizePanel, useResizePanelY } from "@/hooks/useResizePanel";
+import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { ViewSection } from "@/components/ui/ViewSection";
+import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import type { DoseResponseRow, RuleResult, SignalSummaryRow, NoaelSummaryRow } from "@/types/analysis-views";
@@ -1090,9 +1091,14 @@ function ChartOverviewContent({
   collapseGen,
 }: ChartOverviewProps) {
   const chartRowRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [splitPct, setSplitPct] = useState(50); // default 50/50
-  const { height: chartSectionHeight, onPointerDown: onChartSectionResize } = useResizePanelY(280, 120, 600);
-  const { height: tcSectionHeight, onPointerDown: onTcSectionResize } = useResizePanelY(250, 80, 500);
+  const sections = useAutoFitSections(containerRef, "dose-response", [
+    { id: "charts", min: 120, max: 600, defaultHeight: 280 },
+    { id: "timecourse", min: 80, max: 500, defaultHeight: 250 },
+  ]);
+  const chartsSection = sections[0];
+  const tcSection = sections[1];
 
   const onChartResize = useCallback(
     (e: React.PointerEvent) => {
@@ -1138,13 +1144,14 @@ function ChartOverviewContent({
     : undefined;
 
   return (
-    <>
+    <div ref={containerRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Chart area — two independent containers with resize handle */}
       <ViewSection
         mode="fixed"
         title="Charts"
-        height={chartSectionHeight}
-        onResizePointerDown={onChartSectionResize}
+        height={chartsSection.height}
+        onResizePointerDown={chartsSection.onPointerDown}
+        contentRef={chartsSection.contentRef}
         expandGen={expandGen}
         collapseGen={collapseGen}
       >
@@ -1226,8 +1233,9 @@ function ChartOverviewContent({
           selectedEndpoint={selectedEndpoint}
           selectedSummary={selectedSummary}
           onSubjectClick={onSubjectClick}
-          tcSectionHeight={tcSectionHeight}
-          onTcSectionResize={onTcSectionResize}
+          tcSectionHeight={tcSection.height}
+          onTcSectionResize={tcSection.onPointerDown}
+          tcContentRef={tcSection.contentRef}
           expandGen={expandGen}
           collapseGen={collapseGen}
         />
@@ -1287,7 +1295,7 @@ function ChartOverviewContent({
             </table>
         </ViewSection>
       )}
-    </>
+    </div>
   );
 }
 
@@ -1302,11 +1310,12 @@ interface TimecourseSectionProps {
   onSubjectClick?: (usubjid: string) => void;
   tcSectionHeight: number;
   onTcSectionResize: (e: React.PointerEvent) => void;
+  tcContentRef?: React.RefObject<HTMLDivElement | null>;
   expandGen?: number;
   collapseGen?: number;
 }
 
-function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubjectClick, tcSectionHeight, onTcSectionResize, expandGen, collapseGen }: TimecourseSectionProps) {
+function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubjectClick, tcSectionHeight, onTcSectionResize, tcContentRef, expandGen, collapseGen }: TimecourseSectionProps) {
   const [yAxisMode, setYAxisMode] = useState<YAxisMode>("absolute");
   const [showSubjects, setShowSubjects] = useState(false);
 
@@ -1388,6 +1397,7 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubje
       title="Time-course"
       height={tcSectionHeight}
       onResizePointerDown={onTcSectionResize}
+      contentRef={tcContentRef}
       headerRight={tcHeaderRight}
       expandGen={expandGen}
       collapseGen={collapseGen}
