@@ -9,6 +9,7 @@ import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useProvenanceMessages } from "@/hooks/useProvenanceMessages";
+import { useInsights } from "@/hooks/useInsights";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { generateStudyReport } from "@/lib/report-generator";
@@ -21,13 +22,14 @@ import {
 } from "./SignalsPanel";
 import type { SignalSelection, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMetadata } from "@/types";
+import type { Insight } from "@/hooks/useInsights";
 
 interface StudySummaryViewProps {
   onSelectionChange?: (selection: SignalSelection | null) => void;
   onOrganSelect?: (organSystem: string | null) => void;
 }
 
-type Tab = "details" | "signals";
+type Tab = "details" | "signals" | "insights";
 
 export function StudySummaryView({
   onSelectionChange,
@@ -188,6 +190,7 @@ export function StudySummaryView({
         tabs={[
           { key: "details", label: "Study details" },
           { key: "signals", label: "Signals" },
+          { key: "insights", label: "Cross-study insights" },
         ]}
         value={tab}
         onChange={(k) => setTab(k as Tab)}
@@ -206,6 +209,7 @@ export function StudySummaryView({
 
       {/* Tab content */}
       {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} />}
+      {tab === "insights" && <CrossStudyInsightsTab studyId={studyId!} />}
       {tab === "signals" && panelData && (
         <div className="flex h-full flex-col overflow-hidden">
           {/* Decision Bar — persistent */}
@@ -248,6 +252,93 @@ export function StudySummaryView({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Cross-Study Insights Tab
+// ---------------------------------------------------------------------------
+
+function CrossStudyInsightsTab({ studyId }: { studyId: string }) {
+  const { data: insights, isLoading } = useInsights(studyId);
+  const [showAll, setShowAll] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">
+          Loading insights...
+        </span>
+      </div>
+    );
+  }
+
+  if (!insights || insights.length === 0) {
+    return (
+      <div className="flex items-center justify-center p-12 text-center">
+        <p className="text-xs text-muted-foreground">
+          No cross-study insights available (no reference studies).
+        </p>
+      </div>
+    );
+  }
+
+  const priority01 = insights.filter((i) => i.priority <= 1);
+  const priority23 = insights.filter((i) => i.priority >= 2);
+
+  return (
+    <div className="flex-1 overflow-auto p-4">
+      <div className="space-y-2">
+        {/* Priority 0 and 1 — always visible */}
+        {priority01.map((insight, idx) => (
+          <InsightCard key={idx} insight={insight} />
+        ))}
+
+        {/* Priority 2 and 3 — collapsed by default */}
+        {priority23.length > 0 && (
+          <>
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="mt-4 text-xs text-primary hover:underline"
+            >
+              {showAll
+                ? "Show fewer insights ▲"
+                : `Show ${priority23.length} more insights ▼`}
+            </button>
+            {showAll &&
+              priority23.map((insight, idx) => (
+                <InsightCard key={`p23-${idx}`} insight={insight} />
+              ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Insight Card Component
+// ---------------------------------------------------------------------------
+
+function InsightCard({ insight }: { insight: Insight }) {
+  return (
+    <div className="border-l-2 border-primary py-2 pl-3">
+      <div className="flex items-baseline justify-between">
+        <span className="text-xs font-semibold">{insight.title}</span>
+        {insight.ref_study && (
+          <span className="text-[10px] text-muted-foreground">
+            {insight.ref_study}
+          </span>
+        )}
+        {!insight.ref_study && (
+          <span className="text-[10px] italic text-muted-foreground">
+            (this study)
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-[11px] text-foreground">{insight.detail}</p>
     </div>
   );
 }
