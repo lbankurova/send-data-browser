@@ -12,6 +12,7 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
+import { useAnnotations } from "@/hooks/useAnnotations";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { EvidenceBar } from "@/components/ui/EvidenceBar";
@@ -23,6 +24,7 @@ import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { InsightsList } from "./panes/InsightsList";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
+import type { PathologyReview } from "@/types/annotations";
 
 // ─── Neutral heat color (§6.1 evidence tier) ─────────────
 function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
@@ -278,6 +280,36 @@ function deriveSpecimenConclusion(
   return `${incidenceDesc}, ${sevDesc}, ${sexDesc}, ${doseDesc}.`;
 }
 
+// ─── Review status aggregation ────────────────────────────
+
+type SpecimenReviewStatus = "Preliminary" | "In review" | "Confirmed" | "Revised";
+
+function deriveSpecimenReviewStatus(
+  findingNames: string[],
+  reviews: Record<string, PathologyReview> | undefined
+): SpecimenReviewStatus {
+  if (!reviews || findingNames.length === 0) return "Preliminary";
+  const statuses = findingNames.map(f => reviews[f]?.peerReviewStatus ?? "Not Reviewed");
+  if (statuses.every(s => s === "Not Reviewed")) return "Preliminary";
+  if (statuses.some(s => s === "Disagreed")) return "Revised";
+  if (statuses.every(s => s === "Agreed")) return "Confirmed";
+  return "In review";
+}
+
+const REVIEW_STATUS_STYLES: Record<SpecimenReviewStatus, string> = {
+  "Preliminary": "border-border/50 text-muted-foreground/60",
+  "In review": "border-border text-muted-foreground/80",
+  "Confirmed": "border-border text-muted-foreground",
+  "Revised": "border-border text-muted-foreground",
+};
+
+const REVIEW_STATUS_TOOLTIPS: Record<SpecimenReviewStatus, string> = {
+  "Preliminary": "No peer review recorded yet",
+  "In review": "Some findings reviewed, others pending",
+  "Confirmed": "All findings agreed by peer reviewer",
+  "Revised": "One or more findings disagreed by peer reviewer",
+};
+
 // ─── SpecimenRailItem ──────────────────────────────────────
 
 function SpecimenRailItem({
@@ -285,11 +317,13 @@ function SpecimenRailItem({
   isSelected,
   maxGlobalSeverity,
   onClick,
+  reviewStatus,
 }: {
   summary: SpecimenSummary;
   isSelected: boolean;
   maxGlobalSeverity: number;
   onClick: () => void;
+  reviewStatus?: SpecimenReviewStatus;
 }) {
   return (
     <button
@@ -302,7 +336,7 @@ function SpecimenRailItem({
       )}
       onClick={onClick}
     >
-      {/* Row 1: specimen name + dose trend glyph + finding count */}
+      {/* Row 1: specimen name + dose trend glyph + review indicator + finding count */}
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold">
           {summary.specimen.replace(/_/g, " ")}
@@ -313,19 +347,27 @@ function SpecimenRailItem({
         {summary.doseConsistency === "Moderate" && (
           <span className="text-[9px] text-muted-foreground/70" title="Moderate dose trend">{"\u25B4"}</span>
         )}
-        <span className="text-[10px] text-muted-foreground">
+        {reviewStatus === "Confirmed" && (
+          <span className="text-[9px] text-muted-foreground" title="All findings confirmed">{"\u2713"}</span>
+        )}
+        {reviewStatus === "Revised" && (
+          <span className="text-[9px] text-muted-foreground" title="Findings revised">{"\u007E"}</span>
+        )}
+        <span className="text-[10px] text-muted-foreground" title={`${summary.findingCount} findings observed`}>
           {summary.findingCount}
         </span>
       </div>
 
       {/* Row 2: severity bar (neutral, fill darkness encodes severity) */}
-      <EvidenceBar
-        value={summary.maxSeverity}
-        max={maxGlobalSeverity}
-        label={summary.maxSeverity.toFixed(1)}
-        labelClassName="text-muted-foreground"
-        fillColor={getNeutralHeatColor(summary.maxSeverity).bg}
-      />
+      <div title={`Max severity: ${summary.maxSeverity.toFixed(1)} (scale 1\u20135)`}>
+        <EvidenceBar
+          value={summary.maxSeverity}
+          max={maxGlobalSeverity}
+          label={summary.maxSeverity.toFixed(1)}
+          labelClassName="text-muted-foreground"
+          fillColor={getNeutralHeatColor(summary.maxSeverity).bg}
+        />
+      </div>
 
       {/* Row 3: stats + domain chips */}
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
@@ -350,11 +392,15 @@ function SpecimenRail({
   selectedSpecimen,
   maxGlobalSeverity,
   onSpecimenClick,
+  pathReviews,
+  findingNamesBySpecimen,
 }: {
   specimens: SpecimenSummary[];
   selectedSpecimen: string | null;
   maxGlobalSeverity: number;
   onSpecimenClick: (specimen: string) => void;
+  pathReviews?: Record<string, PathologyReview>;
+  findingNamesBySpecimen?: Map<string, string[]>;
 }) {
   const [search, setSearch] = useState("");
 
@@ -386,6 +432,7 @@ function SpecimenRail({
             isSelected={selectedSpecimen === s.specimen}
             maxGlobalSeverity={maxGlobalSeverity}
             onClick={() => onSpecimenClick(s.specimen)}
+            reviewStatus={findingNamesBySpecimen ? deriveSpecimenReviewStatus(findingNamesBySpecimen.get(s.specimen) ?? [], pathReviews) : undefined}
           />
         ))}
         {filtered.length === 0 && (
@@ -404,10 +451,14 @@ function SpecimenHeader({
   summary,
   specimenData,
   specimenRules,
+  pathReviews,
+  findingNames,
 }: {
   summary: SpecimenSummary;
   specimenData: LesionSeverityRow[];
   specimenRules: RuleResult[];
+  pathReviews?: Record<string, PathologyReview>;
+  findingNames: string[];
 }) {
   const sexLabel = useMemo(() => deriveSexLabel(specimenData), [specimenData]);
   const conclusion = useMemo(
@@ -430,10 +481,17 @@ function SpecimenHeader({
         <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
           {sexLabel}
         </span>
-        {/* TODO: Derive from useAnnotations<PathologyReview> — aggregate peerReviewStatus across specimen findings */}
-        <span className="rounded border border-border/50 px-1 py-0.5 text-[10px] text-muted-foreground/60">
-          Preliminary
-        </span>
+        {(() => {
+          const reviewStatus = deriveSpecimenReviewStatus(findingNames, pathReviews);
+          return (
+            <span
+              className={cn("rounded border px-1 py-0.5 text-[10px]", REVIEW_STATUS_STYLES[reviewStatus])}
+              title={`Review status: ${REVIEW_STATUS_TOOLTIPS[reviewStatus]}`}
+            >
+              {reviewStatus}
+            </span>
+          );
+        })()}
       </div>
 
       {/* Domain subtitle */}
@@ -591,17 +649,17 @@ function OverviewTab({
                   <span className="min-w-0 flex-1 truncate font-medium" title={fs.finding}>
                     {fs.finding.length > 40 ? fs.finding.slice(0, 40) + "\u2026" : fs.finding}
                   </span>
-                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground" title={`Max severity: ${fs.maxSeverity.toFixed(1)} (scale 1\u20135)`}>
                     {fs.maxSeverity.toFixed(1)}
                   </span>
-                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground" title={`${fs.totalAffected} affected out of ${fs.totalN} subjects`}>
                     {fs.totalAffected}/{fs.totalN}
                   </span>
-                  <span className="shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+                  <span className="shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground" title={`Severity classification: ${fs.severity}`}>
                     {fs.severity}
                   </span>
                   {findingConsistency.get(fs.finding) === "Strong" && (
-                    <span className="shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] text-muted-foreground">
+                    <span className="shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] text-muted-foreground" title="Incidence increases monotonically with dose across 3+ dose groups">
                       Dose-driven
                     </span>
                   )}
@@ -807,7 +865,9 @@ function SubjectHeatmap({
 
           {/* Tier 2: Subject IDs */}
           <div className="flex">
-            <div className="w-52 shrink-0" />
+            <div className="w-52 shrink-0 py-0.5 text-right pr-2 text-[8px] font-semibold text-muted-foreground">
+              Subject ID
+            </div>
             {doseGroups.map((dg, gi) => (
               <div key={dg.doseLevel} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
                 {dg.subjects.map((subj) => (
@@ -817,7 +877,7 @@ function SubjectHeatmap({
                       "w-8 shrink-0 py-0.5 text-center font-mono text-[9px] text-muted-foreground hover:bg-accent/30",
                       selectedSubject === subj.usubjid && "bg-blue-50/50"
                     )}
-                    title={subj.usubjid}
+                    title={`${subj.usubjid} — click to view details`}
                     onClick={() => {
                       const next = selectedSubject === subj.usubjid ? null : subj.usubjid;
                       setSelectedSubject(next);
@@ -872,6 +932,7 @@ function SubjectHeatmap({
                         "flex h-4 w-8 shrink-0 items-center justify-center text-[9px] text-muted-foreground",
                         selectedSubject === subj.usubjid && "bg-blue-50/50"
                       )}
+                      title={hasAny ? `${subj.usubjid}: examined, has findings` : `${subj.usubjid}: no findings recorded`}
                     >
                       {hasAny ? "E" : ""}
                     </div>
@@ -1497,10 +1558,13 @@ function HypProductionNote({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SeverityDistributionPlaceholder({ specimenName, findingCount }: { specimenName: string; findingCount: number }) {
+function SeverityDistributionPlaceholder({ specimenName, findingCount, selectedFinding }: { specimenName: string; findingCount: number; selectedFinding?: string | null }) {
+  const context = selectedFinding
+    ? `${specimenName} \u00b7 ${findingCount} findings \u00b7 Focus: ${selectedFinding}`
+    : `${specimenName} \u00b7 ${findingCount} findings`;
   return (
     <div className="space-y-3">
-      <HypViewerPlaceholder icon={BarChart3} viewerType="DG Bar Chart" context={`${specimenName} \u00b7 ${findingCount} findings`} />
+      <HypViewerPlaceholder icon={BarChart3} viewerType="DG Bar Chart" context={context} />
       <p className="text-xs text-muted-foreground">
         Distribution of severity grades (1-5) across dose groups for all findings in this specimen.
         Stacked bars show the proportion of each grade per dose level, highlighting dose-related severity escalation.
@@ -1518,14 +1582,14 @@ function SeverityDistributionPlaceholder({ specimenName, findingCount }: { speci
   );
 }
 
-function TreatmentRelatedPlaceholder({ specimenName }: { specimenName: string }) {
+function TreatmentRelatedPlaceholder({ specimenName, selectedFinding }: { specimenName: string; selectedFinding?: string | null }) {
   return (
     <div className="space-y-3">
       <HypViewerPlaceholder icon={Microscope} viewerType="DG Assessment Grid" context={specimenName} />
       <p className="text-xs text-muted-foreground">
-        Classification tool for pathologists to assess each finding as treatment-related, incidental,
-        or spontaneous. Uses dose-response pattern, historical control incidence, severity progression,
-        and biological plausibility as evidence columns.
+        {selectedFinding
+          ? `Assess whether \u201c${selectedFinding}\u201d is treatment-related, incidental, or spontaneous. Uses dose-response pattern, historical control incidence, severity progression, and biological plausibility as evidence columns.`
+          : "Classification tool for pathologists to assess each finding as treatment-related, incidental, or spontaneous. Uses dose-response pattern, historical control incidence, severity progression, and biological plausibility as evidence columns."}
       </p>
       <div className="rounded-md border bg-card p-3">
         <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
@@ -1565,10 +1629,13 @@ function PeerComparisonPlaceholder({ specimenName }: { specimenName: string }) {
   );
 }
 
-function DoseSeverityTrendPlaceholder({ specimenName }: { specimenName: string }) {
+function DoseSeverityTrendPlaceholder({ specimenName, selectedFinding }: { specimenName: string; selectedFinding?: string | null }) {
+  const context = selectedFinding
+    ? `${specimenName} \u00b7 Focus: ${selectedFinding}`
+    : specimenName;
   return (
     <div className="space-y-3">
-      <HypViewerPlaceholder icon={TrendingUp} viewerType="DG Line Chart" context={specimenName} />
+      <HypViewerPlaceholder icon={TrendingUp} viewerType="DG Line Chart" context={context} />
       <p className="text-xs text-muted-foreground">
         Visualize how average severity and incidence change across dose groups for each finding.
         Monotonic increases support dose-response relationship; non-monotonic patterns may indicate
@@ -1590,11 +1657,20 @@ function DoseSeverityTrendPlaceholder({ specimenName }: { specimenName: string }
 function HistopathHypothesesTab({
   specimenName,
   findingCount,
+  selectedFinding,
 }: {
   specimenName: string;
   findingCount: number;
+  selectedFinding?: string | null;
 }) {
   const [intent, setIntent] = useState<SpecimenToolIntent>("severity");
+
+  // Auto-switch to treatment assessment when a finding is selected
+  useEffect(() => {
+    if (selectedFinding) {
+      setIntent("treatment");
+    }
+  }, [selectedFinding]);
   const [favorites, setFavorites] = useState<SpecimenToolIntent[]>(DEFAULT_SPECIMEN_FAVORITES);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dropdownSearch, setDropdownSearch] = useState("");
@@ -1764,16 +1840,16 @@ function HistopathHypothesesTab({
       {/* Intent content */}
       <div className="flex-1 overflow-auto p-4">
         {intent === "severity" && (
-          <SeverityDistributionPlaceholder specimenName={specimenName} findingCount={findingCount} />
+          <SeverityDistributionPlaceholder specimenName={specimenName} findingCount={findingCount} selectedFinding={selectedFinding} />
         )}
         {intent === "treatment" && (
-          <TreatmentRelatedPlaceholder specimenName={specimenName} />
+          <TreatmentRelatedPlaceholder specimenName={specimenName} selectedFinding={selectedFinding} />
         )}
         {intent === "peer" && (
           <PeerComparisonPlaceholder specimenName={specimenName} />
         )}
         {intent === "doseTrend" && (
-          <DoseSeverityTrendPlaceholder specimenName={specimenName} />
+          <DoseSeverityTrendPlaceholder specimenName={specimenName} selectedFinding={selectedFinding} />
         )}
       </div>
     </div>
@@ -1795,6 +1871,7 @@ export function HistopathologyView({
   const location = useLocation();
   const { data: lesionData, isLoading, error } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
+  const { data: pathReviews } = useAnnotations<PathologyReview>(studyId, "pathology-reviews");
 
   const [selectedSpecimen, setSelectedSpecimen] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
@@ -1824,6 +1901,26 @@ export function HistopathologyView({
   const findingSummaries = useMemo(() => {
     return deriveFindingSummaries(specimenData);
   }, [specimenData]);
+
+  // Finding names per specimen (for review status aggregation)
+  const findingNamesBySpecimen = useMemo(() => {
+    if (!lesionData) return new Map<string, string[]>();
+    const map = new Map<string, Set<string>>();
+    for (const row of lesionData) {
+      if (!row.specimen) continue;
+      let set = map.get(row.specimen);
+      if (!set) {
+        set = new Set();
+        map.set(row.specimen, set);
+      }
+      set.add(row.finding);
+    }
+    const result = new Map<string, string[]>();
+    for (const [spec, set] of map) {
+      result.set(spec, [...set]);
+    }
+    return result;
+  }, [lesionData]);
 
   // Selected specimen summary
   const selectedSummary = useMemo(() => {
@@ -1962,6 +2059,8 @@ export function HistopathologyView({
           selectedSpecimen={selectedSpecimen}
           maxGlobalSeverity={maxGlobalSeverity}
           onSpecimenClick={handleSpecimenClick}
+          pathReviews={pathReviews}
+          findingNamesBySpecimen={findingNamesBySpecimen}
         />
       </div>
       <div className="max-[1200px]:hidden">
@@ -1973,7 +2072,13 @@ export function HistopathologyView({
         {selectedSummary && (
           <>
             {/* Summary header */}
-            <SpecimenHeader summary={selectedSummary} specimenData={specimenData} specimenRules={specimenRules} />
+            <SpecimenHeader
+              summary={selectedSummary}
+              specimenData={specimenData}
+              specimenRules={specimenRules}
+              pathReviews={pathReviews}
+              findingNames={findingNamesBySpecimen.get(selectedSummary.specimen) ?? []}
+            />
 
             {/* Tab bar */}
             <ViewTabBar
@@ -2017,6 +2122,7 @@ export function HistopathologyView({
               <HistopathHypothesesTab
                 specimenName={selectedSummary.specimen.replace(/_/g, " ")}
                 findingCount={findingSummaries.length}
+                selectedFinding={selection?.finding}
               />
             )}
           </>
