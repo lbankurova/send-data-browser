@@ -111,12 +111,12 @@ Carries `data-rail-item=""` and `data-selected` attributes.
 | mixed | `\u2195` |
 | null | (none) |
 
-- Sex divergence indicator: Shown when `ep.sex_divergence != null && ep.sex_divergence > 0.5`. Renders the divergent sex letter ("M" or "F") in `text-[10px] font-semibold`, colored `text-[#3B82F6]` for M or `text-[#EC4899]` for F. Title tooltip shows `Sex divergence: |d_M - d_F| = {value} ({sex} has larger effect)`.
+- Sex divergence indicator: Shown when `ep.sex_divergence != null && ep.sex_divergence > 0.5`. Renders a unicode gender symbol (♂/♀) + divergent sex letter ("M" or "F") in `text-[10px] font-semibold text-muted-foreground` (neutral — sex is categorical identity, not signal). Title tooltip shows `Sex divergence: |d_M - d_F| = {value} ({sex} has larger effect)`.
 
 **Row 2:** `mt-0.5 flex items-center gap-1.5`
 - Pattern badge: first word of the pattern label, `rounded px-1 py-0.5 text-[9px] font-medium leading-tight`. **Neutral gray for all patterns** (`bg-gray-100 text-gray-600`, `text-gray-500` for flat, `text-gray-400` for insufficient). Pattern-specific colors were removed: the pattern text communicates the category; signal strength is encoded by p-value and effect size in the same row.
 - Trend p-value: `ev text-[10px] font-mono`, `font-semibold` when `min_trend_p < 0.01` -- "p={value}"
-- Max effect size: `ev text-[10px] font-mono`, `font-semibold` when `max_effect_size >= 0.8` -- "|d|={value}" (1 decimal place), shown only when non-null
+- Max effect size: `ev text-[10px] font-mono`, `font-semibold` when `max_effect_size >= 0.8` -- "|d|={value}" (2 decimal places), shown only when non-null
 - Min N: `text-[10px] font-mono text-muted-foreground/60` -- "n={min_n}", shown only when non-null
 - Timecourse indicator: `text-[10px] text-muted-foreground/40` -- unicode clock symbol, shown when `ep.has_timecourse` is true, with title "Temporal data available"
 - Assessment checkmark: `text-[10px] text-muted-foreground/40` -- checkmark, shown when a ToxFinding annotation exists for the endpoint with `treatmentRelated !== "Not Evaluated"`, with title "Assessment complete"
@@ -153,9 +153,9 @@ Container: `flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5`
 - Example: "Monotonic increase across doses, trend p=0.0031, max effect size 2.23. Both sexes affected."
 
 **Compact metrics row:** `mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]`
-- Trend p: label in `text-muted-foreground` + value in `font-mono` with conditional coloring (`font-semibold text-[#DC2626]` when p < 0.01, `font-medium` when p < 0.05)
-- Min p: label in `text-muted-foreground` + value in `font-mono` with conditional coloring (same thresholds)
-- Max |d|: label in `text-muted-foreground` + value in `font-mono` (2 decimal places) with conditional coloring (`font-semibold text-[#DC2626]` when |d| >= 0.8, `font-medium` when |d| >= 0.5), shown only when non-null
+- Trend p: label in `text-muted-foreground` + value in `font-mono` with font-weight emphasis only (`font-semibold` when p < 0.01, `font-medium` when p < 0.05). No color — Tier 3 evidence values stay neutral at rest.
+- Min p: label in `text-muted-foreground` + value in `font-mono` with font-weight emphasis only (same thresholds)
+- Max |d|: label in `text-muted-foreground` + value in `font-mono` (2 decimal places) with font-weight emphasis only (`font-semibold` when |d| >= 0.8, `font-medium` when |d| >= 0.5), shown only when non-null
 - Data: label in `text-muted-foreground` + value (continuous or categorical)
 - NOAEL: label in `text-muted-foreground` + NOAEL dose value/unit in `font-mono` plus dose level in `text-muted-foreground/60`. Shown when `noaelSummary` data is available (prefers "Combined" sex, falls back to first entry).
 - Assessed: label in `text-muted-foreground` + treatment-relatedness and adversity labels in lowercase. Shown only when ToxFinding annotation exists and `treatmentRelated !== "Not Evaluated"`.
@@ -1014,7 +1014,7 @@ Each auto-populated criterion has a small override toggle. When clicked:
 - An inline editor appears in a `mt-2 space-y-1.5 rounded border bg-muted/20 p-2` container
 - A dropdown select with strength options + a "Clear" button
 - A justification text area (`w-full rounded border px-2 py-1.5 text-xs`, 2 rows, placeholder "Reason for override...")
-- The card shows a subtle `(overridden)` badge in `text-[9px] text-amber-600`
+- The card shows a subtle `(overridden)` badge in `text-[9px] text-muted-foreground`
 - Override values persist via annotations alongside expert-input values
 
 Toggle: `Edit2` (pencil) icon, `h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground`, positioned in the right side of the label row.
@@ -1174,6 +1174,13 @@ All Hypotheses tab state is session-scoped:
 ---
 
 ## Changelog
+
+### 2026-02-12 -- Color audit C-01 through C-36 (Phase 3)
+
+- **Sex divergence indicator:** Replaced `text-[#3B82F6]`/`text-[#EC4899]` (categorical sex color) with neutral `text-muted-foreground` + unicode gender symbols (♂/♀). Sex is categorical identity — no color per C-01/C-05/C-24.
+- **Effect size precision:** Rail effect size changed from `.toFixed(1)` to `.toFixed(2)` per C-21 (consistent with evidence panel and metrics table).
+- **Evidence header metrics:** Removed `text-[#DC2626]` from Trend p, Min p, Max |d| in evidence header. Now uses `font-semibold`/`font-medium` (font-weight emphasis only) — Tier 3 evidence values stay neutral at rest per emphasis tier system.
+- **Causality override badge:** Changed `text-amber-600` to `text-muted-foreground` — status labels are categorical, no color.
 
 ### 2026-02-12 -- Design audit alignment (Phase 2)
 
