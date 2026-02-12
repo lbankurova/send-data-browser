@@ -96,7 +96,7 @@ Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWi
 ### Rail Items
 
 Each `OrganRailItem` is a `<button>` with:
-- Container: `w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors`
+- Container: `w-full text-left border-b border-border/40 border-l-2 px-3 py-2 transition-colors`
 - Selected: `border-l-blue-500 bg-blue-50/60 dark:bg-blue-950/20`
 - Not selected: `border-l-transparent hover:bg-accent/30`
 
@@ -105,6 +105,10 @@ Each `OrganRailItem` is a `<button>` with:
 **Row 2:** Bar — adverse count normalized to max across all organs. Neutral gray fill (`bg-[#D1D5DB]` on `bg-[#E5E7EB]` track). Fraction: `shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground` — "adverse/total".
 
 **Row 3:** Stats line — `{N} endpoints · {M} TR` + domain chips (plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` color class).
+
+### Organ Click Behavior
+
+Clicking an organ in the rail resets both sex and TR filters to null, clears the endpoint selection, and calls `onSelectionChange(null)`.
 
 ### Sorting
 
@@ -125,7 +129,7 @@ Filters organs by name (case-insensitive substring match, underscores treated as
 `shrink-0 border-b px-4 py-3`
 
 - Organ name: `text-sm font-semibold` (displayed via `titleCase()` from `severity-colors.ts`)
-- Adverse badge (if adverseCount > 0): `text-[10px] font-semibold uppercase text-[#DC2626]` — "{N} ADVERSE" (matching Histopathology/Target Organs badge pattern)
+- Adverse badge (if adverseCount > 0): `rounded-sm border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground` — "{N} adverse" (neutral bordered pill, matching other metadata badges)
 - Summary text: `mt-1 text-xs leading-relaxed text-muted-foreground` — "{N} endpoints across {D} domains, {M} adverse, {T} treatment-related."
 - Compact metrics: `mt-2 flex flex-wrap gap-3 text-[11px]` — max |d| (font-mono, font-semibold if >= 0.8), min p (font-mono, font-semibold if < 0.01). Typography-only, no color.
 
@@ -133,13 +137,12 @@ Filters organs by name (case-insensitive substring match, underscores treated as
 
 ## Tab Bar
 
-`flex shrink-0 items-center gap-0 border-b bg-muted/30`
+Uses `ViewTabBar` component with `flex shrink-0 items-center border-b bg-muted/30`.
 
 Two tabs: **Evidence** and **Adversity matrix**
 
-Each tab button: `relative px-4 py-1.5 text-xs font-medium transition-colors`
-Active tab: `text-foreground` + `<span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />`
-Inactive tab: `text-muted-foreground hover:text-foreground`
+Active tab: `text-foreground` + `h-0.5 bg-primary` underline.
+Inactive tab: `text-muted-foreground hover:text-foreground`.
 
 This matches the canonical tab bar pattern (CLAUDE.md hard rule).
 
@@ -186,7 +189,7 @@ Two zones: filter bar + scrollable content (adversity matrix + adverse effect gr
 | Filter | Type | Control | Default |
 |--------|------|---------|---------|
 | Sex | Dropdown | `<select>` with "All sexes" / Male / Female | All |
-| Treatment related | Dropdown | `<select>` with "TR: Any" / "Treatment-related" / "Not treatment-related" | Any |
+| Treatment related | Dropdown | `<select>` with "All TR status" / "Treatment-related" / "Not treatment-related" | All |
 
 No organ dropdown (organ already selected via rail). Row count indicator: right-aligned `ml-auto text-[10px] text-muted-foreground`, "{filtered} of {total} findings".
 
@@ -219,6 +222,8 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 **Legend:** 4 color swatches with labels (Adverse, Warning, Normal, N/A).
 
 ### Adverse Effect Grid
+
+Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Adverse effect summary ({N} rows)"
 
 TanStack React Table, `text-xs`, client-side sorting with column resizing. Scoped to selected organ.
 
@@ -348,6 +353,7 @@ useRuleResults(studyId)           ──> ruleResults (shared React Query cache)
 | No organ selected (but data exists) | "Select an organ system to view adverse effect details." |
 | No data at all | "No adverse effect data available." |
 | Empty search results (rail) | "No matches for '{search}'" |
+| No data for organ (both tabs empty) | "No data for this organ." |
 | No endpoints for organ (overview) | "No endpoints for this organ." |
 | No rows after filter (matrix) | "No rows match the current filters." |
 | >200 filtered rows (grid) | Truncation message below grid |

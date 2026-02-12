@@ -1,7 +1,7 @@
 # Adverse Effects View
 
 **Route:** `/studies/:studyId/analyses/adverse-effects`
-**Component:** `AdverseEffectsView.tsx` (no wrapper -- uses its own contexts)
+**Component:** `AdverseEffectsView.tsx` (in `components/analysis/findings/`)
 **Scientific question:** "What are all the findings and how do they compare across dose groups?"
 **Role:** Dynamic server-side adverse effects analysis. Paginated findings table with per-dose-group values, server-side filtering, and detailed finding context panel.
 
@@ -22,22 +22,23 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a traditional page-style layout with padding `p-6`:
+The view itself is a traditional page-style layout with padding `p-4`:
 
 ```
 +-----------------------------------------------------------+
 |  Adverse Effects                                           |
 |  {studyId}                                                 |  <-- h1 + subtitle
 +-----------------------------------------------------------+
-|  [N adverse] [N warning] [N normal]  {total} total        |  <-- summary badges
+|  [N adverse] [N warning] [N normal]  {total} total        |  <-- summary badges (uniform gray)
 +-----------------------------------------------------------+
-|  [Domain v] [Sex v] [Severity v] [Search findings...]     |  <-- filter bar (shadcn components)
+|  Domain [v] Sex [v] Classification [v] [Search findings…] |  <-- filter bar (native <select> via FilterSelect)
 +-----------------------------------------------------------+
 |                                                           |
 |  Findings table (dynamic columns: fixed + per-dose-group)  |
+|  (horizontally scrollable via overflow-x-auto)             |
 |                                                           |
 +-----------------------------------------------------------+
-|  [Pagination: page X of Y, rows per page selector]        |
+|  {total} rows | Rows per page [v] | Page X of Y |◀◀ ◀ ▶ ▶▶|
 +-----------------------------------------------------------+
 ```
 
@@ -45,10 +46,10 @@ The view itself is a traditional page-style layout with padding `p-6`:
 
 ## Header
 
-`mb-4`
+`mb-3`
 
-- Title: `text-2xl font-bold` -- "Adverse Effects"
-- Subtitle: `text-sm text-muted-foreground` -- study ID
+- Title: `text-base font-semibold` -- "Adverse Effects"
+- Subtitle: `mt-0.5 text-xs text-muted-foreground` -- study ID
 
 ---
 
@@ -56,30 +57,32 @@ The view itself is a traditional page-style layout with padding `p-6`:
 
 `mb-4 flex items-center gap-2 text-xs`
 
-Only shown when data is loaded. Three severity badges plus a total count:
+Only shown when data is loaded. Three classification badges plus a total count. All badges use **uniform gray styling** (categorical identity, not signal color):
 
 | Badge | Classes |
 |-------|---------|
-| Adverse | `rounded-sm border border-red-200 bg-red-50 px-1.5 py-0.5 font-medium text-red-700` |
-| Warning | `rounded-sm border border-amber-200 bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700` |
-| Normal | `rounded-sm border border-green-200 bg-green-50 px-1.5 py-0.5 font-medium text-green-700` |
+| adverse | `rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600` |
+| warning | `rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600` |
+| normal | `rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600` |
 
-**Total count:** `ml-1 text-muted-foreground` -- "{total} total"
+**Total count:** `ml-1 text-muted-foreground` -- "{total_findings} total"
 
 ---
 
 ## Filter Bar
 
-`mb-4 flex flex-wrap items-center gap-2`
+`flex flex-wrap items-center gap-3`
 
-Uses **shadcn/ui Select and Input** components (not native `<select>`).
+Wrapped in a `mb-4` container div. Uses `FindingsFilterBar` component, which renders native `<select>` elements via the `FilterSelect` component (from `@/components/ui/FilterBar`). `FilterSelect` applies the design-token class `filter.select` = `rounded-full bg-muted/50 px-2 py-0.5 text-xs cursor-pointer focus:outline-none`. Each filter is wrapped in a `<label>` with classes `flex items-center gap-1.5 text-xs text-muted-foreground`.
 
-| Filter | Type | Control | Width | Default |
-|--------|------|---------|-------|---------|
-| Domain | Dropdown | shadcn `<Select>` with "All domains" + LB/BW/OM/MI/MA/CL | `w-[100px]`, `h-8` | All |
-| Sex | Dropdown | shadcn `<Select>` with "All" / Male / Female | `w-[80px]`, `h-8` | All |
-| Severity | Dropdown | shadcn `<Select>` with "All severity" / Adverse / Warning / Normal | `w-[110px]`, `h-8` | All |
-| Search | Text input | shadcn `<Input>` with "Search findings..." placeholder | `w-[200px]`, `h-8` | Empty |
+| Filter | Label Text | Control | Options | Default |
+|--------|-----------|---------|---------|---------|
+| Domain | "Domain" | `FilterSelect` (native `<select>`) | "All" + LB / BW / OM / MI / MA / CL | All |
+| Sex | "Sex" | `FilterSelect` (native `<select>`) | "All" / Male / Female | All |
+| Classification | "Classification" | `FilterSelect` (native `<select>`) | "All" / Adverse / Warning / Normal | All |
+| Search | -- | Native `<input>` with placeholder "Search findings..." | Free text | Empty |
+
+The search input uses classes: `rounded border bg-background px-2 py-0.5 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary`.
 
 **Filter change behavior:** Changing any filter resets to page 1 and clears the finding selection.
 
@@ -88,17 +91,18 @@ Uses **shadcn/ui Select and Input** components (not native `<select>`).
 ## Findings Table
 
 ### Structure
-Plain HTML `<table>` with `w-full text-xs`, no TanStack sorting (data comes server-sorted).
+Plain HTML `<table>` with `w-full text-xs`, wrapped in `overflow-x-auto` for horizontal scrolling. No TanStack sorting (data comes server-sorted).
 
 ### Header Row
-`border-b bg-muted/50`
-Headers: `px-2 py-1.5 text-left font-medium` (or `text-right` / `text-center` for numeric/icon columns)
+- Wrapper `<thead>`: `sticky top-0 z-10 bg-background` (sticky header on vertical scroll)
+- Row `<tr>`: `border-b bg-muted/30`
+- Header cells `<th>`: `px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` (or `text-right` / `text-center` for numeric/icon columns)
 
 ### Fixed Columns (Left)
 
 | Column | Header | Alignment | Cell Rendering |
 |--------|--------|-----------|----------------|
-| domain | Domain | Left | Colored badge: `rounded px-1.5 py-0.5 text-[10px] font-medium` with domain-specific bg/text colors |
+| domain | Domain | Left | `DomainLabel` component: colored text only, `text-[9px] font-semibold` with domain-specific text color from `getDomainBadgeColor().text`. No background, no border. |
 | finding | Finding | Left | `max-w-[200px] truncate`, `title` tooltip for full name. If specimen exists: "{specimen}: {finding}" with specimen in `text-muted-foreground` |
 | sex | Sex | Left | Plain text |
 | day | Day | Left | `text-muted-foreground`, em dash if null |
@@ -110,64 +114,70 @@ One column per dose group (from `data.dose_groups` array), rendered dynamically.
 - **Header:** dose value + unit (e.g., "0 mg/kg/day"), or dose label if no value. `text-right`, with `title` tooltip showing label.
 - **Cell:** `text-right font-mono`
   - Continuous: mean value `.toFixed(2)`, em dash if null
-  - Categorical: "{affected}/{n}", em dash if null
+  - Incidence: "{affected}/{n}", em dash if null
 
 ### Fixed Columns (Right)
 
 | Column | Header | Alignment | Cell Rendering |
 |--------|--------|-----------|----------------|
-| min_p_adj | p-value | Right | `font-mono` with p-value color classes |
-| trend_p | Trend | Right | `font-mono` with p-value color classes |
-| direction | Dir | Center | `text-sm`, direction symbol with color (see below) |
-| max_effect_size | Effect | Right | `font-mono` with effect size color classes |
-| severity | Severity | Center | `rounded-sm px-1.5 py-0.5 text-[10px] font-medium` badge with severity classes |
+| min_p_adj | p-value | Right | `font-mono text-muted-foreground` -- formatted via `formatPValue()`. No color scale applied. |
+| trend_p | Trend | Right | `font-mono text-muted-foreground` -- formatted via `formatPValue()`. No color scale applied. |
+| direction | Dir | Center | `text-sm` with direction-specific color via `getDirectionColor()` (see below) |
+| max_effect_size | Effect | Right | `font-mono text-muted-foreground` -- formatted via `formatEffectSize()`. No color scale applied. |
+| severity | Severity | Center | `inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-semibold` with uniform gray classes from `getSeverityBadgeClasses()` |
 
-### Domain Badge Colors
+**Note on p-value and effect-size columns:** Although `getPValueColor()` and `getEffectSizeColor()` functions exist in `severity-colors.ts`, they are **not called** in the `FindingsTable` rendering. Both p-value and effect-size cells use a hardcoded `text-muted-foreground` class. The `data-evidence=""` attribute is set on the outer `<td>`, and the inner `<span>` uses class `ev font-mono text-muted-foreground`.
 
-| Domain | Background | Text |
-|--------|-----------|------|
-| LB | `bg-blue-100` | `text-blue-700` |
-| BW | `bg-emerald-100` | `text-emerald-700` |
-| OM | `bg-purple-100` | `text-purple-700` |
-| MI | `bg-rose-100` | `text-rose-700` |
-| MA | `bg-orange-100` | `text-orange-700` |
-| CL | `bg-cyan-100` | `text-cyan-700` |
-| Other | `bg-gray-100` | `text-gray-700` |
+**Note on severity badges:** `getSeverityBadgeClasses()` returns uniform gray for all severity values (`bg-gray-100 text-gray-600 border-gray-200 border`). There is no color differentiation between adverse, warning, and normal.
 
-### Direction Symbols
+### Domain Label Colors
 
-| Symbol | Meaning |
-|--------|---------|
-| up arrow | Increased |
-| down arrow | Decreased |
-| em dash | No change / not applicable |
+The `DomainLabel` component renders text-only colored labels (no background) using `getDomainBadgeColor(domain).text`:
 
-### P-value Color Scale (text classes)
+| Domain | Text Color |
+|--------|-----------|
+| LB | `text-blue-700` |
+| BW | `text-emerald-700` |
+| OM | `text-purple-700` |
+| MI | `text-rose-700` |
+| MA | `text-orange-700` |
+| CL | `text-cyan-700` |
+| DS | `text-indigo-700` |
+| FW | `text-teal-700` |
+| Other | `text-gray-700` |
 
-| Threshold | Class |
-|-----------|-------|
-| p < 0.001 | `text-red-600 font-semibold` |
-| p < 0.01 | `text-red-500 font-medium` |
-| p < 0.05 | `text-amber-600 font-medium` |
-| p < 0.1 | `text-amber-500` |
-| p >= 0.1 | `text-muted-foreground` |
+### Direction Symbols and Colors
 
-### Effect Size Color Scale
+| Direction | Symbol | Color Class |
+|-----------|--------|------------|
+| up | ↑ | `text-red-500` |
+| down | ↓ | `text-blue-500` |
+| null/other | — | `text-muted-foreground` |
 
-| Threshold | Class |
-|-----------|-------|
-| |d| >= 1.2 | `text-red-600 font-semibold` |
-| |d| >= 0.8 | `text-red-500 font-medium` |
-| |d| >= 0.5 | `text-amber-600` |
-| |d| >= 0.2 | `text-amber-500` |
-| |d| < 0.2 | `text-muted-foreground` |
+### P-value Formatting (`formatPValue`)
+
+| Threshold | Format |
+|-----------|--------|
+| p < 0.0001 | "<0.0001" |
+| p < 0.001 | `.toFixed(4)` |
+| p < 0.01 | `.toFixed(3)` |
+| p >= 0.01 | `.toFixed(2)` |
+| null | "—" |
+
+### Effect Size Formatting (`formatEffectSize`)
+
+| Value | Format |
+|-------|--------|
+| non-null | `.toFixed(2)` |
+| null | "—" |
 
 ### Row Interactions
 
 - Hover: `hover:bg-accent/50`
-- Selected: `bg-accent` (matched on finding ID)
+- Selected: `bg-accent` (matched on finding ID), also sets `data-selected` attribute
 - Click: selects finding via `FindingSelectionContext`. Click again to deselect.
 - Row cells: `px-2 py-1`
+- Row base: `cursor-pointer border-b transition-colors`
 
 ---
 
@@ -176,9 +186,14 @@ One column per dose group (from `data.dose_groups` array), rendered dynamically.
 Uses `DataTablePagination` component below the table.
 
 - Default page size: 50
-- Shows: page number, total pages, total rows
-- Page navigation: previous/next
-- Page size selector: dropdown
+- Page size options: 25, 50, 100, 250 (via shadcn `Select` dropdown)
+- Shows: total row count (left), "Rows per page" selector, "Page X of Y" text, and 4 navigation buttons (right)
+- **Navigation buttons** (all `variant="outline" size="icon"` with `h-8 w-8`):
+  - First page (`ChevronsLeft` icon) -- disabled when on page 1
+  - Previous page (`ChevronLeft` icon) -- disabled when on page 1
+  - Next page (`ChevronRight` icon) -- disabled when on last page
+  - Last page (`ChevronsRight` icon) -- disabled when on last page
+- Layout: `flex items-center justify-between py-4`
 
 ---
 
@@ -187,35 +202,48 @@ Uses `DataTablePagination` component below the table.
 Route-detected: when pathname matches `/studies/{studyId}/analyses/adverse-effects`, shows `AdverseEffectsContextPanel` (uses `FindingSelectionContext`).
 
 ### No Selection State
-- Header: `text-sm font-semibold` -- "Adverse Effects"
+- Header: `text-sm font-semibold` -- "Adverse Effects" (`<h3>` with `mb-2`)
 - Message: "Select a finding row to view detailed analysis."
 - `p-4 text-xs text-muted-foreground`
 
 ### Loading State
-- `Skeleton` components: h-4, h-20 x3
+- `Skeleton` components: h-4 w-2/3, then h-20 w-full x3
 - `space-y-3 p-4`
 
 ### With Selection
 
 #### Header
-- `border-b px-4 py-2`
-- Finding name: `text-sm font-semibold`
-- Subtitle: "{domain} | {sex} | Day {day}" (or "Terminal") in `text-[10px] text-muted-foreground`
+- `border-b px-4 py-3`
+- Row: `flex items-center justify-between`
+- Finding name: `text-sm font-semibold` (`<h3>`)
+- Expand/collapse all buttons: `CollapseAllButtons` component in the header row (right side)
+  - Expand all: `ChevronsUpDown` icon (h-3.5 w-3.5)
+  - Collapse all: `ChevronsDownUp` icon (h-3.5 w-3.5)
+  - Button classes: `rounded p-0.5 text-muted-foreground hover:bg-accent/50 hover:text-foreground`
+- Subtitle: "{domain} | {sex} | Day {day}" (or "Terminal" if day is null) in `text-[10px] text-muted-foreground`
 
-#### Pane 1: Treatment Summary (default open)
+#### Pane 1: Treatment summary (default open)
 `TreatmentRelatedSummaryPane` component -- shows treatment-relatedness assessment.
 
 #### Pane 2: Statistics (default open)
 `StatisticsPane` component -- key statistical metrics.
 
-#### Pane 3: Dose Response (default closed)
-`DoseResponsePane` component -- dose-response relationship details.
+#### Pane 3: Dose response (default open)
+`DoseResponsePane` component -- dose-response relationship details. No `defaultOpen` prop passed, so it inherits the `CollapsiblePane` default of `true` (open).
 
 #### Pane 4: Correlations (default closed)
-`CorrelationsPane` component -- correlated findings.
+`CorrelationsPane` component -- correlated findings. Explicitly passed `defaultOpen={false}`.
 
-#### Pane 5: Effect Size (default closed)
-`EffectSizePane` component -- effect size analysis.
+#### Pane 5: Effect size (default closed)
+`EffectSizePane` component -- effect size analysis. Explicitly passed `defaultOpen={false}`.
+
+#### Pane Rendering
+All panes use the `CollapsiblePane` component:
+- Toggle button: `flex w-full items-center gap-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`
+- Chevron icons: `h-3 w-3` (`ChevronDown` when open, `ChevronRight` when closed)
+- Content area: `px-4 pb-3`
+- Panes are separated by `border-b` (last pane has `last:border-b-0`)
+- Panes respond to expand-all / collapse-all via generation counter (`expandAll` / `collapseAll` props)
 
 **Note:** All context pane data comes from a separate API call: `/api/studies/{studyId}/analyses/adverse-effects/finding/{findingId}`.
 
@@ -232,6 +260,7 @@ Route-detected: when pathname matches `/studies/{studyId}/analyses/adverse-effec
 | Study selection | Shared via context | `SelectionContext` -- synced on mount |
 | Findings data | Server | `useAdverseEffects(studyId, page, pageSize, filters)` hook (React Query) |
 | Finding context | Server | `useFindingContext(studyId, findingId)` hook -- loaded on selection |
+| Collapse all | Local (context panel) | `useCollapseAll()` hook -- provides expandGen/collapseGen counters |
 
 ---
 
@@ -239,7 +268,7 @@ Route-detected: when pathname matches `/studies/{studyId}/analyses/adverse-effec
 
 ```
 useAdverseEffects(studyId, page, pageSize, filters)
-    --> { findings, dose_groups, summary, page, total_pages, total_findings }
+    --> { findings, dose_groups, summary, page, page_size, total_pages, total_findings }
                                   |
                             FindingsTable + DataTablePagination
                                   |
@@ -265,38 +294,6 @@ No direct cross-view links from this view's context panel (unlike the pre-genera
 
 | State | Display |
 |-------|---------|
-| Loading | Skeleton rows: 1 h-10 header + 10 h-8 body rows |
+| Loading | Skeleton rows: 1 `h-10 w-full` header + 10 `h-8 w-full` body rows, in `space-y-2` |
 | Error | `p-6 text-destructive` -- "Failed to load analysis: {message}" |
 | No data | Table renders but with no rows |
-
----
-
-## Current Issues / Improvement Opportunities
-
-### Table
-- No client-side sorting (data comes pre-sorted from server)
-- Dynamic dose-group columns make the table very wide -- no horizontal scroll indicator
-- Finding name truncated at 200px max-width -- may be too aggressive
-- No column visibility toggle
-- No row grouping by domain or organ system
-
-### Filter Bar
-- Uses shadcn/ui Select (different from other views which use native `<select>`) -- inconsistent UI
-- No "clear all" button
-- Search is debounced server-side but no loading indicator during search
-
-### Context Panel
-- Context data loaded via separate API call -- adds latency when selecting a finding
-- 5 panes may be overwhelming -- Treatment Summary and Statistics overlap
-- No cross-view links to the pre-generated analysis views
-- No ToxFindingForm for annotation
-
-### Pagination
-- Only previous/next navigation -- no jump to specific page
-- Page size options not visible in the description
-
-### General
-- This is the only view that uses server-side filtering -- mental model differs from other views
-- No keyboard navigation
-- No export option
-- Summary badges are static from the response -- don't update as filters change

@@ -44,7 +44,7 @@ The Study Summary View itself is split into three tabs with a shared tab bar:
 - **Tabs:** "Study details" (first), "Signals" (second), and "Cross-study insights" (third)
 - **Active indicator:** `h-0.5 bg-primary` underline at bottom of active tab
 - **Tab text:** `text-xs font-medium`. Active = `text-foreground`. Inactive = `text-muted-foreground`. Sentence case for tab labels.
-- **Generate Report button:** Right-aligned in tab bar. Border, `text-xs`, icon `FileText` (3.5x3.5) + "Generate Report" label. Opens HTML report in new tab.
+- **Generate Report button:** Right-aligned in tab bar. Border, `text-xs`, icon `FileText` (3.5x3.5) + "Generate report" label (sentence case). Opens HTML report in new tab.
 
 ---
 
@@ -143,7 +143,7 @@ Persistent across the Signals tab. Neutral muted background: `shrink-0 border-b 
    - Each: label (`text-[10px] font-medium uppercase tracking-wider text-muted-foreground`) + value (`text-xs font-semibold text-foreground`)
    - NOAEL value: amber-600 only if "Not established"; all other values (including "Control") use `text-foreground`
    - NOAEL sex qualifier: `text-[10px] text-muted-foreground` inline after value
-   - NOAEL confidence badge (if present): colored pill (`text-[10px] font-medium`) — green ≥80% (`bg-green-100 text-green-700`), amber ≥60% (`bg-amber-100 text-amber-700`), red <60% (`bg-red-100 text-red-700`)
+   - NOAEL confidence badge (if present): text color only (`text-[10px] font-medium`, no background pill) — `text-green-700` if ≥80%, `text-amber-700` if ≥60%, `text-red-700` if <60%
    - Driver (if exists): `text-xs font-medium text-foreground`
 
 2. **Alert/warning statements** (if any from `panelData.decisionBar` with warning/review-flag icons): `text-xs leading-snug text-amber-700` with triangle/warning icon
@@ -157,8 +157,8 @@ Persistent across the Signals tab. Neutral muted background: `shrink-0 border-b 
 Shows study-level statements, modifiers, and caveats from `panelData`. Only renders if non-empty.
 
 - **Study statements:** `text-sm leading-relaxed` with StatementIcon
-- **Study modifiers:** `text-xs text-amber-800` with amber triangle icon. Only includes modifiers where `organSystem` is falsy.
-- **Study caveats:** `text-xs text-orange-700` with warning icon. Only includes caveats where `organSystem` is falsy.
+- **Study modifiers:** `text-xs leading-relaxed text-foreground/80` with amber triangle icon. Only includes modifiers where `organSystem` is falsy.
+- **Study caveats:** `text-xs leading-relaxed text-foreground/80` with warning icon. Only includes caveats where `organSystem` is falsy.
 
 ### Organ Rail (left panel, resizable 180-500px, default 300px)
 
@@ -174,7 +174,7 @@ Each rail item (`SignalsOrganRailItem`):
   - "TARGET" badge (if target organ): `text-[9px] font-semibold uppercase text-red-600` — sole red element per rail item (C-31 compliance)
 - Selected: `bg-blue-50/60 dark:bg-blue-950/20`
 - Not selected: `hover:bg-accent/30`
-- **Row 2: Evidence score bar** — `mt-1.5 flex items-center gap-2`: track `h-1.5 rounded-full bg-gray-200`, fill `bg-gray-300` (width normalized to max across all organs). Score number: `font-mono text-[10px] tabular-nums`, font-semibold if ≥0.5, font-medium if ≥0.3.
+- **Row 2: Evidence score bar** — uses `<EvidenceBar>` reusable component (from `@/components/ui/EvidenceBar`). Neutral gray track and fill, width normalized to max across all organs. Score number: `font-mono text-[10px] tabular-nums`, font-semibold if ≥0.5, font-medium if ≥0.3.
 - **Row 3: Stats line** — `text-[10px] text-muted-foreground`: `{n_significant} sig · {n_treatment_related} TR · {n_domains} domains` + domain chips (plain colored text `text-[9px] font-semibold` with `getDomainBadgeColor().text`)
 - **Row 4: Effect metrics** (if available from computed stats) — `text-[10px] text-muted-foreground tabular-nums`: `|d|={maxAbsEffectSize}` (font-semibold if ≥0.8) + `trend p={minTrendP}` (font-semibold if <0.01)
 - **Row 5: D-R summary** (if available from OrganBlock): `text-[10px] text-muted-foreground` — `D-R: {nEndpoints} ({topEndpoint})`
@@ -202,21 +202,21 @@ Three tabs: "Evidence", "Signal matrix", "Metrics"
 Scrollable content (`overflow-y-auto px-4 py-3`):
 
 1. **Insights** — `InsightsList` component filtered to organ-specific rules (`r.organ_system === key` or `r.context_key.startsWith("organ_{key}")`)
-2. **Modifiers** — Amber-styled items filtered to this organ (`s.organSystem === key || s.clickOrgan === key`). Organ names are clickable links via `ClickableOrganText`.
-3. **Review flags** — Items with warning icon in `flex items-start gap-2 text-xs leading-relaxed text-foreground/80`, amber warning icon left-aligned. Organ names are clickable links.
+2. **Modifiers** — Items filtered to this organ (`s.organSystem === key || s.clickOrgan === key`), rendered as plain `<div>` elements. Organ names are plain text (not clickable).
+3. **Review flags** — Items with warning icon in `flex items-start gap-2 text-xs leading-relaxed text-foreground/80`, amber warning icon left-aligned. Organ names are plain text (not clickable).
 4. **Domain breakdown** — Table with columns: Domain (colored text `text-[9px] font-semibold` with `getDomainBadgeColor`), Endpoints, Significant (font-semibold if >0), TR (font-semibold if >0). Sorted by significant count desc.
 5. **Top findings** — Up to 8 findings sorted by `|effect_size|` desc. Each row (`hover:bg-accent/30`, clickable → navigates to dose-response view) shows:
    - Endpoint name (`min-w-[120px] truncate font-medium`)
    - Direction arrow (`text-muted-foreground/50`)
-   - Effect size (font-mono, font-semibold if |d| ≥ 0.8, `group-hover/finding:text-[#DC2626]` interaction-driven evidence color)
-   - P-value (font-mono, font-semibold if < 0.001, font-medium if < 0.01, `group-hover/finding:text-[#DC2626]` interaction-driven evidence color)
+   - Effect size (font-mono, font-semibold if |d| ≥ 0.8, `ev` class for data-evidence styling)
+   - P-value (font-mono, font-semibold if < 0.001, font-medium if < 0.01, `ev` class for data-evidence styling)
    - Trend p-value (font-mono text-muted-foreground, font-semibold if < 0.01, prefixed with "t:")
    - D-R pattern badge (if not none/flat): `rounded-full bg-muted px-1.5 py-0.5 text-[9px]`
    - Severity badge (`rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium`)
    - TR flag (if treatment-related)
    - Sex + dose label (right-aligned, muted)
 
-**Cross-view links (pinned footer):** Pinned below the scrollable content area as a persistent footer strip (`shrink-0 border-t px-4 py-2 flex flex-wrap gap-3`). Links: "Target Organs: {organ} →", "Dose-response: {organ} →", "Histopathology: {organ} →", "NOAEL Decision →". Navigate with `{ state: { organ_system } }`.
+Note: Cross-view navigation links are available in the context panel's "Related views" pane, not in the Evidence tab itself.
 
 #### Signal Matrix Tab (`SignalsMatrixTab`)
 
@@ -263,6 +263,8 @@ Full sortable data table of all signals for the selected organ. TanStack React T
 - Only endpoint rows and dose column headers render
 
 **Normal mode (multi-organ):** Used by other views. Organs grouped and sorted by evidence_score desc, target organs first. Collapsible with chevron. Organ header shows: name, evidence score badge, domain chips, target star, sparkline, endpoint count.
+
+**`pendingNavigation` mechanism:** The heatmap accepts a `pendingNavigation` prop that auto-expands a specified organ and scrolls to it. Used for programmatic navigation (e.g., clicking an organ link in the context panel auto-expands and scrolls to that organ in the heatmap).
 
 **Neutral-at-rest rendering:** Heatmap cells use neutral gray backgrounds at rest (`rgba(0,0,0,0.04)` for data cells, `rgba(0,0,0,0.02)` for empty). On hover, the cell fills with the signal score color. Text uses `tabular-nums` for number alignment. See design guide §1.3 and §1.11 for details.
 
@@ -390,7 +392,7 @@ Key-value pairs, `text-[11px] tabular-nums`:
 `ToxFindingForm` component with treatment-related dropdown, adversity dropdown, comment textarea, and SAVE button.
 
 #### Pane 5: Related views (default closed)
-Links to Target Organs (with organ_system), Dose-Response (with endpoint_label + organ_system), Histopathology (with organ_system), NOAEL Decision (with organ_system). Style: `text-[11px]`, color `text-[#3a7bd5]`, `hover:underline`.
+Links to Target Organs (with organ_system), Dose-Response (with endpoint_label + organ_system), Histopathology (with organ_system), NOAEL Decision (with organ_system). Style: `text-[11px]`, `text-primary hover:underline`.
 
 ---
 
@@ -418,7 +420,6 @@ Links to Target Organs (with organ_system), Dose-Response (with endpoint_label +
 | Sorted organs | Derived | Targets first, then by `evidence_score` desc |
 | OrganBlocksMap | Derived | Map from `panelData.organBlocks` keyed by `organKey` |
 | RailStatsMap | Derived | Per-organ `{ maxAbsEffectSize, minTrendP, dominantDirection }` from signal data |
-| TierDotMap | Derived | Per-organ tier dot color from `computeTier()` on organ-filtered rules |
 
 ---
 
@@ -481,7 +482,8 @@ SignalsOrganRail                    SignalsEvidencePanel
 | State | Display |
 |-------|---------|
 | Loading | Centered spinner `Loader2` (animate-spin) + "Loading study summary..." |
-| Error (no generated data) | Red box with instructions to run generator command |
+| Error (no generated data) | Amber-themed box (`bg-amber-50`, `text-amber-600`/`text-amber-700`, `Info` icon) with instructions to run generator command. Includes a "View cross-study insights" button that switches to the insights tab (graceful degradation for portfolio-only studies) |
+| Cross-study insights error | "Cross-study insights are not available for this study. (Only portfolio studies with metadata have insights)" |
 | Empty organ search | "No matches for '{search}'" centered in rail |
 | No signal data for organ | "No signal data for this organ." centered in overview tab |
 | No metadata (Details tab) | Spinner + "Loading details..." |

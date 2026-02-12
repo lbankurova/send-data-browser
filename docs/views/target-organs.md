@@ -49,7 +49,7 @@ Rail is resizable via `useResizePanel(300, 180, 500)` with a `PanelResizeHandle`
 
 ## Organ Rail (left panel, 300px default)
 
-`flex shrink-0 flex-col overflow-hidden border-r`, width set via `useResizePanel`.
+`shrink-0 border-r`, width set via `useResizePanel`. Inner `OrganRail` component uses `flex h-full w-full flex-col overflow-hidden`.
 
 ### Header
 
@@ -59,7 +59,7 @@ Rail is resizable via `useResizePanel(300, 180, 500)` with a `PanelResizeHandle`
 ### Rail Items
 
 Each `OrganListItem` is a `<button>` with:
-- Container: `w-full text-left border-b border-border/40 px-3 py-2.5 transition-colors`
+- Container: `w-full text-left border-b border-border/40 px-3 py-2 transition-colors`
 - Selected: `bg-blue-50/60 dark:bg-blue-950/20`
 - Not selected: `hover:bg-accent/30`
 - Left border: `border-l-2 border-l-[#DC2626]` for organs with `target_organ_flag`, `border-l-transparent` otherwise
@@ -112,7 +112,7 @@ If `location.state` contains `{ organ_system: string }`, auto-selects matching o
 
 ### Subtitle line (NEW)
 
-`mt-0.5 text-[11px] text-muted-foreground` -- domain chips (colored text via `getDomainBadgeColor().text`, separated by middots) + endpoint count. Example: "**LB** · **MI** · **BW** · 15 endpoints"
+`mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground` -- domain chips (colored text via `getDomainBadgeColor().text`, rendered as flex items with gap spacing) + `·` separator before endpoint count. Example: `LB` `MI` `BW` · "15 endpoints"
 
 ### 1-line conclusion
 
@@ -146,13 +146,12 @@ Example: *"Convergent evidence across 3 domains, 8/15 significant (53%), both se
 
 ## Tab Bar
 
-`flex shrink-0 items-center gap-0 border-b bg-muted/30`
+Uses `ViewTabBar` component: `flex shrink-0 items-center border-b bg-muted/30` with nested flex container for tabs.
 
 Three tabs: **Evidence**, **Hypotheses**, **Metrics**
 
-Each tab button: `relative px-4 py-1.5 text-xs font-medium transition-colors`
-Active tab: `text-foreground` + `<span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />`
-Inactive tab: `text-muted-foreground hover:text-foreground`
+Active tab: `text-foreground` + `h-0.5 bg-primary` underline.
+Inactive tab: `text-muted-foreground hover:text-foreground`.
 
 This matches the canonical tab bar pattern (CLAUDE.md hard rule).
 
@@ -162,7 +161,7 @@ Tab bar uses `bg-muted/30` for visual consistency with Dose-Response view.
 
 ---
 
-## Evidence Tab (formerly Overview)
+## Evidence Tab (internal component: `OverviewTab`)
 
 `flex-1 overflow-y-auto px-4 py-3` -- scrollable content.
 
@@ -233,7 +232,7 @@ The Hypotheses tab is an **exploration space** — tools for investigating organ
 
 `flex items-center gap-1 border-b bg-muted/20 px-4 py-1.5`
 
-- **Favorite pills**: rounded-full buttons for pinned tools. Active: `bg-foreground text-background`. Inactive: `text-muted-foreground hover:bg-accent`. Right-click to toggle favorite.
+- **Favorite pills**: rounded-full buttons for pinned tools. Active: `bg-foreground text-background`. Inactive: `text-muted-foreground hover:bg-accent hover:text-foreground`. Right-click to toggle favorite.
 - **`+` dropdown**: searchable dropdown to browse and select tools. Selecting a non-favorited tool auto-adds it to favorites.
 - **"Does not affect conclusions"**: right-aligned `text-[10px] italic text-muted-foreground`.
 
@@ -379,6 +378,7 @@ Compact tier count summary (not full InsightsList — that lives in the center H
 
 Per-domain endpoint count summary (not individual endpoints — that lives in the center Evidence tab to avoid redundancy).
 - Groups endpoints by domain, counts per domain, sorted by count descending.
+- **Note:** Domain counts are derived from the top 15 unique endpoints (by occurrence count), not all evidence rows. Organs with more than 15 unique endpoints may show incomplete domain coverage counts.
 - Each row: domain code (plain colored text `text-[9px] font-semibold` with `getDomainBadgeColor().text`) + endpoint count (`text-muted-foreground`).
 - Footer: "See Evidence tab for full endpoint list."
 - Empty state: "No endpoints for this organ."
@@ -387,7 +387,7 @@ Per-domain endpoint count summary (not individual endpoints — that lives in th
 
 Only shown when `selection.endpoint_label` exists (i.e., a specific endpoint row is selected in the evidence table, not just an organ).
 
-Standard `ToxFindingForm` component -- keyed by `endpointLabel` (the selected endpoint). Not wrapped in a `CollapsiblePane`.
+Standard `ToxFindingForm` component with `endpointLabel` prop. Not wrapped in a `CollapsiblePane`. Note: no explicit React `key` prop is set — remounting is controlled by the parent conditional (`selection.endpoint_label` existing).
 
 #### Pane 4: Related Views (default closed)
 
@@ -396,7 +396,7 @@ Cross-view navigation links in `text-[11px]`:
 - "View histopathology" -- navigates to `/studies/{studyId}/histopathology` with `{ state: { organ_system } }`
 - "View NOAEL decision" -- navigates to `/studies/{studyId}/noael-decision` with `{ state: { organ_system } }`
 
-All links: `block hover:underline`, color `#3a7bd5`, arrow suffix.
+All links: `block text-primary hover:underline`, arrow suffix.
 
 ---
 
