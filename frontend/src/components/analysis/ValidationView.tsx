@@ -24,8 +24,9 @@ import { useAffectedRecords } from "@/hooks/useAffectedRecords";
 import { useRunValidation } from "@/hooks/useRunValidation";
 import type { AffectedRecordData } from "@/hooks/useAffectedRecords";
 import type { ValidationRecordReview } from "@/types/annotations";
+import { ValidationRuleCatalog } from "./ValidationRuleCatalog";
 
-type ValidationMode = "data-quality" | "study-design";
+type ValidationMode = "data-quality" | "study-design" | "rule-catalog";
 
 const STUDY_DESIGN_CATEGORY = "Study design";
 
@@ -521,6 +522,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
       tabs={[
         { key: "data-quality", label: "Data quality" },
         { key: "study-design", label: "Study design" },
+        { key: "rule-catalog", label: "Rule catalog" },
       ]}
       value={mode}
       onChange={(k) => handleModeChange(k as ValidationMode)}
@@ -565,6 +567,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
         tabs={[
           { key: "data-quality", label: "Data quality", count: modeCounts.dataQuality },
           { key: "study-design", label: "Study design", count: modeCounts.studyDesign },
+          { key: "rule-catalog", label: "Rule catalog" },
         ]}
         value={mode}
         onChange={(k) => handleModeChange(k as ValidationMode)}
@@ -582,6 +585,15 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
         }
       />
 
+      {/* Rule catalog mode */}
+      {mode === "rule-catalog" ? (
+        <ValidationRuleCatalog
+          firedRules={allRules}
+          scripts={validationData.scripts ?? []}
+          coreConformance={validationData.core_conformance ?? null}
+        />
+      ) : (
+      <>
       {/* Severity filter bar */}
       <div className="flex items-center gap-4 border-b px-4 py-2">
         <div className="flex items-center gap-3 text-xs">
@@ -906,6 +918,8 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
             </div>
           )}
         </div>
+      )}
+      </>
       )}
     </div>
   );

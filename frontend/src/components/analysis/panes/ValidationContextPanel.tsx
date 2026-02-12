@@ -19,6 +19,8 @@ import { useValidationResults } from "@/hooks/useValidationResults";
 import { useAffectedRecords } from "@/hooks/useAffectedRecords";
 import type { ValidationRecordReview } from "@/types/annotations";
 import type { ValidationViewSelection, ValidationIssueViewSelection } from "@/contexts/ViewSelectionContext";
+import { getValidationRuleDef, FIX_TIER_DEFINITIONS } from "@/lib/validation-rule-catalog";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 
 interface Props {
   selection: ValidationViewSelection | null;
@@ -216,6 +218,48 @@ function RuleReviewSummary({
           <p className="text-[11px] text-muted-foreground">No detail available for this rule.</p>
         )}
       </CollapsiblePane>
+
+      {/* Rule metadata (from static catalog — TRUST-05p1) */}
+      {(() => {
+        const catalogRule = getValidationRuleDef(selection.rule_id);
+        if (!catalogRule) return null;
+        const tierDef = FIX_TIER_DEFINITIONS.find((t) => t.tier === catalogRule.default_fix_tier);
+        return (
+          <CollapsiblePane title="Rule metadata" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+            <div className="space-y-2 text-[11px]">
+              <div>
+                <span className="font-medium text-muted-foreground">Applicable domains: </span>
+                <span className="inline-flex gap-1">
+                  {catalogRule.applicable_domains.map((d) => (
+                    <DomainLabel key={d} domain={d} />
+                  ))}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-muted-foreground">Evidence type: </span>
+                <span className="font-mono text-[10px]">{catalogRule.evidence_type}</span>
+              </div>
+              <div>
+                <span className="font-medium text-muted-foreground">Default fix tier: </span>
+                <span className="font-mono text-[10px]">{catalogRule.default_fix_tier}</span>
+                {tierDef && (
+                  <span className="ml-1 text-muted-foreground">({tierDef.name})</span>
+                )}
+              </div>
+              <div>
+                <span className="font-medium text-muted-foreground">Auto-fixable: </span>
+                <span>{catalogRule.auto_fixable ? "Yes" : "No"}</span>
+              </div>
+              {catalogRule.cdisc_reference && (
+                <div>
+                  <span className="font-medium text-muted-foreground">CDISC reference: </span>
+                  <span>{catalogRule.cdisc_reference}</span>
+                </div>
+              )}
+            </div>
+          </CollapsiblePane>
+        );
+      })()}
 
       {/* Review progress */}
       <CollapsiblePane title="Review progress" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
