@@ -21,6 +21,8 @@ import { DomainLabel } from "@/components/ui/DomainLabel";
 import { getDoseGroupColor, getNeutralHeatColor as getNeutralHeatColor01 } from "@/lib/severity-colors";
 import { useResizePanel, useResizePanelY } from "@/hooks/useResizePanel";
 import { PanelResizeHandle, HorizontalResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import type { PathologyReview } from "@/types/annotations";
@@ -599,15 +601,17 @@ function OverviewTab({
   const [findingColSizing, setFindingColSizing] = useState<ColumnSizingState>({});
   const [heatmapView, setHeatmapView] = useState<"severity" | "incidence">("severity");
   const [matrixMode, setMatrixMode] = useState<"group" | "subject">("group");
-  const [affectedOnly, setAffectedOnly] = useState(false);
+  const [affectedOnly, setAffectedOnly] = useState(true);
   const [subjectSort, setSubjectSort] = useState<"dose" | "severity">("dose");
+  const [doseGroupFilter, setDoseGroupFilter] = useState<number | null>(null);
   const { height: findingsHeight, onPointerDown: onResizeY } = useResizePanelY(200, 80, 500);
 
   // Reset heatmap view state when specimen changes
   useEffect(() => {
-    setAffectedOnly(false);
+    setAffectedOnly(true);
     setMatrixMode("group");
     setSubjectSort("dose");
+    setDoseGroupFilter(null);
   }, [specimen]);
 
   // Subject-level data (fetch when in subject mode)
@@ -615,6 +619,16 @@ function OverviewTab({
     matrixMode === "subject" ? studyId : undefined,
     matrixMode === "subject" ? (specimen ?? null) : null,
   );
+
+  // Available dose groups for filter (from subject data)
+  const availableDoseGroups = useMemo(() => {
+    if (!subjData?.subjects) return [];
+    const groups = new Map<number, string>();
+    for (const s of subjData.subjects) {
+      if (!groups.has(s.dose_level)) groups.set(s.dose_level, s.dose_label);
+    }
+    return [...groups.entries()].sort((a, b) => a[0] - b[0]);
+  }, [subjData]);
 
   // Per-finding dose consistency
   const findingConsistency = useMemo(() => {
@@ -959,6 +973,19 @@ function OverviewTab({
           {matrixMode === "subject" && (
             <>
               <FilterSelect
+                value={doseGroupFilter ?? ""}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setDoseGroupFilter(e.target.value === "" ? null : Number(e.target.value))
+                }
+              >
+                <option value="">All dose groups</option>
+                {availableDoseGroups.map(([level, label]) => (
+                  <option key={level} value={level}>
+                    {label}
+                  </option>
+                ))}
+              </FilterSelect>
+              <FilterSelect
                 value={subjectSort}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSubjectSort(e.target.value as "dose" | "severity")}
               >
@@ -991,6 +1018,7 @@ function OverviewTab({
               onSubjectClick={onSubjectClick}
               affectedOnly={affectedOnly}
               sortMode={subjectSort}
+              doseGroupFilter={doseGroupFilter}
             />
           ) : heatmapData && heatmapData.findings.length > 0 ? (
             <div className="px-4 py-2">
@@ -1132,6 +1160,7 @@ function SubjectHeatmap({
   onSubjectClick,
   affectedOnly,
   sortMode = "dose",
+  doseGroupFilter = null,
 }: {
   subjData: SubjectHistopathEntry[] | null;
   isLoading: boolean;
@@ -1142,23 +1171,27 @@ function SubjectHeatmap({
   onSubjectClick?: (usubjid: string) => void;
   affectedOnly?: boolean;
   sortMode?: "dose" | "severity";
+  doseGroupFilter?: number | null;
 }) {
   // Selected subject for column highlight
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
-  // Filter subjects by sex and affected-only
+  // Filter subjects by sex, affected-only, and dose group
   const subjects = useMemo(() => {
     if (!subjData) return [];
     let filtered = subjData;
     if (sexFilter) filtered = filtered.filter((s) => s.sex === sexFilter);
     if (affectedOnly) filtered = filtered.filter((s) => Object.keys(s.findings).length > 0);
+    if (doseGroupFilter !== null) filtered = filtered.filter((s) => s.dose_level === doseGroupFilter);
 
+    // Always group by dose_level ascending; within each group, sort by severity or default
     if (sortMode === "severity") {
-      // Sort by max severity descending, then dose_level asc
+      // Dose group asc, then max severity descending within group
       return [...filtered].sort((a, b) => {
+        if (a.dose_level !== b.dose_level) return a.dose_level - b.dose_level;
         const aMax = Math.max(0, ...Object.values(a.findings).map((f) => f.severity_num));
         const bMax = Math.max(0, ...Object.values(b.findings).map((f) => f.severity_num));
-        return bMax - aMax || a.dose_level - b.dose_level || a.usubjid.localeCompare(b.usubjid);
+        return bMax - aMax || a.usubjid.localeCompare(b.usubjid);
       });
     }
     // Default: dose_level asc, then sex, then usubjid
@@ -1166,9 +1199,9 @@ function SubjectHeatmap({
       (a, b) =>
         a.dose_level - b.dose_level ||
         a.sex.localeCompare(b.sex) ||
-        a.usubjid.localeCompare(b.usubjid)
+        a.usubjid.localeCompare(b.usubjid),
     );
-  }, [subjData, sexFilter, affectedOnly, sortMode]);
+  }, [subjData, sexFilter, affectedOnly, sortMode, doseGroupFilter]);
 
   // All unique findings (rows) — filter by minSeverity
   const findings = useMemo(() => {
@@ -2024,6 +2057,7 @@ export function HistopathologyView({
   const [sexFilter, setSexFilter] = useState<string | null>(null);
   const [minSeverity, setMinSeverity] = useState(0);
   const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
+  const { expandAll, collapseAll } = useCollapseAll();
 
   // Derived: specimen summaries
   const specimenSummaries = useMemo(() => {
@@ -2234,6 +2268,9 @@ export function HistopathologyView({
               ]}
               value={activeTab}
               onChange={(k) => setActiveTab(k as typeof activeTab)}
+              right={activeTab === "overview" ? (
+                <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+              ) : undefined}
             />
 
             {/* Tab content */}
