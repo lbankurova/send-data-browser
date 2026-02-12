@@ -31,11 +31,11 @@ import type { PathologyReview } from "@/types/annotations";
 
 // ─── Neutral heat color (§6.1 evidence tier) ─────────────
 function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
-  if (avgSev >= 4) return { bg: "#4B5563", text: "white" };
-  if (avgSev >= 3) return { bg: "#6B7280", text: "white" };
-  if (avgSev >= 2) return { bg: "#9CA3AF", text: "var(--foreground)" };
-  if (avgSev >= 1) return { bg: "#D1D5DB", text: "var(--foreground)" };
-  return { bg: "#E5E7EB", text: "var(--foreground)" };
+  if (avgSev >= 5) return { bg: "#4B5563", text: "white" };
+  if (avgSev >= 4) return { bg: "#6B7280", text: "white" };
+  if (avgSev >= 3) return { bg: "#9CA3AF", text: "var(--foreground)" };
+  if (avgSev >= 2) return { bg: "#D1D5DB", text: "var(--foreground)" };
+  return { bg: "transparent", text: "var(--muted-foreground)" };
 }
 
 // ─── Public types ──────────────────────────────────────────
@@ -1178,15 +1178,15 @@ function OverviewTab({
                       { label: "80\u2013100%", color: "#4B5563" },
                     ]
                   : [
-                      { label: "Minimal", color: "#E5E7EB" },
-                      { label: "Mild", color: "#D1D5DB" },
-                      { label: "Moderate", color: "#9CA3AF" },
-                      { label: "Marked", color: "#6B7280" },
-                      { label: "Severe", color: "#4B5563" },
+                      { label: "Minimal", color: getNeutralHeatColor(1).bg },
+                      { label: "Mild", color: getNeutralHeatColor(2).bg },
+                      { label: "Moderate", color: getNeutralHeatColor(3).bg },
+                      { label: "Marked", color: getNeutralHeatColor(4).bg },
+                      { label: "Severe", color: getNeutralHeatColor(5).bg },
                     ]
                 ).map(({ label, color }) => (
                   <span key={label} className="flex items-center gap-0.5">
-                    <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
+                    <span className={cn("inline-block h-3 w-3 rounded-sm", color === "transparent" && "border border-border")} style={{ backgroundColor: color }} />
                     {label}
                   </span>
                 ))}
@@ -1358,28 +1358,47 @@ function SubjectHeatmap({
       {/* Controls — always visible so user can adjust filters */}
       {controls}
 
-      {/* Active filter summary — always visible so user can glance at what they're looking at */}
+      {/* Active filter summary — plain text, stable height */}
       {!isLoading && subjData && (() => {
-        const chips: string[] = [];
+        const parts: string[] = [];
         if (doseGroupFilter !== null) {
           const labels = doseGroupOptions
             .filter((o) => doseGroupFilter.has(o.key))
             .map((o) => o.group ? `${o.label} (R)` : o.label);
-          chips.push(labels.join(", "));
+          parts.push(labels.join(", "));
+        } else {
+          parts.push("All groups");
         }
-        if (sexFilter) chips.push(sexFilter === "M" ? "Male" : "Female");
-        if (minSeverity > 0) chips.push(`Severity ${minSeverity}+`);
-        if (affectedOnly) chips.push("Affected only");
-        if (chips.length === 0) return null;
+        parts.push(sexFilter ? (sexFilter === "M" ? "Male" : "Female") : "Both sexes");
+        if (minSeverity > 0) parts.push(`Severity ${minSeverity}+`);
+        if (affectedOnly) parts.push("Affected only");
         return (
-          <div className="flex flex-wrap items-center gap-1 px-3 py-1 text-[10px] text-muted-foreground">
-            <span className="font-medium">Showing:</span>
-            {chips.map((chip) => (
-              <span key={chip} className="rounded bg-muted/60 px-1.5 py-0.5">{chip}</span>
-            ))}
+          <div className="px-3 py-1 text-[10px] text-muted-foreground">
+            <span className="font-medium">Showing: </span>{parts.join(" · ")}
           </div>
         );
       })()}
+
+      {/* Severity legend */}
+      {!isLoading && subjData && (
+        <div className="flex items-center gap-1 px-3 pb-2 pt-1 text-[10px] text-muted-foreground">
+          <span>Severity:</span>
+          {[
+            { label: "1 Minimal", color: getNeutralHeatColor(1).bg },
+            { label: "2 Mild", color: getNeutralHeatColor(2).bg },
+            { label: "3 Moderate", color: getNeutralHeatColor(3).bg },
+            { label: "4 Marked", color: getNeutralHeatColor(4).bg },
+            { label: "5 Severe", color: getNeutralHeatColor(5).bg },
+          ].map(({ label, color }) => (
+            <span key={label} className="flex items-center gap-0.5">
+              <span className={cn("inline-block h-3 w-3 rounded-sm", color === "transparent" && "border border-border")} style={{ backgroundColor: color }} />
+              {label}
+            </span>
+          ))}
+          <span className="ml-2">&mdash; = examined, no finding</span>
+          <span className="ml-2">blank = not examined</span>
+        </div>
+      )}
 
       {/* Loading spinner */}
       {isLoading ? (
@@ -1393,7 +1412,7 @@ function SubjectHeatmap({
         </div>
       ) : (<>
 
-      <div className="overflow-x-auto">
+      <div className="mt-1 overflow-x-auto">
         <div className="inline-block">
           {/* Tier 1: Dose group headers */}
           <div className="flex">
@@ -1557,24 +1576,6 @@ function SubjectHeatmap({
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
-        <span>Severity:</span>
-        {[
-          { label: "1 Minimal", color: "#E5E7EB" },
-          { label: "2 Mild", color: "#D1D5DB" },
-          { label: "3 Moderate", color: "#9CA3AF" },
-          { label: "4 Marked", color: "#6B7280" },
-          { label: "5 Severe", color: "#4B5563" },
-        ].map(({ label, color }) => (
-          <span key={label} className="flex items-center gap-0.5">
-            <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
-            {label}
-          </span>
-        ))}
-        <span className="ml-2">&mdash; = examined, no finding</span>
-        <span className="ml-2">blank = not examined</span>
-      </div>
       </>)}
     </div>
   );
