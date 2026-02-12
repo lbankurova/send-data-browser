@@ -1,6 +1,8 @@
 # Study Summary View — Design Concepts Update
 
-> Append to or replace the Study Summary sections in `pcc-visual-design-guide.md`. This supersedes the current two-tab layout description for the Signals tab.
+> **ARCHIVED — This design doc is superseded. The implementation diverged from these specs. See `study-summary.md` for the current accurate documentation.** Key differences: the "Key Findings Banner" was implemented as a simpler DecisionBar + StudyStatementsBar; the sex toggle is a dropdown not a segmented control; no color scale legend was implemented; the SelectionLevel type uses separate `selection`/`organSelection` props instead of a `level` field; the Signal Detail Grid is a full Metrics tab, not a toggled panel.
+
+> ~~Append to or replace the Study Summary sections in `pcc-visual-design-guide.md`. This supersedes the current two-tab layout description for the Signals tab.~~
 
 ---
 
