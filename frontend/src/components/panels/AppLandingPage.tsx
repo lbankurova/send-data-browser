@@ -566,16 +566,18 @@ export function AppLandingPage() {
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/30">
-                  <th className="w-8 px-2 py-1.5"></th>
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</th>
-                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subjects</th>
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Duration</th>
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
-                  <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">NOAEL</th>
-                  <th className="pl-5 pr-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                  <th className="w-8 px-1.5 py-1"></th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subj</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dur</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">End</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">NOAEL</th>
+                  <th className="pl-4 pr-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -601,16 +603,16 @@ export function AppLandingPage() {
                           <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
                       </td>
-                      <td className="px-3 py-1 font-medium text-primary">{study.study_id}</td>
-                      <td className="px-3 py-1 text-muted-foreground">
+                      <td className="px-2 py-0.5 font-medium text-primary">{study.study_id}</td>
+                      <td className="px-2 py-0.5 text-muted-foreground text-[11px]">
                         {study.protocol && study.protocol !== "NOT AVAILABLE"
                           ? study.protocol
                           : "—"}
                       </td>
-                      <td className="px-3 py-1 text-muted-foreground">
+                      <td className="px-2 py-0.5 text-muted-foreground text-[11px]">
                         {study.species ?? "—"}
                       </td>
-                      <td className="px-3 py-1">
+                      <td className="px-2 py-0.5 text-[11px]">
                         {study.pipeline_stage ? (
                           <span style={{ color: getPipelineStageColor(study.pipeline_stage) }}>
                             {study.pipeline_stage.charAt(0).toUpperCase() + study.pipeline_stage.slice(1).replace(/_/g, ' ')}
@@ -619,19 +621,25 @@ export function AppLandingPage() {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
+                      <td className="px-2 py-0.5 text-right tabular-nums text-muted-foreground text-[11px]">
                         {study.subjects ?? "—"}
                       </td>
-                      <td className="px-3 py-1 text-muted-foreground">
+                      <td className="px-2 py-0.5 text-muted-foreground text-[11px]">
                         {study.duration_weeks ? `${study.duration_weeks}w` : "—"}
                       </td>
-                      <td className="px-3 py-1 text-muted-foreground">
+                      <td className="px-2 py-0.5 text-muted-foreground text-[11px]">
                         {study.study_type ?? "—"}
                       </td>
-                      <td className="px-3 py-1 text-right tabular-nums">
+                      <td className="px-2 py-0.5 tabular-nums text-muted-foreground text-[11px]">
+                        {study.start_date ?? "—"}
+                      </td>
+                      <td className="px-2 py-0.5 tabular-nums text-muted-foreground text-[11px]">
+                        {study.end_date ?? "—"}
+                      </td>
+                      <td className="px-2 py-0.5 text-right tabular-nums text-[11px]">
                         {study.noael_value ?? "—"}
                       </td>
-                      <td className="relative pl-5 pr-3 py-1 text-xs text-muted-foreground">
+                      <td className="relative pl-4 pr-2 py-0.5 text-[11px] text-muted-foreground">
                         {study.status === "Complete" && (
                           <span
                             className="absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full"
