@@ -22,8 +22,11 @@ import {
   getDirectionSymbol,
   titleCase,
 } from "@/lib/severity-colors";
-import { useResizePanel } from "@/hooks/useResizePanel";
+import { useResizePanel, useResizePanelY } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { ViewSection } from "@/components/ui/ViewSection";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { InsightsList } from "./panes/InsightsList";
 import type { TargetOrganRow, OrganEvidenceRow, RuleResult } from "@/types/analysis-views";
@@ -441,14 +444,20 @@ function OverviewTab({
   organRules,
   allRuleResults,
   studyId,
+  expandGen,
+  collapseGen,
 }: {
   organ: TargetOrganRow;
   evidenceRows: OrganEvidenceRow[];
   organRules: RuleResult[];
   allRuleResults: RuleResult[];
   studyId?: string;
+  expandGen?: number;
+  collapseGen?: number;
 }) {
   const navigate = useNavigate();
+  const { height: domainHeight, onPointerDown: onDomainResize } = useResizePanelY(160, 60, 350);
+  const { height: findingsHeight, onPointerDown: onFindingsResize } = useResizePanelY(200, 80, 400);
   // Cross-organ coherence: R16 rules matching this organ
   const coherenceHints = useMemo(() => {
     if (!allRuleResults.length || !organ) return null;
@@ -523,17 +532,18 @@ function OverviewTab({
   }, [evidenceRows]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-3">
+    <div className="flex flex-1 flex-col overflow-hidden">
       {/* Domain breakdown */}
-      <div className="mb-4">
-        <div className="mb-2 flex items-center gap-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Domain breakdown
-          </h4>
-          <span className="text-[10px] text-muted-foreground">
-            Dose consistency: {getDoseConsistency(evidenceRows)}
-          </span>
-        </div>
+      <ViewSection
+        mode="fixed"
+        title={`Domain breakdown (${domainBreakdown.length})`}
+        height={domainHeight}
+        onResizePointerDown={onDomainResize}
+        expandGen={expandGen}
+        collapseGen={collapseGen}
+        headerRight={<span className="text-[10px] text-muted-foreground">Dose consistency: {getDoseConsistency(evidenceRows)}</span>}
+      >
+      <div className="px-4 py-2">
         <table className="w-full text-xs">
           <thead className="sticky top-0 z-10 bg-background">
             <tr className="border-b bg-muted/50 text-left text-muted-foreground">
@@ -565,13 +575,19 @@ function OverviewTab({
           </tbody>
         </table>
       </div>
+      </ViewSection>
 
       {/* Top findings */}
       {topFindings.length > 0 && (
-        <div>
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Top findings by effect size
-          </h4>
+        <ViewSection
+          mode="fixed"
+          title={`Top findings (${topFindings.length})`}
+          height={findingsHeight}
+          onResizePointerDown={onFindingsResize}
+          expandGen={expandGen}
+          collapseGen={collapseGen}
+        >
+        <div className="px-4 py-2">
           <div className="space-y-1">
             {topFindings.map((row, i) => (
               <div
@@ -610,8 +626,17 @@ function OverviewTab({
             ))}
           </div>
         </div>
+        </ViewSection>
       )}
 
+      {/* Insights (cross-organ coherence + rule insights) */}
+      <ViewSection
+        mode="flex"
+        title="Insights"
+        expandGen={expandGen}
+        collapseGen={collapseGen}
+      >
+      <div className="px-4 py-2">
       {/* Cross-organ coherence hint */}
       {coherenceHints && (
         <div className="mt-4 space-y-0.5">
@@ -628,23 +653,19 @@ function OverviewTab({
         </div>
       )}
 
-      {/* Insights */}
       {organRules.length > 0 && (
-        <div className="mt-4">
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Insights
-          </h4>
           <InsightsList rules={organRules} onEndpointClick={(organ) => {
             if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
           }} />
-        </div>
       )}
 
-      {evidenceRows.length === 0 && (
+      {evidenceRows.length === 0 && organRules.length === 0 && !coherenceHints && (
         <div className="py-8 text-center text-xs text-muted-foreground">
           No evidence rows for this organ.
         </div>
       )}
+      </div>
+      </ViewSection>
     </div>
   );
 }
@@ -1285,6 +1306,7 @@ export function TargetOrgansView({
   const [sexFilter, setSexFilter] = useState<string | null>(null);
   const [domainFilter, setDomainFilter] = useState<string | null>(null);
   const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // Sorted organs by evidence_score desc
   const sortedOrgans = useMemo(() => {
@@ -1451,6 +1473,8 @@ export function TargetOrgansView({
                 <span className="mr-3 text-[10px] text-muted-foreground">
                   {organEvidenceRows.length} of {evidenceData?.length ?? 0} rows
                 </span>
+              ) : activeTab === "evidence" ? (
+                <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
               ) : undefined}
             />
 
@@ -1462,6 +1486,8 @@ export function TargetOrgansView({
                 organRules={organRules}
                 allRuleResults={ruleResults ?? []}
                 studyId={studyId}
+                expandGen={expandGen}
+                collapseGen={collapseGen}
               />
             )}
             {activeTab === "hypotheses" && (
