@@ -196,7 +196,7 @@ Filter controls render below each heatmap's header (between header and matrix co
 
 **Filter ordering:** Dose group filter applies first, then sex, then affected-only. This ensures control group subjects (who typically have no findings) survive the dose group filter even when "Affected only" is checked — the user can uncheck it to see the full baseline roster.
 
-**Filter summary strip:** When any filter is active, a "Showing:" line appears below the filter bar with muted chips summarizing active selections (dose group labels, sex, severity threshold, affected only). Hidden when all defaults are active (no visual noise). Recovery groups show `(R)` suffix.
+**Filter summary strip:** A "Showing:" line always appears below the filter bar as plain `·`-separated text (e.g., "Showing: All groups · Both sexes · Affected only"). Uses stable-height plain text (no chips) to prevent layout jumps when filters change. Recovery groups show `(R)` suffix. Always visible — no conditional hiding.
 
 **Implementation:** Subject mode passes all controls as a `controls` ReactNode prop to `SubjectHeatmap`, which renders them between its header and the matrix. `doseGroupOptions` prop provides label lookup for the filter summary. Group mode renders the `FilterBar` inline between the header and the description text.
 
@@ -220,9 +220,9 @@ Rendered when `heatmapData` exists and has findings.
 - Finding label: `w-52 shrink-0 truncate py-0.5 pr-2 text-[10px]`, truncated at 40 chars
 - Cells: `flex h-6 w-20 shrink-0 items-center justify-center` with neutral heat color or gray placeholder
 
-**Neutral heat color scale:** `getNeutralHeatColor()` — grayscale from `#E5E7EB` (minimal) through `#4B5563` (severe). Incidence mode uses `getNeutralHeatColor01()` (0–1 scale).
+**Neutral heat color scale:** `getNeutralHeatColor()` — 5 distinct grades: transparent (minimal, grade 1), `#D1D5DB` (mild), `#9CA3AF` (moderate), `#6B7280` (marked), `#4B5563` (severe). Minimal gets no color to reinforce low clinical significance; thresholds are integer-aligned (`>= 2`, `>= 3`, etc.). Incidence mode uses `getNeutralHeatColor01()` (0–1 scale).
 
-**Legend:** 5 color swatches with labels. Severity: Minimal–Severe. Incidence: 1–19% through 80–100%.
+**Legend:** 5 color swatches with labels, rendered using `getNeutralHeatColor()` calls (not hardcoded hex). Severity: Minimal–Severe. Incidence: 1–19% through 80–100%. Transparent swatches get `border border-border` so the shape remains visible.
 
 #### Subject-Level Heatmap (matrixMode === "subject")
 
@@ -235,13 +235,13 @@ Fetches individual subject data via `useHistopathSubjects(studyId, specimen)` on
 4. **Examined row** — "E" if subject has any findings, empty otherwise. `bg-muted/20`.
 
 **Data rows:** One per finding (sorted by max severity desc, filtered by `minSeverity`). Each cell (`w-8 h-6`):
-- Severity > 0: colored block (`h-5 w-6 rounded-sm`) with severity number, color from `getNeutralHeatColor(sevNum)`
+- Severity > 0: block (`h-5 w-6 rounded-sm`) with severity number, color from `getNeutralHeatColor(sevNum)` — minimal (grade 1) renders transparent, grades 2-5 get progressively darker gray
 - Entry with severity 0: em dash
 - No entry: empty cell
 
 Selected subject column highlighted with `bg-blue-50/50`.
 
-**Legend:** 5 severity labels with numeric prefixes: "1 Minimal", "2 Mild", "3 Moderate", "4 Marked", "5 Severe" + "— = examined, no finding" + "blank = not examined".
+**Legend:** Positioned between filter summary strip and matrix. 5 severity labels with numeric prefixes: "1 Minimal", "2 Mild", "3 Moderate", "4 Marked", "5 Severe" + "— = examined, no finding" + "blank = not examined". Swatches use `getNeutralHeatColor()` calls; transparent swatch (minimal) gets `border border-border`.
 
 **Loading/empty states:**
 - Loading: spinner + "Loading subject data..."
