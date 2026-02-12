@@ -19,8 +19,10 @@ import { EvidenceBar } from "@/components/ui/EvidenceBar";
 import { FilterBar, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { getDoseGroupColor, getNeutralHeatColor as getNeutralHeatColor01 } from "@/lib/severity-colors";
-import { useResizePanel, useResizePanelY } from "@/hooks/useResizePanel";
-import { PanelResizeHandle, HorizontalResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { useResizePanel } from "@/hooks/useResizePanel";
+import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { ViewSection } from "@/components/ui/ViewSection";
+import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
@@ -603,8 +605,12 @@ function OverviewTab({
   const [matrixMode, setMatrixMode] = useState<"group" | "subject">("group");
   const [affectedOnly, setAffectedOnly] = useState(true);
   const [subjectSort, setSubjectSort] = useState<"dose" | "severity">("dose");
-  const [doseGroupFilter, setDoseGroupFilter] = useState<string | null>(null);
-  const { height: findingsHeight, onPointerDown: onResizeY } = useResizePanelY(200, 80, 500);
+  const [doseGroupFilter, setDoseGroupFilter] = useState<ReadonlySet<string> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sections = useAutoFitSections(containerRef, "histopathology", [
+    { id: "findings", min: 80, max: 500, defaultHeight: 200 },
+  ]);
+  const findingsSection = sections[0];
 
   // Reset heatmap view state when specimen changes
   useEffect(() => {
@@ -634,6 +640,47 @@ function OverviewTab({
       recovery: [...recoveryGroups.entries()].sort((a, b) => a[0] - b[0]),
     };
   }, [subjData]);
+
+  // All group keys + short labels for toggle chips
+  const groupChips = useMemo(() => {
+    const shortLabel = (label: string) => {
+      // "Group 1, Control" → "Control", "Group 2,2 mg/kg PCDRUG" → "2 mg/kg"
+      const parts = label.split(/,\s*/);
+      if (parts.length < 2) return label;
+      return parts.slice(1).join(", ").replace(/\s+\S*DRUG\S*/i, "").trim() || label;
+    };
+    return [
+      ...availableDoseGroups.main.map(([level, label]) => ({
+        key: String(level),
+        shortLabel: shortLabel(label),
+        isRecovery: false,
+      })),
+      ...availableDoseGroups.recovery.map(([level, label]) => ({
+        key: `R${level}`,
+        shortLabel: shortLabel(label),
+        isRecovery: true,
+      })),
+    ];
+  }, [availableDoseGroups]);
+
+  const allGroupKeys = useMemo(() => new Set(groupChips.map((c) => c.key)), [groupChips]);
+
+  const toggleDoseGroup = useCallback(
+    (key: string) => {
+      setDoseGroupFilter((prev) => {
+        const current = prev ?? new Set(allGroupKeys);
+        const next = new Set(current);
+        if (next.has(key)) {
+          if (next.size > 1) next.delete(key); // prevent empty
+        } else {
+          next.add(key);
+        }
+        // If all selected, return null (no filter)
+        return next.size === allGroupKeys.size ? null : next;
+      });
+    },
+    [allGroupKeys],
+  );
 
   // Per-finding dose consistency
   const findingConsistency = useMemo(() => {
@@ -841,12 +888,16 @@ function OverviewTab({
   });
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div ref={containerRef} className="flex flex-1 flex-col overflow-hidden">
       {/* Top: Findings table (resizable height) */}
-      <div className="shrink-0 overflow-y-auto px-4 py-2" style={{ height: findingsHeight }}>
-        <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Observed findings
-        </h4>
+      <ViewSection
+        mode="fixed"
+        title={`Observed findings (${findingSummaries.length})`}
+        height={findingsSection.height}
+        onResizePointerDown={findingsSection.onPointerDown}
+        contentRef={findingsSection.contentRef}
+      >
+      <div className="px-4 py-2">
         {findingSummaries.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No findings for this specimen.</p>
         ) : (
@@ -916,12 +967,13 @@ function OverviewTab({
           </table>
         )}
       </div>
-
-      {/* Resize handle */}
-      <HorizontalResizeHandle onPointerDown={onResizeY} />
+      </ViewSection>
 
       {/* Bottom: Heatmap container (group + subject) */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ViewSection
+        mode="flex"
+        title="Severity matrix"
+      >
         {/* Heatmap content */}
         <div className="flex-1 overflow-auto">
           {matrixMode === "subject" ? (
@@ -971,28 +1023,36 @@ function OverviewTab({
                     <option value={2}>Min severity: 2+</option>
                     <option value={3}>Min severity: 3+</option>
                   </FilterSelect>
-                  <FilterSelect
-                    value={doseGroupFilter ?? ""}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                      setDoseGroupFilter(e.target.value || null)
-                    }
-                  >
-                    <option value="">All dose groups</option>
-                    {availableDoseGroups.main.map(([level, label]) => (
-                      <option key={level} value={String(level)}>
-                        {label}
-                      </option>
-                    ))}
-                    {availableDoseGroups.recovery.length > 0 && (
-                      <optgroup label="Recovery arms">
-                        {availableDoseGroups.recovery.map(([level, label]) => (
-                          <option key={`R${level}`} value={`R${level}`}>
-                            {label} (Recovery)
-                          </option>
-                        ))}
-                      </optgroup>
+                  <div className="flex items-center gap-0.5">
+                    {groupChips.map((chip) => {
+                      const isSelected = doseGroupFilter === null || doseGroupFilter.has(chip.key);
+                      return (
+                        <button
+                          key={chip.key}
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                            isSelected
+                              ? "bg-foreground text-background"
+                              : "text-muted-foreground/50 hover:bg-accent/50",
+                            chip.isRecovery && "border border-dashed border-current",
+                          )}
+                          onClick={() => toggleDoseGroup(chip.key)}
+                          title={`${chip.isRecovery ? "Recovery: " : ""}${chip.shortLabel}${isSelected ? " (click to hide)" : " (click to show)"}`}
+                        >
+                          {chip.isRecovery ? `${chip.shortLabel} R` : chip.shortLabel}
+                        </button>
+                      );
+                    })}
+                    {doseGroupFilter !== null && (
+                      <button
+                        className="ml-0.5 rounded-full px-1.5 py-0.5 text-[9px] text-muted-foreground hover:bg-accent/50"
+                        onClick={() => setDoseGroupFilter(null)}
+                        title="Show all dose groups"
+                      >
+                        All
+                      </button>
                     )}
-                  </FilterSelect>
+                  </div>
                   <FilterSelect
                     value={subjectSort}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSubjectSort(e.target.value as "dose" | "severity")}
@@ -1202,7 +1262,7 @@ function OverviewTab({
             </div>
           )}
         </div>
-      </div>
+      </ViewSection>
     </div>
   );
 }
@@ -1235,7 +1295,7 @@ function SubjectHeatmap({
   onSubjectClick?: (usubjid: string) => void;
   affectedOnly?: boolean;
   sortMode?: "dose" | "severity";
-  doseGroupFilter?: string | null;
+  doseGroupFilter?: ReadonlySet<string> | null;
   controls?: React.ReactNode;
 }) {
   // Selected subject for column highlight
@@ -1246,10 +1306,10 @@ function SubjectHeatmap({
     if (!subjData) return [];
     let filtered = subjData;
     if (doseGroupFilter !== null) {
-      // Parse filter: "R0" = recovery dose_level 0, "2" = main dose_level 2
-      const isRecoveryFilter = doseGroupFilter.startsWith("R");
-      const level = Number(isRecoveryFilter ? doseGroupFilter.slice(1) : doseGroupFilter);
-      filtered = filtered.filter((s) => s.dose_level === level && s.is_recovery === isRecoveryFilter);
+      filtered = filtered.filter((s) => {
+        const key = `${s.is_recovery ? "R" : ""}${s.dose_level}`;
+        return doseGroupFilter.has(key);
+      });
     }
     if (sexFilter) filtered = filtered.filter((s) => s.sex === sexFilter);
     if (affectedOnly) filtered = filtered.filter((s) => Object.keys(s.findings).length > 0);
