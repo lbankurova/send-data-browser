@@ -1359,7 +1359,7 @@ function SubjectHeatmap({
             <div className="w-52 shrink-0" /> {/* Finding label column spacer */}
             {doseGroups.map((dg, gi) => (
               <div
-                key={dg.doseLevel}
+                key={`${dg.isRecovery ? "R" : ""}${dg.doseLevel}`}
                 className={cn(
                   "flex-shrink-0 border-b",
                   gi > 0 && "border-l-2 border-border"
@@ -1384,7 +1384,7 @@ function SubjectHeatmap({
               Subject ID
             </div>
             {doseGroups.map((dg, gi) => (
-              <div key={dg.doseLevel} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
+              <div key={`${dg.isRecovery ? "R" : ""}${dg.doseLevel}`} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
                 {dg.subjects.map((subj) => (
                   <button
                     key={subj.usubjid}
@@ -1413,7 +1413,7 @@ function SubjectHeatmap({
                 Sex
               </div>
               {doseGroups.map((dg, gi) => (
-                <div key={dg.doseLevel} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
+                <div key={`${dg.isRecovery ? "R" : ""}${dg.doseLevel}`} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
                   {dg.subjects.map((subj) => (
                     <div
                       key={subj.usubjid}
@@ -1437,7 +1437,7 @@ function SubjectHeatmap({
               Examined
             </div>
             {doseGroups.map((dg, gi) => (
-              <div key={dg.doseLevel} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
+              <div key={`${dg.isRecovery ? "R" : ""}${dg.doseLevel}`} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
                 {dg.subjects.map((subj) => {
                   const hasAny = Object.keys(subj.findings).length > 0;
                   return (
@@ -1476,7 +1476,7 @@ function SubjectHeatmap({
               </div>
               {/* Cells per dose group */}
               {doseGroups.map((dg, gi) => (
-                <div key={dg.doseLevel} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
+                <div key={`${dg.isRecovery ? "R" : ""}${dg.doseLevel}`} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
                   {dg.subjects.map((subj) => {
                     const entry = subj.findings[finding];
                     const sevNum = entry?.severity_num ?? 0;
