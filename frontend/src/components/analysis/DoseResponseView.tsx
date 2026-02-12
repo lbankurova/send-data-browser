@@ -37,6 +37,7 @@ import {
   formatEffectSize,
   getDomainBadgeColor,
   getDoseGroupColor,
+  getSexColor,
   titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -684,7 +685,7 @@ export function DoseResponseView({
     );
   }
 
-  const sexColors: Record<string, string> = { M: "#3b82f6", F: "#ec4899" };
+  const sexColors: Record<string, string> = { M: getSexColor("M"), F: getSexColor("F") };
   const totalEndpoints = endpointSummaries.length;
 
   return (
@@ -814,7 +815,7 @@ export function DoseResponseView({
                           />
                           {ep.direction && (
                             <span
-                              className="text-xs text-[#9CA3AF]"
+                              className="text-xs text-muted-foreground"
                               title={ep.direction === "up" ? "Effect increases with dose" : ep.direction === "down" ? "Effect decreases with dose" : "Mixed direction across sexes/doses"}
                             >
                               {directionArrow(ep.direction)}
@@ -841,14 +842,14 @@ export function DoseResponseView({
                               .split(" ")[0]}
                           </span>
                           <span className={cn(
-                            "ev text-[10px] font-mono",
+                            "ev text-[10px] font-mono text-muted-foreground",
                             ep.min_trend_p != null && ep.min_trend_p < 0.01 ? "font-semibold" : ""
                           )}>
                             p={formatPValue(ep.min_trend_p)}
                           </span>
                           {ep.max_effect_size != null && (
                             <span className={cn(
-                              "ev text-[10px] font-mono",
+                              "ev text-[10px] font-mono text-muted-foreground",
                               ep.max_effect_size >= 0.8 ? "font-semibold" : ""
                             )}>
                               |d|={ep.max_effect_size.toFixed(2)}
@@ -1678,15 +1679,13 @@ function TimecourseCharts({
   }, [tcData, yAxisMode]);
 
   const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
-  const sexChartColors: Record<string, string> = { M: "#3b82f6", F: "#ec4899" };
-
   return (
     <div>
       {/* Charts */}
       <div className="flex gap-2 border-b px-2 py-1.5">
         {chartsBySex.map(({ sex, points, subjectTraces }) => (
           <div key={sex} className="flex-1">
-            <p className="mb-0.5 text-center text-[10px] font-medium" style={{ color: sexChartColors[sex] }}>
+            <p className="mb-0.5 text-center text-[10px] font-medium" style={{ color: getSexColor(sex) }}>
               {sexLabels[sex] ?? sex}
             </p>
             <EChartsWrapper
@@ -1882,7 +1881,7 @@ function MetricsTableContent({
   return (
     <div className="flex h-full flex-col">
       {/* Filter bar */}
-      <FilterBar className="flex-wrap px-3 py-1">
+      <FilterBar className="flex-wrap">
         <FilterSelect
           value={metricsFilters.sex ?? ""}
           onChange={(e) => setMetricsFilters((f) => ({ ...f, sex: e.target.value || null }))}

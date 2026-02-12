@@ -599,25 +599,26 @@ function OverviewTab({
             {topFindings.map((row, i) => (
               <div
                 key={`${row.endpoint_label}-${row.dose_level}-${row.sex}-${i}`}
-                className="group/finding flex items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30"
+                className="flex items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30"
+                data-evidence-row=""
               >
                 <span className="min-w-[140px] truncate font-medium" title={row.endpoint_label}>
                   {row.endpoint_label}
                 </span>
-                <span className="shrink-0 text-sm text-[#9CA3AF]">
+                <span className="shrink-0 text-sm text-muted-foreground">
                   {getDirectionSymbol(row.direction)}
                 </span>
                 <span className={cn(
-                  "shrink-0 font-mono text-muted-foreground group-hover/finding:text-[#DC2626]",
+                  "ev shrink-0 font-mono text-muted-foreground",
                   Math.abs(row.effect_size ?? 0) >= 0.8 ? "font-semibold" : "font-normal"
-                )}>
+                )} data-evidence="">
                   {formatEffectSize(row.effect_size)}
                 </span>
                 <span className={cn(
-                  "shrink-0 font-mono text-muted-foreground group-hover/finding:text-[#DC2626]",
+                  "ev shrink-0 font-mono text-muted-foreground",
                   row.p_value != null && row.p_value < 0.001 ? "font-semibold" :
                   row.p_value != null && row.p_value < 0.01 ? "font-medium" : "font-normal"
-                )}>
+                )} data-evidence="">
                   {formatPValue(row.p_value)}
                 </span>
                 <span className="shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground">
