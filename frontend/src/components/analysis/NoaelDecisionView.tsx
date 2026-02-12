@@ -23,8 +23,11 @@ import {
   getDirectionSymbol,
   titleCase,
 } from "@/lib/severity-colors";
-import { useResizePanel } from "@/hooks/useResizePanel";
+import { useResizePanel, useResizePanelY } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { ViewSection } from "@/components/ui/ViewSection";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { InsightsList } from "./panes/InsightsList";
 import type {
   NoaelSummaryRow,
@@ -548,6 +551,8 @@ function AdversityMatrixTab({
   setSexFilter,
   trFilter,
   setTrFilter,
+  expandGen,
+  collapseGen,
 }: {
   organData: AdverseEffectSummaryRow[];
   allAeData: AdverseEffectSummaryRow[];
@@ -557,9 +562,12 @@ function AdversityMatrixTab({
   setSexFilter: (v: string | null) => void;
   trFilter: string | null;
   setTrFilter: (v: string | null) => void;
+  expandGen?: number;
+  collapseGen?: number;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const { height: matrixHeight, onPointerDown: onMatrixResize } = useResizePanelY(250, 80, 500);
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -719,13 +727,17 @@ function AdversityMatrixTab({
       </FilterBar>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
         {/* Adversity Matrix */}
         {matrixData.endpoints.length > 0 && (
-          <div className="border-b p-4">
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Adversity matrix ({matrixData.endpoints.length} endpoints)
-            </h2>
+          <ViewSection
+            mode="fixed"
+            title={`Adversity matrix (${matrixData.endpoints.length} endpoints)`}
+            height={matrixHeight}
+            onResizePointerDown={onMatrixResize}
+            expandGen={expandGen}
+            collapseGen={collapseGen}
+          >
+          <div className="p-4">
             <div className="overflow-x-auto">
               <div className="inline-block">
                 <div className="flex">
@@ -785,16 +797,17 @@ function AdversityMatrixTab({
               ))}
             </div>
           </div>
+          </ViewSection>
         )}
 
         {/* Grid */}
-        <div>
-          <div className="flex items-center justify-between px-4 pt-3 pb-1">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Adverse effect summary ({filteredData.length} rows)
-            </h2>
-          </div>
-          <div className="max-h-[50vh] overflow-auto">
+        <ViewSection
+          mode="flex"
+          title={`Adverse effect summary (${filteredData.length})`}
+          expandGen={expandGen}
+          collapseGen={collapseGen}
+        >
+        <div className="overflow-auto">
             <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
               <thead className="sticky top-0 z-10 bg-background">
                 {table.getHeaderGroups().map((hg) => (
@@ -864,8 +877,7 @@ function AdversityMatrixTab({
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </ViewSection>
     </div>
   );
 }
@@ -891,6 +903,7 @@ export function NoaelDecisionView({
   const [sexFilter, setSexFilter] = useState<string | null>(null);
   const [trFilter, setTrFilter] = useState<string | null>(null);
   const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // Derived: organ summaries
   const organSummaries = useMemo(() => {
@@ -1056,6 +1069,9 @@ export function NoaelDecisionView({
                 ]}
                 value={activeTab}
                 onChange={(k) => setActiveTab(k as typeof activeTab)}
+                right={activeTab === "matrix" ? (
+                  <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+                ) : undefined}
               />
 
               {/* Tab content */}
@@ -1079,6 +1095,8 @@ export function NoaelDecisionView({
                   setSexFilter={setSexFilter}
                   trFilter={trFilter}
                   setTrFilter={setTrFilter}
+                  expandGen={expandGen}
+                  collapseGen={collapseGen}
                 />
               )}
             </>

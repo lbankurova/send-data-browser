@@ -38,8 +38,10 @@ import {
   getDoseGroupColor,
   titleCase,
 } from "@/lib/severity-colors";
-import { useResizePanel } from "@/hooks/useResizePanel";
+import { useResizePanel, useResizePanelY } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { ViewSection } from "@/components/ui/ViewSection";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import type { DoseResponseRow, RuleResult, SignalSummaryRow, NoaelSummaryRow } from "@/types/analysis-views";
 import type { TimecourseResponse } from "@/types/timecourse";
@@ -297,6 +299,7 @@ export function DoseResponseView({
   const [railSearch, setRailSearch] = useState("");
   const [expandedOrgans, setExpandedOrgans] = useState<Set<string>>(new Set());
   const [selection, setSelection] = useState<DoseResponseSelection | null>(null);
+  const { expandGen: sectionExpandGen, collapseGen: sectionCollapseGen, expandAll: sectionExpandAll, collapseAll: sectionCollapseAll } = useCollapseAll();
 
   const [bookmarkFilter, setBookmarkFilter] = useState(false);
 
@@ -1003,11 +1006,13 @@ export function DoseResponseView({
             <span className="mr-3 text-[10px] text-muted-foreground">
               {metricsData.length} of {drData?.length ?? 0} rows
             </span>
+          ) : activeTab === "evidence" ? (
+            <CollapseAllButtons onExpandAll={sectionExpandAll} onCollapseAll={sectionCollapseAll} />
           ) : undefined}
         />
 
         {/* Tab content */}
-        <div className="flex-1 overflow-auto">
+        <div className={cn("flex-1", activeTab === "evidence" ? "flex flex-col overflow-hidden" : "overflow-auto")}>
           {activeTab === "evidence" ? (
             <ChartOverviewContent
               chartData={chartData}
@@ -1018,6 +1023,8 @@ export function DoseResponseView({
               selectedSummary={selectedSummary}
               onSubjectClick={onSubjectClick}
               noaelDoseLevel={noaelSummary.length > 0 ? (noaelSummary.find((n) => n.sex === "Combined") ?? noaelSummary[0]).noael_dose_level : null}
+              expandGen={sectionExpandGen}
+              collapseGen={sectionCollapseGen}
             />
           ) : activeTab === "metrics" ? (
             <MetricsTableContent
@@ -1066,6 +1073,8 @@ interface ChartOverviewProps {
   selectedSummary: EndpointSummary | null;
   onSubjectClick?: (usubjid: string) => void;
   noaelDoseLevel?: number | null;
+  expandGen?: number;
+  collapseGen?: number;
 }
 
 function ChartOverviewContent({
@@ -1077,9 +1086,13 @@ function ChartOverviewContent({
   selectedSummary,
   onSubjectClick,
   noaelDoseLevel,
+  expandGen,
+  collapseGen,
 }: ChartOverviewProps) {
   const chartRowRef = useRef<HTMLDivElement>(null);
   const [splitPct, setSplitPct] = useState(50); // default 50/50
+  const { height: chartSectionHeight, onPointerDown: onChartSectionResize } = useResizePanelY(280, 120, 600);
+  const { height: tcSectionHeight, onPointerDown: onTcSectionResize } = useResizePanelY(250, 80, 500);
 
   const onChartResize = useCallback(
     (e: React.PointerEvent) => {
@@ -1125,9 +1138,17 @@ function ChartOverviewContent({
     : undefined;
 
   return (
-    <div>
+    <>
       {/* Chart area — two independent containers with resize handle */}
-      <div ref={chartRowRef} className="flex border-b">
+      <ViewSection
+        mode="fixed"
+        title="Charts"
+        height={chartSectionHeight}
+        onResizePointerDown={onChartSectionResize}
+        expandGen={expandGen}
+        collapseGen={collapseGen}
+      >
+      <div ref={chartRowRef} className="flex h-full">
         {/* ── Dose-response chart container ── */}
         <div
           className="flex shrink-0 flex-col overflow-hidden px-2 py-1.5"
@@ -1196,6 +1217,7 @@ function ChartOverviewContent({
           </div>
         )}
       </div>
+      </ViewSection>
 
       {/* Time-course — peer visualization, visible by default when data exists */}
       {selectedEndpoint && selectedSummary && (
@@ -1204,16 +1226,23 @@ function ChartOverviewContent({
           selectedEndpoint={selectedEndpoint}
           selectedSummary={selectedSummary}
           onSubjectClick={onSubjectClick}
+          tcSectionHeight={tcSectionHeight}
+          onTcSectionResize={onTcSectionResize}
+          expandGen={expandGen}
+          collapseGen={collapseGen}
         />
       )}
 
       {/* Pairwise comparison table */}
       {pairwiseRows.length > 0 && (
+        <ViewSection
+          mode="flex"
+          title={`Pairwise comparison (${pairwiseRows.length})`}
+          expandGen={expandGen}
+          collapseGen={collapseGen}
+        >
         <div className="p-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Pairwise comparison
-          </h3>
-          <div className="max-h-80 overflow-auto">
+          <div className="overflow-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/50">
@@ -1260,8 +1289,9 @@ function ChartOverviewContent({
             </table>
           </div>
         </div>
+        </ViewSection>
       )}
-    </div>
+    </>
   );
 }
 
@@ -1274,10 +1304,13 @@ interface TimecourseSectionProps {
   selectedEndpoint: string;
   selectedSummary: EndpointSummary;
   onSubjectClick?: (usubjid: string) => void;
+  tcSectionHeight: number;
+  onTcSectionResize: (e: React.PointerEvent) => void;
+  expandGen?: number;
+  collapseGen?: number;
 }
 
-function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubjectClick }: TimecourseSectionProps) {
-  const [expanded, setExpanded] = useState(true);
+function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubjectClick, tcSectionHeight, onTcSectionResize, expandGen, collapseGen }: TimecourseSectionProps) {
   const [yAxisMode, setYAxisMode] = useState<YAxisMode>("absolute");
   const [showSubjects, setShowSubjects] = useState(false);
 
@@ -1286,143 +1319,128 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubje
   const isContinuous = selectedSummary.data_type === "continuous";
   const isCL = domain === "CL";
 
-  // Continuous temporal data — fetch when expanded and continuous
+  // Continuous temporal data
   const { data: tcData, isLoading: tcLoading, error: tcError } = useTimecourseGroup(
-    expanded && isContinuous ? studyId : undefined,
-    expanded && isContinuous ? domain : undefined,
-    expanded && isContinuous ? testCode : undefined,
+    isContinuous ? studyId : undefined,
+    isContinuous ? domain : undefined,
+    isContinuous ? testCode : undefined,
   );
 
   // Subject data: only fetch when toggle is ON and continuous
   const { data: subjData, isLoading: subjLoading } = useTimecourseSubject(
-    expanded && showSubjects && isContinuous ? studyId : undefined,
-    expanded && showSubjects && isContinuous ? domain : undefined,
-    expanded && showSubjects && isContinuous ? testCode : undefined,
+    showSubjects && isContinuous ? studyId : undefined,
+    showSubjects && isContinuous ? domain : undefined,
+    showSubjects && isContinuous ? testCode : undefined,
   );
 
-  // CL temporal data — fetch when expanded and CL domain
+  // CL temporal data
   const { data: clData, isLoading: clLoading } = useClinicalObservations(
-    expanded && isCL ? studyId : undefined,
-    expanded && isCL ? selectedEndpoint : undefined,
+    isCL ? studyId : undefined,
+    isCL ? selectedEndpoint : undefined,
   );
 
   // Non-CL categorical endpoints have no temporal data — render nothing
   const hasTimecourse = isContinuous || isCL;
   if (!hasTimecourse) return null;
 
-  return (
-    <div className="border-t">
-      {/* Section header with collapse option */}
-      <div className="flex items-center justify-between px-3 py-1">
-        <button
-          className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded
-            ? <ChevronDown className="h-3 w-3 shrink-0" />
-            : <ChevronRight className="h-3 w-3 shrink-0" />}
-          Time-course
-        </button>
-
-        {expanded && (
-          <div className="flex items-center gap-2">
-            {/* Y-axis mode pills — continuous only */}
-            {isContinuous && (
-              <div className="flex items-center gap-1">
-                {(["absolute", "pct_change", "pct_vs_control"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
-                      yAxisMode === mode
-                        ? "bg-foreground text-background"
-                        : "text-muted-foreground hover:bg-accent/50"
-                    )}
-                    onClick={() => setYAxisMode(mode)}
-                  >
-                    {{ absolute: "Absolute", pct_change: "% change", pct_vs_control: "% vs control" }[mode]}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Show subjects toggle — continuous only */}
-            {isContinuous && (
-              <button
-                className={cn(
-                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-                  showSubjects
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border text-muted-foreground hover:bg-accent/50"
-                )}
-                onClick={() => setShowSubjects(!showSubjects)}
-              >
-                {subjLoading ? (
-                  <span className="flex items-center gap-1">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Loading...
-                  </span>
-                ) : (
-                  "Show subjects"
-                )}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Expanded content */}
-      {expanded && (
-        <div>
-          {/* Continuous time-course */}
-          {isContinuous && (
-            <>
-              {tcLoading ? (
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Loading time-course...</span>
-                </div>
-              ) : tcError || !tcData ? (
-                <div className="p-6 text-center text-xs text-muted-foreground">
-                  Time-course data not available for this endpoint.
-                </div>
-              ) : (
-                <>
-                  <TimecourseCharts
-                    tcData={tcData}
-                    yAxisMode={yAxisMode}
-                    showSubjects={showSubjects}
-                    subjData={subjData ?? null}
-                    onSubjectClick={onSubjectClick}
-                  />
-                </>
+  const tcHeaderRight = (
+    <div className="flex items-center gap-2">
+      {isContinuous && (
+        <div className="flex items-center gap-1">
+          {(["absolute", "pct_change", "pct_vs_control"] as const).map((mode) => (
+            <button
+              key={mode}
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                yAxisMode === mode
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-accent/50"
               )}
-            </>
-          )}
-
-          {/* CL time-course */}
-          {isCL && (
-            <>
-              {clLoading ? (
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Loading time-course...</span>
-                </div>
-              ) : !clData || clData.timecourse.length === 0 ? (
-                <div className="p-6 text-center text-xs text-muted-foreground">
-                  No temporal data available for this finding.
-                </div>
-              ) : (
-                <CLTimecourseCharts
-                  clData={clData}
-                  finding={selectedEndpoint}
-                />
-              )}
-            </>
-          )}
+              onClick={() => setYAxisMode(mode)}
+            >
+              {{ absolute: "Absolute", pct_change: "% change", pct_vs_control: "% vs control" }[mode]}
+            </button>
+          ))}
         </div>
       )}
+      {isContinuous && (
+        <button
+          className={cn(
+            "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+            showSubjects
+              ? "border-foreground bg-foreground text-background"
+              : "border-border text-muted-foreground hover:bg-accent/50"
+          )}
+          onClick={() => setShowSubjects(!showSubjects)}
+        >
+          {subjLoading ? (
+            <span className="flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Loading...
+            </span>
+          ) : (
+            "Show subjects"
+          )}
+        </button>
+      )}
     </div>
+  );
+
+  return (
+    <ViewSection
+      mode="fixed"
+      title="Time-course"
+      height={tcSectionHeight}
+      onResizePointerDown={onTcSectionResize}
+      headerRight={tcHeaderRight}
+      expandGen={expandGen}
+      collapseGen={collapseGen}
+    >
+      {/* Continuous time-course */}
+      {isContinuous && (
+        <>
+          {tcLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Loading time-course...</span>
+            </div>
+          ) : tcError || !tcData ? (
+            <div className="p-6 text-center text-xs text-muted-foreground">
+              Time-course data not available for this endpoint.
+            </div>
+          ) : (
+            <TimecourseCharts
+              tcData={tcData}
+              yAxisMode={yAxisMode}
+              showSubjects={showSubjects}
+              subjData={subjData ?? null}
+              onSubjectClick={onSubjectClick}
+            />
+          )}
+        </>
+      )}
+
+      {/* CL time-course */}
+      {isCL && (
+        <>
+          {clLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Loading time-course...</span>
+            </div>
+          ) : !clData || clData.timecourse.length === 0 ? (
+            <div className="p-6 text-center text-xs text-muted-foreground">
+              No temporal data available for this finding.
+            </div>
+          ) : (
+            <CLTimecourseCharts
+              clData={clData}
+              finding={selectedEndpoint}
+            />
+          )}
+        </>
+      )}
+    </ViewSection>
   );
 }
 

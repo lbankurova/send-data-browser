@@ -11,8 +11,12 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
+import { ViewSection } from "@/components/ui/ViewSection";
 import { FilterBar, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
+import { useResizePanelY } from "@/hooks/useResizePanel";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import type { ValidationRuleResult } from "@/hooks/useValidationResults";
@@ -221,6 +225,8 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>({ fixStatus: "", reviewStatus: "", subjectId: "" });
   const [severityFilter, setSeverityFilter] = useState<"" | "Error" | "Warning" | "Info">("");
   const [sourceFilter, setSourceFilter] = useState<"" | "core" | "custom">("");
+  const { height: ruleSectionHeight, onPointerDown: onRuleSectionResize } = useResizePanelY(280, 100, 500);
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // Mode: data-quality (default) or study-design
   const [mode, setMode] = useState<ValidationMode>(() => {
@@ -559,13 +565,16 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
         value={mode}
         onChange={(k) => handleModeChange(k as ValidationMode)}
         right={
-          <button
-            className="mr-3 rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            disabled={isValidating}
-            onClick={() => runValidation()}
-          >
-            {isValidating ? "RUNNING..." : "RUN"}
-          </button>
+          <span className="flex items-center gap-2 mr-3">
+            <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+            <button
+              className="rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              disabled={isValidating}
+              onClick={() => runValidation()}
+            >
+              {isValidating ? "RUNNING..." : "RUN"}
+            </button>
+          </span>
         }
       />
 
@@ -687,8 +696,16 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
         </div>
       ) : (
         <>
-          {/* Top table — Rule Summary (40%) */}
-          <div className="flex-[4] overflow-auto border-b">
+          {/* Top table — Rule Summary */}
+          <ViewSection
+            mode="fixed"
+            title={`Rule summary (${rules.length})`}
+            height={ruleSectionHeight}
+            onResizePointerDown={onRuleSectionResize}
+            expandGen={expandGen}
+            collapseGen={collapseGen}
+          >
+          <div className="h-full overflow-auto">
             <table className="text-sm" style={{ width: ruleTable.getCenterTotalSize(), tableLayout: "fixed" }}>
               <thead className="sticky top-0 z-10 bg-background">
                 {ruleTable.getHeaderGroups().map((headerGroup) => (
@@ -740,6 +757,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
               </tbody>
             </table>
           </div>
+          </ViewSection>
 
           {/* Divider bar */}
           {selectedRule && (
@@ -790,9 +808,15 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
             </FilterBar>
           )}
 
-          {/* Bottom table — Affected Records (60%) */}
+          {/* Bottom table — Affected Records */}
           {selectedRule ? (
-            <div className="flex-[6] overflow-auto">
+            <ViewSection
+              mode="flex"
+              title={`Affected records (${filteredRecords.length})`}
+              expandGen={expandGen}
+              collapseGen={collapseGen}
+            >
+            <div className="h-full overflow-auto">
               <table className="text-sm" style={{ width: recordTable.getCenterTotalSize(), tableLayout: "fixed" }}>
                 <thead className="sticky top-0 z-10 bg-background">
                   {recordTable.getHeaderGroups().map((headerGroup) => (
@@ -870,8 +894,9 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                 </tbody>
               </table>
             </div>
+            </ViewSection>
           ) : (
-            <div className="flex flex-[6] items-center justify-center text-xs text-muted-foreground">
+            <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
               Select a rule above to view affected records
             </div>
           )}
