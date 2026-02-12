@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
+import { ThresholdEditor } from "./ThresholdEditor";
 import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import {
   RULE_CATALOG,
@@ -16,9 +17,10 @@ import type { RuleResult } from "@/types/analysis-views";
 interface Props {
   ruleResults: RuleResult[];
   organFilter: string | null;
+  studyId?: string;
 }
 
-export function RuleInspectorTab({ ruleResults, organFilter }: Props) {
+export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
   const [scopeFilter, setScopeFilter] = useState<string>("");
   const [severityFilter, setSeverityFilter] = useState<string>("");
 
@@ -206,6 +208,9 @@ export function RuleInspectorTab({ ruleResults, organFilter }: Props) {
             ))}
           </div>
         </CollapsiblePane>
+
+        {/* Threshold editor (TRUST-01p2) */}
+        {studyId && <ThresholdEditor studyId={studyId} />}
       </div>
     </div>
   );

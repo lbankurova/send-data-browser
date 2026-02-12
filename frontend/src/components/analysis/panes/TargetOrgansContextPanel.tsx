@@ -8,6 +8,7 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { cn } from "@/lib/utils";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { titleCase } from "@/lib/severity-colors";
+import { deriveToxSuggestion } from "@/types/annotations";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import type {
@@ -201,9 +202,21 @@ export function TargetOrgansContextPanel({
       </CollapsiblePane>
 
       {/* 3. Tox Assessment (only when endpoint selected — annotation before navigation) */}
-      {studyId && selection.endpoint_label && (
-        <ToxFindingForm studyId={studyId} endpointLabel={selection.endpoint_label} />
-      )}
+      {studyId && selection.endpoint_label && (() => {
+        // Best evidence row for this endpoint (highest severity)
+        const bestEvRow = organEvidence.find(
+          (r) => r.endpoint_label === selection.endpoint_label && r.severity === "adverse"
+        ) ?? organEvidence.find(
+          (r) => r.endpoint_label === selection.endpoint_label
+        );
+        return (
+          <ToxFindingForm
+            studyId={studyId}
+            endpointLabel={selection.endpoint_label}
+            systemSuggestion={bestEvRow ? deriveToxSuggestion(bestEvRow.treatment_related, bestEvRow.severity) : undefined}
+          />
+        );
+      })()}
 
       {/* 4. Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>

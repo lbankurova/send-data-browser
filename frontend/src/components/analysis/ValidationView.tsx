@@ -591,6 +591,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
           firedRules={allRules}
           scripts={validationData.scripts ?? []}
           coreConformance={validationData.core_conformance ?? null}
+          studyId={studyId}
         />
       ) : (
       <>
