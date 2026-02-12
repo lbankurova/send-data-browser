@@ -81,9 +81,14 @@ export function FilterMultiSelect({
     [selected, allKeys, onChange],
   );
 
-  const toggleAll = useCallback(() => {
+  const selectAll = useCallback(() => {
     onChange(null);
   }, [onChange]);
+
+  const clearAll = useCallback(() => {
+    // Keep only the first option (minimum 1 required)
+    if (allKeys.length > 0) onChange(new Set([allKeys[0]]));
+  }, [allKeys, onChange]);
 
   // Build display label
   const displayLabel = isAllSelected
@@ -114,16 +119,25 @@ export function FilterMultiSelect({
       </button>
       {open && (
         <div className="absolute left-0 top-full z-50 mt-1 min-w-[180px] rounded-md border bg-popover py-1 shadow-md">
-          {/* All option */}
-          <label className="flex cursor-pointer items-center gap-2 px-2.5 py-1 text-xs hover:bg-accent/50">
-            <input
-              type="checkbox"
-              checked={isAllSelected}
-              onChange={toggleAll}
-              className="h-3 w-3 rounded border-border"
-            />
-            <span className="font-medium">{allLabel}</span>
-          </label>
+          {/* Select all / Clear all */}
+          <div className="flex items-center justify-between px-2.5 py-1">
+            <button
+              type="button"
+              className={cn("text-[10px]", isAllSelected ? "text-muted-foreground/50" : "text-primary hover:underline")}
+              onClick={selectAll}
+              disabled={isAllSelected}
+            >
+              Select all
+            </button>
+            <button
+              type="button"
+              className={cn("text-[10px]", !isAllSelected && selectedCount === 1 ? "text-muted-foreground/50" : "text-primary hover:underline")}
+              onClick={clearAll}
+              disabled={!isAllSelected && selectedCount === 1}
+            >
+              Clear all
+            </button>
+          </div>
           <div className="my-0.5 border-t" />
           {[...groups.entries()].map(([groupName, groupOpts]) => (
             <div key={groupName}>

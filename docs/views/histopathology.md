@@ -190,13 +190,15 @@ Filter controls render below each heatmap's header (between header and matrix co
 - Severity/Incidence toggle: segmented control (`rounded-full` pills)
 
 **Subject mode adds:**
-- Dose group filter: `<FilterMultiSelect>` dropdown with checkboxes — "All dose groups" when all selected, single label when one selected, "{N} groups" when multiple. Dropdown panel lists main arm options + "Recovery" group header for recovery arms. Checkboxes toggle individual groups on/off (minimum 1 must remain selected). "All dose groups" checkbox at top resets to show all. Short labels strip "Group N," prefix and drug name (e.g., "Group 2, 2 mg/kg PCDRUG" → "2 mg/kg"; "Group 1, Control" → "Control"). State: `ReadonlySet<string> | null` (null = all selected). Composite keys: `"0"`, `"1"` etc. for main arms, `"R0"`, `"R1"` etc. for recovery arms. Computed from `subjData.subjects`, separated by `is_recovery` flag, each sorted by dose_level ascending.
+- Dose group filter: `<FilterMultiSelect>` dropdown with checkboxes — "All dose groups" when all selected, single label when one selected, "{N} groups" when multiple. Dropdown panel has "Select all" / "Clear all" link buttons at top, then main arm checkboxes + "Recovery" group header with recovery arm checkboxes. Minimum 1 must remain selected (clear all keeps first option). Short labels strip "Group N," prefix and drug name (e.g., "Group 2, 2 mg/kg PCDRUG" → "2 mg/kg"; "Group 1, Control" → "Control"). State: `ReadonlySet<string> | null` (null = all selected). Composite keys: `"0"`, `"1"` etc. for main arms, `"R0"`, `"R1"` etc. for recovery arms. Computed from `subjData.subjects`, separated by `is_recovery` flag, each sorted by dose_level ascending.
 - Subject sort: `<FilterSelect>` — "Sort: dose group" / "Sort: max severity". Severity sort sorts within each dose group (dose groups always ascending, severity descending within group).
 - Affected only: checkbox + "Affected only" label (default: checked)
 
 **Filter ordering:** Dose group filter applies first, then sex, then affected-only. This ensures control group subjects (who typically have no findings) survive the dose group filter even when "Affected only" is checked — the user can uncheck it to see the full baseline roster.
 
-**Implementation:** Subject mode passes all controls as a `controls` ReactNode prop to `SubjectHeatmap`, which renders them between its header and the matrix. Group mode renders the `FilterBar` inline between the header and the description text.
+**Filter summary strip:** When any filter is active, a "Showing:" line appears below the filter bar with muted chips summarizing active selections (dose group labels, sex, severity threshold, affected only). Hidden when all defaults are active (no visual noise). Recovery groups show `(R)` suffix.
+
+**Implementation:** Subject mode passes all controls as a `controls` ReactNode prop to `SubjectHeatmap`, which renders them between its header and the matrix. `doseGroupOptions` prop provides label lookup for the filter summary. Group mode renders the `FilterBar` inline between the header and the description text.
 
 Matrix mode, affected only, subject sort, and dose group filter reset on specimen change via `useEffect`. Affected only resets to `true`; others reset to defaults.
 
