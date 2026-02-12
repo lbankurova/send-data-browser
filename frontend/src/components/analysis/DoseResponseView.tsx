@@ -1241,19 +1241,17 @@ function ChartOverviewContent({
           expandGen={expandGen}
           collapseGen={collapseGen}
         >
-        <div className="p-4">
-          <div className="overflow-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/50">
-                  <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Dose</th>
-                  <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Sex</th>
-                  <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">Mean</th>
-                  <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">SD</th>
-                  <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">N</th>
-                  <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">p-value</th>
-                  <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">Effect</th>
-                  <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Pattern</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dose</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sex</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Mean</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">SD</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">N</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">p-value</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Effect</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pattern</th>
                 </tr>
               </thead>
               <tbody>
@@ -1287,8 +1285,6 @@ function ChartOverviewContent({
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
         </ViewSection>
       )}
     </>
