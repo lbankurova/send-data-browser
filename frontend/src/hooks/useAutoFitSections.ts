@@ -48,12 +48,10 @@ export function useAutoFitSections(
 ): SectionResult[] {
   const count = configs.length;
 
-  // Track which sections have been manually resized (persisted)
-  const savedRef = useRef<Record<string, number> | null>(null);
-  if (savedRef.current === null) {
-    savedRef.current = loadSaved(viewKey);
-  }
-  const saved = savedRef.current;
+  // Load persisted heights once on mount (useState lazy init avoids ref-during-render)
+  const [saved] = useState(() => loadSaved(viewKey));
+  // Mutable copy for the drag handler to update
+  const savedRef = useRef(saved);
 
   // Initialize heights: use saved values or defaults
   const [heights, setHeights] = useState<number[]>(() =>
@@ -68,15 +66,10 @@ export function useAutoFitSections(
     new Set(configs.map((c, i) => (saved?.[c.id] != null ? i : -1)).filter((i) => i >= 0)),
   );
 
-  // Content refs for measuring natural height
-  const contentRefs = useRef<Array<RefObject<HTMLDivElement | null>>>(
+  // Content refs for measuring natural height (useState avoids ref mutation during render)
+  const [contentRefs] = useState<Array<RefObject<HTMLDivElement | null>>>(() =>
     configs.map(() => ({ current: null })),
   );
-  // Ensure stable length
-  if (contentRefs.current.length !== count) {
-    while (contentRefs.current.length < count) contentRefs.current.push({ current: null });
-    contentRefs.current.length = count;
-  }
 
   // Auto-fit: measure content and distribute space
   const autoFit = useCallback(() => {
@@ -84,15 +77,24 @@ export function useAutoFitSections(
     if (!container) return;
 
     const available = container.clientHeight;
-    // Overhead: each section has a header; each fixed section has a resize handle
-    const overhead = count * HEADER_HEIGHT + count * HANDLE_HEIGHT;
+    // Overhead: each fixed section has a header + resize handle; flex section(s) have a header
+    // Every view has exactly 1 flex section, so add 1 extra header
+    const overhead = count * (HEADER_HEIGHT + HANDLE_HEIGHT) + HEADER_HEIGHT;
     const usable = available - overhead;
     if (usable <= 0) return;
 
-    // Measure natural heights
-    const naturals: number[] = contentRefs.current.map((ref) => {
+    // Measure natural content heights by summing children's rendered heights.
+    // Can't use scrollHeight — on a h-full overflow-auto container it returns
+    // max(clientHeight, contentHeight), so it reads back the current allocation
+    // when content is smaller, creating a feedback loop that never shrinks.
+    const naturals: number[] = contentRefs.map((ref) => {
       const el = ref.current;
-      return el ? el.scrollHeight : 0;
+      if (!el) return 0;
+      let total = 0;
+      for (let i = 0; i < el.children.length; i++) {
+        total += el.children[i].getBoundingClientRect().height;
+      }
+      return total;
     });
 
     setHeights((prev) => {
@@ -134,7 +136,7 @@ export function useAutoFitSections(
       const changed = next.some((h, i) => h !== prev[i]);
       return changed ? next : prev;
     });
-  }, [containerRef, configs, count]);
+  }, [containerRef, configs, count, contentRefs]);
 
   // Two observers work together:
   // 1. ResizeObserver on the container — handles window/layout resizes
@@ -156,7 +158,7 @@ export function useAutoFitSections(
 
     // Content mutations (selection changes, data loading, re-renders)
     const mutationObs = new MutationObserver(scheduleAutoFit);
-    for (const ref of contentRefs.current) {
+    for (const ref of contentRefs) {
       if (ref.current) {
         mutationObs.observe(ref.current, { childList: true, subtree: true });
       }
@@ -170,7 +172,7 @@ export function useAutoFitSections(
       resizeObs.disconnect();
       mutationObs.disconnect();
     };
-  }, [autoFit, containerRef]);
+  }, [autoFit, containerRef, contentRefs]);
 
   // Build pointer-down handlers (manual drag)
   const makePointerDown = useCallback(
@@ -222,7 +224,7 @@ export function useAutoFitSections(
   // Build results
   return configs.map((_, i) => ({
     height: heights[i],
-    contentRef: contentRefs.current[i],
+    contentRef: contentRefs[i],
     onPointerDown: makePointerDown(i),
   }));
 }
