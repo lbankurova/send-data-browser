@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
@@ -36,6 +36,7 @@ export function StudySummaryView({
   onOrganSelect,
 }: StudySummaryViewProps) {
   const { studyId } = useParams<{ studyId: string }>();
+  const [searchParams] = useSearchParams();
   const { data: signalData, isLoading, error } = useStudySignalSummary(studyId);
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const { data: noaelData } = useNoaelSummary(studyId);
@@ -43,7 +44,9 @@ export function StudySummaryView({
   const { data: meta } = useStudyMetadata(studyId!);
   const { data: provenanceData } = useProvenanceMessages(studyId);
 
-  const [tab, setTab] = useState<Tab>("details");
+  // Initialize tab from URL query parameter if present
+  const initialTab = (searchParams.get("tab") as Tab) || "details";
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [selection, setSelection] = useState<SignalSelection | null>(null);
   const [selectedOrgan, setSelectedOrganState] = useState<string | null>(null);
 

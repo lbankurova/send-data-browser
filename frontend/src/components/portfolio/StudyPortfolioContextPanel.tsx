@@ -7,6 +7,7 @@ import { PackageCompletenessPane } from "./panes/PackageCompletenessPane";
 import { CollectionProgressPane } from "./panes/CollectionProgressPane";
 import { DesignRationalePane } from "./panes/DesignRationalePane";
 import { RelatedStudiesPane } from "./panes/RelatedStudiesPane";
+import { StudyDetailsLinkPane } from "./panes/StudyDetailsLinkPane";
 import {
   hasTargetOrganDiscrepancy,
   hasNoaelDiscrepancy,
@@ -69,6 +70,9 @@ export function StudyPortfolioContextPanel({ selectedStudy, allStudies }: Props)
 
       {/* Always shown */}
       <RelatedStudiesPane study={selectedStudy} allStudies={allStudies} />
+
+      {/* Navigation to Study Details */}
+      <StudyDetailsLinkPane study={selectedStudy} />
     </div>
   );
 }
