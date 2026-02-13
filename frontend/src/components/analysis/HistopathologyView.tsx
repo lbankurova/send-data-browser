@@ -708,10 +708,9 @@ function OverviewTab({
     return () => document.removeEventListener("mousedown", handler);
   }, [doseDepMenu]);
 
-  // Reset heatmap view state when specimen changes
+  // Reset heatmap view state when specimen changes (preserve matrix mode)
   useEffect(() => {
     setAffectedOnly(true);
-    setMatrixMode("group");
     setSubjectSort("dose");
     setDoseGroupFilter(null);
   }, [specimen]);
@@ -1159,7 +1158,18 @@ function OverviewTab({
       {/* Bottom: Heatmap container (group + subject) */}
       <ViewSection
         mode="flex"
-        title={<>SEVERITY MATRIX: {matrixMode === "subject" ? "SUBJECTS" : "GROUP"}{heatmapData ? <span className="ml-1 font-normal normal-case tracking-normal text-muted-foreground/60">({heatmapData.findings.length} findings)</span> : ""}</>}
+        title={<>SEVERITY MATRIX:{" "}
+          <span
+            className={cn("cursor-pointer", matrixMode === "group" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
+            onClick={(e) => { e.stopPropagation(); setMatrixMode("group"); }}
+          >GROUP</span>
+          <span className="mx-0.5 text-muted-foreground/30">|</span>
+          <span
+            className={cn("cursor-pointer", matrixMode === "subject" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
+            onClick={(e) => { e.stopPropagation(); setMatrixMode("subject"); }}
+          >SUBJECTS</span>
+          {heatmapData ? <span className="ml-1 font-normal normal-case tracking-normal text-muted-foreground/60">({heatmapData.findings.length} {heatmapData.findings.length === 1 ? "finding" : "findings"})</span> : ""}
+        </>}
       >
         {/* Heatmap content */}
         <div className="flex-1 overflow-auto">
@@ -1178,22 +1188,6 @@ function OverviewTab({
               doseGroupOptions={doseGroupOptions}
               controls={
                 <FilterBar className="border-0 bg-transparent px-0">
-                  <div className="flex items-center gap-0.5">
-                    {(["group", "subject"] as const).map((mode) => (
-                      <button
-                        key={mode}
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
-                          matrixMode === mode
-                            ? "bg-foreground text-background"
-                            : "text-muted-foreground hover:bg-accent/50"
-                        )}
-                        onClick={() => setMatrixMode(mode)}
-                      >
-                        {mode === "group" ? "Group" : "Subject"}
-                      </button>
-                    ))}
-                  </div>
                   <FilterSelect
                     value={sexFilter ?? ""}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexFilter(e.target.value || null)}
@@ -1239,22 +1233,6 @@ function OverviewTab({
           ) : heatmapData && heatmapData.findings.length > 0 ? (
             <div className="px-4 py-2">
               <FilterBar className="border-0 bg-transparent px-0">
-                <div className="flex items-center gap-0.5">
-                  {(["group", "subject"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
-                        matrixMode === mode
-                          ? "bg-foreground text-background"
-                          : "text-muted-foreground hover:bg-accent/50"
-                      )}
-                      onClick={() => setMatrixMode(mode)}
-                    >
-                      {mode === "group" ? "Group" : "Subject"}
-                    </button>
-                  ))}
-                </div>
                 <FilterSelect
                   value={sexFilter ?? ""}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexFilter(e.target.value || null)}
@@ -1389,24 +1367,6 @@ function OverviewTab({
             </div>
           ) : (
             <div className="px-4 py-2">
-              <FilterBar className="border-0 bg-transparent px-0">
-                <div className="flex items-center gap-0.5">
-                  {(["group", "subject"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
-                        matrixMode === mode
-                          ? "bg-foreground text-background"
-                          : "text-muted-foreground hover:bg-accent/50"
-                      )}
-                      onClick={() => setMatrixMode(mode)}
-                    >
-                      {mode === "group" ? "Group" : "Subject"}
-                    </button>
-                  ))}
-                </div>
-              </FilterBar>
               <div className="py-8 text-center text-xs text-muted-foreground">
                 {specimenData.length === 0 ? "No data for this specimen." : "No heatmap data available."}
               </div>
@@ -1453,6 +1413,9 @@ function SubjectHeatmap({
 }) {
   // Selected subject for column highlight
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+
+  // Resizable finding label column
+  const { width: labelColW, onPointerDown: onLabelResize } = useResizePanel(208, 100, 400);
 
   // Filter subjects: dose group first (so control subjects survive), then sex, then affected-only
   const subjects = useMemo(() => {
@@ -1595,7 +1558,13 @@ function SubjectHeatmap({
         <div className="inline-block">
           {/* Tier 1: Dose group headers */}
           <div className="flex">
-            <div className="w-52 shrink-0" /> {/* Finding label column spacer */}
+            <div className="sticky left-0 z-10 shrink-0 bg-background" style={{ width: labelColW }}>
+              {/* Resize handle */}
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/30"
+                onPointerDown={onLabelResize}
+              />
+            </div>
             {doseGroups.map((dg, gi) => (
               <div
                 key={`${dg.isRecovery ? "R" : ""}${dg.doseLevel}`}
@@ -1616,7 +1585,7 @@ function SubjectHeatmap({
 
           {/* Tier 2: Subject IDs */}
           <div className="flex">
-            <div className="w-52 shrink-0 py-0.5 text-right pr-2 text-[8px] font-semibold text-muted-foreground">
+            <div className="sticky left-0 z-10 shrink-0 bg-background py-0.5 text-right pr-2 text-[8px] font-semibold text-muted-foreground" style={{ width: labelColW }}>
               Subject ID
             </div>
             {doseGroups.map((dg, gi) => (
@@ -1645,7 +1614,7 @@ function SubjectHeatmap({
           {/* Sex indicator row */}
           {!sexFilter && (
             <div className="flex">
-              <div className="w-52 shrink-0 py-0.5 text-right pr-2 text-[8px] font-semibold text-muted-foreground">
+              <div className="sticky left-0 z-10 shrink-0 bg-background py-0.5 text-right pr-2 text-[8px] font-semibold text-muted-foreground" style={{ width: labelColW }}>
                 Sex
               </div>
               {doseGroups.map((dg, gi) => (
@@ -1667,8 +1636,8 @@ function SubjectHeatmap({
           )}
 
           {/* Examined row */}
-          <div className="flex border-b bg-muted/20">
-            <div className="w-52 shrink-0 py-0.5 text-right pr-2 text-[9px] text-muted-foreground">
+          <div className="flex border-b">
+            <div className="sticky left-0 z-10 shrink-0 bg-background py-0.5 text-right pr-2 text-[9px] text-muted-foreground" style={{ width: labelColW }}>
               Examined
             </div>
             {doseGroups.map((dg, gi) => (
@@ -1704,10 +1673,11 @@ function SubjectHeatmap({
             >
               {/* Finding label — sticky */}
               <div
-                className="sticky left-0 z-10 w-52 shrink-0 truncate bg-background py-0.5 pr-2 text-[10px]"
+                className="sticky left-0 z-10 shrink-0 truncate bg-background py-0.5 pr-2 text-[10px]"
+                style={{ width: labelColW }}
                 title={finding}
               >
-                {finding.length > 40 ? finding.slice(0, 40) + "\u2026" : finding}
+                {finding}
               </div>
               {/* Cells per dose group */}
               {doseGroups.map((dg, gi) => (
