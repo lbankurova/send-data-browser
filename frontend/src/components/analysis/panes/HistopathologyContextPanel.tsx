@@ -35,10 +35,10 @@ function deriveSpecimenInsights(rules: RuleResult[], specimen: string): InsightB
   const blocks: InsightBlock[] = [];
   const specLower = specimen.toLowerCase();
 
-  // Filter rules to those matching this specimen (via params or output_text fallback)
+  // Filter rules to those matching this specimen (via params or context_key)
   const specimenRules = rules.filter((r) => {
     if (r.params?.specimen && r.params.specimen.toLowerCase() === specLower) return true;
-    return r.output_text.toLowerCase().includes(specLower);
+    return r.context_key.toLowerCase().includes(specLower.replace(/[, ]+/g, "_"));
   });
 
   // Use aggregateByFinding to get pre-categorized findings
@@ -269,7 +269,7 @@ function SpecimenOverviewPane({
     const specKey = specLower.replace(/[, ]+/g, "_");
     return ruleResults.filter(
       (r) =>
-        r.output_text.toLowerCase().includes(specLower) ||
+        (r.params?.specimen && r.params.specimen.toLowerCase() === specLower) ||
         r.context_key.toLowerCase().includes(specKey) ||
         r.organ_system.toLowerCase() === specLower
     );
@@ -531,8 +531,8 @@ function FindingDetailPane({
     return organFiltered.filter(
       (r) =>
         r.rule_id !== "R12" && r.rule_id !== "R13" &&
-        (r.output_text.toLowerCase().includes(findingLower) ||
-        r.output_text.toLowerCase().includes(specimenLower) ||
+        ((r.params?.finding && r.params.finding.toLowerCase().includes(findingLower)) ||
+        (r.params?.specimen && r.params.specimen.toLowerCase().includes(specimenLower)) ||
         r.context_key.toLowerCase().includes(specimenLower.replace(/[, ]+/g, "_")))
     );
   }, [ruleResults, selection]);

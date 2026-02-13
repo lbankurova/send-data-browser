@@ -416,13 +416,11 @@ interface ProtectiveFinding {
 function aggregateProtectiveFindings(rules: RuleResult[]): ProtectiveFinding[] {
   const map = new Map<string, { specimens: Set<string>; sexes: Set<string>; ctrlPct: string; highPct: string; isRepurposing: boolean }>();
 
-  // Prefer params-based extraction; fall back to regex for old cached data
   for (const r of rules) {
     if (r.rule_id !== "R18" && r.rule_id !== "R19") continue;
 
     const p = r.params;
     if (p?.finding && p?.specimen && p?.ctrl_pct) {
-      // Params-based path
       const findingName = p.finding;
       const entry = map.get(findingName) ?? { specimens: new Set(), sexes: new Set(), ctrlPct: p.ctrl_pct, highPct: p.high_pct ?? "", isRepurposing: false };
       entry.specimens.add(p.specimen);
@@ -430,25 +428,6 @@ function aggregateProtectiveFindings(rules: RuleResult[]): ProtectiveFinding[] {
       if (parseInt(p.ctrl_pct) > parseInt(entry.ctrlPct)) { entry.ctrlPct = p.ctrl_pct; entry.highPct = p.high_pct ?? ""; }
       if (r.rule_id === "R19") entry.isRepurposing = true;
       map.set(findingName, entry);
-    } else {
-      // Regex fallback for backward compat
-      if (r.rule_id === "R18") {
-        const m = r.output_text.match(/incidence of (.+?) in (.+?) with treatment \((\w)\): (\d+)% in controls vs (\d+)%/);
-        if (m) {
-          const entry = map.get(m[1]) ?? { specimens: new Set(), sexes: new Set(), ctrlPct: m[4], highPct: m[5], isRepurposing: false };
-          entry.specimens.add(m[2]);
-          entry.sexes.add(m[3]);
-          if (parseInt(m[4]) > parseInt(entry.ctrlPct)) { entry.ctrlPct = m[4]; entry.highPct = m[5]; }
-          map.set(m[1], entry);
-        }
-      }
-      if (r.rule_id === "R19") {
-        const m = r.output_text.match(/^(.+?) in /);
-        if (m) {
-          const entry = map.get(m[1]);
-          if (entry) entry.isRepurposing = true;
-        }
-      }
     }
   }
 
