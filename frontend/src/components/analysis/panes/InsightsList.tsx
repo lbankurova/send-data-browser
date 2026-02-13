@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import type { RuleResult } from "@/types/analysis-views";
 import {
   buildOrganGroups,
-  cleanText,
   type Tier,
   type SynthLine,
   type SynthEndpoint,
@@ -93,7 +92,7 @@ export function InsightsList({ rules, tierFilter, onEndpointClick }: Props) {
                     <span className="font-mono text-muted-foreground/50">
                       {rule.rule_id}
                     </span>{" "}
-                    {cleanText(rule.output_text)}
+                    {rule.output_text}
                   </div>
                 ))}
               </div>
