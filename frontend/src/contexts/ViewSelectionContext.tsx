@@ -20,8 +20,8 @@ export interface TargetOrgansViewSelection {
 
 export interface HistopathologyViewSelection {
   _view: "histopathology";
-  finding: string;
   specimen: string;
+  finding?: string;
   sex?: string;
 }
 

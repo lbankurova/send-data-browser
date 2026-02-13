@@ -6,6 +6,17 @@ import { InsightsList } from "./InsightsList";
 import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { DomainLabel } from "@/components/ui/DomainLabel";
+import { cn } from "@/lib/utils";
+import {
+  deriveSpecimenSummaries,
+  deriveFindingSummaries,
+  deriveSpecimenConclusion,
+  deriveSexLabel,
+  getDoseConsistency,
+  deriveSpecimenReviewStatus,
+} from "@/components/analysis/HistopathologyView";
+import type { SpecimenReviewStatus } from "@/components/analysis/HistopathologyView";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 
 /** Neutral grayscale for severity 1-5 scale (matches HistopathologyView). */
@@ -28,7 +39,6 @@ const SPECIMEN_ORGAN_MAP: Record<string, string> = {
   EPIDIDYMIS: "reproductive", UTERUS: "reproductive", SKIN: "integumentary",
   EYE: "ocular", EYES: "ocular", "URINARY BLADDER": "renal",
 };
-// Keywords for compound specimens: "GLAND, ADRENAL" → match "ADRENAL"
 const KEYWORD_ORGAN_MAP: [string, string][] = [
   ["ADRENAL", "endocrine"], ["THYROID", "endocrine"], ["PITUITARY", "endocrine"],
   ["PROSTATE", "reproductive"], ["MAMMARY", "reproductive"], ["OVARY", "reproductive"],
@@ -48,9 +58,23 @@ function specimenToOrganSystem(specimen: string): string {
   return "general";
 }
 
+const REVIEW_STATUS_STYLES: Record<SpecimenReviewStatus, string> = {
+  "Preliminary": "border-border/50 text-muted-foreground/60",
+  "In review": "border-border text-muted-foreground/80",
+  "Confirmed": "border-border text-muted-foreground",
+  "Revised": "border-border text-muted-foreground",
+};
+
+const REVIEW_STATUS_TOOLTIPS: Record<SpecimenReviewStatus, string> = {
+  "Preliminary": "No peer review recorded yet",
+  "In review": "Some findings reviewed, others pending",
+  "Confirmed": "All findings agreed by peer reviewer",
+  "Revised": "One or more findings disagreed by peer reviewer",
+};
+
 interface HistopathSelection {
-  finding: string;
   specimen: string;
+  finding?: string;
   sex?: string;
 }
 
@@ -59,16 +83,304 @@ interface Props {
   ruleResults: RuleResult[];
   selection: HistopathSelection | null;
   studyId?: string;
+  onFindingSelect?: (finding: string, specimen: string) => void;
 }
 
-export function HistopathologyContextPanel({ lesionData, ruleResults, selection, studyId: studyIdProp }: Props) {
-  const { studyId: studyIdParam } = useParams<{ studyId: string }>();
-  const studyId = studyIdProp ?? studyIdParam;
+// ─── Specimen Overview (when no finding is selected) ──────────────────────────
+
+function SpecimenOverviewPane({
+  specimen,
+  lesionData,
+  ruleResults,
+  studyId,
+  onFindingSelect,
+}: {
+  specimen: string;
+  lesionData: LesionSeverityRow[];
+  ruleResults: RuleResult[];
+  studyId?: string;
+  onFindingSelect?: (finding: string, specimen: string) => void;
+}) {
   const navigate = useNavigate();
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
+  // Derive specimen summary
+  const summary = useMemo(() => {
+    const summaries = deriveSpecimenSummaries(lesionData, ruleResults);
+    return summaries.find((s) => s.specimen === specimen) ?? null;
+  }, [lesionData, ruleResults, specimen]);
+
+  // Specimen-scoped data
+  const specimenData = useMemo(
+    () => lesionData.filter((r) => r.specimen === specimen),
+    [lesionData, specimen]
+  );
+
+  // Specimen-scoped rules
+  const specimenRules = useMemo(() => {
+    if (!ruleResults.length) return [];
+    const specLower = specimen.toLowerCase();
+    const specKey = specLower.replace(/[, ]+/g, "_");
+    return ruleResults.filter(
+      (r) =>
+        r.output_text.toLowerCase().includes(specLower) ||
+        r.context_key.toLowerCase().includes(specKey) ||
+        r.organ_system.toLowerCase() === specLower
+    );
+  }, [ruleResults, specimen]);
+
+  // Finding summaries
+  const findingSummaries = useMemo(
+    () => deriveFindingSummaries(specimenData),
+    [specimenData]
+  );
+
+  // Conclusion text
+  const conclusion = useMemo(() => {
+    if (!summary) return "";
+    return deriveSpecimenConclusion(summary, specimenData, specimenRules);
+  }, [summary, specimenData, specimenRules]);
+
+  // Sex label
+  const sexLabel = useMemo(() => deriveSexLabel(specimenData), [specimenData]);
+
+  // Merged domains from data + rules
+  const allDomains = useMemo(() => {
+    const set = new Set(summary?.domains ?? []);
+    for (const r of specimenRules) {
+      const m = r.context_key.match(/^([A-Z]{2})_/);
+      if (m) set.add(m[1]);
+    }
+    return [...set].sort();
+  }, [summary?.domains, specimenRules]);
+
+  // Dose trend detail: incidence by dose group
+  const doseTrendDetail = useMemo(() => {
+    // Aggregate across all findings in specimen
+    const doseMap = new Map<number, { label: string; affected: number; n: number }>();
+    for (const r of specimenData) {
+      const existing = doseMap.get(r.dose_level);
+      if (existing) {
+        existing.affected += r.affected;
+        existing.n += r.n;
+      } else {
+        doseMap.set(r.dose_level, { label: r.dose_label.split(",")[0], affected: r.affected, n: r.n });
+      }
+    }
+    const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
+
+    // Determine method
+    const hasDoseRule = specimenRules.some((r) => r.rule_id === "R01" || r.rule_id === "R04");
+    const matchingRuleIds = specimenRules
+      .filter((r) => r.rule_id === "R01" || r.rule_id === "R04")
+      .map((r) => r.rule_id);
+    const heuristicResult = getDoseConsistency(specimenData);
+    const finalTrend = hasDoseRule ? "Strong" as const : heuristicResult;
+    const method = hasDoseRule
+      ? `Rule engine (${[...new Set(matchingRuleIds)].join("/")})`
+      : "Incidence heuristic";
+
+    return { doses: sorted, method, trend: finalTrend };
+  }, [specimenData, specimenRules]);
+
+  // Review status
+  const findingNames = useMemo(
+    () => [...new Set(specimenData.map((r) => r.finding))],
+    [specimenData]
+  );
+
+  if (!summary) {
+    return (
+      <div className="p-4 text-xs text-muted-foreground">
+        No data for specimen.
+      </div>
+    );
+  }
+
+  const reviewStatus = deriveSpecimenReviewStatus(findingNames, undefined);
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">{specimen.replace(/_/g, " ")}</h3>
+          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          {summary.adverseCount > 0 && (
+            <span className="rounded-sm border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {summary.adverseCount} adverse
+            </span>
+          )}
+          <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
+            {sexLabel}
+          </span>
+          <span
+            className={cn("rounded border px-1 py-0.5 text-[10px]", REVIEW_STATUS_STYLES[reviewStatus])}
+            title={REVIEW_STATUS_TOOLTIPS[reviewStatus]}
+          >
+            {reviewStatus}
+          </span>
+        </div>
+        {allDomains.length > 0 && (
+          <div className="mt-1 flex items-center gap-1">
+            {allDomains.map((d) => (
+              <DomainLabel key={d} domain={d} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Overview */}
+      <CollapsiblePane title="Overview" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <p className="text-[11px] leading-snug text-muted-foreground">{conclusion}</p>
+        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+          <span>Findings: <span className="font-mono font-medium">{summary.findingCount}</span></span>
+          <span>Incidence: <span className="font-mono font-medium">{summary.totalN > 0 ? Math.round((summary.totalAffected / summary.totalN) * 100) : 0}%</span></span>
+          <span>Max sev: <span className="font-mono font-medium">{summary.maxSeverity.toFixed(1)}</span></span>
+          <span>Dose: <span className="font-medium">{summary.doseConsistency}</span></span>
+        </div>
+      </CollapsiblePane>
+
+      {/* Dose trend detail */}
+      <CollapsiblePane title="Dose trend detail" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <div className="mb-1.5 text-[10px] text-muted-foreground">
+          Method: <span className="font-medium">{doseTrendDetail.method}</span>
+          {" \u2014 "}
+          <span className="font-medium">
+            {doseTrendDetail.trend === "Strong" ? "Strong trend (\u25B2\u25B2\u25B2)" :
+             doseTrendDetail.trend === "Moderate" ? "Moderate trend (\u25B2\u25B2)" :
+             "Weak trend (\u25B2)"}
+          </span>
+        </div>
+        {doseTrendDetail.doses.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">No dose data.</p>
+        ) : (
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr className="border-b text-muted-foreground">
+                <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Dose</th>
+                <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Affected</th>
+                <th className="w-16 pb-0.5 text-[10px] font-semibold uppercase tracking-wider" />
+              </tr>
+            </thead>
+            <tbody>
+              {doseTrendDetail.doses.map(([level, info]) => {
+                const pct = info.n > 0 ? (info.affected / info.n) * 100 : 0;
+                return (
+                  <tr key={level} className="border-b border-dashed">
+                    <td className="py-0.5">{info.label}</td>
+                    <td className="py-0.5 text-right font-mono">{info.affected}/{info.n}</td>
+                    <td className="py-0.5 px-1">
+                      <div className="h-1.5 w-full rounded-full bg-gray-100">
+                        <div
+                          className="h-1.5 rounded-full bg-gray-400"
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                          title={`${Math.round(pct)}%`}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </CollapsiblePane>
+
+      {/* Findings */}
+      <CollapsiblePane title={`Findings (${findingSummaries.length})`} defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        {findingSummaries.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">No findings in this specimen.</p>
+        ) : (
+          <div className="space-y-0.5">
+            {findingSummaries.map((f) => (
+              <button
+                key={f.finding}
+                className="flex w-full items-center justify-between rounded px-1 py-0.5 text-left text-[11px] hover:bg-accent/30"
+                onClick={() => onFindingSelect?.(f.finding, specimen)}
+              >
+                <span className="min-w-0 flex-1 truncate" title={f.finding}>{f.finding}</span>
+                <span className="ml-2 flex shrink-0 items-center gap-1.5">
+                  <span
+                    className="rounded px-1 font-mono text-[9px]"
+                    style={{ backgroundColor: sevHeatColor(f.maxSeverity).bg, color: sevHeatColor(f.maxSeverity).text }}
+                  >
+                    {f.maxSeverity.toFixed(1)}
+                  </span>
+                  {f.severity === "adverse" && (
+                    <span className="rounded-sm border border-border px-1 py-0.5 text-[9px] text-muted-foreground">adverse</span>
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </CollapsiblePane>
+
+      {/* Pathology Review (specimen-level) */}
+      {studyId && (
+        <PathologyReviewForm studyId={studyId} finding={`specimen:${specimen}`} defaultOpen />
+      )}
+
+      {/* Related views */}
+      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <div className="space-y-1 text-[11px]">
+          <a
+            href="#"
+            className="block text-primary hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: specimen } });
+            }}
+          >
+            View target organs &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block text-primary hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: specimen } });
+            }}
+          >
+            View dose-response &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block text-primary hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: specimen } });
+            }}
+          >
+            View NOAEL decision &#x2192;
+          </a>
+        </div>
+      </CollapsiblePane>
+    </div>
+  );
+}
+
+// ─── Finding Detail (when finding is selected) ───────────────────────────────
+
+function FindingDetailPane({
+  selection,
+  lesionData,
+  ruleResults,
+  studyId,
+}: {
+  selection: HistopathSelection & { finding: string };
+  lesionData: LesionSeverityRow[];
+  ruleResults: RuleResult[];
+  studyId?: string;
+}) {
+  const navigate = useNavigate();
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // Dose-level detail for selected finding
   const findingRows = useMemo(() => {
-    if (!selection) return [];
     return lesionData
       .filter((r) => r.finding === selection.finding && r.specimen === selection.specimen)
       .sort((a, b) => a.dose_level - b.dose_level || a.sex.localeCompare(b.sex));
@@ -87,7 +399,6 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       if ((r.avg_severity ?? 0) > maxSev) maxSev = r.avg_severity ?? 0;
       sexes.add(r.sex);
     }
-    // Dose consistency for this finding
     const doseMap = new Map<number, { affected: number; n: number }>();
     for (const r of findingRows) {
       const existing = doseMap.get(r.dose_level);
@@ -111,23 +422,14 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
     return { totalAffected, totalN, incPct, maxSev, doseTrend, sexLabel };
   }, [findingRows]);
 
-  // Rules matching finding — filter by organ system, then text match, exclude R12/R13
-  // R12/R13 are histopath incidence/severity rules — that data is already the primary
-  // content of this view (evidence panel, severity matrix, dose detail). Showing them
-  // again in insights is redundant. Keep cross-domain signals (LB, BW, OM) that add
-  // corroborating evidence the user can't see elsewhere.
+  // Rules matching finding
   const findingRules = useMemo(() => {
-    if (!selection) return [];
     const organSystem = specimenToOrganSystem(selection.specimen);
     const findingLower = selection.finding.toLowerCase();
     const specimenLower = selection.specimen.toLowerCase();
-
-    // Primary: rules whose organ_system matches the specimen's organ system
     const organFiltered = organSystem !== "general"
       ? ruleResults.filter((r) => r.organ_system === organSystem)
-      : ruleResults; // "general" specimens: can't narrow by organ, use all
-
-    // Secondary: text match + exclude R12/R13 (histopath — already in the view)
+      : ruleResults;
     return organFiltered.filter(
       (r) =>
         r.rule_id !== "R12" && r.rule_id !== "R13" &&
@@ -137,9 +439,8 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
     );
   }, [ruleResults, selection]);
 
-  // Correlating evidence: other findings in same specimen
+  // Correlating evidence
   const correlating = useMemo(() => {
-    if (!selection) return [];
     const otherFindings = lesionData
       .filter((r) => r.specimen === selection.specimen && r.finding !== selection.finding);
     const unique = new Map<string, { maxSev: number; count: number }>();
@@ -157,9 +458,8 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       .slice(0, 10);
   }, [lesionData, selection]);
 
-  // Sex summary for selected finding
+  // Sex summary
   const sexSummary = useMemo(() => {
-    if (!selection) return null;
     const rows = lesionData.filter(
       (r) => r.finding === selection.finding && r.specimen === selection.specimen
     );
@@ -176,16 +476,6 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
     }
     return bySex;
   }, [lesionData, selection]);
-
-  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
-
-  if (!selection) {
-    return (
-      <div className="p-4 text-xs text-muted-foreground">
-        Select a finding from the heatmap or grid to view details.
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -359,5 +649,43 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
         </div>
       </CollapsiblePane>
     </div>
+  );
+}
+
+// ─── Main export ──────────────────────────────────────────────────────────────
+
+export function HistopathologyContextPanel({ lesionData, ruleResults, selection, studyId: studyIdProp, onFindingSelect }: Props) {
+  const { studyId: studyIdParam } = useParams<{ studyId: string }>();
+  const studyId = studyIdProp ?? studyIdParam;
+
+  if (!selection) {
+    return (
+      <div className="p-4 text-xs text-muted-foreground">
+        Select a specimen or finding to view details.
+      </div>
+    );
+  }
+
+  // Finding-level view
+  if (selection.finding) {
+    return (
+      <FindingDetailPane
+        selection={selection as HistopathSelection & { finding: string }}
+        lesionData={lesionData}
+        ruleResults={ruleResults}
+        studyId={studyId}
+      />
+    );
+  }
+
+  // Specimen-level overview
+  return (
+    <SpecimenOverviewPane
+      specimen={selection.specimen}
+      lesionData={lesionData}
+      ruleResults={ruleResults}
+      studyId={studyId}
+      onFindingSelect={onFindingSelect}
+    />
   );
 }

@@ -18,7 +18,8 @@ import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterSelect, FilterMultiSelect, FilterSearch, FilterShowingLine } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { getNeutralHeatColor as getNeutralHeatColor01 } from "@/lib/severity-colors";
+import { DoseLabel, DoseHeader } from "@/components/ui/DoseLabel";
+import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { ViewSection } from "@/components/ui/ViewSection";
@@ -41,14 +42,14 @@ function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
 // ─── Public types ──────────────────────────────────────────
 
 export interface HistopathSelection {
-  finding: string;
   specimen: string;
+  finding?: string;
   sex?: string;
 }
 
 // ─── Derived data types ────────────────────────────────────
 
-interface SpecimenSummary {
+export interface SpecimenSummary {
   specimen: string;
   findingCount: number;
   adverseCount: number;
@@ -59,7 +60,7 @@ interface SpecimenSummary {
   doseConsistency: "Weak" | "Moderate" | "Strong";
 }
 
-interface FindingSummary {
+export interface FindingSummary {
   finding: string;
   maxSeverity: number;
   maxIncidence: number;
@@ -78,7 +79,7 @@ const findingColHelper = createColumnHelper<FindingTableRow>();
 
 // ─── Helpers ───────────────────────────────────────────────
 
-function deriveSpecimenSummaries(data: LesionSeverityRow[]): SpecimenSummary[] {
+export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?: RuleResult[]): SpecimenSummary[] {
   const map = new Map<string, {
     findings: Set<string>;
     adverseFindings: Set<string>;
@@ -103,9 +104,21 @@ function deriveSpecimenSummaries(data: LesionSeverityRow[]): SpecimenSummary[] {
     entry.domains.add(row.domain);
   }
 
+  // Build set of specimens with R01/R04 rule signals (authoritative dose evidence)
+  const doseRules = ruleResults?.filter((r) => r.rule_id === "R01" || r.rule_id === "R04") ?? [];
+  const hasDoseRuleFor = (specimen: string) => {
+    const key = specimen.toLowerCase().replace(/[, ]+/g, "_");
+    return doseRules.some(
+      (r) => r.context_key.toLowerCase().includes(key) ||
+        r.output_text.toLowerCase().includes(specimen.toLowerCase()) ||
+        r.organ_system.toLowerCase() === specimen.toLowerCase()
+    );
+  };
+
   const summaries: SpecimenSummary[] = [];
   for (const [specimen, entry] of map) {
     const specimenRows = data.filter((r) => r.specimen === specimen);
+    const heuristic = getDoseConsistency(specimenRows);
     summaries.push({
       specimen,
       findingCount: entry.findings.size,
@@ -114,7 +127,7 @@ function deriveSpecimenSummaries(data: LesionSeverityRow[]): SpecimenSummary[] {
       totalAffected: entry.totalAffected,
       totalN: entry.totalN,
       domains: [...entry.domains].sort(),
-      doseConsistency: getDoseConsistency(specimenRows),
+      doseConsistency: hasDoseRuleFor(specimen) ? "Strong" : heuristic,
     });
   }
 
@@ -127,7 +140,7 @@ function deriveSpecimenSummaries(data: LesionSeverityRow[]): SpecimenSummary[] {
   return summaries.sort((a, b) => riskScore(b) - riskScore(a) || b.findingCount - a.findingCount);
 }
 
-function deriveFindingSummaries(rows: LesionSeverityRow[]): FindingSummary[] {
+export function deriveFindingSummaries(rows: LesionSeverityRow[]): FindingSummary[] {
   const map = new Map<string, {
     maxSev: number;
     maxIncidence: number;
@@ -168,7 +181,7 @@ function deriveFindingSummaries(rows: LesionSeverityRow[]): FindingSummary[] {
 
 // ─── Specimen-level intelligence helpers ─────────────────────
 
-function deriveSexLabel(rows: LesionSeverityRow[]): string {
+export function deriveSexLabel(rows: LesionSeverityRow[]): string {
   const sexes = new Set(rows.map((r) => r.sex));
   if (sexes.size === 1) {
     const s = [...sexes][0];
@@ -177,7 +190,7 @@ function deriveSexLabel(rows: LesionSeverityRow[]): string {
   return "Both sexes";
 }
 
-function getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderate" | "Strong" {
+export function getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderate" | "Strong" {
   // Group by finding, then check dose-incidence monotonicity
   const byFinding = new Map<string, Map<number, { affected: number; n: number }>>();
   for (const r of rows) {
@@ -254,10 +267,10 @@ function getFindingDoseConsistency(rows: LesionSeverityRow[], finding: string): 
   return "Weak";
 }
 
-function deriveSpecimenConclusion(
+export function deriveSpecimenConclusion(
   summary: SpecimenSummary,
   specimenData: LesionSeverityRow[],
-  specimenRules: RuleResult[]
+  specimenRules: RuleResult[],
 ): string {
   const maxIncidencePct = summary.totalN > 0
     ? ((summary.totalAffected / summary.totalN) * 100).toFixed(0)
@@ -276,26 +289,26 @@ function deriveSpecimenConclusion(
   // Sex
   const sexDesc = deriveSexLabel(specimenData).toLowerCase();
 
-  // Dose relationship: check for R01/R04 presence or compute dose consistency
+  // Dose relationship: heuristic + rule engine upgrade (R01/R04 = authoritative dose signal)
   const hasDoseRule = specimenRules.some((r) => r.rule_id === "R01" || r.rule_id === "R04");
+  const consistency = hasDoseRule ? "Strong" as const : getDoseConsistency(specimenData);
   let doseDesc: string;
-  if (hasDoseRule) {
-    doseDesc = "with dose-related increase";
+  if (consistency === "Strong") {
+    doseDesc = "with dose-related increase, strong trend (▲▲▲)";
+  } else if (consistency === "Moderate") {
+    doseDesc = "with dose-related increase, moderate trend (▲▲)";
   } else {
-    const consistency = getDoseConsistency(specimenData);
-    doseDesc = consistency === "Strong"
-      ? "with dose-related trend"
-      : "without dose-related increase";
+    doseDesc = "without clear dose-related increase, weak trend (▲)";
   }
 
-  return `${incidenceDesc}, ${sevDesc}, ${sexDesc}, ${doseDesc}.`;
+  return `${incidenceDesc} (${maxIncidencePct}%), ${sevDesc}, ${sexDesc}, ${doseDesc}.`;
 }
 
 // ─── Review status aggregation ────────────────────────────
 
-type SpecimenReviewStatus = "Preliminary" | "In review" | "Confirmed" | "Revised";
+export type SpecimenReviewStatus = "Preliminary" | "In review" | "Confirmed" | "Revised";
 
-function deriveSpecimenReviewStatus(
+export function deriveSpecimenReviewStatus(
   findingNames: string[],
   reviews: Record<string, PathologyReview> | undefined
 ): SpecimenReviewStatus {
@@ -306,20 +319,6 @@ function deriveSpecimenReviewStatus(
   if (statuses.every(s => s === "Agreed")) return "Confirmed";
   return "In review";
 }
-
-const REVIEW_STATUS_STYLES: Record<SpecimenReviewStatus, string> = {
-  "Preliminary": "border-border/50 text-muted-foreground/60",
-  "In review": "border-border text-muted-foreground/80",
-  "Confirmed": "border-border text-muted-foreground",
-  "Revised": "border-border text-muted-foreground",
-};
-
-const REVIEW_STATUS_TOOLTIPS: Record<SpecimenReviewStatus, string> = {
-  "Preliminary": "No peer review recorded yet",
-  "In review": "Some findings reviewed, others pending",
-  "Confirmed": "All findings agreed by peer reviewer",
-  "Revised": "One or more findings disagreed by peer reviewer",
-};
 
 // ─── SpecimenRailItem ──────────────────────────────────────
 
@@ -342,10 +341,9 @@ function SpecimenRailItem({
     <button
       className={cn(
         "w-full text-left border-b border-border/40 px-2.5 py-1.5 transition-colors",
-        "border-l-2 border-l-transparent",
         isSelected
-          ? "bg-blue-50/60 dark:bg-blue-950/20"
-          : "hover:bg-accent/30"
+          ? "border-l-2 border-l-primary bg-blue-50/80 dark:bg-blue-950/30"
+          : "border-l-2 border-l-transparent hover:bg-accent/30"
       )}
       onClick={onClick}
     >
@@ -484,7 +482,7 @@ function SpecimenRail({
             value={minSevFilter}
             onChange={(e) => setMinSevFilter(Number(e.target.value))}
             title="Minimum severity filter"
-          >
+                      >
             <option value={0}>All severities</option>
             <option value={2}>Severity 2+</option>
             <option value={3}>Severity 3+</option>
@@ -494,7 +492,7 @@ function SpecimenRail({
             value={doseTrendFilter}
             onChange={(e) => setDoseTrendFilter(e.target.value as "any" | "moderate" | "strong")}
             title="Dose trend filter"
-          >
+                      >
             <option value="any">All trends</option>
             <option value="moderate">Moderate+</option>
             <option value="strong">Strong only</option>
@@ -525,125 +523,6 @@ function SpecimenRail({
             {search ? <>No matches for &ldquo;{search}&rdquo;</> : "No specimens match current filters"}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-// ─── SpecimenHeader ────────────────────────────────────────
-
-function SpecimenHeader({
-  summary,
-  specimenData,
-  specimenRules,
-  pathReviews,
-  findingNames,
-}: {
-  summary: SpecimenSummary;
-  specimenData: LesionSeverityRow[];
-  specimenRules: RuleResult[];
-  pathReviews?: Record<string, PathologyReview>;
-  findingNames: string[];
-}) {
-  const sexLabel = useMemo(() => deriveSexLabel(specimenData), [specimenData]);
-  const conclusion = useMemo(
-    () => deriveSpecimenConclusion(summary, specimenData, specimenRules),
-    [summary, specimenData, specimenRules]
-  );
-  // Merge domains from lesion data + rule results for complete coverage
-  const allDomains = useMemo(() => {
-    const set = new Set(summary.domains);
-    for (const r of specimenRules) {
-      const m = r.context_key.match(/^([A-Z]{2})_/);
-      if (m) set.add(m[1]);
-    }
-    return [...set].sort();
-  }, [summary.domains, specimenRules]);
-
-  return (
-    <div className="shrink-0 border-b px-4 py-2">
-      {/* Title + badges */}
-      <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold">
-          {summary.specimen.replace(/_/g, " ")}
-        </h3>
-        {summary.adverseCount > 0 && (
-          <span className="rounded-sm border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {summary.adverseCount} adverse
-          </span>
-        )}
-        <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
-          {sexLabel}
-        </span>
-        {(() => {
-          const reviewStatus = deriveSpecimenReviewStatus(findingNames, pathReviews);
-          return (
-            <span
-              className={cn("rounded border px-1 py-0.5 text-[10px]", REVIEW_STATUS_STYLES[reviewStatus])}
-              title={`Review status: ${REVIEW_STATUS_TOOLTIPS[reviewStatus]}`}
-            >
-              {reviewStatus}
-            </span>
-          );
-        })()}
-      </div>
-
-      {/* Domain subtitle */}
-      {allDomains.length > 0 && (
-        <div className="mt-0.5 flex items-center gap-1">
-          {allDomains.map((d) => (
-            <DomainLabel key={d} domain={d} />
-          ))}
-        </div>
-      )}
-
-      {/* 1-line conclusion */}
-      <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-        {conclusion}
-      </p>
-
-      {/* Structured metrics */}
-      <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px]">
-        <div className="flex items-baseline justify-between">
-          <span className="text-muted-foreground">Incidence</span>
-          <span className="font-mono text-[10px] font-medium">
-            {summary.totalAffected}/{summary.totalN}
-            {summary.totalN > 0 && ` (${Math.round((summary.totalAffected / summary.totalN) * 100)}%)`}
-          </span>
-        </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-muted-foreground">Max severity</span>
-          <span className={cn(
-            "font-mono text-[10px]",
-            summary.maxSeverity >= 3.0 ? "font-semibold" : "font-medium"
-          )}>
-            {summary.maxSeverity.toFixed(1)}
-          </span>
-        </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-muted-foreground">Adverse</span>
-          <span className="font-mono text-[10px] font-medium">
-            {summary.adverseCount}/{summary.findingCount}
-          </span>
-        </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-muted-foreground">Sex scope</span>
-          <span className="text-[10px] font-medium">{sexLabel}</span>
-        </div>
-      </div>
-      {/* Dose trend — full-width bottom line with directional arrows */}
-      <div className="mt-1 flex items-center gap-1.5 text-[11px]">
-        <span className="text-muted-foreground">Dose trend</span>
-        {summary.doseConsistency === "Strong" && (
-          <span className="font-mono text-[10px] text-muted-foreground" title="Strong: monotonic incidence increase across 3+ dose groups">▲▲▲</span>
-        )}
-        {summary.doseConsistency === "Moderate" && (
-          <span className="font-mono text-[10px] text-muted-foreground/70" title="Moderate: monotonic incidence or 2+ dose groups affected">▲▲</span>
-        )}
-        {summary.doseConsistency === "Weak" && (
-          <span className="font-mono text-[10px] text-muted-foreground/40" title="Weak: no clear dose-related pattern">▲</span>
-        )}
-        <span className="text-[10px] text-muted-foreground/50">{summary.doseConsistency}</span>
       </div>
     </div>
   );
@@ -993,7 +872,7 @@ function OverviewTab({
           const text = organs.join(", ");
           return (
             <span
-              className="block truncate text-[9px] italic text-muted-foreground/60"
+              className="block truncate text-muted-foreground"
               title={`Cross-organ coherence (R16): also observed in ${text}`}
             >
               {text}
@@ -1044,7 +923,7 @@ function OverviewTab({
                         header.column.id === "incidence" && "text-right",
                         header.column.id === "isDoseDriven" && "text-center",
                       )}
-                      style={{ width: header.getSize() }}
+                      style={header.column.id === "relatedOrgans" ? undefined : { width: header.getSize() }}
                       onDoubleClick={header.column.id === "isDoseDriven" ? undefined : header.column.getToggleSortingHandler()}
                       onClick={header.column.id === "isDoseDriven" ? (e) => {
                         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -1089,7 +968,7 @@ function OverviewTab({
                           cell.column.id === "isDoseDriven" && "text-center",
                           cell.column.id === "relatedOrgans" && "overflow-hidden",
                         )}
-                        style={{ width: cell.column.getSize() }}
+                        style={cell.column.id === "relatedOrgans" ? undefined : { width: cell.column.getSize() }}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
@@ -1191,7 +1070,7 @@ function OverviewTab({
                   <FilterSelect
                     value={sexFilter ?? ""}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexFilter(e.target.value || null)}
-                  >
+                                      >
                     <option value="">All sexes</option>
                     <option value="M">Male</option>
                     <option value="F">Female</option>
@@ -1199,7 +1078,7 @@ function OverviewTab({
                   <FilterSelect
                     value={minSeverity}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMinSeverity(Number(e.target.value))}
-                  >
+                                      >
                     <option value={0}>All severities</option>
                     <option value={1}>Severity 1+</option>
                     <option value={2}>Severity 2+</option>
@@ -1214,7 +1093,7 @@ function OverviewTab({
                   <FilterSelect
                     value={subjectSort}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSubjectSort(e.target.value as "dose" | "severity")}
-                  >
+                                      >
                     <option value="dose">Sort: dose group</option>
                     <option value="severity">Sort: max severity</option>
                   </FilterSelect>
@@ -1236,7 +1115,7 @@ function OverviewTab({
                 <FilterSelect
                   value={sexFilter ?? ""}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexFilter(e.target.value || null)}
-                >
+                                  >
                   <option value="">All sexes</option>
                   <option value="M">Male</option>
                   <option value="F">Female</option>
@@ -1244,7 +1123,7 @@ function OverviewTab({
                 <FilterSelect
                   value={minSeverity}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMinSeverity(Number(e.target.value))}
-                >
+                                  >
                   <option value={0}>All severities</option>
                   <option value={1}>Severity 1+</option>
                   <option value={2}>Severity 2+</option>
@@ -1307,7 +1186,7 @@ function OverviewTab({
                         key={dl}
                         className="w-20 shrink-0 text-center text-[10px] font-medium text-muted-foreground"
                       >
-                        {heatmapData.doseLabels.get(dl) ?? `Dose ${dl}`}
+                        <DoseHeader level={dl} label={heatmapData.doseLabels.get(dl) ?? `Dose ${dl}`} />
                       </div>
                     ))}
                   </div>
@@ -1415,7 +1294,7 @@ function SubjectHeatmap({
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
   // Resizable finding label column
-  const { width: labelColW, onPointerDown: onLabelResize } = useResizePanel(208, 100, 400);
+  const { width: labelColW, onPointerDown: onLabelResize } = useResizePanel(124, 100, 400);
 
   // Filter subjects: dose group first (so control subjects survive), then sex, then affected-only
   const subjects = useMemo(() => {
@@ -1574,8 +1453,8 @@ function SubjectHeatmap({
                 )}
               >
                 <div className="text-center" style={{ width: dg.subjects.length * 32 }}>
-                  <div className="h-0.5 bg-border" />
-                  <div className="px-1 py-0.5 text-[10px] font-semibold">
+                  <div className="h-0.5 rounded-full" style={{ backgroundColor: getDoseGroupColor(dg.doseLevel) }} />
+                  <div className="px-1 py-0.5 text-[10px] font-semibold" style={{ color: getDoseGroupColor(dg.doseLevel) }}>
                     {dg.doseLabel} ({dg.subjects.length})
                   </div>
                 </div>
@@ -1594,10 +1473,9 @@ function SubjectHeatmap({
                   <button
                     key={subj.usubjid}
                     className={cn(
-                      "w-8 shrink-0 py-0.5 text-center font-mono text-[9px] text-muted-foreground hover:bg-accent/30",
+                      "w-8 shrink-0 cursor-pointer py-0.5 text-center font-mono text-[9px] text-muted-foreground hover:bg-accent/30",
                       selectedSubject === subj.usubjid && "bg-blue-50/50"
                     )}
-                    title={`${subj.usubjid} — click to view details`}
                     onClick={() => {
                       const next = selectedSubject === subj.usubjid ? null : subj.usubjid;
                       setSelectedSubject(next);
@@ -1779,7 +1657,7 @@ function MetricsTab({
         minSize: 60,
         maxSize: 120,
         cell: (info) => (
-          <span className="text-muted-foreground">{info.row.original.dose_label.split(",")[0]}</span>
+          <DoseLabel level={info.getValue()} label={info.row.original.dose_label.split(",")[0]} />
         ),
       }),
       col.accessor("sex", { header: "Sex", size: 40, minSize: 32, maxSize: 60 }),
@@ -2327,8 +2205,8 @@ export function HistopathologyView({
   // Derived: specimen summaries
   const specimenSummaries = useMemo(() => {
     if (!lesionData) return [];
-    return deriveSpecimenSummaries(lesionData);
-  }, [lesionData]);
+    return deriveSpecimenSummaries(lesionData, ruleResults);
+  }, [lesionData, ruleResults]);
 
   // Rows for selected specimen
   const specimenData = useMemo(() => {
@@ -2367,19 +2245,6 @@ export function HistopathologyView({
     return specimenSummaries.find((s) => s.specimen === selectedSpecimen) ?? null;
   }, [specimenSummaries, selectedSpecimen]);
 
-  // Rules scoped to selected specimen (shared with SpecimenHeader and OverviewTab)
-  const specimenRules = useMemo(() => {
-    if (!ruleResults?.length || !selectedSpecimen) return [];
-    const specLower = selectedSpecimen.toLowerCase();
-    const specKey = specLower.replace(/[, ]+/g, "_");
-    return ruleResults.filter(
-      (r) =>
-        r.output_text.toLowerCase().includes(specLower) ||
-        r.context_key.toLowerCase().includes(specKey) ||
-        r.organ_system.toLowerCase() === specLower
-    );
-  }, [ruleResults, selectedSpecimen]);
-
   // Trends for selected specimen
   const trendsByFinding = useMemo(() => {
     const map = new Map<string, FindingDoseTrend>();
@@ -2397,10 +2262,9 @@ export function HistopathologyView({
     if (specimenSummaries.length > 0 && selectedSpecimen === null) {
       const top = specimenSummaries[0].specimen;
       setSelectedSpecimen(top);
-      const sel = { finding: "", specimen: top };
-      onSelectionChange?.({ finding: "", specimen: top });
-      // Don't set finding-level selection; just set specimen for context panel awareness
-      void sel;
+      const sel: HistopathSelection = { specimen: top };
+      setSelection(sel);
+      onSelectionChange?.(sel);
     }
   }, [specimenSummaries]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2438,8 +2302,10 @@ export function HistopathologyView({
     setSelectedSpecimen(specimen);
     setSexFilter(null);
     setMinSeverity(0);
-    setSelection(null);
-    onSelectionChange?.(null);
+    // Specimen-level selection (no finding) → context panel shows specimen overview
+    const sel: HistopathSelection = { specimen };
+    setSelection(sel);
+    onSelectionChange?.(sel);
   };
 
   const handleRowClick = (row: LesionSeverityRow) => {
@@ -2521,15 +2387,6 @@ export function HistopathologyView({
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
         {selectedSummary && (
           <>
-            {/* Summary header */}
-            <SpecimenHeader
-              summary={selectedSummary}
-              specimenData={specimenData}
-              specimenRules={specimenRules}
-              pathReviews={pathReviews}
-              findingNames={findingNamesBySpecimen.get(selectedSummary.specimen) ?? []}
-            />
-
             {/* Tab bar */}
             <ViewTabBar
               tabs={[

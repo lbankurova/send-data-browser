@@ -309,11 +309,17 @@ function ValidationContextPanelWrapper({ studyId }: { studyId: string }) {
 }
 
 function HistopathologyContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection } = useViewSelection();
+  const { selection, setSelection } = useViewSelection();
   const { data: lesionData } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
 
-  const sel = selection?._view === "histopathology" ? selection as { finding: string; specimen: string; sex?: string } : null;
+  const sel = selection?._view === "histopathology"
+    ? selection as { specimen: string; finding?: string; sex?: string }
+    : null;
+
+  const handleFindingSelect = (finding: string, specimen: string) => {
+    setSelection({ _view: "histopathology", specimen, finding });
+  };
 
   return (
     <HistopathologyContextPanel
@@ -321,6 +327,7 @@ function HistopathologyContextPanelWrapper({ studyId }: { studyId: string }) {
       ruleResults={ruleResults ?? []}
       selection={sel}
       studyId={studyId}
+      onFindingSelect={handleFindingSelect}
     />
   );
 }
