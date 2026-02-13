@@ -19,7 +19,7 @@ import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterSelect, FilterMultiSelect, FilterSearch, FilterShowingLine } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseLabel, DoseHeader } from "@/components/ui/DoseLabel";
-import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor } from "@/lib/severity-colors";
+import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { ViewSection } from "@/components/ui/ViewSection";
@@ -362,6 +362,7 @@ function SpecimenRailItem({
         <span
           className={cn(
             "w-7 shrink-0 text-right text-[9px]",
+            getDoseConsistencyWeight(summary.doseConsistency),
             summary.doseConsistency === "Strong" ? "text-muted-foreground" :
             summary.doseConsistency === "Moderate" ? "text-muted-foreground/60" :
             "text-muted-foreground/30"
@@ -800,7 +801,10 @@ function OverviewTab({
         minSize: 48,
         maxSize: 100,
         cell: (info) => (
-          <span className="rounded-sm border border-border px-1 py-px text-[9px] font-medium text-muted-foreground">
+          <span
+            className="inline-block border-l-2 pl-1.5 py-px text-[9px] font-medium text-gray-600"
+            style={{ borderLeftColor: info.getValue() === "adverse" ? "#dc2626" : info.getValue() === "warning" ? "#d97706" : "#16a34a" }}
+          >
             {info.getValue()}
           </span>
         ),
@@ -1650,7 +1654,13 @@ function MetricsTab({
           </span>
         ),
       }),
-      col.accessor("domain", { header: "Domain", size: 55, minSize: 40, maxSize: 80 }),
+      col.accessor("domain", {
+        header: "Domain",
+        size: 55,
+        minSize: 40,
+        maxSize: 80,
+        cell: (info) => <DomainLabel domain={info.getValue()} />,
+      }),
       col.accessor("dose_level", {
         header: "Dose",
         size: 80,
@@ -1705,7 +1715,10 @@ function MetricsTab({
         minSize: 60,
         maxSize: 120,
         cell: (info) => (
-          <span className="inline-block rounded-sm border border-border px-1 py-px text-[10px] font-medium text-muted-foreground">
+          <span
+            className="inline-block border-l-2 pl-1.5 py-px text-[10px] font-medium text-gray-600"
+            style={{ borderLeftColor: info.getValue() === "adverse" ? "#dc2626" : info.getValue() === "warning" ? "#d97706" : "#16a34a" }}
+          >
             {info.getValue()}
           </span>
         ),

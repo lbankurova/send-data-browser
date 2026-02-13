@@ -44,8 +44,8 @@ function FindingItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 px-2 py-1 transition-colors",
-        isSelected ? "bg-blue-50/60 dark:bg-blue-950/20" : "hover:bg-accent/30",
+        "w-full text-left border-b border-border/40 border-l-2 px-2 py-1 transition-colors",
+        isSelected ? "border-l-primary bg-blue-50/80 dark:bg-blue-950/30" : "border-l-transparent hover:bg-accent/30",
       )}
       onClick={onClick}
     >

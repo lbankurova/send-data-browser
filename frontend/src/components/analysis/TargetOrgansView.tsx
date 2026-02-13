@@ -20,6 +20,7 @@ import {
   formatPValue,
   formatEffectSize,
   getDirectionSymbol,
+  getDoseConsistencyWeight,
   titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -177,10 +178,10 @@ function OrganListItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 px-3 py-2 transition-colors",
+        "w-full text-left border-b border-border/40 border-l-2 px-3 py-2 transition-colors",
         isSelected
-          ? "bg-accent"
-          : "hover:bg-accent/30"
+          ? "border-l-primary bg-blue-50/80 dark:bg-blue-950/30"
+          : "border-l-transparent hover:bg-accent/30"
       )}
       onClick={onClick}
     >
@@ -237,7 +238,7 @@ function OrganListItem({
               |d|={stats.maxEffectSize.toFixed(2)}
             </span>
           )}
-          <span className="text-[9px] text-muted-foreground">
+          <span className={cn("text-[9px] text-muted-foreground", getDoseConsistencyWeight(stats.doseConsistency))}>
             {stats.doseConsistency}
           </span>
         </div>
@@ -418,7 +419,7 @@ function OrganSummaryHeader({
         </span>
         <span>
           <span className="text-muted-foreground">Dose consistency: </span>
-          <span className="font-medium">
+          <span className={getDoseConsistencyWeight(localStats.doseConsistency)}>
             {localStats.doseConsistency}
           </span>
         </span>
@@ -547,7 +548,7 @@ function OverviewTab({
         contentRef={domainsSection.contentRef}
         expandGen={expandGen}
         collapseGen={collapseGen}
-        headerRight={<span className="text-[10px] text-muted-foreground">Dose consistency: {getDoseConsistency(evidenceRows)}</span>}
+        headerRight={<span className="text-[10px] text-muted-foreground">Dose consistency: <span className={getDoseConsistencyWeight(getDoseConsistency(evidenceRows))}>{getDoseConsistency(evidenceRows)}</span></span>}
       >
       <div className="px-4 py-2">
         <table className="w-full text-xs">

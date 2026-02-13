@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils";
 import {
-  getSeverityBadgeClasses,
+  getSeverityDotColor,
   formatPValue,
   formatEffectSize,
   getDirectionSymbol,
   getDirectionColor,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
+import { DoseHeader } from "@/components/ui/DoseLabel";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
@@ -30,12 +31,15 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
             {doseGroups.map((dg) => (
               <th
                 key={dg.dose_level}
-                className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                className="px-2 py-1.5 text-right text-[10px] font-semibold tracking-wider text-muted-foreground"
                 title={dg.label}
               >
-                {dg.dose_value != null
-                  ? `${dg.dose_value}${dg.dose_unit ? ` ${dg.dose_unit}` : ""}`
-                  : dg.label}
+                <DoseHeader
+                  level={dg.dose_level}
+                  label={dg.dose_value != null
+                    ? `${dg.dose_value}${dg.dose_unit ? ` ${dg.dose_unit}` : ""}`
+                    : dg.label}
+                />
               </th>
             ))}
             <th className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">p-value</th>
@@ -150,10 +154,8 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                 {/* Severity */}
                 <td className="px-2 py-1 text-center">
                   <span
-                    className={cn(
-                      "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-semibold",
-                      getSeverityBadgeClasses(f.severity)
-                    )}
+                    className="inline-block border-l-2 pl-1.5 py-0.5 text-[10px] font-semibold text-gray-600"
+                    style={{ borderLeftColor: getSeverityDotColor(f.severity) }}
                   >
                     {f.severity}
                   </span>
