@@ -60,6 +60,8 @@ function ruleCategory(r: RuleResult): FindingCategory {
       return r.severity === "warning" ? "adverse" : "info";
     case "R18":
     case "R19":
+      // Protective exclusion: backend flags excluded findings
+      if (r.params?.protective_excluded) return "info";
       return "protective";
     case "R01":
     case "R03":

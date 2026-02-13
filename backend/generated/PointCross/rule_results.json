@@ -11053,7 +11053,7 @@
     "severity": "info",
     "context_key": "MI_BONE MARROW, FEMUR_FAT VACUOLES_F",
     "organ_system": "hematologic",
-    "output_text": "Decreased incidence of FAT VACUOLES in BONE MARROW, FEMUR with treatment (F): 100% in controls vs 20% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "FAT VACUOLES in BONE MARROW, FEMUR: decreased incidence noted but excluded from protective classification (PEX06).",
     "evidence_refs": [
       "MI: BONE MARROW, FEMUR \u2014 FAT VACUOLES (F)"
     ],
@@ -11075,7 +11075,9 @@
       "n_affected": 16,
       "max_n": 15,
       "ctrl_pct": "100",
-      "high_pct": "20"
+      "high_pct": "20",
+      "protective_excluded": true,
+      "exclusion_id": "PEX06"
     }
   },
   {
@@ -11084,7 +11086,7 @@
     "severity": "info",
     "context_key": "MI_BONE MARROW, FEMUR_FAT VACUOLES_F",
     "organ_system": "hematologic",
-    "output_text": "FAT VACUOLES in BONE MARROW, FEMUR: high baseline incidence (100% control) with dose-dependent decrease suggests a potential protective or therapeutic effect. Consider relevance to drug repurposing \u2014 compound activity against this pathology may indicate utility in related disease contexts.",
+    "output_text": "FAT VACUOLES in BONE MARROW, FEMUR: decreased incidence noted but excluded from protective classification (PEX06).",
     "evidence_refs": [
       "MI: BONE MARROW, FEMUR \u2014 FAT VACUOLES (F)"
     ],
@@ -11106,7 +11108,9 @@
       "n_affected": 16,
       "max_n": 15,
       "ctrl_pct": "100",
-      "high_pct": "20"
+      "high_pct": "20",
+      "protective_excluded": true,
+      "exclusion_id": "PEX06"
     }
   },
   {
@@ -11261,7 +11265,7 @@
     "severity": "info",
     "context_key": "MI_BONE MARROW, FEMUR_FAT VACUOLES_M",
     "organ_system": "hematologic",
-    "output_text": "Decreased incidence of FAT VACUOLES in BONE MARROW, FEMUR with treatment (M): 100% in controls vs 20% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "FAT VACUOLES in BONE MARROW, FEMUR: decreased incidence noted but excluded from protective classification (PEX06).",
     "evidence_refs": [
       "MI: BONE MARROW, FEMUR \u2014 FAT VACUOLES (M)"
     ],
@@ -11283,7 +11287,9 @@
       "n_affected": 16,
       "max_n": 15,
       "ctrl_pct": "100",
-      "high_pct": "20"
+      "high_pct": "20",
+      "protective_excluded": true,
+      "exclusion_id": "PEX06"
     }
   },
   {
@@ -11292,7 +11298,7 @@
     "severity": "info",
     "context_key": "MI_BONE MARROW, FEMUR_FAT VACUOLES_M",
     "organ_system": "hematologic",
-    "output_text": "FAT VACUOLES in BONE MARROW, FEMUR: high baseline incidence (100% control) with dose-dependent decrease suggests a potential protective or therapeutic effect. Consider relevance to drug repurposing \u2014 compound activity against this pathology may indicate utility in related disease contexts.",
+    "output_text": "FAT VACUOLES in BONE MARROW, FEMUR: decreased incidence noted but excluded from protective classification (PEX06).",
     "evidence_refs": [
       "MI: BONE MARROW, FEMUR \u2014 FAT VACUOLES (M)"
     ],
@@ -11314,7 +11320,9 @@
       "n_affected": 16,
       "max_n": 15,
       "ctrl_pct": "100",
-      "high_pct": "20"
+      "high_pct": "20",
+      "protective_excluded": true,
+      "exclusion_id": "PEX06"
     }
   },
   {
@@ -11738,7 +11746,7 @@
   {
     "rule_id": "R07",
     "scope": "endpoint",
-    "severity": "info",
+    "severity": "warning",
     "context_key": "MI_EPIDIDYMIS_ASPERMIA_M",
     "organ_system": "reproductive",
     "output_text": "EPIDIDYMIS \u2014 ASPERMIA: inconsistent dose-response in M.",
@@ -11761,7 +11769,10 @@
       "trend_p": 0.6132417445640952,
       "effect_size": null,
       "n_affected": 3,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "Sentinel",
+      "catalog_id": "C01",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -11830,7 +11841,7 @@
     "severity": "info",
     "context_key": "MI_ESOPHAGUS_INFLAMMATION_M",
     "organ_system": "gastrointestinal",
-    "output_text": "Decreased incidence of INFLAMMATION in ESOPHAGUS with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "INFLAMMATION in ESOPHAGUS: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MI: ESOPHAGUS \u2014 INFLAMMATION (M)"
     ],
@@ -11852,7 +11863,9 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -12099,7 +12112,7 @@
     "severity": "info",
     "context_key": "MI_EYE_RETINAL FOLD(S)_F",
     "organ_system": "ocular",
-    "output_text": "Decreased incidence of RETINAL FOLD(S) in EYE with treatment (F): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "RETINAL FOLD(S) in EYE: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MI: EYE \u2014 RETINAL FOLD(S) (F)"
     ],
@@ -12121,7 +12134,9 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -12190,7 +12205,7 @@
     "severity": "info",
     "context_key": "MI_EYE_RETINAL FOLD(S)_M",
     "organ_system": "ocular",
-    "output_text": "Decreased incidence of RETINAL FOLD(S) in EYE with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "RETINAL FOLD(S) in EYE: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MI: EYE \u2014 RETINAL FOLD(S) (M)"
     ],
@@ -12212,7 +12227,9 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -13275,7 +13292,7 @@
     "severity": "info",
     "context_key": "MI_GLAND, PITUITARY_CYST_F",
     "organ_system": "general",
-    "output_text": "Decreased incidence of CYST in GLAND, PITUITARY with treatment (F): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "CYST in GLAND, PITUITARY: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MI: GLAND, PITUITARY \u2014 CYST (F)"
     ],
@@ -13297,7 +13314,9 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -13366,7 +13385,7 @@
     "severity": "info",
     "context_key": "MI_GLAND, PITUITARY_CYST_M",
     "organ_system": "general",
-    "output_text": "Decreased incidence of CYST in GLAND, PITUITARY with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "CYST in GLAND, PITUITARY: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MI: GLAND, PITUITARY \u2014 CYST (M)"
     ],
@@ -13388,7 +13407,9 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -13455,7 +13476,7 @@
     "severity": "info",
     "context_key": "MI_GLAND, PROSTATE_INFLAMMATION_M",
     "organ_system": "general",
-    "output_text": "Decreased incidence of INFLAMMATION in GLAND, PROSTATE with treatment (M): 50% in controls vs 47% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "INFLAMMATION in GLAND, PROSTATE: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: GLAND, PROSTATE \u2014 INFLAMMATION (M)"
     ],
@@ -13477,7 +13498,9 @@
       "n_affected": 18,
       "max_n": 15,
       "ctrl_pct": "50",
-      "high_pct": "47"
+      "high_pct": "47",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -13958,7 +13981,7 @@
     "severity": "info",
     "context_key": "MI_GLAND, THYROID_ECTOPIC LYMPHOID TISSUE_F",
     "organ_system": "general",
-    "output_text": "Decreased incidence of ECTOPIC LYMPHOID TISSUE in GLAND, THYROID with treatment (F): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "ECTOPIC LYMPHOID TISSUE in GLAND, THYROID: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: GLAND, THYROID \u2014 ECTOPIC LYMPHOID TISSUE (F)"
     ],
@@ -13980,7 +14003,9 @@
       "n_affected": 3,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -14047,7 +14072,7 @@
     "severity": "info",
     "context_key": "MI_GLAND, THYROID_ECTOPIC LYMPHOID TISSUE_M",
     "organ_system": "general",
-    "output_text": "Decreased incidence of ECTOPIC LYMPHOID TISSUE in GLAND, THYROID with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "ECTOPIC LYMPHOID TISSUE in GLAND, THYROID: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: GLAND, THYROID \u2014 ECTOPIC LYMPHOID TISSUE (M)"
     ],
@@ -14069,7 +14094,9 @@
       "n_affected": 3,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -14167,7 +14194,7 @@
     "severity": "info",
     "context_key": "MI_GLAND, THYROID_HYPERPLASIA_F",
     "organ_system": "general",
-    "output_text": "Decreased incidence of HYPERPLASIA in GLAND, THYROID with treatment (F): 20% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "HYPERPLASIA in GLAND, THYROID: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MI: GLAND, THYROID \u2014 HYPERPLASIA (F)"
     ],
@@ -14189,7 +14216,9 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "20",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -15320,7 +15349,7 @@
     "severity": "info",
     "context_key": "MI_KIDNEY_CYST_F",
     "organ_system": "renal",
-    "output_text": "Decreased incidence of CYST in KIDNEY with treatment (F): 10% in controls vs 7% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "CYST in KIDNEY: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: KIDNEY \u2014 CYST (F)"
     ],
@@ -15342,7 +15371,9 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "7"
+      "high_pct": "7",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -15409,7 +15440,7 @@
     "severity": "info",
     "context_key": "MI_KIDNEY_CYST_M",
     "organ_system": "renal",
-    "output_text": "Decreased incidence of CYST in KIDNEY with treatment (M): 10% in controls vs 7% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "CYST in KIDNEY: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: KIDNEY \u2014 CYST (M)"
     ],
@@ -15431,7 +15462,9 @@
       "n_affected": 3,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "7"
+      "high_pct": "7",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -15498,7 +15531,7 @@
     "severity": "info",
     "context_key": "MI_KIDNEY_INFLAMMATION_F",
     "organ_system": "renal",
-    "output_text": "Decreased incidence of INFLAMMATION in KIDNEY with treatment (F): 20% in controls vs 7% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "INFLAMMATION in KIDNEY: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: KIDNEY \u2014 INFLAMMATION (F)"
     ],
@@ -15520,7 +15553,9 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "20",
-      "high_pct": "7"
+      "high_pct": "7",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -15587,7 +15622,7 @@
     "severity": "info",
     "context_key": "MI_KIDNEY_INFLAMMATION_M",
     "organ_system": "renal",
-    "output_text": "Decreased incidence of INFLAMMATION in KIDNEY with treatment (M): 20% in controls vs 7% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "INFLAMMATION in KIDNEY: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: KIDNEY \u2014 INFLAMMATION (M)"
     ],
@@ -15609,7 +15644,9 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "20",
-      "high_pct": "7"
+      "high_pct": "7",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -15792,7 +15829,7 @@
     "severity": "info",
     "context_key": "MI_LARYNX_INFLAMMATION_F",
     "organ_system": "respiratory",
-    "output_text": "Decreased incidence of INFLAMMATION in LARYNX with treatment (F): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "INFLAMMATION in LARYNX: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: LARYNX \u2014 INFLAMMATION (F)"
     ],
@@ -15814,7 +15851,9 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -15881,7 +15920,7 @@
     "severity": "info",
     "context_key": "MI_LARYNX_INFLAMMATION_M",
     "organ_system": "respiratory",
-    "output_text": "Decreased incidence of INFLAMMATION in LARYNX with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "INFLAMMATION in LARYNX: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: LARYNX \u2014 INFLAMMATION (M)"
     ],
@@ -15903,7 +15942,9 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -15932,13 +15973,16 @@
       "trend_p": 0.06583524760876891,
       "effect_size": null,
       "n_affected": 2,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ContextDependent",
+      "catalog_id": "C05",
+      "clinical_confidence": "Low"
     }
   },
   {
     "rule_id": "R06",
     "scope": "endpoint",
-    "severity": "info",
+    "severity": "warning",
     "context_key": "MI_LIVER_HEPATOCELLULAR CARCINOMA_M",
     "organ_system": "hepatic",
     "output_text": "LIVER \u2014 HEPATOCELLULAR CARCINOMA: threshold pattern in M.",
@@ -15961,7 +16005,10 @@
       "trend_p": 0.19751855128761941,
       "effect_size": null,
       "n_affected": 1,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "Sentinel",
+      "catalog_id": "C04",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -15990,7 +16037,10 @@
       "trend_p": 2.8060298010945672e-05,
       "effect_size": 2.56,
       "n_affected": 9,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16019,7 +16069,10 @@
       "trend_p": 2.8060298010945672e-05,
       "effect_size": 2.56,
       "n_affected": 9,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16048,7 +16101,10 @@
       "trend_p": 2.8060298010945672e-05,
       "effect_size": 2.56,
       "n_affected": 9,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16077,7 +16133,10 @@
       "trend_p": 2.8060298010945672e-05,
       "effect_size": 2.56,
       "n_affected": 9,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16106,7 +16165,10 @@
       "trend_p": 2.8060298010945672e-05,
       "effect_size": 2.56,
       "n_affected": 9,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16135,7 +16197,10 @@
       "trend_p": 2.8060298010945672e-05,
       "effect_size": 2.56,
       "n_affected": 9,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16164,7 +16229,10 @@
       "trend_p": 0.0009207662070622735,
       "effect_size": 2.4,
       "n_affected": 6,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16193,7 +16261,10 @@
       "trend_p": 0.0009207662070622735,
       "effect_size": 2.4,
       "n_affected": 6,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16222,7 +16293,10 @@
       "trend_p": 0.0009207662070622735,
       "effect_size": 2.4,
       "n_affected": 6,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16251,7 +16325,10 @@
       "trend_p": 0.0009207662070622735,
       "effect_size": 2.4,
       "n_affected": 6,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16280,7 +16357,10 @@
       "trend_p": 0.0009207662070622735,
       "effect_size": 2.4,
       "n_affected": 6,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "ModerateConcern",
+      "catalog_id": "C14",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16402,7 +16482,7 @@
   {
     "rule_id": "R07",
     "scope": "endpoint",
-    "severity": "info",
+    "severity": "warning",
     "context_key": "MI_LIVER_NECROSIS_F",
     "organ_system": "hepatic",
     "output_text": "LIVER \u2014 NECROSIS: inconsistent dose-response in F.",
@@ -16425,7 +16505,10 @@
       "trend_p": 0.0903301042981417,
       "effect_size": 2.0,
       "n_affected": 6,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "HighConcern",
+      "catalog_id": "C08",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16454,13 +16537,16 @@
       "trend_p": 0.0903301042981417,
       "effect_size": 2.0,
       "n_affected": 6,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "HighConcern",
+      "catalog_id": "C08",
+      "clinical_confidence": "Medium"
     }
   },
   {
     "rule_id": "R07",
     "scope": "endpoint",
-    "severity": "info",
+    "severity": "warning",
     "context_key": "MI_LIVER_NECROSIS_M",
     "organ_system": "hepatic",
     "output_text": "LIVER \u2014 NECROSIS: inconsistent dose-response in M.",
@@ -16483,7 +16569,10 @@
       "trend_p": 0.21580818544632896,
       "effect_size": 2.0,
       "n_affected": 5,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "HighConcern",
+      "catalog_id": "C08",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16512,7 +16601,10 @@
       "trend_p": 0.21580818544632896,
       "effect_size": 2.0,
       "n_affected": 5,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "HighConcern",
+      "catalog_id": "C08",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -16873,7 +16965,7 @@
     "severity": "info",
     "context_key": "MI_LUNG_INFILTRATION GRANULOCYTIC_F",
     "organ_system": "respiratory",
-    "output_text": "Decreased incidence of INFILTRATION GRANULOCYTIC in LUNG with treatment (F): 20% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "INFILTRATION GRANULOCYTIC in LUNG: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: LUNG \u2014 INFILTRATION GRANULOCYTIC (F)"
     ],
@@ -16895,7 +16987,9 @@
       "n_affected": 4,
       "max_n": 15,
       "ctrl_pct": "20",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -16962,7 +17056,7 @@
     "severity": "info",
     "context_key": "MI_LUNG_INFILTRATION GRANULOCYTIC_M",
     "organ_system": "respiratory",
-    "output_text": "Decreased incidence of INFILTRATION GRANULOCYTIC in LUNG with treatment (M): 20% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "INFILTRATION GRANULOCYTIC in LUNG: decreased incidence noted but excluded from protective classification (PEX07).",
     "evidence_refs": [
       "MI: LUNG \u2014 INFILTRATION GRANULOCYTIC (M)"
     ],
@@ -16984,7 +17078,9 @@
       "n_affected": 4,
       "max_n": 15,
       "ctrl_pct": "20",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX07"
     }
   },
   {
@@ -18067,7 +18163,10 @@
       "trend_p": 0.19751855128761941,
       "effect_size": 2.0,
       "n_affected": 1,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "HighConcern",
+      "catalog_id": "C13",
+      "clinical_confidence": "Low"
     }
   },
   {
@@ -18098,7 +18197,10 @@
       "n_affected": 1,
       "max_n": 15,
       "dampened": true,
-      "dampening_reason": "single_affected"
+      "dampening_reason": "single_affected",
+      "clinical_class": "HighConcern",
+      "catalog_id": "C13",
+      "clinical_confidence": "Low"
     }
   },
   {
@@ -18127,7 +18229,10 @@
       "trend_p": 0.19751855128761941,
       "effect_size": 2.0,
       "n_affected": 1,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "HighConcern",
+      "catalog_id": "C13",
+      "clinical_confidence": "Low"
     }
   },
   {
@@ -18156,7 +18261,10 @@
       "trend_p": 0.19751855128761941,
       "effect_size": 2.0,
       "n_affected": 1,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "HighConcern",
+      "catalog_id": "C13",
+      "clinical_confidence": "Low"
     }
   },
   {
@@ -18187,7 +18295,10 @@
       "n_affected": 1,
       "max_n": 15,
       "dampened": true,
-      "dampening_reason": "single_affected"
+      "dampening_reason": "single_affected",
+      "clinical_class": "HighConcern",
+      "catalog_id": "C13",
+      "clinical_confidence": "Low"
     }
   },
   {
@@ -18216,7 +18327,10 @@
       "trend_p": 0.19751855128761941,
       "effect_size": 2.0,
       "n_affected": 1,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "HighConcern",
+      "catalog_id": "C13",
+      "clinical_confidence": "Low"
     }
   },
   {
@@ -18748,7 +18862,7 @@
   {
     "rule_id": "R07",
     "scope": "endpoint",
-    "severity": "info",
+    "severity": "warning",
     "context_key": "MI_TESTIS_ATROPHY_M",
     "organ_system": "reproductive",
     "output_text": "TESTIS \u2014 ATROPHY: inconsistent dose-response in M.",
@@ -18771,13 +18885,16 @@
       "trend_p": 0.5475924666383167,
       "effect_size": 4.0,
       "n_affected": 1,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "Sentinel",
+      "catalog_id": "C01",
+      "clinical_confidence": "Medium"
     }
   },
   {
     "rule_id": "R10",
     "scope": "endpoint",
-    "severity": "info",
+    "severity": "warning",
     "context_key": "MI_TESTIS_ATROPHY_M",
     "organ_system": "reproductive",
     "output_text": "TESTIS \u2014 ATROPHY: Cohen's d = 4.00 at high dose in M.",
@@ -18801,8 +18918,11 @@
       "effect_size": 4.0,
       "n_affected": 1,
       "max_n": 15,
-      "dampened": true,
-      "dampening_reason": "single_affected"
+      "dampened": false,
+      "dampening_reason": null,
+      "clinical_class": "Sentinel",
+      "catalog_id": "C01",
+      "clinical_confidence": "Medium"
     }
   },
   {
@@ -19016,7 +19136,7 @@
     "severity": "info",
     "context_key": "MI_TRACHEA_DILATATION_F",
     "organ_system": "respiratory",
-    "output_text": "Decreased incidence of DILATATION in TRACHEA with treatment (F): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "DILATATION in TRACHEA: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MI: TRACHEA \u2014 DILATATION (F)"
     ],
@@ -19038,7 +19158,9 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -19107,7 +19229,7 @@
     "severity": "info",
     "context_key": "MI_TRACHEA_DILATATION_M",
     "organ_system": "respiratory",
-    "output_text": "Decreased incidence of DILATATION in TRACHEA with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "DILATATION in TRACHEA: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MI: TRACHEA \u2014 DILATATION (M)"
     ],
@@ -19129,7 +19251,9 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -19314,7 +19438,7 @@
     "severity": "info",
     "context_key": "MI_URINARY BLADDER_INFLAMMATION_F",
     "organ_system": "renal",
-    "output_text": "Decreased incidence of INFLAMMATION in URINARY BLADDER with treatment (F): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "INFLAMMATION in URINARY BLADDER: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MI: URINARY BLADDER \u2014 INFLAMMATION (F)"
     ],
@@ -19336,7 +19460,9 @@
       "n_affected": 1,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -19405,7 +19531,7 @@
     "severity": "info",
     "context_key": "MI_URINARY BLADDER_INFLAMMATION_M",
     "organ_system": "renal",
-    "output_text": "Decreased incidence of INFLAMMATION in URINARY BLADDER with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "INFLAMMATION in URINARY BLADDER: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MI: URINARY BLADDER \u2014 INFLAMMATION (M)"
     ],
@@ -19427,7 +19553,9 @@
       "n_affected": 1,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -19552,7 +19680,7 @@
     "severity": "info",
     "context_key": "MA_EPIDIDYMIS_SMALL_M",
     "organ_system": "reproductive",
-    "output_text": "Decreased incidence of SMALL in EPIDIDYMIS with treatment (M): 20% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "SMALL in EPIDIDYMIS: decreased incidence noted but excluded from protective classification (PEX01).",
     "evidence_refs": [
       "MA: EPIDIDYMIS \u2014 SMALL (M)"
     ],
@@ -19574,7 +19702,9 @@
       "n_affected": 1,
       "max_n": 15,
       "ctrl_pct": "20",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX01"
     }
   },
   {
@@ -19603,7 +19733,10 @@
       "trend_p": 0.12201178788406808,
       "effect_size": null,
       "n_affected": 0,
-      "max_n": 15
+      "max_n": 15,
+      "clinical_class": "Sentinel",
+      "catalog_id": "C12",
+      "clinical_confidence": "Low"
     }
   },
   {
@@ -19612,7 +19745,7 @@
     "severity": "info",
     "context_key": "MA_ESOPHAGUS_PERFORATION_M",
     "organ_system": "gastrointestinal",
-    "output_text": "Decreased incidence of PERFORATION in ESOPHAGUS with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "PERFORATION in ESOPHAGUS: decreased incidence noted but excluded from protective classification (PEX04).",
     "evidence_refs": [
       "MA: ESOPHAGUS \u2014 PERFORATION (M)"
     ],
@@ -19634,7 +19767,12 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX04",
+      "clinical_class": "Sentinel",
+      "catalog_id": "C12",
+      "clinical_confidence": "Low"
     }
   },
   {
@@ -19759,7 +19897,7 @@
     "severity": "info",
     "context_key": "MA_GLAND, ADRENAL_ENLARGED_M",
     "organ_system": "general",
-    "output_text": "Decreased incidence of ENLARGED in GLAND, ADRENAL with treatment (M): 20% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "ENLARGED in GLAND, ADRENAL: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MA: GLAND, ADRENAL \u2014 ENLARGED (M)"
     ],
@@ -19781,7 +19919,9 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "20",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -19848,7 +19988,7 @@
     "severity": "info",
     "context_key": "MA_GLAND, COAGULATING_SMALL_M",
     "organ_system": "general",
-    "output_text": "Decreased incidence of SMALL in GLAND, COAGULATING with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "SMALL in GLAND, COAGULATING: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MA: GLAND, COAGULATING \u2014 SMALL (M)"
     ],
@@ -19870,7 +20010,9 @@
       "n_affected": 1,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -19908,7 +20050,7 @@
     "severity": "info",
     "context_key": "MA_GLAND, SEMINAL VESICLE_SMALL_M",
     "organ_system": "general",
-    "output_text": "Decreased incidence of SMALL in GLAND, SEMINAL VESICLE with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "SMALL in GLAND, SEMINAL VESICLE: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MA: GLAND, SEMINAL VESICLE \u2014 SMALL (M)"
     ],
@@ -19930,7 +20072,9 @@
       "n_affected": 1,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -19997,7 +20141,7 @@
     "severity": "info",
     "context_key": "MA_GLAND, THYROID_ENLARGED_F",
     "organ_system": "general",
-    "output_text": "Decreased incidence of ENLARGED in GLAND, THYROID with treatment (F): 20% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "ENLARGED in GLAND, THYROID: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MA: GLAND, THYROID \u2014 ENLARGED (F)"
     ],
@@ -20019,7 +20163,9 @@
       "n_affected": 1,
       "max_n": 15,
       "ctrl_pct": "20",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -20115,7 +20261,7 @@
     "severity": "info",
     "context_key": "MA_HINDLIMB_HARD THICKENING_M",
     "organ_system": "general",
-    "output_text": "Decreased incidence of HARD THICKENING in HINDLIMB with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "HARD THICKENING in HINDLIMB: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MA: HINDLIMB \u2014 HARD THICKENING (M)"
     ],
@@ -20137,7 +20283,9 @@
       "n_affected": 1,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -20204,7 +20352,7 @@
     "severity": "info",
     "context_key": "MA_HINDLIMB_SWELLING_F",
     "organ_system": "general",
-    "output_text": "Decreased incidence of SWELLING in HINDLIMB with treatment (F): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "SWELLING in HINDLIMB: decreased incidence noted but excluded from protective classification (PEX05).",
     "evidence_refs": [
       "MA: HINDLIMB \u2014 SWELLING (F)"
     ],
@@ -20226,7 +20374,9 @@
       "n_affected": 0,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX05"
     }
   },
   {
@@ -20960,7 +21110,7 @@
     "severity": "info",
     "context_key": "MA_LYMPH NODE, MESENTERIC_DISCOLORATION_F",
     "organ_system": "hematologic",
-    "output_text": "Decreased incidence of DISCOLORATION in LYMPH NODE, MESENTERIC with treatment (F): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "DISCOLORATION in LYMPH NODE, MESENTERIC: decreased incidence noted but excluded from protective classification (PEX06).",
     "evidence_refs": [
       "MA: LYMPH NODE, MESENTERIC \u2014 DISCOLORATION (F)"
     ],
@@ -20982,7 +21132,9 @@
       "n_affected": 1,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX06"
     }
   },
   {
@@ -21832,7 +21984,7 @@
     "severity": "info",
     "context_key": "MA_TESTIS_SMALL_M",
     "organ_system": "reproductive",
-    "output_text": "Decreased incidence of SMALL in TESTIS with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "SMALL in TESTIS: decreased incidence noted but excluded from protective classification (PEX01).",
     "evidence_refs": [
       "MA: TESTIS \u2014 SMALL (M)"
     ],
@@ -21854,7 +22006,9 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX01"
     }
   },
   {
@@ -21892,7 +22046,7 @@
     "severity": "info",
     "context_key": "MA_TESTIS_SOFT_M",
     "organ_system": "reproductive",
-    "output_text": "Decreased incidence of SOFT in TESTIS with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "SOFT in TESTIS: decreased incidence noted but excluded from protective classification (PEX01).",
     "evidence_refs": [
       "MA: TESTIS \u2014 SOFT (M)"
     ],
@@ -21914,7 +22068,9 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0"
+      "high_pct": "0",
+      "protective_excluded": true,
+      "exclusion_id": "PEX01"
     }
   },
   {
@@ -21981,7 +22137,7 @@
     "severity": "info",
     "context_key": "MA_THYMUS_SMALL_M",
     "organ_system": "hematologic",
-    "output_text": "Decreased incidence of SMALL in THYMUS with treatment (M): 10% in controls vs 7% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
+    "output_text": "SMALL in THYMUS: decreased incidence noted but excluded from protective classification (PEX06).",
     "evidence_refs": [
       "MA: THYMUS \u2014 SMALL (M)"
     ],
@@ -22003,7 +22159,9 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "7"
+      "high_pct": "7",
+      "protective_excluded": true,
+      "exclusion_id": "PEX06"
     }
   },
   {
