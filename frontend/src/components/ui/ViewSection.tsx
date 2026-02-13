@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { HorizontalResizeHandle } from "@/components/ui/PanelResizeHandle";
 
 interface ViewSectionBaseProps {
-  title: string;
+  title: ReactNode;
   headerRight?: ReactNode;
   children: ReactNode;
   defaultOpen?: boolean;
