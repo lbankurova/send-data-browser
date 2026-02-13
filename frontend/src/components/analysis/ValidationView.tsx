@@ -100,10 +100,10 @@ export function extractRuleDetail(rule: ValidationRuleResult): RuleDetail {
 
 // ── Severity styles ────────────────────────────────────────────────────
 
-const SEVERITY_STYLES: Record<string, string> = {
-  Error: "bg-gray-100 text-gray-600 border-gray-200",
-  Warning: "bg-gray-100 text-gray-600 border-gray-200",
-  Info: "bg-gray-100 text-gray-600 border-gray-200",
+const SEVERITY_BORDER_COLORS: Record<string, string> = {
+  Error: "#dc2626",
+  Warning: "#d97706",
+  Info: "#16a34a",
 };
 
 // ── Fix & Review status badges ─────────────────────────────────────────
@@ -159,7 +159,10 @@ const ruleColumns = [
     cell: (info) => {
       const sev = info.getValue();
       return (
-        <span className={cn("inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold", SEVERITY_STYLES[sev])}>
+        <span
+          className="inline-block border-l-2 pl-1.5 py-0.5 text-[10px] font-semibold text-gray-600"
+          style={{ borderLeftColor: SEVERITY_BORDER_COLORS[sev] ?? "#6B7280" }}
+        >
           {sev}
         </span>
       );

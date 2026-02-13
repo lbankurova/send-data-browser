@@ -21,11 +21,10 @@ export function TreatmentRelatedSummaryPane({ data }: Props) {
           {data.treatment_related ? "Treatment-related" : "Not treatment-related"}
         </span>
         <span className="text-muted-foreground">·</span>
-        <span className="inline-flex items-center gap-1 text-muted-foreground">
-          <span
-            className="inline-block h-1.5 w-1.5 rounded-full"
-            style={{ background: getSeverityDotColor(data.severity) }}
-          />
+        <span
+          className="font-medium"
+          style={{ color: getSeverityDotColor(data.severity) }}
+        >
           {data.severity}
         </span>
       </div>
@@ -35,17 +34,14 @@ export function TreatmentRelatedSummaryPane({ data }: Props) {
         <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Study-wide severity
         </div>
-        <div className="flex gap-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#dc2626" }} />
+        <div className="flex gap-3 text-xs">
+          <span style={{ color: "#dc2626" }}>
             {data.severity_counts.adverse ?? 0} adverse
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#d97706" }} />
+          <span style={{ color: "#d97706" }}>
             {data.severity_counts.warning ?? 0} warning
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#16a34a" }} />
+          <span style={{ color: "#16a34a" }}>
             {data.severity_counts.normal ?? 0} normal
           </span>
         </div>
@@ -83,11 +79,10 @@ export function TreatmentRelatedSummaryPane({ data }: Props) {
                   {ce.domain}
                 </span>
                 <span className="truncate">{ce.finding}</span>
-                <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
-                  <span
-                    className="inline-block h-1.5 w-1.5 rounded-full"
-                    style={{ background: getSeverityDotColor(ce.severity) }}
-                  />
+                <span
+                  className="ml-auto shrink-0 text-[10px] font-medium"
+                  style={{ color: getSeverityDotColor(ce.severity) }}
+                >
                   {ce.severity}
                 </span>
               </div>

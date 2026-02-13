@@ -172,12 +172,8 @@ function RuleReviewSummary({
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm font-semibold">{selection.rule_id}</span>
           <span
-            className={cn(
-              "rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold",
-              selection.severity === "Error" && "border-gray-200 bg-gray-100 text-gray-600",
-              selection.severity === "Warning" && "border-gray-200 bg-gray-100 text-gray-600",
-              selection.severity === "Info" && "border-gray-200 bg-gray-100 text-gray-600"
-            )}
+            className="text-[10px] font-semibold"
+            style={{ color: selection.severity === "Error" ? "#dc2626" : selection.severity === "Warning" ? "#d97706" : "#16a34a" }}
           >
             {selection.severity}
           </span>
@@ -1489,12 +1485,8 @@ function IssueReview({
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm font-semibold">{selection.issue_id}</span>
           <span
-            className={cn(
-              "rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold",
-              selection.severity === "Error" && "border-gray-200 bg-gray-100 text-gray-600",
-              selection.severity === "Warning" && "border-gray-200 bg-gray-100 text-gray-600",
-              selection.severity === "Info" && "border-gray-200 bg-gray-100 text-gray-600"
-            )}
+            className="text-[10px] font-semibold"
+            style={{ color: selection.severity === "Error" ? "#dc2626" : selection.severity === "Warning" ? "#d97706" : "#16a34a" }}
           >
             {selection.severity}
           </span>

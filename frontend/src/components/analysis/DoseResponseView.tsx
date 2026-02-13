@@ -32,10 +32,10 @@ import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
+import { DoseLabel } from "@/components/ui/DoseLabel";
 import {
   formatPValue,
   formatEffectSize,
-  getDomainBadgeColor,
   getDoseGroupColor,
   getSexColor,
   titleCase,
@@ -456,21 +456,12 @@ export function DoseResponseView({
       }),
       col.accessor("domain", {
         header: "Domain",
-        cell: (info) => {
-          const dc = getDomainBadgeColor(info.getValue());
-          return (
-            <span className={cn("text-[9px] font-semibold", dc.text)}>
-              {info.getValue()}
-            </span>
-          );
-        },
+        cell: (info) => <DomainLabel domain={info.getValue()} />,
       }),
       col.accessor("dose_level", {
         header: "Dose",
         cell: (info) => (
-          <span className="font-mono text-[11px]">
-            {info.row.original.dose_label.split(",")[0]}
-          </span>
+          <DoseLabel level={info.getValue()} label={info.row.original.dose_label.split(",")[0]} />
         ),
       }),
       col.accessor("n", {
@@ -770,14 +761,9 @@ export function DoseResponseView({
                     </div>
                     {group.domains.length > 0 && (
                       <div className="flex gap-1.5">
-                        {group.domains.map((d) => {
-                          const dc = getDomainBadgeColor(d);
-                          return (
-                            <span key={d} className={cn("text-[9px] font-semibold", dc.text)}>
-                              {d}
-                            </span>
-                          );
-                        })}
+                        {group.domains.map((d) => (
+                          <DomainLabel key={d} domain={d} />
+                        ))}
                       </div>
                     )}
                   </div>
@@ -791,8 +777,8 @@ export function DoseResponseView({
                       <button
                         key={ep.endpoint_label}
                         className={cn(
-                          "w-full border-b border-dashed px-3 py-1.5 text-left transition-colors hover:bg-accent/50",
-                          isSelected && "bg-accent"
+                          "w-full border-b border-dashed border-l-2 px-3 py-1.5 text-left transition-colors",
+                          isSelected ? "border-l-primary bg-blue-50/80 dark:bg-blue-950/30" : "border-l-transparent hover:bg-accent/30"
                         )}
                         data-rail-item=""
                         data-selected={isSelected || undefined}
@@ -1261,8 +1247,8 @@ function ChartOverviewContent({
               <tbody>
                 {pairwiseRows.map((row, i) => (
                   <tr key={i} className="border-b border-dashed">
-                    <td className="px-2 py-1 font-mono text-[11px]">
-                      {row.dose_label.split(",")[0]}
+                    <td className="px-2 py-1">
+                      <DoseLabel level={row.dose_level} label={row.dose_label.split(",")[0]} />
                     </td>
                     <td className="px-2 py-1">{row.sex}</td>
                     <td className="px-2 py-1 text-right font-mono">
@@ -2714,15 +2700,13 @@ function CausalityWorksheet({
     );
   };
 
-  const domainColor = getDomainBadgeColor(selectedSummary.domain);
-
   return (
     <div className="space-y-4">
       {/* Header */}
       <div>
         <h3 className="text-sm font-semibold">Causality: {selectedSummary.endpoint_label}</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          <span className={cn("text-[9px] font-semibold", domainColor.text)}>{selectedSummary.domain}</span>
+          <DomainLabel domain={selectedSummary.domain} />
           {" · "}
           {titleCase(selectedSummary.organ_system)}
         </p>

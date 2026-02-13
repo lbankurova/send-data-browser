@@ -9,10 +9,9 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import {
   formatPValue,
   formatEffectSize,
-  getSeverityBadgeClasses,
+  getSeverityDotColor,
 } from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
-import { cn } from "@/lib/utils";
 import { deriveToxSuggestion } from "@/types/annotations";
 import type { Tier } from "@/lib/rule-synthesis";
 import type {
@@ -144,10 +143,8 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
                   <span className="font-mono">{formatPValue(row.p_value)}</span>
                   <span className="font-mono">{formatEffectSize(row.effect_size)}</span>
                   <span
-                    className={cn(
-                      "rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
-                      getSeverityBadgeClasses(row.severity)
-                    )}
+                    className="text-[10px] font-medium"
+                    style={{ color: getSeverityDotColor(row.severity) }}
                   >
                     {row.severity}
                   </span>

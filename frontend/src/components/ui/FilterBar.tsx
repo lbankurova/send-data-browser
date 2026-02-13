@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode, SelectHTMLAttributes } from "react";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { filter } from "@/lib/design-tokens";
 import { cn } from "@/lib/utils";
 
@@ -22,13 +22,12 @@ export function FilterSelect({
   className,
   children,
   ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
+}: SelectHTMLAttributes<HTMLSelectElement> & {
+  children: ReactNode;
+}) {
   return (
     <select
-      className={cn(
-        filter.select,
-        className,
-      )}
+      className={cn(filter.select, className)}
       {...props}
     >
       {children}
@@ -219,6 +218,30 @@ export function FilterSearch({
         className="w-12 border-none bg-transparent px-0 text-[10px] text-foreground placeholder:text-muted-foreground/30 focus:w-20 focus:outline-none"
       />
     </div>
+  );
+}
+
+/** Clear all filters button — only visible when dirty. */
+export function FilterClearButton({
+  dirty,
+  onClear,
+  className,
+}: {
+  /** True when any filter differs from its default value. */
+  dirty: boolean;
+  onClear: () => void;
+  className?: string;
+}) {
+  if (!dirty) return null;
+  return (
+    <button
+      type="button"
+      className={cn("flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] text-muted-foreground/60 hover:bg-accent/50 hover:text-foreground", className)}
+      onClick={onClear}
+      title="Clear all filters"
+    >
+      <X className="h-2.5 w-2.5" />
+    </button>
   );
 }
 

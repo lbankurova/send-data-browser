@@ -17,6 +17,7 @@ import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { EvidenceBar } from "@/components/ui/EvidenceBar";
 import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
+import { DoseLabel, DoseHeader } from "@/components/ui/DoseLabel";
 import {
   formatPValue,
   formatEffectSize,
@@ -226,10 +227,8 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
                   {r.sex === "Combined" ? "Combined" : r.sex === "M" ? "Males" : "Females"}
                 </span>
                 <span
-                  className={cn(
-                    "rounded px-1.5 py-0.5 text-[10px] font-medium",
-                    established ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                  )}
+                  className="text-[10px] font-medium"
+                  style={{ color: established ? "#15803d" : "#dc2626" }}
                 >
                   {established ? "Established" : "Not established"}
                 </span>
@@ -300,7 +299,7 @@ function OrganRailItem({
       className={cn(
         "w-full text-left border-b border-border/40 border-l-2 px-3 py-2 transition-colors",
         isSelected
-          ? "border-l-blue-500 bg-blue-50/60 dark:bg-blue-950/20"
+          ? "border-l-primary bg-blue-50/80 dark:bg-blue-950/30"
           : "border-l-transparent hover:bg-accent/30"
       )}
       onClick={onClick}
@@ -644,9 +643,7 @@ function AdversityMatrixTab({
       col.accessor("dose_level", {
         header: "Dose",
         cell: (info) => (
-          <span className="text-muted-foreground">
-            {info.row.original.dose_label.split(",")[0]}
-          </span>
+          <DoseLabel level={info.getValue()} label={info.row.original.dose_label.split(",")[0]} />
         ),
       }),
       col.accessor("sex", { header: "Sex" }),
@@ -758,7 +755,7 @@ function AdversityMatrixTab({
                       key={dl}
                       className="w-16 shrink-0 text-center text-[10px] font-medium text-muted-foreground"
                     >
-                      {matrixData.doseLabels?.get(dl) ?? `Dose ${dl}`}
+                      <DoseHeader level={dl} label={matrixData.doseLabels?.get(dl) ?? `Dose ${dl}`} />
                     </div>
                   ))}
                 </div>
