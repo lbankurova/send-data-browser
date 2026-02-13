@@ -62,23 +62,21 @@ Container: `shrink-0 border-b bg-muted/20 px-4 py-3`
 
 Outer: `rounded-lg border p-3` — neutral background, no colored fill.
 
-**Status badge color logic:**
-- Established (`noael_dose_value != null`, including Control at dose 0): `bg-green-100 text-green-700`
-- Not established (`noael_dose_value` is null): `bg-red-100 text-red-700`
+**Status indicator color logic (text-only, no background):**
+- Established (`noael_dose_value != null`, including Control at dose 0): `text-[10px] font-medium` with `color: #15803d`
+- Not established (`noael_dose_value` is null): `text-[10px] font-medium` with `color: #dc2626`
 
-Card surface is always neutral (plain `border`). Color is confined to the small status badge.
+Card surface is always neutral (plain `border`). Color is confined to the status text.
 
 **Row 1:** `mb-1 flex items-center justify-between`
 - Sex label: `text-xs font-semibold` — "Combined" / "Males" / "Females"
-- Status badge: `rounded px-1.5 py-0.5 text-[10px] font-medium`
-  - Established: `bg-green-100 text-green-700` — "Established"
-  - Not established: `bg-red-100 text-red-700` — "Not established"
+- Status text: `text-[10px] font-medium` — "Established" (green) or "Not established" (red)
 
 **Row 2+:** `space-y-0.5 text-[11px]`
 - NOAEL: label `text-muted-foreground`, value `font-medium` — "{dose_value} {dose_unit}"
 - LOAEL: label `text-muted-foreground`, value `font-medium` — loael_label (first part before comma)
 - Adverse at LOAEL: label `text-muted-foreground`, value `font-medium` — count
-- Confidence (if `noael_confidence != null`): label `text-muted-foreground`, value `font-medium` with color (green >= 80%, yellow >= 60%, red < 60%) — percentage
+- Confidence (if `noael_confidence != null`): label `text-muted-foreground`, value wrapped in `ConfidencePopover` — clickable `font-medium` with color (`text-green-700` >= 80%, `text-amber-700` >= 60%, `text-red-700` < 60%) showing percentage. Popover shows confidence breakdown and comparison across sexes.
 
 **Row 3 (conditional):** Only rendered if `adverse_domains_at_loael` is not empty. `mt-1 flex flex-wrap gap-1`
 - Domain labels: plain colored text `text-[9px] font-semibold` with `getDomainBadgeColor().text` (no background — consistent with domain label rule)
@@ -95,10 +93,7 @@ Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWi
 
 ### Rail Items
 
-Each `OrganRailItem` is a `<button>` with:
-- Container: `w-full text-left border-b border-border/40 border-l-2 px-3 py-2 transition-colors`
-- Selected: `border-l-blue-500 bg-blue-50/60 dark:bg-blue-950/20`
-- Not selected: `border-l-transparent hover:bg-accent/30`
+Each `OrganRailItem` is a `<button>` using design tokens from `rail` (`rail.itemBase`, `rail.itemSelected`, `rail.itemIdle`) with `px-3 py-2`.
 
 **Row 1:** Organ name (`text-xs font-semibold`, displayed via `titleCase()` from `severity-colors.ts`) + adverse count (`text-[10px] text-muted-foreground` — "N adverse")
 
@@ -172,15 +167,13 @@ Sorted by: severity (adverse first) → treatment-related → max effect size de
 
 ### Insights
 
-Only shown when organ-scoped rule results exist. Section header: "Insights". Uses `InsightsList` component with rules filtered to the selected organ (matches on `organ_system`, `output_text` containing organ name, or `context_key` containing organ key).
-
-Note: no cross-view links in the overview tab. Cross-view navigation is in the context panel's "Related views" pane (see below).
+Only shown when organ-scoped rule results exist. Section header: "Insights". Uses `InsightsList` component with rules filtered to the selected organ (matches on `organ_system`, `output_text` containing organ name, or `context_key` containing organ key). `onEndpointClick` callback navigates to dose-response view with the clicked organ system.
 
 ---
 
 ## Adversity Matrix Tab
 
-Two zones: filter bar + scrollable content (adversity matrix + adverse effect grid), scoped to the selected organ.
+Two zones: filter bar + scrollable content (adversity matrix in `ViewSection mode="fixed"` + adverse effect grid in `ViewSection mode="flex"`), scoped to the selected organ. Uses `useAutoFitSections` with matrix section default 250px (80-500px).
 
 ### Filter Bar
 
@@ -286,12 +279,13 @@ Panes (ordered per design system priority — insights → stats → annotation 
 |-------|-------|------------|
 | Selected organ | Local | `useState<string \| null>` — which organ is active in the rail |
 | Active tab | Local | `useState<EvidenceTab>` — "overview" (Evidence tab) or "matrix" (Adversity matrix tab) |
-| Selection (endpoint) | Shared via context | `ViewSelectionContext` with `_view: "noael"` tag |
+| Selection (endpoint) | Local | `useState<NoaelSelection \| null>` — endpoint + dose + sex selection |
 | Sex filter | Local | `useState<string \| null>` — for Adversity matrix tab |
 | TR filter | Local | `useState<string \| null>` — for Adversity matrix tab |
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in AdversityMatrixTab) |
 | Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in AdversityMatrixTab) |
-| Rail width | Local | `useResizePanel(300, 180, 500)` — resizable rail width (default 300px, range 180-500px) |
+| Section heights | Local (AdversityMatrixTab) | `useAutoFitSections` — matrix section (250px default, 80-500px) |
+| Rail width | Local | `MasterDetailLayout` — default 300px, resizable 180-500px |
 | NOAEL summary data | Server | `useNoaelSummary` hook (React Query, 5min stale) |
 | Adverse effect data | Server | `useAdverseEffectSummary` hook (React Query, 5min stale) |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |

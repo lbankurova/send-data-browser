@@ -174,7 +174,10 @@ Three tabs (left to right):
 - "Hypotheses"
 - "Metrics"
 
-**Row count (metrics tab only):** rendered via the `right` prop -- `mr-3 text-[10px] text-muted-foreground` -- "{filtered} of {total} rows"
+**Tab bar `right` prop content:**
+- Evidence tab: `CollapseAllButtons` (expand/collapse all sections in the Evidence tab)
+- Metrics tab: `mr-3 text-[10px] text-muted-foreground` -- "{filtered} of {total} rows"
+- Hypotheses tab: none
 
 ---
 

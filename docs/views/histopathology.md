@@ -58,29 +58,39 @@ Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWi
 
 ### Rail Items
 
-Each `SpecimenRailItem` is a `<button>` with:
-- Container: `w-full text-left border-b border-border/40 px-3 py-2 transition-colors`
-- Selected: `bg-blue-50/60 dark:bg-blue-950/20`
-- Not selected: `hover:bg-accent/30`
-- Left border: `border-l-2 border-l-transparent` always (neutral-at-rest design; no severity coloring on rail borders)
+Each `SpecimenRailItem` is a `<button>` using design tokens from `rail` (`rail.itemBase`, `rail.itemSelected`, `rail.itemIdle`) with `px-2.5 py-2`.
 
-**Row 1:** Specimen name (`text-xs font-semibold`, underscores replaced with spaces for display) + dose-trend glyph (Strong: `▲`, Moderate: `▴`, Weak: no glyph — `text-[9px] text-muted-foreground`) + review status glyph (Confirmed: `✓`, Revised: `~`, Preliminary/In review: no glyph — `text-[9px] text-muted-foreground`) + finding count badge (`text-[10px] text-muted-foreground`). Glyphs support sub-3-second triage scanning; most specimens show no review glyph to keep the rail clean.
+**Row 1 (name + quantitative indicators):** Specimen name (`text-xs font-semibold`, underscores replaced with spaces) + review status glyph (Confirmed: `✓`, Revised: `~`, Preliminary/In review: no glyph — `text-[9px] text-muted-foreground`) + dose-trend glyphs (Strong: `▲▲▲`, Moderate: `▲▲`, Weak: `▲` — opacity fading: Strong full, Moderate 60%, Weak 30%) + max severity badge (`font-mono text-[9px]`, `getNeutralHeatColor(maxSeverity)` background) + max incidence badge (`font-mono text-[9px]`, `getNeutralHeatColor01(maxIncidence)` background) + finding count (`font-mono text-[9px]`) + adverse count with "A" suffix (`font-mono text-[9px]`).
 
-**Row 2:** Severity bar — neutral gray alignment matching Signals rail. Track: `h-1.5 flex-1 rounded-full bg-[#E5E7EB]`, fill color encodes max severity via `getNeutralHeatColor(maxSeverity).bg` (passed as `fillColor` prop to `EvidenceBar`). Numeric value: `shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground`.
-
-**Row 3:** Stats line — `{N} findings · {M} adverse ({pct}%)` + domain chips (plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` color class). Adverse percentage is `adverseCount / findingCount * 100`, guarded when `findingCount === 0`.
+**Row 2 (organ system + domains):** `mt-0.5` — organ system label (`text-[10px] text-muted-foreground/60`, `titleCase(specimenToOrganSystem())`) + domain labels (`<DomainLabel>` for each domain).
 
 ### Sorting
 
-Specimens sorted by risk-density score descending, then `findingCount` desc as tiebreaker. Risk score formula: `(maxSeverity × 2) + (adverseCount × 1.5) + doseConsistencyWeight` where doseConsistencyWeight is Strong=2, Moderate=1, Weak=0.
+Default sort by signal score descending, then `findingCount` desc as tiebreaker. Signal score formula: `(adverseCount × 3) + maxSeverity + (maxIncidence × 5) + doseConsistencyWeight` where doseConsistencyWeight is Strong=2, Moderate=1, Weak=0.
+
+Five sort modes available via `FilterSelect` dropdown:
+- **Signal** (default): signal score descending
+- **Organ**: groups by organ system alphabetically (with sticky group headers showing system name + specimen count + adverse count), max severity descending within groups
+- **Severity**: max severity descending
+- **Incidence**: max incidence descending
+- **A–Z**: alphabetical by specimen name
+
+### Filters
+
+The rail header includes a filter bar with:
+- **Sort select**: 5 sort modes (see above)
+- **Min severity**: "Sev: all", "Sev 2+", "Sev 3+", "Sev 4+"
+- **Dose trend**: "Trend: all", "Moderate+", "Strong only"
+- **Adverse only**: checkbox labeled "Adv" — shows only specimens with `adverseCount > 0`
+- **Search** (`FilterSearch`): case-insensitive substring match on specimen name
+
+A `FilterShowingLine` displays active filter summary when any filter is active (e.g., `Showing: "liver" · Severity 2+ · Adverse only · 5/42`).
+
+Empty state when no specimens match: "No specimens match current filters".
 
 ### Auto-Select
 
-On data load, auto-selects the top specimen (highest max severity).
-
-### Search
-
-Filters specimens by name (case-insensitive substring match). Empty state: "No matches for '{search}'".
+On data load, auto-selects the top specimen (highest signal score).
 
 ---
 
@@ -126,57 +136,72 @@ All tabs: `relative px-4 py-1.5 text-xs font-medium transition-colors`
 
 The Evidence tab uses `useAutoFitSections(containerRef, "histopathology", [...])` to create three sections:
 - **Top section** (findings table): `ViewSection mode="fixed"`, default 200px height, resizable 80-500px.
-- **Middle section** (dose-incidence chart): `ViewSection mode="fixed"`, default 150px height, resizable 80-300px.
+- **Middle section** (dual dose charts): `ViewSection mode="fixed"`, default 170px height, resizable 80-400px.
 - **Bottom section** (severity matrix): `ViewSection mode="flex"` — fills remaining space. Filter controls render inside each heatmap mode (below the header, above the matrix).
 
 ### Observed Findings (top section)
 
 TanStack React Table with sortable, resizable columns. Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Observed findings"
 
+**Header right:** "Hide zero severity" checkbox — filters out findings with `maxSeverity === 0`. Title shows count: "Observed findings ({filtered} of {total})" when active.
+
 **Columns:**
 
 | Column | Header | Size | Cell Rendering |
 |--------|--------|------|----------------|
-| finding | Finding | 160px | Severity micro-cell (`h-2.5 w-2.5 rounded-sm`, `getNeutralHeatColor(maxSev).bg`) + truncated name (`font-medium`) |
-| maxSeverity | Sev | 40px | `font-mono text-[10px] text-muted-foreground`, tooltip "Max severity: {n} (scale 1–5)" |
-| incidence | Incid. | 48px | `font-mono text-[10px] text-muted-foreground`, "{affected}/{N}" |
-| severity | Class | 60px | Neutral badge: `rounded-sm border border-border px-1 py-px text-[9px] font-medium text-muted-foreground` |
-| isDoseDriven | Dose-driven | 78px | Boolean glyph: `✓` for Strong consistency, empty otherwise. Tooltip: "Incidence increases monotonically with dose across 3+ groups" |
-| relatedOrgans | Also in | 160px | `text-[9px] italic text-muted-foreground/60`, comma-joined organ names from R16 cross-organ coherence |
+| finding | Finding | 120px (60-260) | Severity micro-cell (`h-2.5 w-2.5 rounded-sm`, `getNeutralHeatColor(maxSev).bg`) + truncated name (weight escalates: `font-medium` → `font-semibold` at sev 2+ → `font-bold` at sev 4+) |
+| maxSeverity | Peak sev | 50px (40-80) | `font-mono text-[10px]`, weight/opacity escalates with value. Em dash for zero. Tooltip "Max severity: {n.n} (scale 1–5)" |
+| incidence | Incid. | 50px (42-80) | `font-mono text-[10px]`, percentage format. Weight/opacity escalates at 10%/30% thresholds. Em dash for zero. |
+| severity | Signal | 60px (48-100) | **Clinical-aware severity cell.** When statistical severity is "normal" but a clinical catalog match exists, replaces "normal" with clinical class label (Sentinel / High concern / Moderate / Flag) in `text-[9px] font-medium text-gray-500` with `border-l-2 border-l-gray-300`. Tooltip shows both clinical and statistical classification. For adverse/warning/normal without clinical override: left-border color (`#dc2626` adverse, `#d97706` warning, `#16a34a` normal) + severity text. |
+| isDoseDriven | Dose-dep. ▾ | 80px (55-120) | **Switchable dose-dependence method.** Clicking the column header opens a context menu with 4 methods grouped as Heuristic (Moderate+, Strong only) and Statistical (CA trend, Severity trend). Header label changes to reflect active method. Cell shows `✓` when criterion met; for statistical methods, shows p-value in tooltip or "–" with reason when not significant/no data. |
+| relatedOrgans | Also in | 120px (40-300) | Absorber column. `text-muted-foreground`, comma-joined organ names from R16 cross-organ coherence. |
 
-Sorted by max avg_severity descending. Click sets finding-level selection (updates context panel). Click again to deselect. Column resizing enabled.
+**Content-hugging layout:** All columns except "Also in" (absorber) use `width: 1px; white-space: nowrap` so they shrink to content. The absorber column absorbs remaining space. Manual column resize overrides with explicit width.
 
-### Dose-Incidence Chart (middle section)
+Sorted by max avg_severity descending. Click sets finding-level selection (updates context panel). Click again to deselect. Column resizing enabled via drag handles.
 
-ECharts bar chart built by `buildDoseIncidenceBarOption()` from `charts/histopathology-charts.ts`.
+### Dual Dose Charts (middle section)
 
-**X-axis:** Dose groups (labels from data). **Y-axis:** Incidence percentage (0–100%).
+Side-by-side ECharts bar charts — **Incidence** (left, `border-r`) and **Severity** (right). Built by `buildDoseIncidenceBarOption()` and `buildDoseSeverityBarOption()` from `charts/histopathology-charts.ts`.
 
-**Behavior:**
-- When no finding is selected: shows specimen-level aggregate incidence per dose group.
-- When a finding is selected: shows that finding's incidence per dose group.
-- When both sexes are present and no sex filter is active: groups bars by sex.
-- Bar colors: `getDoseBarColor(level)` — Control=#6b7280, Low=#3b82f6, Mid=#f59e0b, High=#ef4444.
-- Tooltip: dose label, incidence %, affected/n counts.
-- Empty state: "No incidence data available."
+Each chart has a **Compact/Scaled mode toggle** (`ChartModeToggle`) — "C" (compact: auto-scale to data range) and "S" (scaled: fixed axis range 0–100% / 0–5). Toggle pills: `rounded-sm px-1 py-px text-[9px] font-semibold`, active: `bg-foreground text-background`, inactive: `text-muted-foreground/50`.
 
-**Section title:** Dynamic — "Dose-incidence: {finding}" when finding selected, "Dose-incidence (specimen aggregate)" otherwise.
+**Section title:** Dynamic — "Dose charts: {finding}" when finding selected, "Dose charts (specimen aggregate)" otherwise. Default 170px height, resizable 80-400px.
+
+**Incidence chart:**
+- X-axis: Dose groups. Y-axis: Incidence percentage.
+- When both sexes present and no sex filter: groups bars by sex.
+- Empty state: "No incidence data."
+
+**Severity chart:**
+- X-axis: Dose groups. Y-axis: Average severity (0–5).
+- Only includes rows with avg_severity > 0.
+- When both sexes present and no sex filter: groups bars by sex.
+- Empty state: "No severity data."
+
+**Shared behavior:**
+- When no finding selected: specimen-level aggregate per dose group.
+- When a finding selected: that finding's data per dose group.
+- Both charts use a stable frame (all dose levels + sexes from the full specimen, not filtered by finding) so axes don't shift when selecting different findings.
 
 ### Severity Matrix (bottom section)
 
 Contains both group-level and subject-level heatmaps, toggled via a Group/Subject segmented control. Shares sex/severity filters with the Metrics tab (lifted to parent state).
 
+#### Group/Subject Mode Toggle
+
+The mode toggle is inline in the `ViewSection` title: `SEVERITY MATRIX: GROUP | SUBJECTS` — clickable text links (active: `text-foreground`, inactive: `text-muted-foreground/40 hover:text-muted-foreground/60`, separated by `|`). Finding count appended when heatmap data exists.
+
 #### Filter Controls
 
-Filter controls render below each heatmap's header (between header and matrix content), not in a shared bar above. Each mode includes the common controls plus mode-specific ones. When there's no heatmap data, the empty-state fallback still shows the Group/Subject toggle so users can switch modes.
+Filter controls render below the section header. Each mode includes common controls plus mode-specific ones.
 
 **Common controls (both modes):**
-- Group/Subject toggle: segmented control (`rounded-full` pills, active: `bg-foreground text-background`) — switches `matrixMode` between "group" and "subject"
 - Sex filter: `<FilterSelect>` — "All sexes" / Male / Female
-- Min severity filter: `<FilterSelect>` — "Min severity: any" / "1+" / "2+" / "3+"
+- Min severity filter: `<FilterSelect>` — "All severities" / "Severity 1+" / "2+" / "3+"
 
 **Group mode adds:**
-- Severity/Incidence toggle: segmented control (`rounded-full` pills)
+- Severity/Incidence toggle: segmented control (`rounded-full` pills, active: `bg-foreground text-background`)
 
 **Subject mode adds:**
 - Dose group filter: `<FilterMultiSelect>` dropdown with checkboxes — "All dose groups" when all selected, single label when one selected, "{N} groups" when multiple. Dropdown panel has "Select all" / "Clear all" link buttons at top, then main arm checkboxes + "Recovery" group header with recovery arm checkboxes. Minimum 1 must remain selected (clear all keeps first option). Short labels strip "Group N," prefix and drug name (e.g., "Group 2, 2 mg/kg PCDRUG" → "2 mg/kg"; "Group 1, Control" → "Control"). State: `ReadonlySet<string> | null` (null = all selected). Composite keys: `"0"`, `"1"` etc. for main arms, `"R0"`, `"R1"` etc. for recovery arms. Computed from `subjData.subjects`, separated by `is_recovery` flag, each sorted by dose_level ascending.
@@ -296,6 +321,13 @@ Per-finding version of `getDoseConsistency`. Filters rows to one finding, groups
 ### `deriveSpecimenConclusion(summary, specimenData, specimenRules): string`
 Builds a deterministic 1-line conclusion from incidence range, severity, sex, and dose relationship.
 
+### `deriveSpecimenInsights(rules, specimen): InsightBlock[]`
+Context panel insight synthesis. Groups rules by finding (collapsed across sexes) into sections:
+1. **Adverse (treatment-related):** Per-finding with evidence qualifiers (p-value, effect size, incidence/severity increase) and inline clinical catalog annotations
+2. **Clinical significance:** Non-adverse findings matched by clinical catalog (C01–C15)
+3. **Protective (decreased with treatment):** Per-finding with control→high dose percentages; protective-excluded findings shown as info kind
+4. **Info (notes):** Suppressed protective findings with exclusion IDs
+
 ### `deriveSpecimenReviewStatus(findingNames, reviews): SpecimenReviewStatus`
 Aggregates peer review annotations across all findings in a specimen. Returns one of:
 - **Preliminary**: no reviews record or all "Not Reviewed"
@@ -319,9 +351,14 @@ The `HistopathologyContextPanelWrapper` in `ContextPanel.tsx` fetches `lesionDat
 Header: sticky, specimen name (`text-sm font-semibold`) + review status badge + adverse count badge + `CollapseAllButtons`, domain labels below.
 
 Panes:
-1. **Overview** (default open) — conclusion chips (incidence, severity, sex, dose-relation, findings count)
-2. **Pathology Review** — `PathologyReviewForm` (specimen-level, keyed by `specimen:{name}`)
-3. **Related views** (default closed) — "View target organs", "View dose-response", "View NOAEL decision" links
+1. **Insights** (default open) — `SpecimenInsights` component rendering `InsightBlock[]` via `deriveSpecimenInsights()`. Blocks grouped into labeled sections:
+   - **Treatment-related** (adverse blocks): per-finding, collapsed across sexes with evidence qualifiers (p-value, effect size, incidence/severity increase) and inline clinical annotations
+   - **Clinical significance** (clinical blocks): findings matched by clinical catalog but not already in adverse section — shows class + catalog ID + confidence
+   - **Decreased with treatment** (protective blocks): per-finding with control→high dose percentages; excluded findings show info kind with exclusion ID
+   - **Notes** (info blocks): suppressed protective findings, etc.
+2. **Overview** (default open) — conclusion chips (incidence, severity, sex, dose-relation, findings count)
+3. **Pathology Review** — `PathologyReviewForm` (specimen-level, keyed by `specimen:{name}`)
+4. **Related views** (default closed) — "View target organs", "View dose-response", "View NOAEL decision" links
 
 Review status is derived via `deriveSpecimenReviewStatus(findingNames, pathReviews)` where `pathReviews` is fetched by the wrapper and passed through.
 
@@ -332,7 +369,7 @@ Header: sticky, finding name (`text-sm font-semibold`) + `CollapseAllButtons`, s
 **Header metrics line** (`mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground`): Four inline metrics computed from finding rows — Incidence (`{affected}/{N} ({pct}%)`), Max sev (`{n.n}`), Dose trend (`{Weak|Moderate|Strong}`), Sex (`{M|F|M/F}`). Makes the panel presentation-ready without scrolling.
 
 Panes in order (follows design system priority: insights > stats > related > annotation > navigation):
-1. **Insights** (default open) — `InsightsList` with finding-scoped rules
+1. **Insights** (default open) — `InsightsList` with finding-scoped rules. Includes clinical catalog annotations when present.
 2. **Dose detail** (default open) — all dose-level rows for finding + specimen, sorted by dose_level then sex. Table columns: Dose, Sex, Incid., mini dose ramp bar, Avg Sev, Sev. The mini dose ramp is a `h-1.5 rounded-full` horizontal bar (neutral gray: track `bg-gray-100`, fill `bg-gray-400`) showing relative incidence percentage per row. Makes dose relationship pre-attentive without reading numbers.
 3. **Sex comparison** (conditional, default open) — only shown when finding has data from both sexes. Per-sex row: affected/total + max severity badge with `getNeutralHeatColor()`.
 4. **Correlating evidence** (default open) — up to 10 other findings in same specimen, sorted by max severity desc, with severity badge colored by `getNeutralHeatColor()`
@@ -352,17 +389,26 @@ Panes in order (follows design system priority: insights > stats > related > ann
 | Sex filter | Local (parent) | `useState<string \| null>` — shared with Evidence tab filters |
 | Min severity | Local (parent) | `useState<number>` — shared with Evidence tab filters |
 | Heatmap view | Local (OverviewTab) | `useState<"severity" \| "incidence">` — group heatmap coloring mode (default "severity") |
-| Matrix mode | Local (OverviewTab) | `useState<"group" \| "subject">` — toggles between group and subject heatmaps (default "group", resets on specimen change) |
+| Matrix mode | Local (OverviewTab) | `useState<"group" \| "subject">` — toggles between group and subject heatmaps (default "group") |
 | Affected only | Local (OverviewTab) | `useState<boolean>` — filter subjects to affected only in subject mode (default true, resets to true on specimen change) |
 | Subject sort | Local (OverviewTab) | `useState<"dose" \| "severity">` — subject heatmap sort mode (default "dose", resets on specimen change). Severity sort orders within dose groups, not across them. |
 | Dose group filter | Local (OverviewTab) | `useState<ReadonlySet<string> \| null>` — multi-select dropdown with checkboxes via FilterMultiSelect (null = all shown, Set of composite keys when filtered, resets on specimen change) |
-| Section heights | Local (OverviewTab) | `useAutoFitSections` — findings table (200px default, 80-500px) + dose chart (150px default, 80-300px) |
+| Dose-dep threshold | Local (OverviewTab) | `useState<"moderate" \| "strong" \| "ca_trend" \| "severity_trend">` — dose-dependence method (default "moderate") |
+| Hide zero severity | Local (OverviewTab) | `useState<boolean>` — filter findings table (default false) |
+| Chart display modes | Local (OverviewTab) | `useState<ChartDisplayMode>` × 2 — "compact" or "scaled" for incidence and severity charts (default "scaled") |
+| Section heights | Local (OverviewTab) | `useAutoFitSections` — findings table (200px default, 80-500px) + dose chart (170px default, 80-400px) |
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in OverviewTab) |
 | Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in OverviewTab) |
 | Selected subject | Local | `useState<string \| null>` — column highlight in SubjectHeatmap |
-| Rail width | Local | `useResizePanel(300, 180, 500)` — resizable rail width (default 300px, range 180-500px) |
+| Rail width | Local | `MasterDetailLayout` — default 300px, resizable 180-500px |
+| Rail sort | Local (SpecimenRail) | `useState<"signal" \| "organ" \| "severity" \| "incidence" \| "alpha">` (default "signal") |
+| Rail min sev filter | Local (SpecimenRail) | `useState<number>` (default 0) |
+| Rail adverse only | Local (SpecimenRail) | `useState<boolean>` (default false) |
+| Rail dose trend filter | Local (SpecimenRail) | `useState<"any" \| "moderate" \| "strong">` (default "any") |
 | Specimen rules | Derived | `useMemo` — rules filtered to selected specimen, shared between SpecimenHeader and OverviewTab |
+| Finding clinical | Derived | `useMemo` — Map<finding, {clinicalClass, catalogId}> from ruleResults for clinical catalog lookup |
 | Lesion data | Server | `useLesionSeveritySummary` hook (React Query, 5min stale) |
+| Finding dose trends | Server | `useFindingDoseTrends` hook (statistical trend data) |
 | Subject data | Server | `useHistopathSubjects` hook (fetched on demand in OverviewTab when matrixMode === "subject") |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
 | Path reviews | Server | `useAnnotations<PathologyReview>(studyId, "pathology-reviews")` — shared cache with context panel PathologyReviewForm |
@@ -377,13 +423,16 @@ Panes in order (follows design system priority: insights > stats > related > ann
 ```
 useLesionSeveritySummary(studyId) ──> lesionData (728 rows)
 useRuleResults(studyId) ──> ruleResults (shared React Query cache)
+useFindingDoseTrends(studyId, specimen) ──> trendsByFinding (statistical trend data)
 useAnnotations<PathologyReview> ──> pathReviews (shared cache with context panel)
                                 |
                     deriveSpecimenSummaries() → SpecimenSummary[]
                     findingNamesBySpecimen → Map<specimen, finding[]>
                     (skips rows with null specimen)
                                 |
-                        SpecimenRail (sorted by risk-density desc)
+                        SpecimenRail (sorted by signal score desc)
+                        + filters (sort, min sev, adverse only, dose trend)
+                        + organ system grouping when sort=organ
                         + deriveSpecimenReviewStatus() per rail item
                                 |
                     [selectedSpecimen] → filter lesionData
@@ -393,17 +442,19 @@ useAnnotations<PathologyReview> ──> pathReviews (shared cache with context p
                         deriveFindingSummaries()
                         deriveSexLabel() / getDoseConsistency()
                         deriveSpecimenConclusion()
+                        findingClinical (clinical catalog lookup)
                            /                  \
                   OverviewTab            HypothesesTab
                   (findings table +       (selectedFinding
-                   dose-incidence chart +  auto-focus)
+                   dual dose charts +     auto-focus)
                    severity matrix)
                         \                 /
                     HistopathSelection (shared)
                                 |
                   HistopathologyContextPanel
                     /  |    |     |     \    \     \
-                 Dose  Sex  Ins  Corr  Path  Nav  Tox
+                 Ins  Dose  Sex  Corr  Path  Nav  Tox
+                (+ clinical catalog annotations)
 ```
 
 ---
@@ -440,6 +491,24 @@ useAnnotations<PathologyReview> ──> pathReviews (shared cache with context p
 | No findings for specimen (overview) | "No findings for this specimen." |
 | No rows after filter (matrix) | "No rows match the current filters." |
 | >200 filtered rows (grid) | Truncation message below grid |
+
+---
+
+## Clinical Catalog Integration
+
+The view integrates with the clinical insight layer (`backend/services/analysis/clinical_catalog.py`). Clinical annotations flow through rule results as params:
+
+- `clinical_class`: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent"
+- `catalog_id`: "C01" through "C15"
+- `clinical_confidence`: "Low" | "Medium" | "High"
+- `protective_excluded`: boolean (when a protective label is suppressed by PEX01–PEX07)
+- `exclusion_id`: "PEX01" through "PEX07"
+
+**Findings table:** The Signal column replaces misleading "normal" statistical severity with the clinical class label when a catalog match exists. This surfaces clinically significant findings (e.g., HEPATOCELLULAR CARCINOMA is "normal" statistically but "Sentinel" clinically).
+
+**Context panel:** Clinical annotations appear inline on adverse insight blocks and as a separate "Clinical significance" section for non-adverse matched findings.
+
+**Per-finding lookup:** `findingClinical` useMemo scans all rule results for matching specimen+finding with `clinical_class` params, producing a Map for O(1) lookup per finding row.
 
 ---
 

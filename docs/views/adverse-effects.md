@@ -73,7 +73,7 @@ Only shown when data is loaded. Three classification badges plus a total count. 
 
 `flex flex-wrap items-center gap-3`
 
-Wrapped in a `mb-4` container div. Uses `FindingsFilterBar` component, which renders native `<select>` elements via the `FilterSelect` component (from `@/components/ui/FilterBar`). `FilterSelect` applies the design-token class `filter.select` = `rounded-full bg-muted/50 px-2 py-0.5 text-xs cursor-pointer focus:outline-none`. Each filter is wrapped in a `<label>` with classes `flex items-center gap-1.5 text-xs text-muted-foreground`.
+Wrapped in a `mb-4` container div. Uses `FindingsFilterBar` component, which renders native `<select>` elements via the `FilterSelect` component (from `@/components/ui/FilterBar`). `FilterSelect` applies the design-token class `filter.select` = `h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary`. Each filter is wrapped in a `<label>` with classes `flex items-center gap-1.5 text-xs text-muted-foreground`.
 
 | Filter | Label Text | Control | Options | Default |
 |--------|-----------|---------|---------|---------|

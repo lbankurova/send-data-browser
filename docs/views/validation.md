@@ -255,7 +255,7 @@ Column resize handle: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize
 | Column | Header | Size | Cell Rendering |
 |--------|--------|------|----------------|
 | rule_id | Rule | 150px | `font-mono text-xs` |
-| severity | Severity | 90px | Gray badge: `inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold` |
+| severity | Severity | 90px | Left-border badge: `inline-block border-l-2 pl-1.5 py-0.5 text-[10px] font-semibold text-gray-600` with colored left border (Error: `#dc2626`, Warning: `#d97706`, Info: `#16a34a`) |
 | source | Source | 60px | `text-[9px] font-semibold uppercase tracking-wide text-muted-foreground` with tooltip |
 | domain | Domain | 70px | `<DomainLabel>` component (colored text, `text-[9px] font-semibold`) |
 | category | Category | 140px | Plain text |
@@ -397,7 +397,7 @@ The `ValidationContextPanelWrapper` in `ContextPanel.tsx` casts `ViewSelectionCo
 
 #### Header
 - `sticky top-0 z-10 border-b bg-background px-4 py-3`
-- `flex items-center gap-2`: rule_id in `font-mono text-sm font-semibold` + severity badge + CollapseAllButtons (right-aligned)
+- `flex items-center gap-2`: rule_id in `font-mono text-sm font-semibold` + severity left-border badge (same style as table) + CollapseAllButtons (right-aligned)
 - Subtitle: "{domain} . {category}" in `mt-1 text-xs text-muted-foreground`
 
 #### Pane 1: Rule detail (default open)
