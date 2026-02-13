@@ -1,6 +1,6 @@
 """Signal scores, rule engine, and adversity determination.
 
-Evaluates 16 canonical rules and emits structured rule results.
+Evaluates 19 canonical rules and emits structured rule results.
 """
 
 import logging
@@ -76,6 +76,19 @@ RULES = [
     {"id": "R17", "scope": "study", "severity": "critical",
      "condition": "mortality_signal",
      "template": "{count} deaths in {sex}, dose-dependent pattern."},
+
+    # Protective / inverse incidence rules
+    {"id": "R18", "scope": "endpoint", "severity": "info",
+     "condition": "histo_incidence_decrease",
+     "template": "Decreased incidence of {finding} in {specimen} with treatment ({sex}): "
+                 "{ctrl_pct}% in controls vs {high_pct}% at high dose. "
+                 "This finding is likely a background/spontaneous lesion reduced by compound exposure."},
+    {"id": "R19", "scope": "endpoint", "severity": "info",
+     "condition": "potential_protective_effect",
+     "template": "{finding} in {specimen}: high baseline incidence ({ctrl_pct}% control) with "
+                 "dose-dependent decrease suggests a potential protective or therapeutic effect. "
+                 "Consider relevance to drug repurposing — compound activity against this "
+                 "pathology may indicate utility in related disease contexts."},
 ]
 
 
@@ -94,7 +107,8 @@ def evaluate_rules(
 
         # R01: Treatment-related
         if finding.get("treatment_related"):
-            results.append(_emit(RULES[0], ctx, finding))
+            results.append(_emit(RULES[0], ctx, finding,
+                                 params={"pattern": finding.get("dose_response_pattern", "")}))
 
         # R02: Significant pairwise
         for pw in finding.get("pairwise", []):
@@ -116,7 +130,8 @@ def evaluate_rules(
         # R05-R07: Dose-response patterns
         pattern = finding.get("dose_response_pattern", "")
         if pattern in ("monotonic_increase", "monotonic_decrease"):
-            results.append(_emit(RULES[4], {**ctx, "pattern": pattern}, finding))
+            results.append(_emit(RULES[4], {**ctx, "pattern": pattern}, finding,
+                                 params={"pattern": pattern}))
         elif pattern == "threshold":
             results.append(_emit(RULES[5], ctx, finding))
         elif pattern == "non_monotonic":
@@ -125,18 +140,56 @@ def evaluate_rules(
         # R10-R11: Effect magnitude
         es = finding.get("max_effect_size")
         if es is not None:
+            gs_r10 = finding.get("group_stats", [])
+            n_aff = sum(g.get("affected", 0) for g in gs_r10 if g.get("dose_level", 0) > 0)
             if abs(es) >= 1.0:
-                results.append(_emit(RULES[9], {**ctx, "effect_size": es}, finding))
+                extra = {"effect_size": es, "n_affected": n_aff}
+                if n_aff <= 1:
+                    # Dampen: single-animal finding — mathematically correct but
+                    # statistically meaningless, so downgrade to info severity
+                    dampened_rule = {**RULES[9], "severity": "info"}
+                    extra["dampened"] = True
+                    extra["dampening_reason"] = "single_affected"
+                    results.append(_emit(dampened_rule, {**ctx, "effect_size": es}, finding,
+                                         params=extra))
+                else:
+                    results.append(_emit(RULES[9], {**ctx, "effect_size": es}, finding,
+                                         params=extra))
             elif abs(es) >= 0.5:
-                results.append(_emit(RULES[10], {**ctx, "effect_size": es}, finding))
+                results.append(_emit(RULES[10], {**ctx, "effect_size": es}, finding,
+                                     params={"effect_size": es, "n_affected": n_aff}))
 
-        # R12-R13: Histopathology
+        # R12-R13: Histopathology — incidence increase / severity increase
         if finding.get("domain") in ("MI", "MA", "CL"):
             if finding.get("direction") == "up" and finding.get("severity") != "normal":
                 results.append(_emit(RULES[11], ctx, finding))
             if finding.get("dose_response_pattern") in ("monotonic_increase", "threshold"):
                 if finding.get("avg_severity") is not None:
                     results.append(_emit(RULES[12], ctx, finding))
+
+            # R18-R19: Histopathology — incidence decrease (protective)
+            # Require a real specimen — clinical observations (CL domain
+            # findings without specimen) are whole-animal signs, not tissue
+            # pathology, so they're excluded from protective/repurposing rules.
+            specimen = finding.get("specimen")
+            gs = finding.get("group_stats", [])
+            if specimen and finding.get("direction") == "down" and len(gs) >= 2:
+                ctrl_inc = gs[0].get("incidence", 0) * 100
+                high_inc = gs[-1].get("incidence", 0) * 100
+                if ctrl_inc > 0 and high_inc < ctrl_inc:
+                    dec_ctx = {**ctx, "ctrl_pct": f"{ctrl_inc:.0f}", "high_pct": f"{high_inc:.0f}"}
+                    prot_params = {"ctrl_pct": f"{ctrl_inc:.0f}", "high_pct": f"{high_inc:.0f}"}
+                    results.append(_emit(RULES[17], dec_ctx, finding, params=prot_params))
+                    # R19: Drug repurposing — when control incidence is high
+                    # and there's a clear decrease (monotonic, threshold, or
+                    # non-monotonic with large magnitude drop)
+                    pattern = finding.get("dose_response_pattern", "")
+                    large_drop = (ctrl_inc - high_inc) >= 40
+                    if ctrl_inc >= 50 and (
+                        pattern in ("monotonic_decrease", "threshold")
+                        or (pattern == "non_monotonic" and large_drop)
+                    ):
+                        results.append(_emit(RULES[18], dec_ctx, finding, params=prot_params))
 
     # Target organ rules (R08, R09, R16)
     for organ in target_organs:
@@ -149,7 +202,10 @@ def evaluate_rules(
         if organ.get("target_organ_flag"):
             results.append(_emit_organ(RULES[7], organ_ctx))
         if organ["n_domains"] >= 2:
-            results.append(_emit_organ(RULES[8], organ_ctx))
+            results.append(_emit_organ(RULES[8], organ_ctx,
+                                       params={"n_endpoints": organ["n_endpoints"],
+                                               "n_domains": organ["n_domains"],
+                                               "domains": organ["domains"]}))
 
         # R16: Correlated findings
         organ_findings = [f for f in findings if f.get("organ_system") == organ["organ_system"]]
@@ -157,18 +213,23 @@ def evaluate_rules(
             labels = sorted(set(f.get("endpoint_label", "") for f in organ_findings))[:5]
             results.append(_emit_organ(RULES[15], {
                 **organ_ctx, "endpoint_labels": ", ".join(labels)
-            }))
+            }, params={"endpoint_labels": labels}))
 
     # NOAEL rules (R14, R15)
     for noael_row in noael_summary:
         sex = noael_row["sex"]
         if noael_row["noael_dose_level"] is not None:
+            noael_params = {
+                "noael_label": noael_row["noael_label"],
+                "noael_dose_value": noael_row.get("noael_dose_value", ""),
+                "noael_dose_unit": noael_row.get("noael_dose_unit", ""),
+            }
             results.append(_emit_study(RULES[13], {
                 "sex": sex,
                 "noael_label": noael_row["noael_label"],
                 "noael_dose_value": noael_row.get("noael_dose_value", ""),
                 "noael_dose_unit": noael_row.get("noael_dose_unit", ""),
-            }))
+            }, params=noael_params))
         else:
             results.append(_emit_study(RULES[14], {"sex": sex}))
 
@@ -180,9 +241,37 @@ def evaluate_rules(
                 results.append(_emit_study(RULES[16], {
                     "sex": finding.get("sex", ""),
                     "count": count,
-                }))
+                }, params={"count": count}))
 
-    return results
+    return _apply_suppressions(results)
+
+
+def _apply_suppressions(results: list[dict]) -> list[dict]:
+    """Remove contradictory/redundant rule results.
+
+    Suppression rules (grouped by context_key):
+    - R01 present → suppress R07 (treatment significance subsumes pattern diagnostic)
+    - R04 present → suppress R01, R03 (adverse classification subsumes trend tests)
+    """
+    by_context = defaultdict(list)
+    for r in results:
+        by_context[r["context_key"]].append(r)
+
+    suppressed_indices = set()
+    for ctx_rules in by_context.values():
+        ids = {r["rule_id"] for r in ctx_rules}
+
+        if "R01" in ids and "R07" in ids:
+            for r in ctx_rules:
+                if r["rule_id"] == "R07":
+                    suppressed_indices.add(id(r))
+
+        if "R04" in ids:
+            for r in ctx_rules:
+                if r["rule_id"] in ("R01", "R03"):
+                    suppressed_indices.add(id(r))
+
+    return [r for r in results if id(r) not in suppressed_indices]
 
 
 def _build_finding_context(finding: dict, dose_label_map: dict) -> dict:
@@ -204,13 +293,38 @@ def _build_finding_context(finding: dict, dose_label_map: dict) -> dict:
     }
 
 
-def _emit(rule: dict, ctx: dict, finding: dict) -> dict:
+def _emit(rule: dict, ctx: dict, finding: dict, params=None) -> dict:
     """Emit a rule result for an endpoint-scoped rule."""
     try:
         text = rule["template"].format(**ctx)
     except (KeyError, ValueError) as e:
         logger.warning("Template error in rule %s: %s", rule["id"], e)
         text = rule["template"]
+
+    # Base params — available for all endpoint-scoped rules
+    gs = finding.get("group_stats", [])
+    n_affected_treated = sum(g.get("affected", 0) for g in gs if g.get("dose_level", 0) > 0)
+    max_n = max((g.get("n", 0) for g in gs), default=0)
+
+    base = {
+        "endpoint_label": finding.get("endpoint_label", ""),
+        "domain": finding.get("domain", ""),
+        "test_code": finding.get("test_code", ""),
+        "sex": finding.get("sex", ""),
+        "direction": finding.get("direction", ""),
+        "specimen": finding.get("specimen"),
+        "finding": finding.get("finding", ""),
+        "data_type": finding.get("data_type", ""),
+        "dose_response_pattern": finding.get("dose_response_pattern", ""),
+        "severity_class": finding.get("severity", ""),
+        "treatment_related": finding.get("treatment_related", False),
+        "p_value": finding.get("min_p_adj"),
+        "trend_p": finding.get("trend_p"),
+        "effect_size": finding.get("max_effect_size"),
+        "n_affected": n_affected_treated,
+        "max_n": max_n,
+    }
+    merged = {**base, **(params or {})}
 
     return {
         "rule_id": rule["id"],
@@ -222,16 +336,20 @@ def _emit(rule: dict, ctx: dict, finding: dict) -> dict:
         "evidence_refs": [
             f"{finding.get('domain')}: {finding.get('endpoint_label', '')} ({finding.get('sex', '')})"
         ],
+        "params": merged,
     }
 
 
-def _emit_organ(rule: dict, ctx: dict) -> dict:
+def _emit_organ(rule: dict, ctx: dict, params=None) -> dict:
     """Emit a rule result for an organ-scoped rule."""
     try:
         text = rule["template"].format(**ctx)
     except (KeyError, ValueError) as e:
         logger.warning("Template error in rule %s: %s", rule["id"], e)
         text = rule["template"]
+
+    base = {"organ_system": ctx.get("organ_system", "")}
+    merged = {**base, **(params or {})}
 
     return {
         "rule_id": rule["id"],
@@ -241,16 +359,20 @@ def _emit_organ(rule: dict, ctx: dict) -> dict:
         "organ_system": ctx.get("organ_system", ""),
         "output_text": text,
         "evidence_refs": [],
+        "params": merged,
     }
 
 
-def _emit_study(rule: dict, ctx: dict) -> dict:
+def _emit_study(rule: dict, ctx: dict, params=None) -> dict:
     """Emit a rule result for a study-scoped rule."""
     try:
         text = rule["template"].format(**ctx)
     except (KeyError, ValueError) as e:
         logger.warning("Template error in rule %s: %s", rule["id"], e)
         text = rule["template"]
+
+    base = {"sex": ctx.get("sex", "")}
+    merged = {**base, **(params or {})}
 
     return {
         "rule_id": rule["id"],
@@ -260,4 +382,5 @@ def _emit_study(rule: dict, ctx: dict) -> dict:
         "organ_system": "",
         "output_text": text,
         "evidence_refs": [],
+        "params": merged,
     }

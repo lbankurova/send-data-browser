@@ -118,8 +118,11 @@ export function extractEndpointSignals(rules: RuleResult[]): EndpointSignal[] {
     if (!ctx) continue;
 
     if (r.rule_id === "R10" || r.rule_id === "R11") {
-      const d = parseEffectSize(r.output_text);
-      const epName = parseEndpointName(r.output_text);
+      // Prefer params, fall back to regex
+      const d = r.params?.effect_size != null
+        ? (typeof r.params.effect_size === "number" ? r.params.effect_size : null)
+        : parseEffectSize(r.output_text);
+      const epName = r.params?.endpoint_label || parseEndpointName(r.output_text);
       if (d !== null) {
         const sig = getOrCreate(ctx.testCode, epName ?? ctx.testCode);
         const absD = Math.abs(d);
@@ -135,15 +138,17 @@ export function extractEndpointSignals(rules: RuleResult[]): EndpointSignal[] {
     }
 
     if (r.rule_id === "R04") {
-      const epName = parseEndpointName(r.output_text);
+      const epName = r.params?.endpoint_label || parseEndpointName(r.output_text);
       getOrCreate(ctx.testCode, epName ?? ctx.testCode).isAdverse = true;
     }
 
     if (r.rule_id === "R01") {
-      const epName = parseEndpointName(r.output_text);
+      const epName = r.params?.endpoint_label || parseEndpointName(r.output_text);
       const sig = getOrCreate(ctx.testCode, epName ?? ctx.testCode);
       sig.hasR01 = true;
-      const dir = parseDirection(r.output_text);
+      const dir = r.params?.direction
+        ? (r.params.direction as "up" | "down")
+        : parseDirection(r.output_text);
       if (dir && !sig.direction) {
         sig.direction = dir === "up" ? "\u2191" : "\u2193";
       }
@@ -222,8 +227,15 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
     const findingMap = new Map<string, Set<string>>();
     for (const r of histoRules) {
       const ctx = parseContextKey(r.context_key);
-      const sex = ctx?.sex ?? "";
-      if (r.rule_id === "R12") {
+      const sex = r.params?.sex ?? ctx?.sex ?? "";
+
+      // Prefer params-based extraction
+      if (r.params?.finding && r.params?.specimen) {
+        const key = `${r.params.finding} in ${r.params.specimen}`;
+        const set = findingMap.get(key) ?? new Set();
+        if (sex) set.add(sex);
+        findingMap.set(key, set);
+      } else if (r.rule_id === "R12") {
         const h = parseHistopath(r.output_text);
         if (h) {
           const key = `${h.finding} in ${h.specimen}`;
@@ -253,22 +265,71 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
     }
   }
 
-  // 4. R16: correlation — parse endpoint names into chips
-  //    New template: "{endpoint_labels} show convergent pattern."
+  // 4. R18/R19: protective / inverse incidence — collapse into one line
+  const protectiveRules = rules.filter(
+    (r) => r.rule_id === "R18" || r.rule_id === "R19"
+  );
+  if (protectiveRules.length > 0) {
+    const findingMap = new Map<string, { sexes: Set<string>; repurposing: boolean }>();
+    for (const r of protectiveRules) {
+      const ctx = parseContextKey(r.context_key);
+      const sex = r.params?.sex ?? ctx?.sex ?? "";
+
+      // Prefer params-based extraction
+      if (r.params?.finding && r.params?.specimen) {
+        const key = `${r.params.finding} in ${r.params.specimen}`;
+        const entry = findingMap.get(key) ?? { sexes: new Set(), repurposing: false };
+        if (sex) entry.sexes.add(sex);
+        if (r.rule_id === "R19") entry.repurposing = true;
+        findingMap.set(key, entry);
+      } else {
+        // Regex fallback
+        const m = r.output_text.match(/incidence of (.+?) in (.+?) with/);
+        if (m) {
+          const key = `${m[1]} in ${m[2]}`;
+          const entry = findingMap.get(key) ?? { sexes: new Set(), repurposing: false };
+          if (sex) entry.sexes.add(sex);
+          if (r.rule_id === "R19") entry.repurposing = true;
+          findingMap.set(key, entry);
+        } else if (r.rule_id === "R19") {
+          const m2 = r.output_text.match(/^(.+? in .+?):/);
+          if (m2) {
+            const entry = findingMap.get(m2[1]) ?? { sexes: new Set(), repurposing: false };
+            if (sex) entry.sexes.add(sex);
+            entry.repurposing = true;
+            findingMap.set(m2[1], entry);
+          }
+        }
+      }
+    }
+    if (findingMap.size > 0) {
+      const items: string[] = [];
+      for (const [finding, info] of findingMap) {
+        const sexStr = info.sexes.size > 0 ? ` (${[...info.sexes].sort().join(", ")})` : "";
+        const tag = info.repurposing ? " — potential protective effect" : "";
+        items.push(finding + sexStr + tag);
+      }
+      lines.push({ text: "Decreased with treatment", isWarning: false, listItems: items });
+    }
+  }
+
+  // R16: correlation — parse endpoint names into chips
   const r16 = rules.find((r) => r.rule_id === "R16");
   if (r16) {
-    const m = r16.output_text.match(/^(.+?)\s+show\b/);
-    if (m) {
-      const items = m[1]
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      lines.push({ text: "Correlated findings", isWarning: false, chips: items });
+    // Prefer params-based extraction
+    if (r16.params?.endpoint_labels && Array.isArray(r16.params.endpoint_labels)) {
+      lines.push({ text: "Correlated findings", isWarning: false, chips: r16.params.endpoint_labels });
     } else {
-      lines.push({
-        text: r16.output_text,
-        isWarning: false,
-      });
+      const m = r16.output_text.match(/^(.+?)\s+show\b/);
+      if (m) {
+        const items = m[1]
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        lines.push({ text: "Correlated findings", isWarning: false, chips: items });
+      } else {
+        lines.push({ text: r16.output_text, isWarning: false });
+      }
     }
   }
 
@@ -277,6 +338,10 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
   if (r14s.length > 0) {
     const parsed = r14s
       .map((r) => {
+        // Prefer params-based extraction
+        if (r.params?.noael_label && r.params?.sex) {
+          return { dose: r.params.noael_label, sex: r.params.sex };
+        }
         const m = r.output_text.match(/at (.+?) for (\w+)/);
         return m ? { dose: m[1], sex: m[2] } : null;
       })
@@ -325,6 +390,10 @@ export function computeTier(rules: RuleResult[]): Tier {
   const ids = new Set(rules.map((r) => r.rule_id));
   const warningEps = new Set<string>();
   const r01Eps = new Set<string>();
+  // Only count R10 as "real" (for tier computation) when severity = warning (not dampened)
+  const hasRealR10 = rules.some(
+    (r) => r.rule_id === "R10" && r.severity === "warning"
+  );
   for (const r of rules) {
     const ctx = parseContextKey(r.context_key);
     if (!ctx) continue;
@@ -332,8 +401,8 @@ export function computeTier(rules: RuleResult[]): Tier {
     if (r.rule_id === "R01") r01Eps.add(ctx.testCode);
   }
   if (ids.has("R08")) return "Critical";
-  if (ids.has("R04") && ids.has("R10") && warningEps.size >= 2) return "Critical";
-  if (ids.has("R04") || ids.has("R10")) return "Notable";
+  if (ids.has("R04") && hasRealR10 && warningEps.size >= 2) return "Critical";
+  if (ids.has("R04") || hasRealR10) return "Notable";
   if (ids.has("R01") && r01Eps.size >= 2) return "Notable";
   return "Observed";
 }
@@ -378,11 +447,18 @@ export function buildOrganGroups(rules: RuleResult[]): OrganGroup[] {
     let domainNames: string[] = [];
     const r09 = organRules.find((r) => r.rule_id === "R09");
     if (r09) {
-      const m = r09.output_text.match(/(\d+) endpoints across (.+?)\.?$/);
-      if (m) {
-        endpointCount = parseInt(m[1], 10);
-        domainNames = m[2].split(",").map((s) => s.trim()).filter(Boolean);
-        domainCount = domainNames.length;
+      // Prefer params-based extraction
+      if (r09.params?.n_endpoints != null && r09.params?.domains) {
+        endpointCount = r09.params.n_endpoints;
+        domainNames = Array.isArray(r09.params.domains) ? r09.params.domains : [];
+        domainCount = r09.params.n_domains ?? domainNames.length;
+      } else {
+        const m = r09.output_text.match(/(\d+) endpoints across (.+?)\.?$/);
+        if (m) {
+          endpointCount = parseInt(m[1], 10);
+          domainNames = m[2].split(",").map((s) => s.trim()).filter(Boolean);
+          domainCount = domainNames.length;
+        }
       }
     }
     // Build endpoint names grouped by domain
@@ -393,11 +469,11 @@ export function buildOrganGroups(rules: RuleResult[]): OrganGroup[] {
       let domMap = epByDomain.get(ctx.domain);
       if (!domMap) { domMap = new Map(); epByDomain.set(ctx.domain, domMap); }
       if (!domMap.has(ctx.testCode)) {
-        const epName = parseEndpointName(r.output_text);
+        const epName = r.params?.endpoint_label || parseEndpointName(r.output_text);
         domMap.set(ctx.testCode, epName ?? ctx.testCode);
       } else if (!domMap.get(ctx.testCode)!.includes(" ")) {
         // Prefer longer human-readable name over raw test code
-        const epName = parseEndpointName(r.output_text);
+        const epName = r.params?.endpoint_label || parseEndpointName(r.output_text);
         if (epName && epName.length > domMap.get(ctx.testCode)!.length) {
           domMap.set(ctx.testCode, epName);
         }
