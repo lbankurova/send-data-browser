@@ -7,11 +7,11 @@ import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { cn } from "@/lib/utils";
+import { getDoseConsistencyWeight, getDoseGroupColor } from "@/lib/severity-colors";
+import { DoseLabel } from "@/components/ui/DoseLabel";
 import {
   deriveSpecimenSummaries,
   deriveFindingSummaries,
-  deriveSpecimenConclusion,
   deriveSexLabel,
   getDoseConsistency,
   deriveSpecimenReviewStatus,
@@ -57,13 +57,6 @@ function specimenToOrganSystem(specimen: string): string {
   }
   return "general";
 }
-
-const REVIEW_STATUS_STYLES: Record<SpecimenReviewStatus, string> = {
-  "Preliminary": "border-border/50 text-muted-foreground/60",
-  "In review": "border-border text-muted-foreground/80",
-  "Confirmed": "border-border text-muted-foreground",
-  "Revised": "border-border text-muted-foreground",
-};
 
 const REVIEW_STATUS_TOOLTIPS: Record<SpecimenReviewStatus, string> = {
   "Preliminary": "No peer review recorded yet",
@@ -135,15 +128,6 @@ function SpecimenOverviewPane({
     [specimenData]
   );
 
-  // Conclusion text
-  const conclusion = useMemo(() => {
-    if (!summary) return "";
-    return deriveSpecimenConclusion(summary, specimenData, specimenRules);
-  }, [summary, specimenData, specimenRules]);
-
-  // Sex label
-  const sexLabel = useMemo(() => deriveSexLabel(specimenData), [specimenData]);
-
   // Merged domains from data + rules
   const allDomains = useMemo(() => {
     const set = new Set(summary?.domains ?? []);
@@ -154,7 +138,7 @@ function SpecimenOverviewPane({
     return [...set].sort();
   }, [summary?.domains, specimenRules]);
 
-  // Dose trend detail: incidence by dose group
+  // Dose-response: incidence by dose group
   const doseTrendDetail = useMemo(() => {
     // Aggregate across all findings in specimen
     const doseMap = new Map<number, { label: string; affected: number; n: number }>();
@@ -183,6 +167,32 @@ function SpecimenOverviewPane({
     return { doses: sorted, method, trend: finalTrend };
   }, [specimenData, specimenRules]);
 
+  // Structured conclusion parts (rendered as individual chips)
+  const conclusionParts = useMemo(() => {
+    if (!summary) return null;
+    const incPct = summary.totalN > 0
+      ? Math.round((summary.totalAffected / summary.totalN) * 100)
+      : 0;
+    const incidenceLabel = incPct > 50 ? "high" : incPct > 20 ? "moderate" : "low";
+    const sevLabel = summary.adverseCount > 0
+      ? `max severity ${summary.maxSeverity.toFixed(1)}`
+      : "non-adverse";
+    const sexLabel = deriveSexLabel(specimenData).toLowerCase();
+    const trend = doseTrendDetail.trend;
+    const doseRelation = trend === "Strong"
+      ? "dose-response: \u2191 strong"
+      : trend === "Moderate"
+      ? "dose-response: \u2191 moderate"
+      : "dose-response: no clear trend";
+    return {
+      incidence: `incidence: ${incidenceLabel}, ${incPct}%`,
+      severity: sevLabel,
+      sex: sexLabel,
+      doseRelation,
+      findings: `${summary.findingCount} findings`,
+    };
+  }, [summary, specimenData, doseTrendDetail.trend]);
+
   // Review status
   const findingNames = useMemo(
     () => [...new Set(specimenData.map((r) => r.finding))],
@@ -204,24 +214,21 @@ function SpecimenOverviewPane({
       {/* Header */}
       <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">{specimen.replace(/_/g, " ")}</h3>
-          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          {summary.adverseCount > 0 && (
-            <span className="rounded-sm border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {summary.adverseCount} adverse
+          <div className="flex items-end gap-2">
+            <h3 className="text-sm font-semibold leading-none">{specimen.replace(/_/g, " ")}</h3>
+            <span
+              className={`text-[10px] leading-none ${reviewStatus === "Revised" ? "text-purple-600" : "text-muted-foreground"}`}
+              title={REVIEW_STATUS_TOOLTIPS[reviewStatus]}
+            >
+              {reviewStatus}
             </span>
-          )}
-          <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
-            {sexLabel}
-          </span>
-          <span
-            className={cn("rounded border px-1 py-0.5 text-[10px]", REVIEW_STATUS_STYLES[reviewStatus])}
-            title={REVIEW_STATUS_TOOLTIPS[reviewStatus]}
-          >
-            {reviewStatus}
-          </span>
+            {summary.adverseCount > 0 && (
+              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {summary.adverseCount} adverse
+              </span>
+            )}
+          </div>
+          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
         </div>
         {allDomains.length > 0 && (
           <div className="mt-1 flex items-center gap-1">
@@ -234,21 +241,25 @@ function SpecimenOverviewPane({
 
       {/* Overview */}
       <CollapsiblePane title="Overview" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <p className="text-[11px] leading-snug text-muted-foreground">{conclusion}</p>
-        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
-          <span>Findings: <span className="font-mono font-medium">{summary.findingCount}</span></span>
-          <span>Incidence: <span className="font-mono font-medium">{summary.totalN > 0 ? Math.round((summary.totalAffected / summary.totalN) * 100) : 0}%</span></span>
-          <span>Max sev: <span className="font-mono font-medium">{summary.maxSeverity.toFixed(1)}</span></span>
-          <span>Dose: <span className="font-medium">{summary.doseConsistency}</span></span>
-        </div>
+        {conclusionParts && (
+          <div className="flex flex-wrap gap-1.5">
+            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.incidence}</span>
+            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.severity}</span>
+            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.sex}</span>
+            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
+              <span className={getDoseConsistencyWeight(doseTrendDetail.trend)}>{conclusionParts.doseRelation}</span>
+            </span>
+            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.findings}</span>
+          </div>
+        )}
       </CollapsiblePane>
 
-      {/* Dose trend detail */}
-      <CollapsiblePane title="Dose trend detail" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+      {/* Dose-response */}
+      <CollapsiblePane title="Dose-response" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <div className="mb-1.5 text-[10px] text-muted-foreground">
           Method: <span className="font-medium">{doseTrendDetail.method}</span>
           {" \u2014 "}
-          <span className="font-medium">
+          <span className={getDoseConsistencyWeight(doseTrendDetail.trend)}>
             {doseTrendDetail.trend === "Strong" ? "Strong trend (\u25B2\u25B2\u25B2)" :
              doseTrendDetail.trend === "Moderate" ? "Moderate trend (\u25B2\u25B2)" :
              "Weak trend (\u25B2)"}
@@ -270,13 +281,15 @@ function SpecimenOverviewPane({
                 const pct = info.n > 0 ? (info.affected / info.n) * 100 : 0;
                 return (
                   <tr key={level} className="border-b border-dashed">
-                    <td className="py-0.5">{info.label}</td>
+                    <td className="py-0.5">
+                      <DoseLabel level={level} label={info.label} />
+                    </td>
                     <td className="py-0.5 text-right font-mono">{info.affected}/{info.n}</td>
                     <td className="py-0.5 px-1">
                       <div className="h-1.5 w-full rounded-full bg-gray-100">
                         <div
-                          className="h-1.5 rounded-full bg-gray-400"
-                          style={{ width: `${Math.min(pct, 100)}%` }}
+                          className="h-1.5 rounded-full"
+                          style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: getDoseGroupColor(level) }}
                           title={`${Math.round(pct)}%`}
                         />
                       </div>
@@ -310,7 +323,7 @@ function SpecimenOverviewPane({
                     {f.maxSeverity.toFixed(1)}
                   </span>
                   {f.severity === "adverse" && (
-                    <span className="rounded-sm border border-border px-1 py-0.5 text-[9px] text-muted-foreground">adverse</span>
+                    <span className="text-[9px] font-medium" style={{ color: "#dc2626" }}>adverse</span>
                   )}
                 </span>
               </button>
@@ -524,7 +537,9 @@ function FindingDetailPane({
                 const incPct = row.n > 0 ? (row.affected / row.n) * 100 : 0;
                 return (
                   <tr key={i} className="border-b border-dashed">
-                    <td className="py-0.5">{row.dose_label.split(",")[0]}</td>
+                    <td className="py-0.5">
+                      <DoseLabel level={row.dose_level} label={row.dose_label.split(",")[0]} />
+                    </td>
                     <td className="py-0.5">{row.sex}</td>
                     <td className="py-0.5 text-right font-mono">
                       {row.affected}/{row.n}
@@ -532,8 +547,8 @@ function FindingDetailPane({
                     <td className="py-0.5 px-1">
                       <div className="h-1.5 w-full rounded-full bg-gray-100">
                         <div
-                          className="h-1.5 rounded-full bg-gray-400"
-                          style={{ width: `${Math.min(incPct, 100)}%` }}
+                          className="h-1.5 rounded-full"
+                          style={{ width: `${Math.min(incPct, 100)}%`, backgroundColor: getDoseGroupColor(row.dose_level) }}
                           title={`${Math.round(incPct)}%`}
                         />
                       </div>
@@ -544,7 +559,10 @@ function FindingDetailPane({
                       </span>
                     </td>
                     <td className="py-0.5 text-center">
-                      <span className="rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground">
+                      <span
+                        className="text-[9px] font-medium"
+                        style={{ color: row.severity === "adverse" ? "#dc2626" : row.severity === "warning" ? "#d97706" : "#16a34a" }}
+                      >
                         {row.severity}
                       </span>
                     </td>
