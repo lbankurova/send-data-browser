@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Loader2, Microscope, BarChart3, Users, TrendingUp, Search, Plus, Pin, Info } from "lucide-react";
+import { Loader2, Microscope, BarChart3, Users, TrendingUp, Search, Plus, Pin } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -18,20 +18,25 @@ import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterSelect, FilterMultiSelect, FilterSearch, FilterShowingLine } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { DoseLabel, DoseHeader } from "@/components/ui/DoseLabel";
-import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight } from "@/lib/severity-colors";
+import { DoseHeader } from "@/components/ui/DoseLabel";
+import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight, titleCase } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
-import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { MasterDetailLayout } from "@/components/ui/MasterDetailLayout";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
+import { rail } from "@/lib/design-tokens";
+import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
+import { buildDoseIncidenceBarOption, buildDoseSeverityBarOption } from "@/components/analysis/charts/histopathology-charts";
+import type { DoseIncidenceGroup, DoseSeverityGroup, ChartDisplayMode } from "@/components/analysis/charts/histopathology-charts";
+import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 import type { LesionSeverityRow, RuleResult, FindingDoseTrend } from "@/types/analysis-views";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import type { PathologyReview } from "@/types/annotations";
 
 // ─── Neutral heat color (§6.1 evidence tier) ─────────────
-function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
+export function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
   if (avgSev >= 5) return { bg: "#4B5563", text: "white" };
   if (avgSev >= 4) return { bg: "#6B7280", text: "white" };
   if (avgSev >= 3) return { bg: "#9CA3AF", text: "var(--foreground)" };
@@ -320,6 +325,29 @@ export function deriveSpecimenReviewStatus(
   return "In review";
 }
 
+// ─── ChartModeToggle ──────────────────────────────────────
+
+function ChartModeToggle({ mode, onChange }: { mode: ChartDisplayMode; onChange: (m: ChartDisplayMode) => void }) {
+  return (
+    <div className="flex gap-px rounded-sm bg-muted/40 p-px">
+      {(["compact", "scaled"] as const).map((m) => (
+        <button
+          key={m}
+          type="button"
+          title={m === "compact" ? "Compact — auto-scale to data" : "Scaled — fixed axis range"}
+          className={cn(
+            "rounded-sm px-1 py-px text-[9px] font-semibold leading-none transition-colors",
+            mode === m ? "bg-foreground text-background" : "text-muted-foreground/50 hover:text-muted-foreground",
+          )}
+          onClick={() => onChange(m)}
+        >
+          {m === "compact" ? "C" : "S"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ─── SpecimenRailItem ──────────────────────────────────────
 
 function SpecimenRailItem({
@@ -340,15 +368,13 @@ function SpecimenRailItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 px-2.5 py-1.5 transition-colors",
-        isSelected
-          ? "border-l-2 border-l-primary bg-blue-50/80 dark:bg-blue-950/30"
-          : "border-l-2 border-l-transparent hover:bg-accent/30"
+        rail.itemBase, "px-2.5 py-1.5",
+        isSelected ? rail.itemSelected : rail.itemIdle
       )}
       onClick={onClick}
     >
       {/* Line 1: specimen name + aligned indicators */}
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center">
         <span className="min-w-0 flex-1 truncate text-xs font-semibold">
           {summary.specimen.replace(/_/g, " ")}
         </span>
@@ -358,10 +384,10 @@ function SpecimenRailItem({
         {reviewStatus === "Revised" && (
           <span className="shrink-0 text-[9px] text-muted-foreground" title="Findings revised">{"\u007E"}</span>
         )}
-        {/* Fixed-width indicator columns for vertical alignment */}
+        {/* Indicators: [dose trend] ·· [severity] · [incidence][counts] */}
         <span
           className={cn(
-            "w-7 shrink-0 text-right text-[9px]",
+            "w-5 shrink-0 text-right text-[9px]",
             getDoseConsistencyWeight(summary.doseConsistency),
             summary.doseConsistency === "Strong" ? "text-muted-foreground" :
             summary.doseConsistency === "Moderate" ? "text-muted-foreground/60" :
@@ -372,39 +398,37 @@ function SpecimenRailItem({
           {summary.doseConsistency === "Strong" ? "▲▲▲" : summary.doseConsistency === "Moderate" ? "▲▲" : "▲"}
         </span>
         <span
-          className="w-7 shrink-0 rounded-sm text-center font-mono text-[9px]"
+          className="ml-2 w-7 shrink-0 rounded-sm text-center font-mono text-[9px]"
           style={{ backgroundColor: sevColors.bg, color: sevColors.text }}
           title={`Max severity: ${summary.maxSeverity.toFixed(1)} (scale 1\u20135)`}
         >
           {summary.maxSeverity.toFixed(1)}
         </span>
-        <span className="w-1 shrink-0" />
         <span
-          className="w-8 shrink-0 rounded-sm text-center font-mono text-[9px]"
+          className="ml-1 w-8 shrink-0 rounded-sm text-center font-mono text-[9px]"
           style={{ backgroundColor: incColors.bg, color: incColors.text }}
           title={`Incidence: ${summary.totalAffected}/${summary.totalN} (${incPct}%)`}
         >
           {incPct}%
         </span>
-        <span className="w-4 shrink-0 text-right font-mono text-[9px] text-muted-foreground" title={`${summary.findingCount} findings`}>
+        <span className="w-3 shrink-0 text-right font-mono text-[9px] text-muted-foreground" title={`${summary.findingCount} findings`}>
           {summary.findingCount}
         </span>
         <span
-          className={cn("w-5 shrink-0 text-right font-mono text-[9px]", summary.adverseCount > 0 ? "text-muted-foreground" : "text-muted-foreground/40")}
+          className={cn("w-4 shrink-0 text-right font-mono text-[9px]", summary.adverseCount > 0 ? "text-muted-foreground" : "text-muted-foreground/40")}
           title={`${summary.adverseCount} adverse`}
         >
           {summary.adverseCount}A
         </span>
       </div>
 
-      {/* Line 2: domain tags */}
-      {summary.domains.length > 0 && (
-        <div className="mt-0.5 flex items-center gap-1 pl-0.5">
-          {summary.domains.map((d) => (
-            <DomainLabel key={d} domain={d} />
-          ))}
-        </div>
-      )}
+      {/* Line 2: organ system + domain tags */}
+      <div className="mt-0.5 flex items-center gap-1 pl-0.5">
+        <span className="text-[9px] text-muted-foreground/70">{titleCase(specimenToOrganSystem(summary.specimen))}</span>
+        {summary.domains.map((d) => (
+          <DomainLabel key={d} domain={d} />
+        ))}
+      </div>
     </button>
   );
 }
@@ -428,8 +452,10 @@ function SpecimenRail({
   const [minSevFilter, setMinSevFilter] = useState<number>(0);
   const [adverseOnly, setAdverseOnly] = useState(false);
   const [doseTrendFilter, setDoseTrendFilter] = useState<"any" | "moderate" | "strong">("any");
+  const [sortBy, setSortBy] = useState<"signal" | "organ" | "severity" | "incidence" | "alpha">("signal");
 
   const filtered = useMemo(() => {
+    // Filter
     let list = specimens;
     if (search) {
       const q = search.toLowerCase();
@@ -446,8 +472,43 @@ function SpecimenRail({
     } else if (doseTrendFilter === "strong") {
       list = list.filter((s) => s.doseConsistency === "Strong");
     }
-    return list;
-  }, [specimens, search, minSevFilter, adverseOnly, doseTrendFilter]);
+
+    // Sort
+    const sorted = [...list];
+    switch (sortBy) {
+      case "signal":
+        sorted.sort((a, b) => {
+          const doseW = (d: string) => d === "Strong" ? 2 : d === "Moderate" ? 1 : 0;
+          const scoreA = a.adverseCount * 3 + a.maxSeverity + (a.totalAffected / Math.max(a.totalN, 1)) * 5 + doseW(a.doseConsistency);
+          const scoreB = b.adverseCount * 3 + b.maxSeverity + (b.totalAffected / Math.max(b.totalN, 1)) * 5 + doseW(b.doseConsistency);
+          return scoreB - scoreA;
+        });
+        break;
+      case "organ": {
+        sorted.sort((a, b) => {
+          const orgA = specimenToOrganSystem(a.specimen);
+          const orgB = specimenToOrganSystem(b.specimen);
+          if (orgA !== orgB) return orgA.localeCompare(orgB);
+          return b.maxSeverity - a.maxSeverity;
+        });
+        break;
+      }
+      case "severity":
+        sorted.sort((a, b) => b.maxSeverity - a.maxSeverity);
+        break;
+      case "incidence":
+        sorted.sort((a, b) => {
+          const incA = a.totalAffected / Math.max(a.totalN, 1);
+          const incB = b.totalAffected / Math.max(b.totalN, 1);
+          return incB - incA;
+        });
+        break;
+      case "alpha":
+        sorted.sort((a, b) => a.specimen.localeCompare(b.specimen));
+        break;
+    }
+    return sorted;
+  }, [specimens, search, minSevFilter, adverseOnly, doseTrendFilter, sortBy]);
 
 
   return (
@@ -465,14 +526,17 @@ function SpecimenRail({
         <FilterShowingLine
           className="mt-0.5"
           parts={(() => {
-            if (!minSevFilter && !adverseOnly && doseTrendFilter === "any" && !search) return undefined;
             const parts: string[] = [];
             if (search) parts.push(`"${search}"`);
             if (minSevFilter > 0) parts.push(`Severity ${minSevFilter}+`);
             if (adverseOnly) parts.push("Adverse only");
             if (doseTrendFilter === "moderate") parts.push("Moderate+ trend");
             else if (doseTrendFilter === "strong") parts.push("Strong trend");
-            parts.push(`${filtered.length}/${specimens.length}`);
+            const hasFilters = parts.length > 0;
+            if (hasFilters) parts.push(`${filtered.length}/${specimens.length}`);
+            const sortLabels: Record<string, string> = { signal: "Signal", organ: "Organ", severity: "Severity", incidence: "Incidence", alpha: "A\u2013Z" };
+            if (!hasFilters) parts.push("All");
+            parts.push(`Sort: ${sortLabels[sortBy]}`);
             return parts;
           })()}
         />
@@ -480,21 +544,32 @@ function SpecimenRail({
         {/* Filter row */}
         <div className="mt-2 flex items-center gap-1.5">
           <FilterSelect
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+            title={sortBy === "signal" ? "Signal = adverse\u00D73 + severity + incidence\u00D75 + dose trend strength" : "Sort specimens by"}
+          >
+            <option value="signal">Signal</option>
+            <option value="organ">Organ</option>
+            <option value="severity">Severity</option>
+            <option value="incidence">Incidence</option>
+            <option value="alpha">A–Z</option>
+          </FilterSelect>
+          <FilterSelect
             value={minSevFilter}
             onChange={(e) => setMinSevFilter(Number(e.target.value))}
             title="Minimum severity filter"
-                      >
-            <option value={0}>All severities</option>
-            <option value={2}>Severity 2+</option>
-            <option value={3}>Severity 3+</option>
-            <option value={4}>Severity 4+</option>
+          >
+            <option value={0}>Sev: all</option>
+            <option value={2}>Sev 2+</option>
+            <option value={3}>Sev 3+</option>
+            <option value={4}>Sev 4+</option>
           </FilterSelect>
           <FilterSelect
             value={doseTrendFilter}
             onChange={(e) => setDoseTrendFilter(e.target.value as "any" | "moderate" | "strong")}
             title="Dose trend filter"
-                      >
-            <option value="any">All trends</option>
+          >
+            <option value="any">Trend: all</option>
             <option value="moderate">Moderate+</option>
             <option value="strong">Strong only</option>
           </FilterSelect>
@@ -505,7 +580,7 @@ function SpecimenRail({
               onChange={(e) => setAdverseOnly(e.target.checked)}
               className="h-3 w-3 rounded border-gray-300"
             />
-            Adverse
+            Adv
           </label>
         </div>
       </div>
@@ -571,12 +646,17 @@ function OverviewTab({
   const [doseGroupFilter, setDoseGroupFilter] = useState<ReadonlySet<string> | null>(null);
   const [doseDepThreshold, setDoseDepThreshold] = useState<"moderate" | "strong" | "ca_trend" | "severity_trend">("moderate");
   const [doseDepMenu, setDoseDepMenu] = useState<{ x: number; y: number } | null>(null);
+  const [hideZeroSeverity, setHideZeroSeverity] = useState(false);
+  const [incidenceMode, setIncidenceMode] = useState<ChartDisplayMode>("scaled");
+  const [severityMode, setSeverityMode] = useState<ChartDisplayMode>("scaled");
   const doseDepMenuRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sections = useAutoFitSections(containerRef, "histopathology", [
     { id: "findings", min: 80, max: 500, defaultHeight: 200 },
+    { id: "doseChart", min: 80, max: 400, defaultHeight: 170 },
   ]);
   const findingsSection = sections[0];
+  const chartSection = sections[1];
 
   // Close dose-dep context menu on outside click
   useEffect(() => {
@@ -649,9 +729,9 @@ function OverviewTab({
   const findingRelatedOrgans = useMemo(() => {
     const map = new Map<string, string[]>();
     if (!allRuleResults.length || !specimen) return map;
-    const specLower = specimen.toLowerCase();
+    const selfOrgan = specimenToOrganSystem(specimen).toLowerCase();
     const otherR16 = allRuleResults.filter(
-      (r) => r.rule_id === "R16" && r.organ_system.toLowerCase() !== specLower
+      (r) => r.rule_id === "R16" && r.organ_system.toLowerCase() !== selfOrgan
     );
     for (const fs of findingSummaries) {
       const findingLower = fs.finding.toLowerCase();
@@ -674,6 +754,112 @@ function OverviewTab({
       return true;
     });
   }, [specimenData, sexFilter, minSeverity]);
+
+  // Stable frame: all dose groups + sexes from the entire specimen (not finding-filtered)
+  const { stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping } = useMemo(() => {
+    if (!filteredData.length) return { stableDoseLevels: [] as { level: number; label: string }[], stableAllSexes: [] as string[], stableSexKeys: [] as string[], stableUseSexGrouping: false };
+    const doseLabels = new Map<number, string>();
+    const sexSet = new Set<string>();
+    for (const r of filteredData) {
+      if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, r.dose_label.split(",")[0]);
+      sexSet.add(r.sex);
+    }
+    const levels = [...doseLabels.entries()].sort((a, b) => a[0] - b[0]).map(([level, label]) => ({ level, label }));
+    const allSexes = [...sexSet].sort();
+    const useSexGrouping = allSexes.length > 1 && !sexFilter;
+    const sexKeys = useSexGrouping ? allSexes : allSexes.length === 1 ? allSexes : ["Combined"];
+    return { stableDoseLevels: levels, stableAllSexes: allSexes, stableSexKeys: sexKeys, stableUseSexGrouping: useSexGrouping };
+  }, [filteredData, sexFilter]);
+
+  // Dose-incidence chart data
+  const { chartOption: doseChartOption, hasDoseChartData } = useMemo(() => {
+    if (!stableDoseLevels.length) return { chartOption: null, hasDoseChartData: false };
+
+    // Optionally filter to selected finding
+    const rows = selection?.finding
+      ? filteredData.filter((r) => r.finding === selection.finding)
+      : filteredData;
+
+    // Group by dose_level → sex → { affected, n }
+    const doseMap = new Map<number, Map<string, { affected: number; n: number }>>();
+    for (const r of rows) {
+      let bySex = doseMap.get(r.dose_level);
+      if (!bySex) { bySex = new Map(); doseMap.set(r.dose_level, bySex); }
+      const sexEntry = bySex.get(r.sex);
+      if (sexEntry) { sexEntry.affected += r.affected; sexEntry.n += r.n; }
+      else { bySex.set(r.sex, { affected: r.affected, n: r.n }); }
+    }
+
+    // Build groups using stable frame — always all dose levels, all sexes
+    const groups: DoseIncidenceGroup[] = stableDoseLevels.map(({ level, label }) => {
+      const bySexMap = doseMap.get(level);
+      if (stableUseSexGrouping) {
+        const bySex: Record<string, { affected: number; n: number }> = {};
+        for (const sex of stableAllSexes) {
+          const s = bySexMap?.get(sex);
+          bySex[sex] = s ?? { affected: 0, n: 0 };
+        }
+        return { doseLevel: level, doseLabel: label, bySex };
+      }
+      if (stableAllSexes.length === 1) {
+        const sex = stableAllSexes[0];
+        const s = bySexMap?.get(sex);
+        return { doseLevel: level, doseLabel: label, bySex: { [sex]: s ?? { affected: 0, n: 0 } } };
+      }
+      let totalAffected = 0;
+      let totalN = 0;
+      if (bySexMap) for (const [, s] of bySexMap) { totalAffected += s.affected; totalN += s.n; }
+      return { doseLevel: level, doseLabel: label, bySex: { Combined: { affected: totalAffected, n: totalN } } };
+    });
+
+    return { chartOption: buildDoseIncidenceBarOption(groups, stableSexKeys, incidenceMode), hasDoseChartData: true };
+  }, [filteredData, selection?.finding, stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping, incidenceMode]);
+
+  // Dose-severity chart data
+  const { chartOption: doseSeverityChartOption, hasSeverityChartData } = useMemo(() => {
+    if (!stableDoseLevels.length) return { chartOption: null, hasSeverityChartData: false };
+
+    const rows = selection?.finding
+      ? filteredData.filter((r) => r.finding === selection.finding)
+      : filteredData;
+    // Only include rows with non-null avg_severity for aggregation
+    const sevRows = rows.filter((r) => (r.avg_severity ?? 0) > 0);
+
+    const doseMap = new Map<number, Map<string, { totalSeverity: number; count: number }>>();
+    for (const r of sevRows) {
+      let bySex = doseMap.get(r.dose_level);
+      if (!bySex) { bySex = new Map(); doseMap.set(r.dose_level, bySex); }
+      const sexEntry = bySex.get(r.sex);
+      const sev = r.avg_severity ?? 0;
+      if (sexEntry) { sexEntry.totalSeverity += sev; sexEntry.count += 1; }
+      else { bySex.set(r.sex, { totalSeverity: sev, count: 1 }); }
+    }
+
+    // Build groups using stable frame — always all dose levels, all sexes
+    const groups: DoseSeverityGroup[] = stableDoseLevels.map(({ level, label }) => {
+      const bySexMap = doseMap.get(level);
+      if (stableUseSexGrouping) {
+        const bySex: Record<string, { totalSeverity: number; count: number }> = {};
+        for (const sex of stableAllSexes) {
+          const s = bySexMap?.get(sex);
+          bySex[sex] = s ?? { totalSeverity: 0, count: 0 };
+        }
+        return { doseLevel: level, doseLabel: label, bySex };
+      }
+      if (stableAllSexes.length === 1) {
+        const sex = stableAllSexes[0];
+        const s = bySexMap?.get(sex);
+        return { doseLevel: level, doseLabel: label, bySex: { [sex]: s ?? { totalSeverity: 0, count: 0 } } };
+      }
+      let totalSev = 0;
+      let totalCount = 0;
+      if (bySexMap) for (const [, s] of bySexMap) { totalSev += s.totalSeverity; totalCount += s.count; }
+      return { doseLevel: level, doseLabel: label, bySex: { Combined: { totalSeverity: totalSev, count: totalCount } } };
+    });
+
+    const hasData = sevRows.length > 0;
+    return { chartOption: buildDoseSeverityBarOption(groups, stableSexKeys, severityMode), hasSeverityChartData: hasData };
+  }, [filteredData, selection?.finding, stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping, severityMode]);
 
   // Group-level heatmap data
   const heatmapData = useMemo(() => {
@@ -747,56 +933,68 @@ function OverviewTab({
     () => [
       findingColHelper.accessor("finding", {
         header: "Finding",
-        size: 160,
-        minSize: 100,
-        maxSize: 300,
+        size: 120,
+        minSize: 60,
+        maxSize: 260,
         cell: (info) => {
           const v = info.getValue();
+          const sev = info.row.original.maxSeverity;
           return (
             <div className="flex items-center gap-1.5 overflow-hidden">
               <div
                 className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                style={{ backgroundColor: getNeutralHeatColor(info.row.original.maxSeverity).bg }}
+                style={{ backgroundColor: getNeutralHeatColor(sev).bg }}
               />
-              <span className="truncate font-medium" title={v}>{v}</span>
+              <span className={cn("truncate", sev >= 4 ? "font-bold" : sev >= 2 ? "font-semibold" : "font-medium")} title={v}>{v}</span>
             </div>
           );
         },
       }),
       findingColHelper.accessor("maxSeverity", {
-        header: "Sev",
-        size: 40,
-        minSize: 35,
-        maxSize: 70,
-        cell: (info) => (
-          <span
-            className="font-mono text-[10px] text-muted-foreground"
-            title={`Max severity: ${info.getValue().toFixed(1)} (scale 1\u20135)`}
-          >
-            {info.getValue().toFixed(1)}
-          </span>
-        ),
+        header: "Peak sev",
+        size: 50,
+        minSize: 40,
+        maxSize: 80,
+        cell: (info) => {
+          const v = info.getValue();
+          return (
+            <span
+              className={cn(
+                "font-mono text-[10px]",
+                v >= 4 ? "font-bold text-foreground" : v >= 2 ? "font-semibold text-foreground/80" : v > 0 ? "font-medium text-muted-foreground" : "text-muted-foreground/40",
+              )}
+              title={`Max severity: ${v.toFixed(1)} (scale 1\u20135)`}
+            >
+              {v > 0 ? v.toFixed(1) : "\u2013"}
+            </span>
+          );
+        },
       }),
       findingColHelper.display({
         id: "incidence",
         header: "Incid.",
-        size: 48,
-        minSize: 40,
+        size: 50,
+        minSize: 42,
         maxSize: 80,
         cell: (info) => {
           const r = info.row.original;
+          const peak = (r.maxIncidence ?? 0) * 100;
+          const aggPct = r.totalN > 0 ? (r.totalAffected / r.totalN) * 100 : 0;
           return (
             <span
-              className="font-mono text-[10px] text-muted-foreground"
-              title={`${r.totalAffected} affected of ${r.totalN}`}
+              className={cn(
+                "font-mono text-[10px]",
+                peak >= 30 ? "font-bold text-foreground" : peak >= 10 ? "font-semibold text-foreground/80" : peak > 0 ? "font-medium text-muted-foreground" : "text-muted-foreground/40",
+              )}
+              title={`${r.totalAffected} affected of ${r.totalN} (${aggPct.toFixed(0)}% aggregate, ${peak.toFixed(0)}% peak group)`}
             >
-              {r.totalAffected}/{r.totalN}
+              {r.totalAffected > 0 ? `${r.totalAffected}/${r.totalN}` : "\u2013"}
             </span>
           );
         },
       }),
       findingColHelper.accessor("severity", {
-        header: "Class",
+        header: "Signal",
         size: 60,
         minSize: 48,
         maxSize: 100,
@@ -824,8 +1022,8 @@ function OverviewTab({
             </span>
           );
         },
-        size: 85,
-        minSize: 50,
+        size: 80,
+        minSize: 55,
         maxSize: 120,
         cell: (info) => {
           const isStatistical = doseDepThreshold === "ca_trend" || doseDepThreshold === "severity_trend";
@@ -867,9 +1065,9 @@ function OverviewTab({
       }),
       findingColHelper.accessor("relatedOrgans", {
         header: "Also in",
-        size: 160,
-        minSize: 60,
-        maxSize: 400,
+        size: 120,
+        minSize: 40,
+        maxSize: 300,
         cell: (info) => {
           const organs = info.getValue();
           if (!organs) return null;
@@ -888,8 +1086,13 @@ function OverviewTab({
     [doseDepThreshold]
   );
 
+  const filteredTableData = useMemo(
+    () => hideZeroSeverity ? tableData.filter((r) => r.maxSeverity > 0) : tableData,
+    [tableData, hideZeroSeverity],
+  );
+
   const findingsTable = useReactTable({
-    data: tableData,
+    data: filteredTableData,
     columns: findingColumns,
     state: { sorting, columnSizing: findingColSizing },
     onSortingChange: setSorting,
@@ -905,7 +1108,18 @@ function OverviewTab({
       {/* Top: Findings table (resizable height) */}
       <ViewSection
         mode="fixed"
-        title={`Observed findings (${findingSummaries.length})`}
+        title={`Observed findings (${filteredTableData.length}${hideZeroSeverity ? ` of ${findingSummaries.length}` : ""})`}
+        headerRight={
+          <label className="flex items-center gap-1 text-[9px] font-normal normal-case tracking-normal text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={hideZeroSeverity}
+              onChange={(e) => setHideZeroSeverity(e.target.checked)}
+              className="h-3 w-3 rounded border-gray-300"
+            />
+            Hide zero severity
+          </label>
+        }
         height={findingsSection.height}
         onResizePointerDown={findingsSection.onPointerDown}
         contentRef={findingsSection.contentRef}
@@ -914,38 +1128,50 @@ function OverviewTab({
         {findingSummaries.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No findings for this specimen.</p>
         ) : (
-          <table className="w-full text-[11px]" style={{ tableLayout: "fixed" }}>
+          <table className="w-full text-[11px]">
             <thead className="sticky top-0 z-10 bg-background">
               {findingsTable.getHeaderGroups().map((hg) => (
                 <tr key={hg.id} className="border-b border-border/40">
-                  {hg.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className={cn(
-                        "relative cursor-pointer pb-2 pr-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground/70",
-                        header.column.id === "maxSeverity" && "text-right",
-                        header.column.id === "incidence" && "text-right",
-                        header.column.id === "isDoseDriven" && "text-center",
-                      )}
-                      style={header.column.id === "relatedOrgans" ? undefined : { width: header.getSize() }}
-                      onDoubleClick={header.column.id === "isDoseDriven" ? undefined : header.column.getToggleSortingHandler()}
-                      onClick={header.column.id === "isDoseDriven" ? (e) => {
-                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        setDoseDepMenu({ x: rect.left, y: rect.bottom + 2 });
-                      } : undefined}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
-                      <div
-                        onMouseDown={header.getResizeHandler()}
-                        onTouchStart={header.getResizeHandler()}
+                  {hg.headers.map((header) => {
+                    // Absorber column gets remaining space; all others shrink-to-content.
+                    // Manual resize overrides with an explicit width.
+                    const id = header.column.id;
+                    const isAbsorber = id === "relatedOrgans";
+                    const isResized = id in findingColSizing;
+                    const colStyle: React.CSSProperties = isResized
+                      ? { width: header.getSize() }
+                      : isAbsorber
+                        ? {}
+                        : { width: 1, maxWidth: header.column.columnDef.maxSize };
+                    return (
+                      <th
+                        key={header.id}
                         className={cn(
-                          "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
-                          header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                          "relative cursor-pointer whitespace-nowrap pb-2 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground/70",
+                          id === "maxSeverity" && "text-right",
+                          id === "incidence" && "text-right",
+                          id === "isDoseDriven" && "text-center",
                         )}
-                      />
-                    </th>
-                  ))}
+                        style={colStyle}
+                        onDoubleClick={id === "isDoseDriven" ? undefined : header.column.getToggleSortingHandler()}
+                        onClick={id === "isDoseDriven" ? (e) => {
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          setDoseDepMenu({ x: rect.left, y: rect.bottom + 2 });
+                        } : undefined}
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className={cn(
+                            "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
+                            header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                          )}
+                        />
+                      </th>
+                    );
+                  })}
                 </tr>
               ))}
             </thead>
@@ -962,21 +1188,32 @@ function OverviewTab({
                     )}
                     onClick={() => onFindingClick(orig.finding)}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className={cn(
-                          "py-1 pr-2",
-                          cell.column.id === "maxSeverity" && "text-right",
-                          cell.column.id === "incidence" && "text-right",
-                          cell.column.id === "isDoseDriven" && "text-center",
-                          cell.column.id === "relatedOrgans" && "overflow-hidden",
-                        )}
-                        style={cell.column.id === "relatedOrgans" ? undefined : { width: cell.column.getSize() }}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
+                    {row.getVisibleCells().map((cell) => {
+                      const id = cell.column.id;
+                      const isAbsorber = id === "relatedOrgans";
+                      const isResized = id in findingColSizing;
+                      const colStyle: React.CSSProperties = isResized
+                        ? { width: cell.column.getSize() }
+                        : isAbsorber
+                          ? {}
+                          : { width: 1, maxWidth: cell.column.columnDef.maxSize };
+                      return (
+                        <td
+                          key={cell.id}
+                          className={cn(
+                            "whitespace-nowrap py-1 pr-3",
+                            id === "maxSeverity" && "text-right",
+                            id === "incidence" && "text-right",
+                            id === "isDoseDriven" && "text-center",
+                            id === "finding" && "overflow-hidden text-ellipsis",
+                            isAbsorber && "overflow-hidden text-ellipsis",
+                          )}
+                          style={colStyle}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}
@@ -1036,6 +1273,50 @@ function OverviewTab({
           </div>
         )}
       </div>
+      </ViewSection>
+
+      {/* Middle: Dual dose-response charts (resizable) */}
+      <ViewSection
+        mode="fixed"
+        title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts (specimen aggregate)"}
+        height={chartSection.height}
+        onResizePointerDown={chartSection.onPointerDown}
+        contentRef={chartSection.contentRef}
+      >
+        <div className="flex h-full">
+          <div className="relative flex-1 border-r border-border/30">
+            <div className="absolute left-2 top-1 z-10 flex items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Incidence</span>
+              <ChartModeToggle mode={incidenceMode} onChange={setIncidenceMode} />
+            </div>
+            {hasDoseChartData && doseChartOption ? (
+              <EChartsWrapper
+                option={doseChartOption}
+                style={{ width: "100%", height: "100%" }}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground">
+                No incidence data.
+              </div>
+            )}
+          </div>
+          <div className="relative flex-1">
+            <div className="absolute left-2 top-1 z-10 flex items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Severity</span>
+              <ChartModeToggle mode={severityMode} onChange={setSeverityMode} />
+            </div>
+            {hasSeverityChartData && doseSeverityChartOption ? (
+              <EChartsWrapper
+                option={doseSeverityChartOption}
+                style={{ width: "100%", height: "100%" }}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground">
+                No severity data.
+              </div>
+            )}
+          </div>
+        </div>
       </ViewSection>
 
       {/* Bottom: Heatmap container (group + subject) */}
@@ -1608,227 +1889,6 @@ function SubjectHeatmap({
   );
 }
 
-// ─── MetricsTab ──────────────────────────────────────────
-
-const col = createColumnHelper<LesionSeverityRow>();
-
-function MetricsTab({
-  specimenData,
-  selection,
-  onRowClick,
-  sexFilter,
-  setSexFilter,
-  minSeverity,
-  setMinSeverity,
-}: {
-  specimenData: LesionSeverityRow[];
-  selection: HistopathSelection | null;
-  onRowClick: (row: LesionSeverityRow) => void;
-  sexFilter: string | null;
-  setSexFilter: (v: string | null) => void;
-  minSeverity: number;
-  setMinSeverity: (v: number) => void;
-}) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-
-  // Filtered data
-  const filteredData = useMemo(() => {
-    return specimenData.filter((row) => {
-      if (sexFilter && row.sex !== sexFilter) return false;
-      if ((row.avg_severity ?? 0) < minSeverity) return false;
-      return true;
-    });
-  }, [specimenData, sexFilter, minSeverity]);
-
-  const columns = useMemo(
-    () => [
-      col.accessor("finding", {
-        header: "Finding",
-        size: 200,
-        minSize: 120,
-        maxSize: 400,
-        cell: (info) => (
-          <span className="truncate" title={info.getValue()}>
-            {info.getValue().length > 30 ? info.getValue().slice(0, 30) + "\u2026" : info.getValue()}
-          </span>
-        ),
-      }),
-      col.accessor("domain", {
-        header: "Domain",
-        size: 55,
-        minSize: 40,
-        maxSize: 80,
-        cell: (info) => <DomainLabel domain={info.getValue()} />,
-      }),
-      col.accessor("dose_level", {
-        header: "Dose",
-        size: 80,
-        minSize: 60,
-        maxSize: 120,
-        cell: (info) => (
-          <DoseLabel level={info.getValue()} label={info.row.original.dose_label.split(",")[0]} />
-        ),
-      }),
-      col.accessor("sex", { header: "Sex", size: 40, minSize: 32, maxSize: 60 }),
-      col.accessor("n", { header: "N", size: 40, minSize: 32, maxSize: 60 }),
-      col.accessor("affected", { header: "Aff.", size: 45, minSize: 36, maxSize: 70 }),
-      col.accessor("incidence", {
-        header: () => (
-          <span className="inline-flex items-center gap-0.5">
-            Incid.
-            <span title="Incidence = affected / N per dose group × sex. Numerator: subjects with at least one finding record. Denominator: total subjects in the group. Filtered by current sex and severity filters.">
-              <Info className="inline h-2.5 w-2.5 text-muted-foreground/50" />
-            </span>
-          </span>
-        ),
-        size: 60,
-        minSize: 50,
-        maxSize: 90,
-        cell: (info) => {
-          const v = info.getValue();
-          return (
-            <span className="font-mono">
-              {v != null ? (v * 100).toFixed(0) + "%" : "\u2014"}
-            </span>
-          );
-        },
-      }),
-      col.accessor("avg_severity", {
-        header: "Avg sev",
-        size: 60,
-        minSize: 50,
-        maxSize: 90,
-        cell: (info) => {
-          const v = info.getValue();
-          if (v == null) return <span className="text-muted-foreground">{"\u2014"}</span>;
-          return (
-            <span className="font-mono text-[10px]">
-              {v.toFixed(1)}
-            </span>
-          );
-        },
-      }),
-      col.accessor("severity", {
-        header: "Severity",
-        size: 72,
-        minSize: 60,
-        maxSize: 120,
-        cell: (info) => (
-          <span
-            className="inline-block border-l-2 pl-1.5 py-px text-[10px] font-medium text-gray-600"
-            style={{ borderLeftColor: info.getValue() === "adverse" ? "#dc2626" : info.getValue() === "warning" ? "#d97706" : "#16a34a" }}
-          >
-            {info.getValue()}
-          </span>
-        ),
-      }),
-    ],
-    []
-  );
-
-  const table = useReactTable({
-    data: filteredData,
-    columns,
-    state: { sorting, columnSizing },
-    onSortingChange: setSorting,
-    onColumnSizingChange: setColumnSizing,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    enableColumnResizing: true,
-    columnResizeMode: "onChange",
-  });
-
-  return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Filter bar */}
-      <FilterBar>
-        <FilterSelect
-          value={sexFilter ?? ""}
-          onChange={(e) => setSexFilter(e.target.value || null)}
-        >
-          <option value="">All sexes</option>
-          <option value="M">Male</option>
-          <option value="F">Female</option>
-        </FilterSelect>
-        <FilterSelect
-          value={minSeverity}
-          onChange={(e) => setMinSeverity(Number(e.target.value))}
-        >
-          <option value={0}>Min severity: any</option>
-          <option value={1}>Min severity: 1+</option>
-          <option value={2}>Min severity: 2+</option>
-          <option value={3}>Min severity: 3+</option>
-        </FilterSelect>
-      </FilterBar>
-
-      {/* Details grid */}
-      <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
-          <thead className="sticky top-0 z-10 bg-background">
-            {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="border-b bg-muted/50">
-                {hg.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
-                    style={{ width: header.getSize() }}
-                    onDoubleClick={header.column.getToggleSortingHandler()}
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
-                    <div
-                      onMouseDown={header.getResizeHandler()}
-                      onTouchStart={header.getResizeHandler()}
-                      className={cn(
-                        "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
-                        header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
-                      )}
-                    />
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.slice(0, 200).map((row) => {
-              const orig = row.original;
-              const isSelected =
-                selection?.finding === orig.finding && selection?.specimen === orig.specimen;
-              return (
-                <tr
-                  key={row.id}
-                  className={cn(
-                    "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                    isSelected && "bg-accent"
-                  )}
-                  onClick={() => onRowClick(orig)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-1.5 py-0.5" style={{ width: cell.column.getSize() }}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {filteredData.length > 200 && (
-          <div className="p-2 text-center text-[10px] text-muted-foreground">
-            Showing first 200 of {filteredData.length} rows. Use filters to narrow results.
-          </div>
-        )}
-        {filteredData.length === 0 && (
-          <div className="p-4 text-center text-xs text-muted-foreground">
-            No rows match the current filters.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Hypotheses tab — specimen-level exploratory tools ──────
 
 type SpecimenToolIntent = "severity" | "treatment" | "peer" | "doseTrend";
@@ -2191,7 +2251,7 @@ function HistopathHypothesesTab({
 
 // ─── Main: HistopathologyView ──────────────────────────────
 
-type EvidenceTab = "overview" | "hypotheses" | "metrics";
+type EvidenceTab = "overview" | "hypotheses";
 
 export function HistopathologyView({
   onSelectionChange,
@@ -2321,18 +2381,6 @@ export function HistopathologyView({
     onSelectionChange?.(sel);
   };
 
-  const handleRowClick = (row: LesionSeverityRow) => {
-    const sel: HistopathSelection = {
-      finding: row.finding,
-      specimen: row.specimen,
-      sex: row.sex,
-    };
-    const isSame = selection?.finding === sel.finding && selection?.specimen === sel.specimen;
-    const next = isSame ? null : sel;
-    setSelection(next);
-    onSelectionChange?.(next);
-  };
-
   const handleHeatmapClick = (finding: string) => {
     if (!selectedSpecimen) return;
     const row = specimenData.find((r) => r.finding === finding);
@@ -2378,12 +2426,10 @@ export function HistopathologyView({
   }
 
   return (
-    <div className="flex h-full overflow-hidden max-[1200px]:flex-col">
-      {/* Left: Specimen rail */}
-      <div
-        className="shrink-0 border-r max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto"
-        style={{ width: railWidth }}
-      >
+    <MasterDetailLayout
+      railWidth={railWidth}
+      onRailResize={onRailResize}
+      rail={
         <SpecimenRail
           specimens={specimenSummaries}
           selectedSpecimen={selectedSpecimen}
@@ -2391,81 +2437,85 @@ export function HistopathologyView({
           pathReviews={pathReviews}
           findingNamesBySpecimen={findingNamesBySpecimen}
         />
-      </div>
-      <div className="max-[1200px]:hidden">
-        <PanelResizeHandle onPointerDown={onRailResize} />
-      </div>
+      }
+    >
+      {selectedSummary && (
+        <>
+          {/* Specimen summary strip */}
+          <div className="shrink-0 border-b bg-background px-3 py-1.5">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">{selectedSummary.specimen.replace(/_/g, " ")}</h2>
+              {selectedSummary.domains.map((d) => (
+                <DomainLabel key={d} domain={d} />
+              ))}
+              <span className="text-[10px] text-muted-foreground">{deriveSexLabel(specimenData)}</span>
+              {selectedSummary.adverseCount > 0 && (
+                <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {selectedSummary.adverseCount} adverse
+                </span>
+              )}
+            </div>
+            <div className="mt-1 flex items-center gap-4 text-[10px] text-muted-foreground">
+              <span>Incidence: <span className="font-mono font-medium">{selectedSummary.totalAffected}/{selectedSummary.totalN} ({selectedSummary.totalN > 0 ? Math.round((selectedSummary.totalAffected / selectedSummary.totalN) * 100) : 0}%)</span></span>
+              <span>Max sev: <span className="font-mono font-medium">{selectedSummary.maxSeverity.toFixed(1)}</span></span>
+              <span>Dose trend: <span className={getDoseConsistencyWeight(selectedSummary.doseConsistency)}>{selectedSummary.doseConsistency}</span></span>
+              <span>Findings: <span className="font-mono font-medium">{selectedSummary.findingCount}</span></span>
+            </div>
+          </div>
 
-      {/* Right: Evidence panel */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
-        {selectedSummary && (
-          <>
-            {/* Tab bar */}
-            <ViewTabBar
-              tabs={[
-                { key: "overview", label: "Evidence" },
-                { key: "hypotheses", label: "Hypotheses" },
-                { key: "metrics", label: "Metrics" },
-              ]}
-              value={activeTab}
-              onChange={(k) => setActiveTab(k as typeof activeTab)}
-              right={activeTab === "overview" ? (
-                <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-              ) : undefined}
+          {/* Tab bar */}
+          <ViewTabBar
+            tabs={[
+              { key: "overview", label: "Evidence" },
+              { key: "hypotheses", label: "Hypotheses" },
+            ]}
+            value={activeTab}
+            onChange={(k) => setActiveTab(k as typeof activeTab)}
+            right={activeTab === "overview" ? (
+              <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+            ) : undefined}
+          />
+
+          {/* Tab content */}
+          {activeTab === "overview" && (
+            <OverviewTab
+              specimenData={specimenData}
+              findingSummaries={findingSummaries}
+              allRuleResults={ruleResults ?? []}
+              specimen={selectedSpecimen!}
+              selection={selection}
+              onFindingClick={handleFindingClick}
+              onHeatmapClick={handleHeatmapClick}
+              sexFilter={sexFilter}
+              setSexFilter={setSexFilter}
+              minSeverity={minSeverity}
+              setMinSeverity={setMinSeverity}
+              studyId={studyId}
+              onSubjectClick={onSubjectClick}
+              trendsByFinding={trendsByFinding}
             />
+          )}
+          {activeTab === "hypotheses" && (
+            <HistopathHypothesesTab
+              specimenName={selectedSummary.specimen.replace(/_/g, " ")}
+              findingCount={findingSummaries.length}
+              selectedFinding={selection?.finding}
+            />
+          )}
+        </>
+      )}
 
-            {/* Tab content */}
-            {activeTab === "overview" && (
-              <OverviewTab
-                specimenData={specimenData}
-                findingSummaries={findingSummaries}
-                allRuleResults={ruleResults ?? []}
-                specimen={selectedSpecimen!}
-                selection={selection}
-                onFindingClick={handleFindingClick}
-                onHeatmapClick={handleHeatmapClick}
-                sexFilter={sexFilter}
-                setSexFilter={setSexFilter}
-                minSeverity={minSeverity}
-                setMinSeverity={setMinSeverity}
-                studyId={studyId}
-                onSubjectClick={onSubjectClick}
-                trendsByFinding={trendsByFinding}
-              />
-            )}
-            {activeTab === "metrics" && (
-              <MetricsTab
-                specimenData={specimenData}
-                selection={selection}
-                onRowClick={handleRowClick}
-                sexFilter={sexFilter}
-                setSexFilter={setSexFilter}
-                minSeverity={minSeverity}
-                setMinSeverity={setMinSeverity}
-              />
-            )}
-            {activeTab === "hypotheses" && (
-              <HistopathHypothesesTab
-                specimenName={selectedSummary.specimen.replace(/_/g, " ")}
-                findingCount={findingSummaries.length}
-                selectedFinding={selection?.finding}
-              />
-            )}
-          </>
-        )}
+      {!selectedSummary && specimenSummaries.length > 0 && (
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          Select a specimen to view histopathology details.
+        </div>
+      )}
 
-        {!selectedSummary && specimenSummaries.length > 0 && (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            Select a specimen to view histopathology details.
-          </div>
-        )}
-
-        {specimenSummaries.length === 0 && (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            No histopathology data available.
-          </div>
-        )}
-      </div>
-    </div>
+      {specimenSummaries.length === 0 && (
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          No histopathology data available.
+        </div>
+      )}
+    </MasterDetailLayout>
   );
 }
