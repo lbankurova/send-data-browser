@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode, SelectHTMLAttributes } from "react";
+import { Search } from "lucide-react";
 import { filter } from "@/lib/design-tokens";
 import { cn } from "@/lib/utils";
 
@@ -182,5 +183,58 @@ export function FilterBarCount({
     <span className={cn("ml-auto text-[10px] text-muted-foreground", className)}>
       {children}
     </span>
+  );
+}
+
+/** Compact inline search: icon + borderless input. Live filtering, Esc to clear. */
+export function FilterSearch({
+  value,
+  onChange,
+  placeholder = "...",
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div className={cn("flex items-center gap-0.5 text-muted-foreground/60", className)}>
+      <Search className="h-3 w-3 shrink-0" />
+      <input
+        ref={ref}
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            onChange("");
+            ref.current?.blur();
+          } else if (e.key === "Enter") {
+            ref.current?.blur();
+          }
+        }}
+        className="w-12 border-none bg-transparent px-0 text-[10px] text-foreground placeholder:text-muted-foreground/30 focus:w-20 focus:outline-none"
+      />
+    </div>
+  );
+}
+
+/** "Showing: All" or "Showing: Severity 3+ · Adverse only · 8/28". */
+export function FilterShowingLine({
+  parts,
+  className,
+}: {
+  /** Filter description parts. Empty array or undefined = "All". */
+  parts?: string[];
+  className?: string;
+}) {
+  const display = parts && parts.length > 0 ? parts.join(" \u00b7 ") : "All";
+  return (
+    <div className={cn("text-[10px] text-muted-foreground", className)}>
+      <span className="font-medium">Showing: </span>{display}
+    </div>
   );
 }
