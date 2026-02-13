@@ -16,7 +16,7 @@ import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
-import { FilterBar, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
+import { FilterBar, FilterSelect, FilterMultiSelect, FilterSearch, FilterShowingLine } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { getNeutralHeatColor as getNeutralHeatColor01 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -426,7 +426,6 @@ function SpecimenRail({
   findingNamesBySpecimen?: Map<string, string[]>;
 }) {
   const [search, setSearch] = useState("");
-  const searchRef = useRef<HTMLInputElement>(null);
   const [minSevFilter, setMinSevFilter] = useState<number>(0);
   const [adverseOnly, setAdverseOnly] = useState(false);
   const [doseTrendFilter, setDoseTrendFilter] = useState<"any" | "moderate" | "strong">("any");
@@ -460,32 +459,14 @@ function SpecimenRail({
           <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Specimens ({specimens.length})
           </span>
-          <div className="flex items-center gap-0.5 text-muted-foreground/60">
-            <Search className="h-3 w-3 shrink-0" />
-            <input
-              ref={searchRef}
-              type="text"
-              placeholder="..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setSearch("");
-                  searchRef.current?.blur();
-                } else if (e.key === "Enter") {
-                  searchRef.current?.blur();
-                }
-              }}
-              className="w-12 border-none bg-transparent px-0 text-[10px] text-foreground placeholder:text-muted-foreground/30 focus:w-20 focus:outline-none"
-            />
-          </div>
+          <FilterSearch value={search} onChange={setSearch} />
         </div>
 
         {/* Showing: summary */}
-        <div className="mt-0.5 text-[10px] text-muted-foreground">
-          <span className="font-medium">Showing: </span>
-          {(() => {
-            if (!minSevFilter && !adverseOnly && doseTrendFilter === "any" && !search) return "All";
+        <FilterShowingLine
+          className="mt-0.5"
+          parts={(() => {
+            if (!minSevFilter && !adverseOnly && doseTrendFilter === "any" && !search) return undefined;
             const parts: string[] = [];
             if (search) parts.push(`"${search}"`);
             if (minSevFilter > 0) parts.push(`Severity ${minSevFilter}+`);
@@ -493,9 +474,9 @@ function SpecimenRail({
             if (doseTrendFilter === "moderate") parts.push("Moderate+ trend");
             else if (doseTrendFilter === "strong") parts.push("Strong trend");
             parts.push(`${filtered.length}/${specimens.length}`);
-            return parts.join(" \u00b7 ");
+            return parts;
           })()}
-        </div>
+        />
 
         {/* Filter row */}
         <div className="mt-2 flex items-center gap-1.5">
@@ -1601,11 +1582,7 @@ function SubjectHeatmap({
         parts.push(sexFilter ? (sexFilter === "M" ? "Male" : "Female") : "Both sexes");
         if (minSeverity > 0) parts.push(`Severity ${minSeverity}+`);
         if (affectedOnly) parts.push("Affected only");
-        return (
-          <div className="px-3 py-1 text-[10px] text-muted-foreground">
-            <span className="font-medium">Showing: </span>{parts.join(" · ")}
-          </div>
-        );
+        return <FilterShowingLine className="px-3 py-1" parts={parts} />;
       })()}
 
       {/* Severity legend */}
