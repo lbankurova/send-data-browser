@@ -21,7 +21,7 @@ import {
   StudyStatementsBar,
 } from "./SignalsPanel";
 import { ConfidencePopover } from "./ScoreBreakdown";
-import type { SignalSelection, ProvenanceMessage, NoaelSummaryRow } from "@/types/analysis-views";
+import type { SignalSelection, ProvenanceMessage, NoaelSummaryRow, RuleResult } from "@/types/analysis-views";
 import type { StudyMetadata } from "@/types";
 import type { Insight } from "@/hooks/useInsights";
 
@@ -263,6 +263,9 @@ export function StudySummaryView({
             caveats={panelData.caveats}
           />
 
+          {/* Protective signals — study-wide R18/R19 aggregation */}
+          <ProtectiveSignalsBar rules={ruleResults ?? []} studyId={studyId!} />
+
           {/* Two-panel master-detail */}
           <div className="flex flex-1 overflow-hidden max-[1200px]:flex-col">
             <SignalsOrganRail
@@ -393,6 +396,159 @@ function InsightCard({ insight }: { insight: Insight }) {
         )}
       </div>
       <p className="mt-1 text-[11px] text-foreground">{insight.detail}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Protective Signals Bar — study-wide aggregation of R18/R19
+// ---------------------------------------------------------------------------
+
+interface ProtectiveFinding {
+  finding: string;
+  specimens: string[];
+  sexes: string;
+  ctrlPct: string;
+  highPct: string;
+  isRepurposing: boolean;
+}
+
+function aggregateProtectiveFindings(rules: RuleResult[]): ProtectiveFinding[] {
+  const map = new Map<string, { specimens: Set<string>; sexes: Set<string>; ctrlPct: string; highPct: string; isRepurposing: boolean }>();
+
+  // Prefer params-based extraction; fall back to regex for old cached data
+  for (const r of rules) {
+    if (r.rule_id !== "R18" && r.rule_id !== "R19") continue;
+
+    const p = r.params;
+    if (p?.finding && p?.specimen && p?.ctrl_pct) {
+      // Params-based path
+      const findingName = p.finding;
+      const entry = map.get(findingName) ?? { specimens: new Set(), sexes: new Set(), ctrlPct: p.ctrl_pct, highPct: p.high_pct ?? "", isRepurposing: false };
+      entry.specimens.add(p.specimen);
+      if (p.sex) entry.sexes.add(p.sex);
+      if (parseInt(p.ctrl_pct) > parseInt(entry.ctrlPct)) { entry.ctrlPct = p.ctrl_pct; entry.highPct = p.high_pct ?? ""; }
+      if (r.rule_id === "R19") entry.isRepurposing = true;
+      map.set(findingName, entry);
+    } else {
+      // Regex fallback for backward compat
+      if (r.rule_id === "R18") {
+        const m = r.output_text.match(/incidence of (.+?) in (.+?) with treatment \((\w)\): (\d+)% in controls vs (\d+)%/);
+        if (m) {
+          const entry = map.get(m[1]) ?? { specimens: new Set(), sexes: new Set(), ctrlPct: m[4], highPct: m[5], isRepurposing: false };
+          entry.specimens.add(m[2]);
+          entry.sexes.add(m[3]);
+          if (parseInt(m[4]) > parseInt(entry.ctrlPct)) { entry.ctrlPct = m[4]; entry.highPct = m[5]; }
+          map.set(m[1], entry);
+        }
+      }
+      if (r.rule_id === "R19") {
+        const m = r.output_text.match(/^(.+?) in /);
+        if (m) {
+          const entry = map.get(m[1]);
+          if (entry) entry.isRepurposing = true;
+        }
+      }
+    }
+  }
+
+  return [...map.entries()]
+    .map(([finding, info]) => ({
+      finding,
+      specimens: [...info.specimens].sort(),
+      sexes: [...info.sexes].sort().join(", "),
+      ctrlPct: info.ctrlPct,
+      highPct: info.highPct,
+      isRepurposing: info.isRepurposing,
+    }))
+    .sort((a, b) => {
+      // Repurposing signals first, then by control incidence (highest first)
+      if (a.isRepurposing !== b.isRepurposing) return a.isRepurposing ? -1 : 1;
+      return parseInt(b.ctrlPct) - parseInt(a.ctrlPct);
+    });
+}
+
+function ProtectiveSignalsBar({
+  rules,
+  studyId,
+}: {
+  rules: RuleResult[];
+  studyId: string;
+}) {
+  const navigate = useNavigate();
+  const findings = useMemo(() => aggregateProtectiveFindings(rules), [rules]);
+
+  if (findings.length === 0) return null;
+
+  const repurposingCount = findings.filter((f) => f.isRepurposing).length;
+  const protectiveOnly = findings.filter((f) => !f.isRepurposing);
+
+  return (
+    <div className="shrink-0 border-b px-4 py-2">
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Protective signals
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {findings.length} finding{findings.length !== 1 ? "s" : ""} with decreased incidence
+          {repurposingCount > 0 && ` · ${repurposingCount} repurposing candidate${repurposingCount !== 1 ? "s" : ""}`}
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        {/* Repurposing candidates first */}
+        {findings.filter((f) => f.isRepurposing).map((f) => (
+          <div key={`r-${f.finding}`} className="border-l-2 border-l-purple-400 py-1 pl-2.5">
+            <div className="flex items-baseline gap-2">
+              <button
+                className="text-[11px] font-semibold hover:underline"
+                onClick={() => {
+                  const spec = f.specimens[0];
+                  if (spec) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
+                }}
+              >
+                {f.finding}
+              </button>
+              <span className="text-[10px] font-medium text-muted-foreground">{f.sexes}</span>
+              <span className="text-[9px] font-medium text-purple-600">repurposing</span>
+            </div>
+            <div className="text-[10px] leading-snug text-muted-foreground">
+              {f.ctrlPct}% control → {f.highPct}% high dose in {f.specimens.join(", ")} — potential therapeutic target
+            </div>
+          </div>
+        ))}
+        {/* Protective-only */}
+        {protectiveOnly.length > 0 && (
+          <div className="space-y-0.5">
+            {protectiveOnly.slice(0, 5).map((f) => (
+              <div key={`p-${f.finding}`} className="border-l-2 border-l-emerald-400 py-0.5 pl-2.5">
+                <div className="flex items-baseline gap-2">
+                  <button
+                    className="text-[11px] font-medium hover:underline"
+                    onClick={() => {
+                      const spec = f.specimens[0];
+                      if (spec) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
+                    }}
+                  >
+                    {f.finding}
+                  </button>
+                  <span className="text-[10px] text-muted-foreground">{f.sexes}</span>
+                  <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                    {f.ctrlPct}% → {f.highPct}%
+                  </span>
+                </div>
+                {f.specimens.length > 0 && (
+                  <div className="text-[9px] text-muted-foreground/70">{f.specimens.join(", ")}</div>
+                )}
+              </div>
+            ))}
+            {protectiveOnly.length > 5 && (
+              <div className="pl-2.5 text-[10px] text-muted-foreground/50">
+                +{protectiveOnly.length - 5} more
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

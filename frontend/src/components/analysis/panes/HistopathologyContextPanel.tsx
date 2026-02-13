@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
-import { InsightsList } from "./InsightsList";
 import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
@@ -11,21 +11,174 @@ import { getDoseConsistencyWeight, getDoseGroupColor } from "@/lib/severity-colo
 import { DoseLabel } from "@/components/ui/DoseLabel";
 import {
   deriveSpecimenSummaries,
-  deriveFindingSummaries,
   deriveSexLabel,
   getDoseConsistency,
   deriveSpecimenReviewStatus,
 } from "@/components/analysis/HistopathologyView";
 import type { SpecimenReviewStatus } from "@/components/analysis/HistopathologyView";
+import { aggregateByFinding } from "@/lib/finding-aggregation";
+import type { FindingCategory } from "@/lib/finding-aggregation";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
+import type { PathologyReview } from "@/types/annotations";
+import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
 
-/** Neutral grayscale for severity 1-5 scale (matches HistopathologyView). */
-function sevHeatColor(avgSev: number): { bg: string; text: string } {
-  if (avgSev >= 5) return { bg: "#4B5563", text: "white" };
-  if (avgSev >= 4) return { bg: "#6B7280", text: "white" };
-  if (avgSev >= 3) return { bg: "#9CA3AF", text: "var(--foreground)" };
-  if (avgSev >= 2) return { bg: "#D1D5DB", text: "var(--foreground)" };
-  return { bg: "#E5E7EB", text: "var(--foreground)" };
+// ─── Specimen-scoped insights (purpose-built for context panel) ──────────────
+
+interface InsightBlock {
+  kind: "adverse" | "protective" | "repurposing" | "trend" | "info";
+  finding: string;
+  sexes: string;
+  detail: string;
+}
+
+function deriveSpecimenInsights(rules: RuleResult[], specimen: string): InsightBlock[] {
+  const blocks: InsightBlock[] = [];
+  const specLower = specimen.toLowerCase();
+
+  // Filter rules to those matching this specimen (via params or output_text fallback)
+  const specimenRules = rules.filter((r) => {
+    if (r.params?.specimen && r.params.specimen.toLowerCase() === specLower) return true;
+    return r.output_text.toLowerCase().includes(specLower);
+  });
+
+  // Use aggregateByFinding to get pre-categorized findings
+  const aggregated = aggregateByFinding(specimenRules);
+
+  // Category → InsightBlock kind mapping
+  const categoryToKind: Record<FindingCategory, InsightBlock["kind"]> = {
+    adverse: "adverse",
+    protective: "protective",
+    trend: "trend",
+    info: "info",
+  };
+
+  for (const agg of aggregated) {
+    const kind = categoryToKind[agg.category];
+
+    if (kind === "adverse") {
+      // Build detail from contributing rules
+      const details: string[] = [];
+      for (const r of agg.rules) {
+        if (r.rule_id === "R04") {
+          const p = r.params?.p_value;
+          if (p != null) details.push(`Adverse (p = ${p})`);
+          else details.push("Adverse");
+        }
+        if (r.rule_id === "R10" && r.severity === "warning") {
+          const d = r.params?.effect_size;
+          if (d != null) details.push(`Large effect (d = ${typeof d === "number" ? d.toFixed(2) : d})`);
+        }
+        if (r.rule_id === "R12") details.push("Incidence increases with dose");
+        if (r.rule_id === "R13") details.push("Dose-dependent severity increase");
+      }
+      blocks.push({
+        kind: "adverse",
+        finding: agg.finding || agg.endpointLabel,
+        sexes: agg.sex,
+        detail: [...new Set(details)].join(" \u00b7 "),
+      });
+    } else if (kind === "protective") {
+      const ctrlPct = agg.primaryRule.params?.ctrl_pct ?? "";
+      const highPct = agg.primaryRule.params?.high_pct ?? "";
+      const hasR19 = agg.rules.some((r) => r.rule_id === "R19");
+
+      blocks.push({
+        kind: "protective",
+        finding: agg.finding || agg.endpointLabel,
+        sexes: agg.sex,
+        detail: `${ctrlPct}% control \u2192 ${highPct}% high dose`,
+      });
+      if (hasR19) {
+        blocks.push({
+          kind: "repurposing",
+          finding: agg.finding || agg.endpointLabel,
+          sexes: agg.sex,
+          detail: `High baseline (${ctrlPct}%) reduced by treatment \u2014 potential therapeutic target`,
+        });
+      }
+    } else if (kind === "trend") {
+      const dir = agg.direction;
+      blocks.push({
+        kind: "trend",
+        finding: agg.finding || agg.endpointLabel,
+        sexes: agg.sex,
+        detail: dir === "up" ? "Significant dose-dependent increase" : "Significant dose-dependent decrease",
+      });
+    }
+    // info: skip — not shown in specimen insights
+  }
+
+  return blocks;
+}
+
+const INSIGHT_STYLES: Record<InsightBlock["kind"], { border: string; icon: string; label: string }> = {
+  adverse:     { border: "border-l-red-400",    icon: "↑", label: "Adverse" },
+  protective:  { border: "border-l-emerald-400", icon: "↓", label: "Protective" },
+  repurposing: { border: "border-l-purple-400",  icon: "◆", label: "Repurposing" },
+  trend:       { border: "border-l-amber-300",  icon: "→", label: "Trend" },
+  info:        { border: "border-l-gray-300",   icon: "·", label: "Info" },
+};
+
+function SpecimenInsights({ rules, specimen }: { rules: RuleResult[]; specimen: string }) {
+  const blocks = useMemo(() => deriveSpecimenInsights(rules, specimen), [rules, specimen]);
+
+  if (blocks.length === 0) {
+    return <p className="text-[11px] text-muted-foreground">No insights for this specimen.</p>;
+  }
+
+  // Group by kind for section headers
+  const adverseBlocks = blocks.filter((b) => b.kind === "adverse");
+  const protectiveBlocks = blocks.filter((b) => b.kind === "protective");
+  const repurposingBlocks = blocks.filter((b) => b.kind === "repurposing");
+  const trendBlocks = blocks.filter((b) => b.kind === "trend" || b.kind === "info");
+
+  return (
+    <div className="space-y-2.5">
+      {adverseBlocks.length > 0 && (
+        <InsightSection label="Treatment-related" blocks={adverseBlocks} />
+      )}
+      {protectiveBlocks.length > 0 && (
+        <InsightSection label="Decreased with treatment" blocks={protectiveBlocks} />
+      )}
+      {repurposingBlocks.length > 0 && (
+        <InsightSection label="Drug repurposing signal" blocks={repurposingBlocks} />
+      )}
+      {trendBlocks.length > 0 && (
+        <InsightSection label="Other trends" blocks={trendBlocks} />
+      )}
+    </div>
+  );
+}
+
+function InsightSection({ label, blocks }: { label: string; blocks: InsightBlock[] }) {
+  return (
+    <div>
+      <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+        {label}
+      </div>
+      <div className="space-y-1">
+        {blocks.map((b, i) => {
+          const style = INSIGHT_STYLES[b.kind];
+          return (
+            <div
+              key={`${b.finding}-${b.kind}-${i}`}
+              className={cn("border-l-2 py-0.5 pl-2", style.border)}
+            >
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[11px] font-medium">{b.finding}</span>
+                {b.sexes && (
+                  <span className="text-[10px] font-medium text-muted-foreground">{b.sexes}</span>
+                )}
+              </div>
+              <div className="text-[10px] leading-snug text-muted-foreground">
+                {b.detail}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 // ─── Specimen → organ_system mapping (mirrors backend ORGAN_SYSTEM_MAP) ──────
@@ -49,7 +202,7 @@ const KEYWORD_ORGAN_MAP: [string, string][] = [
   ["MUSCLE", "musculoskeletal"], ["FEMUR", "musculoskeletal"], ["STERNUM", "musculoskeletal"],
 ];
 
-function specimenToOrganSystem(specimen: string): string {
+export function specimenToOrganSystem(specimen: string): string {
   const upper = specimen.toUpperCase().trim();
   if (SPECIMEN_ORGAN_MAP[upper]) return SPECIMEN_ORGAN_MAP[upper];
   for (const [keyword, system] of KEYWORD_ORGAN_MAP) {
@@ -76,7 +229,7 @@ interface Props {
   ruleResults: RuleResult[];
   selection: HistopathSelection | null;
   studyId?: string;
-  onFindingSelect?: (finding: string, specimen: string) => void;
+  pathReviews?: Record<string, PathologyReview>;
 }
 
 // ─── Specimen Overview (when no finding is selected) ──────────────────────────
@@ -86,13 +239,13 @@ function SpecimenOverviewPane({
   lesionData,
   ruleResults,
   studyId,
-  onFindingSelect,
+  pathReviews,
 }: {
   specimen: string;
   lesionData: LesionSeverityRow[];
   ruleResults: RuleResult[];
   studyId?: string;
-  onFindingSelect?: (finding: string, specimen: string) => void;
+  pathReviews?: Record<string, PathologyReview>;
 }) {
   const navigate = useNavigate();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
@@ -121,12 +274,6 @@ function SpecimenOverviewPane({
         r.organ_system.toLowerCase() === specLower
     );
   }, [ruleResults, specimen]);
-
-  // Finding summaries
-  const findingSummaries = useMemo(
-    () => deriveFindingSummaries(specimenData),
-    [specimenData]
-  );
 
   // Merged domains from data + rules
   const allDomains = useMemo(() => {
@@ -170,9 +317,7 @@ function SpecimenOverviewPane({
   // Structured conclusion parts (rendered as individual chips)
   const conclusionParts = useMemo(() => {
     if (!summary) return null;
-    const incPct = summary.totalN > 0
-      ? Math.round((summary.totalAffected / summary.totalN) * 100)
-      : 0;
+    const incPct = Math.round(summary.maxIncidence * 100);
     const incidenceLabel = incPct > 50 ? "high" : incPct > 20 ? "moderate" : "low";
     const sevLabel = summary.adverseCount > 0
       ? `max severity ${summary.maxSeverity.toFixed(1)}`
@@ -184,12 +329,19 @@ function SpecimenOverviewPane({
       : trend === "Moderate"
       ? "dose-response: \u2191 moderate"
       : "dose-response: no clear trend";
+    const findingBreakdown = summary.warningCount > 0
+      ? `${summary.findingCount} findings (${summary.adverseCount}adv/${summary.warningCount}warn)`
+      : `${summary.findingCount} findings`;
     return {
       incidence: `incidence: ${incidenceLabel}, ${incPct}%`,
       severity: sevLabel,
       sex: sexLabel,
+      sexSkew: summary.sexSkew && summary.sexSkew !== "M=F"
+        ? `sex difference: ${summary.sexSkew === "M>F" ? "males" : "females"} >1.5× higher`
+        : null,
       doseRelation,
-      findings: `${summary.findingCount} findings`,
+      findings: findingBreakdown,
+      hasRecovery: summary.hasRecovery,
     };
   }, [summary, specimenData, doseTrendDetail.trend]);
 
@@ -207,7 +359,7 @@ function SpecimenOverviewPane({
     );
   }
 
-  const reviewStatus = deriveSpecimenReviewStatus(findingNames, undefined);
+  const reviewStatus = deriveSpecimenReviewStatus(findingNames, pathReviews);
 
   return (
     <div>
@@ -246,91 +398,26 @@ function SpecimenOverviewPane({
             <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.incidence}</span>
             <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.severity}</span>
             <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.sex}</span>
+            {conclusionParts.sexSkew && (
+              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">{conclusionParts.sexSkew}</span>
+            )}
             <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
               <span className={getDoseConsistencyWeight(doseTrendDetail.trend)}>{conclusionParts.doseRelation}</span>
             </span>
             <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.findings}</span>
+            {conclusionParts.hasRecovery && (
+              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">recovery data available</span>
+            )}
           </div>
         )}
       </CollapsiblePane>
 
-      {/* Dose-response */}
-      <CollapsiblePane title="Dose-response" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="mb-1.5 text-[10px] text-muted-foreground">
-          Method: <span className="font-medium">{doseTrendDetail.method}</span>
-          {" \u2014 "}
-          <span className={getDoseConsistencyWeight(doseTrendDetail.trend)}>
-            {doseTrendDetail.trend === "Strong" ? "Strong trend (\u25B2\u25B2\u25B2)" :
-             doseTrendDetail.trend === "Moderate" ? "Moderate trend (\u25B2\u25B2)" :
-             "Weak trend (\u25B2)"}
-          </span>
-        </div>
-        {doseTrendDetail.doses.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No dose data.</p>
-        ) : (
-          <table className="w-full text-[10px]">
-            <thead>
-              <tr className="border-b text-muted-foreground">
-                <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Dose</th>
-                <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Affected</th>
-                <th className="w-16 pb-0.5 text-[10px] font-semibold uppercase tracking-wider" />
-              </tr>
-            </thead>
-            <tbody>
-              {doseTrendDetail.doses.map(([level, info]) => {
-                const pct = info.n > 0 ? (info.affected / info.n) * 100 : 0;
-                return (
-                  <tr key={level} className="border-b border-dashed">
-                    <td className="py-0.5">
-                      <DoseLabel level={level} label={info.label} />
-                    </td>
-                    <td className="py-0.5 text-right font-mono">{info.affected}/{info.n}</td>
-                    <td className="py-0.5 px-1">
-                      <div className="h-1.5 w-full rounded-full bg-gray-100">
-                        <div
-                          className="h-1.5 rounded-full"
-                          style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: getDoseGroupColor(level) }}
-                          title={`${Math.round(pct)}%`}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </CollapsiblePane>
-
-      {/* Findings */}
-      <CollapsiblePane title={`Findings (${findingSummaries.length})`} defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        {findingSummaries.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No findings in this specimen.</p>
-        ) : (
-          <div className="space-y-0.5">
-            {findingSummaries.map((f) => (
-              <button
-                key={f.finding}
-                className="flex w-full items-center justify-between rounded px-1 py-0.5 text-left text-[11px] hover:bg-accent/30"
-                onClick={() => onFindingSelect?.(f.finding, specimen)}
-              >
-                <span className="min-w-0 flex-1 truncate" title={f.finding}>{f.finding}</span>
-                <span className="ml-2 flex shrink-0 items-center gap-1.5">
-                  <span
-                    className="rounded px-1 font-mono text-[9px]"
-                    style={{ backgroundColor: sevHeatColor(f.maxSeverity).bg, color: sevHeatColor(f.maxSeverity).text }}
-                  >
-                    {f.maxSeverity.toFixed(1)}
-                  </span>
-                  {f.severity === "adverse" && (
-                    <span className="text-[9px] font-medium" style={{ color: "#dc2626" }}>adverse</span>
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </CollapsiblePane>
+      {/* Insights */}
+      {specimenRules.length > 0 && (
+        <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <SpecimenInsights rules={specimenRules} specimen={specimen} />
+        </CollapsiblePane>
+      )}
 
       {/* Pathology Review (specimen-level) */}
       {studyId && (
@@ -402,14 +489,12 @@ function FindingDetailPane({
   // Header metrics for selected finding
   const headerMetrics = useMemo(() => {
     if (!findingRows.length) return null;
-    let totalAffected = 0;
-    let totalN = 0;
     let maxSev = 0;
+    let maxInc = 0;
     const sexes = new Set<string>();
     for (const r of findingRows) {
-      totalAffected += r.affected;
-      totalN += r.n;
       if ((r.avg_severity ?? 0) > maxSev) maxSev = r.avg_severity ?? 0;
+      if (r.incidence > maxInc) maxInc = r.incidence;
       sexes.add(r.sex);
     }
     const doseMap = new Map<number, { affected: number; n: number }>();
@@ -431,8 +516,8 @@ function FindingDetailPane({
       else if (isMonotonic || doseGroupsAffected >= 2) doseTrend = "Moderate";
     }
     const sexLabel = sexes.size === 1 ? ([...sexes][0] === "M" ? "M" : "F") : "M/F";
-    const incPct = totalN > 0 ? Math.round((totalAffected / totalN) * 100) : 0;
-    return { totalAffected, totalN, incPct, maxSev, doseTrend, sexLabel };
+    const incPct = Math.round(maxInc * 100);
+    return { incPct, maxSev, doseTrend, sexLabel };
   }, [findingRows]);
 
   // Rules matching finding
@@ -501,7 +586,7 @@ function FindingDetailPane({
         <p className="text-xs text-muted-foreground">{selection.specimen}</p>
         {headerMetrics && (
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
-            <span>Incidence: <span className="font-mono font-medium">{headerMetrics.totalAffected}/{headerMetrics.totalN} ({headerMetrics.incPct}%)</span></span>
+            <span>Peak incidence: <span className="font-mono font-medium">{headerMetrics.incPct}%</span></span>
             <span>Max sev: <span className="font-mono font-medium">{headerMetrics.maxSev.toFixed(1)}</span></span>
             <span>Dose: <span className="font-medium">{headerMetrics.doseTrend}</span></span>
             <span>Sex: <span className="font-medium">{headerMetrics.sexLabel}</span></span>
@@ -511,9 +596,7 @@ function FindingDetailPane({
 
       {/* Insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <InsightsList rules={findingRules} onEndpointClick={(organ) => {
-          if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
-        }} />
+        <SpecimenInsights rules={findingRules} specimen={selection.specimen} />
       </CollapsiblePane>
 
       {/* Dose detail */}
@@ -586,7 +669,7 @@ function FindingDetailPane({
                   {stats.maxSev > 0 && (
                     <span
                       className="ml-1.5 rounded px-1 font-mono text-[9px]"
-                      style={{ backgroundColor: sevHeatColor(stats.maxSev).bg, color: sevHeatColor(stats.maxSev).text }}
+                      style={{ backgroundColor: getNeutralHeatColor(stats.maxSev).bg, color: getNeutralHeatColor(stats.maxSev).text }}
                     >
                       sev {stats.maxSev.toFixed(1)}
                     </span>
@@ -611,7 +694,7 @@ function FindingDetailPane({
                 </span>
                 <span
                   className="rounded px-1 font-mono text-[9px]"
-                  style={{ backgroundColor: sevHeatColor(info.maxSev).bg, color: sevHeatColor(info.maxSev).text }}
+                  style={{ backgroundColor: getNeutralHeatColor(info.maxSev).bg, color: getNeutralHeatColor(info.maxSev).text }}
                 >
                   {info.maxSev.toFixed(1)}
                 </span>
@@ -672,7 +755,7 @@ function FindingDetailPane({
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export function HistopathologyContextPanel({ lesionData, ruleResults, selection, studyId: studyIdProp, onFindingSelect }: Props) {
+export function HistopathologyContextPanel({ lesionData, ruleResults, selection, studyId: studyIdProp, pathReviews }: Props) {
   const { studyId: studyIdParam } = useParams<{ studyId: string }>();
   const studyId = studyIdProp ?? studyIdParam;
 
@@ -703,7 +786,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       lesionData={lesionData}
       ruleResults={ruleResults}
       studyId={studyId}
-      onFindingSelect={onFindingSelect}
+      pathReviews={pathReviews}
     />
   );
 }

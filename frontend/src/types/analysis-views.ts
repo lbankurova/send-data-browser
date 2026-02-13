@@ -37,6 +37,49 @@ export interface TargetOrganRow {
   target_organ_flag: boolean;
 }
 
+export interface RuleParams {
+  // Endpoint identity (auto-populated from finding)
+  endpoint_label?: string;
+  domain?: string;
+  test_code?: string;
+  sex?: string;
+  direction?: string;
+  specimen?: string | null;
+  finding?: string;
+  data_type?: string;
+
+  // Statistics (auto-populated)
+  p_value?: number | null;
+  trend_p?: number | null;
+  effect_size?: number | null;
+  dose_response_pattern?: string;
+  severity_class?: string;
+  treatment_related?: boolean;
+  n_affected?: number;
+  max_n?: number;
+
+  // Rule-specific
+  ctrl_pct?: string;          // R18/R19
+  high_pct?: string;          // R18/R19
+  endpoint_labels?: string[]; // R16
+  noael_label?: string;       // R14
+  noael_dose_value?: string | number; // R14
+  noael_dose_unit?: string;   // R14
+  pattern?: string;           // R01/R05
+  n_endpoints?: number;       // R09
+  n_domains?: number;         // R09
+  domains?: string[];         // R09
+  count?: number;             // R17
+
+  // Metadata (suppression / dampening)
+  suppressed_by?: string;
+  dampened?: boolean;
+  dampening_reason?: string;
+
+  // Organ-scoped
+  organ_system?: string;
+}
+
 export interface RuleResult {
   rule_id: string;
   scope: "endpoint" | "organ" | "study";
@@ -45,6 +88,7 @@ export interface RuleResult {
   organ_system: string;
   output_text: string;
   evidence_refs: string[];
+  params?: RuleParams;
 }
 
 export interface StudySummaryFilters {
