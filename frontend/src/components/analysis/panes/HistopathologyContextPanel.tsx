@@ -71,6 +71,16 @@ function deriveSpecimenInsights(rules: RuleResult[], specimen: string): InsightB
         if (r.rule_id === "R12") details.push("Incidence increases with dose");
         if (r.rule_id === "R13") details.push("Dose-dependent severity increase");
       }
+      // Clinical catalog annotation
+      const clinicalRule = agg.rules.find((r) => r.params?.clinical_class);
+      if (clinicalRule?.params?.clinical_class) {
+        const cls = clinicalRule.params.clinical_class === "Sentinel"
+          ? "Sentinel"
+          : clinicalRule.params.clinical_class === "HighConcern"
+          ? "High concern"
+          : clinicalRule.params.clinical_class;
+        details.push(`${cls} (${clinicalRule.params.catalog_id ?? ""})`);
+      }
       blocks.push({
         kind: "adverse",
         finding: agg.finding || agg.endpointLabel,
@@ -82,19 +92,30 @@ function deriveSpecimenInsights(rules: RuleResult[], specimen: string): InsightB
       const highPct = agg.primaryRule.params?.high_pct ?? "";
       const hasR19 = agg.rules.some((r) => r.rule_id === "R19");
 
-      blocks.push({
-        kind: "protective",
-        finding: agg.finding || agg.endpointLabel,
-        sexes: agg.sex,
-        detail: `${ctrlPct}% control \u2192 ${highPct}% high dose`,
-      });
-      if (hasR19) {
+      // Check if any rule in this group has protective exclusion
+      const excludedRule = agg.rules.find((r) => r.params?.protective_excluded);
+      if (excludedRule) {
         blocks.push({
-          kind: "repurposing",
+          kind: "info",
           finding: agg.finding || agg.endpointLabel,
           sexes: agg.sex,
-          detail: `High baseline (${ctrlPct}%) reduced by treatment \u2014 potential therapeutic target`,
+          detail: `Decreased incidence noted but excluded from protective classification (${excludedRule.params?.exclusion_id ?? ""})`,
         });
+      } else {
+        blocks.push({
+          kind: "protective",
+          finding: agg.finding || agg.endpointLabel,
+          sexes: agg.sex,
+          detail: `${ctrlPct}% control \u2192 ${highPct}% high dose`,
+        });
+        if (hasR19) {
+          blocks.push({
+            kind: "repurposing",
+            finding: agg.finding || agg.endpointLabel,
+            sexes: agg.sex,
+            detail: `High baseline (${ctrlPct}%) reduced by treatment \u2014 potential therapeutic target`,
+          });
+        }
       }
     } else if (kind === "trend") {
       const dir = agg.direction;

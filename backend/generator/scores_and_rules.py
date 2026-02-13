@@ -6,6 +6,8 @@ Evaluates 19 canonical rules and emits structured rule results.
 import logging
 from collections import defaultdict
 
+from services.analysis.clinical_catalog import apply_clinical_layer
+
 logger = logging.getLogger(__name__)
 
 
@@ -243,7 +245,9 @@ def evaluate_rules(
                     "count": count,
                 }, params={"count": count}))
 
-    return _apply_suppressions(results)
+    results = _apply_suppressions(results)
+    results = apply_clinical_layer(results, findings)
+    return results
 
 
 def _apply_suppressions(results: list[dict]) -> list[dict]:

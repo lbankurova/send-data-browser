@@ -164,6 +164,28 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
     });
   }
 
+  // 1b. Clinical catalog sentinel/high-concern annotations
+  const clinicalRules = rules.filter(
+    (r) => r.params?.clinical_class === "Sentinel" || r.params?.clinical_class === "HighConcern"
+  );
+  if (clinicalRules.length > 0) {
+    const seen = new Set<string>();
+    const items: string[] = [];
+    for (const r of clinicalRules) {
+      const catalogId = r.params?.catalog_id ?? "";
+      const finding = r.params?.finding ?? r.params?.endpoint_label ?? "";
+      const key = `${catalogId}|${finding}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const cls = r.params?.clinical_class === "Sentinel" ? "Sentinel" : "High concern";
+      const conf = r.params?.clinical_confidence ? ` · ${r.params.clinical_confidence} confidence` : "";
+      items.push(`${finding} — ${cls} (${catalogId})${conf}`);
+    }
+    if (items.length > 0) {
+      lines.push({ text: "Clinical signals", isWarning: true, listItems: items });
+    }
+  }
+
   // 2. R08: target organ — text no longer has "Target organ:" prefix
   const r08 = rules.find((r) => r.rule_id === "R08");
   if (r08) {
@@ -199,8 +221,9 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
   }
 
   // 4. R18/R19: protective / inverse incidence — collapse into one line
+  //    Skip excluded findings (protective_excluded flag set by clinical catalog)
   const protectiveRules = rules.filter(
-    (r) => r.rule_id === "R18" || r.rule_id === "R19"
+    (r) => (r.rule_id === "R18" || r.rule_id === "R19") && !r.params?.protective_excluded
   );
   if (protectiveRules.length > 0) {
     const findingMap = new Map<string, { sexes: Set<string>; repurposing: boolean }>();

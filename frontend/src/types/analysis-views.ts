@@ -76,6 +76,13 @@ export interface RuleParams {
   dampened?: boolean;
   dampening_reason?: string;
 
+  // Clinical catalog annotations
+  clinical_class?: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent";
+  catalog_id?: string;
+  clinical_confidence?: "Low" | "Medium" | "High";
+  protective_excluded?: boolean;
+  exclusion_id?: string;
+
   // Organ-scoped
   organ_system?: string;
 }
