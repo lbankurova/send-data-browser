@@ -1159,7 +1159,7 @@ function OverviewTab({
       {/* Bottom: Heatmap container (group + subject) */}
       <ViewSection
         mode="flex"
-        title="Severity matrix"
+        title={<>SEVERITY MATRIX: {matrixMode === "subject" ? "SUBJECTS" : "GROUP"}{heatmapData ? <span className="ml-1 font-normal normal-case tracking-normal text-muted-foreground/60">({heatmapData.findings.length} findings)</span> : ""}</>}
       >
         {/* Heatmap content */}
         <div className="flex-1 overflow-auto">
@@ -1177,7 +1177,7 @@ function OverviewTab({
               doseGroupFilter={doseGroupFilter}
               doseGroupOptions={doseGroupOptions}
               controls={
-                <FilterBar>
+                <FilterBar className="border-0 bg-transparent px-0">
                   <div className="flex items-center gap-0.5">
                     {(["group", "subject"] as const).map((mode) => (
                       <button
@@ -1206,10 +1206,10 @@ function OverviewTab({
                     value={minSeverity}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMinSeverity(Number(e.target.value))}
                   >
-                    <option value={0}>Min severity: any</option>
-                    <option value={1}>Min severity: 1+</option>
-                    <option value={2}>Min severity: 2+</option>
-                    <option value={3}>Min severity: 3+</option>
+                    <option value={0}>All severities</option>
+                    <option value={1}>Severity 1+</option>
+                    <option value={2}>Severity 2+</option>
+                    <option value={3}>Severity 3+</option>
                   </FilterSelect>
                   <FilterMultiSelect
                     options={doseGroupOptions}
@@ -1224,7 +1224,7 @@ function OverviewTab({
                     <option value="dose">Sort: dose group</option>
                     <option value="severity">Sort: max severity</option>
                   </FilterSelect>
-                  <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                     <input
                       type="checkbox"
                       checked={affectedOnly}
@@ -1238,20 +1238,7 @@ function OverviewTab({
             />
           ) : heatmapData && heatmapData.findings.length > 0 ? (
             <div className="px-4 py-2">
-              <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {heatmapView === "incidence" ? "Incidence" : "Severity"} heatmap ({heatmapData.findings.length} findings)
-                </h4>
-                <span className="text-[10px] text-muted-foreground">
-                  Dose consistency: {(() => {
-                    const c = getDoseConsistency(specimenData);
-                    if (c === "Strong") return "Strong \u25B2\u25B2\u25B2";
-                    if (c === "Moderate") return "Moderate \u25B4\u25B4";
-                    return "Weak \u00B7";
-                  })()}
-                </span>
-              </div>
-              <FilterBar>
+              <FilterBar className="border-0 bg-transparent px-0">
                 <div className="flex items-center gap-0.5">
                   {(["group", "subject"] as const).map((mode) => (
                     <button
@@ -1280,10 +1267,10 @@ function OverviewTab({
                   value={minSeverity}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMinSeverity(Number(e.target.value))}
                 >
-                  <option value={0}>Min severity: any</option>
-                  <option value={1}>Min severity: 1+</option>
-                  <option value={2}>Min severity: 2+</option>
-                  <option value={3}>Min severity: 3+</option>
+                  <option value={0}>All severities</option>
+                  <option value={1}>Severity 1+</option>
+                  <option value={2}>Severity 2+</option>
+                  <option value={3}>Severity 3+</option>
                 </FilterSelect>
                 <div className="flex items-center gap-0.5">
                   {(["severity", "incidence"] as const).map((mode) => (
@@ -1402,7 +1389,7 @@ function OverviewTab({
             </div>
           ) : (
             <div className="px-4 py-2">
-              <FilterBar>
+              <FilterBar className="border-0 bg-transparent px-0">
                 <div className="flex items-center gap-0.5">
                   {(["group", "subject"] as const).map((mode) => (
                     <button
@@ -1551,22 +1538,7 @@ function SubjectHeatmap({
 
   return (
     <div className="border-b p-3">
-      {/* Header — always visible so user sees context */}
-      <div className="mb-1.5 flex items-center gap-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Subject-level matrix{!isLoading && subjData ? ` (${findings.length} findings)` : ""}
-        </h2>
-        {!isLoading && subjects.length > 0 && (
-          <span className="text-[10px] text-muted-foreground">
-            {subjects.length} subjects across {doseGroups.length} dose groups &middot; Scroll horizontally &rarr;
-          </span>
-        )}
-      </div>
-
-      {/* Controls — always visible so user can adjust filters */}
-      {controls}
-
-      {/* Active filter summary — plain text, stable height */}
+      {/* Active filter summary */}
       {!isLoading && subjData && (() => {
         const parts: string[] = [];
         if (doseGroupFilter !== null) {
@@ -1580,8 +1552,11 @@ function SubjectHeatmap({
         parts.push(sexFilter ? (sexFilter === "M" ? "Male" : "Female") : "Both sexes");
         if (minSeverity > 0) parts.push(`Severity ${minSeverity}+`);
         if (affectedOnly) parts.push("Affected only");
-        return <FilterShowingLine className="px-3 py-1" parts={parts} />;
+        return <FilterShowingLine className="mb-1" parts={parts} />;
       })()}
+
+      {/* Controls */}
+      {controls}
 
       {/* Severity legend */}
       {!isLoading && subjData && (
