@@ -19,7 +19,17 @@ backend/generator/view_dataframes.py
     |
     v
 backend/generator/scores_and_rules.py
-    |-- evaluate_rules()               --> rule_results.json
+    |-- evaluate_rules()
+    |       |
+    |       +-- _apply_suppressions()           (R01/R04 → suppress R07/R01/R03)
+    |       +-- apply_clinical_layer()           (clinical_catalog.py post-pass)
+    |               |-- match_catalog()          (C01-C15 specimen+finding match)
+    |               |-- _check_protective_exclusion()  (PEX01-PEX07)
+    |               |-- compute_clinical_confidence()  (High/Medium/Low)
+    |               |-- severity promotion       (info → warning for sentinel)
+    |               |-- R10 un-dampening         (restore warning for sentinel)
+    |       |
+    |       +--> rule_results.json  (with clinical annotations in params)
     |
     v
   (JSON shipped to frontend via API)
@@ -29,20 +39,27 @@ backend/generator/scores_and_rules.py
     |       +--> SignalsPanel.tsx (FindingsView component)
     |
     +--> lib/rule-synthesis.ts         (InsightsList context panel: organ-grouped synth lines)
-            |
-            +--> panes/InsightsList.tsx (context panel component)
+    |       |                          (clinical signals synthesis block)
+    |       +--> panes/InsightsList.tsx (context panel component)
+    |
+    +--> lib/finding-aggregation.ts    (finding category: respects protective_excluded)
+    |
+    +--> HistopathologyContextPanel.tsx (specimen insights: adverse/clinical/protective blocks)
 ```
 
 ### Component Relationship
 
 | Layer | File | Consumes | Produces |
 |-------|------|----------|----------|
-| Backend rule engine | `scores_and_rules.py` | `findings`, `target_organs`, `noael_summary`, `dose_groups` | `rule_results[]` (R01-R17) |
+| Backend rule engine | `scores_and_rules.py` | `findings`, `target_organs`, `noael_summary`, `dose_groups` | `rule_results[]` (R01-R19) |
+| Backend clinical post-pass | `clinical_catalog.py` | `rule_results[]`, `findings` | Annotated `rule_results[]` with clinical metadata in `params` |
 | Backend scoring | `view_dataframes.py` | `findings` (derived from XPT) | `study_signal_summary`, `target_organ_summary`, `noael_summary` |
 | Frontend signals engine | `signals-panel-engine.ts` | `NoaelSummaryRow[]`, `TargetOrganRow[]`, `SignalSummaryRow[]` | `SignalsPanelData` (Decision Bar, organ blocks, modifiers, caveats, metrics) |
-| Frontend rule synthesis | `rule-synthesis.ts` | `RuleResult[]` | `OrganGroup[]` with tier, synthLines, endpoint signals |
+| Frontend rule synthesis | `rule-synthesis.ts` | `RuleResult[]` | `OrganGroup[]` with tier, synthLines, endpoint signals, clinical signals block |
+| Frontend finding aggregation | `finding-aggregation.ts` | `RuleResult[]` | `FindingCategory` per finding (respects `protective_excluded`) |
 | UI: Signals Panel | `SignalsPanel.tsx` | `SignalsPanelData` | FindingsView (organ cards, modifiers, caveats) |
 | UI: InsightsList | `InsightsList.tsx` | `RuleResult[]` (for selected organ/endpoint) | Tiered organ groups with collapsible rule detail |
+| UI: Specimen insights | `HistopathologyContextPanel.tsx` | `RuleResult[]` (for selected specimen) | InsightBlocks: adverse, clinical, protective, info sections |
 
 ### Two Parallel Synthesis Paths
 
@@ -60,7 +77,7 @@ Each rule result emitted by `evaluate_rules()` in `scores_and_rules.py`:
 
 ```typescript
 interface RuleResult {
-  rule_id: string;          // "R01" through "R16"
+  rule_id: string;          // "R01" through "R19"
   scope: "endpoint" | "organ" | "study";
   severity: "info" | "warning" | "critical";
   context_key: string;      // "DOMAIN_TESTCODE_SEX" for endpoint scope,
@@ -69,6 +86,55 @@ interface RuleResult {
   organ_system: string;     // e.g., "hepatic", "renal", "" for study-scope
   output_text: string;      // Rendered template string
   evidence_refs: string[];  // e.g., ["LB: ALT (M)"]
+  params: RuleParams;       // Structured parameters (see below)
+}
+
+interface RuleParams {
+  // Common endpoint-scoped params (all endpoint rules)
+  endpoint_label?: string;
+  domain?: string;
+  test_code?: string;
+  sex?: string;
+  direction?: string;
+  specimen?: string;
+  finding?: string;
+  data_type?: string;
+  dose_response_pattern?: string;
+  severity_class?: string;
+  treatment_related?: boolean;
+  p_value?: number;
+  trend_p?: number;
+  effect_size?: number;
+  n_affected?: number;
+  max_n?: number;
+
+  // R10 dampening
+  dampened?: boolean;
+  dampening_reason?: string;
+
+  // R18/R19 protective params
+  ctrl_pct?: string;
+  high_pct?: string;
+
+  // Clinical catalog annotations (added by apply_clinical_layer post-pass)
+  clinical_class?: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent";
+  catalog_id?: string;                    // e.g., "C01"
+  clinical_confidence?: "Low" | "Medium" | "High";
+  protective_excluded?: boolean;          // R18/R19 suppressed by PEX rule
+  exclusion_id?: string;                  // e.g., "PEX01"
+
+  // Organ-scoped params
+  organ_system?: string;
+  n_endpoints?: number;
+  n_domains?: number;
+  domains?: string[];
+  endpoint_labels?: string[];
+
+  // Study-scoped params
+  noael_label?: string;
+  noael_dose_value?: string;
+  noael_dose_unit?: string;
+  count?: number;  // R17 mortality count
 }
 ```
 
@@ -247,7 +313,7 @@ function assignSection(priority: number): UISection {
 
 ## Rules
 
-### R01-R17 Reference Table (17 rules)
+### R01-R19 Reference Table (19 rules)
 
 | ID | Name | Scope | Severity | Condition | Template (abbreviated) | Output |
 |----|------|-------|----------|-----------|----------------------|--------|
@@ -353,7 +419,8 @@ for noael_row in noael_summary:
 
 ### Rule Output Structure
 
-Each `_emit()` call produces:
+Each `_emit()` call produces a dict with a structured `params` field:
+
 ```python
 {
     "rule_id": rule["id"],        # e.g., "R01"
@@ -363,8 +430,32 @@ Each `_emit()` call produces:
     "organ_system": finding.get("organ_system", ""),
     "output_text": template.format(**ctx),
     "evidence_refs": [f"{domain}: {endpoint_label} ({sex})"],
+    "params": {                   # Structured params — all template values + metadata
+        "endpoint_label": ..., "domain": ..., "test_code": ..., "sex": ...,
+        "direction": ..., "specimen": ..., "finding": ..., "data_type": ...,
+        "dose_response_pattern": ..., "severity_class": ..., "treatment_related": ...,
+        "p_value": ..., "trend_p": ..., "effect_size": ...,
+        "n_affected": ..., "max_n": ...,
+        # + rule-specific extras (e.g., "dampened": True for R10)
+    },
 }
 ```
+
+### Post-evaluation Pipeline
+
+After all rules are emitted, `evaluate_rules()` applies two post-passes in order:
+
+```python
+results = _apply_suppressions(results)       # Step 1: Remove contradictory rules
+results = apply_clinical_layer(results, findings)  # Step 2: Clinical catalog annotations
+return results
+```
+
+**Step 1 — Suppression** (`_apply_suppressions`): Groups rules by `context_key` and removes redundant results:
+- R01 present → suppress R07 (treatment significance subsumes pattern diagnostic)
+- R04 present → suppress R01, R03 (adverse classification subsumes trend tests)
+
+**Step 2 — Clinical catalog post-pass** (`apply_clinical_layer`): Annotates endpoint-scoped rules with clinical metadata. See [Clinical Insight Layer](#clinical-insight-layer) section below.
 
 ## Synthesis Logic
 
@@ -517,7 +608,13 @@ function computeTier(rules: RuleResult[]): Tier {
 5. **R14 NOAEL**: Consolidates when same dose across sexes.
    - Example: `"NOAEL: Control for both sexes"` or `"NOAEL: 10 mg/kg for M"`
 
-6. **Fallback**: If no synthesis lines produced, shows top 2 raw rules sorted by severity.
+6. **Clinical signals** (from rules with `params.clinical_class`): Extracts findings matched against the clinical catalog (C01-C15), deduplicates by `catalogId|finding`, and renders a "Clinical signals" synthesis line with `isWarning: true` when any Sentinel or HighConcern findings are present.
+   - Each item: `"{finding} — {class} ({catalogId}) · {confidence} confidence"`
+   - Example: `"HEPATOCELLULAR HYPERTROPHY — Moderate concern (C14) · Medium confidence"`
+
+7. **Protective exclusion filtering**: R18/R19 rules with `params.protective_excluded === true` are excluded from the protective synthesis block. Only non-excluded R18/R19 rules render as protective lines.
+
+8. **Fallback**: If no synthesis lines produced, shows top 2 raw rules sorted by severity.
 
 ### Endpoint Signal Extraction
 
@@ -539,6 +636,120 @@ interface EndpointSignal {
 - R04: Sets `isAdverse = true`
 - R01: Sets `hasR01 = true`, parses direction from `/(up|down)/`
 - Sorted by `maxAbsD` descending (strongest effects first)
+
+## Clinical Insight Layer
+
+### Overview
+
+The clinical insight layer is a **post-pass annotation system** that runs after all 19 rules have been evaluated and suppressions applied. It enriches rule results with clinical metadata from a curated catalog of 15 clinically significant lesion patterns. The layer is implemented in `backend/services/analysis/clinical_catalog.py` and called from `evaluate_rules()` in `scores_and_rules.py`.
+
+**Design principle:** The clinical catalog is an annotation layer, not a new rule engine. It does not emit new rule results. It modifies existing results by adding params, promoting severity, suppressing protective labels, and un-dampening R10 for sentinel findings.
+
+### Clinical Catalog (C01-C15)
+
+15 curated entries covering the most clinically significant histopathology finding patterns in toxicology studies. Each entry defines matching criteria and annotation behavior.
+
+| ID | Name | Class | Elevate to | Specimens | Min N | Min Sev |
+|----|------|-------|-----------|-----------|-------|---------|
+| C01 | Male reproductive — atrophy/degeneration | Sentinel | adverse | TESTIS, EPIDIDYMIS, SEMINAL VESICLE, PROSTATE | 1 | 1 |
+| C02 | Ovary atrophy/follicular depletion | Sentinel | adverse | OVARY | 1 | 1 |
+| C03 | Uterus atrophy | HighConcern | adverse | UTERUS | 2 | 1 |
+| C04 | Malignant neoplasia (any organ) | Sentinel | adverse | ANY | 1 | 1 |
+| C05 | Benign neoplasia | ContextDependent | none (flag) | ANY | 2 | 1 |
+| C06 | Neurotoxic injury | Sentinel | adverse | BRAIN, SPINAL CORD, SCIATIC NERVE, PERIPHERAL NERVE, DORSAL ROOT GANGLIA | 1 | 1 |
+| C07 | Bone marrow hypocellularity/aplasia | Sentinel | adverse | BONE MARROW, STERNUM, FEMUR | 1 | 2 |
+| C08 | Liver necrosis/degeneration | HighConcern | adverse | LIVER | 2 | 1 |
+| C09 | Kidney tubular necrosis/degeneration | HighConcern | adverse | KIDNEY | 2 | 1 |
+| C10 | Heart myocardial necrosis/degeneration | HighConcern | adverse | HEART | 2 | 2 |
+| C11 | Lung diffuse alveolar damage/hemorrhage | HighConcern | adverse | LUNG, LUNGS | 2 | 2 |
+| C12 | GI tract ulceration/perforation | Sentinel | adverse | STOMACH, ESOPHAGUS, SMALL INTESTINE, LARGE INTESTINE, COLON, CECUM, RECTUM, DUODENUM, JEJUNUM, ILEUM | 1 | 2 |
+| C13 | Lymphoid depletion (immune organs) | HighConcern | adverse | THYMUS, SPLEEN, LYMPH NODE | 3 | 2 |
+| C14 | Liver hypertrophy (adaptive) | ModerateConcern | none (flag) | LIVER | 3 | 2 |
+| C15 | Thyroid follicular hypertrophy/hyperplasia | ModerateConcern | none (flag) | THYROID | 3 | 2 |
+
+**Clinical class hierarchy:**
+- **Sentinel** (C01, C02, C04, C06, C07, C12): Always clinically significant regardless of statistical strength. One affected animal is sufficient.
+- **HighConcern** (C03, C08, C09, C10, C11, C13): Significant with dose-response evidence. Requires ≥2 affected animals.
+- **ModerateConcern** (C14, C15): Flag for review — often adaptive or secondary. No severity promotion.
+- **ContextDependent** (C05): Requires pathologist judgment. No severity promotion.
+
+### Matching Strategy
+
+SEND histopathology data uses free-text findings (e.g., "FAT VACUOLES", "INFILTRATE, INFLAMMATORY CELL"). Catalog entries use normalized terms. Matching is case-insensitive substring:
+
+```python
+def _matches_finding(data_finding: str, catalog_findings: list[str]) -> bool:
+    upper = data_finding.upper()
+    return any(term in upper for term in catalog_findings)
+
+def _matches_specimen(data_specimen: str, catalog_specimens: list[str] | None) -> bool:
+    if catalog_specimens is None:   # C04/C05: any organ
+        return True
+    upper = data_specimen.upper()
+    return any(term in upper for term in catalog_specimens)
+```
+
+This handles "BONE MARROW, FEMUR" matching against "BONE MARROW", "LIVER" matching against "LIVER", etc. For C04/C05 (neoplasia), `specimens` is `None` — matching is by finding keywords only.
+
+### Post-pass Operations
+
+`apply_clinical_layer(results, findings)` iterates over endpoint-scoped rule results and performs four operations:
+
+**1. Catalog annotation.** For each matched finding, adds to `params`:
+- `clinical_class`: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent"
+- `catalog_id`: "C01" through "C15"
+- `clinical_confidence`: "High" | "Medium" | "Low" (see confidence computation below)
+
+**2. Severity promotion.** For Sentinel and HighConcern findings where `n_affected >= min_n_affected` and `elevate_to` is set: promotes `severity` from "info" to "warning". This ensures sentinel findings surface in the UI as warnings even if they lack statistical significance.
+
+**3. Protective exclusion.** For R18/R19 results, checks all 7 PEX rules. If excluded:
+- Sets `params.protective_excluded = true` and `params.exclusion_id`
+- Neutralizes `output_text` to: "{finding} in {specimen}: decreased incidence noted but excluded from protective classification ({exclusion_id})."
+
+**4. R10 un-dampening.** For R10 results that were dampened (single-animal, `params.dampened = true`): if the finding matches a Sentinel catalog entry, restores `severity` to "warning" and clears dampening flags. Rationale: a single-animal sentinel finding (e.g., testicular atrophy) is clinically meaningful even without statistical power.
+
+### Protective Exclusions (PEX01-PEX07)
+
+These rules block protective labeling (R18/R19) for findings where decreased incidence should not be interpreted as beneficial:
+
+| ID | Rule | Check logic |
+|----|------|-------------|
+| PEX01 | Reproductive organs | `organ_system == "reproductive"` |
+| PEX02 | Neoplasia | Finding contains neoplasia keywords (CARCINOMA, SARCOMA, LYMPHOMA, LEUKEMIA, MALIGNANT, ADENOMA, FIBROMA, BENIGN) |
+| PEX03 | Low baseline | `ctrl_pct < 10%` (control incidence too low to interpret decrease) |
+| PEX04 | Sentinel/HighConcern finding | Catalog match with class Sentinel or HighConcern |
+| PEX05 | Single-animal decrease | `n_affected <= 1` (insufficient evidence) |
+| PEX06 | Hematopoietic/immune organs | `organ_system in ("hematopoietic", "immune", "hematologic")` |
+| PEX07 | Non-monotonic without significance | `pattern == "non_monotonic" AND NOT treatment_related AND (p_value is null OR p_value >= 0.05)` |
+
+Exclusions are checked sequentially; the first match wins. PEX01 and PEX06 share the same check function (organ system membership).
+
+### Clinical Confidence Computation
+
+`compute_clinical_confidence(params, match)` produces High/Medium/Low based on a point score:
+
+| Factor | Points | Condition |
+|--------|--------|-----------|
+| n_affected | 3 | ≥ 3× catalog threshold |
+| n_affected | 2 | ≥ 2× catalog threshold |
+| n_affected | 1 | ≥ 1× catalog threshold |
+| Dose-response pattern | 2 | monotonic_increase or monotonic_decrease |
+| Dose-response pattern | 1 | threshold |
+| Clinical class | 2 | Sentinel |
+| Clinical class | 1 | HighConcern |
+| Statistical significance | 1 | p_value < 0.01 |
+
+**Thresholds:** score ≥ 6 → High, score ≥ 3 → Medium, else Low.
+
+### Frontend Consumption
+
+**`finding-aggregation.ts` — `ruleCategory()`:** R18/R19 rules with `params.protective_excluded === true` are downgraded from "protective" to "info" category. This prevents excluded findings from appearing in the protective signals section.
+
+**`rule-synthesis.ts` — `synthesize()`:** Adds a "Clinical signals" synthesis line block when any rules have `params.clinical_class`. Deduplicates by `catalogId|finding`. Sets `isWarning: true` when Sentinel or HighConcern findings are present, promoting the block visually.
+
+**`HistopathologyContextPanel.tsx` — `deriveSpecimenInsights()`:** Builds `InsightBlock[]` with kind "clinical" for catalog-matched findings that are not already shown in the adverse section. Shows clinical class, catalog ID, and confidence. Separately renders excluded protective findings with their exclusion reason.
+
+**`HistopathologyView.tsx` — `findingClinical` lookup:** Builds a per-specimen `Map<finding, {clinicalClass, catalogId}>` from rule results. Used by the findings table Signal column: when a finding has `severity === "normal"` but a catalog match exists, displays the clinical class label (e.g., "Sentinel", "High concern") instead of "normal" to prevent misleading classification.
 
 ## Signal Score Formula
 
@@ -623,13 +834,16 @@ NOAEL_Confidence = 1.0
 
 ### What is real (full pipeline operational)
 
-- **XPT to rule evaluation**: Complete pipeline from SEND XPT files through statistical computation to R01-R17 rule emission. All 16 rules fire against real study data.
+- **XPT to rule evaluation**: Complete pipeline from SEND XPT files through statistical computation to R01-R19 rule emission. All 19 rules fire against real study data.
+- **Clinical insight layer**: 15-entry catalog (C01-C15) with 7 protective exclusions (PEX01-PEX07). Catalog matching, severity promotion, protective suppression, R10 un-dampening, and confidence scoring all operational.
 - **Signal score computation**: Fully implemented with continuous scoring functions.
 - **Target organ identification**: Automated from evidence scores and domain convergence.
 - **NOAEL determination**: Derived from adverse effect analysis with per-sex computation.
 - **Signals Panel engine**: Complete synthesis from summary data to structured UI output (DecisionBar, OrganBlocks, Modifiers, Caveats, Metrics).
-- **InsightsList synthesis**: Complete organ-grouped tier classification with endpoint signal extraction.
-- **UI rendering**: Both FindingsView (Signals Panel center) and InsightsList (context panel) fully operational.
+- **InsightsList synthesis**: Complete organ-grouped tier classification with endpoint signal extraction. Clinical signals synthesis block renders catalog-matched findings.
+- **Finding aggregation**: `ruleCategory()` respects `protective_excluded` flag — excluded R18/R19 findings downgraded from "protective" to "info".
+- **Specimen insights**: `deriveSpecimenInsights()` in HistopathologyContextPanel builds InsightBlocks with adverse, clinical, protective, and info sections from rule results.
+- **UI rendering**: Both FindingsView (Signals Panel center) and InsightsList (context panel) fully operational. Histopathology findings table shows clinical class labels in Signal column when catalog match overrides "normal" classification.
 - **Filter-responsive metrics**: Metrics line updates with heatmap filters; Decision Bar values remain constant.
 
 ### What is hardcoded / configurable
@@ -652,6 +866,13 @@ NOAEL_Confidence = 1.0
 | Tier: Critical | R08, or R04+R10+2 warnings | `rule-synthesis.ts:computeTier()` | Hardcoded |
 | Tier: Notable | R04 or R10, or R01 in 2+ endpoints | `rule-synthesis.ts:computeTier()` | Hardcoded |
 | Max banner findings | None (all shown) | Spec dropped (SD-04) | Typical studies have 3-5 study-scope statements; hiding findings risks oversight |
+| Clinical catalog | 15 entries (C01-C15) | `clinical_catalog.py:CLINICAL_CATALOG` | Hardcoded list; add entries for new finding patterns |
+| Protective exclusions | 7 rules (PEX01-PEX07) | `clinical_catalog.py:PROTECTIVE_EXCLUSIONS` | Hardcoded list |
+| PEX03 control threshold | < 10% | `clinical_catalog.py:_check_protective_exclusion()` | Hardcoded |
+| PEX05 n_affected threshold | ≤ 1 | `clinical_catalog.py:_check_protective_exclusion()` | Hardcoded |
+| Clinical confidence: High | score ≥ 6 | `clinical_catalog.py:compute_clinical_confidence()` | Hardcoded |
+| Clinical confidence: Medium | score ≥ 3 | `clinical_catalog.py:compute_clinical_confidence()` | Hardcoded |
+| R10 un-dampening | Sentinel class only | `clinical_catalog.py:apply_clinical_layer()` | Hardcoded; could extend to HighConcern |
 
 ### Known limitations and TBD
 
@@ -674,21 +895,25 @@ The following items were previously listed as spec divergences. All have been re
 
 | File | What it does | Key functions/exports |
 |------|-------------|----------------------|
-| `backend/generator/scores_and_rules.py` | Evaluates 19 canonical rules (R01-R19) against computed findings, target organs, and NOAEL data. R17 is the mortality signal from DS domain. R18-R19 detect decreased incidence (protective/repurposing patterns). Emits structured rule results with context keys and rendered template text. | `RULES` (rule definitions), `evaluate_rules()`, `_emit()`, `_emit_organ()`, `_emit_study()`, `_build_finding_context()` |
+| `backend/generator/scores_and_rules.py` | Evaluates 19 canonical rules (R01-R19) against computed findings, target organs, and NOAEL data. R17 is the mortality signal from DS domain. R18-R19 detect decreased incidence (protective/repurposing patterns). Calls `_apply_suppressions()` then `apply_clinical_layer()` as post-passes. Emits structured rule results with `params` dict and rendered template text. | `RULES` (rule definitions), `evaluate_rules()`, `_apply_suppressions()`, `_emit()`, `_emit_organ()`, `_emit_study()`, `_build_finding_context()` |
+| `backend/services/analysis/clinical_catalog.py` | Clinical insight layer — post-pass annotation on rule results. Matches histopathology findings against 15 catalog entries (C01-C15), applies 7 protective exclusions (PEX01-PEX07), computes clinical confidence, promotes severity for sentinel/high-concern findings, and un-dampens R10 for sentinel findings. | `CLINICAL_CATALOG`, `PROTECTIVE_EXCLUSIONS`, `apply_clinical_layer()`, `match_catalog()`, `compute_clinical_confidence()`, `_check_protective_exclusion()`, `_matches_finding()`, `_matches_specimen()` |
 | `backend/generator/view_dataframes.py` | Computes signal scores, builds summary dataframes (study_signal_summary, target_organ_summary, noael_summary). Contains the signal score formula, target organ threshold logic, and NOAEL confidence score. | `build_study_signal_summary()`, `build_target_organ_summary()`, `_compute_signal_score()`, `_compute_noael_confidence()` |
 | `frontend/src/lib/signals-panel-engine.ts` | Derives semantic rules from NOAEL/organ/signal summary data, assigns priority bands, builds organ blocks with compound merging, and produces the full SignalsPanelData structure for the Signals tab center panel. | `buildSignalsPanelData()`, `buildFilteredMetrics()`, `sexLabel()`, `organName()`, `assignSection()` + types: `SignalsPanelData`, `OrganBlock`, `PanelStatement`, `MetricsLine`, `UISection` |
-| `frontend/src/lib/rule-synthesis.ts` | Groups backend rule_results by organ, computes per-organ tiers (Critical/Notable/Observed), extracts per-endpoint signals from R10/R04/R01, and synthesizes compact display lines. Serves the InsightsList context panel. | `buildOrganGroups()`, `computeTier()`, `computeTierCounts()`, `synthesize()`, `extractEndpointSignals()`, `parseContextKey()`, `cleanText()` + types: `OrganGroup`, `SynthLine`, `SynthEndpoint`, `EndpointSignal`, `Tier` |
+| `frontend/src/lib/rule-synthesis.ts` | Groups backend rule_results by organ, computes per-organ tiers (Critical/Notable/Observed), extracts per-endpoint signals from R10/R04/R01, synthesizes compact display lines, and adds clinical signals synthesis block from catalog annotations. Filters protective exclusions from R18/R19. Serves the InsightsList context panel. | `buildOrganGroups()`, `computeTier()`, `computeTierCounts()`, `synthesize()`, `extractEndpointSignals()`, `formatClinicalClassSynth()`, `parseContextKey()`, `cleanText()` + types: `OrganGroup`, `SynthLine`, `SynthEndpoint`, `EndpointSignal`, `Tier` |
+| `frontend/src/lib/finding-aggregation.ts` | Aggregates rule results by finding key, assigns category (adverse/protective/trend/info). Respects `protective_excluded` flag: R18/R19 with exclusion downgraded from "protective" to "info". | `aggregateByFinding()`, `ruleCategory()`, `FindingCategory` |
 | `frontend/src/components/analysis/panes/InsightsList.tsx` | React component that renders organ-grouped insights in the context panel. Accepts optional `tierFilter?: Tier \| null` prop to show only organs matching a specific tier. Organ groups with synth lines, expandable raw rule detail. | `InsightsList` (component, props: `rules: RuleResult[]`, `tierFilter?: Tier \| null`), `SynthLineItem`, `EndpointRow`, `HistopathItem`, `TierBadge` |
+| `frontend/src/components/analysis/panes/HistopathologyContextPanel.tsx` | Derives specimen-level insights from rule results. Builds InsightBlocks in 4 sections: adverse (with inline clinical class), clinical significance (standalone catalog matches), protective (non-excluded R18/R19), and info (excluded findings with exclusion reason). | `SpecimenInsights`, `deriveSpecimenInsights()`, `formatClinicalClass()`, `InsightBlock` (kind: "adverse" \| "clinical" \| "protective" \| "info") |
 | `frontend/src/components/analysis/SignalsPanel.tsx` | React component that renders the Findings mode of the Signals tab center panel. Contains organ cards grid, modifiers section, review flags section, clickable organ/endpoint navigation. | `FindingsView` (main export), `OrganCard`, `TargetOrgansSection`, `ModifiersSection`, `CaveatsSection`, `StudyStatementsSection` |
-| `frontend/src/types/analysis-views.ts` | TypeScript interfaces for all analysis view data types consumed by both synthesis engines. | `SignalSummaryRow`, `TargetOrganRow`, `NoaelSummaryRow`, `RuleResult`, `SignalSelection` |
+| `frontend/src/types/analysis-views.ts` | TypeScript interfaces for all analysis view data types consumed by both synthesis engines. Includes `RuleParams` with clinical catalog annotation fields. | `SignalSummaryRow`, `TargetOrganRow`, `NoaelSummaryRow`, `RuleResult`, `RuleParams`, `SignalSelection` |
 
 ## Datagrok Notes
 
 ### What ports directly
 
 - **All Python rule logic** (`scores_and_rules.py`): Rule definitions, evaluation logic, and template rendering are self-contained and have no framework dependencies. Can be extracted as-is.
+- **Clinical catalog** (`clinical_catalog.py`): Pure Python with no external dependencies beyond `logging`. Catalog data, matching logic, exclusion checks, and confidence scoring are all self-contained. Can be extracted as-is.
 - **Signal score computation** (`view_dataframes.py:_compute_signal_score()`): Pure function with no external dependencies beyond `math.log10`.
-- **All TypeScript synthesis logic** (`signals-panel-engine.ts`, `rule-synthesis.ts`): Both engines are pure functions with no React dependencies. They consume plain data objects and return plain data objects. Can be used in any JS/TS runtime.
+- **All TypeScript synthesis logic** (`signals-panel-engine.ts`, `rule-synthesis.ts`, `finding-aggregation.ts`): All three engines are pure functions with no React dependencies. They consume plain data objects and return plain data objects. Can be used in any JS/TS runtime.
 - **Type definitions** (`analysis-views.ts`): All interfaces are portable.
 
 ### What changes for production
@@ -698,8 +923,10 @@ The following items were previously listed as spec divergences. All have been re
 - **Multi-study support**: Current system processes one study at a time. Datagrok may need cross-study comparison of signal scores and rule results.
 - **Mortality NOAEL override**: R17 emits mortality signals but doesn't yet force NOAEL adjustment. Production should auto-set LOAEL at any dose with deaths.
 - **Audit trail**: The spec defines rule lifecycle states (inactive -> triggered -> emitted -> suppressed). Current implementation only has "emitted" (all results are emitted, no suppression tracking). Production should log all state transitions for regulatory audit.
+- **Clinical catalog extensibility**: The 15 catalog entries are hardcoded. Production should support catalog versioning (INHAND nomenclature updates), site-specific additions, and configurable thresholds per study type. The substring matching strategy may need refinement for edge cases in free-text SEND data.
 
 ## Changelog
 
+- 2026-02-13: Added Clinical Insight Layer section — 15-entry catalog (C01-C15), 7 protective exclusions (PEX01-PEX07), confidence scoring, severity promotion, R10 un-dampening. Expanded RuleResult contract with full `RuleParams` interface including clinical annotation fields. Updated data flow diagram with post-pass pipeline. Added `clinical_catalog.py`, `finding-aggregation.ts`, `HistopathologyContextPanel.tsx` to code map. Updated synthesis logic for clinical signals block and protective exclusion filtering. Updated Current State and Datagrok Notes sections.
 - 2026-02-09: Added `SynthEndpoint` interface, `computeTierCounts()` export, and `tierFilter` prop on InsightsList. Updated SynthLine interface with full field set (endpoints, extraCount, qualifiers, listItems). Updated code map for rule-synthesis.ts and InsightsList.tsx.
 - 2026-02-08: Consolidated from insight-synthesis-engine.md, send-browser- rule-based-insight-system.md, signals-panel-implementation-spec.md, CLAUDE.md, and five source code files (scores_and_rules.py, view_dataframes.py, signals-panel-engine.ts, rule-synthesis.ts, InsightsList.tsx, SignalsPanel.tsx)
