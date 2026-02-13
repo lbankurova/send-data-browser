@@ -58,11 +58,15 @@ export interface SpecimenSummary {
   specimen: string;
   findingCount: number;
   adverseCount: number;
+  warningCount: number;
   maxSeverity: number;
-  totalAffected: number;
-  totalN: number;
+  /** Highest incidence (0–1) from any single (finding × dose × sex) row */
+  maxIncidence: number;
   domains: string[];
   doseConsistency: "Weak" | "Moderate" | "Strong";
+  signalScore: number;
+  sexSkew: "M>F" | "F>M" | "M=F" | null;
+  hasRecovery: boolean;
 }
 
 export interface FindingSummary {
@@ -88,25 +92,54 @@ export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?:
   const map = new Map<string, {
     findings: Set<string>;
     adverseFindings: Set<string>;
+    warningFindings: Set<string>;
     maxSev: number;
-    totalAffected: number;
-    totalN: number;
+    maxIncidence: number;
+    maxMaleInc: number;
+    maxFemaleInc: number;
+    hasMale: boolean;
+    hasFemale: boolean;
     domains: Set<string>;
+    hasRecovery: boolean;
+    /** Track worst severity classification per finding */
+    findingSeverity: Map<string, "adverse" | "warning" | "normal">;
   }>();
 
   for (const row of data) {
-    if (!row.specimen) continue; // skip rows with null specimen (e.g. CL domain findings)
+    if (!row.specimen) continue;
     let entry = map.get(row.specimen);
     if (!entry) {
-      entry = { findings: new Set(), adverseFindings: new Set(), maxSev: 0, totalAffected: 0, totalN: 0, domains: new Set() };
+      entry = {
+        findings: new Set(), adverseFindings: new Set(), warningFindings: new Set(),
+        maxSev: 0, maxIncidence: 0, maxMaleInc: 0, maxFemaleInc: 0,
+        hasMale: false, hasFemale: false, domains: new Set(),
+        hasRecovery: false, findingSeverity: new Map(),
+      };
       map.set(row.specimen, entry);
     }
     entry.findings.add(row.finding);
-    if (row.severity === "adverse") entry.adverseFindings.add(row.finding);
     if ((row.avg_severity ?? 0) > entry.maxSev) entry.maxSev = row.avg_severity ?? 0;
-    entry.totalAffected += row.affected;
-    entry.totalN += row.n;
+    if (row.incidence > entry.maxIncidence) entry.maxIncidence = row.incidence;
     entry.domains.add(row.domain);
+
+    // Per-sex max incidence for sex skew
+    if (row.sex === "M") { entry.hasMale = true; if (row.incidence > entry.maxMaleInc) entry.maxMaleInc = row.incidence; }
+    else if (row.sex === "F") { entry.hasFemale = true; if (row.incidence > entry.maxFemaleInc) entry.maxFemaleInc = row.incidence; }
+
+    // Recovery detection
+    if (row.dose_label.toLowerCase().includes("recovery")) entry.hasRecovery = true;
+
+    // Track worst severity per finding (adverse > warning > normal)
+    const prev = entry.findingSeverity.get(row.finding);
+    if (row.severity === "adverse") {
+      entry.adverseFindings.add(row.finding);
+      entry.findingSeverity.set(row.finding, "adverse");
+    } else if (row.severity === "warning" && prev !== "adverse") {
+      entry.warningFindings.add(row.finding);
+      entry.findingSeverity.set(row.finding, "warning");
+    } else if (!prev) {
+      entry.findingSeverity.set(row.finding, "normal");
+    }
   }
 
   // Build set of specimens with R01/R04 rule signals (authoritative dose evidence)
@@ -124,25 +157,37 @@ export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?:
   for (const [specimen, entry] of map) {
     const specimenRows = data.filter((r) => r.specimen === specimen);
     const heuristic = getDoseConsistency(specimenRows);
+    const doseConsistency = hasDoseRuleFor(specimen) ? "Strong" as const : heuristic;
+    const doseW = doseConsistency === "Strong" ? 2 : doseConsistency === "Moderate" ? 1 : 0;
+    const signalScore = entry.adverseFindings.size * 3 + entry.maxSev + entry.maxIncidence * 5 + doseW;
+
+    // Sex skew: compare max incidence per sex
+    let sexSkew: "M>F" | "F>M" | "M=F" | null = null;
+    if (entry.hasMale && entry.hasFemale) {
+      const hi = Math.max(entry.maxMaleInc, entry.maxFemaleInc);
+      const lo = Math.min(entry.maxMaleInc, entry.maxFemaleInc);
+      const ratio = lo > 0 ? hi / lo : (hi > 0 ? Infinity : 1);
+      if (ratio > 1.5) sexSkew = entry.maxMaleInc > entry.maxFemaleInc ? "M>F" : "F>M";
+      else sexSkew = "M=F";
+    }
+
     summaries.push({
       specimen,
       findingCount: entry.findings.size,
       adverseCount: entry.adverseFindings.size,
+      warningCount: entry.warningFindings.size,
       maxSeverity: entry.maxSev,
-      totalAffected: entry.totalAffected,
-      totalN: entry.totalN,
+      maxIncidence: entry.maxIncidence,
       domains: [...entry.domains].sort(),
-      doseConsistency: hasDoseRuleFor(specimen) ? "Strong" : heuristic,
+      doseConsistency,
+      signalScore,
+      sexSkew,
+      hasRecovery: entry.hasRecovery,
     });
   }
 
-  // Risk-density weighted sort: severity (2x) + adverse count (1.5x) + dose consistency weight
-  const doseWeight = (c: "Weak" | "Moderate" | "Strong") =>
-    c === "Strong" ? 2 : c === "Moderate" ? 1 : 0;
-  const riskScore = (s: SpecimenSummary) =>
-    (s.maxSeverity * 2) + (s.adverseCount * 1.5) + doseWeight(s.doseConsistency);
-
-  return summaries.sort((a, b) => riskScore(b) - riskScore(a) || b.findingCount - a.findingCount);
+  // Default sort: signal score descending
+  return summaries.sort((a, b) => b.signalScore - a.signalScore || b.findingCount - a.findingCount);
 }
 
 export function deriveFindingSummaries(rows: LesionSeverityRow[]): FindingSummary[] {
@@ -277,9 +322,7 @@ export function deriveSpecimenConclusion(
   specimenData: LesionSeverityRow[],
   specimenRules: RuleResult[],
 ): string {
-  const maxIncidencePct = summary.totalN > 0
-    ? ((summary.totalAffected / summary.totalN) * 100).toFixed(0)
-    : "0";
+  const maxIncidencePct = (summary.maxIncidence * 100).toFixed(0);
 
   // Incidence characterization
   const incidenceDesc = Number(maxIncidencePct) > 50
@@ -362,18 +405,17 @@ function SpecimenRailItem({
   reviewStatus?: SpecimenReviewStatus;
 }) {
   const sevColors = getNeutralHeatColor(summary.maxSeverity);
-  const incidence = summary.totalN > 0 ? summary.totalAffected / summary.totalN : 0;
-  const incColors = getNeutralHeatColor01(incidence);
-  const incPct = Math.round(incidence * 100);
+  const incColors = getNeutralHeatColor01(summary.maxIncidence);
+  const incPct = Math.round(summary.maxIncidence * 100);
   return (
     <button
       className={cn(
-        rail.itemBase, "px-2.5 py-1.5",
+        rail.itemBase, "px-2.5 py-2",
         isSelected ? rail.itemSelected : rail.itemIdle
       )}
       onClick={onClick}
     >
-      {/* Line 1: specimen name + aligned indicators */}
+      {/* Line 1: specimen name + quantitative indicators */}
       <div className="flex items-center">
         <span className="min-w-0 flex-1 truncate text-xs font-semibold">
           {summary.specimen.replace(/_/g, " ")}
@@ -407,7 +449,7 @@ function SpecimenRailItem({
         <span
           className="ml-1 w-8 shrink-0 rounded-sm text-center font-mono text-[9px]"
           style={{ backgroundColor: incColors.bg, color: incColors.text }}
-          title={`Incidence: ${summary.totalAffected}/${summary.totalN} (${incPct}%)`}
+          title={`Peak incidence: ${incPct}%`}
         >
           {incPct}%
         </span>
@@ -422,9 +464,9 @@ function SpecimenRailItem({
         </span>
       </div>
 
-      {/* Line 2: organ system + domain tags */}
-      <div className="mt-0.5 flex items-center gap-1 pl-0.5">
-        <span className="text-[9px] text-muted-foreground/70">{titleCase(specimenToOrganSystem(summary.specimen))}</span>
+      {/* Line 2: organ system + domains */}
+      <div className="mt-0.5 flex items-center gap-2">
+        <span className="text-[10px] text-muted-foreground/60">{titleCase(specimenToOrganSystem(summary.specimen))}</span>
         {summary.domains.map((d) => (
           <DomainLabel key={d} domain={d} />
         ))}
@@ -477,12 +519,7 @@ function SpecimenRail({
     const sorted = [...list];
     switch (sortBy) {
       case "signal":
-        sorted.sort((a, b) => {
-          const doseW = (d: string) => d === "Strong" ? 2 : d === "Moderate" ? 1 : 0;
-          const scoreA = a.adverseCount * 3 + a.maxSeverity + (a.totalAffected / Math.max(a.totalN, 1)) * 5 + doseW(a.doseConsistency);
-          const scoreB = b.adverseCount * 3 + b.maxSeverity + (b.totalAffected / Math.max(b.totalN, 1)) * 5 + doseW(b.doseConsistency);
-          return scoreB - scoreA;
-        });
+        sorted.sort((a, b) => b.signalScore - a.signalScore);
         break;
       case "organ": {
         sorted.sort((a, b) => {
@@ -497,11 +534,7 @@ function SpecimenRail({
         sorted.sort((a, b) => b.maxSeverity - a.maxSeverity);
         break;
       case "incidence":
-        sorted.sort((a, b) => {
-          const incA = a.totalAffected / Math.max(a.totalN, 1);
-          const incB = b.totalAffected / Math.max(b.totalN, 1);
-          return incB - incA;
-        });
+        sorted.sort((a, b) => b.maxIncidence - a.maxIncidence);
         break;
       case "alpha":
         sorted.sort((a, b) => a.specimen.localeCompare(b.specimen));
@@ -526,17 +559,14 @@ function SpecimenRail({
         <FilterShowingLine
           className="mt-0.5"
           parts={(() => {
+            if (!minSevFilter && !adverseOnly && doseTrendFilter === "any" && !search) return undefined;
             const parts: string[] = [];
             if (search) parts.push(`"${search}"`);
             if (minSevFilter > 0) parts.push(`Severity ${minSevFilter}+`);
             if (adverseOnly) parts.push("Adverse only");
             if (doseTrendFilter === "moderate") parts.push("Moderate+ trend");
             else if (doseTrendFilter === "strong") parts.push("Strong trend");
-            const hasFilters = parts.length > 0;
-            if (hasFilters) parts.push(`${filtered.length}/${specimens.length}`);
-            const sortLabels: Record<string, string> = { signal: "Signal", organ: "Organ", severity: "Severity", incidence: "Incidence", alpha: "A\u2013Z" };
-            if (!hasFilters) parts.push("All");
-            parts.push(`Sort: ${sortLabels[sortBy]}`);
+            parts.push(`${filtered.length}/${specimens.length}`);
             return parts;
           })()}
         />
@@ -548,11 +578,11 @@ function SpecimenRail({
             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
             title={sortBy === "signal" ? "Signal = adverse\u00D73 + severity + incidence\u00D75 + dose trend strength" : "Sort specimens by"}
           >
-            <option value="signal">Signal</option>
-            <option value="organ">Organ</option>
-            <option value="severity">Severity</option>
-            <option value="incidence">Incidence</option>
-            <option value="alpha">A–Z</option>
+            <option value="signal">Sort: Signal</option>
+            <option value="organ">Sort: Organ</option>
+            <option value="severity">Sort: Severity</option>
+            <option value="incidence">Sort: Incidence</option>
+            <option value="alpha">Sort: A–Z</option>
           </FilterSelect>
           <FilterSelect
             value={minSevFilter}
@@ -585,7 +615,44 @@ function SpecimenRail({
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {filtered.map((s) => (
+        {sortBy === "organ" ? (() => {
+          // Group by organ system with headers
+          const groups: { system: string; items: typeof filtered }[] = [];
+          let currentSystem = "";
+          for (const s of filtered) {
+            const sys = specimenToOrganSystem(s.specimen);
+            if (sys !== currentSystem) {
+              currentSystem = sys;
+              groups.push({ system: sys, items: [] });
+            }
+            groups[groups.length - 1].items.push(s);
+          }
+          return groups.map((g) => {
+            const advCount = g.items.filter((s) => s.adverseCount > 0).length;
+            return (
+              <div key={g.system}>
+                <div className="sticky top-0 z-10 flex items-center gap-1.5 border-b border-border/60 bg-muted/40 px-2.5 py-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {titleCase(g.system)}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground/60">
+                    {g.items.length} specimen{g.items.length !== 1 ? "s" : ""}
+                    {advCount > 0 && <> · {advCount} adverse</>}
+                  </span>
+                </div>
+                {g.items.map((s) => (
+                  <SpecimenRailItem
+                    key={s.specimen}
+                    summary={s}
+                    isSelected={selectedSpecimen === s.specimen}
+                    onClick={() => onSpecimenClick(s.specimen)}
+                    reviewStatus={findingNamesBySpecimen ? deriveSpecimenReviewStatus(findingNamesBySpecimen.get(s.specimen) ?? [], pathReviews) : undefined}
+                  />
+                ))}
+              </div>
+            );
+          });
+        })() : filtered.map((s) => (
           <SpecimenRailItem
             key={s.specimen}
             summary={s}
@@ -979,16 +1046,15 @@ function OverviewTab({
         cell: (info) => {
           const r = info.row.original;
           const peak = (r.maxIncidence ?? 0) * 100;
-          const aggPct = r.totalN > 0 ? (r.totalAffected / r.totalN) * 100 : 0;
           return (
             <span
               className={cn(
                 "font-mono text-[10px]",
                 peak >= 30 ? "font-bold text-foreground" : peak >= 10 ? "font-semibold text-foreground/80" : peak > 0 ? "font-medium text-muted-foreground" : "text-muted-foreground/40",
               )}
-              title={`${r.totalAffected} affected of ${r.totalN} (${aggPct.toFixed(0)}% aggregate, ${peak.toFixed(0)}% peak group)`}
+              title={`Peak incidence: ${peak.toFixed(0)}%`}
             >
-              {r.totalAffected > 0 ? `${r.totalAffected}/${r.totalN}` : "\u2013"}
+              {peak > 0 ? `${peak.toFixed(0)}%` : "\u2013"}
             </span>
           );
         },
@@ -2456,10 +2522,18 @@ export function HistopathologyView({
               )}
             </div>
             <div className="mt-1 flex items-center gap-4 text-[10px] text-muted-foreground">
-              <span>Incidence: <span className="font-mono font-medium">{selectedSummary.totalAffected}/{selectedSummary.totalN} ({selectedSummary.totalN > 0 ? Math.round((selectedSummary.totalAffected / selectedSummary.totalN) * 100) : 0}%)</span></span>
+              <span>Peak incidence: <span className="font-mono font-medium">{Math.round(selectedSummary.maxIncidence * 100)}%</span></span>
               <span>Max sev: <span className="font-mono font-medium">{selectedSummary.maxSeverity.toFixed(1)}</span></span>
               <span>Dose trend: <span className={getDoseConsistencyWeight(selectedSummary.doseConsistency)}>{selectedSummary.doseConsistency}</span></span>
-              <span>Findings: <span className="font-mono font-medium">{selectedSummary.findingCount}</span></span>
+              <span>Findings: <span className="font-mono font-medium">{selectedSummary.findingCount}</span>
+                {selectedSummary.warningCount > 0 && <> ({selectedSummary.adverseCount}adv/{selectedSummary.warningCount}warn)</>}
+              </span>
+              {selectedSummary.sexSkew && (
+                <span>Sex: <span className="font-medium">{selectedSummary.sexSkew === "M>F" ? "males higher" : selectedSummary.sexSkew === "F>M" ? "females higher" : "balanced"}</span></span>
+              )}
+              {selectedSummary.hasRecovery && (
+                <span className="font-medium">Recovery data</span>
+              )}
             </div>
           </div>
 

@@ -26,11 +26,12 @@ import {
   getNeutralHeatColor,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
-import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { MasterDetailLayout } from "@/components/ui/MasterDetailLayout";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
+import { rail } from "@/lib/design-tokens";
 import { InsightsList } from "./panes/InsightsList";
 import { ConfidencePopover } from "./ScoreBreakdown";
 import type {
@@ -297,10 +298,8 @@ function OrganRailItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 border-l-2 px-3 py-2 transition-colors",
-        isSelected
-          ? "border-l-primary bg-blue-50/80 dark:bg-blue-950/30"
-          : "border-l-transparent hover:bg-accent/30"
+        rail.itemBase, "px-3 py-2",
+        isSelected ? rail.itemSelected : rail.itemIdle
       )}
       onClick={onClick}
     >
@@ -1053,83 +1052,76 @@ export function NoaelDecisionView({
       {noaelData && <NoaelBanner data={noaelData} />}
 
       {/* Two-panel area */}
-      <div className="flex min-h-0 flex-1 overflow-hidden max-[1200px]:flex-col">
-        {/* Left: Organ rail */}
-        <div
-          className="shrink-0 border-r max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto"
-          style={{ width: railWidth }}
-        >
+      <MasterDetailLayout
+        className="h-auto min-h-0 flex-1"
+        railWidth={railWidth}
+        onRailResize={onRailResize}
+        rail={
           <OrganRail
             organs={organSummaries}
             selectedOrgan={selectedOrgan}
             maxAdverse={maxAdverse}
             onOrganClick={handleOrganClick}
           />
-        </div>
-        <div className="max-[1200px]:hidden">
-          <PanelResizeHandle onPointerDown={onRailResize} />
-        </div>
+        }
+      >
+        {selectedSummary && (
+          <>
+            <OrganHeader summary={selectedSummary} />
 
-        {/* Right: Evidence panel */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
-          {selectedSummary && (
-            <>
-              <OrganHeader summary={selectedSummary} />
+            {/* Tab bar */}
+            <ViewTabBar
+              tabs={[
+                { key: "overview", label: "Evidence" },
+                { key: "matrix", label: "Adversity matrix" },
+              ]}
+              value={activeTab}
+              onChange={(k) => setActiveTab(k as typeof activeTab)}
+              right={activeTab === "matrix" ? (
+                <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+              ) : undefined}
+            />
 
-              {/* Tab bar */}
-              <ViewTabBar
-                tabs={[
-                  { key: "overview", label: "Evidence" },
-                  { key: "matrix", label: "Adversity matrix" },
-                ]}
-                value={activeTab}
-                onChange={(k) => setActiveTab(k as typeof activeTab)}
-                right={activeTab === "matrix" ? (
-                  <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-                ) : undefined}
+            {/* Tab content */}
+            {activeTab === "overview" ? (
+              <OverviewTab
+                organData={organData}
+                endpointSummaries={endpointSummaries}
+                ruleResults={ruleResults ?? []}
+                organ={selectedOrgan!}
+                selection={selection}
+                onEndpointClick={handleEndpointClick}
+                studyId={studyId}
               />
+            ) : (
+              <AdversityMatrixTab
+                organData={organData}
+                allAeData={aeData ?? []}
+                selection={selection}
+                onRowClick={handleRowClick}
+                sexFilter={sexFilter}
+                setSexFilter={setSexFilter}
+                trFilter={trFilter}
+                setTrFilter={setTrFilter}
+                expandGen={expandGen}
+                collapseGen={collapseGen}
+              />
+            )}
+          </>
+        )}
 
-              {/* Tab content */}
-              {activeTab === "overview" ? (
-                <OverviewTab
-                  organData={organData}
-                  endpointSummaries={endpointSummaries}
-                  ruleResults={ruleResults ?? []}
-                  organ={selectedOrgan!}
-                  selection={selection}
-                  onEndpointClick={handleEndpointClick}
-                  studyId={studyId}
-                />
-              ) : (
-                <AdversityMatrixTab
-                  organData={organData}
-                  allAeData={aeData ?? []}
-                  selection={selection}
-                  onRowClick={handleRowClick}
-                  sexFilter={sexFilter}
-                  setSexFilter={setSexFilter}
-                  trFilter={trFilter}
-                  setTrFilter={setTrFilter}
-                  expandGen={expandGen}
-                  collapseGen={collapseGen}
-                />
-              )}
-            </>
-          )}
+        {!selectedSummary && organSummaries.length > 0 && (
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            Select an organ system to view adverse effect details.
+          </div>
+        )}
 
-          {!selectedSummary && organSummaries.length > 0 && (
-            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-              Select an organ system to view adverse effect details.
-            </div>
-          )}
-
-          {organSummaries.length === 0 && (
-            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-              No adverse effect data available.
-            </div>
-          )}
-        </div>
-      </div>
+        {organSummaries.length === 0 && (
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            No adverse effect data available.
+          </div>
+        )}
+      </MasterDetailLayout>
     </div>
   );
 }

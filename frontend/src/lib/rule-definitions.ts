@@ -143,6 +143,20 @@ export const RULE_CATALOG: RuleDef[] = [
     template: "{count} deaths in {sex}, dose-dependent pattern.",
     thresholdRefs: [],
   },
+  {
+    id: "R18", name: "Incidence decrease (protective)", scope: "endpoint", severity: "info",
+    condition: "histo_incidence_decrease",
+    conditionHuman: 'domain in ("MI","MA","CL") AND direction=="down" AND ctrl_incidence > high_incidence',
+    template: "Decreased incidence of {finding} in {specimen} with treatment ({sex}): {ctrl_pct}% in controls vs {high_pct}% at high dose.",
+    thresholdRefs: [],
+  },
+  {
+    id: "R19", name: "Potential protective effect", scope: "endpoint", severity: "info",
+    condition: "potential_protective_effect",
+    conditionHuman: 'R18 conditions AND ctrl_incidence >= 50% AND (monotonic_decrease OR threshold OR large_drop >= 40pp)',
+    template: "{finding} in {specimen}: high baseline incidence suggests potential protective or therapeutic effect.",
+    thresholdRefs: [],
+  },
 ];
 
 // ---------------------------------------------------------------------------

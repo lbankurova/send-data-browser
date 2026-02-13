@@ -62,9 +62,9 @@
     "reviewDate": "2026-02-09T21:52:04.214597+00:00"
   },
   "SD-004-001": {
-    "fixStatus": "Manually fixed",
-    "comment": "Manual value entered: TSPARMCD \u2192 'test entry'",
+    "fixStatus": "Not fixed",
+    "comment": "Reverted from Manually fixed",
     "pathologist": "User",
-    "reviewDate": "2026-02-12T17:20:21.724512+00:00"
+    "reviewDate": "2026-02-12T19:07:22.745644+00:00"
   }
 }

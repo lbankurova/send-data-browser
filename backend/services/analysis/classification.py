@@ -30,6 +30,17 @@ def classify_severity(finding: dict) -> str:
         return "normal"
     else:
         # Incidence endpoints: use p-value + direction
+        # A significant DECREASE from control is not adverse — it may be
+        # a background finding reduced by treatment (potential protective effect).
+        direction = finding.get("direction", "none")
+        if direction == "down":
+            # Significant decrease: not adverse, but flag as noteworthy
+            if min_p is not None and min_p < 0.05:
+                return "warning"
+            if trend_p is not None and trend_p < 0.05:
+                return "warning"
+            return "normal"
+        # Direction is "up" or "none" — standard classification
         if min_p is not None and min_p < 0.05:
             return "adverse"
         if trend_p is not None and trend_p < 0.05:

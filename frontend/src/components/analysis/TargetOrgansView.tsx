@@ -24,12 +24,13 @@ import {
   titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
-import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { MasterDetailLayout } from "@/components/ui/MasterDetailLayout";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { useRuleResults } from "@/hooks/useRuleResults";
+import { rail } from "@/lib/design-tokens";
 import { InsightsList } from "./panes/InsightsList";
 import { EvidenceScorePopover } from "./ScoreBreakdown";
 import type { TargetOrganRow, OrganEvidenceRow, RuleResult } from "@/types/analysis-views";
@@ -178,10 +179,8 @@ function OrganListItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 border-l-2 px-3 py-2 transition-colors",
-        isSelected
-          ? "border-l-primary bg-blue-50/80 dark:bg-blue-950/30"
-          : "border-l-transparent hover:bg-accent/30"
+        rail.itemBase, "px-3 py-2",
+        isSelected ? rail.itemSelected : rail.itemIdle
       )}
       onClick={onClick}
     >
@@ -1444,12 +1443,10 @@ export function TargetOrgansView({
   }
 
   return (
-    <div className="flex h-full overflow-hidden max-[1200px]:flex-col">
-      {/* Left: Organ rail */}
-      <div
-        className="shrink-0 border-r max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto"
-        style={{ width: railWidth }}
-      >
+    <MasterDetailLayout
+      railWidth={railWidth}
+      onRailResize={onRailResize}
+      rail={
         <OrganRail
           organs={sortedOrgans}
           selectedOrgan={selectedOrgan}
@@ -1457,82 +1454,76 @@ export function TargetOrgansView({
           organStatsMap={organStatsMap}
           onOrganClick={handleOrganClick}
         />
-      </div>
-      <div className="max-[1200px]:hidden">
-        <PanelResizeHandle onPointerDown={onRailResize} />
-      </div>
+      }
+    >
+      {selectedOrganData && (
+        <>
+          {/* Summary header */}
+          <OrganSummaryHeader organ={selectedOrganData} evidenceRows={organEvidenceRows} organRules={organRules} />
 
-      {/* Right: Evidence panel */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
-        {selectedOrganData && (
-          <>
-            {/* Summary header */}
-            <OrganSummaryHeader organ={selectedOrganData} evidenceRows={organEvidenceRows} organRules={organRules} />
+          {/* Tab bar */}
+          <ViewTabBar
+            tabs={[
+              { key: "evidence", label: "Evidence" },
+              { key: "hypotheses", label: "Hypotheses" },
+              { key: "metrics", label: "Metrics" },
+            ]}
+            value={activeTab}
+            onChange={(k) => setActiveTab(k as typeof activeTab)}
+            right={activeTab === "metrics" ? (
+              <span className="mr-3 text-[10px] text-muted-foreground">
+                {organEvidenceRows.length} of {evidenceData?.length ?? 0} rows
+              </span>
+            ) : activeTab === "evidence" ? (
+              <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+            ) : undefined}
+          />
 
-            {/* Tab bar */}
-            <ViewTabBar
-              tabs={[
-                { key: "evidence", label: "Evidence" },
-                { key: "hypotheses", label: "Hypotheses" },
-                { key: "metrics", label: "Metrics" },
-              ]}
-              value={activeTab}
-              onChange={(k) => setActiveTab(k as typeof activeTab)}
-              right={activeTab === "metrics" ? (
-                <span className="mr-3 text-[10px] text-muted-foreground">
-                  {organEvidenceRows.length} of {evidenceData?.length ?? 0} rows
-                </span>
-              ) : activeTab === "evidence" ? (
-                <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-              ) : undefined}
+          {/* Tab content */}
+          {activeTab === "evidence" && (
+            <OverviewTab
+              organ={selectedOrganData}
+              evidenceRows={organEvidenceRows}
+              organRules={organRules}
+              allRuleResults={ruleResults ?? []}
+              studyId={studyId}
+              expandGen={expandGen}
+              collapseGen={collapseGen}
             />
+          )}
+          {activeTab === "hypotheses" && (
+            <HypothesesTabContent
+              organName={titleCase(selectedOrganData.organ_system)}
+              endpointCount={selectedOrganData.n_endpoints}
+              domains={domainsInOrgan}
+            />
+          )}
+          {activeTab === "metrics" && (
+            <EvidenceTableTab
+              evidenceRows={organEvidenceRows}
+              selectedRow={selectedRow}
+              onRowClick={handleRowClick}
+              sexFilter={sexFilter}
+              setSexFilter={setSexFilter}
+              domainFilter={domainFilter}
+              setDomainFilter={setDomainFilter}
+              domainsInOrgan={domainsInOrgan}
+            />
+          )}
+        </>
+      )}
 
-            {/* Tab content */}
-            {activeTab === "evidence" && (
-              <OverviewTab
-                organ={selectedOrganData}
-                evidenceRows={organEvidenceRows}
-                organRules={organRules}
-                allRuleResults={ruleResults ?? []}
-                studyId={studyId}
-                expandGen={expandGen}
-                collapseGen={collapseGen}
-              />
-            )}
-            {activeTab === "hypotheses" && (
-              <HypothesesTabContent
-                organName={titleCase(selectedOrganData.organ_system)}
-                endpointCount={selectedOrganData.n_endpoints}
-                domains={domainsInOrgan}
-              />
-            )}
-            {activeTab === "metrics" && (
-              <EvidenceTableTab
-                evidenceRows={organEvidenceRows}
-                selectedRow={selectedRow}
-                onRowClick={handleRowClick}
-                sexFilter={sexFilter}
-                setSexFilter={setSexFilter}
-                domainFilter={domainFilter}
-                setDomainFilter={setDomainFilter}
-                domainsInOrgan={domainsInOrgan}
-              />
-            )}
-          </>
-        )}
+      {!selectedOrganData && sortedOrgans.length > 0 && (
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          Select an organ system to view evidence details.
+        </div>
+      )}
 
-        {!selectedOrganData && sortedOrgans.length > 0 && (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            Select an organ system to view evidence details.
-          </div>
-        )}
-
-        {sortedOrgans.length === 0 && (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            No target organ data available.
-          </div>
-        )}
-      </div>
-    </div>
+      {sortedOrgans.length === 0 && (
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          No target organ data available.
+        </div>
+      )}
+    </MasterDetailLayout>
   );
 }

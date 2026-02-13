@@ -42,6 +42,8 @@ import {
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { MasterDetailLayout } from "@/components/ui/MasterDetailLayout";
+import { rail } from "@/lib/design-tokens";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
@@ -680,199 +682,194 @@ export function DoseResponseView({
   const totalEndpoints = endpointSummaries.length;
 
   return (
-    <div className="flex h-full overflow-hidden max-[1200px]:flex-col">
-      {/* ───── Endpoint Rail (left) ───── */}
-      <div
-        className="flex shrink-0 flex-col max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b"
-        style={{ width: railWidth }}
-      >
-        {/* Rail header */}
-        <div className="shrink-0 border-b px-2 py-1.5">
-          <div className="mb-0.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <span>Endpoints ({totalEndpoints})</span>
-            <CollapseAllButtons
-              onExpandAll={() =>
-                setExpandedOrgans(
-                  new Set(filteredOrganGroups.map((g) => g.organ_system))
-                )
-              }
-              onCollapseAll={() => setExpandedOrgans(new Set())}
-            />
-          </div>
-          <p className="mb-1.5 text-[10px] text-muted-foreground/60">by signal strength</p>
-          <div className="flex items-center gap-1.5">
-            <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search endpoints..."
-              className="w-full bg-transparent py-1 text-xs focus:outline-none"
-              value={railSearch}
-              onChange={(e) => setRailSearch(e.target.value)}
-            />
-          </div>
-          {bookmarkCount > 0 && (
-            <button
-              className={cn(
-                "mt-1.5 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
-                bookmarkFilter
-                  ? "border-amber-300 bg-amber-100 text-amber-800"
-                  : "border-border text-muted-foreground hover:bg-accent/50"
-              )}
-              onClick={() => setBookmarkFilter(!bookmarkFilter)}
-            >
-              <Star className="h-2.5 w-2.5" fill={bookmarkFilter ? "currentColor" : "none"} />
-              <span className="font-mono">{bookmarkCount}</span> bookmarked
-            </button>
-          )}
-        </div>
-
-        {/* Rail body */}
-        <div className="flex-1 overflow-y-auto">
-          {filteredOrganGroups.length === 0 && (
-            <div className="p-3 text-center text-xs text-muted-foreground">
-              No endpoints match your search.
+    <MasterDetailLayout
+      railClassName="flex flex-col border-r-0"
+      railWidth={railWidth}
+      onRailResize={onRailResize}
+      rail={
+        <>
+          {/* Rail header */}
+          <div className="shrink-0 border-b px-2 py-1.5">
+            <div className="mb-0.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <span>Endpoints ({totalEndpoints})</span>
+              <CollapseAllButtons
+                onExpandAll={() =>
+                  setExpandedOrgans(
+                    new Set(filteredOrganGroups.map((g) => g.organ_system))
+                  )
+                }
+                onCollapseAll={() => setExpandedOrgans(new Set())}
+              />
             </div>
-          )}
-          {filteredOrganGroups.map((group) => {
-            const isExpanded = expandedOrgans.has(group.organ_system);
-            const hasSelected = group.endpoints.some((ep) => ep.endpoint_label === selectedEndpoint);
+            <p className="mb-1.5 text-[10px] text-muted-foreground/60">by signal strength</p>
+            <div className="flex items-center gap-1.5">
+              <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search endpoints..."
+                className="w-full bg-transparent py-1 text-xs focus:outline-none"
+                value={railSearch}
+                onChange={(e) => setRailSearch(e.target.value)}
+              />
+            </div>
+            {bookmarkCount > 0 && (
+              <button
+                className={cn(
+                  "mt-1.5 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  bookmarkFilter
+                    ? "border-amber-300 bg-amber-100 text-amber-800"
+                    : "border-border text-muted-foreground hover:bg-accent/50"
+                )}
+                onClick={() => setBookmarkFilter(!bookmarkFilter)}
+              >
+                <Star className="h-2.5 w-2.5" fill={bookmarkFilter ? "currentColor" : "none"} />
+                <span className="font-mono">{bookmarkCount}</span> bookmarked
+              </button>
+            )}
+          </div>
 
-            return (
-              <div key={group.organ_system}>
-                {/* Organ group header */}
-                <button
-                  className={cn(
-                    "flex w-full items-center gap-1.5 border-b px-3 py-1.5 text-left text-[11px] font-semibold hover:bg-accent/50",
-                    hasSelected && !isExpanded && "bg-accent/30"
-                  )}
-                  onClick={() => toggleOrgan(group.organ_system)}
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1">
-                      <span className="truncate">{titleCase(group.organ_system)}</span>
-                      <span className="text-[10px] font-normal text-muted-foreground">
-                        {group.endpoints.length}
-                      </span>
-                    </div>
-                    {group.domains.length > 0 && (
-                      <div className="flex gap-1.5">
-                        {group.domains.map((d) => (
-                          <DomainLabel key={d} domain={d} />
-                        ))}
-                      </div>
+          {/* Rail body */}
+          <div className="flex-1 overflow-y-auto">
+            {filteredOrganGroups.length === 0 && (
+              <div className="p-3 text-center text-xs text-muted-foreground">
+                No endpoints match your search.
+              </div>
+            )}
+            {filteredOrganGroups.map((group) => {
+              const isExpanded = expandedOrgans.has(group.organ_system);
+              const hasSelected = group.endpoints.some((ep) => ep.endpoint_label === selectedEndpoint);
+
+              return (
+                <div key={group.organ_system}>
+                  {/* Organ group header */}
+                  <button
+                    className={cn(
+                      "flex w-full items-center gap-1.5 border-b px-3 py-1.5 text-left text-[11px] font-semibold hover:bg-accent/50",
+                      hasSelected && !isExpanded && "bg-accent/30"
                     )}
-                  </div>
-                </button>
-
-                {/* Endpoint items */}
-                {isExpanded &&
-                  group.endpoints.map((ep) => {
-                    const isSelected = ep.endpoint_label === selectedEndpoint;
-                    return (
-                      <button
-                        key={ep.endpoint_label}
-                        className={cn(
-                          "w-full border-b border-dashed border-l-2 px-3 py-1.5 text-left transition-colors",
-                          isSelected ? "border-l-primary bg-blue-50/80 dark:bg-blue-950/30" : "border-l-transparent hover:bg-accent/30"
-                        )}
-                        data-rail-item=""
-                        data-selected={isSelected || undefined}
-                        onClick={() => selectEndpoint(ep.endpoint_label)}
-                      >
-                        {/* Row 1: name + bookmark + direction */}
-                        <div className="flex items-center gap-1">
-                          <span
-                            className={cn(
-                              "flex-1 truncate text-xs",
-                              isSelected ? "font-semibold" : "font-medium"
-                            )}
-                            title={ep.endpoint_label}
-                          >
-                            {ep.endpoint_label}
-                          </span>
-                          <BookmarkStar
-                            bookmarked={!!bookmarks[ep.endpoint_label]?.bookmarked}
-                            onClick={() => toggleBookmark(ep.endpoint_label, !!bookmarks[ep.endpoint_label]?.bookmarked)}
-                          />
-                          {ep.direction && (
-                            <span
-                              className="text-xs text-muted-foreground"
-                              title={ep.direction === "up" ? "Effect increases with dose" : ep.direction === "down" ? "Effect decreases with dose" : "Mixed direction across sexes/doses"}
-                            >
-                              {directionArrow(ep.direction)}
-                            </span>
-                          )}
-                          {ep.sex_divergence != null && ep.sex_divergence > 0.5 && (
-                            <span
-                              className="text-[10px] font-semibold text-muted-foreground"
-                              title={`Sex divergence: |d_M - d_F| = ${ep.sex_divergence.toFixed(2)} (${ep.divergent_sex} has larger effect)`}
-                            >
-                              {ep.divergent_sex === "M" ? "\u2642" : "\u2640"}{ep.divergent_sex}
-                            </span>
-                          )}
+                    onClick={() => toggleOrgan(group.organ_system)}
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="truncate">{titleCase(group.organ_system)}</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">
+                          {group.endpoints.length}
+                        </span>
+                      </div>
+                      {group.domains.length > 0 && (
+                        <div className="flex gap-1.5">
+                          {group.domains.map((d) => (
+                            <DomainLabel key={d} domain={d} />
+                          ))}
                         </div>
-                        {/* Row 2: pattern badge + min p + max |d| */}
-                        <div className="mt-0.5 flex items-center gap-1.5">
-                          <span
-                            className={cn(
-                              "rounded px-1 py-0.5 text-[9px] font-medium leading-tight",
-                              PATTERN_BG[ep.dose_response_pattern] ?? "bg-gray-100 text-gray-500"
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Endpoint items */}
+                  {isExpanded &&
+                    group.endpoints.map((ep) => {
+                      const isSelected = ep.endpoint_label === selectedEndpoint;
+                      return (
+                        <button
+                          key={ep.endpoint_label}
+                          className={cn(
+                            rail.itemBase, "border-dashed px-3 py-1.5",
+                            isSelected ? rail.itemSelected : rail.itemIdle
+                          )}
+                          data-rail-item=""
+                          data-selected={isSelected || undefined}
+                          onClick={() => selectEndpoint(ep.endpoint_label)}
+                        >
+                          {/* Row 1: name + bookmark + direction */}
+                          <div className="flex items-center gap-1">
+                            <span
+                              className={cn(
+                                "flex-1 truncate text-xs",
+                                isSelected ? "font-semibold" : "font-medium"
+                              )}
+                              title={ep.endpoint_label}
+                            >
+                              {ep.endpoint_label}
+                            </span>
+                            <BookmarkStar
+                              bookmarked={!!bookmarks[ep.endpoint_label]?.bookmarked}
+                              onClick={() => toggleBookmark(ep.endpoint_label, !!bookmarks[ep.endpoint_label]?.bookmarked)}
+                            />
+                            {ep.direction && (
+                              <span
+                                className="text-xs text-muted-foreground"
+                                title={ep.direction === "up" ? "Effect increases with dose" : ep.direction === "down" ? "Effect decreases with dose" : "Mixed direction across sexes/doses"}
+                              >
+                                {directionArrow(ep.direction)}
+                              </span>
                             )}
-                          >
-                            {(PATTERN_LABELS[ep.dose_response_pattern] ?? ep.dose_response_pattern)
-                              .split(" ")[0]}
-                          </span>
-                          <span className={cn(
-                            "ev text-[10px] font-mono text-muted-foreground",
-                            ep.min_trend_p != null && ep.min_trend_p < 0.01 ? "font-semibold" : ""
-                          )}>
-                            p={formatPValue(ep.min_trend_p)}
-                          </span>
-                          {ep.max_effect_size != null && (
+                            {ep.sex_divergence != null && ep.sex_divergence > 0.5 && (
+                              <span
+                                className="text-[10px] font-semibold text-muted-foreground"
+                                title={`Sex divergence: |d_M - d_F| = ${ep.sex_divergence.toFixed(2)} (${ep.divergent_sex} has larger effect)`}
+                              >
+                                {ep.divergent_sex === "M" ? "\u2642" : "\u2640"}{ep.divergent_sex}
+                              </span>
+                            )}
+                          </div>
+                          {/* Row 2: pattern badge + min p + max |d| */}
+                          <div className="mt-0.5 flex items-center gap-1.5">
+                            <span
+                              className={cn(
+                                "rounded px-1 py-0.5 text-[9px] font-medium leading-tight",
+                                PATTERN_BG[ep.dose_response_pattern] ?? "bg-gray-100 text-gray-500"
+                              )}
+                            >
+                              {(PATTERN_LABELS[ep.dose_response_pattern] ?? ep.dose_response_pattern)
+                                .split(" ")[0]}
+                            </span>
                             <span className={cn(
                               "ev text-[10px] font-mono text-muted-foreground",
-                              ep.max_effect_size >= 0.8 ? "font-semibold" : ""
+                              ep.min_trend_p != null && ep.min_trend_p < 0.01 ? "font-semibold" : ""
                             )}>
-                              |d|={ep.max_effect_size.toFixed(2)}
+                              p={formatPValue(ep.min_trend_p)}
                             </span>
-                          )}
-                          {ep.min_n != null && (
-                            <span className="text-[10px] font-mono text-muted-foreground/60">
-                              n={ep.min_n}
-                            </span>
-                          )}
-                          {ep.has_timecourse && (
-                            <span className="text-[10px] text-muted-foreground/40" title="Temporal data available">
-                              ◷
-                            </span>
-                          )}
-                          {toxFindingAnnotations?.[ep.endpoint_label] &&
-                           toxFindingAnnotations[ep.endpoint_label].treatmentRelated !== "Not Evaluated" && (
-                            <span className="text-[10px] text-muted-foreground/40" title="Assessment complete">
-                              ✓
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="max-[1200px]:hidden">
-        <PanelResizeHandle onPointerDown={onRailResize} />
-      </div>
-
-      {/* ───── Evidence Panel (right) ───── */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
+                            {ep.max_effect_size != null && (
+                              <span className={cn(
+                                "ev text-[10px] font-mono text-muted-foreground",
+                                ep.max_effect_size >= 0.8 ? "font-semibold" : ""
+                              )}>
+                                |d|={ep.max_effect_size.toFixed(2)}
+                              </span>
+                            )}
+                            {ep.min_n != null && (
+                              <span className="text-[10px] font-mono text-muted-foreground/60">
+                                n={ep.min_n}
+                              </span>
+                            )}
+                            {ep.has_timecourse && (
+                              <span className="text-[10px] text-muted-foreground/40" title="Temporal data available">
+                                ◷
+                              </span>
+                            )}
+                            {toxFindingAnnotations?.[ep.endpoint_label] &&
+                             toxFindingAnnotations[ep.endpoint_label].treatmentRelated !== "Not Evaluated" && (
+                              <span className="text-[10px] text-muted-foreground/40" title="Assessment complete">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      }
+    >
         {/* Summary header */}
         {selectedSummary ? (
           <div className="sticky top-0 z-10 shrink-0 border-b bg-background px-3 py-1.5">
@@ -1035,8 +1032,7 @@ export function DoseResponseView({
             />
           )}
         </div>
-      </div>
-    </div>
+    </MasterDetailLayout>
   );
 }
 
