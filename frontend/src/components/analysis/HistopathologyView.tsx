@@ -16,10 +16,9 @@ import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
-import { EvidenceBar } from "@/components/ui/EvidenceBar";
 import { FilterBar, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { getDoseGroupColor, getNeutralHeatColor as getNeutralHeatColor01 } from "@/lib/severity-colors";
+import { getNeutralHeatColor as getNeutralHeatColor01 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { ViewSection } from "@/components/ui/ViewSection";
@@ -327,16 +326,18 @@ const REVIEW_STATUS_TOOLTIPS: Record<SpecimenReviewStatus, string> = {
 function SpecimenRailItem({
   summary,
   isSelected,
-  maxGlobalSeverity,
   onClick,
   reviewStatus,
 }: {
   summary: SpecimenSummary;
   isSelected: boolean;
-  maxGlobalSeverity: number;
   onClick: () => void;
   reviewStatus?: SpecimenReviewStatus;
 }) {
+  const sevColors = getNeutralHeatColor(summary.maxSeverity);
+  const incidence = summary.totalN > 0 ? summary.totalAffected / summary.totalN : 0;
+  const incColors = getNeutralHeatColor01(incidence);
+  const incPct = Math.round(incidence * 100);
   return (
     <button
       className={cn(
@@ -348,51 +349,63 @@ function SpecimenRailItem({
       )}
       onClick={onClick}
     >
-      {/* Row 1: specimen name + dose trend glyph + review indicator + finding count */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold">
+      {/* Line 1: specimen name + aligned indicators */}
+      <div className="flex items-center gap-0.5">
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold">
           {summary.specimen.replace(/_/g, " ")}
         </span>
-        {summary.doseConsistency === "Strong" && (
-          <span className="text-[9px] text-muted-foreground" title="Strong dose trend">{"\u25B2"}</span>
-        )}
-        {summary.doseConsistency === "Moderate" && (
-          <span className="text-[9px] text-muted-foreground/70" title="Moderate dose trend">{"\u25B4"}</span>
-        )}
         {reviewStatus === "Confirmed" && (
-          <span className="text-[9px] text-muted-foreground" title="All findings confirmed">{"\u2713"}</span>
+          <span className="shrink-0 text-[9px] text-muted-foreground" title="All findings confirmed">{"\u2713"}</span>
         )}
         {reviewStatus === "Revised" && (
-          <span className="text-[9px] text-muted-foreground" title="Findings revised">{"\u007E"}</span>
+          <span className="shrink-0 text-[9px] text-muted-foreground" title="Findings revised">{"\u007E"}</span>
         )}
-        <span className="text-[10px] text-muted-foreground" title={`${summary.findingCount} findings observed`}>
+        {/* Fixed-width indicator columns for vertical alignment */}
+        <span
+          className={cn(
+            "w-7 shrink-0 text-right text-[9px]",
+            summary.doseConsistency === "Strong" ? "text-muted-foreground" :
+            summary.doseConsistency === "Moderate" ? "text-muted-foreground/60" :
+            "text-muted-foreground/30"
+          )}
+          title={`Dose trend: ${summary.doseConsistency}`}
+        >
+          {summary.doseConsistency === "Strong" ? "▲▲▲" : summary.doseConsistency === "Moderate" ? "▲▲" : "▲"}
+        </span>
+        <span
+          className="w-7 shrink-0 rounded-sm text-center font-mono text-[9px]"
+          style={{ backgroundColor: sevColors.bg, color: sevColors.text }}
+          title={`Max severity: ${summary.maxSeverity.toFixed(1)} (scale 1\u20135)`}
+        >
+          {summary.maxSeverity.toFixed(1)}
+        </span>
+        <span className="w-1 shrink-0" />
+        <span
+          className="w-8 shrink-0 rounded-sm text-center font-mono text-[9px]"
+          style={{ backgroundColor: incColors.bg, color: incColors.text }}
+          title={`Incidence: ${summary.totalAffected}/${summary.totalN} (${incPct}%)`}
+        >
+          {incPct}%
+        </span>
+        <span className="w-4 shrink-0 text-right font-mono text-[9px] text-muted-foreground" title={`${summary.findingCount} findings`}>
           {summary.findingCount}
         </span>
-      </div>
-
-      {/* Row 2: severity bar (neutral, fill darkness encodes severity) */}
-      <div title={`Max severity: ${summary.maxSeverity.toFixed(1)} (scale 1\u20135)`}>
-        <EvidenceBar
-          value={summary.maxSeverity}
-          max={maxGlobalSeverity}
-          label={summary.maxSeverity.toFixed(1)}
-          labelClassName="text-muted-foreground"
-          fillColor={getNeutralHeatColor(summary.maxSeverity).bg}
-        />
-      </div>
-
-      {/* Row 3: stats + domain chips */}
-      <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0 text-[10px] text-muted-foreground">
-        <span>{summary.findingCount} findings</span>
-        <span>&middot;</span>
-        <span>
-          {summary.adverseCount} adverse
-          {summary.findingCount > 0 && ` (${Math.round((summary.adverseCount / summary.findingCount) * 100)}%)`}
+        <span
+          className={cn("w-5 shrink-0 text-right font-mono text-[9px]", summary.adverseCount > 0 ? "text-muted-foreground" : "text-muted-foreground/40")}
+          title={`${summary.adverseCount} adverse`}
+        >
+          {summary.adverseCount}A
         </span>
-        {summary.domains.map((d) => (
-          <DomainLabel key={d} domain={d} />
-        ))}
       </div>
+
+      {/* Line 2: domain tags */}
+      {summary.domains.length > 0 && (
+        <div className="mt-0.5 flex items-center gap-1 pl-0.5">
+          {summary.domains.map((d) => (
+            <DomainLabel key={d} domain={d} />
+          ))}
+        </div>
+      )}
     </button>
   );
 }
@@ -402,39 +415,121 @@ function SpecimenRailItem({
 function SpecimenRail({
   specimens,
   selectedSpecimen,
-  maxGlobalSeverity,
   onSpecimenClick,
   pathReviews,
   findingNamesBySpecimen,
 }: {
   specimens: SpecimenSummary[];
   selectedSpecimen: string | null;
-  maxGlobalSeverity: number;
   onSpecimenClick: (specimen: string) => void;
   pathReviews?: Record<string, PathologyReview>;
   findingNamesBySpecimen?: Map<string, string[]>;
 }) {
   const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [minSevFilter, setMinSevFilter] = useState<number>(0);
+  const [adverseOnly, setAdverseOnly] = useState(false);
+  const [doseTrendFilter, setDoseTrendFilter] = useState<"any" | "moderate" | "strong">("any");
 
   const filtered = useMemo(() => {
-    if (!search) return specimens;
-    const q = search.toLowerCase();
-    return specimens.filter((s) => s.specimen.replace(/_/g, " ").toLowerCase().includes(q));
-  }, [specimens, search]);
+    let list = specimens;
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter((s) => s.specimen.replace(/_/g, " ").toLowerCase().includes(q));
+    }
+    if (minSevFilter > 0) {
+      list = list.filter((s) => s.maxSeverity >= minSevFilter);
+    }
+    if (adverseOnly) {
+      list = list.filter((s) => s.adverseCount > 0);
+    }
+    if (doseTrendFilter === "moderate") {
+      list = list.filter((s) => s.doseConsistency === "Moderate" || s.doseConsistency === "Strong");
+    } else if (doseTrendFilter === "strong") {
+      list = list.filter((s) => s.doseConsistency === "Strong");
+    }
+    return list;
+  }, [specimens, search, minSevFilter, adverseOnly, doseTrendFilter]);
+
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
-      <div className="border-b px-2.5 py-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Specimens ({specimens.length})
-        </span>
-        <input
-          type="text"
-          placeholder="Search specimens\u2026"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mt-1 w-full rounded border bg-background px-2 py-0.5 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
-        />
+      <div className="border-b px-2.5 py-2">
+        {/* Header row: title + search */}
+        <div className="flex items-center gap-1.5">
+          <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Specimens ({specimens.length})
+          </span>
+          <div className="flex items-center gap-0.5 text-muted-foreground/60">
+            <Search className="h-3 w-3 shrink-0" />
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setSearch("");
+                  searchRef.current?.blur();
+                } else if (e.key === "Enter") {
+                  searchRef.current?.blur();
+                }
+              }}
+              className="w-12 border-none bg-transparent px-0 text-[10px] text-foreground placeholder:text-muted-foreground/30 focus:w-20 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Showing: summary */}
+        <div className="mt-0.5 text-[10px] text-muted-foreground">
+          <span className="font-medium">Showing: </span>
+          {(() => {
+            if (!minSevFilter && !adverseOnly && doseTrendFilter === "any" && !search) return "All";
+            const parts: string[] = [];
+            if (search) parts.push(`"${search}"`);
+            if (minSevFilter > 0) parts.push(`Severity ${minSevFilter}+`);
+            if (adverseOnly) parts.push("Adverse only");
+            if (doseTrendFilter === "moderate") parts.push("Moderate+ trend");
+            else if (doseTrendFilter === "strong") parts.push("Strong trend");
+            parts.push(`${filtered.length}/${specimens.length}`);
+            return parts.join(" \u00b7 ");
+          })()}
+        </div>
+
+        {/* Filter row */}
+        <div className="mt-2 flex items-center gap-1.5">
+          <select
+            value={minSevFilter}
+            onChange={(e) => setMinSevFilter(Number(e.target.value))}
+            className="h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            title="Minimum severity filter"
+          >
+            <option value={0}>Sev: any</option>
+            <option value={2}>Sev: 2+</option>
+            <option value={3}>Sev: 3+</option>
+            <option value={4}>Sev: 4+</option>
+          </select>
+          <select
+            value={doseTrendFilter}
+            onChange={(e) => setDoseTrendFilter(e.target.value as "any" | "moderate" | "strong")}
+            className="h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            title="Dose trend filter"
+          >
+            <option value="any">Trend: any</option>
+            <option value="moderate">Trend: moderate+</option>
+            <option value="strong">Trend: strong</option>
+          </select>
+          <label className="flex cursor-pointer items-center gap-0.5 text-[10px] text-muted-foreground" title="Show only specimens with adverse findings">
+            <input
+              type="checkbox"
+              checked={adverseOnly}
+              onChange={(e) => setAdverseOnly(e.target.checked)}
+              className="h-3 w-3 rounded border-gray-300"
+            />
+            Adverse
+          </label>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto">
         {filtered.map((s) => (
@@ -442,14 +537,13 @@ function SpecimenRail({
             key={s.specimen}
             summary={s}
             isSelected={selectedSpecimen === s.specimen}
-            maxGlobalSeverity={maxGlobalSeverity}
             onClick={() => onSpecimenClick(s.specimen)}
             reviewStatus={findingNamesBySpecimen ? deriveSpecimenReviewStatus(findingNamesBySpecimen.get(s.specimen) ?? [], pathReviews) : undefined}
           />
         ))}
         {filtered.length === 0 && (
           <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
-            No matches for &ldquo;{search}&rdquo;
+            {search ? <>No matches for &ldquo;{search}&rdquo;</> : "No specimens match current filters"}
           </div>
         )}
       </div>
@@ -548,10 +642,6 @@ function SpecimenHeader({
           </span>
         </div>
         <div className="flex items-baseline justify-between">
-          <span className="text-muted-foreground">Dose trend</span>
-          <span className="font-mono text-[10px] font-medium">{summary.doseConsistency}</span>
-        </div>
-        <div className="flex items-baseline justify-between">
           <span className="text-muted-foreground">Adverse</span>
           <span className="font-mono text-[10px] font-medium">
             {summary.adverseCount}/{summary.findingCount}
@@ -561,10 +651,20 @@ function SpecimenHeader({
           <span className="text-muted-foreground">Sex scope</span>
           <span className="text-[10px] font-medium">{sexLabel}</span>
         </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-muted-foreground">Findings</span>
-          <span className="font-mono text-[10px] font-medium">{summary.findingCount}</span>
-        </div>
+      </div>
+      {/* Dose trend — full-width bottom line with directional arrows */}
+      <div className="mt-1 flex items-center gap-1.5 text-[11px]">
+        <span className="text-muted-foreground">Dose trend</span>
+        {summary.doseConsistency === "Strong" && (
+          <span className="font-mono text-[10px] text-muted-foreground" title="Strong: monotonic incidence increase across 3+ dose groups">▲▲▲</span>
+        )}
+        {summary.doseConsistency === "Moderate" && (
+          <span className="font-mono text-[10px] text-muted-foreground/70" title="Moderate: monotonic incidence or 2+ dose groups affected">▲▲</span>
+        )}
+        {summary.doseConsistency === "Weak" && (
+          <span className="font-mono text-[10px] text-muted-foreground/40" title="Weak: no clear dose-related pattern">▲</span>
+        )}
+        <span className="text-[10px] text-muted-foreground/50">{summary.doseConsistency}</span>
       </div>
     </div>
   );
@@ -1555,10 +1655,7 @@ function SubjectHeatmap({
                 )}
               >
                 <div className="text-center" style={{ width: dg.subjects.length * 32 }}>
-                  <div
-                    className="h-0.5"
-                    style={{ backgroundColor: getDoseGroupColor(dg.doseLevel) }}
-                  />
+                  <div className="h-0.5 bg-border" />
                   <div className="px-1 py-0.5 text-[10px] font-semibold">
                     {dg.doseLabel} ({dg.subjects.length})
                   </div>
@@ -1607,9 +1704,8 @@ function SubjectHeatmap({
                     <div
                       key={subj.usubjid}
                       className={cn(
-                        "flex h-4 w-8 shrink-0 items-center justify-center text-[8px] font-semibold",
+                        "flex h-4 w-8 shrink-0 items-center justify-center text-[8px] font-semibold text-muted-foreground",
                         selectedSubject === subj.usubjid && "bg-blue-50/50",
-                        subj.sex === "M" ? "text-blue-600" : "text-red-600"
                       )}
                     >
                       {subj.sex}
@@ -2258,7 +2354,7 @@ function HistopathHypothesesTab({
             }}
           >
             <Pin className={cn("h-3 w-3", favorites.includes(contextMenu.tool) ? "fill-current text-muted-foreground" : "text-muted-foreground/40")} />
-            {favorites.includes(contextMenu.tool) ? "Remove from favorites" : "Add to favorites"}
+            {favorites.includes(contextMenu.tool) ? "Remove from Favorites" : "Add to Favorites"}
           </button>
         </div>
       )}
@@ -2313,11 +2409,6 @@ export function HistopathologyView({
     if (!lesionData) return [];
     return deriveSpecimenSummaries(lesionData);
   }, [lesionData]);
-
-  const maxGlobalSeverity = useMemo(() => {
-    if (specimenSummaries.length === 0) return 1;
-    return Math.max(...specimenSummaries.map((s) => s.maxSeverity), 0.01);
-  }, [specimenSummaries]);
 
   // Rows for selected specimen
   const specimenData = useMemo(() => {
@@ -2497,7 +2588,6 @@ export function HistopathologyView({
         <SpecimenRail
           specimens={specimenSummaries}
           selectedSpecimen={selectedSpecimen}
-          maxGlobalSeverity={maxGlobalSeverity}
           onSpecimenClick={handleSpecimenClick}
           pathReviews={pathReviews}
           findingNamesBySpecimen={findingNamesBySpecimen}

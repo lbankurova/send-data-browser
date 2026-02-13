@@ -6,8 +6,16 @@ import { InsightsList } from "./InsightsList";
 import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
-import { getSeverityHeatColor } from "@/lib/severity-colors";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
+
+/** Neutral grayscale for severity 1-5 scale (matches HistopathologyView). */
+function sevHeatColor(avgSev: number): { bg: string; text: string } {
+  if (avgSev >= 5) return { bg: "#4B5563", text: "white" };
+  if (avgSev >= 4) return { bg: "#6B7280", text: "white" };
+  if (avgSev >= 3) return { bg: "#9CA3AF", text: "var(--foreground)" };
+  if (avgSev >= 2) return { bg: "#D1D5DB", text: "var(--foreground)" };
+  return { bg: "#E5E7EB", text: "var(--foreground)" };
+}
 
 // ─── Specimen → organ_system mapping (mirrors backend ORGAN_SYSTEM_MAP) ──────
 const SPECIMEN_ORGAN_MAP: Record<string, string> = {
@@ -270,7 +278,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
                   {stats.maxSev > 0 && (
                     <span
                       className="ml-1.5 rounded px-1 font-mono text-[9px]"
-                      style={{ backgroundColor: getSeverityHeatColor(stats.maxSev) }}
+                      style={{ backgroundColor: sevHeatColor(stats.maxSev).bg, color: sevHeatColor(stats.maxSev).text }}
                     >
                       sev {stats.maxSev.toFixed(1)}
                     </span>
@@ -295,7 +303,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
                 </span>
                 <span
                   className="rounded px-1 font-mono text-[9px]"
-                  style={{ backgroundColor: getSeverityHeatColor(info.maxSev) }}
+                  style={{ backgroundColor: sevHeatColor(info.maxSev).bg, color: sevHeatColor(info.maxSev).text }}
                 >
                   {info.maxSev.toFixed(1)}
                 </span>
