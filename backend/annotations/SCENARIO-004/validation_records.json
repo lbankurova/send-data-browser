@@ -1,0 +1,15 @@
+{
+  "CORE-SEND0074-DM-002": {
+    "reviewStatus": "Reviewed",
+    "assignedTo": "",
+    "comment": "Manual value entered: ARMCD \u2192 'dgsg'",
+    "pathologist": "User",
+    "reviewDate": "2026-02-11T23:31:14.117563+00:00"
+  },
+  "CORE-SEND0035-TS-001": {
+    "fixStatus": "Manually fixed",
+    "comment": "Manual value entered: TSPARMCD \u2192 'fyysvv'",
+    "pathologist": "User",
+    "reviewDate": "2026-02-12T15:43:33.541114+00:00"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "CORE-SEND0073-EX-003": {
+    "fixStatus": "Manually fixed",
+    "comment": "Manual value entered: EXDOSE \u2192 '123'",
+    "pathologist": "User",
+    "reviewDate": "2026-02-11T23:09:12.700781+00:00"
+  }
+}
