@@ -253,6 +253,19 @@ export const progress = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Rail item tokens (rail)
+// ---------------------------------------------------------------------------
+
+export const rail = {
+  /** Base classes for every rail item (add padding per view) */
+  itemBase: "w-full text-left border-b border-border/40 border-l-2 transition-colors",
+  /** Selected rail item */
+  itemSelected: "border-l-primary bg-blue-50/80 dark:bg-blue-950/30",
+  /** Idle (unselected) rail item */
+  itemIdle: "border-l-transparent hover:bg-accent/30",
+} as const;
+
+// ---------------------------------------------------------------------------
 // Layout dimensions
 // ---------------------------------------------------------------------------
 

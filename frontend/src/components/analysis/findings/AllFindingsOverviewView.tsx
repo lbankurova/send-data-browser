@@ -20,7 +20,8 @@ import {
   titleCase,
 } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
-import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { MasterDetailLayout } from "@/components/ui/MasterDetailLayout";
+import { rail } from "@/lib/design-tokens";
 import type { SignalSummaryRow } from "@/types/analysis-views";
 
 export interface FindingsOverviewSelection {
@@ -44,8 +45,8 @@ function FindingItem({
   return (
     <button
       className={cn(
-        "w-full text-left border-b border-border/40 border-l-2 px-2 py-1 transition-colors",
-        isSelected ? "border-l-primary bg-blue-50/80 dark:bg-blue-950/30" : "border-l-transparent hover:bg-accent/30",
+        rail.itemBase, "px-2 py-1",
+        isSelected ? rail.itemSelected : rail.itemIdle,
       )}
       onClick={onClick}
     >
@@ -489,48 +490,38 @@ export function AllFindingsOverviewView({
   }
 
   return (
-    <div className="flex h-full overflow-hidden max-[1200px]:flex-col">
-      {/* Left: Findings rail */}
-      <div
-        className="shrink-0 border-r max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto"
-        style={{ width: railWidth }}
-      >
-        <FindingsRail rows={sorted} selectedKey={selectedKey} onSelect={handleSelect} />
-      </div>
-      <div className="max-[1200px]:hidden">
-        <PanelResizeHandle onPointerDown={onRailResize} />
-      </div>
-
-      {/* Right: Evidence panel */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5">
-        {selectedRow && (
-          <>
-            <EndpointSummaryHeader row={selectedRow} />
-            <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
-              <span className="relative px-3 py-1 text-xs font-medium text-foreground">
-                Evidence
-                <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
-              </span>
-              <span className="ml-auto mr-3 text-[10px] text-muted-foreground">
-                {endpointRows.length} rows for this endpoint
-              </span>
-            </div>
-            <EvidenceTable rows={endpointRows} selectedKey={selectedKey} onRowClick={handleSelect} />
-          </>
-        )}
-
-        {!selectedRow && sorted.length > 0 && (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            Select a finding to view evidence details.
+    <MasterDetailLayout
+      railWidth={railWidth}
+      onRailResize={onRailResize}
+      rail={<FindingsRail rows={sorted} selectedKey={selectedKey} onSelect={handleSelect} />}
+    >
+      {selectedRow && (
+        <>
+          <EndpointSummaryHeader row={selectedRow} />
+          <div className="flex shrink-0 items-center gap-0 border-b bg-muted/30">
+            <span className="relative px-3 py-1 text-xs font-medium text-foreground">
+              Evidence
+              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
+            </span>
+            <span className="ml-auto mr-3 text-[10px] text-muted-foreground">
+              {endpointRows.length} rows for this endpoint
+            </span>
           </div>
-        )}
+          <EvidenceTable rows={endpointRows} selectedKey={selectedKey} onRowClick={handleSelect} />
+        </>
+      )}
 
-        {sorted.length === 0 && (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            No findings data available.
-          </div>
-        )}
-      </div>
-    </div>
+      {!selectedRow && sorted.length > 0 && (
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          Select a finding to view evidence details.
+        </div>
+      )}
+
+      {sorted.length === 0 && (
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          No findings data available.
+        </div>
+      )}
+    </MasterDetailLayout>
   );
 }

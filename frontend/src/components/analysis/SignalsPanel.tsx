@@ -24,6 +24,7 @@ import {
   getSeverityDotColor,
   titleCase,
 } from "@/lib/severity-colors";
+import { rail } from "@/lib/design-tokens";
 import { InsightsList } from "./panes/InsightsList";
 import { RuleInspectorTab } from "./RuleInspectorTab";
 import { SignalScorePopover, EvidenceScorePopover } from "./ScoreBreakdown";
@@ -96,7 +97,7 @@ function SignalsOrganRailItem({ organ, organBlock, isSelected, maxEvidenceScore,
   organ: TargetOrganRow; organBlock: OrganBlock | undefined; isSelected: boolean; maxEvidenceScore: number; stats: OrganRailStats | null; onClick: () => void;
 }) {
   return (
-    <button className={cn("w-full text-left border-b border-border/40 border-l-2 px-3 py-2.5 transition-colors", isSelected ? "border-l-primary bg-blue-50/80 dark:bg-blue-950/30" : "border-l-transparent hover:bg-accent/30")} onClick={onClick}>
+    <button className={cn(rail.itemBase, "px-3 py-2.5", isSelected ? rail.itemSelected : rail.itemIdle)} onClick={onClick}>
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold">{titleCase(organ.organ_system)}</span>
         {stats?.dominantDirection && <span className="text-[10px] text-muted-foreground/60">{stats.dominantDirection}</span>}

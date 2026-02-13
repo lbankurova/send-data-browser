@@ -4241,7 +4241,7 @@
     "p_value": 0.06126482213438735,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4256,7 +4256,7 @@
     "p_value": 0.00010768609503297887,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4271,7 +4271,7 @@
     "p_value": 0.00010768609503297887,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4286,7 +4286,7 @@
     "p_value": 0.06126482213438735,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4301,7 +4301,7 @@
     "p_value": 0.00010768609503297887,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4316,7 +4316,7 @@
     "p_value": 0.00010768609503297887,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4646,7 +4646,7 @@
     "p_value": 0.1107013056939023,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4661,7 +4661,7 @@
     "p_value": 0.008952630355241744,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4676,7 +4676,7 @@
     "p_value": 0.0017058456417724153,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4691,7 +4691,7 @@
     "p_value": 0.1107013056939023,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4706,7 +4706,7 @@
     "p_value": 0.008952630355241744,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -4721,7 +4721,7 @@
     "p_value": 0.0017058456417724153,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -5321,7 +5321,7 @@
     "p_value": 1.0,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -5336,7 +5336,7 @@
     "p_value": 1.0,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   },
   {
@@ -5351,7 +5351,7 @@
     "p_value": 0.00024963594757645096,
     "effect_size": null,
     "direction": "down",
-    "severity": "adverse",
+    "severity": "warning",
     "treatment_related": true
   }
 ]

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Insights & Synthesis Engine converts raw statistical rule results (R01-R17) and derived analytical data into structured, organ-grouped signals for scientist consumption. It enables toxicologists to read deterministic conclusions rather than derive them manually from raw numbers. The system has two major subsystems: a backend **rule engine** that evaluates 16 canonical rules against computed statistics, and a frontend **signals/synthesis engine** that groups, merges, and prioritizes those rules into UI-ready structures for the Signals Panel and InsightsList context panel.
+The Insights & Synthesis Engine converts raw statistical rule results (R01-R19) and derived analytical data into structured, organ-grouped signals for scientist consumption. It enables toxicologists to read deterministic conclusions rather than derive them manually from raw numbers. The system has two major subsystems: a backend **rule engine** that evaluates 19 canonical rules against computed statistics, and a frontend **signals/synthesis engine** that groups, merges, and prioritizes those rules into UI-ready structures for the Signals Panel and InsightsList context panel.
 
 ## Architecture
 
@@ -268,12 +268,14 @@ function assignSection(priority: number): UISection {
 | R15 | NOAEL not established | study | warning | `noael_dose_level is null` | "NOAEL not established for {sex} — adverse effects at lowest dose tested." | Per sex |
 | R16 | Correlated findings | organ | info | `len(organ_findings) >= 2` | "{endpoint_labels} show convergent pattern." | Per organ (top 5 labels) |
 | R17 | Mortality signal | study | critical | `domain=="DS" AND test_code=="MORTALITY" AND mortality_count > 0` | "{count} deaths in {sex}, dose-dependent pattern." | Per sex with deaths |
+| R18 | Incidence decrease (protective) | endpoint | info | `domain in (MI,MA,CL) AND direction=="down" AND ctrl_incidence > high_incidence` | "Decreased incidence of {finding} in {specimen} with treatment ({sex}): {ctrl_pct}% in controls vs {high_pct}% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure." | Per histo finding with decreased incidence |
+| R19 | Potential protective effect | endpoint | info | `R18 conditions AND ctrl_incidence >= 50% AND (monotonic_decrease OR threshold OR non_monotonic with ≥40pp drop)` | "{finding} in {specimen}: high baseline incidence... suggests potential protective or therapeutic effect. Consider relevance to drug repurposing." | Subset of R18 with high control + large drop |
 
 ### Rule Evaluation Logic (from scores_and_rules.py)
 
 The `evaluate_rules()` function iterates over three input collections:
 
-**Per-finding loop** (endpoint-scope rules R01-R07, R10-R13):
+**Per-finding loop** (endpoint-scope rules R01-R07, R10-R13, R18-R19):
 ```python
 for finding in findings:
     ctx = _build_finding_context(finding, dose_label_map)
@@ -672,7 +674,7 @@ The following items were previously listed as spec divergences. All have been re
 
 | File | What it does | Key functions/exports |
 |------|-------------|----------------------|
-| `backend/generator/scores_and_rules.py` | Evaluates 17 canonical rules (R01-R17) against computed findings, target organs, and NOAEL data. R17 is the mortality signal from DS domain. Emits structured rule results with context keys and rendered template text. | `RULES` (rule definitions), `evaluate_rules()`, `_emit()`, `_emit_organ()`, `_emit_study()`, `_build_finding_context()` |
+| `backend/generator/scores_and_rules.py` | Evaluates 19 canonical rules (R01-R19) against computed findings, target organs, and NOAEL data. R17 is the mortality signal from DS domain. R18-R19 detect decreased incidence (protective/repurposing patterns). Emits structured rule results with context keys and rendered template text. | `RULES` (rule definitions), `evaluate_rules()`, `_emit()`, `_emit_organ()`, `_emit_study()`, `_build_finding_context()` |
 | `backend/generator/view_dataframes.py` | Computes signal scores, builds summary dataframes (study_signal_summary, target_organ_summary, noael_summary). Contains the signal score formula, target organ threshold logic, and NOAEL confidence score. | `build_study_signal_summary()`, `build_target_organ_summary()`, `_compute_signal_score()`, `_compute_noael_confidence()` |
 | `frontend/src/lib/signals-panel-engine.ts` | Derives semantic rules from NOAEL/organ/signal summary data, assigns priority bands, builds organ blocks with compound merging, and produces the full SignalsPanelData structure for the Signals tab center panel. | `buildSignalsPanelData()`, `buildFilteredMetrics()`, `sexLabel()`, `organName()`, `assignSection()` + types: `SignalsPanelData`, `OrganBlock`, `PanelStatement`, `MetricsLine`, `UISection` |
 | `frontend/src/lib/rule-synthesis.ts` | Groups backend rule_results by organ, computes per-organ tiers (Critical/Notable/Observed), extracts per-endpoint signals from R10/R04/R01, and synthesizes compact display lines. Serves the InsightsList context panel. | `buildOrganGroups()`, `computeTier()`, `computeTierCounts()`, `synthesize()`, `extractEndpointSignals()`, `parseContextKey()`, `cleanText()` + types: `OrganGroup`, `SynthLine`, `SynthEndpoint`, `EndpointSignal`, `Tier` |

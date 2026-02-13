@@ -11,7 +11,7 @@
     "affected": 10,
     "incidence": 1.0,
     "avg_severity": 2.3,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -25,7 +25,7 @@
     "affected": 10,
     "incidence": 0.6667,
     "avg_severity": 2.5,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -39,7 +39,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -53,7 +53,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -67,7 +67,7 @@
     "affected": 10,
     "incidence": 1.0,
     "avg_severity": 2.3,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -81,7 +81,7 @@
     "affected": 10,
     "incidence": 0.6667,
     "avg_severity": 2.5,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -95,7 +95,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -109,7 +109,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FIBROSIS",
@@ -2251,7 +2251,7 @@
     "affected": 7,
     "incidence": 0.7,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -2265,7 +2265,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -2279,7 +2279,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -2293,7 +2293,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -2307,7 +2307,7 @@
     "affected": 7,
     "incidence": 0.7,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -2321,7 +2321,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -2335,7 +2335,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -2349,7 +2349,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "KIDNEY \u2014 CAST",
@@ -9755,7 +9755,7 @@
     "affected": 7,
     "incidence": 0.7,
     "avg_severity": null,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BEDDING WET",
@@ -9769,7 +9769,7 @@
     "affected": 10,
     "incidence": 0.6667,
     "avg_severity": null,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BEDDING WET",
@@ -9783,7 +9783,7 @@
     "affected": 10,
     "incidence": 0.6667,
     "avg_severity": null,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "BEDDING WET",
@@ -9797,7 +9797,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
-    "severity": "adverse"
+    "severity": "warning"
   },
   {
     "endpoint_label": "CRUST",
