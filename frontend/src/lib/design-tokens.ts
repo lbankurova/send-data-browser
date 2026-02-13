@@ -107,8 +107,8 @@ export const badge = {
 // ---------------------------------------------------------------------------
 
 export const filter = {
-  /** Filter select pill — muted chip, native chevron */
-  select: "rounded-full bg-muted/50 px-2 py-0.5 text-xs cursor-pointer focus:outline-none",
+  /** Filter select — compact bordered dropdown, canonical style */
+  select: "h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary",
   /** Filter label wrapping a select */
   label: "flex items-center gap-1.5 text-xs text-muted-foreground",
 } as const;

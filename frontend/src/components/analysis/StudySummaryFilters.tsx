@@ -16,36 +16,30 @@ export function StudySummaryFilters({ data, filters, onChange }: Props) {
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        Endpoint
-        <FilterSelect
-          value={filters.endpoint_type ?? ""}
-          onChange={(e) =>
-            onChange({ ...filters, endpoint_type: e.target.value || null })
-          }
-        >
-          <option value="">All</option>
-          {endpointTypes.map((t) => (
-            <option key={t} value={t}>
-              {t.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())}
-            </option>
-          ))}
-        </FilterSelect>
-      </label>
+      <FilterSelect
+        value={filters.endpoint_type ?? ""}
+        onChange={(e) =>
+          onChange({ ...filters, endpoint_type: e.target.value || null })
+        }
+      >
+        <option value="">All endpoints</option>
+        {endpointTypes.map((t) => (
+          <option key={t} value={t}>
+            {t.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())}
+          </option>
+        ))}
+      </FilterSelect>
 
-      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        Sex
-        <FilterSelect
-          value={filters.sex ?? ""}
-          onChange={(e) =>
-            onChange({ ...filters, sex: e.target.value || null })
-          }
-        >
-          <option value="">All</option>
-          <option value="M">Male</option>
-          <option value="F">Female</option>
-        </FilterSelect>
-      </label>
+      <FilterSelect
+        value={filters.sex ?? ""}
+        onChange={(e) =>
+          onChange({ ...filters, sex: e.target.value || null })
+        }
+      >
+        <option value="">All sexes</option>
+        <option value="M">Male</option>
+        <option value="F">Female</option>
+      </FilterSelect>
 
       <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
         Min score

@@ -480,27 +480,25 @@ function SpecimenRail({
 
         {/* Filter row */}
         <div className="mt-2 flex items-center gap-1.5">
-          <select
+          <FilterSelect
             value={minSevFilter}
             onChange={(e) => setMinSevFilter(Number(e.target.value))}
-            className="h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             title="Minimum severity filter"
           >
-            <option value={0}>Sev: any</option>
-            <option value={2}>Sev: 2+</option>
-            <option value={3}>Sev: 3+</option>
-            <option value={4}>Sev: 4+</option>
-          </select>
-          <select
+            <option value={0}>All severities</option>
+            <option value={2}>Severity 2+</option>
+            <option value={3}>Severity 3+</option>
+            <option value={4}>Severity 4+</option>
+          </FilterSelect>
+          <FilterSelect
             value={doseTrendFilter}
             onChange={(e) => setDoseTrendFilter(e.target.value as "any" | "moderate" | "strong")}
-            className="h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             title="Dose trend filter"
           >
-            <option value="any">Trend: any</option>
-            <option value="moderate">Trend: moderate+</option>
-            <option value="strong">Trend: strong</option>
-          </select>
+            <option value="any">All trends</option>
+            <option value="moderate">Moderate+</option>
+            <option value="strong">Strong only</option>
+          </FilterSelect>
           <label className="flex cursor-pointer items-center gap-0.5 text-[10px] text-muted-foreground" title="Show only specimens with adverse findings">
             <input
               type="checkbox"
