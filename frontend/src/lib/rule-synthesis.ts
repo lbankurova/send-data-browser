@@ -30,6 +30,17 @@ export function capitalize(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Study-Level";
 }
 
+/** Human-readable clinical class label */
+function formatClinicalClassSynth(cc: string): string {
+  switch (cc) {
+    case "Sentinel": return "Sentinel";
+    case "HighConcern": return "High concern";
+    case "ModerateConcern": return "Moderate concern";
+    case "ContextDependent": return "Context dependent";
+    default: return cc;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Per-endpoint signal extraction
 // ---------------------------------------------------------------------------
@@ -164,10 +175,8 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
     });
   }
 
-  // 1b. Clinical catalog sentinel/high-concern annotations
-  const clinicalRules = rules.filter(
-    (r) => r.params?.clinical_class === "Sentinel" || r.params?.clinical_class === "HighConcern"
-  );
+  // 1b. Clinical catalog annotations (all classes)
+  const clinicalRules = rules.filter((r) => r.params?.clinical_class);
   if (clinicalRules.length > 0) {
     const seen = new Set<string>();
     const items: string[] = [];
@@ -177,12 +186,15 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
       const key = `${catalogId}|${finding}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      const cls = r.params?.clinical_class === "Sentinel" ? "Sentinel" : "High concern";
+      const cls = formatClinicalClassSynth(r.params?.clinical_class ?? "");
       const conf = r.params?.clinical_confidence ? ` · ${r.params.clinical_confidence} confidence` : "";
       items.push(`${finding} — ${cls} (${catalogId})${conf}`);
     }
     if (items.length > 0) {
-      lines.push({ text: "Clinical signals", isWarning: true, listItems: items });
+      const hasSentinel = clinicalRules.some(
+        (r) => r.params?.clinical_class === "Sentinel" || r.params?.clinical_class === "HighConcern"
+      );
+      lines.push({ text: "Clinical signals", isWarning: hasSentinel, listItems: items });
     }
   }
 

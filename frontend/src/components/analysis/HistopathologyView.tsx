@@ -82,6 +82,8 @@ interface FindingTableRow extends FindingSummary {
   isDoseDriven: boolean;
   relatedOrgans: string[] | undefined;
   trendData?: FindingDoseTrend;
+  clinicalClass?: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent";
+  catalogId?: string;
 }
 
 const findingColHelper = createColumnHelper<FindingTableRow>();
@@ -813,6 +815,25 @@ function OverviewTab({
     return map;
   }, [allRuleResults, specimen, findingSummaries]);
 
+  // Per-finding clinical catalog lookup
+  const findingClinical = useMemo(() => {
+    const map = new Map<string, { clinicalClass: string; catalogId: string }>();
+    if (!allRuleResults.length || !specimen) return map;
+    const specLower = specimen.toLowerCase();
+    for (const r of allRuleResults) {
+      const cc = r.params?.clinical_class;
+      const cid = r.params?.catalog_id;
+      if (!cc || !cid) continue;
+      const rSpec = (r.params?.specimen ?? "").toLowerCase();
+      if (rSpec !== specLower) continue;
+      const finding = r.params?.finding ?? "";
+      if (finding && !map.has(finding)) {
+        map.set(finding, { clinicalClass: cc, catalogId: cid });
+      }
+    }
+    return map;
+  }, [allRuleResults, specimen]);
+
   // Filtered data for group heatmap (respects shared sex/severity filters)
   const filteredData = useMemo(() => {
     return specimenData.filter((row) => {
@@ -991,9 +1012,16 @@ function OverviewTab({
             isDoseDriven = c !== "Weak";
             break;
         }
-        return { ...fs, isDoseDriven, relatedOrgans: findingRelatedOrgans.get(fs.finding), trendData: trend };
+        const clin = findingClinical.get(fs.finding);
+        return {
+          ...fs, isDoseDriven,
+          relatedOrgans: findingRelatedOrgans.get(fs.finding),
+          trendData: trend,
+          clinicalClass: clin?.clinicalClass as FindingTableRow["clinicalClass"],
+          catalogId: clin?.catalogId,
+        };
       }),
-    [findingSummaries, findingConsistency, findingRelatedOrgans, doseDepThreshold, trendsByFinding]
+    [findingSummaries, findingConsistency, findingRelatedOrgans, findingClinical, doseDepThreshold, trendsByFinding]
   );
 
   const findingColumns = useMemo(
@@ -1064,14 +1092,33 @@ function OverviewTab({
         size: 60,
         minSize: 48,
         maxSize: 100,
-        cell: (info) => (
-          <span
-            className="inline-block border-l-2 pl-1.5 py-px text-[9px] font-medium text-gray-600"
-            style={{ borderLeftColor: info.getValue() === "adverse" ? "#dc2626" : info.getValue() === "warning" ? "#d97706" : "#16a34a" }}
-          >
-            {info.getValue()}
-          </span>
-        ),
+        cell: (info) => {
+          const sev = info.getValue();
+          const cc = info.row.original.clinicalClass;
+          // Clinical class replaces misleading "normal" when present
+          if (sev === "normal" && cc) {
+            const label = cc === "Sentinel" ? "Sentinel"
+              : cc === "HighConcern" ? "High concern"
+              : cc === "ModerateConcern" ? "Moderate"
+              : "Flag";
+            return (
+              <span
+                className="inline-block border-l-2 border-l-gray-300 pl-1.5 py-px text-[9px] font-medium text-gray-500"
+                title={`Clinical catalog: ${cc} (${info.row.original.catalogId ?? ""}). Statistical severity: normal.`}
+              >
+                {label}
+              </span>
+            );
+          }
+          return (
+            <span
+              className="inline-block border-l-2 pl-1.5 py-px text-[9px] font-medium text-gray-600"
+              style={{ borderLeftColor: sev === "adverse" ? "#dc2626" : sev === "warning" ? "#d97706" : "#16a34a" }}
+            >
+              {sev}
+            </span>
+          );
+        },
       }),
       findingColHelper.accessor("isDoseDriven", {
         header: () => {
