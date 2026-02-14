@@ -24,7 +24,10 @@ import { DoseHeader } from "@/components/ui/DoseLabel";
 import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { ViewSection } from "@/components/ui/ViewSection";
-import { CollapsedStrip, StripSep } from "@/components/ui/CollapsedStrip";
+import { CollapsedStrip } from "@/components/ui/CollapsedStrip";
+import { FindingsStripSummary } from "@/components/analysis/FindingsStripSummary";
+import { DoseChartsStripSummary } from "@/components/analysis/DoseChartsStripSummary";
+import { MatrixStripSummary } from "@/components/analysis/MatrixStripSummary";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
@@ -79,12 +82,21 @@ export interface FindingSummary {
   severity: "adverse" | "warning" | "normal";
 }
 
-interface FindingTableRow extends FindingSummary {
+export interface FindingTableRow extends FindingSummary {
   isDoseDriven: boolean;
   relatedOrgans: string[] | undefined;
   trendData?: FindingDoseTrend;
   clinicalClass?: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent";
   catalogId?: string;
+}
+
+export interface HeatmapData {
+  doseLevels: number[];
+  doseLabels: Map<number, string>;
+  findings: string[];
+  cells: Map<string, { incidence: number; avg_severity: number; affected: number; n: number }>;
+  findingMeta: Map<string, { maxSev: number; hasSeverityData: boolean }>;
+  totalFindings: number;
 }
 
 const findingColHelper = createColumnHelper<FindingTableRow>();
@@ -773,7 +785,7 @@ function OverviewTab({
       }
     }
 
-    return { doseLevels, doseLabels, findings, cells, findingMeta, totalFindings };
+    return { doseLevels, doseLabels, findings, cells, findingMeta, totalFindings } satisfies HeatmapData;
   }, [matrixBaseData, severityGradedOnly, minSeverity]);
 
   // Combined table data
@@ -998,123 +1010,10 @@ function OverviewTab({
     columnResizeMode: "onChange",
   });
 
-  // ── Strip summary content ──────────────────────────────────
+  // ── Strip summary: selected row for collapsed strip content ──
   const selectedRow = selection?.finding
-    ? filteredTableData.find((r) => r.finding === selection.finding)
+    ? filteredTableData.find((r) => r.finding === selection.finding) ?? null
     : null;
-
-  const findingsStripSummary = useMemo(() => {
-    if (selectedRow) {
-      const pct = `${Math.round(selectedRow.maxIncidence * 100)}%`;
-      return (
-        <span className="text-[10px]">
-          <span className="text-primary">▸</span>{" "}
-          <span className="font-medium">{selectedRow.finding}</span>{" "}
-          <span className="text-muted-foreground">{pct} {selectedRow.severity}</span>
-          {selectedRow.isDoseDriven && <span className="text-muted-foreground"> ✓dose-dep</span>}
-          {selectedRow.relatedOrgans && selectedRow.relatedOrgans.length > 0 && (
-            <><StripSep /><span className="text-muted-foreground">also in: {selectedRow.relatedOrgans.join(", ")}</span></>
-          )}
-        </span>
-      );
-    }
-    const flagged = filteredTableData.filter((f) => f.severity !== "normal" || f.clinicalClass);
-    const normalCount = filteredTableData.length - flagged.length;
-    const shown = flagged.slice(0, 3);
-    return (
-      <span className="flex items-center gap-0 text-[10px]">
-        {shown.map((f, i) => {
-          const label = f.clinicalClass
-            ? (f.clinicalClass === "Sentinel" ? "Sentinel" : f.clinicalClass === "HighConcern" ? "High concern" : f.severity)
-            : f.severity;
-          return (
-            <span key={f.finding}>
-              {i > 0 && <StripSep />}
-              <span className="font-medium">{f.finding}</span>{" "}
-              <span className="text-muted-foreground">{label} {Math.round(f.maxIncidence * 100)}%</span>
-            </span>
-          );
-        })}
-        {flagged.length > 3 && <><StripSep /><span className="text-muted-foreground">+{flagged.length - 3} flagged</span></>}
-        {normalCount > 0 && <><StripSep /><span className="text-muted-foreground">+{normalCount} normal</span></>}
-      </span>
-    );
-  }, [filteredTableData, selectedRow]);
-
-  const doseChartsStripSummary = useMemo(() => {
-    if (selectedRow && heatmapData) {
-      const seq = heatmapData.doseLevels.map((dl) => {
-        const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
-        return cell ? `${Math.round(cell.incidence * 100)}%` : "0%";
-      }).join("→");
-      const sevSeq = heatmapData.doseLevels.map((dl) => {
-        const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
-        return cell && cell.avg_severity ? cell.avg_severity.toFixed(1) : "—";
-      }).join("→");
-      return (
-        <span className="font-mono text-[10px] text-muted-foreground">
-          Incid: {seq}<StripSep />Sev: {sevSeq}
-        </span>
-      );
-    }
-    // Specimen aggregate: peak incidence and severity across all findings
-    let peakInc = 0;
-    let peakSev = 0;
-    for (const f of filteredTableData) {
-      if (f.maxIncidence > peakInc) peakInc = f.maxIncidence;
-      if (f.maxSeverity > peakSev) peakSev = f.maxSeverity;
-    }
-    return (
-      <span className="text-[10px] text-muted-foreground">
-        Peak incidence: {Math.round(peakInc * 100)}%<StripSep />Peak severity: {peakSev.toFixed(1)}
-      </span>
-    );
-  }, [filteredTableData, selectedRow, heatmapData]);
-
-  const matrixStripSummary = useMemo(() => {
-    if (!heatmapData) return <span className="text-[10px] text-muted-foreground">No data</span>;
-    if (selectedRow) {
-      const groups = heatmapData.doseLevels
-        .map((dl) => ({ dl, cell: heatmapData.cells.get(`${selectedRow.finding}|${dl}`) }))
-        .filter((g) => g.cell && g.cell.affected > 0);
-      return (
-        <span className="text-[10px]">
-          <span className="text-primary">▸</span>{" "}
-          <span className="font-medium">{selectedRow.finding}</span>:{" "}
-          {groups.length === 0
-            ? <span className="text-muted-foreground">no affected subjects</span>
-            : groups.map((g, i) => (
-                <span key={g.dl} className="text-muted-foreground">
-                  {i > 0 && ", "}
-                  {g.cell!.affected}/{g.cell!.n} in {heatmapData.doseLabels.get(g.dl) ?? `Dose ${g.dl}`}
-                </span>
-              ))
-          }
-        </span>
-      );
-    }
-    // No selection: show affected counts per top dose groups
-    const groupTotals = heatmapData.doseLevels.map((dl) => {
-      let affected = 0;
-      for (const finding of heatmapData.findings) {
-        const cell = heatmapData.cells.get(`${finding}|${dl}`);
-        if (cell) affected += cell.affected;
-      }
-      return { dl, affected, label: heatmapData.doseLabels.get(dl) ?? `Dose ${dl}` };
-    }).sort((a, b) => b.affected - a.affected);
-    const top = groupTotals.slice(0, 2).filter((g) => g.affected > 0);
-    return (
-      <span className="text-[10px] text-muted-foreground">
-        {top.map((g, i) => (
-          <span key={g.dl}>
-            {i > 0 && <StripSep />}
-            {g.label}: {g.affected} affected
-          </span>
-        ))}
-        {top.length === 0 && "No affected subjects"}
-      </span>
-    );
-  }, [heatmapData, selectedRow]);
 
   return (
     <div ref={containerRef} className="flex flex-1 flex-col overflow-hidden">
@@ -1123,7 +1022,7 @@ function OverviewTab({
         <CollapsedStrip
           title="Observed findings"
           count={filteredTableData.length}
-          summary={findingsStripSummary}
+          summary={<FindingsStripSummary findings={filteredTableData} selectedRow={selectedRow} />}
           onExpand={() => toggleCollapse("findings")}
           onMaximize={() => maximizeSection("findings")}
         />
@@ -1303,7 +1202,7 @@ function OverviewTab({
       {collapsed.doseCharts ? (
         <CollapsedStrip
           title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts"}
-          summary={doseChartsStripSummary}
+          summary={<DoseChartsStripSummary findings={filteredTableData} selectedRow={selectedRow} heatmapData={heatmapData} />}
           onExpand={() => toggleCollapse("doseCharts")}
           onMaximize={() => maximizeSection("doseCharts")}
         />
@@ -1358,7 +1257,7 @@ function OverviewTab({
         <CollapsedStrip
           title={`Severity matrix: ${matrixMode}`}
           count={heatmapData?.findings.length}
-          summary={matrixStripSummary}
+          summary={<MatrixStripSummary selectedRow={selectedRow} heatmapData={heatmapData} />}
           onExpand={() => toggleCollapse("matrix")}
           onMaximize={() => maximizeSection("matrix")}
         />
