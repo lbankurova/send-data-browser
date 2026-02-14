@@ -529,7 +529,7 @@ export function DoseResponseView() {
     if (top) {
       selectEndpoint(top.endpoint_label);
     }
-  }, [drData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [drData, selectedEndpoint]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Sync from StudySelectionContext endpoint changes ──
 
@@ -551,6 +551,19 @@ export function DoseResponseView() {
       }
     }
   }, [studySelection.endpoint, drData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Clear local endpoint when organ changes ──────────
+  const prevOrgan = useRef(studySelection.organSystem);
+  useEffect(() => {
+    if (studySelection.organSystem === prevOrgan.current) return;
+    prevOrgan.current = studySelection.organSystem;
+
+    // Cascade cleared the endpoint — reset local state so auto-select re-fires
+    if (!studySelection.endpoint && selectedEndpoint) {
+      setSelectedEndpoint(null);
+      setSelection(null);
+    }
+  }, [studySelection.organSystem, studySelection.endpoint]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Cross-view state from navigate() ──────────────────
 

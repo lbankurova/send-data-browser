@@ -71,6 +71,16 @@ export function PolymorphicRail() {
             />
             Significant
           </label>
+          <FilterSelect
+            value={filters.minSeverity}
+            onChange={(e) => setFilters({ minSeverity: Number(e.target.value) })}
+            title="Minimum severity filter"
+          >
+            <option value={0}>Sev: all</option>
+            <option value={2}>Sev 2+</option>
+            <option value={3}>Sev 3+</option>
+            <option value={4}>Sev 4+</option>
+          </FilterSelect>
         </div>
       </div>
 

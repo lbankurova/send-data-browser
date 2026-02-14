@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
+import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
 import { Loader2, Microscope, BarChart3, Users, TrendingUp, Search, Plus, Pin } from "lucide-react";
 import {
   useReactTable,
@@ -417,9 +418,7 @@ function OverviewTab({
   onFindingClick,
   onHeatmapClick,
   sexFilter,
-  setSexFilter,
   minSeverity,
-  setMinSeverity,
   studyId,
   onSubjectClick,
   trendsByFinding,
@@ -432,9 +431,7 @@ function OverviewTab({
   onFindingClick: (finding: string) => void;
   onHeatmapClick: (finding: string) => void;
   sexFilter: string | null;
-  setSexFilter: (v: string | null) => void;
   minSeverity: number;
-  setMinSeverity: (v: number) => void;
   studyId?: string;
   onSubjectClick?: (usubjid: string) => void;
   trendsByFinding: Map<string, FindingDoseTrend>;
@@ -1318,23 +1315,6 @@ function OverviewTab({
               findingSeverityMap={heatmapData?.findingMeta ?? new Map()}
               controls={
                 <FilterBar className="border-0 bg-transparent px-0">
-                  <FilterSelect
-                    value={sexFilter ?? ""}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexFilter(e.target.value || null)}
-                                      >
-                    <option value="">All sexes</option>
-                    <option value="M">Male</option>
-                    <option value="F">Female</option>
-                  </FilterSelect>
-                  <FilterSelect
-                    value={minSeverity}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMinSeverity(Number(e.target.value))}
-                                      >
-                    <option value={0}>All severities</option>
-                    <option value={1}>Severity 1+</option>
-                    <option value={2}>Severity 2+</option>
-                    <option value={3}>Severity 3+</option>
-                  </FilterSelect>
                   <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                     <input
                       type="checkbox"
@@ -1372,23 +1352,6 @@ function OverviewTab({
           ) : heatmapData && heatmapData.findings.length > 0 ? (
             <div className="px-4 py-2">
               <FilterBar className="border-0 bg-transparent px-0">
-                <FilterSelect
-                  value={sexFilter ?? ""}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSexFilter(e.target.value || null)}
-                                  >
-                  <option value="">All sexes</option>
-                  <option value="M">Male</option>
-                  <option value="F">Female</option>
-                </FilterSelect>
-                <FilterSelect
-                  value={minSeverity}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMinSeverity(Number(e.target.value))}
-                                  >
-                  <option value={0}>All severities</option>
-                  <option value={1}>Severity 1+</option>
-                  <option value={2}>Severity 2+</option>
-                  <option value={3}>Severity 3+</option>
-                </FilterSelect>
                 <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                   <input
                     type="checkbox"
@@ -2293,7 +2256,7 @@ type EvidenceTab = "overview" | "hypotheses";
 export function HistopathologyView() {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
-  const { selection: studySelection } = useStudySelection();
+  const { selection: studySelection, navigateTo } = useStudySelection();
   const { setSelection: setViewSelection } = useViewSelection();
   const { data: lesionData, isLoading, error } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
@@ -2303,8 +2266,9 @@ export function HistopathologyView() {
   const selectedSpecimen = studySelection.specimen ?? null;
   const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
   const [selection, setSelection] = useState<HistopathSelection | null>(null);
-  const [sexFilter, setSexFilter] = useState<string | null>(null);
-  const [minSeverity, setMinSeverity] = useState(0);
+  const { filters } = useGlobalFilters();
+  const sexFilter = filters.sex;
+  const minSeverity = filters.minSeverity;
   const { expandAll, collapseAll } = useCollapseAll();
 
   // Derived: specimen summaries
@@ -2312,6 +2276,20 @@ export function HistopathologyView() {
     if (!lesionData) return [];
     return deriveSpecimenSummaries(lesionData, ruleResults);
   }, [lesionData, ruleResults]);
+
+  // Auto-select top specimen on load (spec §5.2)
+  const autoSelectDone = useRef(false);
+  useEffect(() => {
+    if (autoSelectDone.current) return;
+    if (!specimenSummaries.length || studySelection.specimen) return;
+
+    autoSelectDone.current = true;
+    const top = specimenSummaries[0]; // sorted by signal score desc
+    navigateTo({
+      organSystem: specimenToOrganSystem(top.specimen),
+      specimen: top.specimen,
+    });
+  }, [specimenSummaries, studySelection.specimen, navigateTo]);
 
   // Rows for selected specimen
   const specimenData = useMemo(() => {
@@ -2342,10 +2320,8 @@ export function HistopathologyView() {
     return map;
   }, [trendData, selectedSpecimen]);
 
-  // Reset filters when specimen changes (from shell rail)
+  // Reset finding selection when specimen changes (from shell rail)
   useEffect(() => {
-    setSexFilter(null);
-    setMinSeverity(0);
     setSelection(selectedSpecimen ? { specimen: selectedSpecimen } : null);
   }, [selectedSpecimen]);
 
@@ -2475,9 +2451,7 @@ export function HistopathologyView() {
               onFindingClick={handleFindingClick}
               onHeatmapClick={handleHeatmapClick}
               sexFilter={sexFilter}
-              setSexFilter={setSexFilter}
               minSeverity={minSeverity}
-              setMinSeverity={setMinSeverity}
               studyId={studyId}
               trendsByFinding={trendsByFinding}
             />
