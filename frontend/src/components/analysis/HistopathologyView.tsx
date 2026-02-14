@@ -435,6 +435,7 @@ function OverviewTab({
   const [doseDepThreshold, setDoseDepThreshold] = useState<"moderate" | "strong" | "ca_trend" | "severity_trend">("moderate");
   const [doseDepMenu, setDoseDepMenu] = useState<{ x: number; y: number } | null>(null);
   const [hideZeroSeverity, setHideZeroSeverity] = useState(false);
+  const [severityGradedOnly, setSeverityGradedOnly] = useState(false);
   const [incidenceMode, setIncidenceMode] = useState<ChartDisplayMode>("scaled");
   const [severityMode, setSeverityMode] = useState<ChartDisplayMode>("scaled");
   const doseDepMenuRef = useRef<HTMLDivElement>(null);
@@ -461,6 +462,7 @@ function OverviewTab({
     setAffectedOnly(true);
     setSubjectSort("dose");
     setDoseGroupFilter(null);
+    setSeverityGradedOnly(false);
   }, [specimen]);
 
   // Subject-level data (fetch when in subject mode)
@@ -561,6 +563,14 @@ function OverviewTab({
       return true;
     });
   }, [specimenData, sexFilter, minSeverity]);
+
+  // Matrix base data: sex-filtered only (no minSeverity) so non-graded findings appear
+  const matrixBaseData = useMemo(() => {
+    return specimenData.filter((row) => {
+      if (sexFilter && row.sex !== sexFilter) return false;
+      return true;
+    });
+  }, [specimenData, sexFilter]);
 
   // Stable frame: all dose groups + sexes from the entire specimen (not finding-filtered)
   const { stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping } = useMemo(() => {
@@ -668,28 +678,48 @@ function OverviewTab({
     return { chartOption: buildDoseSeverityBarOption(groups, stableSexKeys, severityMode), hasSeverityChartData: hasData };
   }, [filteredData, selection?.finding, stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping, severityMode]);
 
-  // Group-level heatmap data
+  // Group-level heatmap data (uses matrixBaseData so non-graded findings appear)
   const heatmapData = useMemo(() => {
-    if (!filteredData.length) return null;
-    const doseLevels = [...new Set(filteredData.map((r) => r.dose_level))].sort((a, b) => a - b);
+    if (!matrixBaseData.length) return null;
+    const doseLevels = [...new Set(matrixBaseData.map((r) => r.dose_level))].sort((a, b) => a - b);
     const doseLabels = new Map<number, string>();
-    for (const r of filteredData) {
+    for (const r of matrixBaseData) {
       if (!doseLabels.has(r.dose_level)) {
         doseLabels.set(r.dose_level, r.dose_label.split(",")[0]);
       }
     }
 
-    const findingMaxSev = new Map<string, number>();
-    for (const r of filteredData) {
-      const existing = findingMaxSev.get(r.finding) ?? 0;
-      if ((r.avg_severity ?? 0) > existing) findingMaxSev.set(r.finding, r.avg_severity ?? 0);
+    // Build finding metadata: max severity and whether any row has severity data
+    const findingMeta = new Map<string, { maxSev: number; hasSeverityData: boolean }>();
+    for (const r of matrixBaseData) {
+      const sev = r.avg_severity ?? 0;
+      const existing = findingMeta.get(r.finding);
+      if (!existing) {
+        findingMeta.set(r.finding, { maxSev: sev, hasSeverityData: sev > 0 });
+      } else {
+        if (sev > existing.maxSev) existing.maxSev = sev;
+        if (sev > 0) existing.hasSeverityData = true;
+      }
     }
-    const findings = [...findingMaxSev.entries()]
-      .sort((a, b) => b[1] - a[1])
+
+    // Filter and sort findings
+    let findingList = [...findingMeta.entries()];
+    const totalFindings = findingList.length;
+    if (severityGradedOnly) findingList = findingList.filter(([, m]) => m.hasSeverityData);
+    findingList = findingList.filter(([, m]) => !m.hasSeverityData || m.maxSev >= minSeverity);
+
+    const findings = findingList
+      .sort((a, b) => {
+        if (a[1].hasSeverityData && !b[1].hasSeverityData) return -1;
+        if (!a[1].hasSeverityData && b[1].hasSeverityData) return 1;
+        if (a[1].hasSeverityData && b[1].hasSeverityData) return b[1].maxSev - a[1].maxSev;
+        return a[0].localeCompare(b[0]);
+      })
       .map(([f]) => f);
 
+    // Build cells from matrixBaseData
     const cells = new Map<string, { incidence: number; avg_severity: number; affected: number; n: number }>();
-    for (const r of filteredData) {
+    for (const r of matrixBaseData) {
       const key = `${r.finding}|${r.dose_level}`;
       const existing = cells.get(key);
       if (existing) {
@@ -707,8 +737,8 @@ function OverviewTab({
       }
     }
 
-    return { doseLevels, doseLabels, findings, cells };
-  }, [filteredData]);
+    return { doseLevels, doseLabels, findings, cells, findingMeta, totalFindings };
+  }, [matrixBaseData, severityGradedOnly, minSeverity]);
 
   // Combined table data
   const tableData = useMemo<FindingTableRow[]>(
@@ -1164,7 +1194,14 @@ function OverviewTab({
             className={cn("cursor-pointer", matrixMode === "subject" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
             onClick={(e) => { e.stopPropagation(); setMatrixMode("subject"); }}
           >SUBJECTS</span>
-          {heatmapData ? <span className="ml-1 font-normal normal-case tracking-normal text-muted-foreground/60">({heatmapData.findings.length} {heatmapData.findings.length === 1 ? "finding" : "findings"})</span> : ""}
+          {heatmapData ? (
+            <span className="ml-1 font-normal normal-case tracking-normal text-muted-foreground/60">
+              {heatmapData.findings.length < heatmapData.totalFindings
+                ? `(${heatmapData.findings.length} of ${heatmapData.totalFindings} findings)`
+                : `(${heatmapData.findings.length} ${heatmapData.findings.length === 1 ? "finding" : "findings"})`
+              }
+            </span>
+          ) : ""}
         </>}
       >
         {/* Heatmap content */}
@@ -1182,6 +1219,8 @@ function OverviewTab({
               sortMode={subjectSort}
               doseGroupFilter={doseGroupFilter}
               doseGroupOptions={doseGroupOptions}
+              severityGradedOnly={severityGradedOnly}
+              findingSeverityMap={heatmapData?.findingMeta ?? new Map()}
               controls={
                 <FilterBar className="border-0 bg-transparent px-0">
                   <FilterSelect
@@ -1201,6 +1240,15 @@ function OverviewTab({
                     <option value={2}>Severity 2+</option>
                     <option value={3}>Severity 3+</option>
                   </FilterSelect>
+                  <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={severityGradedOnly}
+                      onChange={(e) => setSeverityGradedOnly(e.target.checked)}
+                      className="h-3 w-3 rounded border-gray-300"
+                    />
+                    Severity graded only
+                  </label>
                   <FilterMultiSelect
                     options={doseGroupOptions}
                     selected={doseGroupFilter}
@@ -1246,6 +1294,15 @@ function OverviewTab({
                   <option value={2}>Severity 2+</option>
                   <option value={3}>Severity 3+</option>
                 </FilterSelect>
+                <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={severityGradedOnly}
+                    onChange={(e) => setSeverityGradedOnly(e.target.checked)}
+                    className="h-3 w-3 rounded border-gray-300"
+                  />
+                  Severity graded only
+                </label>
                 <div className="flex items-center gap-0.5">
                   {(["severity", "incidence"] as const).map((mode) => (
                     <button
@@ -1266,7 +1323,7 @@ function OverviewTab({
               <p className="mb-0.5 text-[10px] text-muted-foreground">
                 {heatmapView === "incidence"
                   ? "Cells show % animals affected per dose group."
-                  : "Cells show average severity grade per dose group."}
+                  : "Cells show average severity grade per dose group. Non-graded findings show incidence."}
               </p>
               {/* Legend */}
               <div className="mb-1 flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -1292,6 +1349,12 @@ function OverviewTab({
                     {label}
                   </span>
                 ))}
+                {heatmapView === "severity" && (
+                  <span className="ml-2 flex items-center gap-1">
+                    <span className="text-[10px] text-gray-400">●</span>
+                    = present (no grade)
+                  </span>
+                )}
               </div>
               <div className="overflow-x-auto">
                 <div className="inline-block">
@@ -1325,10 +1388,25 @@ function OverviewTab({
                       </div>
                       {heatmapData.doseLevels.map((dl) => {
                         const cell = heatmapData.cells.get(`${finding}|${dl}`);
+                        const meta = heatmapData.findingMeta.get(finding);
+                        const isNonGraded = meta && !meta.hasSeverityData;
                         if (!cell) {
                           return (
                             <div key={dl} className="flex h-6 w-20 shrink-0 items-center justify-center">
                               <div className="h-5 w-16 rounded-sm bg-gray-100" />
+                            </div>
+                          );
+                        }
+                        // Non-graded findings in severity mode: show incidence %
+                        if (heatmapView === "severity" && isNonGraded) {
+                          return (
+                            <div key={dl} className="flex h-6 w-20 shrink-0 items-center justify-center">
+                              <div
+                                className="flex h-5 w-16 items-center justify-center rounded-sm bg-gray-100 font-mono text-[10px] text-muted-foreground"
+                                title={`Incidence: ${cell.affected}/${cell.n} (no severity grade)`}
+                              >
+                                {`${(cell.incidence * 100).toFixed(0)}%`}
+                              </div>
                             </div>
                           );
                         }
@@ -1392,6 +1470,8 @@ function SubjectHeatmap({
   sortMode = "dose",
   doseGroupFilter = null,
   doseGroupOptions = [],
+  severityGradedOnly = false,
+  findingSeverityMap,
   controls,
 }: {
   subjData: SubjectHistopathEntry[] | null;
@@ -1405,6 +1485,8 @@ function SubjectHeatmap({
   sortMode?: "dose" | "severity";
   doseGroupFilter?: ReadonlySet<string> | null;
   doseGroupOptions?: { key: string; label: string; group?: string }[];
+  severityGradedOnly?: boolean;
+  findingSeverityMap?: Map<string, { maxSev: number; hasSeverityData: boolean }>;
   controls?: React.ReactNode;
 }) {
   // Selected subject for column highlight
@@ -1448,7 +1530,7 @@ function SubjectHeatmap({
     );
   }, [subjData, sexFilter, affectedOnly, sortMode, doseGroupFilter]);
 
-  // All unique findings (rows) — filter by minSeverity
+  // All unique findings (rows) — include non-graded, apply filters
   const findings = useMemo(() => {
     if (!subjects.length) return [];
     const findingMaxSev = new Map<string, number>();
@@ -1459,11 +1541,31 @@ function SubjectHeatmap({
         if (sev > existing) findingMaxSev.set(finding, sev);
       }
     }
-    return [...findingMaxSev.entries()]
-      .filter(([, maxSev]) => maxSev >= minSeverity)
-      .sort((a, b) => b[1] - a[1])
-      .map(([f]) => f);
-  }, [subjects, minSeverity]);
+    let entries = [...findingMaxSev.entries()].map(([f, maxSev]) => {
+      const hasGrade = findingSeverityMap?.get(f)?.hasSeverityData ?? (maxSev > 0);
+      return { finding: f, maxSev, hasSeverityData: hasGrade };
+    });
+    if (severityGradedOnly) entries = entries.filter((e) => e.hasSeverityData);
+    entries = entries.filter((e) => !e.hasSeverityData || e.maxSev >= minSeverity);
+    return entries
+      .sort((a, b) => {
+        if (a.hasSeverityData && !b.hasSeverityData) return -1;
+        if (!a.hasSeverityData && b.hasSeverityData) return 1;
+        if (a.hasSeverityData && b.hasSeverityData) return b.maxSev - a.maxSev;
+        return a.finding.localeCompare(b.finding);
+      })
+      .map((e) => e.finding);
+  }, [subjects, minSeverity, severityGradedOnly, findingSeverityMap]);
+
+  // Map finding → hasSeverityData for cell rendering
+  const findingGradeMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    if (!findingSeverityMap) return map;
+    for (const [f, meta] of findingSeverityMap) {
+      map.set(f, meta.hasSeverityData);
+    }
+    return map;
+  }, [findingSeverityMap]);
 
   // Group subjects by dose level + recovery status
   const doseGroups = useMemo(() => {
@@ -1510,6 +1612,7 @@ function SubjectHeatmap({
         }
         parts.push(sexFilter ? (sexFilter === "M" ? "Male" : "Female") : "Both sexes");
         if (minSeverity > 0) parts.push(`Severity ${minSeverity}+`);
+        if (severityGradedOnly) parts.push("Severity graded only");
         if (affectedOnly) parts.push("Affected only");
         return <FilterShowingLine className="mb-1" parts={parts} />;
       })()}
@@ -1533,6 +1636,10 @@ function SubjectHeatmap({
               {label}
             </span>
           ))}
+          <span className="ml-2 flex items-center gap-1">
+            <span className="text-[10px] text-gray-400">●</span>
+            = present (no grade)
+          </span>
           <span className="ml-2">&mdash; = examined, no finding</span>
           <span className="ml-2">blank = not examined</span>
         </div>
@@ -1703,8 +1810,10 @@ function SubjectHeatmap({
                           >
                             {sevNum}
                           </div>
-                        ) : hasEntry ? (
+                        ) : hasEntry && findingGradeMap.get(finding) ? (
                           <span className="text-[9px] text-muted-foreground">&mdash;</span>
+                        ) : hasEntry ? (
+                          <span className="text-[10px] text-gray-400">●</span>
                         ) : null}
                       </div>
                     );
