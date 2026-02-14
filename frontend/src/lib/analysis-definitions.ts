@@ -39,7 +39,6 @@ export const ANALYSIS_VIEWS: AnalysisView[] = [
   { key: "findings-dashboard", label: "Findings dashboard", implemented: true, group: "findings" },
   { key: "adverse-effects", label: "Adverse effects", implemented: true, group: "findings" },
   { key: "dose-response", label: "Dose-Response", implemented: true },
-  { key: "target-organs", label: "Target organs & systems", implemented: true },
   { key: "histopathology", label: "Histopathology", implemented: true },
   { key: "noael-decision", label: "NOAEL & decision", implemented: true },
   { key: "validation", label: "Validation", implemented: true },

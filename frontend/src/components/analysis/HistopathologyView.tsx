@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
+import { useStudySelection } from "@/contexts/StudySelectionContext";
+import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { Loader2, Microscope, BarChart3, Users, TrendingUp, Search, Plus, Pin } from "lucide-react";
 import {
   useReactTable,
@@ -13,20 +15,17 @@ import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
-import { useAnnotations } from "@/hooks/useAnnotations";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
-import { FilterBar, FilterSelect, FilterMultiSelect, FilterSearch, FilterShowingLine } from "@/components/ui/FilterBar";
+import { FilterBar, FilterSelect, FilterMultiSelect, FilterShowingLine } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
-import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight, titleCase } from "@/lib/severity-colors";
+import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
-import { MasterDetailLayout } from "@/components/ui/MasterDetailLayout";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
-import { rail } from "@/lib/design-tokens";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
 import { buildDoseIncidenceBarOption, buildDoseSeverityBarOption } from "@/components/analysis/charts/histopathology-charts";
 import type { DoseIncidenceGroup, DoseSeverityGroup, ChartDisplayMode } from "@/components/analysis/charts/histopathology-charts";
@@ -389,286 +388,6 @@ function ChartModeToggle({ mode, onChange }: { mode: ChartDisplayMode; onChange:
           {m === "compact" ? "C" : "S"}
         </button>
       ))}
-    </div>
-  );
-}
-
-// ─── SpecimenRailItem ──────────────────────────────────────
-
-function SpecimenRailItem({
-  summary,
-  isSelected,
-  onClick,
-  reviewStatus,
-}: {
-  summary: SpecimenSummary;
-  isSelected: boolean;
-  onClick: () => void;
-  reviewStatus?: SpecimenReviewStatus;
-}) {
-  const sevColors = getNeutralHeatColor(summary.maxSeverity);
-  const incColors = getNeutralHeatColor01(summary.maxIncidence);
-  const incPct = Math.round(summary.maxIncidence * 100);
-  return (
-    <button
-      className={cn(
-        rail.itemBase, "px-2.5 py-2",
-        isSelected ? rail.itemSelected : rail.itemIdle
-      )}
-      onClick={onClick}
-    >
-      {/* Line 1: specimen name + quantitative indicators */}
-      <div className="flex items-center">
-        <span className="min-w-0 flex-1 truncate text-xs font-semibold">
-          {summary.specimen.replace(/_/g, " ")}
-        </span>
-        {reviewStatus === "Confirmed" && (
-          <span className="shrink-0 text-[9px] text-muted-foreground" title="All findings confirmed">{"\u2713"}</span>
-        )}
-        {reviewStatus === "Revised" && (
-          <span className="shrink-0 text-[9px] text-muted-foreground" title="Findings revised">{"\u007E"}</span>
-        )}
-        {/* Indicators: [dose trend] ·· [severity] · [incidence][counts] */}
-        <span
-          className={cn(
-            "w-5 shrink-0 text-right text-[9px]",
-            getDoseConsistencyWeight(summary.doseConsistency),
-            summary.doseConsistency === "Strong" ? "text-muted-foreground" :
-            summary.doseConsistency === "Moderate" ? "text-muted-foreground/60" :
-            "text-muted-foreground/30"
-          )}
-          title={`Dose trend: ${summary.doseConsistency}`}
-        >
-          {summary.doseConsistency === "Strong" ? "▲▲▲" : summary.doseConsistency === "Moderate" ? "▲▲" : "▲"}
-        </span>
-        <span
-          className="ml-2 w-7 shrink-0 rounded-sm text-center font-mono text-[9px]"
-          style={{ backgroundColor: sevColors.bg, color: sevColors.text }}
-          title={`Max severity: ${summary.maxSeverity.toFixed(1)} (scale 1\u20135)`}
-        >
-          {summary.maxSeverity.toFixed(1)}
-        </span>
-        <span
-          className="ml-1 w-8 shrink-0 rounded-sm text-center font-mono text-[9px]"
-          style={{ backgroundColor: incColors.bg, color: incColors.text }}
-          title={`Peak incidence: ${incPct}%`}
-        >
-          {incPct}%
-        </span>
-        <span className="w-3 shrink-0 text-right font-mono text-[9px] text-muted-foreground" title={`${summary.findingCount} findings`}>
-          {summary.findingCount}
-        </span>
-        <span
-          className={cn("w-4 shrink-0 text-right font-mono text-[9px]", summary.adverseCount > 0 ? "text-muted-foreground" : "text-muted-foreground/40")}
-          title={`${summary.adverseCount} adverse`}
-        >
-          {summary.adverseCount}A
-        </span>
-      </div>
-
-      {/* Line 2: organ system + domains */}
-      <div className="mt-0.5 flex items-center gap-2">
-        <span className="text-[10px] text-muted-foreground/60">{titleCase(specimenToOrganSystem(summary.specimen))}</span>
-        {summary.domains.map((d) => (
-          <DomainLabel key={d} domain={d} />
-        ))}
-      </div>
-    </button>
-  );
-}
-
-// ─── SpecimenRail ──────────────────────────────────────────
-
-function SpecimenRail({
-  specimens,
-  selectedSpecimen,
-  onSpecimenClick,
-  pathReviews,
-  findingNamesBySpecimen,
-}: {
-  specimens: SpecimenSummary[];
-  selectedSpecimen: string | null;
-  onSpecimenClick: (specimen: string) => void;
-  pathReviews?: Record<string, PathologyReview>;
-  findingNamesBySpecimen?: Map<string, string[]>;
-}) {
-  const [search, setSearch] = useState("");
-  const [minSevFilter, setMinSevFilter] = useState<number>(0);
-  const [adverseOnly, setAdverseOnly] = useState(false);
-  const [doseTrendFilter, setDoseTrendFilter] = useState<"any" | "moderate" | "strong">("any");
-  const [sortBy, setSortBy] = useState<"signal" | "organ" | "severity" | "incidence" | "alpha">("signal");
-
-  const filtered = useMemo(() => {
-    // Filter
-    let list = specimens;
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((s) => s.specimen.replace(/_/g, " ").toLowerCase().includes(q));
-    }
-    if (minSevFilter > 0) {
-      list = list.filter((s) => s.maxSeverity >= minSevFilter);
-    }
-    if (adverseOnly) {
-      list = list.filter((s) => s.adverseCount > 0);
-    }
-    if (doseTrendFilter === "moderate") {
-      list = list.filter((s) => s.doseConsistency === "Moderate" || s.doseConsistency === "Strong");
-    } else if (doseTrendFilter === "strong") {
-      list = list.filter((s) => s.doseConsistency === "Strong");
-    }
-
-    // Sort
-    const sorted = [...list];
-    switch (sortBy) {
-      case "signal":
-        sorted.sort((a, b) => b.signalScore - a.signalScore);
-        break;
-      case "organ": {
-        sorted.sort((a, b) => {
-          const orgA = specimenToOrganSystem(a.specimen);
-          const orgB = specimenToOrganSystem(b.specimen);
-          if (orgA !== orgB) return orgA.localeCompare(orgB);
-          return b.maxSeverity - a.maxSeverity;
-        });
-        break;
-      }
-      case "severity":
-        sorted.sort((a, b) => b.maxSeverity - a.maxSeverity);
-        break;
-      case "incidence":
-        sorted.sort((a, b) => b.maxIncidence - a.maxIncidence);
-        break;
-      case "alpha":
-        sorted.sort((a, b) => a.specimen.localeCompare(b.specimen));
-        break;
-    }
-    return sorted;
-  }, [specimens, search, minSevFilter, adverseOnly, doseTrendFilter, sortBy]);
-
-
-  return (
-    <div className="flex h-full w-full flex-col overflow-hidden">
-      <div className="border-b px-2.5 py-2">
-        {/* Header row: title + search */}
-        <div className="flex items-center gap-1.5">
-          <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Specimens ({specimens.length})
-          </span>
-          <FilterSearch value={search} onChange={setSearch} />
-        </div>
-
-        {/* Showing: summary */}
-        <FilterShowingLine
-          className="mt-0.5"
-          parts={(() => {
-            if (!minSevFilter && !adverseOnly && doseTrendFilter === "any" && !search) return undefined;
-            const parts: string[] = [];
-            if (search) parts.push(`"${search}"`);
-            if (minSevFilter > 0) parts.push(`Severity ${minSevFilter}+`);
-            if (adverseOnly) parts.push("Adverse only");
-            if (doseTrendFilter === "moderate") parts.push("Moderate+ trend");
-            else if (doseTrendFilter === "strong") parts.push("Strong trend");
-            parts.push(`${filtered.length}/${specimens.length}`);
-            return parts;
-          })()}
-        />
-
-        {/* Filter row */}
-        <div className="mt-2 flex items-center gap-1.5">
-          <FilterSelect
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            title={sortBy === "signal" ? "Signal = adverse\u00D73 + severity + incidence\u00D75 + dose trend strength" : "Sort specimens by"}
-          >
-            <option value="signal">Sort: Signal</option>
-            <option value="organ">Sort: Organ</option>
-            <option value="severity">Sort: Severity</option>
-            <option value="incidence">Sort: Incidence</option>
-            <option value="alpha">Sort: A–Z</option>
-          </FilterSelect>
-          <FilterSelect
-            value={minSevFilter}
-            onChange={(e) => setMinSevFilter(Number(e.target.value))}
-            title="Minimum severity filter"
-          >
-            <option value={0}>Sev: all</option>
-            <option value={2}>Sev 2+</option>
-            <option value={3}>Sev 3+</option>
-            <option value={4}>Sev 4+</option>
-          </FilterSelect>
-          <FilterSelect
-            value={doseTrendFilter}
-            onChange={(e) => setDoseTrendFilter(e.target.value as "any" | "moderate" | "strong")}
-            title="Dose trend filter"
-          >
-            <option value="any">Trend: all</option>
-            <option value="moderate">Moderate+</option>
-            <option value="strong">Strong only</option>
-          </FilterSelect>
-          <label className="flex cursor-pointer items-center gap-0.5 text-[10px] text-muted-foreground" title="Show only specimens with adverse findings">
-            <input
-              type="checkbox"
-              checked={adverseOnly}
-              onChange={(e) => setAdverseOnly(e.target.checked)}
-              className="h-3 w-3 rounded border-gray-300"
-            />
-            Adv
-          </label>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        {sortBy === "organ" ? (() => {
-          // Group by organ system with headers
-          const groups: { system: string; items: typeof filtered }[] = [];
-          let currentSystem = "";
-          for (const s of filtered) {
-            const sys = specimenToOrganSystem(s.specimen);
-            if (sys !== currentSystem) {
-              currentSystem = sys;
-              groups.push({ system: sys, items: [] });
-            }
-            groups[groups.length - 1].items.push(s);
-          }
-          return groups.map((g) => {
-            const advCount = g.items.filter((s) => s.adverseCount > 0).length;
-            return (
-              <div key={g.system}>
-                <div className="sticky top-0 z-10 flex items-center gap-1.5 border-b border-border/60 bg-muted/40 px-2.5 py-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {titleCase(g.system)}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground/60">
-                    {g.items.length} specimen{g.items.length !== 1 ? "s" : ""}
-                    {advCount > 0 && <> · {advCount} adverse</>}
-                  </span>
-                </div>
-                {g.items.map((s) => (
-                  <SpecimenRailItem
-                    key={s.specimen}
-                    summary={s}
-                    isSelected={selectedSpecimen === s.specimen}
-                    onClick={() => onSpecimenClick(s.specimen)}
-                    reviewStatus={findingNamesBySpecimen ? deriveSpecimenReviewStatus(findingNamesBySpecimen.get(s.specimen) ?? [], pathReviews) : undefined}
-                  />
-                ))}
-              </div>
-            );
-          });
-        })() : filtered.map((s) => (
-          <SpecimenRailItem
-            key={s.specimen}
-            summary={s}
-            isSelected={selectedSpecimen === s.specimen}
-            onClick={() => onSpecimenClick(s.specimen)}
-            reviewStatus={findingNamesBySpecimen ? deriveSpecimenReviewStatus(findingNamesBySpecimen.get(s.specimen) ?? [], pathReviews) : undefined}
-          />
-        ))}
-        {filtered.length === 0 && (
-          <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
-            {search ? <>No matches for &ldquo;{search}&rdquo;</> : "No specimens match current filters"}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -2366,26 +2085,21 @@ function HistopathHypothesesTab({
 
 type EvidenceTab = "overview" | "hypotheses";
 
-export function HistopathologyView({
-  onSelectionChange,
-  onSubjectClick,
-}: {
-  onSelectionChange?: (sel: HistopathSelection | null) => void;
-  onSubjectClick?: (usubjid: string) => void;
-}) {
+export function HistopathologyView() {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
+  const { selection: studySelection } = useStudySelection();
+  const { setSelection: setViewSelection } = useViewSelection();
   const { data: lesionData, isLoading, error } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: trendData } = useFindingDoseTrends(studyId);
-  const { data: pathReviews } = useAnnotations<PathologyReview>(studyId, "pathology-reviews");
 
-  const [selectedSpecimen, setSelectedSpecimen] = useState<string | null>(null);
+  // Read selected specimen from StudySelectionContext
+  const selectedSpecimen = studySelection.specimen ?? null;
   const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
   const [selection, setSelection] = useState<HistopathSelection | null>(null);
   const [sexFilter, setSexFilter] = useState<string | null>(null);
   const [minSeverity, setMinSeverity] = useState(0);
-  const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
   const { expandAll, collapseAll } = useCollapseAll();
 
   // Derived: specimen summaries
@@ -2405,26 +2119,6 @@ export function HistopathologyView({
     return deriveFindingSummaries(specimenData);
   }, [specimenData]);
 
-  // Finding names per specimen (for review status aggregation)
-  const findingNamesBySpecimen = useMemo(() => {
-    if (!lesionData) return new Map<string, string[]>();
-    const map = new Map<string, Set<string>>();
-    for (const row of lesionData) {
-      if (!row.specimen) continue;
-      let set = map.get(row.specimen);
-      if (!set) {
-        set = new Set();
-        map.set(row.specimen, set);
-      }
-      set.add(row.finding);
-    }
-    const result = new Map<string, string[]>();
-    for (const [spec, set] of map) {
-      result.set(spec, [...set]);
-    }
-    return result;
-  }, [lesionData]);
-
   // Selected specimen summary
   const selectedSummary = useMemo(() => {
     if (!selectedSpecimen) return null;
@@ -2443,56 +2137,40 @@ export function HistopathologyView({
     return map;
   }, [trendData, selectedSpecimen]);
 
-  // Auto-select top specimen on load
+  // Reset filters when specimen changes (from shell rail)
   useEffect(() => {
-    if (specimenSummaries.length > 0 && selectedSpecimen === null) {
-      const top = specimenSummaries[0].specimen;
-      setSelectedSpecimen(top);
-      const sel: HistopathSelection = { specimen: top };
-      setSelection(sel);
-      onSelectionChange?.(sel);
-    }
-  }, [specimenSummaries]); // eslint-disable-line react-hooks/exhaustive-deps
+    setSexFilter(null);
+    setMinSeverity(0);
+    setSelection(selectedSpecimen ? { specimen: selectedSpecimen } : null);
+  }, [selectedSpecimen]);
 
-  // Cross-view navigation from location.state
+  // Bridge finding-level selection to ViewSelectionContext for context panel
   useEffect(() => {
-    const state = location.state as { organ_system?: string; specimen?: string } | null;
-    if (state && lesionData) {
-      const specimenTarget = state.specimen ?? state.organ_system ?? null;
-      if (specimenTarget) {
-        // Find matching specimen (case-insensitive)
-        const match = specimenSummaries.find(
-          (s) => s.specimen.toLowerCase() === specimenTarget.toLowerCase()
-        );
-        if (match) {
-          setSelectedSpecimen(match.specimen);
-        }
-      }
+    if (selection?.specimen) {
+      setViewSelection({ _view: "histopathology", specimen: selection.specimen, finding: selection.finding, sex: selection.sex });
+    } else {
+      setViewSelection(null);
+    }
+  }, [selection, setViewSelection]);
+
+  // Cross-view navigation from location.state — clear after consuming
+  useEffect(() => {
+    const state = location.state as { specimen?: string } | null;
+    if (state?.specimen) {
       window.history.replaceState({}, "");
     }
-  }, [location.state, lesionData, specimenSummaries]);
+  }, [location.state]);
 
-  // Escape clears selection
+  // Escape clears finding selection
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setSelection(null);
-        onSelectionChange?.(null);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onSelectionChange]);
-
-  const handleSpecimenClick = (specimen: string) => {
-    setSelectedSpecimen(specimen);
-    setSexFilter(null);
-    setMinSeverity(0);
-    // Specimen-level selection (no finding) → context panel shows specimen overview
-    const sel: HistopathSelection = { specimen };
-    setSelection(sel);
-    onSelectionChange?.(sel);
-  };
+  }, []);
 
   const handleHeatmapClick = (finding: string) => {
     if (!selectedSpecimen) return;
@@ -2500,9 +2178,7 @@ export function HistopathologyView({
     if (row) {
       const sel: HistopathSelection = { finding, specimen: row.specimen };
       const isSame = selection?.finding === finding;
-      const next = isSame ? null : sel;
-      setSelection(next);
-      onSelectionChange?.(next);
+      setSelection(isSame ? null : sel);
     }
   };
 
@@ -2510,9 +2186,7 @@ export function HistopathologyView({
     if (!selectedSpecimen) return;
     const sel: HistopathSelection = { finding, specimen: selectedSpecimen };
     const isSame = selection?.finding === finding && selection?.specimen === selectedSpecimen;
-    const next = isSame ? null : sel;
-    setSelection(next);
-    onSelectionChange?.(next);
+    setSelection(isSame ? null : sel);
   };
 
   if (error) {
@@ -2539,19 +2213,7 @@ export function HistopathologyView({
   }
 
   return (
-    <MasterDetailLayout
-      railWidth={railWidth}
-      onRailResize={onRailResize}
-      rail={
-        <SpecimenRail
-          specimens={specimenSummaries}
-          selectedSpecimen={selectedSpecimen}
-          onSpecimenClick={handleSpecimenClick}
-          pathReviews={pathReviews}
-          findingNamesBySpecimen={findingNamesBySpecimen}
-        />
-      }
-    >
+    <div className="flex h-full flex-col overflow-hidden">
       {selectedSummary && (
         <>
           {/* Specimen summary strip */}
@@ -2612,7 +2274,6 @@ export function HistopathologyView({
               minSeverity={minSeverity}
               setMinSeverity={setMinSeverity}
               studyId={studyId}
-              onSubjectClick={onSubjectClick}
               trendsByFinding={trendsByFinding}
             />
           )}
@@ -2628,7 +2289,7 @@ export function HistopathologyView({
 
       {!selectedSummary && specimenSummaries.length > 0 && (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-          Select a specimen to view histopathology details.
+          Select a specimen from the rail to view histopathology details.
         </div>
       )}
 
@@ -2637,6 +2298,6 @@ export function HistopathologyView({
           No histopathology data available.
         </div>
       )}
-    </MasterDetailLayout>
+    </div>
   );
 }

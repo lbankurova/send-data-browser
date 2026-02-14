@@ -190,12 +190,12 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, {
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`, {
                 state: selectedOrganSystem ? { organ_system: selectedOrganSystem } : undefined,
               });
             }}
           >
-            View target organs &#x2192;
+            View study summary &#x2192;
           </a>
           <a
             href="#"

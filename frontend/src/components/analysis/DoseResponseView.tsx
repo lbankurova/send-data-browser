@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Loader2, ChevronDown, ChevronRight, Search, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect, Pin, Plus, Star, Scale, Edit2, HelpCircle } from "lucide-react";
+import { Loader2, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect, Pin, Plus, Search, Scale, Edit2, HelpCircle } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -18,16 +18,14 @@ import {
   buildTimecourseLineOption,
   buildVolcanoScatterOption,
 } from "@/components/analysis/charts/dose-response-charts";
-import type { MergedPoint, SubjectTrace, VolcanoPoint } from "@/components/analysis/charts/dose-response-charts";
+import type { MergedPoint, VolcanoPoint } from "@/components/analysis/charts/dose-response-charts";
 import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import { useTimecourseGroup, useTimecourseSubject } from "@/hooks/useTimecourse";
 import { useClinicalObservations } from "@/hooks/useClinicalObservations";
-import { useEndpointBookmarks, useToggleBookmark } from "@/hooks/useEndpointBookmarks";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
-import { BookmarkStar } from "@/components/ui/BookmarkStar";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
@@ -40,14 +38,13 @@ import {
   getSexColor,
   titleCase,
 } from "@/lib/severity-colors";
-import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
-import { MasterDetailLayout } from "@/components/ui/MasterDetailLayout";
-import { rail } from "@/lib/design-tokens";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
+import { DoseResponseEndpointPicker } from "@/components/analysis/DoseResponseEndpointPicker";
+import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { DoseResponseRow, RuleResult, SignalSummaryRow, NoaelSummaryRow } from "@/types/analysis-views";
 import type { TimecourseResponse } from "@/types/timecourse";
 import type { ToxFinding } from "@/types/annotations";
@@ -100,13 +97,6 @@ interface EndpointSummary {
   has_timecourse: boolean;
   sex_divergence: number | null; // |d_M - d_F|
   divergent_sex: "M" | "F" | null; // Which sex has larger effect
-}
-
-interface OrganGroup {
-  organ_system: string;
-  endpoints: EndpointSummary[];
-  max_signal_score: number;
-  domains: string[];
 }
 
 // ─── Helpers ───────────────────────────────────────────────
@@ -223,37 +213,6 @@ function deriveEndpointSummaries(data: DoseResponseRow[]): EndpointSummary[] {
   return summaries.sort((a, b) => b.signal_score - a.signal_score);
 }
 
-function deriveOrganGroups(summaries: EndpointSummary[]): OrganGroup[] {
-  const map = new Map<string, EndpointSummary[]>();
-  for (const s of summaries) {
-    const existing = map.get(s.organ_system);
-    if (existing) existing.push(s);
-    else map.set(s.organ_system, [s]);
-  }
-
-  const groups: OrganGroup[] = [];
-  for (const [organ, endpoints] of map) {
-    // Endpoints are already sorted by signal_score desc from deriveEndpointSummaries
-    const domainSet = new Set<string>();
-    for (const ep of endpoints) domainSet.add(ep.domain);
-    groups.push({
-      organ_system: organ,
-      endpoints,
-      max_signal_score: endpoints[0]?.signal_score ?? 0,
-      domains: [...domainSet].sort(),
-    });
-  }
-
-  return groups.sort((a, b) => b.max_signal_score - a.max_signal_score);
-}
-
-function directionArrow(dir: "up" | "down" | "mixed" | null): string {
-  if (dir === "up") return "\u2191";
-  if (dir === "down") return "\u2193";
-  if (dir === "mixed") return "\u2195";
-  return "";
-}
-
 function generateConclusion(ep: EndpointSummary): string {
   const patternLabel = PATTERN_LABELS[ep.dose_response_pattern] ?? ep.dose_response_pattern.replace(/_/g, " ");
   const parts: string[] = [];
@@ -287,31 +246,18 @@ const col = createColumnHelper<DoseResponseRow>();
 
 // ─── Main component ────────────────────────────────────────
 
-export function DoseResponseView({
-  onSelectionChange,
-  onSubjectClick,
-}: {
-  onSelectionChange?: (sel: DoseResponseSelection | null) => void;
-  onSubjectClick?: (usubjid: string) => void;
-}) {
+export function DoseResponseView() {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
+  const { selection: studySelection, navigateTo } = useStudySelection();
   const { data: drData, isLoading, error } = useDoseResponseMetrics(studyId);
 
-  // State
+  // State — selectedEndpoint is local for evidence panel display,
+  // but also synced to/from StudySelectionContext
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"evidence" | "hypotheses" | "metrics">("evidence");
-  const [railSearch, setRailSearch] = useState("");
-  const [expandedOrgans, setExpandedOrgans] = useState<Set<string>>(new Set());
   const [selection, setSelection] = useState<DoseResponseSelection | null>(null);
   const { expandGen: sectionExpandGen, collapseGen: sectionCollapseGen, expandAll: sectionExpandAll, collapseAll: sectionCollapseAll } = useCollapseAll();
-
-  const [bookmarkFilter, setBookmarkFilter] = useState(false);
-
-  // Endpoint bookmarks
-  const { data: bookmarksData } = useEndpointBookmarks(studyId);
-  const toggleBookmark = useToggleBookmark(studyId);
-  const bookmarks = bookmarksData ?? {};
 
   // Data for Causality tool (fetched at view level, passed to Hypotheses tab)
   const { data: ruleResultsData } = useRuleResults(studyId);
@@ -333,7 +279,6 @@ export function DoseResponseView({
   const [sigOnly, setSigOnly] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-  const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
 
   // ── Derived data ──────────────────────────────────────
 
@@ -341,10 +286,6 @@ export function DoseResponseView({
     if (!drData) return [];
     return deriveEndpointSummaries(drData);
   }, [drData]);
-
-  const organGroups = useMemo(() => {
-    return deriveOrganGroups(endpointSummaries);
-  }, [endpointSummaries]);
 
   const organSystems = useMemo(() => {
     if (!drData) return [];
@@ -356,36 +297,6 @@ export function DoseResponseView({
     if (!selectedEndpoint) return null;
     return endpointSummaries.find((s) => s.endpoint_label === selectedEndpoint) ?? null;
   }, [endpointSummaries, selectedEndpoint]);
-
-  // Bookmark count
-  const bookmarkCount = useMemo(() => {
-    return Object.values(bookmarks).filter((b) => b.bookmarked).length;
-  }, [bookmarks]);
-
-  // Filtered rail endpoints by search + bookmark filter
-  const filteredOrganGroups = useMemo(() => {
-    let groups = organGroups;
-    if (bookmarkFilter) {
-      groups = groups
-        .map((g) => ({
-          ...g,
-          endpoints: g.endpoints.filter((ep) => bookmarks[ep.endpoint_label]?.bookmarked),
-        }))
-        .filter((g) => g.endpoints.length > 0);
-    }
-    if (!railSearch) return groups;
-    const q = railSearch.toLowerCase();
-    return groups
-      .map((g) => ({
-        ...g,
-        endpoints: g.endpoints.filter(
-          (ep) =>
-            ep.endpoint_label.toLowerCase().includes(q) ||
-            ep.organ_system.toLowerCase().includes(q)
-        ),
-      }))
-      .filter((g) => g.endpoints.length > 0);
-  }, [organGroups, railSearch, bookmarkFilter, bookmarks]);
 
   // Chart data for selected endpoint — merged M/F per dose level
   const chartData = useMemo(() => {
@@ -571,10 +482,10 @@ export function DoseResponseView({
           organ_system: row.organ_system,
         };
         setSelection(sel);
-        onSelectionChange?.(sel);
+        navigateTo({ endpoint: row.endpoint_label });
       }
     },
-    [drData, onSelectionChange]
+    [drData, navigateTo]
   );
 
   const handleRowClick = useCallback(
@@ -588,45 +499,58 @@ export function DoseResponseView({
       const isSame = selection?.endpoint_label === sel.endpoint_label && selection?.sex === sel.sex;
       const next = isSame ? null : sel;
       setSelection(next);
-      onSelectionChange?.(next);
       if (next) {
         setSelectedEndpoint(next.endpoint_label);
+        navigateTo({ endpoint: next.endpoint_label });
       }
     },
-    [selection, onSelectionChange]
+    [selection, navigateTo]
   );
-
-  const toggleOrgan = useCallback((organ: string) => {
-    setExpandedOrgans((prev) => {
-      const next = new Set(prev);
-      if (next.has(organ)) next.delete(organ);
-      else next.add(organ);
-      return next;
-    });
-  }, []);
 
   // ── Auto-select on data load ──────────────────────────
 
   useEffect(() => {
     if (!drData || drData.length === 0 || selectedEndpoint) return;
+    // If StudySelectionContext has an endpoint, use that
+    if (studySelection.endpoint) {
+      const exists = drData.some((r) => r.endpoint_label === studySelection.endpoint);
+      if (exists) {
+        selectEndpoint(studySelection.endpoint);
+        return;
+      }
+    }
+    // Otherwise auto-select top endpoint, scoped to organ if selected
     const summaries = deriveEndpointSummaries(drData);
-    if (summaries.length === 0) return;
-    const top = summaries[0];
-    setSelectedEndpoint(top.endpoint_label);
-    // Expand the organ group that contains the top endpoint
-    setExpandedOrgans(new Set([top.organ_system]));
-    // Set selection for context panel
-    const row = drData.find((r) => r.endpoint_label === top.endpoint_label);
-    if (row) {
-      const sel: DoseResponseSelection = {
-        endpoint_label: row.endpoint_label,
-        domain: row.domain,
-        organ_system: row.organ_system,
-      };
-      setSelection(sel);
-      onSelectionChange?.(sel);
+    const organFilter = studySelection.organSystem;
+    const filtered = organFilter
+      ? summaries.filter((s) => s.organ_system === organFilter)
+      : summaries;
+    const top = filtered[0] ?? summaries[0];
+    if (top) {
+      selectEndpoint(top.endpoint_label);
     }
   }, [drData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Sync from StudySelectionContext endpoint changes ──
+
+  useEffect(() => {
+    if (!drData || !studySelection.endpoint) return;
+    if (studySelection.endpoint !== selectedEndpoint) {
+      const exists = drData.some((r) => r.endpoint_label === studySelection.endpoint);
+      if (exists) {
+        setSelectedEndpoint(studySelection.endpoint);
+        setActiveTab("evidence");
+        const row = drData.find((r) => r.endpoint_label === studySelection.endpoint);
+        if (row) {
+          setSelection({
+            endpoint_label: row.endpoint_label,
+            domain: row.domain,
+            organ_system: row.organ_system,
+          });
+        }
+      }
+    }
+  }, [studySelection.endpoint, drData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Cross-view state from navigate() ──────────────────
 
@@ -635,13 +559,7 @@ export function DoseResponseView({
     if (state && drData) {
       if (state.endpoint_label) {
         selectEndpoint(state.endpoint_label);
-        // Find and expand the organ group
-        const row = drData.find((r) => r.endpoint_label === state.endpoint_label);
-        if (row) {
-          setExpandedOrgans((prev) => new Set([...prev, row.organ_system]));
-        }
       } else if (state.organ_system) {
-        setExpandedOrgans((prev) => new Set([...prev, state.organ_system!]));
         // Select first endpoint in that organ
         const summaries = deriveEndpointSummaries(drData);
         const first = summaries.find((s) => s.organ_system === state.organ_system);
@@ -679,203 +597,25 @@ export function DoseResponseView({
   }
 
   const sexColors: Record<string, string> = { M: getSexColor("M"), F: getSexColor("F") };
-  const totalEndpoints = endpointSummaries.length;
 
   return (
-    <MasterDetailLayout
-      railClassName="flex flex-col border-r-0"
-      railWidth={railWidth}
-      onRailResize={onRailResize}
-      rail={
-        <>
-          {/* Rail header */}
-          <div className="shrink-0 border-b px-2 py-1.5">
-            <div className="mb-0.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <span>Endpoints ({totalEndpoints})</span>
-              <CollapseAllButtons
-                onExpandAll={() =>
-                  setExpandedOrgans(
-                    new Set(filteredOrganGroups.map((g) => g.organ_system))
-                  )
-                }
-                onCollapseAll={() => setExpandedOrgans(new Set())}
-              />
-            </div>
-            <p className="mb-1.5 text-[10px] text-muted-foreground/60">by signal strength</p>
-            <div className="flex items-center gap-1.5">
-              <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search endpoints..."
-                className="w-full bg-transparent py-1 text-xs focus:outline-none"
-                value={railSearch}
-                onChange={(e) => setRailSearch(e.target.value)}
-              />
-            </div>
-            {bookmarkCount > 0 && (
-              <button
-                className={cn(
-                  "mt-1.5 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
-                  bookmarkFilter
-                    ? "border-amber-300 bg-amber-100 text-amber-800"
-                    : "border-border text-muted-foreground hover:bg-accent/50"
-                )}
-                onClick={() => setBookmarkFilter(!bookmarkFilter)}
-              >
-                <Star className="h-2.5 w-2.5" fill={bookmarkFilter ? "currentColor" : "none"} />
-                <span className="font-mono">{bookmarkCount}</span> bookmarked
-              </button>
-            )}
-          </div>
-
-          {/* Rail body */}
-          <div className="flex-1 overflow-y-auto">
-            {filteredOrganGroups.length === 0 && (
-              <div className="p-3 text-center text-xs text-muted-foreground">
-                No endpoints match your search.
-              </div>
-            )}
-            {filteredOrganGroups.map((group) => {
-              const isExpanded = expandedOrgans.has(group.organ_system);
-              const hasSelected = group.endpoints.some((ep) => ep.endpoint_label === selectedEndpoint);
-
-              return (
-                <div key={group.organ_system}>
-                  {/* Organ group header */}
-                  <button
-                    className={cn(
-                      "flex w-full items-center gap-1.5 border-b px-3 py-1.5 text-left text-[11px] font-semibold hover:bg-accent/50",
-                      hasSelected && !isExpanded && "bg-accent/30"
-                    )}
-                    onClick={() => toggleOrgan(group.organ_system)}
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1">
-                        <span className="truncate">{titleCase(group.organ_system)}</span>
-                        <span className="text-[10px] font-normal text-muted-foreground">
-                          {group.endpoints.length}
-                        </span>
-                      </div>
-                      {group.domains.length > 0 && (
-                        <div className="flex gap-1.5">
-                          {group.domains.map((d) => (
-                            <DomainLabel key={d} domain={d} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-
-                  {/* Endpoint items */}
-                  {isExpanded &&
-                    group.endpoints.map((ep) => {
-                      const isSelected = ep.endpoint_label === selectedEndpoint;
-                      return (
-                        <button
-                          key={ep.endpoint_label}
-                          className={cn(
-                            rail.itemBase, "border-dashed px-3 py-1.5",
-                            isSelected ? rail.itemSelected : rail.itemIdle
-                          )}
-                          data-rail-item=""
-                          data-selected={isSelected || undefined}
-                          onClick={() => selectEndpoint(ep.endpoint_label)}
-                        >
-                          {/* Row 1: name + bookmark + direction */}
-                          <div className="flex items-center gap-1">
-                            <span
-                              className={cn(
-                                "flex-1 truncate text-xs",
-                                isSelected ? "font-semibold" : "font-medium"
-                              )}
-                              title={ep.endpoint_label}
-                            >
-                              {ep.endpoint_label}
-                            </span>
-                            <BookmarkStar
-                              bookmarked={!!bookmarks[ep.endpoint_label]?.bookmarked}
-                              onClick={() => toggleBookmark(ep.endpoint_label, !!bookmarks[ep.endpoint_label]?.bookmarked)}
-                            />
-                            {ep.direction && (
-                              <span
-                                className="text-xs text-muted-foreground"
-                                title={ep.direction === "up" ? "Effect increases with dose" : ep.direction === "down" ? "Effect decreases with dose" : "Mixed direction across sexes/doses"}
-                              >
-                                {directionArrow(ep.direction)}
-                              </span>
-                            )}
-                            {ep.sex_divergence != null && ep.sex_divergence > 0.5 && (
-                              <span
-                                className="text-[10px] font-semibold text-muted-foreground"
-                                title={`Sex divergence: |d_M - d_F| = ${ep.sex_divergence.toFixed(2)} (${ep.divergent_sex} has larger effect)`}
-                              >
-                                {ep.divergent_sex === "M" ? "\u2642" : "\u2640"}{ep.divergent_sex}
-                              </span>
-                            )}
-                          </div>
-                          {/* Row 2: pattern badge + min p + max |d| */}
-                          <div className="mt-0.5 flex items-center gap-1.5">
-                            <span
-                              className={cn(
-                                "rounded px-1 py-0.5 text-[9px] font-medium leading-tight",
-                                PATTERN_BG[ep.dose_response_pattern] ?? "bg-gray-100 text-gray-500"
-                              )}
-                            >
-                              {(PATTERN_LABELS[ep.dose_response_pattern] ?? ep.dose_response_pattern)
-                                .split(" ")[0]}
-                            </span>
-                            <span className={cn(
-                              "ev text-[10px] font-mono text-muted-foreground",
-                              ep.min_trend_p != null && ep.min_trend_p < 0.01 ? "font-semibold" : ""
-                            )}>
-                              p={formatPValue(ep.min_trend_p)}
-                            </span>
-                            {ep.max_effect_size != null && (
-                              <span className={cn(
-                                "ev text-[10px] font-mono text-muted-foreground",
-                                ep.max_effect_size >= 0.8 ? "font-semibold" : ""
-                              )}>
-                                |d|={ep.max_effect_size.toFixed(2)}
-                              </span>
-                            )}
-                            {ep.min_n != null && (
-                              <span className="text-[10px] font-mono text-muted-foreground/60">
-                                n={ep.min_n}
-                              </span>
-                            )}
-                            {ep.has_timecourse && (
-                              <span className="text-[10px] text-muted-foreground/40" title="Temporal data available">
-                                ◷
-                              </span>
-                            )}
-                            {toxFindingAnnotations?.[ep.endpoint_label] &&
-                             toxFindingAnnotations[ep.endpoint_label].treatmentRelated !== "Not Evaluated" && (
-                              <span className="text-[10px] text-muted-foreground/40" title="Assessment complete">
-                                ✓
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                </div>
-              );
-            })}
-          </div>
-        </>
-      }
-    >
-        {/* Summary header */}
+    <div className="flex h-full flex-col bg-muted/5">
+        {/* Summary header with endpoint picker */}
         {selectedSummary ? (
           <div className="sticky top-0 z-10 shrink-0 border-b bg-background px-3 py-1.5">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h2 className="text-sm font-semibold">{selectedSummary.endpoint_label}</h2>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-2">
+                  {drData && (
+                    <DoseResponseEndpointPicker
+                      data={drData}
+                      studyId={studyId}
+                      selectedEndpoint={selectedEndpoint}
+                      organFilter={studySelection.organSystem ?? null}
+                      onSelect={selectEndpoint}
+                    />
+                  )}
+                </div>
                 <p className="text-[11px] text-muted-foreground">
                   <DomainLabel domain={selectedSummary.domain} /> &middot; {titleCase(selectedSummary.organ_system)}
                   {selectedSummary.data_type === "categorical" && " &middot; Categorical"}
@@ -969,8 +709,19 @@ export function DoseResponseView({
           </div>
         ) : (
           <div className="shrink-0 border-b px-3 py-1.5">
+            <div className="mb-1 flex items-center gap-2">
+              {drData && (
+                <DoseResponseEndpointPicker
+                  data={drData}
+                  studyId={studyId}
+                  selectedEndpoint={selectedEndpoint}
+                  organFilter={studySelection.organSystem ?? null}
+                  onSelect={selectEndpoint}
+                />
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Select an endpoint from the list to view dose-response details.
+              Select an endpoint to view dose-response details.
             </p>
           </div>
         )}
@@ -1003,7 +754,6 @@ export function DoseResponseView({
               sexColors={sexColors}
               studyId={studyId}
               selectedSummary={selectedSummary}
-              onSubjectClick={onSubjectClick}
               noaelDoseLevel={noaelSummary.length > 0 ? (noaelSummary.find((n) => n.sex === "Combined") ?? noaelSummary[0]).noael_dose_level : null}
               expandGen={sectionExpandGen}
               collapseGen={sectionCollapseGen}
@@ -1032,7 +782,7 @@ export function DoseResponseView({
             />
           )}
         </div>
-    </MasterDetailLayout>
+    </div>
   );
 }
 
@@ -1050,7 +800,6 @@ interface ChartOverviewProps {
   sexColors: Record<string, string>;
   studyId: string | undefined;
   selectedSummary: EndpointSummary | null;
-  onSubjectClick?: (usubjid: string) => void;
   noaelDoseLevel?: number | null;
   expandGen?: number;
   collapseGen?: number;
@@ -1063,7 +812,6 @@ function ChartOverviewContent({
   sexColors,
   studyId,
   selectedSummary,
-  onSubjectClick,
   noaelDoseLevel,
   expandGen,
   collapseGen,
@@ -1210,7 +958,6 @@ function ChartOverviewContent({
           studyId={studyId}
           selectedEndpoint={selectedEndpoint}
           selectedSummary={selectedSummary}
-          onSubjectClick={onSubjectClick}
           tcSectionHeight={tcSection.height}
           onTcSectionResize={tcSection.onPointerDown}
           tcContentRef={tcSection.contentRef}
@@ -1285,7 +1032,6 @@ interface TimecourseSectionProps {
   studyId: string | undefined;
   selectedEndpoint: string;
   selectedSummary: EndpointSummary;
-  onSubjectClick?: (usubjid: string) => void;
   tcSectionHeight: number;
   onTcSectionResize: (e: React.PointerEvent) => void;
   tcContentRef?: React.RefObject<HTMLDivElement | null>;
@@ -1293,7 +1039,7 @@ interface TimecourseSectionProps {
   collapseGen?: number;
 }
 
-function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubjectClick, tcSectionHeight, onTcSectionResize, tcContentRef, expandGen, collapseGen }: TimecourseSectionProps) {
+function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, tcSectionHeight, onTcSectionResize, tcContentRef, expandGen, collapseGen }: TimecourseSectionProps) {
   const [yAxisMode, setYAxisMode] = useState<YAxisMode>("absolute");
   const [showSubjects, setShowSubjects] = useState(false);
 
@@ -1398,7 +1144,6 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, onSubje
               yAxisMode={yAxisMode}
               showSubjects={showSubjects}
               subjData={subjData ?? null}
-              onSubjectClick={onSubjectClick}
             />
           )}
         </>
@@ -1515,13 +1260,11 @@ function TimecourseCharts({
   yAxisMode,
   showSubjects,
   subjData,
-  onSubjectClick,
 }: {
   tcData: TimecourseResponse;
   yAxisMode: YAxisMode;
   showSubjects: boolean;
   subjData: import("@/types/timecourse").TimecourseSubjectResponse | null;
-  onSubjectClick?: (usubjid: string) => void;
 }) {
   // Determine available sexes
   const sexes = useMemo(() => {
@@ -1673,10 +1416,8 @@ function TimecourseCharts({
             <EChartsWrapper
               option={buildTimecourseLineOption(points, doseLevels, getDoseGroupColor, yLabel, baselineRefValue, yAxisMode, showSubjects, subjectTraces)}
               style={{ width: "100%", height: 240 }}
-              onClick={(params) => {
-                if (onSubjectClick && params.seriesName && subjectTraces.some((t: SubjectTrace) => t.usubjid === params.seriesName)) {
-                  onSubjectClick(params.seriesName);
-                }
+              onClick={() => {
+                // Subject click handling now via context — no-op here
               }}
             />
           </div>

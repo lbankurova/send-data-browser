@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,34 +10,25 @@ import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useProvenanceMessages } from "@/hooks/useProvenanceMessages";
 import { useInsights } from "@/hooks/useInsights";
-import { useResizePanel } from "@/hooks/useResizePanel";
-import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { generateStudyReport } from "@/lib/report-generator";
 import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
-import type { MetricsLine, PanelStatement, OrganBlock } from "@/lib/signals-panel-engine";
+import type { MetricsLine, PanelStatement } from "@/lib/signals-panel-engine";
 import {
-  SignalsOrganRail,
   SignalsEvidencePanel,
   StudyStatementsBar,
 } from "./SignalsPanel";
 import { ConfidencePopover } from "./ScoreBreakdown";
+import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { SignalSelection, ProvenanceMessage, NoaelSummaryRow, RuleResult } from "@/types/analysis-views";
 import type { StudyMetadata } from "@/types";
 import type { Insight } from "@/hooks/useInsights";
 
-interface StudySummaryViewProps {
-  onSelectionChange?: (selection: SignalSelection | null) => void;
-  onOrganSelect?: (organSystem: string | null) => void;
-}
-
 type Tab = "details" | "signals" | "insights";
 
-export function StudySummaryView({
-  onSelectionChange,
-  onOrganSelect,
-}: StudySummaryViewProps) {
+export function StudySummaryView() {
   const { studyId } = useParams<{ studyId: string }>();
   const [searchParams] = useSearchParams();
+  const { selection: studySelection, navigateTo } = useStudySelection();
   const { data: signalData, isLoading, error } = useStudySignalSummary(studyId);
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const { data: noaelData } = useNoaelSummary(studyId);
@@ -48,107 +39,25 @@ export function StudySummaryView({
   // Initialize tab from URL query parameter if present
   const initialTab = (searchParams.get("tab") as Tab) || "details";
   const [tab, setTab] = useState<Tab>(initialTab);
-  const [selection, setSelection] = useState<SignalSelection | null>(null);
-  const [selectedOrgan, setSelectedOrganState] = useState<string | null>(null);
 
-  // Propagate selection changes to parent (SignalSelectionContext)
-  useEffect(() => {
-    onSelectionChange?.(selection);
-  }, [selection, onSelectionChange]);
+  // Local signal selection (for endpoint-level detail in evidence panel)
+  const [localSignalSel, setLocalSignalSel] = useState<SignalSelection | null>(null);
 
-  useEffect(() => {
-    onOrganSelect?.(selectedOrgan);
-  }, [selectedOrgan, onOrganSelect]);
+  // Read organ from StudySelectionContext
+  const selectedOrgan = studySelection.organSystem ?? null;
 
-  // Mutually exclusive selection
   const handleSetSelection = useCallback((sel: SignalSelection | null) => {
-    setSelection(sel);
-    if (sel) setSelectedOrganState(null);
-  }, []);
-
-  const handleOrganClick = useCallback(
-    (organ: string) => {
-      setSelectedOrganState(organ);
-      setSelection(null);
-    },
-    []
-  );
+    setLocalSignalSel(sel);
+    if (sel) {
+      navigateTo({ endpoint: sel.endpoint_label });
+    }
+  }, [navigateTo]);
 
   // Build panel data
   const panelData = useMemo(() => {
     if (!signalData || !targetOrgans || !noaelData) return null;
     return buildSignalsPanelData(noaelData, targetOrgans, signalData);
   }, [signalData, targetOrgans, noaelData]);
-
-  // Resizable rail
-  const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
-
-  // Sorted organs (targets first, then by evidence_score desc)
-  const sortedOrgans = useMemo(() => {
-    if (!targetOrgans) return [];
-    return [...targetOrgans].sort((a, b) => {
-      if (a.target_organ_flag !== b.target_organ_flag) return a.target_organ_flag ? -1 : 1;
-      return b.evidence_score - a.evidence_score;
-    });
-  }, [targetOrgans]);
-
-  // Keyboard: Escape clears selection, ↑/↓ navigates organ rail
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (tab !== "signals") return;
-      if (e.key === "Escape") {
-        setSelection(null);
-        setSelectedOrganState(null);
-        return;
-      }
-      if ((e.key === "ArrowUp" || e.key === "ArrowDown") && sortedOrgans.length > 0) {
-        e.preventDefault();
-        const currentIdx = selectedOrgan
-          ? sortedOrgans.findIndex((o) => o.organ_system === selectedOrgan)
-          : -1;
-        let nextIdx: number;
-        if (e.key === "ArrowDown") {
-          nextIdx = currentIdx < sortedOrgans.length - 1 ? currentIdx + 1 : 0;
-        } else {
-          nextIdx = currentIdx > 0 ? currentIdx - 1 : sortedOrgans.length - 1;
-        }
-        handleOrganClick(sortedOrgans[nextIdx].organ_system);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [tab, selectedOrgan, sortedOrgans, handleOrganClick]);
-
-  // Max evidence score (for rail bar normalization)
-  const maxEvidenceScore = useMemo(
-    () =>
-      sortedOrgans.length > 0
-        ? Math.max(...sortedOrgans.map((o) => o.evidence_score))
-        : 1,
-    [sortedOrgans]
-  );
-
-  // OrganBlock map
-  const organBlocksMap = useMemo(() => {
-    const map = new Map<string, OrganBlock>();
-    if (panelData?.organBlocks) {
-      for (const ob of panelData.organBlocks) {
-        map.set(ob.organKey, ob);
-      }
-    }
-    return map;
-  }, [panelData]);
-
-  // Auto-select top organ when data loads
-  useEffect(() => {
-    if (
-      tab === "signals" &&
-      selectedOrgan === null &&
-      sortedOrgans.length > 0
-    ) {
-      setSelectedOrganState(sortedOrgans[0].organ_system);
-    }
-  }, [tab, selectedOrgan, sortedOrgans]);
 
   // Selected organ data
   const selectedOrganData = useMemo(() => {
@@ -266,29 +175,23 @@ export function StudySummaryView({
           {/* Protective signals — study-wide R18/R19 aggregation */}
           <ProtectiveSignalsBar rules={ruleResults ?? []} studyId={studyId!} />
 
-          {/* Two-panel master-detail */}
-          <div className="flex flex-1 overflow-hidden max-[1200px]:flex-col">
-            <SignalsOrganRail
-              organs={sortedOrgans}
-              organBlocksMap={organBlocksMap}
-              selectedOrgan={selectedOrgan}
-              maxEvidenceScore={maxEvidenceScore}
-              onOrganClick={handleOrganClick}
-              signalData={signalData}
-              width={railWidth}
-            />
-            <div className="max-[1200px]:hidden"><PanelResizeHandle onPointerDown={onRailResize} /></div>
-            {selectedOrganData && signalData && (
+          {/* Evidence panel — full width (rail is in shell) */}
+          <div className="flex-1 overflow-hidden">
+            {selectedOrganData && signalData ? (
               <SignalsEvidencePanel
                 organ={selectedOrganData}
                 signalData={signalData}
                 ruleResults={ruleResults ?? []}
                 modifiers={panelData.modifiers}
                 caveats={panelData.caveats}
-                selection={selection}
+                selection={localSignalSel}
                 onSelect={handleSetSelection}
                 studyId={studyId!}
               />
+            ) : (
+              <div className="flex items-center justify-center p-8 text-xs text-muted-foreground">
+                Select an organ system from the rail to view evidence
+              </div>
             )}
           </div>
         </div>

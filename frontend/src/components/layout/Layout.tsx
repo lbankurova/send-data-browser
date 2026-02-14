@@ -1,15 +1,18 @@
-import { Outlet } from "react-router-dom";
-import { useCallback, useRef, useState } from "react";
+import { Outlet, useLocation, matchPath } from "react-router-dom";
+import { useCallback, useRef, useState, useMemo } from "react";
 import { Settings, HelpCircle, Compass } from "lucide-react";
 import { Header } from "./Header";
 import { BrowsingTree } from "@/components/tree/BrowsingTree";
 import { ContextPanel } from "@/components/panels/ContextPanel";
 import { SelectionProvider } from "@/contexts/SelectionContext";
 import { FindingSelectionProvider } from "@/contexts/FindingSelectionContext";
-import { SignalSelectionProvider } from "@/contexts/SignalSelectionContext";
 import { ViewSelectionProvider } from "@/contexts/ViewSelectionContext";
 import { TreeControlProvider } from "@/contexts/TreeControlContext";
 import { DesignModeProvider } from "@/contexts/DesignModeContext";
+import { StudySelectionProvider } from "@/contexts/StudySelectionContext";
+import { GlobalFilterProvider } from "@/contexts/GlobalFilterContext";
+import { RailModeProvider } from "@/contexts/RailModeContext";
+import { ShellRailPanel } from "@/components/shell/ShellRailPanel";
 import { GlobalTooltip } from "@/components/ui/GlobalTooltip";
 
 const LEFT_DEFAULT = 260;
@@ -83,13 +86,20 @@ function ResizeHandle({
 export function Layout() {
   const left = useResize(LEFT_DEFAULT, LEFT_MIN, LEFT_MAX, "left");
   const right = useResize(RIGHT_DEFAULT, RIGHT_MIN, RIGHT_MAX, "right");
+  const location = useLocation();
+  const studyId = useMemo(() => {
+    const match = matchPath("/studies/:studyId/*", location.pathname);
+    return match?.params.studyId ?? "";
+  }, [location.pathname]);
 
   return (
     <DesignModeProvider>
     <SelectionProvider>
       <FindingSelectionProvider>
-        <SignalSelectionProvider>
         <ViewSelectionProvider>
+        <StudySelectionProvider studyId={studyId}>
+        <GlobalFilterProvider>
+        <RailModeProvider studyId={studyId}>
         <TreeControlProvider>
         <div className="flex h-screen flex-col">
           <Header />
@@ -141,8 +151,13 @@ export function Layout() {
                   <BrowsingTree />
                 </aside>
                 <ResizeHandle onPointerDown={left.onPointerDown} />
-                <main className="relative min-w-0 flex-1 overflow-y-auto">
-                  <Outlet />
+                <main className="relative min-w-0 flex-1 overflow-hidden">
+                  <div className="flex h-full overflow-hidden">
+                    <ShellRailPanel />
+                    <div className="min-w-0 flex-1 overflow-y-auto">
+                      <Outlet />
+                    </div>
+                  </div>
                 </main>
                 <ResizeHandle onPointerDown={right.onPointerDown} />
                 <aside
@@ -160,8 +175,10 @@ export function Layout() {
           </div>
         </div>
         </TreeControlProvider>
+        </RailModeProvider>
+        </GlobalFilterProvider>
+        </StudySelectionProvider>
         </ViewSelectionProvider>
-        </SignalSelectionProvider>
       </FindingSelectionProvider>
     </SelectionProvider>
     <GlobalTooltip />

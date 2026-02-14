@@ -296,10 +296,10 @@ function EndpointPanel({
               className="block text-primary hover:underline"
               onClick={(e) => {
                 e.preventDefault();
-                if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: selection.organ_system } });
+                if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: selection.organ_system } });
               }}
             >
-              View target organ: {titleCase(selection.organ_system)} &#x2192;
+              View histopathology: {titleCase(selection.organ_system)} &#x2192;
             </a>
           )}
           <a
@@ -498,7 +498,7 @@ function OrganPanel({
                   onClick={() => {
                     if (studyId) {
                       navigate(
-                        `/studies/${encodeURIComponent(studyId)}/target-organs`,
+                        `/studies/${encodeURIComponent(studyId)}/dose-response`,
                         { state: { organ_system: ep.organ_system } }
                       );
                     }
@@ -577,10 +577,10 @@ function OrganPanel({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: organSystem } });
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: organSystem } });
             }}
           >
-            View target organ: {displayName} &#x2192;
+            View histopathology: {displayName} &#x2192;
           </a>
           <a
             href="#"

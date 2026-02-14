@@ -324,10 +324,10 @@ export function DoseResponseContextPanel({
               className="block text-primary hover:underline"
               onClick={(e) => {
                 e.preventDefault();
-                if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: selection.organ_system } });
+                if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: selection.organ_system } });
               }}
             >
-              View target organ: {titleCase(selection.organ_system)} &#x2192;
+              View study summary: {titleCase(selection.organ_system)} &#x2192;
             </a>
           )}
           <a
