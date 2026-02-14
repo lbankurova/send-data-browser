@@ -118,47 +118,6 @@ export function getDirectionColor(direction: string | null): string {
   }
 }
 
-export function getDomainBadgeColor(domain: string): {
-  bg: string;
-  text: string;
-} {
-  switch (domain) {
-    case "LB":
-      return { bg: "bg-blue-100", text: "text-blue-700" };
-    case "BW":
-      return { bg: "bg-emerald-100", text: "text-emerald-700" };
-    case "OM":
-      return { bg: "bg-purple-100", text: "text-purple-700" };
-    case "MI":
-      return { bg: "bg-rose-100", text: "text-rose-700" };
-    case "MA":
-      return { bg: "bg-orange-100", text: "text-orange-700" };
-    case "CL":
-      return { bg: "bg-cyan-100", text: "text-cyan-700" };
-    case "DS":
-      return { bg: "bg-indigo-100", text: "text-indigo-700" };
-    case "FW":
-      return { bg: "bg-teal-100", text: "text-teal-700" };
-    default:
-      return { bg: "bg-gray-100", text: "text-gray-700" };
-  }
-}
-
-/** Returns a hex color for a domain identity dot (color spec §3.5). */
-export function getDomainDotColor(domain: string): string {
-  switch (domain) {
-    case "BW": return "#10B981";
-    case "LB": return "#3B82F6";
-    case "MA": return "#F59E0B";
-    case "MI": return "#EC4899";
-    case "OM": return "#8B5CF6";
-    case "CL": return "#22C55E";
-    case "DS": return "#6366F1";
-    case "FW": return "#14B8A6";
-    default:   return "#9CA3AF";
-  }
-}
-
 /** Severity heat color scale: pale yellow → deep red per spec §12.3 */
 export function getSeverityHeatColor(avgSev: number): string {
   if (avgSev >= 4) return "#E57373"; // severe
@@ -166,14 +125,6 @@ export function getSeverityHeatColor(avgSev: number): string {
   if (avgSev >= 2) return "#FFB74D"; // moderate
   if (avgSev >= 1) return "#FFE0B2"; // mild
   return "#FFF9C4"; // minimal
-}
-
-/** Incidence background color for table cells. */
-export function getIncidenceColor(incidence: number): string {
-  if (incidence >= 0.8) return "rgba(239,68,68,0.15)";
-  if (incidence >= 0.5) return "rgba(249,115,22,0.1)";
-  if (incidence >= 0.2) return "rgba(234,179,8,0.08)";
-  return "transparent";
 }
 
 /** Signal score to CSS background color (hex) — spec §12.3 thresholds. */

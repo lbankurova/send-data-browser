@@ -1,0 +1,398 @@
+import { useState, useMemo } from "react";
+import { useParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
+import { useRuleResults } from "@/hooks/useRuleResults";
+import { useAnnotations } from "@/hooks/useAnnotations";
+import { useStudySelection } from "@/contexts/StudySelectionContext";
+import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
+import { DomainLabel } from "@/components/ui/DomainLabel";
+import { FilterSelect, FilterShowingLine } from "@/components/ui/FilterBar";
+import {
+  getNeutralHeatColor as getNeutralHeatColor01,
+  getDoseConsistencyWeight,
+  titleCase,
+} from "@/lib/severity-colors";
+import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
+import {
+  deriveSpecimenSummaries,
+  deriveSpecimenReviewStatus,
+} from "@/components/analysis/HistopathologyView";
+import type {
+  SpecimenSummary,
+  SpecimenReviewStatus,
+} from "@/components/analysis/HistopathologyView";
+import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
+import { rail } from "@/lib/design-tokens";
+import type { PathologyReview } from "@/types/annotations";
+
+// ---------------------------------------------------------------------------
+// SpecimenRailItem (ported from HistopathologyView)
+// ---------------------------------------------------------------------------
+
+function SpecimenRailItem({
+  summary,
+  isSelected,
+  onClick,
+  reviewStatus,
+}: {
+  summary: SpecimenSummary;
+  isSelected: boolean;
+  onClick: () => void;
+  reviewStatus?: SpecimenReviewStatus;
+}) {
+  const sevColors = getNeutralHeatColor(summary.maxSeverity);
+  const incColors = getNeutralHeatColor01(summary.maxIncidence);
+  const incPct = Math.round(summary.maxIncidence * 100);
+  return (
+    <button
+      className={cn(
+        rail.itemBase,
+        "px-2.5 py-2",
+        isSelected ? rail.itemSelected : rail.itemIdle,
+      )}
+      onClick={onClick}
+    >
+      {/* Line 1: specimen name + quantitative indicators */}
+      <div className="flex items-center">
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold">
+          {summary.specimen.replace(/_/g, " ")}
+        </span>
+        {reviewStatus === "Confirmed" && (
+          <span
+            className="shrink-0 text-[9px] text-muted-foreground"
+            title="All findings confirmed"
+          >
+            {"\u2713"}
+          </span>
+        )}
+        {reviewStatus === "Revised" && (
+          <span
+            className="shrink-0 text-[9px] text-muted-foreground"
+            title="Findings revised"
+          >
+            {"\u007E"}
+          </span>
+        )}
+        <span
+          className={cn(
+            "w-5 shrink-0 text-right text-[9px]",
+            getDoseConsistencyWeight(summary.doseConsistency),
+            summary.doseConsistency === "Strong"
+              ? "text-muted-foreground"
+              : summary.doseConsistency === "Moderate"
+                ? "text-muted-foreground/60"
+                : "text-muted-foreground/30",
+          )}
+          title={`Dose trend: ${summary.doseConsistency}`}
+        >
+          {summary.doseConsistency === "Strong"
+            ? "\u25B2\u25B2\u25B2"
+            : summary.doseConsistency === "Moderate"
+              ? "\u25B2\u25B2"
+              : "\u25B2"}
+        </span>
+        <span
+          className="ml-2 w-7 shrink-0 rounded-sm text-center font-mono text-[9px]"
+          style={{ backgroundColor: sevColors.bg, color: sevColors.text }}
+          title={`Max severity: ${summary.maxSeverity.toFixed(1)} (scale 1\u20135)`}
+        >
+          {summary.maxSeverity.toFixed(1)}
+        </span>
+        <span
+          className="ml-1 w-8 shrink-0 rounded-sm text-center font-mono text-[9px]"
+          style={{ backgroundColor: incColors.bg, color: incColors.text }}
+          title={`Peak incidence: ${incPct}%`}
+        >
+          {incPct}%
+        </span>
+        <span
+          className="w-3 shrink-0 text-right font-mono text-[9px] text-muted-foreground"
+          title={`${summary.findingCount} findings`}
+        >
+          {summary.findingCount}
+        </span>
+        <span
+          className={cn(
+            "w-4 shrink-0 text-right font-mono text-[9px]",
+            summary.adverseCount > 0
+              ? "text-muted-foreground"
+              : "text-muted-foreground/40",
+          )}
+          title={`${summary.adverseCount} adverse`}
+        >
+          {summary.adverseCount}A
+        </span>
+      </div>
+
+      {/* Line 2: organ system + domains */}
+      <div className="mt-0.5 flex items-center gap-2">
+        <span className="text-[10px] text-muted-foreground/60">
+          {titleCase(specimenToOrganSystem(summary.specimen))}
+        </span>
+        {summary.domains.map((d) => (
+          <DomainLabel key={d} domain={d} />
+        ))}
+      </div>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SpecimenRailMode
+// ---------------------------------------------------------------------------
+
+type SpecimenSort = "signal" | "organ" | "severity" | "incidence" | "alpha";
+
+export function SpecimenRailMode() {
+  const { studyId } = useParams<{ studyId: string }>();
+  const { selection, navigateTo } = useStudySelection();
+  const { filters } = useGlobalFilters();
+  const { data: lesionData } = useLesionSeveritySummary(studyId);
+  const { data: ruleResults } = useRuleResults(studyId);
+  const { data: annotationsData } = useAnnotations<PathologyReview>(studyId, "pathology_review");
+
+  // Specimen-specific filters (local to specimen rail, not global)
+  const [sortBy, setSortBy] = useState<SpecimenSort>("signal");
+  const [minSevFilter, setMinSevFilter] = useState(0);
+  const [doseTrendFilter, setDoseTrendFilter] = useState<
+    "any" | "moderate" | "strong"
+  >("any");
+
+  // Pathology reviews — already typed from hook
+  const pathReviews = annotationsData && Object.keys(annotationsData).length > 0
+    ? annotationsData
+    : undefined;
+
+  // Build specimen summaries
+  const specimens = useMemo(() => {
+    if (!lesionData) return [];
+    return deriveSpecimenSummaries(lesionData, ruleResults);
+  }, [lesionData, ruleResults]);
+
+  // Build finding names by specimen for review status
+  const findingNamesBySpecimen = useMemo(() => {
+    if (!lesionData) return new Map<string, string[]>();
+    const map = new Map<string, Set<string>>();
+    for (const row of lesionData) {
+      if (!row.specimen) continue;
+      let set = map.get(row.specimen);
+      if (!set) {
+        set = new Set();
+        map.set(row.specimen, set);
+      }
+      set.add(row.finding);
+    }
+    const result = new Map<string, string[]>();
+    for (const [spec, set] of map) {
+      result.set(spec, [...set]);
+    }
+    return result;
+  }, [lesionData]);
+
+  // Filter and sort
+  const filtered = useMemo(() => {
+    let list = specimens;
+
+    // Global filters
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      list = list.filter((s) =>
+        s.specimen.replace(/_/g, " ").toLowerCase().includes(q),
+      );
+    }
+    if (filters.adverseOnly) {
+      list = list.filter((s) => s.adverseCount > 0);
+    }
+
+    // Local filters
+    if (minSevFilter > 0) {
+      list = list.filter((s) => s.maxSeverity >= minSevFilter);
+    }
+    if (doseTrendFilter === "moderate") {
+      list = list.filter(
+        (s) =>
+          s.doseConsistency === "Moderate" || s.doseConsistency === "Strong",
+      );
+    } else if (doseTrendFilter === "strong") {
+      list = list.filter((s) => s.doseConsistency === "Strong");
+    }
+
+    // Sort
+    const sorted = [...list];
+    switch (sortBy) {
+      case "signal":
+        sorted.sort((a, b) => b.signalScore - a.signalScore);
+        break;
+      case "organ":
+        sorted.sort((a, b) => {
+          const orgA = specimenToOrganSystem(a.specimen);
+          const orgB = specimenToOrganSystem(b.specimen);
+          if (orgA !== orgB) return orgA.localeCompare(orgB);
+          return b.maxSeverity - a.maxSeverity;
+        });
+        break;
+      case "severity":
+        sorted.sort((a, b) => b.maxSeverity - a.maxSeverity);
+        break;
+      case "incidence":
+        sorted.sort((a, b) => b.maxIncidence - a.maxIncidence);
+        break;
+      case "alpha":
+        sorted.sort((a, b) => a.specimen.localeCompare(b.specimen));
+        break;
+    }
+    return sorted;
+  }, [
+    specimens,
+    filters.search,
+    filters.adverseOnly,
+    minSevFilter,
+    doseTrendFilter,
+    sortBy,
+  ]);
+
+  const handleSpecimenClick = (specimen: string) => {
+    const organSystem = specimenToOrganSystem(specimen);
+    navigateTo({ organSystem, specimen });
+  };
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Header with filter controls */}
+      <div className="border-b px-2.5 py-2">
+        <div className="flex items-center gap-1.5">
+          <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Specimens ({specimens.length})
+          </span>
+        </div>
+
+        <FilterShowingLine
+          className="mt-0.5"
+          parts={(() => {
+            if (
+              !minSevFilter &&
+              !filters.adverseOnly &&
+              doseTrendFilter === "any" &&
+              !filters.search
+            )
+              return undefined;
+            const parts: string[] = [];
+            if (filters.search) parts.push(`"${filters.search}"`);
+            if (minSevFilter > 0) parts.push(`Severity ${minSevFilter}+`);
+            if (filters.adverseOnly) parts.push("Adverse only");
+            if (doseTrendFilter === "moderate") parts.push("Moderate+ trend");
+            else if (doseTrendFilter === "strong") parts.push("Strong trend");
+            parts.push(`${filtered.length}/${specimens.length}`);
+            return parts;
+          })()}
+        />
+
+        {/* Filter row */}
+        <div className="mt-2 flex items-center gap-1.5">
+          <FilterSelect
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SpecimenSort)}
+            title="Sort specimens by"
+          >
+            <option value="signal">Sort: Signal</option>
+            <option value="organ">Sort: Organ</option>
+            <option value="severity">Sort: Severity</option>
+            <option value="incidence">Sort: Incidence</option>
+            <option value="alpha">Sort: A\u2013Z</option>
+          </FilterSelect>
+          <FilterSelect
+            value={minSevFilter}
+            onChange={(e) => setMinSevFilter(Number(e.target.value))}
+            title="Minimum severity filter"
+          >
+            <option value={0}>Sev: all</option>
+            <option value={2}>Sev 2+</option>
+            <option value={3}>Sev 3+</option>
+            <option value={4}>Sev 4+</option>
+          </FilterSelect>
+          <FilterSelect
+            value={doseTrendFilter}
+            onChange={(e) =>
+              setDoseTrendFilter(
+                e.target.value as "any" | "moderate" | "strong",
+              )
+            }
+            title="Dose trend filter"
+          >
+            <option value="any">Trend: all</option>
+            <option value="moderate">Moderate+</option>
+            <option value="strong">Strong only</option>
+          </FilterSelect>
+        </div>
+      </div>
+
+      {/* Specimen list */}
+      <div className="flex-1 overflow-y-auto">
+        {sortBy === "organ"
+          ? (() => {
+              const groups: { system: string; items: typeof filtered }[] = [];
+              let currentSystem = "";
+              for (const s of filtered) {
+                const sys = specimenToOrganSystem(s.specimen);
+                if (sys !== currentSystem) {
+                  currentSystem = sys;
+                  groups.push({ system: sys, items: [] });
+                }
+                groups[groups.length - 1].items.push(s);
+              }
+              return groups.map((g) => {
+                const advCount = g.items.filter(
+                  (s) => s.adverseCount > 0,
+                ).length;
+                return (
+                  <div key={g.system}>
+                    <div className="sticky top-0 z-10 flex items-center gap-1.5 border-b border-border/60 bg-muted/40 px-2.5 py-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {titleCase(g.system)}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground/60">
+                        {g.items.length} specimen
+                        {g.items.length !== 1 ? "s" : ""}
+                        {advCount > 0 && <> &middot; {advCount} adverse</>}
+                      </span>
+                    </div>
+                    {g.items.map((s) => (
+                      <SpecimenRailItem
+                        key={s.specimen}
+                        summary={s}
+                        isSelected={selection.specimen === s.specimen}
+                        onClick={() => handleSpecimenClick(s.specimen)}
+                        reviewStatus={deriveSpecimenReviewStatus(
+                          findingNamesBySpecimen.get(s.specimen) ?? [],
+                          pathReviews,
+                        )}
+                      />
+                    ))}
+                  </div>
+                );
+              });
+            })()
+          : filtered.map((s) => (
+              <SpecimenRailItem
+                key={s.specimen}
+                summary={s}
+                isSelected={selection.specimen === s.specimen}
+                onClick={() => handleSpecimenClick(s.specimen)}
+                reviewStatus={deriveSpecimenReviewStatus(
+                  findingNamesBySpecimen.get(s.specimen) ?? [],
+                  pathReviews,
+                )}
+              />
+            ))}
+        {filtered.length === 0 && (
+          <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
+            {filters.search
+              ? `No matches for \u201C${filters.search}\u201D`
+              : "No specimen data available"}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -486,10 +486,10 @@ function SpecimenOverviewPane({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: specimen } });
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: specimen } });
             }}
           >
-            View target organs &#x2192;
+            View study summary &#x2192;
           </a>
           <a
             href="#"
@@ -776,10 +776,10 @@ function FindingDetailPane({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/target-organs`, { state: { organ_system: selection.specimen } });
+              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: selection.specimen } });
             }}
           >
-            View target organs &#x2192;
+            View study summary &#x2192;
           </a>
           <a
             href="#"

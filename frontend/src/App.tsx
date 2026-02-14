@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { AppLandingPage } from "@/components/panels/AppLandingPage";
@@ -15,7 +15,6 @@ const AdverseEffectsView = lazy(() => import("@/components/analysis/findings/Adv
 
 // Lazy-loaded analysis views (code-split into separate chunks)
 const DoseResponseViewWrapper = lazy(() => import("@/components/analysis/DoseResponseViewWrapper").then(m => ({ default: m.DoseResponseViewWrapper })));
-const TargetOrgansViewWrapper = lazy(() => import("@/components/analysis/TargetOrgansViewWrapper").then(m => ({ default: m.TargetOrgansViewWrapper })));
 const HistopathologyViewWrapper = lazy(() => import("@/components/analysis/HistopathologyViewWrapper").then(m => ({ default: m.HistopathologyViewWrapper })));
 const NoaelDecisionViewWrapper = lazy(() => import("@/components/analysis/NoaelDecisionViewWrapper").then(m => ({ default: m.NoaelDecisionViewWrapper })));
 const ValidationViewWrapper = lazy(() => import("@/components/analysis/ValidationViewWrapper").then(m => ({ default: m.ValidationViewWrapper })));
@@ -72,7 +71,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/studies/:studyId/target-organs",
-        element: <LazyRoute><TargetOrgansViewWrapper /></LazyRoute>,
+        element: <Navigate to=".." replace />,
       },
       {
         path: "/studies/:studyId/histopathology",

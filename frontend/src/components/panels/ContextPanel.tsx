@@ -2,21 +2,18 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { useSelection } from "@/contexts/SelectionContext";
-import { useSignalSelection } from "@/contexts/SignalSelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
+import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useAESummary } from "@/hooks/useAESummary";
 import { generateStudyReport } from "@/lib/report-generator";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
-import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
-import { useOrganEvidenceDetail } from "@/hooks/useOrganEvidenceDetail";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { AdverseEffectsContextPanel } from "@/components/analysis/panes/AdverseEffectsContextPanel";
 import { StudySummaryContextPanel } from "@/components/analysis/panes/StudySummaryContextPanel";
 import { NoaelContextPanel } from "@/components/analysis/panes/NoaelContextPanel";
-import { TargetOrgansContextPanel } from "@/components/analysis/panes/TargetOrgansContextPanel";
 import { DoseResponseContextPanel } from "@/components/analysis/panes/DoseResponseContextPanel";
 import { HistopathologyContextPanel } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { ValidationContextPanel } from "@/components/analysis/panes/ValidationContextPanel";
@@ -232,15 +229,17 @@ function StudyInspector({ studyId }: { studyId: string }) {
 }
 
 function StudySummaryContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection, organSelection } = useSignalSelection();
+  const { selection: studySel } = useStudySelection();
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
+
+  const organSelection = studySel.organSystem ?? null;
 
   return (
     <StudySummaryContextPanel
       signalData={signalData ?? []}
       ruleResults={ruleResults ?? []}
-      selection={selection}
+      selection={null}
       organSelection={organSelection}
       studyId={studyId}
     />
@@ -248,11 +247,13 @@ function StudySummaryContextPanelWrapper({ studyId }: { studyId: string }) {
 }
 
 function NoaelContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection } = useViewSelection();
+  const { selection: viewSel } = useViewSelection();
   const { data: aeData } = useAdverseEffectSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
 
-  const sel = selection?._view === "noael" ? selection as { endpoint_label: string; dose_level: number; sex: string } : null;
+  // NoaelContextPanel expects { endpoint_label, dose_level, sex } — these come from
+  // NOAEL's local selection state, bridged via ViewSelectionContext during transition
+  const sel = viewSel?._view === "noael" ? viewSel as { endpoint_label: string; dose_level: number; sex: string } : null;
 
   return (
     <NoaelContextPanel
@@ -264,31 +265,14 @@ function NoaelContextPanelWrapper({ studyId }: { studyId: string }) {
   );
 }
 
-function TargetOrgansContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection } = useViewSelection();
-  const { data: organData } = useTargetOrganSummary(studyId);
-  const { data: evidenceData } = useOrganEvidenceDetail(studyId);
-  const { data: ruleResults } = useRuleResults(studyId);
-
-  const sel = selection?._view === "target-organs" ? selection as { organ_system: string; endpoint_label?: string; sex?: string } : null;
-
-  return (
-    <TargetOrgansContextPanel
-      organData={organData ?? []}
-      evidenceData={evidenceData ?? []}
-      ruleResults={ruleResults ?? []}
-      selection={sel}
-      studyId={studyId}
-    />
-  );
-}
-
 function DoseResponseContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection } = useViewSelection();
+  const { selection: studySel } = useStudySelection();
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: signalData } = useStudySignalSummary(studyId);
 
-  const sel = selection?._view === "dose-response" ? selection as { endpoint_label: string; sex?: string; domain?: string; organ_system?: string } : null;
+  const sel = studySel.endpoint
+    ? { endpoint_label: studySel.endpoint, organ_system: studySel.organSystem }
+    : null;
 
   return (
     <DoseResponseContextPanel
@@ -444,7 +428,6 @@ export function ContextPanel() {
     activeStudyId &&
     location.pathname === `/studies/${encodeURIComponent(activeStudyId)}`;
   const isNoaelRoute = /\/studies\/[^/]+\/noael-decision/.test(location.pathname);
-  const isTargetOrgansRoute = /\/studies\/[^/]+\/target-organs/.test(location.pathname);
   const isDoseResponseRoute = /\/studies\/[^/]+\/dose-response/.test(location.pathname);
   const isHistopathologyRoute = /\/studies\/[^/]+\/histopathology/.test(location.pathname);
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);
@@ -468,10 +451,6 @@ export function ContextPanel() {
 
   if (isNoaelRoute && activeStudyId) {
     return <NoaelContextPanelWrapper studyId={activeStudyId} />;
-  }
-
-  if (isTargetOrgansRoute && activeStudyId) {
-    return <TargetOrgansContextPanelWrapper studyId={activeStudyId} />;
   }
 
   if (isDoseResponseRoute && activeStudyId) {

@@ -3,28 +3,6 @@ import type { ReactNode } from "react";
 
 // ─── Per-view selection shapes ────────────────────────────────
 
-export interface DoseResponseViewSelection {
-  _view: "dose-response";
-  endpoint_label: string;
-  sex?: string;
-  domain?: string;
-  organ_system?: string;
-}
-
-export interface TargetOrgansViewSelection {
-  _view: "target-organs";
-  organ_system: string;
-  endpoint_label?: string;
-  sex?: string;
-}
-
-export interface HistopathologyViewSelection {
-  _view: "histopathology";
-  specimen: string;
-  finding?: string;
-  sex?: string;
-}
-
 export interface NoaelViewSelection {
   _view: "noael";
   endpoint_label: string;
@@ -66,6 +44,13 @@ export interface ValidationIssueViewSelection {
 
 export type ValidationViewSelection = ValidationRuleViewSelection | ValidationIssueViewSelection;
 
+export interface HistopathologyViewSelection {
+  _view: "histopathology";
+  specimen: string;
+  finding?: string;
+  sex?: string;
+}
+
 export interface FindingsOverviewViewSelection {
   _view: "findings-overview";
   endpoint_label: string;
@@ -85,10 +70,8 @@ export interface FindingsDashboardViewSelection {
 }
 
 export type ViewSelection =
-  | DoseResponseViewSelection
-  | TargetOrgansViewSelection
-  | HistopathologyViewSelection
   | NoaelViewSelection
+  | HistopathologyViewSelection
   | ValidationViewSelection
   | FindingsOverviewViewSelection
   | SignalHeatmapViewSelection

@@ -14,7 +14,6 @@ import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
-import { EvidenceBar } from "@/components/ui/EvidenceBar";
 import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseLabel, DoseHeader } from "@/components/ui/DoseLabel";
@@ -25,15 +24,14 @@ import {
   titleCase,
   getNeutralHeatColor,
 } from "@/lib/severity-colors";
-import { useResizePanel } from "@/hooks/useResizePanel";
-import { MasterDetailLayout } from "@/components/ui/MasterDetailLayout";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
-import { rail } from "@/lib/design-tokens";
 import { InsightsList } from "./panes/InsightsList";
 import { ConfidencePopover } from "./ScoreBreakdown";
+import { useStudySelection } from "@/contexts/StudySelectionContext";
+import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import type {
   NoaelSummaryRow,
   AdverseEffectSummaryRow,
@@ -277,115 +275,6 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-// ─── OrganRailItem ─────────────────────────────────────────
-
-function OrganRailItem({
-  summary,
-  isSelected,
-  maxAdverse,
-  onClick,
-}: {
-  summary: OrganSummary;
-  isSelected: boolean;
-  maxAdverse: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={cn(
-        rail.itemBase, "px-3 py-2",
-        isSelected ? rail.itemSelected : rail.itemIdle
-      )}
-      onClick={onClick}
-    >
-      {/* Row 1: organ name + adverse count */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold">
-          {titleCase(summary.organ_system)}
-        </span>
-        {summary.adverseCount > 0 && (
-          <span className="text-[10px] text-muted-foreground">
-            {summary.adverseCount} adverse
-          </span>
-        )}
-      </div>
-
-      {/* Row 2: bar */}
-      <EvidenceBar
-        value={summary.adverseCount}
-        max={maxAdverse}
-        label={<>{summary.adverseCount}/{summary.totalEndpoints}</>}
-        labelClassName="text-muted-foreground"
-      />
-
-      {/* Row 3: stats + domain chips */}
-      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
-        <span>{summary.totalEndpoints} endpoints</span>
-        <span>&middot;</span>
-        <span>{summary.trCount} TR</span>
-        {summary.domains.map((d) => (
-          <DomainLabel key={d} domain={d} />
-        ))}
-      </div>
-    </button>
-  );
-}
-
-// ─── OrganRail ─────────────────────────────────────────────
-
-function OrganRail({
-  organs,
-  selectedOrgan,
-  maxAdverse,
-  onOrganClick,
-}: {
-  organs: OrganSummary[];
-  selectedOrgan: string | null;
-  maxAdverse: number;
-  onOrganClick: (organ: string) => void;
-}) {
-  const [search, setSearch] = useState("");
-
-  const filtered = useMemo(() => {
-    if (!search) return organs;
-    const q = search.toLowerCase();
-    return organs.filter((o) => o.organ_system.replace(/_/g, " ").toLowerCase().includes(q));
-  }, [organs, search]);
-
-  return (
-    <div className="flex h-full w-full flex-col overflow-hidden">
-      <div className="border-b px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Organ systems ({organs.length})
-        </span>
-        <input
-          type="text"
-          placeholder="Search organs\u2026"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
-        />
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        {filtered.map((o) => (
-          <OrganRailItem
-            key={o.organ_system}
-            summary={o}
-            isSelected={selectedOrgan === o.organ_system}
-            maxAdverse={maxAdverse}
-            onClick={() => onOrganClick(o.organ_system)}
-          />
-        ))}
-        {filtered.length === 0 && (
-          <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
-            No matches for &ldquo;{search}&rdquo;
-          </div>
-        )}
       </div>
     </div>
   );
@@ -900,23 +789,21 @@ function AdversityMatrixTab({
 
 type EvidenceTab = "overview" | "matrix";
 
-export function NoaelDecisionView({
-  onSelectionChange,
-}: {
-  onSelectionChange?: (sel: NoaelSelection | null) => void;
-}) {
+export function NoaelDecisionView() {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
+  const { selection: studySelection, navigateTo } = useStudySelection();
+  const { setSelection: setViewSelection } = useViewSelection();
   const { data: noaelData, isLoading: noaelLoading, error: noaelError } = useNoaelSummary(studyId);
   const { data: aeData, isLoading: aeLoading, error: aeError } = useAdverseEffectSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
 
-  const [selectedOrgan, setSelectedOrgan] = useState<string | null>(null);
+  // Read organ from StudySelectionContext
+  const selectedOrgan = studySelection.organSystem ?? null;
   const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
   const [selection, setSelection] = useState<NoaelSelection | null>(null);
   const [sexFilter, setSexFilter] = useState<string | null>(null);
   const [trFilter, setTrFilter] = useState<string | null>(null);
-  const { width: railWidth, onPointerDown: onRailResize } = useResizePanel(300, 180, 500);
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // Derived: organ summaries
@@ -924,11 +811,6 @@ export function NoaelDecisionView({
     if (!aeData) return [];
     return deriveOrganSummaries(aeData);
   }, [aeData]);
-
-  const maxAdverse = useMemo(() => {
-    if (organSummaries.length === 0) return 1;
-    return Math.max(...organSummaries.map((o) => o.adverseCount), 1);
-  }, [organSummaries]);
 
   // Rows for selected organ
   const organData = useMemo(() => {
@@ -947,10 +829,10 @@ export function NoaelDecisionView({
     return organSummaries.find((o) => o.organ_system === selectedOrgan) ?? null;
   }, [organSummaries, selectedOrgan]);
 
-  // Auto-select top organ on load
+  // Auto-select top organ on load if no organ selected via context
   useEffect(() => {
-    if (organSummaries.length > 0 && selectedOrgan === null) {
-      setSelectedOrgan(organSummaries[0].organ_system);
+    if (organSummaries.length > 0 && !selectedOrgan) {
+      navigateTo({ organSystem: organSummaries[0].organ_system });
     }
   }, [organSummaries]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -962,31 +844,31 @@ export function NoaelDecisionView({
         (o) => o.organ_system.toLowerCase() === state.organ_system!.toLowerCase()
       );
       if (match) {
-        setSelectedOrgan(match.organ_system);
+        navigateTo({ organSystem: match.organ_system });
       }
       window.history.replaceState({}, "");
     }
-  }, [location.state, aeData, organSummaries]);
+  }, [location.state, aeData, organSummaries]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset filters when organ changes
+  useEffect(() => {
+    setSexFilter(null);
+    setTrFilter(null);
+    setSelection(null);
+    setViewSelection(null);
+  }, [selectedOrgan]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Escape clears selection
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setSelection(null);
-        onSelectionChange?.(null);
+        setViewSelection(null);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onSelectionChange]);
-
-  const handleOrganClick = (organ: string) => {
-    setSelectedOrgan(organ);
-    setSexFilter(null);
-    setTrFilter(null);
-    setSelection(null);
-    onSelectionChange?.(null);
-  };
+  }, [setViewSelection]);
 
   const handleRowClick = (row: AdverseEffectSummaryRow) => {
     const sel: NoaelSelection = {
@@ -1000,12 +882,11 @@ export function NoaelDecisionView({
       selection?.sex === sel.sex;
     const next = isSame ? null : sel;
     setSelection(next);
-    onSelectionChange?.(next);
+    setViewSelection(next ? { ...next, _view: "noael" } : null);
   };
 
   const handleEndpointClick = (endpoint: string) => {
     if (!selectedOrgan) return;
-    // Find representative row for this endpoint
     const row = organData.find((r) => r.endpoint_label === endpoint);
     if (row) {
       const sel: NoaelSelection = {
@@ -1016,7 +897,7 @@ export function NoaelDecisionView({
       const isSame = selection?.endpoint_label === endpoint;
       const next = isSame ? null : sel;
       setSelection(next);
-      onSelectionChange?.(next);
+      setViewSelection(next ? { ...next, _view: "noael" } : null);
     }
   };
 
@@ -1051,20 +932,8 @@ export function NoaelDecisionView({
       {/* NOAEL Banner (persistent, non-scrolling) */}
       {noaelData && <NoaelBanner data={noaelData} />}
 
-      {/* Two-panel area */}
-      <MasterDetailLayout
-        className="h-auto min-h-0 flex-1"
-        railWidth={railWidth}
-        onRailResize={onRailResize}
-        rail={
-          <OrganRail
-            organs={organSummaries}
-            selectedOrgan={selectedOrgan}
-            maxAdverse={maxAdverse}
-            onOrganClick={handleOrganClick}
-          />
-        }
-      >
+      {/* Evidence panel — full width */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/5">
         {selectedSummary && (
           <>
             <OrganHeader summary={selectedSummary} />
@@ -1116,12 +985,18 @@ export function NoaelDecisionView({
           </div>
         )}
 
+        {!selectedSummary && organSummaries.length > 0 && (
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            Select an organ system from the shell rail.
+          </div>
+        )}
+
         {organSummaries.length === 0 && (
           <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
             No adverse effect data available.
           </div>
         )}
-      </MasterDetailLayout>
+      </div>
     </div>
   );
 }
