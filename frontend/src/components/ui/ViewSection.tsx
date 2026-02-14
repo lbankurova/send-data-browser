@@ -11,6 +11,8 @@ interface ViewSectionBaseProps {
   defaultOpen?: boolean;
   expandGen?: number;
   collapseGen?: number;
+  /** Double-click on section header (maximize: collapse other sections). */
+  onHeaderDoubleClick?: () => void;
 }
 
 interface ViewSectionFixed extends ViewSectionBaseProps {
@@ -27,7 +29,7 @@ interface ViewSectionFlex extends ViewSectionBaseProps {
 export type ViewSectionProps = ViewSectionFixed | ViewSectionFlex;
 
 export function ViewSection(props: ViewSectionProps) {
-  const { title, headerRight, children, defaultOpen = true, expandGen, collapseGen, mode } = props;
+  const { title, headerRight, children, defaultOpen = true, expandGen, collapseGen, mode, onHeaderDoubleClick } = props;
   const [open, setOpen] = useState(defaultOpen);
 
   // Respond to expand/collapse all signals
@@ -45,6 +47,7 @@ export function ViewSection(props: ViewSectionProps) {
       <button
         className="flex w-full shrink-0 items-center gap-1.5 border-b border-border/50 bg-muted/20 px-3 py-1 text-left"
         onClick={() => setOpen((o) => !o)}
+        onDoubleClick={onHeaderDoubleClick ? (e) => { e.preventDefault(); onHeaderDoubleClick(); } : undefined}
       >
         {open ? (
           <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />

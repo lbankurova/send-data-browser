@@ -24,6 +24,7 @@ import { DoseHeader } from "@/components/ui/DoseLabel";
 import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { ViewSection } from "@/components/ui/ViewSection";
+import { CollapsedStrip, StripSep } from "@/components/ui/CollapsedStrip";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
@@ -448,6 +449,39 @@ function OverviewTab({
   const findingsSection = sections[0];
   const chartSection = sections[1];
 
+  // ── Section collapse state ─────────────────────────────────
+  type SectionKey = "findings" | "doseCharts" | "matrix";
+  const [collapsed, setCollapsed] = useState<Record<SectionKey, boolean>>({
+    findings: false,
+    doseCharts: false,
+    matrix: false,
+  });
+
+  const expandedCount = Object.values(collapsed).filter((c) => !c).length;
+
+  function toggleCollapse(section: SectionKey) {
+    setCollapsed((prev) => {
+      // Prevent collapsing the last expanded section
+      if (!prev[section] && expandedCount <= 1) return prev;
+      return { ...prev, [section]: !prev[section] };
+    });
+  }
+
+  function maximizeSection(section: SectionKey) {
+    const others = (Object.keys(collapsed) as SectionKey[]).filter((k) => k !== section);
+    const isAlreadyMaximized = others.every((k) => collapsed[k]) && !collapsed[section];
+    if (isAlreadyMaximized) {
+      // Restore all
+      setCollapsed({ findings: false, doseCharts: false, matrix: false });
+    } else {
+      setCollapsed({
+        findings: section !== "findings",
+        doseCharts: section !== "doseCharts",
+        matrix: section !== "matrix",
+      });
+    }
+  }
+
   // Close dose-dep context menu on outside click
   useEffect(() => {
     if (!doseDepMenu) return;
@@ -458,12 +492,13 @@ function OverviewTab({
     return () => document.removeEventListener("mousedown", handler);
   }, [doseDepMenu]);
 
-  // Reset heatmap view state when specimen changes (preserve matrix mode)
+  // Reset heatmap view state and collapse state when specimen changes (preserve matrix mode)
   useEffect(() => {
     setAffectedOnly(true);
     setSubjectSort("dose");
     setDoseGroupFilter(null);
     setSeverityGradedOnly(false);
+    setCollapsed({ findings: false, doseCharts: false, matrix: false });
   }, [specimen]);
 
   // Subject-level data (fetch when in subject mode)
@@ -963,9 +998,136 @@ function OverviewTab({
     columnResizeMode: "onChange",
   });
 
+  // ── Strip summary content ──────────────────────────────────
+  const selectedRow = selection?.finding
+    ? filteredTableData.find((r) => r.finding === selection.finding)
+    : null;
+
+  const findingsStripSummary = useMemo(() => {
+    if (selectedRow) {
+      const pct = `${Math.round(selectedRow.maxIncidence * 100)}%`;
+      return (
+        <span className="text-[10px]">
+          <span className="text-primary">▸</span>{" "}
+          <span className="font-medium">{selectedRow.finding}</span>{" "}
+          <span className="text-muted-foreground">{pct} {selectedRow.severity}</span>
+          {selectedRow.isDoseDriven && <span className="text-muted-foreground"> ✓dose-dep</span>}
+          {selectedRow.relatedOrgans && selectedRow.relatedOrgans.length > 0 && (
+            <><StripSep /><span className="text-muted-foreground">also in: {selectedRow.relatedOrgans.join(", ")}</span></>
+          )}
+        </span>
+      );
+    }
+    const flagged = filteredTableData.filter((f) => f.severity !== "normal" || f.clinicalClass);
+    const normalCount = filteredTableData.length - flagged.length;
+    const shown = flagged.slice(0, 3);
+    return (
+      <span className="flex items-center gap-0 text-[10px]">
+        {shown.map((f, i) => {
+          const label = f.clinicalClass
+            ? (f.clinicalClass === "Sentinel" ? "Sentinel" : f.clinicalClass === "HighConcern" ? "High concern" : f.severity)
+            : f.severity;
+          return (
+            <span key={f.finding}>
+              {i > 0 && <StripSep />}
+              <span className="font-medium">{f.finding}</span>{" "}
+              <span className="text-muted-foreground">{label} {Math.round(f.maxIncidence * 100)}%</span>
+            </span>
+          );
+        })}
+        {flagged.length > 3 && <><StripSep /><span className="text-muted-foreground">+{flagged.length - 3} flagged</span></>}
+        {normalCount > 0 && <><StripSep /><span className="text-muted-foreground">+{normalCount} normal</span></>}
+      </span>
+    );
+  }, [filteredTableData, selectedRow]);
+
+  const doseChartsStripSummary = useMemo(() => {
+    if (selectedRow && heatmapData) {
+      const seq = heatmapData.doseLevels.map((dl) => {
+        const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
+        return cell ? `${Math.round(cell.incidence * 100)}%` : "0%";
+      }).join("→");
+      const sevSeq = heatmapData.doseLevels.map((dl) => {
+        const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
+        return cell && cell.avg_severity ? cell.avg_severity.toFixed(1) : "—";
+      }).join("→");
+      return (
+        <span className="font-mono text-[10px] text-muted-foreground">
+          Incid: {seq}<StripSep />Sev: {sevSeq}
+        </span>
+      );
+    }
+    // Specimen aggregate: peak incidence and severity across all findings
+    let peakInc = 0;
+    let peakSev = 0;
+    for (const f of filteredTableData) {
+      if (f.maxIncidence > peakInc) peakInc = f.maxIncidence;
+      if (f.maxSeverity > peakSev) peakSev = f.maxSeverity;
+    }
+    return (
+      <span className="text-[10px] text-muted-foreground">
+        Peak incidence: {Math.round(peakInc * 100)}%<StripSep />Peak severity: {peakSev.toFixed(1)}
+      </span>
+    );
+  }, [filteredTableData, selectedRow, heatmapData]);
+
+  const matrixStripSummary = useMemo(() => {
+    if (!heatmapData) return <span className="text-[10px] text-muted-foreground">No data</span>;
+    if (selectedRow) {
+      const groups = heatmapData.doseLevels
+        .map((dl) => ({ dl, cell: heatmapData.cells.get(`${selectedRow.finding}|${dl}`) }))
+        .filter((g) => g.cell && g.cell.affected > 0);
+      return (
+        <span className="text-[10px]">
+          <span className="text-primary">▸</span>{" "}
+          <span className="font-medium">{selectedRow.finding}</span>:{" "}
+          {groups.length === 0
+            ? <span className="text-muted-foreground">no affected subjects</span>
+            : groups.map((g, i) => (
+                <span key={g.dl} className="text-muted-foreground">
+                  {i > 0 && ", "}
+                  {g.cell!.affected}/{g.cell!.n} in {heatmapData.doseLabels.get(g.dl) ?? `Dose ${g.dl}`}
+                </span>
+              ))
+          }
+        </span>
+      );
+    }
+    // No selection: show affected counts per top dose groups
+    const groupTotals = heatmapData.doseLevels.map((dl) => {
+      let affected = 0;
+      for (const finding of heatmapData.findings) {
+        const cell = heatmapData.cells.get(`${finding}|${dl}`);
+        if (cell) affected += cell.affected;
+      }
+      return { dl, affected, label: heatmapData.doseLabels.get(dl) ?? `Dose ${dl}` };
+    }).sort((a, b) => b.affected - a.affected);
+    const top = groupTotals.slice(0, 2).filter((g) => g.affected > 0);
+    return (
+      <span className="text-[10px] text-muted-foreground">
+        {top.map((g, i) => (
+          <span key={g.dl}>
+            {i > 0 && <StripSep />}
+            {g.label}: {g.affected} affected
+          </span>
+        ))}
+        {top.length === 0 && "No affected subjects"}
+      </span>
+    );
+  }, [heatmapData, selectedRow]);
+
   return (
     <div ref={containerRef} className="flex flex-1 flex-col overflow-hidden">
       {/* Top: Findings table (resizable height) */}
+      {collapsed.findings ? (
+        <CollapsedStrip
+          title="Observed findings"
+          count={filteredTableData.length}
+          summary={findingsStripSummary}
+          onExpand={() => toggleCollapse("findings")}
+          onMaximize={() => maximizeSection("findings")}
+        />
+      ) : (
       <ViewSection
         mode="fixed"
         title={`Observed findings (${filteredTableData.length}${hideZeroSeverity ? ` of ${findingSummaries.length}` : ""})`}
@@ -983,6 +1145,7 @@ function OverviewTab({
         height={findingsSection.height}
         onResizePointerDown={findingsSection.onPointerDown}
         contentRef={findingsSection.contentRef}
+        onHeaderDoubleClick={() => maximizeSection("findings")}
       >
       <div className="px-4 py-2">
         {findingSummaries.length === 0 ? (
@@ -1134,14 +1297,24 @@ function OverviewTab({
         )}
       </div>
       </ViewSection>
+      )}
 
       {/* Middle: Dual dose-response charts (resizable) */}
+      {collapsed.doseCharts ? (
+        <CollapsedStrip
+          title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts"}
+          summary={doseChartsStripSummary}
+          onExpand={() => toggleCollapse("doseCharts")}
+          onMaximize={() => maximizeSection("doseCharts")}
+        />
+      ) : (
       <ViewSection
         mode="fixed"
         title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts (specimen aggregate)"}
         height={chartSection.height}
         onResizePointerDown={chartSection.onPointerDown}
         contentRef={chartSection.contentRef}
+        onHeaderDoubleClick={() => maximizeSection("doseCharts")}
       >
         <div className="flex h-full">
           <div className="relative flex-1 border-r border-border/30">
@@ -1178,8 +1351,18 @@ function OverviewTab({
           </div>
         </div>
       </ViewSection>
+      )}
 
       {/* Bottom: Heatmap container (group + subject) */}
+      {collapsed.matrix ? (
+        <CollapsedStrip
+          title={`Severity matrix: ${matrixMode}`}
+          count={heatmapData?.findings.length}
+          summary={matrixStripSummary}
+          onExpand={() => toggleCollapse("matrix")}
+          onMaximize={() => maximizeSection("matrix")}
+        />
+      ) : (
       <ViewSection
         mode="flex"
         title={<>SEVERITY MATRIX:{" "}
@@ -1201,6 +1384,7 @@ function OverviewTab({
             </span>
           ) : ""}
         </>}
+        onHeaderDoubleClick={() => maximizeSection("matrix")}
       >
         {/* Heatmap content */}
         <div className="flex-1 overflow-auto">
@@ -1446,6 +1630,7 @@ function OverviewTab({
           )}
         </div>
       </ViewSection>
+      )}
     </div>
   );
 }
