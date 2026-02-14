@@ -499,7 +499,11 @@ async def get_histopath_subjects(
     study_id: str,
     specimen: str = Query(..., description="Specimen name to filter by"),
 ):
-    """Per-subject microscopic findings for a specimen (severity matrix)."""
+    """Per-subject histopath findings for a specimen (severity matrix).
+
+    Reads both MI (microscopic) and MA (macroscopic) domains so the matrix
+    includes non-graded findings like ENLARGED, MASS, DISCOLORATION.
+    """
     study = _get_study(study_id)
 
     if "mi" not in study.xpt_files:
@@ -515,38 +519,76 @@ async def get_histopath_subjects(
     if spec_col is None:
         raise HTTPException(status_code=404, detail="MISPEC column not found in MI domain")
 
-    # Filter to specimen
+    # Filter MI to specimen
     specimen_df = mi_df[mi_df[spec_col].str.upper() == specimen.upper()]
-    if specimen_df.empty:
+
+    # Also read MA domain if available
+    ma_specimen_df = None
+    ma_finding_col = None
+    ma_sev_col = None
+    if "ma" in study.xpt_files:
+        ma_df = _read_domain_df(study, "MA")
+        ma_spec_col = "MASPEC" if "MASPEC" in ma_df.columns else None
+        if ma_spec_col:
+            ma_finding_col = "MASTRESC" if "MASTRESC" in ma_df.columns else "MAORRES"
+            ma_sev_col = "MASEV" if "MASEV" in ma_df.columns else None
+            ma_specimen_df = ma_df[ma_df[ma_spec_col].str.upper() == specimen.upper()]
+            if ma_specimen_df.empty:
+                ma_specimen_df = None
+
+    if specimen_df.empty and ma_specimen_df is None:
         raise HTTPException(status_code=404, detail=f"No findings for specimen '{specimen}'")
 
-    # Get unique findings for this specimen
-    all_findings = sorted(specimen_df[finding_col].dropna().unique().tolist())
+    # Get unique findings from both domains
+    mi_findings = set(specimen_df[finding_col].dropna().unique().tolist()) if not specimen_df.empty else set()
+    ma_findings = set(ma_specimen_df[ma_finding_col].dropna().unique().tolist()) if ma_specimen_df is not None else set()
+    all_findings = sorted(mi_findings | ma_findings)
 
     # Severity mapping
     SEV_MAP = {
         "MINIMAL": 1, "MILD": 2, "MODERATE": 3, "MARKED": 4, "SEVERE": 5,
     }
 
-    # Join specimen findings with subject metadata
-    specimen_df = specimen_df.merge(
-        subjects_df[["USUBJID", "SEX", "dose_level", "dose_label", "is_recovery"]],
-        on="USUBJID", how="inner",
-    )
-
-    # Build findings map per subject (only those with MI records)
+    # Join MI specimen findings with subject metadata
     findings_by_subj: dict[str, dict] = {}
-    for usubjid, subj_grp in specimen_df.groupby("USUBJID"):
-        findings_map = {}
-        for _, r in subj_grp.iterrows():
-            f = str(r[finding_col])
-            sev_str = str(r[sev_col]).strip().upper() if sev_col and sev_col in subj_grp.columns and r.get(sev_col, "") != "" else None
-            sev_num = SEV_MAP.get(sev_str, 0) if sev_str else 0
-            findings_map[f] = {
-                "severity": sev_str,
-                "severity_num": sev_num,
-            }
-        findings_by_subj[usubjid] = findings_map
+    if not specimen_df.empty:
+        specimen_df = specimen_df.merge(
+            subjects_df[["USUBJID", "SEX", "dose_level", "dose_label", "is_recovery"]],
+            on="USUBJID", how="inner",
+        )
+
+        for usubjid, subj_grp in specimen_df.groupby("USUBJID"):
+            findings_map = {}
+            for _, r in subj_grp.iterrows():
+                f = str(r[finding_col])
+                sev_str = str(r[sev_col]).strip().upper() if sev_col and sev_col in subj_grp.columns and r.get(sev_col, "") != "" else None
+                sev_num = SEV_MAP.get(sev_str, 0) if sev_str else 0
+                findings_map[f] = {
+                    "severity": sev_str,
+                    "severity_num": sev_num,
+                }
+            findings_by_subj[str(usubjid)] = findings_map
+
+    # Merge MA findings into findings_by_subj
+    if ma_specimen_df is not None:
+        ma_merged = ma_specimen_df.merge(
+            subjects_df[["USUBJID", "SEX", "dose_level", "dose_label", "is_recovery"]],
+            on="USUBJID", how="inner",
+        )
+        for usubjid, subj_grp in ma_merged.groupby("USUBJID"):
+            subj_key = str(usubjid)
+            if subj_key not in findings_by_subj:
+                findings_by_subj[subj_key] = {}
+            for _, r in subj_grp.iterrows():
+                f = str(r[ma_finding_col])
+                if f in findings_by_subj[subj_key]:
+                    continue  # MI finding takes precedence
+                sev_str = str(r[ma_sev_col]).strip().upper() if ma_sev_col and ma_sev_col in subj_grp.columns and r.get(ma_sev_col, "") not in ("", "nan") else None
+                sev_num = SEV_MAP.get(sev_str, 0) if sev_str else 0
+                findings_by_subj[subj_key][f] = {
+                    "severity": sev_str,
+                    "severity_num": sev_num,
+                }
 
     # Build per-subject entries from ALL subjects (not just those with findings)
     subject_list = []
