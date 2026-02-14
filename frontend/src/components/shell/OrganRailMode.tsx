@@ -245,6 +245,9 @@ export function OrganRailMode() {
     if (filters.adverseOnly) {
       list = list.filter((o) => o.n_treatment_related > 0);
     }
+    if (filters.significantOnly) {
+      list = list.filter((o) => o.n_significant > 0);
+    }
 
     // Sort
     switch (sortBy) {
@@ -267,7 +270,7 @@ export function OrganRailMode() {
         break;
     }
     return list;
-  }, [targetOrgans, filters.search, filters.adverseOnly, sortBy]);
+  }, [targetOrgans, filters.search, filters.adverseOnly, filters.significantOnly, sortBy]);
 
   // Evidence stats per organ
   const organStatsMap = useMemo(() => {
