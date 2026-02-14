@@ -6,6 +6,7 @@ import type {
   CLTimecourseResponse,
   SubjectProfile,
   SubjectHistopathResponse,
+  SubjectComparisonResponse,
 } from "@/types/timecourse";
 
 const API_BASE = "/api";
@@ -73,5 +74,15 @@ export function fetchHistopathSubjects(
 ): Promise<SubjectHistopathResponse> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/histopath/subjects?specimen=${encodeURIComponent(specimen)}`,
+  );
+}
+
+export function fetchSubjectComparison(
+  studyId: string,
+  subjectIds: string[],
+): Promise<SubjectComparisonResponse> {
+  const ids = subjectIds.map(encodeURIComponent).join(",");
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/subjects/compare?ids=${ids}`,
   );
 }

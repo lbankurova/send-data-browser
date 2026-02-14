@@ -119,3 +119,49 @@ export interface SubjectHistopathEntry {
   is_recovery: boolean;
   findings: Record<string, { severity: string | null; severity_num: number }>;
 }
+
+// --- Endpoint 5: Multi-subject comparison ---
+
+export interface SubjectComparisonResponse {
+  subjects: ComparisonSubjectProfile[];
+  lab_values: ComparisonLabValue[];
+  body_weights: ComparisonBodyWeight[];
+  clinical_obs: ComparisonClinicalObs[];
+  control_stats: ControlStats;
+  available_timepoints: number[];
+}
+
+export interface ComparisonSubjectProfile {
+  usubjid: string;
+  short_id: string;
+  sex: string;
+  dose_level: number;
+  dose_label: string;
+  disposition: string | null;
+  disposition_day: number | null;
+}
+
+export interface ComparisonLabValue {
+  usubjid: string;
+  test: string;
+  unit: string;
+  day: number;
+  value: number;
+}
+
+export interface ComparisonBodyWeight {
+  usubjid: string;
+  day: number;
+  weight: number;
+}
+
+export interface ComparisonClinicalObs {
+  usubjid: string;
+  day: number;
+  observation: string;
+}
+
+export interface ControlStats {
+  lab: Record<string, { mean: number; sd: number; unit: string; n: number; sex?: string }>;
+  bw: Record<string, { mean: number; sd: number; n: number; sex?: string }>;
+}

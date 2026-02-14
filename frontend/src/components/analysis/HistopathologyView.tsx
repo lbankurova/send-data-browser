@@ -34,6 +34,7 @@ import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
 import { buildDoseIncidenceBarOption, buildDoseSeverityBarOption } from "@/components/analysis/charts/histopathology-charts";
 import type { DoseIncidenceGroup, DoseSeverityGroup, ChartDisplayMode } from "@/components/analysis/charts/histopathology-charts";
 import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
+import { CompareTab } from "@/components/analysis/CompareTab";
 import type { LesionSeverityRow, RuleResult, FindingDoseTrend } from "@/types/analysis-views";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import type { PathologyReview } from "@/types/annotations";
@@ -420,6 +421,9 @@ function OverviewTab({
   studyId,
   onSubjectClick,
   trendsByFinding,
+  comparisonSubjects,
+  onComparisonChange,
+  onCompareClick,
 }: {
   specimenData: LesionSeverityRow[];
   findingSummaries: FindingSummary[];
@@ -433,6 +437,9 @@ function OverviewTab({
   studyId?: string;
   onSubjectClick?: (usubjid: string) => void;
   trendsByFinding: Map<string, FindingDoseTrend>;
+  comparisonSubjects: Set<string>;
+  onComparisonChange: (subjects: Set<string>) => void;
+  onCompareClick: () => void;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [findingColSizing, setFindingColSizing] = useState<ColumnSizingState>({});
@@ -1272,6 +1279,9 @@ function OverviewTab({
               doseGroupOptions={doseGroupOptions}
               severityGradedOnly={severityGradedOnly}
               findingSeverityMap={heatmapData?.findingMeta ?? new Map()}
+              comparisonSubjects={comparisonSubjects}
+              onComparisonChange={onComparisonChange}
+              onCompareClick={onCompareClick}
               controls={
                 <FilterBar className="border-0 bg-transparent px-0">
                   <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
@@ -1476,6 +1486,8 @@ function OverviewTab({
 
 const SEV_LABELS: Record<number, string> = { 1: "Minimal", 2: "Mild", 3: "Moderate", 4: "Marked", 5: "Severe" };
 
+const MAX_COMPARISON_SUBJECTS = 8;
+
 function SubjectHeatmap({
   subjData,
   isLoading,
@@ -1491,6 +1503,9 @@ function SubjectHeatmap({
   severityGradedOnly = false,
   findingSeverityMap,
   controls,
+  comparisonSubjects,
+  onComparisonChange,
+  onCompareClick,
 }: {
   subjData: SubjectHistopathEntry[] | null;
   isLoading: boolean;
@@ -1506,9 +1521,16 @@ function SubjectHeatmap({
   severityGradedOnly?: boolean;
   findingSeverityMap?: Map<string, { maxSev: number; hasSeverityData: boolean }>;
   controls?: React.ReactNode;
+  comparisonSubjects?: Set<string>;
+  onComparisonChange?: (subjects: Set<string>) => void;
+  onCompareClick?: () => void;
 }) {
   // Selected subject for column highlight
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  // Track last checked subject for shift+click range select
+  const lastCheckedRef = useRef<string | null>(null);
+  // Toast state for max subjects message
+  const [maxToast, setMaxToast] = useState(false);
 
   // Resizable finding label column
   const { width: labelColW, onPointerDown: onLabelResize } = useResizePanel(124, 100, 400);
@@ -1606,6 +1628,78 @@ function SubjectHeatmap({
     return parts[parts.length - 1] || id.slice(-4);
   };
 
+  // Flatten all visible subjects for range-select
+  const allVisibleSubjects = useMemo(() => doseGroups.flatMap((dg) => dg.subjects), [doseGroups]);
+
+  // Toggle comparison subject (with max enforcement)
+  const toggleComparison = useCallback((id: string, shiftKey: boolean) => {
+    if (!comparisonSubjects || !onComparisonChange) return;
+    const next = new Set(comparisonSubjects);
+
+    if (shiftKey && lastCheckedRef.current) {
+      // Range select: all subjects between lastChecked and current
+      const ids = allVisibleSubjects.map((s) => s.usubjid);
+      const from = ids.indexOf(lastCheckedRef.current);
+      const to = ids.indexOf(id);
+      if (from >= 0 && to >= 0) {
+        const [lo, hi] = from < to ? [from, to] : [to, from];
+        for (let i = lo; i <= hi; i++) {
+          if (next.size < MAX_COMPARISON_SUBJECTS) next.add(ids[i]);
+        }
+      }
+    } else {
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        if (next.size >= MAX_COMPARISON_SUBJECTS) {
+          setMaxToast(true);
+          setTimeout(() => setMaxToast(false), 3000);
+          return;
+        }
+        next.add(id);
+      }
+    }
+    lastCheckedRef.current = id;
+    onComparisonChange(next);
+  }, [comparisonSubjects, onComparisonChange, allVisibleSubjects]);
+
+  // Toggle all subjects in a dose group
+  const toggleDoseGroup = useCallback((groupSubjects: SubjectHistopathEntry[]) => {
+    if (!comparisonSubjects || !onComparisonChange) return;
+    const groupIds = groupSubjects.map((s) => s.usubjid);
+    const allSelected = groupIds.every((id) => comparisonSubjects.has(id));
+    const next = new Set(comparisonSubjects);
+    if (allSelected) {
+      for (const id of groupIds) next.delete(id);
+    } else {
+      for (const id of groupIds) {
+        if (next.size < MAX_COMPARISON_SUBJECTS) next.add(id);
+      }
+    }
+    onComparisonChange(next);
+  }, [comparisonSubjects, onComparisonChange]);
+
+  // Column tint helper
+  const colTint = (subjId: string) => {
+    const isSingleSelected = selectedSubject === subjId;
+    const isCompSelected = comparisonSubjects?.has(subjId) ?? false;
+    if (isSingleSelected) return "bg-blue-50/50";
+    if (isCompSelected) return "bg-amber-50/40";
+    return "";
+  };
+
+  // Selection bar summary
+  const selectionBarInfo = useMemo(() => {
+    if (!comparisonSubjects || comparisonSubjects.size === 0) return null;
+    const infos: string[] = [];
+    for (const id of comparisonSubjects) {
+      const s = allVisibleSubjects.find((sub) => sub.usubjid === id);
+      if (s) infos.push(`${shortId(id)} (${s.sex}, ${s.dose_label})`);
+      else infos.push(shortId(id));
+    }
+    return infos;
+  }, [comparisonSubjects, allVisibleSubjects]);
+
   // Empty state message (null = show matrix)
   const emptyMessage = isLoading
     ? null
@@ -1616,7 +1710,7 @@ function SubjectHeatmap({
         : null;
 
   return (
-    <div className="border-b p-3">
+    <div className="relative border-b p-3">
       {/* Active filter summary */}
       {!isLoading && subjData && (() => {
         const parts: string[] = [];
@@ -1686,7 +1780,12 @@ function SubjectHeatmap({
                 onPointerDown={onLabelResize}
               />
             </div>
-            {doseGroups.map((dg, gi) => (
+            {doseGroups.map((dg, gi) => {
+              const groupIds = dg.subjects.map((s) => s.usubjid);
+              const allChecked = comparisonSubjects ? groupIds.every((id) => comparisonSubjects.has(id)) : false;
+              const someChecked = comparisonSubjects ? groupIds.some((id) => comparisonSubjects.has(id)) : false;
+
+              return (
               <div
                 key={`${dg.isRecovery ? "R" : ""}${dg.doseLevel}`}
                 className={cn(
@@ -1696,12 +1795,23 @@ function SubjectHeatmap({
               >
                 <div className="text-center" style={{ width: dg.subjects.length * 32 }}>
                   <div className="h-0.5 rounded-full" style={{ backgroundColor: getDoseGroupColor(dg.doseLevel) }} />
-                  <div className="px-1 py-0.5 text-[10px] font-semibold" style={{ color: getDoseGroupColor(dg.doseLevel) }}>
+                  <div className="flex items-center justify-center gap-1 px-1 py-0.5 text-[10px] font-semibold" style={{ color: getDoseGroupColor(dg.doseLevel) }}>
+                    {comparisonSubjects && onComparisonChange && (
+                      <input
+                        type="checkbox"
+                        checked={allChecked}
+                        ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked; }}
+                        onChange={() => toggleDoseGroup(dg.subjects)}
+                        className="h-3 w-3 rounded-sm border-gray-300"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
                     {dg.doseLabel} ({dg.subjects.length})
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Tier 2: Subject IDs */}
@@ -1716,7 +1826,7 @@ function SubjectHeatmap({
                     key={subj.usubjid}
                     className={cn(
                       "w-8 shrink-0 cursor-pointer py-0.5 text-center font-mono text-[9px] text-muted-foreground hover:bg-accent/30",
-                      selectedSubject === subj.usubjid && "bg-blue-50/50"
+                      colTint(subj.usubjid),
                     )}
                     onClick={() => {
                       const next = selectedSubject === subj.usubjid ? null : subj.usubjid;
@@ -1731,6 +1841,33 @@ function SubjectHeatmap({
             ))}
           </div>
 
+          {/* Checkbox row for comparison selection */}
+          {comparisonSubjects && onComparisonChange && (
+            <div className="flex">
+              <div className="sticky left-0 z-10 shrink-0 bg-background" style={{ width: labelColW }} />
+              {doseGroups.map((dg, gi) => (
+                <div key={`${dg.isRecovery ? "R" : ""}${dg.doseLevel}`} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
+                  {dg.subjects.map((subj) => (
+                    <div
+                      key={subj.usubjid}
+                      className={cn(
+                        "flex h-5 w-8 shrink-0 items-center justify-center",
+                        colTint(subj.usubjid),
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={comparisonSubjects.has(subj.usubjid)}
+                        onChange={(e) => toggleComparison(subj.usubjid, (e.nativeEvent as MouseEvent).shiftKey)}
+                        className="h-3 w-3 rounded-sm border-gray-300"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Sex indicator row */}
           {!sexFilter && (
             <div className="flex">
@@ -1744,7 +1881,7 @@ function SubjectHeatmap({
                       key={subj.usubjid}
                       className={cn(
                         "flex h-4 w-8 shrink-0 items-center justify-center text-[8px] font-semibold text-muted-foreground",
-                        selectedSubject === subj.usubjid && "bg-blue-50/50",
+                        colTint(subj.usubjid),
                       )}
                     >
                       {subj.sex}
@@ -1769,7 +1906,7 @@ function SubjectHeatmap({
                       key={subj.usubjid}
                       className={cn(
                         "flex h-4 w-8 shrink-0 items-center justify-center text-[9px] text-muted-foreground",
-                        selectedSubject === subj.usubjid && "bg-blue-50/50"
+                        colTint(subj.usubjid),
                       )}
                       title={hasAny ? `${subj.usubjid}: examined, has findings` : `${subj.usubjid}: no findings recorded`}
                     >
@@ -1813,7 +1950,7 @@ function SubjectHeatmap({
                         key={subj.usubjid}
                         className={cn(
                           "flex h-6 w-8 shrink-0 items-center justify-center",
-                          selectedSubject === subj.usubjid && "bg-blue-50/50"
+                          colTint(subj.usubjid),
                         )}
                         title={
                           hasEntry
@@ -1844,6 +1981,41 @@ function SubjectHeatmap({
       </div>
 
       </>)}
+
+      {/* Selection bar for comparison */}
+      {selectionBarInfo && selectionBarInfo.length > 0 && (
+        <div className="flex items-center gap-2 border-t bg-muted/30 px-3 py-1.5 text-xs">
+          <span className="font-medium text-foreground">
+            {comparisonSubjects!.size} subjects selected:
+          </span>
+          <span
+            className="flex-1 truncate text-muted-foreground"
+            title={selectionBarInfo.join(", ")}
+          >
+            {selectionBarInfo.join(", ")}
+          </span>
+          <button
+            disabled={comparisonSubjects!.size < 2}
+            onClick={onCompareClick}
+            className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
+          >
+            Compare
+          </button>
+          <button
+            onClick={() => onComparisonChange?.(new Set())}
+            className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* Max subjects toast */}
+      {maxToast && (
+        <div className="absolute bottom-4 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-md bg-muted/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+          Maximum {MAX_COMPARISON_SUBJECTS} subjects for comparison. Deselect one to add another.
+        </div>
+      )}
     </div>
   );
 }
@@ -2210,7 +2382,7 @@ function HistopathHypothesesTab({
 
 // ─── Main: HistopathologyView ──────────────────────────────
 
-type EvidenceTab = "overview" | "hypotheses";
+type EvidenceTab = "overview" | "hypotheses" | "compare";
 
 export function HistopathologyView() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -2225,6 +2397,7 @@ export function HistopathologyView() {
   const selectedSpecimen = studySelection.specimen ?? null;
   const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
   const [selection, setSelection] = useState<HistopathSelection | null>(null);
+  const [comparisonSubjects, setComparisonSubjects] = useState<Set<string>>(new Set());
   const { filters } = useGlobalFilters();
   const sexFilter = filters.sex;
   const minSeverity = filters.minSeverity;
@@ -2278,10 +2451,18 @@ export function HistopathologyView() {
     return map;
   }, [trendData, selectedSpecimen]);
 
-  // Reset finding selection when specimen changes (from shell rail)
+  // Reset finding selection and comparison when specimen changes (from shell rail)
   useEffect(() => {
     setSelection(selectedSpecimen ? { specimen: selectedSpecimen } : null);
+    setComparisonSubjects(new Set());
   }, [selectedSpecimen]);
+
+  // Auto-switch away from Compare tab when selection drops below 2
+  useEffect(() => {
+    if (activeTab === "compare" && comparisonSubjects.size < 2) {
+      setActiveTab("overview");
+    }
+  }, [activeTab, comparisonSubjects.size]);
 
   // Bridge finding-level selection to ViewSelectionContext for context panel
   useEffect(() => {
@@ -2390,6 +2571,9 @@ export function HistopathologyView() {
             tabs={[
               { key: "overview", label: "Evidence" },
               { key: "hypotheses", label: "Hypotheses" },
+              ...(comparisonSubjects.size >= 2
+                ? [{ key: "compare", label: "Compare", count: comparisonSubjects.size }]
+                : []),
             ]}
             value={activeTab}
             onChange={(k) => setActiveTab(k as typeof activeTab)}
@@ -2410,6 +2594,9 @@ export function HistopathologyView() {
               minSeverity={minSeverity}
               studyId={studyId}
               trendsByFinding={trendsByFinding}
+              comparisonSubjects={comparisonSubjects}
+              onComparisonChange={setComparisonSubjects}
+              onCompareClick={() => setActiveTab("compare")}
             />
           )}
           {activeTab === "hypotheses" && (
@@ -2417,6 +2604,15 @@ export function HistopathologyView() {
               specimenName={selectedSummary.specimen.replace(/_/g, " ")}
               findingCount={findingSummaries.length}
               selectedFinding={selection?.finding}
+            />
+          )}
+          {activeTab === "compare" && studyId && (
+            <CompareTab
+              studyId={studyId}
+              specimen={selectedSpecimen!}
+              subjectIds={[...comparisonSubjects]}
+              onEditSelection={() => setActiveTab("overview")}
+              onFindingClick={handleFindingClick}
             />
           )}
         </>
