@@ -298,7 +298,7 @@ async def get_subject_profile(study_id: str, usubjid: str):
     study = _get_study(study_id)
 
     # Get subject metadata from DM
-    subjects_df = _get_subjects_df(study)
+    subjects_df = _get_subjects_df(study, include_recovery=True)
     subj_row = subjects_df[subjects_df["USUBJID"] == usubjid]
     if subj_row.empty:
         raise HTTPException(status_code=404, detail=f"Subject '{usubjid}' not found")
