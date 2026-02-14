@@ -51,31 +51,10 @@ export interface HistopathologyViewSelection {
   sex?: string;
 }
 
-export interface FindingsOverviewViewSelection {
-  _view: "findings-overview";
-  endpoint_label: string;
-  organ_system: string;
-  sex?: string;
-  domain?: string;
-}
-
-export interface SignalHeatmapViewSelection {
-  _view: "signal-heatmap";
-  endpoint_label: string;
-  dose_label: string;
-}
-
-export interface FindingsDashboardViewSelection {
-  _view: "findings-dashboard";
-}
-
 export type ViewSelection =
   | NoaelViewSelection
   | HistopathologyViewSelection
-  | ValidationViewSelection
-  | FindingsOverviewViewSelection
-  | SignalHeatmapViewSelection
-  | FindingsDashboardViewSelection;
+  | ValidationViewSelection;
 
 // ─── Context ──────────────────────────────────────────────────
 

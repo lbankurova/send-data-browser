@@ -7,10 +7,6 @@ import { CenterPanel } from "@/components/panels/CenterPanel";
 import { PlaceholderAnalysisView } from "@/components/analysis/PlaceholderAnalysisView";
 import { StudySummaryViewWrapper } from "@/components/analysis/StudySummaryViewWrapper";
 
-// Lazy-loaded findings views
-const AllFindingsOverviewViewWrapper = lazy(() => import("@/components/analysis/findings/AllFindingsOverviewViewWrapper").then(m => ({ default: m.AllFindingsOverviewViewWrapper })));
-const SignalSummaryHeatmapViewWrapper = lazy(() => import("@/components/analysis/findings/SignalSummaryHeatmapViewWrapper").then(m => ({ default: m.SignalSummaryHeatmapViewWrapper })));
-const FindingsDashboardViewWrapper = lazy(() => import("@/components/analysis/findings/FindingsDashboardViewWrapper").then(m => ({ default: m.FindingsDashboardViewWrapper })));
 const AdverseEffectsView = lazy(() => import("@/components/analysis/findings/AdverseEffectsView").then(m => ({ default: m.AdverseEffectsView })));
 
 // Lazy-loaded analysis views (code-split into separate chunks)
@@ -41,19 +37,6 @@ const router = createBrowserRouter([
       {
         path: "/studies/:studyId/domains/:domainName",
         element: <CenterPanel />,
-      },
-      // Findings views
-      {
-        path: "/studies/:studyId/findings-overview",
-        element: <LazyRoute><AllFindingsOverviewViewWrapper /></LazyRoute>,
-      },
-      {
-        path: "/studies/:studyId/signal-heatmap",
-        element: <LazyRoute><SignalSummaryHeatmapViewWrapper /></LazyRoute>,
-      },
-      {
-        path: "/studies/:studyId/findings-dashboard",
-        element: <LazyRoute><FindingsDashboardViewWrapper /></LazyRoute>,
       },
       {
         path: "/studies/:studyId/adverse-effects",
