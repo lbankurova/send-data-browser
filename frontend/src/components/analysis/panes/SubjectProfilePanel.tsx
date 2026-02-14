@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSubjectProfile } from "@/hooks/useSubjectProfile";
 import { cn } from "@/lib/utils";
-import { getDoseGroupColor } from "@/lib/severity-colors";
+import { getDoseGroupColor, getSexColor } from "@/lib/severity-colors";
 import type { SubjectProfile, SubjectMeasurement, SubjectObservation, SubjectFinding } from "@/types/timecourse";
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -371,13 +371,20 @@ function SubjectProfileContent({
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
           <span>
             <span className="text-muted-foreground">Sex: </span>
-            <span style={{ color: profile.sex === "M" ? "#1565C0" : "#C62828" }} className="font-medium">
+            <span style={{ color: getSexColor(profile.sex) }} className="font-medium">
               {profile.sex === "M" ? "Male" : profile.sex === "F" ? "Female" : profile.sex}
             </span>
           </span>
           <span>
             <span className="text-muted-foreground">Dose: </span>
-            <span className="font-mono">{profile.dose_label}</span>
+            {(() => {
+              const idx = profile.dose_label.indexOf(",");
+              if (idx === -1) return <span className="font-mono font-medium" style={{ color: getDoseGroupColor(profile.dose_level) }}>{profile.dose_label}</span>;
+              return <>
+                <span className="font-mono font-medium" style={{ color: getDoseGroupColor(profile.dose_level) }}>{profile.dose_label.slice(0, idx)}</span>
+                <span className="font-mono">,{profile.dose_label.slice(idx + 1)}</span>
+              </>;
+            })()}
           </span>
           {profile.disposition && (
             <span>

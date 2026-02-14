@@ -2216,7 +2216,7 @@ export function HistopathologyView() {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
   const { selection: studySelection, navigateTo } = useStudySelection();
-  const { setSelection: setViewSelection } = useViewSelection();
+  const { setSelection: setViewSelection, setSelectedSubject } = useViewSelection();
   const { data: lesionData, isLoading, error } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: trendData } = useFindingDoseTrends(studyId);
@@ -2405,6 +2405,7 @@ export function HistopathologyView() {
               selection={selection}
               onFindingClick={handleFindingClick}
               onHeatmapClick={handleHeatmapClick}
+              onSubjectClick={setSelectedSubject}
               sexFilter={sexFilter}
               minSeverity={minSeverity}
               studyId={studyId}
