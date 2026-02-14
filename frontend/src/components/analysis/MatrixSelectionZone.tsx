@@ -1,17 +1,17 @@
 import { StripSep } from "@/components/ui/CollapsedStrip";
 import type { FindingTableRow, HeatmapData } from "@/components/analysis/HistopathologyView";
 
-interface MatrixStripSummaryProps {
+interface MatrixSelectionZoneProps {
   selectedRow: FindingTableRow | null;
   heatmapData: HeatmapData | null;
 }
 
 /**
- * Summary content for the severity matrix collapsed strip.
- * - No selection: affected subject counts per top 2 dose groups.
+ * Selection zone content for the severity matrix section header.
  * - Finding selected: per-group affected/N breakdown for that finding.
+ * - No selection: affected subject counts per top 2 dose groups.
  */
-export function MatrixStripSummary({ selectedRow, heatmapData }: MatrixStripSummaryProps) {
+export function MatrixSelectionZone({ selectedRow, heatmapData }: MatrixSelectionZoneProps) {
   if (!heatmapData) return <span className="text-[10px] text-muted-foreground">No data</span>;
 
   if (selectedRow) {
@@ -21,11 +21,11 @@ export function MatrixStripSummary({ selectedRow, heatmapData }: MatrixStripSumm
     return (
       <span className="text-[10px]">
         <span className="text-primary">▸</span>{" "}
-        <span className="font-medium">{selectedRow.finding}</span>:{" "}
+        <span className="font-medium text-foreground/80">{selectedRow.finding}</span>:{" "}
         {groups.length === 0
           ? <span className="text-muted-foreground">no affected subjects</span>
           : groups.map((g, i) => (
-              <span key={g.dl} className="text-muted-foreground">
+              <span key={g.dl} className="text-foreground/70">
                 {i > 0 && ", "}
                 {g.cell!.affected}/{g.cell!.n} in {heatmapData.doseLabels.get(g.dl) ?? `Dose ${g.dl}`}
               </span>

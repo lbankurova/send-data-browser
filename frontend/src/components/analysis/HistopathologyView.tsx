@@ -24,14 +24,12 @@ import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
 import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
-import { ViewSection } from "@/components/ui/ViewSection";
-import { CollapsedStrip } from "@/components/ui/CollapsedStrip";
-import { FindingsStripSummary } from "@/components/analysis/FindingsStripSummary";
-import { DoseChartsStripSummary } from "@/components/analysis/DoseChartsStripSummary";
-import { MatrixStripSummary } from "@/components/analysis/MatrixStripSummary";
-import { useAutoFitSections } from "@/hooks/useAutoFitSections";
-import { useCollapseAll } from "@/hooks/useCollapseAll";
-import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { FindingsSelectionZone } from "@/components/analysis/FindingsSelectionZone";
+import { DoseChartsSelectionZone } from "@/components/analysis/DoseChartsSelectionZone";
+import { MatrixSelectionZone } from "@/components/analysis/MatrixSelectionZone";
+import { useSectionLayout } from "@/hooks/useSectionLayout";
+import { HorizontalResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
 import { buildDoseIncidenceBarOption, buildDoseSeverityBarOption } from "@/components/analysis/charts/histopathology-charts";
 import type { DoseIncidenceGroup, DoseSeverityGroup, ChartDisplayMode } from "@/components/analysis/charts/histopathology-charts";
@@ -451,53 +449,7 @@ function OverviewTab({
   const [severityMode, setSeverityMode] = useState<ChartDisplayMode>("scaled");
   const doseDepMenuRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const sections = useAutoFitSections(containerRef, "histopathology", [
-    { id: "findings", min: 80, max: 500, defaultHeight: 200 },
-    { id: "doseChart", min: 80, max: 400, defaultHeight: 170 },
-  ]);
-  const findingsSection = sections[0];
-  const chartSection = sections[1];
 
-  // ── Section collapse state ─────────────────────────────────
-  type SectionKey = "findings" | "doseCharts" | "matrix";
-  const [collapsed, setCollapsed] = useState<Record<SectionKey, boolean>>({
-    findings: false,
-    doseCharts: false,
-    matrix: false,
-  });
-  const [showCollapseHint, setShowCollapseHint] = useState(false);
-
-  const expandedCount = Object.values(collapsed).filter((c) => !c).length;
-
-  function toggleCollapse(section: SectionKey) {
-    setCollapsed((prev) => {
-      const isCollapsing = !prev[section];
-      // Prevent collapsing the last expanded section
-      if (isCollapsing && expandedCount <= 1) return prev;
-      // Show one-time hint on first collapse
-      if (isCollapsing && !localStorage.getItem("pcc.hints.collapse-maximize")) {
-        localStorage.setItem("pcc.hints.collapse-maximize", "1");
-        setShowCollapseHint(true);
-        setTimeout(() => setShowCollapseHint(false), 3000);
-      }
-      return { ...prev, [section]: !prev[section] };
-    });
-  }
-
-  function maximizeSection(section: SectionKey) {
-    const others = (Object.keys(collapsed) as SectionKey[]).filter((k) => k !== section);
-    const isAlreadyMaximized = others.every((k) => collapsed[k]) && !collapsed[section];
-    if (isAlreadyMaximized) {
-      // Restore all
-      setCollapsed({ findings: false, doseCharts: false, matrix: false });
-    } else {
-      setCollapsed({
-        findings: section !== "findings",
-        doseCharts: section !== "doseCharts",
-        matrix: section !== "matrix",
-      });
-    }
-  }
 
   // Close dose-dep context menu on outside click
   useEffect(() => {
@@ -509,13 +461,12 @@ function OverviewTab({
     return () => document.removeEventListener("mousedown", handler);
   }, [doseDepMenu]);
 
-  // Reset heatmap view state and collapse state when specimen changes (preserve matrix mode)
+  // Reset heatmap view state when specimen changes (preserve matrix mode)
   useEffect(() => {
     setAffectedOnly(true);
     setSubjectSort("dose");
     setDoseGroupFilter(null);
     setSeverityGradedOnly(false);
-    setCollapsed({ findings: false, doseCharts: false, matrix: false });
   }, [specimen]);
 
   // Subject-level data (fetch when in subject mode)
@@ -1015,32 +966,43 @@ function OverviewTab({
     columnResizeMode: "onChange",
   });
 
-  // ── Strip summary: selected row for collapsed strip content ──
+  // ── Selection zone: selected row for header content ──
   const selectedRow = selection?.finding
     ? filteredTableData.find((r) => r.finding === selection.finding) ?? null
     : null;
 
+  // ── Adaptive section layout ─────────────────────────────────
+  const naturalHeights = useMemo(() => ({
+    findings: filteredTableData.length * 28 + 40,
+    doseCharts: 170,
+    matrix: (heatmapData?.findings.length ?? 5) * 24 + 100,
+  }), [filteredTableData.length, heatmapData?.findings.length]);
+
+  const {
+    heights, showHint, isStrip,
+    handleDoubleClick, restoreDefaults, makeResizePointerDown,
+  } = useSectionLayout(containerRef, naturalHeights);
+
+  // Reset section layout when specimen changes
+  useEffect(() => {
+    restoreDefaults();
+  }, [specimen, restoreDefaults]);
+
   return (
-    <div ref={containerRef} className="flex flex-1 flex-col overflow-hidden">
-      {/* One-time collapse hint */}
-      {showCollapseHint && (
-        <div className="shrink-0 bg-blue-50 px-3 py-1 text-[10px] text-blue-600 animate-fade-hint">
-          Tip: double-click any section header to maximize it
+    <div ref={containerRef} className="relative flex flex-1 flex-col overflow-hidden">
+      {/* One-time focus hint */}
+      {showHint && (
+        <div className="absolute bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-md bg-muted/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+          Tip: double-click any section header to maximize it. Double-click again to restore.
         </div>
       )}
-      {/* Top: Findings table (resizable height) */}
-      {collapsed.findings ? (
-        <CollapsedStrip
-          title="Observed findings"
-          count={filteredTableData.length}
-          summary={<FindingsStripSummary findings={filteredTableData} selectedRow={selectedRow} />}
-          onExpand={() => toggleCollapse("findings")}
-          onMaximize={() => maximizeSection("findings")}
-        />
-      ) : (
-      <ViewSection
-        mode="fixed"
-        title={`Observed findings (${filteredTableData.length}${hideZeroSeverity ? ` of ${findingSummaries.length}` : ""})`}
+
+      {/* ── Findings table ──────────────────────────────────── */}
+      <SectionHeader
+        height={heights.findings}
+        title="Observed findings"
+        count={`${filteredTableData.length}${hideZeroSeverity ? ` of ${findingSummaries.length}` : ""}`}
+        selectionZone={<FindingsSelectionZone findings={filteredTableData} selectedRow={selectedRow} />}
         headerRight={
           <label className="flex items-center gap-1 text-[9px] font-normal normal-case tracking-normal text-muted-foreground">
             <input
@@ -1052,11 +1014,11 @@ function OverviewTab({
             Hide zero severity
           </label>
         }
-        height={findingsSection.height}
-        onResizePointerDown={findingsSection.onPointerDown}
-        contentRef={findingsSection.contentRef}
-        onHeaderDoubleClick={() => maximizeSection("findings")}
-      >
+        onDoubleClick={() => handleDoubleClick("findings")}
+        onStripClick={restoreDefaults}
+      />
+      {!isStrip("findings") && (
+      <div style={{ height: heights.findings - 28 }} className="shrink-0 overflow-auto">
       <div className="px-4 py-2">
         {findingSummaries.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No findings for this specimen.</p>
@@ -1115,6 +1077,7 @@ function OverviewTab({
                 return (
                   <tr
                     key={row.id}
+                    data-finding={orig.finding}
                     className={cn(
                       "cursor-pointer border-b border-border/20 transition-colors hover:bg-accent/30",
                       isSelected && "bg-accent"
@@ -1206,26 +1169,24 @@ function OverviewTab({
           </div>
         )}
       </div>
-      </ViewSection>
+      </div>
       )}
 
-      {/* Middle: Dual dose-response charts (resizable) */}
-      {collapsed.doseCharts ? (
-        <CollapsedStrip
-          title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts"}
-          summary={<DoseChartsStripSummary findings={filteredTableData} selectedRow={selectedRow} heatmapData={heatmapData} />}
-          onExpand={() => toggleCollapse("doseCharts")}
-          onMaximize={() => maximizeSection("doseCharts")}
-        />
-      ) : (
-      <ViewSection
-        mode="fixed"
-        title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts (specimen aggregate)"}
-        height={chartSection.height}
-        onResizePointerDown={chartSection.onPointerDown}
-        contentRef={chartSection.contentRef}
-        onHeaderDoubleClick={() => maximizeSection("doseCharts")}
-      >
+      {/* Resize handle between findings and dose charts */}
+      {!isStrip("findings") && !isStrip("doseCharts") && (
+        <HorizontalResizeHandle onPointerDown={makeResizePointerDown("findings")} />
+      )}
+
+      {/* ── Dose charts ─────────────────────────────────────── */}
+      <SectionHeader
+        height={heights.doseCharts}
+        title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts"}
+        selectionZone={<DoseChartsSelectionZone findings={filteredTableData} selectedRow={selectedRow} heatmapData={heatmapData} />}
+        onDoubleClick={() => handleDoubleClick("doseCharts")}
+        onStripClick={restoreDefaults}
+      />
+      {!isStrip("doseCharts") && (
+      <div style={{ height: heights.doseCharts - 28 }} className="shrink-0 overflow-hidden">
         <div className="flex h-full">
           <div className="relative flex-1 border-r border-border/30">
             <div className="absolute left-2 top-1 z-10 flex items-center gap-2">
@@ -1260,44 +1221,42 @@ function OverviewTab({
             )}
           </div>
         </div>
-      </ViewSection>
+      </div>
       )}
 
-      {/* Bottom: Heatmap container (group + subject) */}
-      {collapsed.matrix ? (
-        <CollapsedStrip
-          title={`Severity matrix: ${matrixMode}`}
-          count={heatmapData?.findings.length}
-          summary={<MatrixStripSummary selectedRow={selectedRow} heatmapData={heatmapData} />}
-          onExpand={() => toggleCollapse("matrix")}
-          onMaximize={() => maximizeSection("matrix")}
-        />
-      ) : (
-      <ViewSection
-        mode="flex"
-        title={<>SEVERITY MATRIX:{" "}
-          <span
-            className={cn("cursor-pointer", matrixMode === "group" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
-            onClick={(e) => { e.stopPropagation(); setMatrixMode("group"); }}
-          >GROUP</span>
-          <span className="mx-0.5 text-muted-foreground/30">|</span>
-          <span
-            className={cn("cursor-pointer", matrixMode === "subject" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
-            onClick={(e) => { e.stopPropagation(); setMatrixMode("subject"); }}
-          >SUBJECTS</span>
-          {heatmapData ? (
-            <span className="ml-1 font-normal normal-case tracking-normal text-muted-foreground/60">
-              {heatmapData.findings.length < heatmapData.totalFindings
-                ? `(${heatmapData.findings.length} of ${heatmapData.totalFindings} findings)`
-                : `(${heatmapData.findings.length} ${heatmapData.findings.length === 1 ? "finding" : "findings"})`
-              }
-            </span>
-          ) : ""}
-        </>}
-        onHeaderDoubleClick={() => maximizeSection("matrix")}
-      >
-        {/* Heatmap content */}
-        <div className="flex-1 overflow-auto">
+      {/* Resize handle between dose charts and matrix */}
+      {!isStrip("doseCharts") && !isStrip("matrix") && (
+        <HorizontalResizeHandle onPointerDown={makeResizePointerDown("doseCharts")} />
+      )}
+
+      {/* ── Severity matrix ─────────────────────────────────── */}
+      <SectionHeader
+        height={heights.matrix}
+        titleContent={
+          <span className="shrink-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            SEVERITY MATRIX:{" "}
+            <span
+              className={cn("cursor-pointer", matrixMode === "group" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
+              onClick={(e) => { e.stopPropagation(); setMatrixMode("group"); }}
+            >GROUP</span>
+            <span className="mx-0.5 text-muted-foreground/30">|</span>
+            <span
+              className={cn("cursor-pointer", matrixMode === "subject" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
+              onClick={(e) => { e.stopPropagation(); setMatrixMode("subject"); }}
+            >SUBJECTS</span>
+          </span>
+        }
+        count={heatmapData ? (
+          heatmapData.findings.length < heatmapData.totalFindings
+            ? `${heatmapData.findings.length} of ${heatmapData.totalFindings}`
+            : `${heatmapData.findings.length}`
+        ) : undefined}
+        selectionZone={<MatrixSelectionZone selectedRow={selectedRow} heatmapData={heatmapData} />}
+        onDoubleClick={() => handleDoubleClick("matrix")}
+        onStripClick={restoreDefaults}
+      />
+      {!isStrip("matrix") && (
+      <div style={{ height: heights.matrix - 28 }} className="shrink-0 overflow-auto">
           {matrixMode === "subject" ? (
             <SubjectHeatmap
               subjData={subjData?.subjects ?? null}
@@ -1432,6 +1391,7 @@ function OverviewTab({
                   {heatmapData.findings.map((finding) => (
                     <div
                       key={finding}
+                      data-finding={finding}
                       className={cn(
                         "flex cursor-pointer border-t hover:bg-accent/20",
                         selection?.finding === finding && "ring-1 ring-primary"
@@ -1505,7 +1465,6 @@ function OverviewTab({
             </div>
           )}
         </div>
-      </ViewSection>
       )}
     </div>
   );
@@ -2269,7 +2228,6 @@ export function HistopathologyView() {
   const { filters } = useGlobalFilters();
   const sexFilter = filters.sex;
   const minSeverity = filters.minSeverity;
-  const { expandAll, collapseAll } = useCollapseAll();
 
   // Derived: specimen summaries
   const specimenSummaries = useMemo(() => {
@@ -2435,9 +2393,6 @@ export function HistopathologyView() {
             ]}
             value={activeTab}
             onChange={(k) => setActiveTab(k as typeof activeTab)}
-            right={activeTab === "overview" ? (
-              <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-            ) : undefined}
           />
 
           {/* Tab content */}
