@@ -160,6 +160,19 @@ Shows study-level statements, modifiers, and caveats from `panelData`. Only rend
 - **Study modifiers:** `text-xs leading-relaxed text-foreground/80` with amber triangle icon. Only includes modifiers where `organSystem` is falsy.
 - **Study caveats:** `text-xs leading-relaxed text-foreground/80` with warning icon. Only includes caveats where `organSystem` is falsy.
 
+### Protective Signals Bar
+
+**Component:** `ProtectiveSignalsBar` (inline in `StudySummaryView.tsx`)
+
+Shows below the Study Statements Bar, above the Evidence Panel. Only renders when R18 (protective findings) or R19 (repurposing candidates) rules are present.
+
+Aggregates protective findings:
+- Count of findings with decreased incidence
+- Per-finding rows with incidence percentages (control → high dose), specimen, and sex
+- **Repurposing candidates** (R19): rendered with purple accent, flagged distinctly from protective-only findings
+- **Protective-only findings** (R18): rendered with emerald green accent
+- Clickable navigation: each finding links to the histopathology view for that specimen
+
 ### Organ Rail (left panel, resizable 180-500px, default 300px)
 
 **Component:** `SignalsOrganRail` (from `SignalsPanel.tsx`)
@@ -194,8 +207,9 @@ Each rail item (`SignalsOrganRailItem`):
 - No conclusion sentence — all relevant information is conveyed by the metrics line
 
 #### Tab Bar
-Three tabs: "Evidence", "Signal matrix", "Metrics"
+Four tabs: "Evidence", "Signal matrix", "Metrics", "Rules"
 - Same styling as main tab bar (`text-xs font-medium`, `h-0.5 bg-primary` underline)
+- The "Rules" tab renders `RuleInspectorTab` for browsing and inspecting rule results
 
 #### Evidence Tab (`SignalsOverviewTab`)
 
@@ -312,7 +326,13 @@ When priority 2-3 insights exist:
 
 ## Context Panel (Right Sidebar — 280px)
 
-Route-detected: when pathname matches `/studies/{studyId}`, shows `StudySummaryContextPanel`.
+Route-detected: when pathname matches `/studies/{studyId}`, shows `StudySummaryContextPanel` via `StudySummaryContextPanelWrapper`.
+
+**Wrapper architecture:** `StudySummaryContextPanelWrapper` (in `ContextPanel.tsx`) bridges `StudySelectionContext` to the context panel:
+- Reads `studySel` from `useStudySelection()` hook
+- Extracts `organSelection = studySel.organSystem ?? null`
+- Fetches `signalData` (via `useStudySignalSummary`) and `ruleResults` (via `useRuleResults`)
+- Passes props to `StudySummaryContextPanel` which selects between `OrganPanel` (organ selected, no endpoint) and `EndpointPanel` (endpoint selected)
 
 ### No Selection State
 - Primary message: "Select a signal from the heatmap or grid to view details."
@@ -388,10 +408,19 @@ Key-value pairs, `text-[11px] tabular-nums`:
 - Rows clickable — navigate to dose-response view with `{ state: { endpoint_label, organ_system } }`
 - Empty state: "No correlations in this organ system."
 
-#### Pane 4: Tox Assessment (no pane header — direct `ToxFindingForm`)
+#### Pane 4: Source records (default closed)
+`CollapsiblePane` — `SourceRecordsExpander` component. Expands to show individual animal/subject records matching the signal. Allows drill-down to raw data level. Related to TRUST-07p1 feature.
+
+#### Pane 5: Audit trail (default closed)
+`CollapsiblePane` — `AuditTrailPanel` component. Shows annotation history for the selected endpoint. Related to TRUST-06 feature.
+
+#### Pane 6: Statistical methodology (default closed)
+`CollapsiblePane` — `MethodologyPanel` component. Explains how the signal score was calculated. Related to TRUST-03 feature.
+
+#### Pane 7: Tox Assessment (no pane header — direct `ToxFindingForm`)
 `ToxFindingForm` component with treatment-related dropdown, adversity dropdown, comment textarea, and SAVE button.
 
-#### Pane 5: Related views (default closed)
+#### Pane 8: Related views (default closed)
 Links to Target Organs (with organ_system), Dose-Response (with endpoint_label + organ_system), Histopathology (with organ_system), NOAEL Decision (with organ_system). Style: `text-[11px]`, `text-primary hover:underline`.
 
 ---

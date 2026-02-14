@@ -165,7 +165,7 @@ TanStack React Table with sortable, resizable columns. Section header: `text-xs 
 | finding | Finding | 120px (60-260) | Severity micro-cell (`h-2.5 w-2.5 rounded-sm`, `getNeutralHeatColor(maxSev).bg`) + truncated name (weight escalates: `font-medium` → `font-semibold` at sev 2+ → `font-bold` at sev 4+) |
 | maxSeverity | Peak sev | 50px (40-80) | `font-mono text-[10px]`, weight/opacity escalates with value. Em dash for zero. Tooltip "Max severity: {n.n} (scale 1–5)" |
 | incidence | Incid. | 50px (42-80) | `font-mono text-[10px]`, percentage format. Weight/opacity escalates at 10%/30% thresholds. Em dash for zero. |
-| severity | Signal | 60px (48-100) | **Clinical-aware severity cell.** When statistical severity is "normal" but a clinical catalog match exists, replaces "normal" with clinical class label (Sentinel / High concern / Moderate / Flag) in `text-[9px] font-medium text-gray-500` with `border-l-2 border-l-gray-300`. Tooltip shows both clinical and statistical classification. For adverse/warning/normal without clinical override: left-border color (`#dc2626` adverse, `#d97706` warning, `#16a34a` normal) + severity text. |
+| severity | Signal | 60px (48-100) | **Clinical-aware severity cell** using `signal.*` design tokens. When statistical severity is "normal" but a clinical catalog match exists, replaces "normal" with clinical class label (Sentinel / High concern / Moderate / Flag) via `signal.clinicalOverride` (`border-l-2 border-l-gray-400`, `text-[9px] font-medium text-foreground`). Tooltip shows both clinical and statistical classification. For adverse/warning/normal without clinical override: `signal.adverse` (`border-l-red-600`), `signal.warning` (`border-l-amber-600`), `signal.normal` (`border-l-emerald-400/40`, `text-muted-foreground`). |
 | isDoseDriven | Dose-dep. ▾ | 80px (55-120) | **Switchable dose-dependence method.** Clicking the column header opens a context menu with 4 methods grouped as Heuristic (Moderate+, Strong only) and Statistical (CA trend, Severity trend). Header label changes to reflect active method. Cell shows `✓` when criterion met; for statistical methods, shows p-value in tooltip or "–" with reason when not significant/no data. |
 | relatedOrgans | Also in | 120px (40-300) | Absorber column. `text-muted-foreground`, comma-joined organ names from R16 cross-organ coherence. |
 
@@ -215,6 +215,7 @@ Filter controls render below the section header. Each mode includes common contr
 
 **Group mode adds:**
 - Severity/Incidence toggle: segmented control (`rounded-full` pills, active: `bg-foreground text-background`)
+- Severity graded only: checkbox — filters findings to those with `hasSeverityData === true` (hides findings that have incidence data but no severity grades)
 
 **Subject mode adds:**
 - Dose group filter: `<FilterMultiSelect>` dropdown with checkboxes — "All dose groups" when all selected, single label when one selected, "{N} groups" when multiple. Dropdown panel has "Select all" / "Clear all" link buttons at top, then main arm checkboxes + "Recovery" group header with recovery arm checkboxes. Minimum 1 must remain selected (clear all keeps first option). Short labels strip "Group N," prefix and drug name (e.g., "Group 2, 2 mg/kg PCDRUG" → "2 mg/kg"; "Group 1, Control" → "Control"). State: `ReadonlySet<string> | null` (null = all selected). Composite keys: `"0"`, `"1"` etc. for main arms, `"R0"`, `"R1"` etc. for recovery arms. Computed from `subjData.subjects`, separated by `is_recovery` flag, each sorted by dose_level ascending.
@@ -364,14 +365,14 @@ The `HistopathologyContextPanelWrapper` in `ContextPanel.tsx` fetches `lesionDat
 Header: sticky, specimen name (`text-sm font-semibold`) + review status badge + adverse count badge + `CollapseAllButtons`, domain labels below.
 
 Panes:
-1. **Insights** (default open) — `SpecimenInsights` component rendering `InsightBlock[]` via `deriveSpecimenInsights()`. Blocks grouped into labeled sections:
+1. **Overview** (default open) — conclusion chips (incidence, severity, sex, dose-relation, findings count)
+2. **Insights** (default open, conditional on `specimenRules.length > 0`) — `SpecimenInsights` component rendering `InsightBlock[]` via `deriveSpecimenInsights()`. Blocks grouped into labeled sections:
    - **Treatment-related** (adverse blocks): per-finding, collapsed across sexes with evidence qualifiers (p-value, effect size, incidence/severity increase) and inline clinical annotations
    - **Clinical significance** (clinical blocks): findings matched by clinical catalog but not already in adverse section — shows class + catalog ID + confidence
    - **Decreased with treatment** (protective blocks): per-finding with control→high dose percentages; excluded findings show info kind with exclusion ID
    - **Notes** (info blocks): suppressed protective findings, etc.
-2. **Overview** (default open) — conclusion chips (incidence, severity, sex, dose-relation, findings count)
 3. **Pathology Review** — `PathologyReviewForm` (specimen-level, keyed by `specimen:{name}`)
-4. **Related views** (default closed) — "View target organs", "View dose-response", "View NOAEL decision" links
+4. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL decision" links
 
 Review status is derived via `deriveSpecimenReviewStatus(findingNames, pathReviews)` where `pathReviews` is fetched by the wrapper and passed through.
 
@@ -480,7 +481,7 @@ useAnnotations<PathologyReview> ──> pathReviews (shared cache with context p
 ### Outbound (Context panel — "Related views" pane)
 | Action | Navigates To | State Passed |
 |--------|-------------|-------------|
-| "View target organs" | `/studies/{studyId}/target-organs` | `{ organ_system: specimen }` |
+| "View study summary" | `/studies/{studyId}` | `{ organ_system: specimen }` |
 | "View dose-response" | `/studies/{studyId}/dose-response` | `{ organ_system: specimen }` |
 | "View NOAEL decision" | `/studies/{studyId}/noael-decision` | `{ organ_system: specimen }` |
 

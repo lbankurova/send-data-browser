@@ -1,324 +1,90 @@
 # Target Organs View
 
-**Route:** `/studies/:studyId/target-organs`
-**Component:** `TargetOrgansView.tsx` (wrapped by `TargetOrgansViewWrapper.tsx`)
+**Route:** `/studies/:studyId/target-organs` → **redirects to** `/studies/:studyId` (study summary)
+**Component:** No dedicated center-panel view. Organ selection lives in the shell-level `OrganRailMode` (`components/shell/OrganRailMode.tsx`).
 **Scientific question:** "Which organ systems show converging evidence of toxicity?"
-**Role:** Organ-level convergence assessment. Two-panel master-detail layout with organ rail and evidence panel (Evidence + Hypotheses + Metrics tabs). Identifies target organs by aggregating evidence across endpoints and domains.
+**Role:** Organ-level convergence assessment. Organ selection via the shell rail; organ-scoped content appears in the Study Summary evidence panel and context panel when an organ is selected.
+
+> **Implementation note:** The route `/studies/:studyId/target-organs` is defined in `App.tsx` as `<Navigate to=".." replace />`, which redirects to the study summary. There is no `TargetOrgansView.tsx` or `TargetOrgansViewWrapper.tsx`. All organ-level functionality is provided by the shell rail (`OrganRailMode`) and the context panel (`TargetOrgansContextPanel` via `ContextPanel.tsx`).
 
 ---
 
-## Layout
-
-The view lives in the center panel of the 3-panel shell:
+## Architecture
 
 ```
-+--[260px]--+----------[flex-1]----------+--[280px]--+
-|            |                            |            |
-| Browsing   |  Target Organs View        | Context    |
-| Tree       |  (this document)           | Panel      |
-|            |                            |            |
-+------------+----------------------------+------------+
++--[260px]--+--[rail]--+----------[flex-1]----------+--[280px]--+
+|            |          |                            |            |
+| Browsing   | Organ    | Study Summary View         | Context    |
+| Tree       | Rail     | (center panel content)     | Panel      |
+|            | Mode     |                            | (organ-    |
+|            | (shell)  |                            |  scoped)   |
++------------+----------+----------------------------+------------+
 ```
 
-The view itself is a two-panel master-detail layout (matching Dose-Response, Histopathology, NOAEL, and Signals views):
-
-```
-+--[300px*]-+-+---------------------------------------[flex-1]-+
-|            |R| OrganSummaryHeader                              |
-| Organ      |e|  organ name, TARGET + sex badges, subtitle,    |
-| Rail       |s|  conclusion, 6 compact metrics                 |
-|            |i+------------------------------------------------+
-| search     |z| [Evidence] [Hypotheses] [Metrics] <-- tab bar  |
-| organ 1    |e+------------------------------------------------+
-| organ 2    | | Tab content:                                    |
-| organ 3    | |  Evidence: domain breakdown, coherence, insights|
-| ...        | |  Hypotheses: organ-level tools (5 tools)        |
-|            | |  Metrics: filters, sortable grid                |
-+------------+-+------------------------------------------------+
-             ^ PanelResizeHandle (4px)
-* default 300px, resizable 180-500px via useResizePanel
-```
-
-The evidence panel has a subtle muted background (`bg-muted/5`) to visually distinguish it from the crisp-white context panel where conclusions live.
-
-Responsive: stacks vertically below 1200px (`max-[1200px]:flex-col`). Rail becomes horizontal 180px tall strip.
-
-Rail is resizable via `useResizePanel(300, 180, 500)` with a `PanelResizeHandle` between panels (hidden on narrow viewports).
+When the user navigates to `/target-organs`, the redirect shows the study summary in the center panel. The shell-level `OrganRailMode` (in `PolymorphicRail`) provides organ selection. Clicking an organ updates `StudySelectionContext`, which the study summary and context panel react to.
 
 ---
 
-## Organ Rail (left panel, 300px default)
+## Organ Rail (shell-level `OrganRailMode`)
 
-`shrink-0 border-r`, width set via `useResizePanel`. Inner `OrganRail` component uses `flex h-full w-full flex-col overflow-hidden`.
+**File:** `frontend/src/components/shell/OrganRailMode.tsx` (394 lines)
+
+The organ rail is a shell-level component in `PolymorphicRail`, not embedded in a view. It fetches its own data via `useTargetOrganSummary()`, `useStudySignalSummary()`, and `useOrganEvidenceDetail()`.
 
 ### Header
 
 - Label: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` -- "Organ systems ({N})"
-- Search input: `mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs` with placeholder "Search organs..."
+- Search input: filters organs by name (case-insensitive substring match)
+
+### Filters
+
+- Search text (organ name)
+- Adverse-only checkbox
+- Significant-only checkbox
+
+### Sort Modes (`OrganSortMode`)
+
+- **Evidence** (default): targets first, then `evidence_score` descending
+- **Adverse**: `n_treatment_related` descending
+- **Effect**: `max_signal_score` descending
+- **Alpha**: alphabetical by `organ_system`
 
 ### Rail Items
 
-Each `OrganListItem` is a `<button>` with:
-- Container: `w-full text-left border-b border-border/40 px-3 py-2 transition-colors`
-- Selected: `bg-accent`
-- Not selected: `hover:bg-accent/30`
+Each `OrganRailItem` is a `<button>`:
 
-**Row 1:** Organ name + TARGET badge.
-- Organ name: `text-xs font-semibold` (uses `titleCase()`)
-- TARGET badge: `text-[9px] font-semibold uppercase text-[#DC2626]` -- only shown if `target_organ_flag` is true. Single Tier 1 conclusion indicator per card (no redundant colored left border or tier dots).
+**Row 1:** Organ name (`text-xs font-semibold`, `titleCase()`) + direction arrow + TARGET badge (if `target_organ_flag`)
 
-**Row 2:** Evidence bar -- neutral gray alignment matching Signals and Histopathology rails. Track: `h-1.5 flex-1 rounded-full bg-[#E5E7EB]`, fill: `bg-[#D1D5DB]`. Width proportional to `evidence_score / maxEvidenceScore` (minimum 4%). Numeric value: `shrink-0 font-mono text-[10px] tabular-nums`, font-semibold for >= 0.5, font-medium for >= 0.3.
+**Row 2:** Evidence bar with popover -- neutral gray fill, proportional to `evidence_score / maxEvidenceScore`
 
-**Row 3:** Signal metrics -- `text-[10px]` row showing min p-value (font-mono text-muted-foreground, font-semibold if < 0.001, font-medium if < 0.01), max |d| (font-mono text-muted-foreground, font-semibold if >= 0.8, font-medium if >= 0.5), and dose consistency label (`text-[9px] text-muted-foreground`, plain text — no color differentiation). Computed per-organ from `organStatsMap` via `computeOrganStats()`.
+**Row 3:** Signal metrics -- min p-value, max |d|, dose consistency label (all neutral text)
 
-**Row 4:** Stats line -- `{N} sig · {M} TR · {D} domains` + domain chips (plain colored text: `text-[9px] font-semibold` with domain-specific color class via `getDomainBadgeColor().text`).
+**Row 4:** Counts and domain labels (plain colored text via `getDomainBadgeColor().text`)
+
+**Row 5:** Max effect size and trend p-value
 
 ### Per-Organ Stats
 
-`organStatsMap: Map<string, OrganStats>` computed in main component from all evidence rows. `computeOrganStats(rows)` returns:
-- `minPValue: number | null` -- smallest p-value across all evidence rows for this organ
-- `maxEffectSize: number | null` -- largest absolute effect size
-- `doseConsistency: "Weak" | "Moderate" | "Strong"` -- via `getDoseConsistency()`
+`computeOrganRailStats(rows)` returns:
+- `maxAbsEffectSize: number | null`
+- `minTrendP: number | null`
+- `dominantDirection: string | null`
 
-### Sorting
+### Keyboard Navigation
 
-Organs sorted by `evidence_score` descending.
+Uses `useRailKeyboard()` hook -- arrow keys navigate organ list, Enter/Space selects.
 
-### Auto-Select
+### Selection
 
-On data load, auto-selects the top organ (highest evidence score). Also notifies the wrapper via `onSelectionChange`.
-
-### Search
-
-Filters organs by name (case-insensitive substring match, underscores replaced with spaces). Empty state: "No matches for '{search}'".
-
-### Cross-View Inbound
-
-If `location.state` contains `{ organ_system: string }`, auto-selects matching organ in rail and clears the history state via `window.history.replaceState({}, "")`.
+Clicking an organ calls `navigateTo({ organSystem: organ })` which updates `StudySelectionContext`.
 
 ---
 
-## Organ Summary Header
+## Center-Panel Content
 
-`shrink-0 border-b px-4 py-3`
+> **NOT IMPLEMENTED.** The route `/studies/:studyId/target-organs` redirects to the study summary view. No dedicated `TargetOrgansView.tsx` exists. The organ summary header, tab bar, evidence tab, hypotheses tab, and metrics tab described below are **planned features** that have not been built. Organ-scoped content currently appears in the Study Summary evidence panel when an organ is selected via the shell rail.
 
-### Title row (flex, gap-2)
-
-- Organ name: `text-sm font-semibold` (uses `titleCase()`)
-- TARGET ORGAN badge (if `target_organ_flag`): `text-[10px] font-semibold uppercase text-[#DC2626]`
-- Sex specificity badge: `rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground` -- "Male only" | "Female only" | "Both sexes". Derived from unique `sex` values in `organEvidenceRows` via `deriveSexLabel()`.
-
-### Subtitle line (NEW)
-
-`mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground` -- domain chips (colored text via `getDomainBadgeColor().text`, rendered as flex items with gap spacing) + `·` separator before endpoint count. Example: `LB` `MI` `BW` · "15 endpoints"
-
-### 1-line conclusion
-
-`mt-1 text-xs leading-relaxed text-foreground/80`
-
-Deterministic sentence built by `deriveOrganConclusion()` from:
-- **Convergence**: "convergent evidence" (if target_organ_flag) or "evidence"
-- **Domains**: "across {N} domain(s)"
-- **Significance**: "{sig}/{total} significant ({pct}%)"
-- **Sex**: from `deriveSexLabel()` (lowercase)
-- **Dose relationship**: "dose-dependent" if R01/R04 rules present, else from `getDoseConsistency()` -- "dose-trending" (Strong), "some dose pattern" (Moderate), "no clear dose pattern" (Weak)
-
-Example: *"Convergent evidence across 3 domains, 8/15 significant (53%), both sexes, dose-dependent."*
-
-### Compact metrics (6 items, two visual rows)
-
-`mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]` -- six metrics in key-value pairs:
-
-| Metric | Source | Formatting |
-|--------|--------|------------|
-| Max signal | `organ.max_signal_score` | font-mono, font-semibold if >= 0.8, font-medium otherwise |
-| Evidence | `organ.evidence_score` | font-mono, font-semibold if >= 0.5, font-medium otherwise |
-| Min p | `localStats.minPValue` | font-mono, font-semibold if < 0.01, font-medium otherwise |
-| Max \|d\| | `localStats.maxEffectSize` | font-mono, font-semibold if >= 0.8, font-medium otherwise |
-| Domains | `organ.n_domains` | font-medium |
-| Dose consistency | `localStats.doseConsistency` | font-medium (plain text, no color) |
-
-`localStats` computed in header via `computeOrganStats(evidenceRows)`.
-
----
-
-## Tab Bar
-
-Uses `ViewTabBar` component: `flex shrink-0 items-center border-b bg-muted/30` with nested flex container for tabs.
-
-Three tabs: **Evidence**, **Hypotheses**, **Metrics**
-
-Active tab: `text-foreground` + `h-0.5 bg-primary` underline.
-Inactive tab: `text-muted-foreground hover:text-foreground`.
-
-This matches the canonical tab bar pattern (CLAUDE.md hard rule).
-
-Metrics tab shows row count indicator: right-aligned `ml-auto mr-3 text-[10px] text-muted-foreground` -- "{organ_rows} of {total_rows} rows".
-
-Tab bar uses `bg-muted/30` for visual consistency with Dose-Response view.
-
----
-
-## Evidence Tab (internal component: `OverviewTab`)
-
-`flex-1 overflow-y-auto px-4 py-3` -- scrollable content.
-
-### Domain Breakdown
-
-Section header: flex row with title + dose consistency badge.
-- Title: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` -- "Domain breakdown"
-- Dose consistency badge: `text-[10px] text-muted-foreground` -- "Dose consistency: {Weak|Moderate|Strong}". Computed by `getDoseConsistency()` which checks significance-rate monotonicity across dose levels per endpoint.
-
-Static HTML table (`w-full text-xs`) with columns:
-
-| Column | Header | Cell Rendering |
-|--------|--------|----------------|
-| Domain | Domain | Plain colored text: `text-[10px] font-semibold` with `getDomainBadgeColor().text` color class |
-| Endpoints | Endpoints | Unique endpoint count per domain |
-| Significant | Significant | Count of rows with p_value < 0.05, font-semibold if > 0 |
-| TR | TR | Treatment-related count, font-semibold if > 0 |
-
-Rows sorted by significant count descending. Computed by grouping `organEvidenceRows` by domain.
-
-### Top Findings by Effect Size
-
-Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` -- "Top findings by effect size"
-
-Shows up to 10 evidence rows with the largest absolute effect size (filtered to effect_size > 0, sorted desc).
-
-Each finding is a row:
-- Container: `flex items-center gap-2 rounded border border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30` with `data-evidence-row` attribute for canonical evidence hover pattern
-- Endpoint name: `min-w-[140px] truncate font-medium`
-- Direction symbol: `shrink-0 text-sm text-muted-foreground`
-- Effect size: `ev shrink-0 font-mono text-muted-foreground`, font-semibold if |d| >= 0.8. Uses `ev` class + `data-evidence` for interaction-driven `#DC2626` on hover/selection.
-- P-value: `ev shrink-0 font-mono text-muted-foreground`, font-semibold if < 0.001, font-medium if < 0.01. Uses `ev` class + `data-evidence` for interaction-driven `#DC2626` on hover/selection.
-- Severity badge: `shrink-0 rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium text-muted-foreground`
-- TR label (if treatment_related): `shrink-0 text-[9px] font-medium text-muted-foreground`
-- Sex and dose: `ml-auto shrink-0 text-muted-foreground` -- "{sex} · {dose}"
-
-### Cross-Organ Coherence Hint
-
-Rendered between "Top findings" and "Insights" when R16 rules are relevant. Two possible lines, both `text-[11px] text-muted-foreground`:
-
-1. **Convergent endpoints** (if R16 rules match this organ's `organ_system`): "Convergent findings: {endpoint1}, {endpoint2}, ..."
-   - Extracts endpoint names from R16 `output_text` matching pattern `"{endpoints} show convergent pattern"`.
-2. **Related organs** (if other organs share endpoint labels with this organ's evidence): "Related findings also observed in {other_organ}."
-   - Scans all R16 rules for other organs whose output_text mentions any of this organ's endpoint labels.
-   - Organ names displayed via `titleCase()`.
-
-If no R16 match found, nothing is rendered (no empty state).
-
-### Insights
-
-Only shown when organ-scoped rule results exist. Section header: "Insights". Uses `InsightsList` component with `organRules` (pre-filtered at parent level -- matches on `context_key === "organ_{organ_system}"` or `organ_system === selectedOrgan`).
-
-### Empty State
-
-"No evidence rows for this organ." (`py-8 text-center text-xs text-muted-foreground`)
-
----
-
-## Hypotheses Tab (NEW)
-
-Organ-level exploratory tools following the Dose-Response view pattern. Provides interactive analysis tools that are session-scoped and never affect conclusions.
-
-### Cognitive Mode
-
-The Hypotheses tab is an **exploration space** — tools for investigating organ-level patterns. It is clearly separated from Evidence (curated facts) by the tab boundary. A persistent italic note "Does not affect conclusions" appears in the toolbar.
-
-### Toolbar
-
-`flex items-center gap-1 border-b bg-muted/20 px-4 py-1.5`
-
-- **Favorite pills**: rounded-full buttons for pinned tools. Active: `bg-foreground text-background`. Inactive: `text-muted-foreground hover:bg-accent hover:text-foreground`. Right-click to toggle favorite.
-- **`+` dropdown**: searchable dropdown to browse and select tools. Selecting a non-favorited tool auto-adds it to favorites.
-- **"Does not affect conclusions"**: right-aligned `text-[10px] italic text-muted-foreground`.
-
-### Right-Click Context Menu
-
-Fixed position, `z-50 min-w-[160px] rounded-md border bg-popover`. Single option: "Add to favorites" / "Remove from favorites" with Pin icon.
-
-### Tools
-
-5 organ-level tools, 3 available (render context-aware placeholders), 2 require production infrastructure:
-
-| Tool | Key | Icon | Available | Description |
-|------|-----|------|-----------|-------------|
-| Evidence heatmap | `heatmap` | `Grid3X3` | Yes | Endpoint × dose matrix showing convergent signals |
-| Domain contribution | `domain` | `PieChart` | Yes | Which domains drive the evidence for this organ |
-| Organ comparison | `comparison` | `Columns2` | Yes | Compare evidence profiles of two organs |
-| Pathway analysis | `pathway` | `GitBranch` | No | Mechanistic links between endpoints in this organ |
-| Temporal pattern | `temporal` | `Clock` | No | Recovery group data and time-course changes |
-
-Default favorites: `["heatmap", "domain"]`
-
-### Tool Placeholders
-
-Each available tool shows:
-1. `ViewerPlaceholder` -- centered icon + viewer type label + context string (organ name, endpoint count, domain list)
-2. Description paragraph -- `text-xs text-muted-foreground`
-3. Config card -- `rounded-md border bg-card p-3` with `ConfigLine` key-value pairs
-
-Unavailable tools additionally show a `ProductionNote` -- `text-[11px] italic text-muted-foreground/60`.
-
-### State
-
-| State | Type | Default |
-|-------|------|---------|
-| `intent` | `OrganToolIntent` | `"heatmap"` |
-| `favorites` | `OrganToolIntent[]` | `["heatmap", "domain"]` |
-| `dropdownOpen` | `boolean` | `false` |
-| `dropdownSearch` | `string` | `""` |
-| `contextMenu` | `{ x, y, tool } \| null` | `null` |
-
----
-
-## Metrics Tab (formerly Evidence Table)
-
-Two zones: filter bar + scrollable TanStack table, scoped to the selected organ.
-
-### Filter Bar
-
-`flex items-center gap-2 border-b bg-muted/30 px-4 py-2`
-
-| Filter | Type | Control | Default |
-|--------|------|---------|---------|
-| Domain | Dropdown | `<select>` with "All domains" + domains in selected organ | All |
-| Sex | Dropdown | `<select>` with "All sexes" / Male / Female | All |
-
-No organ dropdown (organ already selected via rail). Row count indicator: right-aligned `ml-auto text-[10px] text-muted-foreground`, "{N} findings".
-
-### Evidence Grid
-
-TanStack React Table with `enableColumnResizing: true`, `columnResizeMode: "onChange"`, `ColumnSizingState`. Table uses `tableLayout: "fixed"` with width from `table.getCenterTotalSize()`.
-
-**Header row:** `sticky top-0 z-10 bg-background`, border-b bg-muted/50.
-- Headers: `relative cursor-pointer px-2 py-1.5 text-left font-medium hover:bg-accent/50`
-- Clickable for sorting (shows triangle arrow: `▲` asc / `▼` desc)
-- Column resize handle: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize`, blue when actively resizing
-
-**Columns:**
-
-| Column | Header | Cell Rendering |
-|--------|--------|----------------|
-| endpoint_label | Endpoint | Truncated at 30 chars with ellipsis, `title` tooltip |
-| domain | Domain | Plain colored text: `text-[10px] font-semibold` with `getDomainBadgeColor().text` color class |
-| dose_level | Dose | `text-muted-foreground`, shows `dose_label.split(",")[0]` |
-| sex | Sex | Plain text |
-| p_value | P-value | `ev font-mono`, font-semibold if < 0.001, font-medium if < 0.01. Uses `ev` class + `data-evidence=""` on `<td>` for hover/selection coloring (`#DC2626`) |
-| effect_size | Effect | `ev font-mono`, font-semibold if |d| >= 0.8, font-medium if |d| >= 0.5. Uses `ev` class + `data-evidence=""` on `<td>` for hover/selection coloring (`#DC2626`) |
-| direction | Dir | Direction symbol (`getDirectionSymbol()`), `text-sm text-muted-foreground` |
-| severity | Severity | `inline-block rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground` |
-| treatment_related | TR | "Yes" in `font-medium` or "No" in `text-muted-foreground` |
-
-### Row Interactions
-
-- Hover: `hover:bg-accent/50`
-- Selected: `bg-accent` (matched on `endpoint_label` + `sex` + `organ_system`)
-- Click: sets endpoint-level selection (with `endpoint_label` and `sex`). Click again to deselect back to organ-level selection.
-- Row cells: `px-2 py-1`
-
-**Row cap:** None -- all rows rendered.
+The following sections document the **planned design** for a future dedicated center-panel view. They are retained for reference but do not reflect current code.
 
 ---
 
@@ -402,68 +168,49 @@ All links: `block text-primary hover:underline`, arrow suffix.
 
 | State | Scope | Managed By |
 |-------|-------|------------|
-| Selected organ | Local | `useState<string \| null>` -- which organ is active in the rail |
-| Active tab | Local | `useState<EvidenceTab>` -- "evidence" \| "hypotheses" \| "metrics" |
-| Selection (organ/endpoint) | Shared via context | `ViewSelectionContext` with `_view: "target-organs"` tag, bridged via `TargetOrgansViewWrapper` |
-| Domain filter | Local | `useState<string \| null>` -- for Metrics tab, clears on organ change |
-| Sex filter | Local | `useState<string \| null>` -- for Metrics tab, clears on organ change |
-| Sorting | Local | `useState<SortingState>` -- TanStack sorting state (in EvidenceTableTab) |
-| Column sizing | Local | `useState<ColumnSizingState>` -- TanStack column resize state (in EvidenceTableTab) |
-| Rail width | Local | `useResizePanel(300, 180, 500)` |
-| Rail search | Local | `useState<string>` inside OrganRail |
-| Organ rules | Derived | `useMemo` -- rules filtered to selected organ, shared between header and evidence tab |
-| Organ stats map | Derived | `useMemo` -- per-organ signal stats from all evidence rows |
+| Selected organ | Shared via context | `StudySelectionContext` (`studySelection.organSystem`) -- set by shell-level `OrganRailMode` |
+| Rail search | Local (OrganRailMode) | `useState<string>` inside `OrganRailMode` shell component |
+| Rail sort | Local (OrganRailMode) | `useState<OrganSortMode>` -- "evidence" \| "adverse" \| "effect" \| "alpha" |
+| Rail filters | Local (OrganRailMode) | adverse-only, significant-only checkboxes |
 | Tier filter | Local (context panel) | `useState<Tier \| null>` -- filters InsightsList tiers |
 | Collapse all | Local (context panel) | `useCollapseAll()` -- generation counters for expand/collapse |
-| Organ summary data | Server | `useTargetOrganSummary` hook (React Query, 5min stale) |
-| Evidence detail data | Server | `useOrganEvidenceDetail` hook (React Query, 5min stale) |
-| Rule results | Server | `useRuleResults` hook (shared cache with context panel and center view) |
-| Hypotheses intent | Local (HypothesesTabContent) | `useState<OrganToolIntent>` -- current tool |
-| Hypotheses favorites | Local (HypothesesTabContent) | `useState<OrganToolIntent[]>` -- pinned tools |
+| Organ summary data | Server | `useTargetOrganSummary` hook (React Query, 5min stale) -- fetched by OrganRailMode |
+| Evidence detail data | Server | `useOrganEvidenceDetail` hook (React Query, 5min stale) -- fetched by OrganRailMode |
+| Signal summary data | Server | `useStudySignalSummary` hook -- fetched by OrganRailMode for stats |
+| Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
 
 ---
 
 ## Data Flow
 
 ```
-useTargetOrganSummary(studyId)  --> organData (14 organs, TargetOrganRow[])
-useOrganEvidenceDetail(studyId) --> evidenceData (357 rows, OrganEvidenceRow[])
-useRuleResults(studyId)         --> ruleResults (shared React Query cache)
-                                        |
-                              sortedOrgans (evidence_score desc)
-                              organStatsMap (per-organ signal metrics)
-                                        |
-                                OrganRail (search filter, auto-select top, stats)
-                                        |
-                              [selectedOrgan] --> filter evidenceData
-                                        |
-                              organEvidenceRows --> organRules (filtered at parent)
-                                        |
-                              deriveSexLabel() / getDoseConsistency()
-                              deriveOrganConclusion() / computeOrganStats()
-                                /          |              \
-                      Evidence Tab   Hypotheses Tab    Metrics Tab
-                      (domain bkdn,  (5 organ tools,   (domain/sex filter,
-                       dose consist,  favorites bar,     sortable grid,
-                       top findings,  dropdown, ctx      column resize)
-                       coherence,     menu)
-                       insights)
-                                \          |              /
-                            OrganSelection (shared via ViewSelectionContext)
-                                        |
-                          TargetOrgansContextPanel
-                             /     |       \       \
-                      Convergence  Domain    Related  ToxAssessment
-                      (tier count  coverage  Views    (conditional)
-                       summary)    (counts)
+OrganRailMode (shell component)
+  ├─ useTargetOrganSummary(studyId)  --> organData (14 organs)
+  ├─ useStudySignalSummary(studyId)  --> signal data for rail stats
+  └─ useOrganEvidenceDetail(studyId) --> evidence data for stats
+                    |
+          sorted/filtered organ list
+                    |
+          [user clicks organ] --> navigateTo({ organSystem: organ })
+                    |
+          StudySelectionContext.organSystem updated
+                    |
+          TargetOrgansContextPanel (via ContextPanel.tsx routing)
+                /     |       \       \
+         Convergence  Domain    Related  ToxAssessment
+         (tier count  coverage  Views    (conditional)
+          summary)    (counts)
 ```
+
+> **Note:** No center-panel view processes organ data. Organ-scoped content appears only in the context panel and (when organ is selected) in the Study Summary evidence panel.
 
 ---
 
 ## Cross-View Navigation
 
 ### Inbound
-- From other views with `location.state`: `{ organ_system: string }` -- auto-selects matching organ in rail, then clears history state.
+- Route `/studies/:studyId/target-organs` redirects to study summary via `<Navigate to=".." replace />`
+- From other views passing `{ organ_system: string }` in `location.state` -- the shell rail reads `StudySelectionContext` to highlight the matching organ.
 
 ### Outbound (Context panel -- Related views pane)
 | Action | Navigates To | State Passed |
@@ -478,12 +225,10 @@ useRuleResults(studyId)         --> ruleResults (shared React Query cache)
 
 | State | Display |
 |-------|---------|
-| Loading | Centered spinner `Loader2` (animate-spin) + "Loading target organ data..." |
-| Error (no generated data) | Red box with instructions to run generator command |
-| No organ selected (but data exists) | "Select an organ system to view evidence details." |
-| No data at all | "No target organ data available." |
+| Loading (rail) | Spinner in `OrganRailMode` while data fetches |
+| No data at all (rail) | Empty rail state |
 | Empty search results (rail) | "No matches for '{search}'" |
-| No evidence rows (evidence tab) | "No evidence rows for this organ." |
+| No organ selected (context panel) | "Select an organ system to view convergence details." |
 
 ---
 

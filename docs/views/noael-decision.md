@@ -20,31 +20,26 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a flex column: persistent NOAEL Banner at top, then a two-panel master-detail layout with a resizable rail below (matching Target Organs, Dose-Response, Signals, and Histopathology views):
+The view itself is a flex column: persistent NOAEL Banner at top, then the evidence panel below. Organ selection is provided by the shell-level organ rail (not embedded in the view):
 
 ```
 +-----------------------------------------------------------+
 |  NOAEL Determination (persistent, non-scrolling)           |
 |  [Combined card] [Males card] [Females card]               |
-+--[300px*]-+-+---------------------------------------[flex-1]-+
-|            |R| OrganHeader                                    |
-| Organ      |e|  organ name, adverse count, summary text,     |
-| Rail       |s|  compact metrics (max |d|, min p, endpoints)  |
-|            |i+------------------------------------------------+
-| search     |z| [Evidence] [Adversity matrix]  <── tab bar     |
-| organ 1    |e+------------------------------------------------+
-| organ 2    | | Tab content:                                    |
-| organ 3    | |  Evidence: endpoint summary, insights            |
-| ...        | |  Adversity matrix: filters, matrix, grid        |
-|            | |                                                  |
-+------------+-+------------------------------------------------+
-             ^ PanelResizeHandle (4px)
-* default 300px, resizable 180-500px via useResizePanel
++-----------------------------------------------------------+
+| OrganHeader                                                |
+|  organ name, adverse count, summary text,                  |
+|  compact metrics (max |d|, min p, endpoints)               |
++-----------------------------------------------------------+
+| [Evidence] [Adversity matrix]  <── tab bar                 |
++-----------------------------------------------------------+
+| Tab content:                                               |
+|  Evidence: endpoint summary, insights                      |
+|  Adversity matrix: filters, matrix, grid                   |
++-----------------------------------------------------------+
 ```
 
-The rail width is controlled by `useResizePanel(300, 180, 500)` — default 300px, draggable between 180px and 500px. A `PanelResizeHandle` (4px vertical drag strip) sits between the rail and evidence panel, hidden at narrow widths (`max-[1200px]:hidden`).
-
-Responsive: stacks vertically below 1200px (`max-[1200px]:flex-col`). Rail becomes horizontal 180px tall strip with `max-[1200px]:!w-full`.
+The shell organ rail (`OrganRailMode`) lives in the left rail panel of the three-panel layout and provides organ selection, search, and sorting.
 
 ---
 
@@ -83,39 +78,13 @@ Card surface is always neutral (plain `border`). Color is confined to the status
 
 ---
 
-## Organ Rail (left panel, resizable 300px default)
+## Organ Selection (shell-level rail)
 
-Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWidth` comes from `useResizePanel(300, 180, 500)`. On narrow viewports: `max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto`.
+The NOAEL view does **not** embed its own organ rail. Instead, it declares a preference for the shell-level organ rail via `useRailModePreference("organ")` in `NoaelDecisionViewWrapper`. The organ rail (`OrganRailMode` in `components/shell/`) provides organ selection, search, and sorting — shared with the study summary and target organs contexts.
 
-### Header
-- Label: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Organ systems ({N})"
-- Search input: `mt-1.5 w-full rounded border bg-background px-2 py-1 text-xs` with placeholder "Search organs..."
+The selected organ flows from `StudySelectionContext` (`studySelection.organSystem`). Organ items, sorting, and search are managed by `OrganRailMode` (see `docs/systems/navigation-and-layout.md`).
 
-### Rail Items
-
-Each `OrganRailItem` is a `<button>` using design tokens from `rail` (`rail.itemBase`, `rail.itemSelected`, `rail.itemIdle`) with `px-3 py-2`.
-
-**Row 1:** Organ name (`text-xs font-semibold`, displayed via `titleCase()` from `severity-colors.ts`) + adverse count (`text-[10px] text-muted-foreground` — "N adverse")
-
-**Row 2:** Bar — adverse count normalized to max across all organs. Neutral gray fill (`bg-[#D1D5DB]` on `bg-[#E5E7EB]` track). Fraction: `shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground` — "adverse/total".
-
-**Row 3:** Stats line — `{N} endpoints · {M} TR` + domain chips (plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` color class).
-
-### Organ Click Behavior
-
-Clicking an organ in the rail resets both sex and TR filters to null, clears the endpoint selection, and calls `onSelectionChange(null)`.
-
-### Sorting
-
-Organs sorted by: `adverseCount` desc → `trCount` desc → `maxEffectSize` desc.
-
-### Auto-Select
-
-On data load, auto-selects the top organ (highest adverse count).
-
-### Search
-
-Filters organs by name (case-insensitive substring match, underscores treated as spaces). Empty state: "No matches for '{search}'".
+When the user clicks an organ in the shell rail, the view reads the selection and filters adverse effect data accordingly. Clicking an organ resets both sex and TR filters to null and clears any endpoint selection.
 
 ---
 
@@ -277,7 +246,7 @@ Panes (ordered per design system priority — insights → stats → annotation 
 
 | State | Scope | Managed By |
 |-------|-------|------------|
-| Selected organ | Local | `useState<string \| null>` — which organ is active in the rail |
+| Selected organ | Shared via context | `StudySelectionContext` (`studySelection.organSystem`) — set by shell-level organ rail |
 | Active tab | Local | `useState<EvidenceTab>` — "overview" (Evidence tab) or "matrix" (Adversity matrix tab) |
 | Selection (endpoint) | Local | `useState<NoaelSelection \| null>` — endpoint + dose + sex selection |
 | Sex filter | Local | `useState<string \| null>` — for Adversity matrix tab |
@@ -285,7 +254,7 @@ Panes (ordered per design system priority — insights → stats → annotation 
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in AdversityMatrixTab) |
 | Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in AdversityMatrixTab) |
 | Section heights | Local (AdversityMatrixTab) | `useAutoFitSections` — matrix section (250px default, 80-500px) |
-| Rail width | Local | `MasterDetailLayout` — default 300px, resizable 180-500px |
+| Rail width | Shell | Managed by shell-level `OrganRailMode` (not embedded in this view) |
 | NOAEL summary data | Server | `useNoaelSummary` hook (React Query, 5min stale) |
 | Adverse effect data | Server | `useAdverseEffectSummary` hook (React Query, 5min stale) |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
@@ -348,7 +317,7 @@ useRuleResults(studyId)           ──> ruleResults (shared React Query cache)
 |-------|---------|
 | Loading | Centered spinner `Loader2` (animate-spin) + "Loading NOAEL data..." |
 | Error (no generated data) | Red box with instructions to run generator command |
-| No organ selected (but data exists) | "Select an organ system to view adverse effect details." |
+| No organ selected (but data exists) | "Select an organ system to view adverse effect details." AND "Select an organ system from the shell rail." (known bug: duplicate empty states rendered simultaneously) |
 | No data at all | "No adverse effect data available." |
 | Empty search results (rail) | "No matches for '{search}'" |
 | No data for organ (both tabs empty) | "No data for this organ." |

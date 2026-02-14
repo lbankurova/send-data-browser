@@ -50,14 +50,26 @@ If no rule is selected, the bottom area shows: "Select a rule above to view affe
 
 ## Dual-Mode Tab System
 
-The view partitions rules into two modes via a `ViewTabBar` at the top:
+The view partitions rules into three modes via a `ViewTabBar` at the top:
 
 - **Data quality** (default): All rules where `category !== "Study design"`
 - **Study design**: Rules where `category === "Study design"`
+- **Rule catalog**: Browsable rule reference (all fired and available rules). Renders `ValidationRuleCatalog` component instead of the dual-table layout.
 
-Each tab shows its count in parentheses (e.g., "Data quality (12)"). The active tab has a `bg-primary` underline indicator.
+Each tab shows its count in parentheses (e.g., "Data quality (12)") except Rule catalog which has no count. The active tab has a `bg-primary` underline indicator.
 
 Mode switching (`handleModeChange`) resets: selected rule, selected issue, severity filter, source filter, record filters, and selection context. The mode is also persisted as a URL search parameter (`?mode=study-design` for the study design tab; the param is deleted for data quality).
+
+### Rule Catalog Mode
+
+When `mode === "rule-catalog"`, the dual-table layout is replaced by the `ValidationRuleCatalog` component. This provides:
+
+- Browsable list of all fired rules with expandable detail rows
+- Rule metadata: rule ID, severity, domain, category, description, source (CORE/custom)
+- Fix tier information and applicable fix scripts per rule
+- Evidence type documentation
+- CORE conformance details when available
+- Related to TRUST-05 (transparency features)
 
 The `ViewTabBar` component renders as `flex shrink-0 items-center border-b bg-muted/30`. Tab buttons are `px-4 py-1.5 text-xs font-medium`. Active tab: `text-foreground` with `absolute inset-x-0 bottom-0 h-0.5 bg-primary` underline. Inactive tab: `text-muted-foreground hover:text-foreground`.
 
@@ -540,7 +552,7 @@ Located at `panes/ValidationRecordForm.tsx`. A standalone record-level annotatio
 
 | State | Scope | Managed By |
 |-------|-------|------------|
-| Mode (data-quality / study-design) | Local + URL | `useState<ValidationMode>`, synced to `?mode=` search param |
+| Mode (data-quality / study-design / rule-catalog) | Local + URL | `useState<ValidationMode>`, synced to `?mode=` search param |
 | Rule sorting | Local | `useState<SortingState>` |
 | Record sorting | Local | `useState<SortingState>` |
 | Rule column sizing | Local | `useState<ColumnSizingState>` |

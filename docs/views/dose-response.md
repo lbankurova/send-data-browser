@@ -20,111 +20,70 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a two-panel layout with a resizable rail:
+The view itself is a single-panel layout with a dropdown endpoint picker in the summary header:
 
 ```
-+--[300px*]-+-+--------[flex-1]--------+
-|            |R|                        |
-| Endpoint   |e| Evidence Panel         |
-| Rail       |s| (summary header +     |
-| (organ-    |i|  tabs: evidence /      |
-| grouped)   |z|  metrics / hypotheses)    |
-+------------+-+------------------------+
-             ^ PanelResizeHandle (4px)
-* default 300px, resizable 180-500px via useResizePanel
++-----------------------------------------------------------+
+| [Endpoint picker ▾]  Summary header                        |
+|  endpoint name, pattern badge, conclusion,                  |
+|  compact metrics (trend p, min p, max |d|, data, NOAEL)   |
++-----------------------------------------------------------+
+| [Evidence] [Hypotheses] [Metrics]  <── tab bar             |
++-----------------------------------------------------------+
+| Tab content:                                                |
+|  Evidence: chart area, time-course, pairwise table         |
+|  Hypotheses: tool selector, viewer/form                     |
+|  Metrics: filter bar, sortable grid                        |
++-----------------------------------------------------------+
 ```
 
-The rail width is controlled by `useResizePanel(300, 180, 500)` -- default 300px, draggable between 180px and 500px. A `PanelResizeHandle` (4px vertical drag strip) sits between the rail and evidence panel.
-
-Responsive: `max-[1200px]:flex-col` -- rail collapses to a 180px horizontal strip with `max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b`. The resize handle is hidden at narrow widths (`max-[1200px]:hidden`).
+There is no left-panel endpoint rail. Endpoint selection is via the `DoseResponseEndpointPicker` dropdown component in the evidence panel header.
 
 ---
 
-## Endpoint Rail (Left, resizable 300px default)
+## Endpoint Picker (dropdown, not left-panel rail)
 
-Container: `shrink-0 flex-col` with `style={{ width: railWidth }}` where `railWidth` comes from `useResizePanel(300, 180, 500)`. Border-right via parent. On narrow viewports: `max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b`.
+**Component:** `DoseResponseEndpointPicker.tsx`
 
-### Rail Header
+The view uses a dropdown button for endpoint selection, not a left-panel rail. The picker appears in the evidence panel header area.
 
-`shrink-0 border-b px-2 py-1.5`
+### Trigger Button
 
-**Top row:** `mb-0.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground`
-- Left: "Endpoints ({N})" where N is the total number of unique endpoints.
-- Right: `CollapseAllButtons` component with expand-all / collapse-all buttons for organ groups.
+```
+flex items-center gap-1.5 rounded border px-2 py-1 text-left text-xs transition-colors
+```
+- Open: `border-primary bg-accent`
+- Closed: `border-border hover:border-primary/50 hover:bg-accent/50`
+- Content: selected endpoint name (`max-w-[280px] truncate font-medium`) + organ system label (`text-[10px] text-muted-foreground`, via `titleCase()`) + `ChevronDown` icon (rotates 180° when open)
 
-**Subtitle:** `mb-1.5 text-[10px] text-muted-foreground/60` -- "by signal strength"
+### Dropdown Panel
 
-**Search input:** Inline flex layout with Search icon (consistent with all view rails).
-- Container: `flex items-center gap-1.5`
-- Icon: `Search h-3 w-3 shrink-0 text-muted-foreground`
-- Input: `w-full bg-transparent py-1 text-xs focus:outline-none`, placeholder "Search endpoints..."
-- Filters by `endpoint_label` or `organ_system` (case-insensitive substring match)
+`absolute left-0 top-full z-50 mt-1 w-[420px] rounded-md border bg-popover shadow-lg`
 
-**Bookmark filter toggle:** Conditionally rendered when `bookmarkCount > 0`. A pill button:
-- `mt-1.5 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors`
-- Active: `border-amber-300 bg-amber-100 text-amber-800`
-- Inactive: `border-border text-muted-foreground hover:bg-accent/50`
-- Content: `Star` icon (h-2.5 w-2.5, filled when active), bookmark count in `font-mono`, "bookmarked"
-- Click toggles `bookmarkFilter` state, which filters rail to only bookmarked endpoints
+**Search input:** Top of dropdown with placeholder text for filtering endpoints by name or organ system.
 
-### Rail Body
+**Bookmark filter toggle:** Conditionally rendered when bookmarks exist. Same bookmark pill styling as described in endpoint item features.
 
-`flex-1 overflow-y-auto`
+**Content:** Endpoints grouped by organ system. Each group has:
+- **Group header:** `sticky top-0 z-10 flex items-center gap-1.5 border-b bg-muted/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` — organ name via `titleCase()` + count
+- **Endpoint rows:** Each row shows endpoint name, direction arrow, pattern badge, p-value, effect size, bookmark star
 
-Organ groups sorted by `max_signal_score` descending. When `bookmarkFilter` is active, groups are filtered to only contain bookmarked endpoints.
+### Endpoint Row Details
 
-**Empty state:** "No endpoints match your search." -- `p-3 text-center text-xs text-muted-foreground`
+Each endpoint in the dropdown shows:
+- Endpoint name: truncated, `font-semibold` when selected
+- Bookmark star: `BookmarkStar` component, toggleable
+- Direction arrow: neutral `text-muted-foreground` (categorical identity)
+- Pattern badge: neutral gray (`bg-gray-100 text-gray-600`)
+- Trend p-value: `ev text-[10px] font-mono text-muted-foreground`
+- Max effect size: `ev text-[10px] font-mono text-muted-foreground`
+- Timecourse indicator: clock symbol when `has_timecourse`
+- Assessment checkmark: when ToxFinding annotation exists
 
-### Organ Group Header
+### Endpoint Selection
 
-`button w-full` -- full-width clickable header for expand/collapse.
-
-`flex w-full items-center gap-1.5 border-b px-3 py-1.5 text-left text-[11px] font-semibold hover:bg-accent/50`
-
-| Element | Rendering |
-|---------|-----------|
-| Chevron | `ChevronDown` (expanded) or `ChevronRight` (collapsed), `h-3 w-3 shrink-0 text-muted-foreground` |
-| Organ name + count | Wrapped in `min-w-0 flex-1` div. Top line: `flex items-center gap-1` with organ name via `titleCase()` in a `truncate` span, and endpoint count in `text-[10px] font-normal text-muted-foreground` |
-| Domain labels | Below organ name, `flex gap-1.5`. Each domain rendered as `text-[9px] font-semibold` with color from `getDomainBadgeColor(d).text`. Only shown when `group.domains.length > 0`. |
-
-**Collapsed-with-selection highlight:** If the group contains the selected endpoint but is collapsed, applies `bg-accent/30`.
-
-Click toggles expand/collapse.
-
-### Endpoint Item (within expanded group)
-
-`button w-full border-b border-dashed px-3 py-1.5 text-left transition-colors hover:bg-accent/50`
-
-Selected: `bg-accent`
-
-Carries `data-rail-item=""` and `data-selected` attributes.
-
-**Row 1:** `flex items-center gap-1`
-- Endpoint name: `flex-1 truncate text-xs`, `font-semibold` when selected, `font-medium` otherwise. Full name shown as `title` tooltip.
-- Bookmark star: `BookmarkStar` component. Toggles bookmark on click via `useToggleBookmark`.
-- Direction arrow (right-aligned): `text-xs text-muted-foreground`. Arrows are categorical identity, so they stay neutral.
-
-| Direction | Arrow |
-|-----------|-------|
-| up | `\u2191` |
-| down | `\u2193` |
-| mixed | `\u2195` |
-| null | (none) |
-
-- Sex divergence indicator: Shown when `ep.sex_divergence != null && ep.sex_divergence > 0.5`. Renders a unicode gender symbol (♂/♀) + divergent sex letter ("M" or "F") in `text-[10px] font-semibold text-muted-foreground` (neutral — sex is categorical identity, not signal). Title tooltip shows `Sex divergence: |d_M - d_F| = {value} ({sex} has larger effect)`.
-
-**Row 2:** `mt-0.5 flex items-center gap-1.5`
-- Pattern badge: first word of the pattern label, `rounded px-1 py-0.5 text-[9px] font-medium leading-tight`. **Neutral gray for all patterns** (`bg-gray-100 text-gray-600`, `text-gray-500` for flat, `text-gray-400` for insufficient). Pattern-specific colors were removed: the pattern text communicates the category; signal strength is encoded by p-value and effect size in the same row.
-- Trend p-value: `ev text-[10px] font-mono text-muted-foreground`, `font-semibold` when `min_trend_p < 0.01` -- "p={value}". Neutral at rest via `text-muted-foreground`, interaction-driven `#DC2626` via `ev` class.
-- Max effect size: `ev text-[10px] font-mono text-muted-foreground`, `font-semibold` when `max_effect_size >= 0.8` -- "|d|={value}" (2 decimal places), shown only when non-null. Neutral at rest, interaction-driven color.
-- Min N: `text-[10px] font-mono text-muted-foreground/60` -- "n={min_n}", shown only when non-null
-- Timecourse indicator: `text-[10px] text-muted-foreground/40` -- unicode clock symbol, shown when `ep.has_timecourse` is true, with title "Temporal data available"
-- Assessment checkmark: `text-[10px] text-muted-foreground/40` -- checkmark, shown when a ToxFinding annotation exists for the endpoint with `treatmentRelated !== "Not Evaluated"`, with title "Assessment complete"
-
-### Endpoint Item Interaction
-
-- Click: selects the endpoint, switches to "Evidence" tab, updates selection context.
-- No toggle-off on re-click from the rail (only metrics table rows toggle).
+- Click: selects endpoint, closes dropdown, switches to Evidence tab, updates `StudySelectionContext`
+- Auto-select on data load: highest-signal endpoint
 
 ---
 
@@ -578,7 +537,7 @@ Empty state: "No other endpoints in this organ system."
 #### Pane 5: Related views (default closed)
 
 Cross-view navigation links in `text-[11px]`:
-- "View target organ: {titleCase(organ_system)}" (only if `organ_system` present in selection) -- navigates to `/studies/{studyId}/target-organs` with `state: { organ_system }`
+- "View study summary: {titleCase(organ_system)}" (only if `organ_system` present in selection) -- navigates to `/studies/{studyId}` with `state: { organ_system }`
 - "View histopathology" -- navigates to `/studies/{studyId}/histopathology` with `state: { organ_system }`
 - "View NOAEL decision" -- navigates to `/studies/{studyId}/noael-decision` with `state: { organ_system }`
 
@@ -590,17 +549,16 @@ All links: `block text-primary hover:underline`, arrow suffix (`&#x2192;`).
 
 | State | Scope | Managed By |
 |-------|-------|------------|
-| Selected endpoint | Local | `useState<string \| null>` -- tracks which endpoint is active in the rail and evidence panel |
+| Selected endpoint | Local | `useState<string \| null>` -- tracks which endpoint is active in the picker and evidence panel |
 | Active tab | Local | `useState<"evidence" \| "hypotheses" \| "metrics">` -- switches between evidence, metrics, and hypotheses views |
 | Rail search | Local | `useState<string>` -- text input for filtering endpoints in the rail |
-| Expanded organs | Local | `useState<Set<string>>` -- tracks which organ groups are expanded in the rail |
-| Selection | Shared via context | `ViewSelectionContext` with `_view: "dose-response"` tag, propagated via `onSelectionChange` callback |
+| Expanded organs | Local | `useState<Set<string>>` -- tracks which organ groups are expanded in the picker dropdown |
+| Selection | Shared via context | `StudySelectionContext` via `useStudySelection()` hook |
 | Metrics filters | Local | `useState` -- `{ sex, data_type, organ_system }`, each nullable string |
 | sigOnly | Local | `useState<boolean>(false)` -- checkbox filter for p < 0.05 rows |
 | Sorting | Local | `useState<SortingState>` -- TanStack sorting state for metrics table |
 | Column sizing | Local | `useState<ColumnSizingState>` -- TanStack column resize state for metrics table |
-| Rail width | Local | `useResizePanel(300, 180, 500)` -- resizable rail width (default 300px, range 180-500px) |
-| Bookmark filter | Local | `useState<boolean>(false)` -- toggles rail to show only bookmarked endpoints |
+| Bookmark filter | Local | `useState<boolean>(false)` -- toggles picker to show only bookmarked endpoints |
 | Bookmarks | Server | `useEndpointBookmarks(studyId)` hook |
 | Dose-response data | Server | `useDoseResponseMetrics(studyId)` hook (React Query) |
 | Rule results | Server | `useRuleResults(studyId)` hook (consumed by Hypotheses tab and context panel) |
@@ -694,7 +652,7 @@ Accepts `location.state` with `{ organ_system?, endpoint_label? }`:
 
 | From | Action | Navigates To |
 |------|--------|-------------|
-| Context panel > Related views | Click "View target organ" | `/studies/{studyId}/target-organs` with `state: { organ_system }` |
+| Context panel > Related views | Click "View study summary" | `/studies/{studyId}` with `state: { organ_system }` |
 | Context panel > Related views | Click "View histopathology" | `/studies/{studyId}/histopathology` with `state: { organ_system }` |
 | Context panel > Related views | Click "View NOAEL decision" | `/studies/{studyId}/noael-decision` with `state: { organ_system }` |
 
@@ -1141,10 +1099,15 @@ All Hypotheses tab state is session-scoped:
 
 ## Wrapper Component
 
-`DoseResponseViewWrapper.tsx` wraps `DoseResponseView` and connects it to `ViewSelectionContext`:
+`DoseResponseViewWrapper.tsx` is a minimal wrapper that renders `DoseResponseView` without additional context connections:
 
-- `handleSelectionChange`: forwards selections with `_view: "dose-response"` tag via `setSelection`
-- `handleSubjectClick`: forwards subject clicks via `setSelectedSubject` (from time-course subject trace interactions)
+```tsx
+export function DoseResponseViewWrapper() {
+  return <DoseResponseView />;
+}
+```
+
+The view uses `StudySelectionContext` (not `ViewSelectionContext`) for selection management. Selection is handled internally via `useStudySelection()` hook with `navigateTo()` calls.
 
 ---
 
