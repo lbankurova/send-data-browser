@@ -42,8 +42,8 @@ const StudySelectionContext = createContext<StudySelectionContextValue>({
 // Cascading logic
 // ---------------------------------------------------------------------------
 
+/** Hierarchy fields that cascade. Sex is excluded — it's a filter, not a level. */
 const FIELD_ORDER: (keyof SelectionUpdate)[] = [
-  "sex",
   "organSystem",
   "specimen",
   "endpoint",
@@ -60,7 +60,10 @@ function applyCascade(
 ): StudySelection {
   const next: StudySelection = { studyId: prev.studyId };
 
-  // Find the highest-level field that changed
+  // Sex is a filter, not a hierarchy level — set it but never cascade from it
+  next.sex = "sex" in update ? update.sex : prev.sex;
+
+  // Find the highest-level hierarchy field that changed
   let cascadeFrom = -1;
   for (let i = 0; i < FIELD_ORDER.length; i++) {
     const key = FIELD_ORDER[i];

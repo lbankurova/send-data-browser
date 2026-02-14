@@ -204,6 +204,9 @@ export function SpecimenRailMode() {
     if (filters.adverseOnly) {
       list = list.filter((s) => s.adverseCount > 0);
     }
+    if (filters.significantOnly) {
+      list = list.filter((s) => s.adverseCount > 0 || s.warningCount > 0);
+    }
 
     // Local filters
     if (minSevFilter > 0) {
@@ -247,6 +250,7 @@ export function SpecimenRailMode() {
     specimens,
     filters.search,
     filters.adverseOnly,
+    filters.significantOnly,
     minSevFilter,
     doseTrendFilter,
     sortBy,
