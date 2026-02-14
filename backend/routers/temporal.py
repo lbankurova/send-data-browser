@@ -611,3 +611,205 @@ async def get_histopath_subjects(
         "findings": all_findings,
         "subjects": subject_list,
     }
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 5: Multi-subject comparison (cross-domain)
+# ---------------------------------------------------------------------------
+
+@router.get("/studies/{study_id}/subjects/compare")
+async def compare_subjects(
+    study_id: str,
+    ids: str = Query(..., description="Comma-separated subject IDs (short or full)"),
+):
+    """Cross-domain comparison data for multiple subjects.
+
+    Returns lab values, body weights, clinical observations, and control
+    group statistics for the requested subjects. Used by the Compare tab.
+    """
+    study = _get_study(study_id)
+    raw_ids = [s.strip() for s in ids.split(",") if s.strip()]
+    if len(raw_ids) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 subject IDs required")
+    if len(raw_ids) > 8:
+        raise HTTPException(status_code=400, detail="Maximum 8 subjects for comparison")
+
+    subjects_df = _get_subjects_df(study, include_recovery=True)
+
+    # Resolve short IDs (e.g., "2104") to full USUBJIDs (e.g., "PC201708-2104")
+    full_ids: list[str] = []
+    for rid in raw_ids:
+        if rid in subjects_df["USUBJID"].values:
+            full_ids.append(rid)
+        else:
+            # Try suffix match
+            matches = subjects_df[subjects_df["USUBJID"].str.endswith(f"-{rid}")]["USUBJID"].tolist()
+            if matches:
+                full_ids.append(matches[0])
+            else:
+                raise HTTPException(status_code=404, detail=f"Subject '{rid}' not found")
+
+    # --- Subject profiles ---
+    profiles = []
+    for fid in full_ids:
+        row = subjects_df[subjects_df["USUBJID"] == fid].iloc[0]
+        short_id = fid.split("-")[-1] if "-" in fid else fid[-4:]
+
+        # Disposition from DS
+        disposition = None
+        disposition_day = None
+        if "ds" in study.xpt_files:
+            try:
+                ds_df = _read_domain_df(study, "DS")
+                ds_subj = ds_df[ds_df["USUBJID"] == fid]
+                if not ds_subj.empty:
+                    if "DSDECOD" in ds_subj.columns:
+                        disposition = str(ds_subj["DSDECOD"].iloc[0])
+                    elif "DSTERM" in ds_subj.columns:
+                        disposition = str(ds_subj["DSTERM"].iloc[0])
+                    if "DSDY" in ds_subj.columns:
+                        day_val = pd.to_numeric(ds_subj["DSDY"].iloc[0], errors="coerce")
+                        if pd.notna(day_val):
+                            disposition_day = int(day_val)
+            except Exception:
+                pass
+
+        profiles.append({
+            "usubjid": fid,
+            "short_id": short_id,
+            "sex": str(row["SEX"]),
+            "dose_level": int(row["dose_level"]),
+            "dose_label": str(row["dose_label"]),
+            "disposition": disposition,
+            "disposition_day": disposition_day,
+        })
+
+    # --- Body weights ---
+    body_weights: list[dict] = []
+    if "bw" in study.xpt_files:
+        try:
+            bw_df = _read_domain_df(study, "BW")
+            bw_df = bw_df[bw_df["USUBJID"].isin(full_ids)]
+            val_col, day_col, unit_col = "BWSTRESN", "BWDY", "BWSTRESU"
+            bw_df[val_col] = pd.to_numeric(bw_df[val_col], errors="coerce")
+            bw_df[day_col] = pd.to_numeric(bw_df[day_col], errors="coerce")
+            bw_df = bw_df.dropna(subset=[val_col, day_col])
+            for _, r in bw_df.iterrows():
+                body_weights.append({
+                    "usubjid": str(r["USUBJID"]),
+                    "day": int(r[day_col]),
+                    "weight": round(float(r[val_col]), 2),
+                })
+        except Exception:
+            pass
+
+    # --- Lab values ---
+    lab_values: list[dict] = []
+    available_timepoints: list[int] = []
+    if "lb" in study.xpt_files:
+        try:
+            lb_df = _read_domain_df(study, "LB")
+            lb_df = lb_df[lb_df["USUBJID"].isin(full_ids)]
+            val_col, day_col, unit_col, testcd_col = "LBSTRESN", "LBDY", "LBSTRESU", "LBTESTCD"
+            lb_df[val_col] = pd.to_numeric(lb_df[val_col], errors="coerce")
+            lb_df[day_col] = pd.to_numeric(lb_df[day_col], errors="coerce")
+            lb_df = lb_df.dropna(subset=[val_col, day_col])
+            available_timepoints = sorted(lb_df[day_col].dropna().unique().astype(int).tolist())
+            for _, r in lb_df.iterrows():
+                lab_values.append({
+                    "usubjid": str(r["USUBJID"]),
+                    "test": str(r[testcd_col]) if testcd_col in lb_df.columns else "",
+                    "unit": str(r[unit_col]) if unit_col in lb_df.columns and r[unit_col] != "" else "",
+                    "day": int(r[day_col]),
+                    "value": round(float(r[val_col]), 4),
+                })
+        except Exception:
+            pass
+
+    # --- Clinical observations ---
+    clinical_obs: list[dict] = []
+    if "cl" in study.xpt_files:
+        try:
+            cl_df = _read_domain_df(study, "CL")
+            cl_df = cl_df[cl_df["USUBJID"].isin(full_ids)]
+            finding_col = "CLSTRESC" if "CLSTRESC" in cl_df.columns else "CLRESULT"
+            day_col = "CLDY" if "CLDY" in cl_df.columns else "VISITDY"
+            if day_col in cl_df.columns:
+                cl_df[day_col] = pd.to_numeric(cl_df[day_col], errors="coerce")
+            for _, r in cl_df.iterrows():
+                clinical_obs.append({
+                    "usubjid": str(r["USUBJID"]),
+                    "day": int(r[day_col]) if day_col in cl_df.columns and pd.notna(r.get(day_col)) else 0,
+                    "observation": str(r[finding_col]) if finding_col in cl_df.columns else "",
+                })
+        except Exception:
+            pass
+
+    # --- Control group stats ---
+    # Sexes of the selected subjects (for sex-specific controls)
+    selected_sexes = set(p["sex"] for p in profiles)
+    control_subjects = subjects_df[subjects_df["dose_level"] == 0]
+    if selected_sexes and len(selected_sexes) == 1:
+        sex_val = next(iter(selected_sexes))
+        control_subjects = control_subjects[control_subjects["SEX"] == sex_val]
+    control_ids = control_subjects["USUBJID"].tolist()
+
+    # Control lab stats (terminal timepoint = max day per test)
+    control_lab: dict[str, dict] = {}
+    if "lb" in study.xpt_files and control_ids:
+        try:
+            lb_all = _read_domain_df(study, "LB")
+            lb_ctrl = lb_all[lb_all["USUBJID"].isin(control_ids)]
+            val_col, day_col, unit_col, testcd_col = "LBSTRESN", "LBDY", "LBSTRESU", "LBTESTCD"
+            lb_ctrl[val_col] = pd.to_numeric(lb_ctrl[val_col], errors="coerce")
+            lb_ctrl[day_col] = pd.to_numeric(lb_ctrl[day_col], errors="coerce")
+            lb_ctrl = lb_ctrl.dropna(subset=[val_col, day_col])
+            if not lb_ctrl.empty:
+                # Use terminal timepoint (max day) per test
+                for test, tgrp in lb_ctrl.groupby(testcd_col):
+                    max_day = tgrp[day_col].max()
+                    terminal = tgrp[tgrp[day_col] == max_day]
+                    vals = terminal[val_col].dropna()
+                    if len(vals) >= 1:
+                        unit = str(terminal[unit_col].iloc[0]) if unit_col in terminal.columns and terminal[unit_col].iloc[0] != "" else ""
+                        control_lab[str(test)] = {
+                            "mean": round(float(vals.mean()), 4),
+                            "sd": round(float(vals.std(ddof=1)), 4) if len(vals) > 1 else 0.0,
+                            "unit": unit,
+                            "n": int(len(vals)),
+                        }
+        except Exception:
+            pass
+
+    # Control BW stats (mean/SD per day)
+    control_bw: dict[str, dict] = {}
+    if "bw" in study.xpt_files and control_ids:
+        try:
+            bw_all = _read_domain_df(study, "BW")
+            bw_ctrl = bw_all[bw_all["USUBJID"].isin(control_ids)]
+            val_col, day_col = "BWSTRESN", "BWDY"
+            bw_ctrl[val_col] = pd.to_numeric(bw_ctrl[val_col], errors="coerce")
+            bw_ctrl[day_col] = pd.to_numeric(bw_ctrl[day_col], errors="coerce")
+            bw_ctrl = bw_ctrl.dropna(subset=[val_col, day_col])
+            for day_val, dgrp in bw_ctrl.groupby(day_col):
+                vals = dgrp[val_col].dropna()
+                if len(vals) >= 1:
+                    control_bw[str(int(day_val))] = {
+                        "mean": round(float(vals.mean()), 2),
+                        "sd": round(float(vals.std(ddof=1)), 2) if len(vals) > 1 else 0.0,
+                        "n": int(len(vals)),
+                    }
+        except Exception:
+            pass
+
+    return {
+        "subjects": profiles,
+        "lab_values": lab_values,
+        "body_weights": body_weights,
+        "clinical_obs": clinical_obs,
+        "control_stats": {
+            "lab": control_lab,
+            "bw": control_bw,
+        },
+        "available_timepoints": available_timepoints,
+    }
