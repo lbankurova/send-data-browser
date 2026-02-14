@@ -7,7 +7,7 @@ import { useAnnotations } from "@/hooks/useAnnotations";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { FilterSelect, FilterShowingLine } from "@/components/ui/FilterBar";
+import { FilterSelect, FilterSearch, FilterShowingLine } from "@/components/ui/FilterBar";
 import {
   getNeutralHeatColor as getNeutralHeatColor01,
   getDoseConsistencyWeight,
@@ -147,7 +147,7 @@ type SpecimenSort = "signal" | "organ" | "severity" | "incidence" | "alpha";
 export function SpecimenRailMode() {
   const { studyId } = useParams<{ studyId: string }>();
   const { selection, navigateTo } = useStudySelection();
-  const { filters } = useGlobalFilters();
+  const { filters, setFilters } = useGlobalFilters();
   const { data: lesionData } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: annotationsData } = useAnnotations<PathologyReview>(studyId, "pathology_review");
@@ -265,6 +265,11 @@ export function SpecimenRailMode() {
           <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Specimens ({specimens.length})
           </span>
+          <FilterSearch
+            value={filters.search}
+            onChange={(v) => setFilters({ search: v })}
+            placeholder="Type to search..."
+          />
         </div>
 
         <FilterShowingLine

@@ -215,7 +215,7 @@ export function FilterSearch({
             ref.current?.blur();
           }
         }}
-        className="w-12 border-none bg-transparent px-0 text-[10px] text-foreground placeholder:text-muted-foreground/30 focus:w-20 focus:outline-none"
+        className="w-20 border-none bg-transparent px-0 text-[10px] text-foreground placeholder:text-muted-foreground/30 focus:w-28 focus:outline-none"
       />
     </div>
   );

@@ -43,23 +43,14 @@ export function PolymorphicRail() {
       {/* Global filter bar */}
       <div className="shrink-0 border-b px-2.5 py-1.5">
         <div className="flex items-center gap-1.5">
-          <input
-            type="text"
-            placeholder="Search\u2026"
-            value={filters.search}
-            onChange={(e) => setFilters({ search: e.target.value })}
-            className="min-w-0 flex-1 rounded border bg-background px-2 py-1 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
-          />
           <FilterSelect
             value={filters.sex ?? ""}
             onChange={(e) => setFilters({ sex: e.target.value || null })}
           >
-            <option value="">All</option>
+            <option value="">All sexes</option>
             <option value="M">M</option>
             <option value="F">F</option>
           </FilterSelect>
-        </div>
-        <div className="mt-1 flex items-center gap-2">
           <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
             <input
               type="checkbox"
