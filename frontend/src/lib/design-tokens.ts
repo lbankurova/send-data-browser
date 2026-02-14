@@ -264,6 +264,24 @@ export const layout = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Signal cell — severity/classification indicator in findings tables (signal)
+// ---------------------------------------------------------------------------
+
+export const signal = {
+  /** Adverse (data-driven) — red border, medium weight */
+  adverse: "inline-block border-l-2 border-l-red-600 pl-1.5 py-px text-[9px] font-medium text-gray-600",
+  /** Warning (data-driven) — amber border, medium weight */
+  warning: "inline-block border-l-2 border-l-amber-600 pl-1.5 py-px text-[9px] font-medium text-gray-600",
+  /** Statistical normal (no clinical catalog match) — muted emerald border, quiet text */
+  normal: "inline-block border-l-2 border-l-emerald-400/40 pl-1.5 py-px text-[9px] text-muted-foreground",
+  /** Clinical override (any catalog class) — gray border, typographic emphasis.
+   *  Label differentiates severity (Sentinel > High concern > Moderate > Flag), not styling.
+   *  font-medium + text-foreground gives the clinical label more weight than plain "normal"
+   *  without introducing color — correct priority after "adverse." */
+  clinicalOverride: "inline-block border-l-2 border-l-gray-400 pl-1.5 py-px text-[9px] font-medium text-foreground",
+} as const;
+
+// ---------------------------------------------------------------------------
 // Validation icons
 // ---------------------------------------------------------------------------
 
