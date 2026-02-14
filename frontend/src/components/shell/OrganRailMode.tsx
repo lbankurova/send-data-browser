@@ -18,6 +18,7 @@ import {
 import { computeOrganStats } from "@/lib/organ-analytics";
 import type { OrganStats } from "@/lib/organ-analytics";
 import { rail } from "@/lib/design-tokens";
+import { useRailKeyboard } from "@/hooks/useRailKeyboard";
 import type { TargetOrganRow, SignalSummaryRow } from "@/types/analysis-views";
 
 // ---------------------------------------------------------------------------
@@ -229,6 +230,8 @@ export function OrganRailMode() {
   const { data: evidenceData } = useOrganEvidenceDetail(studyId);
 
   const [sortBy, setSortBy] = useState<OrganSortMode>("evidence");
+  const { containerRef: listRef, onKeyDown: handleListKeyDown } =
+    useRailKeyboard(() => navigateTo({}));
 
   // Sorted organs (targets first, then by evidence_score desc)
   const sortedOrgans = useMemo(() => {
@@ -359,7 +362,7 @@ export function OrganRailMode() {
       </div>
 
       {/* Organ list */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={listRef} className="flex-1 overflow-y-auto" tabIndex={0} onKeyDown={handleListKeyDown}>
         {sortedOrgans.map((organ, i) => (
           <div key={organ.organ_system}>
             {i === separatorIdx + 1 && separatorIdx >= 0 && (

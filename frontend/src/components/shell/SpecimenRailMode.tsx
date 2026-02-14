@@ -24,6 +24,7 @@ import type {
 } from "@/components/analysis/HistopathologyView";
 import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { rail } from "@/lib/design-tokens";
+import { useRailKeyboard } from "@/hooks/useRailKeyboard";
 import type { PathologyReview } from "@/types/annotations";
 
 // ---------------------------------------------------------------------------
@@ -152,9 +153,11 @@ export function SpecimenRailMode() {
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: annotationsData } = useAnnotations<PathologyReview>(studyId, "pathology_review");
 
+  const { containerRef: listRef, onKeyDown: handleListKeyDown } =
+    useRailKeyboard(() => navigateTo({}));
+
   // Specimen-specific filters (local to specimen rail, not global)
   const [sortBy, setSortBy] = useState<SpecimenSort>("signal");
-  const [minSevFilter, setMinSevFilter] = useState(0);
   const [doseTrendFilter, setDoseTrendFilter] = useState<
     "any" | "moderate" | "strong"
   >("any");
@@ -208,9 +211,16 @@ export function SpecimenRailMode() {
       list = list.filter((s) => s.adverseCount > 0 || s.warningCount > 0);
     }
 
+    // Organ filter (from cross-view link or organ mode selection)
+    if (selection.organSystem && !selection.specimen) {
+      list = list.filter(
+        (s) => specimenToOrganSystem(s.specimen) === selection.organSystem,
+      );
+    }
+
     // Local filters
-    if (minSevFilter > 0) {
-      list = list.filter((s) => s.maxSeverity >= minSevFilter);
+    if (filters.minSeverity > 0) {
+      list = list.filter((s) => s.maxSeverity >= filters.minSeverity);
     }
     if (doseTrendFilter === "moderate") {
       list = list.filter(
@@ -251,7 +261,9 @@ export function SpecimenRailMode() {
     filters.search,
     filters.adverseOnly,
     filters.significantOnly,
-    minSevFilter,
+    filters.minSeverity,
+    selection.organSystem,
+    selection.specimen,
     doseTrendFilter,
     sortBy,
   ]);
@@ -280,7 +292,7 @@ export function SpecimenRailMode() {
           className="mt-0.5"
           parts={(() => {
             if (
-              !minSevFilter &&
+              !filters.minSeverity &&
               !filters.adverseOnly &&
               doseTrendFilter === "any" &&
               !filters.search
@@ -288,7 +300,7 @@ export function SpecimenRailMode() {
               return undefined;
             const parts: string[] = [];
             if (filters.search) parts.push(`"${filters.search}"`);
-            if (minSevFilter > 0) parts.push(`Severity ${minSevFilter}+`);
+            if (filters.minSeverity > 0) parts.push(`Severity ${filters.minSeverity}+`);
             if (filters.adverseOnly) parts.push("Adverse only");
             if (doseTrendFilter === "moderate") parts.push("Moderate+ trend");
             else if (doseTrendFilter === "strong") parts.push("Strong trend");
@@ -311,16 +323,6 @@ export function SpecimenRailMode() {
             <option value="alpha">Sort: A\u2013Z</option>
           </FilterSelect>
           <FilterSelect
-            value={minSevFilter}
-            onChange={(e) => setMinSevFilter(Number(e.target.value))}
-            title="Minimum severity filter"
-          >
-            <option value={0}>Sev: all</option>
-            <option value={2}>Sev 2+</option>
-            <option value={3}>Sev 3+</option>
-            <option value={4}>Sev 4+</option>
-          </FilterSelect>
-          <FilterSelect
             value={doseTrendFilter}
             onChange={(e) =>
               setDoseTrendFilter(
@@ -336,8 +338,24 @@ export function SpecimenRailMode() {
         </div>
       </div>
 
+      {/* Organ filter breadcrumb chip */}
+      {selection.organSystem && !selection.specimen && (
+        <div className="border-b px-2.5 py-1">
+          <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+            Filtered to: {titleCase(selection.organSystem)}
+            <button
+              className="ml-0.5 rounded p-0.5 hover:bg-accent"
+              onClick={() => navigateTo({})}
+              title="Clear organ filter"
+            >
+              {"\u00D7"}
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Specimen list */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={listRef} className="flex-1 overflow-y-auto" tabIndex={0} onKeyDown={handleListKeyDown}>
         {sortBy === "organ"
           ? (() => {
               const groups: { system: string; items: typeof filtered }[] = [];
