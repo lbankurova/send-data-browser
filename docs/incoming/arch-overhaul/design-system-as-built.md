@@ -20,7 +20,7 @@ These are the ONLY elements that earn persistent saturated color. They represent
 | **Tier badge — Critical** | `text-[#DC2626]`, `text-[9px] font-semibold uppercase` | `InsightsList.tsx:294`, `TierCountBadges.tsx:5` |
 | **Tier badge — Notable** | `text-[#D97706]`, `text-[9px] font-semibold uppercase` | `InsightsList.tsx:295`, `TierCountBadges.tsx` |
 | **Tier badge — Observed** | `text-muted-foreground/60` (neutral, no color) | `InsightsList.tsx:296` |
-| **Severity dot** (left-border on finding badge) | adverse `#dc2626`, warning `#d97706`, normal `#16a34a` | `FindingsTable.tsx:158`, `HistopathologyView.tsx:834`, `HistopathologyContextPanel.tsx:701` — via `getSeverityDotColor()` |
+| **Severity signal cell** (left-border on finding badge) | adverse `border-l-red-600`, warning `border-l-amber-600`, normal `border-l-emerald-400/40` (muted) | `FindingsTable.tsx:158` (inline style), `HistopathologyView.tsx` (via `signal.*` tokens) |
 | **NOAEL status icon** | established `#15803d` (green), not established `#dc2626` (red) | `NoaelDecisionView.tsx:230` |
 | **Validation severity icon** | Error `#dc2626`, Warning `#d97706`, Info `#16a34a` | `ValidationContextPanel.tsx:176,1489`, `ValidationView.tsx:104` |
 | **Validation landing fail icon** | `#dc2626` | `AppLandingPage.tsx:24` |
@@ -462,6 +462,29 @@ Data attr: data-selected="" (for ev CSS selectors)
 ```
 
 Some views use `hover:bg-accent/30` instead of `hover:bg-accent/50`. Most use `/50`.
+
+### 6.9 Signal Cell Tokens (design-tokens.ts `signal.*`)
+
+The signal cell is a left-bordered inline label used in findings tables to indicate the severity classification of a finding. Four states:
+
+| Token | Classes | When |
+|---|---|---|
+| `signal.adverse` | `inline-block border-l-2 border-l-red-600 pl-1.5 py-px text-[9px] font-medium text-gray-600` | Data-driven adverse classification |
+| `signal.warning` | `inline-block border-l-2 border-l-amber-600 pl-1.5 py-px text-[9px] font-medium text-gray-600` | Data-driven warning classification |
+| `signal.normal` | `inline-block border-l-2 border-l-emerald-400/40 pl-1.5 py-px text-[9px] text-muted-foreground` | Statistical normal, no clinical catalog match |
+| `signal.clinicalOverride` | `inline-block border-l-2 border-l-gray-400 pl-1.5 py-px text-[9px] font-medium text-foreground` | Clinical catalog override (any class) |
+
+**Normal vs. clinical override — design rationale:**
+
+The distinction between "normal (nothing interesting)" and "normal (clinically overridden)" uses typography, not color:
+
+- **Statistical normal** gets a muted green border at 40% opacity and `text-muted-foreground` — it's the quietest element in the column, communicating "nothing to see here."
+- **Clinical override** gets a solid `border-l-gray-400` and `font-medium text-foreground` — stronger typographic weight than plain "normal" without introducing color. This makes the override label the second thing your eye hits after "adverse," which is the correct priority order.
+
+All clinical classes (Sentinel, High concern, Moderate concern, Flag, Context dependent) receive identical styling. The label alone differentiates severity. This follows H-004: clinical catalog classes are categorical identity (a finding is always its class regardless of study data), so no color encoding. The word does the work — "Sentinel" is inherently alarming to a toxicologist without needing red; adding color would compete with the data-driven adverse flag, falsely equating two different kinds of alarm (biological identity vs. statistical signal).
+
+**Used in:** `HistopathologyView.tsx` (findings table Signal column).
+**Shared component note:** `FindingsTable.tsx` uses a similar inline-style pattern (`getSeverityDotColor()`) but does not yet consume `signal.*` tokens. It does not render clinical overrides.
 
 ---
 

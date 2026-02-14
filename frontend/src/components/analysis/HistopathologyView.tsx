@@ -16,6 +16,7 @@ import { useRuleResults } from "@/hooks/useRuleResults";
 import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { cn } from "@/lib/utils";
+import { signal } from "@/lib/design-tokens";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterSelect, FilterMultiSelect, FilterShowingLine } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
@@ -852,7 +853,7 @@ function OverviewTab({
               : "Flag";
             return (
               <span
-                className="inline-block border-l-2 border-l-gray-300 pl-1.5 py-px text-[9px] font-medium text-gray-500"
+                className={signal.clinicalOverride}
                 title={`Clinical catalog: ${cc} (${info.row.original.catalogId ?? ""}). Statistical severity: normal.`}
               >
                 {label}
@@ -860,10 +861,7 @@ function OverviewTab({
             );
           }
           return (
-            <span
-              className="inline-block border-l-2 pl-1.5 py-px text-[9px] font-medium text-gray-600"
-              style={{ borderLeftColor: sev === "adverse" ? "#dc2626" : sev === "warning" ? "#d97706" : "#16a34a" }}
-            >
+            <span className={sev === "adverse" ? signal.adverse : sev === "warning" ? signal.warning : signal.normal}>
               {sev}
             </span>
           );
