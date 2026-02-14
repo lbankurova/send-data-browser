@@ -1,25 +1,25 @@
 import { StripSep } from "@/components/ui/CollapsedStrip";
 import type { FindingTableRow } from "@/components/analysis/HistopathologyView";
 
-interface FindingsStripSummaryProps {
+interface FindingsSelectionZoneProps {
   findings: FindingTableRow[];
   selectedRow: FindingTableRow | null;
 }
 
 /**
- * Summary content for the findings table collapsed strip.
- * - No selection: top 3 flagged findings with signal + incidence, plus normal count.
+ * Selection zone content for the findings section header.
  * - Finding selected: selected finding's key metrics inline.
+ * - No selection: top 3 flagged findings with signal + incidence, plus normal count.
  */
-export function FindingsStripSummary({ findings, selectedRow }: FindingsStripSummaryProps) {
+export function FindingsSelectionZone({ findings, selectedRow }: FindingsSelectionZoneProps) {
   if (selectedRow) {
     const pct = `${Math.round(selectedRow.maxIncidence * 100)}%`;
     return (
       <span className="text-[10px]">
         <span className="text-primary">▸</span>{" "}
-        <span className="font-medium">{selectedRow.finding}</span>{" "}
-        <span className="text-muted-foreground">{pct} {selectedRow.severity}</span>
-        {selectedRow.isDoseDriven && <span className="text-muted-foreground"> ✓dose-dep</span>}
+        <span className="font-medium text-foreground/80">{selectedRow.finding}</span>{" "}
+        <span className="font-mono text-foreground/70">{pct} {selectedRow.severity}</span>
+        {selectedRow.isDoseDriven && <span className="font-mono text-foreground/70"> ✓dose-dep</span>}
         {selectedRow.relatedOrgans && selectedRow.relatedOrgans.length > 0 && (
           <><StripSep /><span className="text-muted-foreground">also in: {selectedRow.relatedOrgans.join(", ")}</span></>
         )}
@@ -40,7 +40,7 @@ export function FindingsStripSummary({ findings, selectedRow }: FindingsStripSum
         return (
           <span key={f.finding}>
             {i > 0 && <StripSep />}
-            <span className="font-medium">{f.finding}</span>{" "}
+            <span className="font-medium text-foreground/80">{f.finding}</span>{" "}
             <span className="text-muted-foreground">{label} {Math.round(f.maxIncidence * 100)}%</span>
           </span>
         );
