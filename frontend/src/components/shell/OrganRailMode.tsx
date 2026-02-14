@@ -9,6 +9,7 @@ import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
 import { EvidenceBar } from "@/components/ui/EvidenceBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { EvidenceScorePopover } from "@/components/analysis/ScoreBreakdown";
+import { FilterSearch } from "@/components/ui/FilterBar";
 import {
   formatPValue,
   getDoseConsistencyWeight,
@@ -222,7 +223,7 @@ function OrganRailItem({
 export function OrganRailMode() {
   const { studyId } = useParams<{ studyId: string }>();
   const { selection, navigateTo } = useStudySelection();
-  const { filters } = useGlobalFilters();
+  const { filters, setFilters } = useGlobalFilters();
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: evidenceData } = useOrganEvidenceDetail(studyId);
@@ -330,8 +331,18 @@ export function OrganRailMode() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Sort controls */}
+      {/* Header + sort controls */}
       <div className="border-b px-2.5 py-1.5">
+        <div className="mb-1 flex items-center gap-1.5">
+          <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Organs ({sortedOrgans.length})
+          </span>
+          <FilterSearch
+            value={filters.search}
+            onChange={(v) => setFilters({ search: v })}
+            placeholder="Type to search..."
+          />
+        </div>
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as OrganSortMode)}
