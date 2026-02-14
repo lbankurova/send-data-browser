@@ -486,6 +486,76 @@ All clinical classes (Sentinel, High concern, Moderate concern, Flag, Context de
 **Used in:** `HistopathologyView.tsx` (findings table Signal column).
 **Shared component note:** `FindingsTable.tsx` uses a similar inline-style pattern (`getSeverityDotColor()`) but does not yet consume `signal.*` tokens. It does not render clinical overrides.
 
+### 6.10 Collapsible Sections with Summary Strips
+
+**Scope:** Histopathology view Evidence tab (OverviewTab). Three sections: findings table, dose charts, severity matrix.
+
+**Problem:** The Evidence tab splits ~550–650px of vertical space across three sections. All three are essential to the triage workflow, but whichever the pathologist is actively working in is cramped. The severity matrix with 30 subjects × 11 findings needs vertical room; the findings table needs room for 15+ rows. Resizing always steals from another section.
+
+**Solution:** Each section can collapse to a 28px summary strip that preserves context. The strip shows a contextual digest that adapts to the currently selected finding.
+
+#### Components
+
+**`CollapsedStrip`** (`components/ui/CollapsedStrip.tsx`): Generic 28px strip component.
+
+| Element | Classes |
+|---|---|
+| Container | `flex h-7 shrink-0 cursor-pointer select-none items-center gap-2 border-b border-border/50 bg-muted/20 px-3` |
+| Chevron | `ChevronRight h-3 w-3 text-muted-foreground` (always right — collapsed) |
+| Title | `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` |
+| Count | `text-[10px] text-muted-foreground/60` |
+| Separator | `mx-1 text-muted-foreground/30` (·) |
+| Summary | `flex min-w-0 flex-1 items-center gap-1.5 truncate` |
+
+**`StripSep`**: Inline dot separator between summary items (`mx-1 text-muted-foreground/30`).
+
+**`ViewSection`** (`components/ui/ViewSection.tsx`): Updated with `onHeaderDoubleClick` prop for maximize behavior.
+
+#### Interactions
+
+| Action | Target | Result |
+|---|---|---|
+| Single-click strip | Any collapsed strip | Expand that section |
+| Double-click strip | Any collapsed strip | Maximize that section (collapse the other two) |
+| Double-click header | Any expanded section header | Maximize that section |
+| Double-click maximized header | The only expanded section | Restore all sections to expanded |
+
+**Constraint:** At least one section must remain expanded. Attempting to collapse the last section is a no-op.
+
+#### State Management
+
+```
+SectionCollapseState: { findings: boolean, doseCharts: boolean, matrix: boolean }
+```
+
+- `toggleCollapse(section)`: toggle one section; no-op if it's the last expanded.
+- `maximizeSection(section)`: collapse the other two; if already maximized, restore all.
+- Reset to all-expanded on specimen change (new context → full layout before deciding what to collapse).
+
+#### Summary Strip Content
+
+Each strip has two content modes: **no selection** (section-level digest) and **finding selected** (selected finding's data from that section).
+
+| Section | No selection | Finding selected |
+|---|---|---|
+| **Findings table** | Top 3 flagged findings + signal + incidence + `+N normal` | `▸ FINDING incidence signal ✓dose-dep · also in: organs` |
+| **Dose charts** | Peak incidence + peak severity from aggregate | `Incid: 0%→8%→14%→27% · Sev: —→1.2→1.8→2.6` (per-dose sequence) |
+| **Severity matrix** | Affected subject counts per top 2 dose groups | `▸ FINDING: 4/10 in Group 4, 2/10 in Group 3` |
+
+The `▸` marker renders in `text-primary` (Datagrok blue) for visual consistency with selection indicators.
+
+#### Design Rationale
+
+**Why summary strips instead of just hiding?** A collapsed section without context forces the pathologist to expand to check state. The summary strip answers "did I miss anything?" at a glance. For dose charts: the per-dose incidence sequence (`0%→8%→14%→27%`) communicates dose-response in 10 characters — more information-dense than the chart itself for a quick check.
+
+**Why double-click to maximize?** The primary workflow is: scan all three sections → focus on one for detailed inspection → return to full view. Double-click-to-maximize is a single action for the common "zoom in / zoom out" toggle. Single-click for expand/collapse handles fine-grained control.
+
+**Why reset on specimen change?** A new specimen is a new diagnostic context. The pathologist should see all three sections to orient before deciding which deserves screen real estate.
+
+**Why not animated transitions?** Prioritized shipping over polish. The spatial layout is preserved (sections stay in order), so even instant snap is navigable. CSS transitions can be added later without structural changes.
+
+**Used in:** `HistopathologyView.tsx` (OverviewTab). Pattern is generic — `CollapsedStrip` and `ViewSection.onHeaderDoubleClick` are reusable by any view with multiple sections.
+
 ---
 
 ## 7. Polymorphic Rail

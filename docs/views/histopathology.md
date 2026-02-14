@@ -139,6 +139,19 @@ The Evidence tab uses `useAutoFitSections(containerRef, "histopathology", [...])
 - **Middle section** (dual dose charts): `ViewSection mode="fixed"`, default 170px height, resizable 80-400px.
 - **Bottom section** (severity matrix): `ViewSection mode="flex"` — fills remaining space. Filter controls render inside each heatmap mode (below the header, above the matrix).
 
+### Collapsible Sections
+
+Each section can collapse to a 28px `CollapsedStrip` summary strip. The strip shows a contextual digest that adapts to the currently selected finding. At least one section must remain expanded.
+
+- **Single-click** on a collapsed strip expands that section.
+- **Double-click** on any section header (collapsed or expanded) maximizes that section by collapsing the other two. Double-click again restores all to expanded.
+- **Specimen change** resets all sections to expanded (new diagnostic context → full layout).
+
+Summary strip content:
+- **Findings table**: top 3 flagged findings with signal/incidence, or selected finding's inline data.
+- **Dose charts**: peak incidence/severity aggregate, or per-dose incidence→severity sequence for the selected finding.
+- **Severity matrix**: affected subject counts per top dose groups, or selected finding's group-level subject breakdown.
+
 ### Observed Findings (top section)
 
 TanStack React Table with sortable, resizable columns. Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Observed findings"
