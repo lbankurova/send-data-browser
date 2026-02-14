@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { StripSep } from "@/components/ui/CollapsedStrip";
 import type { FindingTableRow, HeatmapData } from "@/components/analysis/HistopathologyView";
 
@@ -7,6 +8,20 @@ interface DoseChartsSelectionZoneProps {
   heatmapData: HeatmapData | null;
 }
 
+function incTypo(pct: number): string {
+  if (pct >= 30) return "font-bold text-foreground";
+  if (pct >= 10) return "font-semibold text-foreground/80";
+  if (pct > 0) return "font-medium text-muted-foreground";
+  return "text-muted-foreground/40";
+}
+
+function sevTypo(v: number): string {
+  if (v >= 4) return "font-bold text-foreground";
+  if (v >= 2) return "font-semibold text-foreground/80";
+  if (v > 0) return "font-medium text-muted-foreground";
+  return "text-muted-foreground/40";
+}
+
 /**
  * Selection zone content for the dose charts section header.
  * - Finding selected: per-dose-group incidence→severity sequence with dose labels.
@@ -14,17 +29,31 @@ interface DoseChartsSelectionZoneProps {
  */
 export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData }: DoseChartsSelectionZoneProps) {
   if (selectedRow && heatmapData) {
-    const seq = heatmapData.doseLevels.map((dl) => {
-      const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
-      return cell ? `${Math.round(cell.incidence * 100)}%` : "0%";
-    }).join("→");
-    const sevSeq = heatmapData.doseLevels.map((dl) => {
-      const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
-      return cell && cell.avg_severity ? cell.avg_severity.toFixed(1) : "—";
-    }).join("→");
     return (
-      <span className="font-mono text-[10px] text-foreground/70">
-        Incid: {seq}<StripSep />Sev: {sevSeq}
+      <span className="flex items-center gap-0 font-mono text-[10px]">
+        <span className="text-muted-foreground">Incid:</span>
+        {heatmapData.doseLevels.map((dl, i) => {
+          const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
+          const pct = cell ? Math.round(cell.incidence * 100) : 0;
+          return (
+            <span key={dl} className="flex items-center">
+              {i > 0 && <span className="mx-1 text-muted-foreground/30">→</span>}
+              <span className={cn(incTypo(pct))}>{pct}%</span>
+            </span>
+          );
+        })}
+        <StripSep />
+        <span className="text-muted-foreground">Sev:</span>
+        {heatmapData.doseLevels.map((dl, i) => {
+          const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
+          const v = cell?.avg_severity ?? 0;
+          return (
+            <span key={dl} className="flex items-center">
+              {i > 0 && <span className="mx-1 text-muted-foreground/30">→</span>}
+              <span className={cn(sevTypo(v))}>{v > 0 ? v.toFixed(1) : "0"}</span>
+            </span>
+          );
+        })}
       </span>
     );
   }
@@ -57,10 +86,17 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData }: 
     }
   }
 
+  const peakIncPct = Math.round(peakInc * 100);
+
   return (
-    <span className="font-mono text-[10px] text-foreground/70">
-      Peak incidence: {Math.round(peakInc * 100)}%{peakIncGroup ? ` (${peakIncGroup})` : ""}
-      <StripSep />Peak severity: {peakSev.toFixed(1)}{peakSevGroup ? ` (${peakSevGroup})` : ""}
+    <span className="flex items-center gap-0 font-mono text-[10px]">
+      <span className="text-muted-foreground">Peak incidence:{" "}</span>
+      <span className={cn(incTypo(peakIncPct))}>{peakIncPct}%</span>
+      {peakIncGroup && <span className="text-muted-foreground/60">{" "}({peakIncGroup})</span>}
+      <StripSep />
+      <span className="text-muted-foreground">Peak severity:{" "}</span>
+      <span className={cn(sevTypo(peakSev))}>{peakSev.toFixed(1)}</span>
+      {peakSevGroup && <span className="text-muted-foreground/60">{" "}({peakSevGroup})</span>}
     </span>
   );
 }
