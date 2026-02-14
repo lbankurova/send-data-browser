@@ -142,3 +142,13 @@ button[data-rail-item][data-selected] .ev {
 [data-evidence-row]:hover .ev {
   color: #DC2626;
 }
+
+/* ── One-time hint fade (collapsible sections) ── */
+@keyframes fade-hint {
+  0%   { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.animate-fade-hint {
+  animation: fade-hint 3s ease-out forwards;
+}

@@ -468,13 +468,21 @@ function OverviewTab({
     doseCharts: false,
     matrix: false,
   });
+  const [showCollapseHint, setShowCollapseHint] = useState(false);
 
   const expandedCount = Object.values(collapsed).filter((c) => !c).length;
 
   function toggleCollapse(section: SectionKey) {
     setCollapsed((prev) => {
+      const isCollapsing = !prev[section];
       // Prevent collapsing the last expanded section
-      if (!prev[section] && expandedCount <= 1) return prev;
+      if (isCollapsing && expandedCount <= 1) return prev;
+      // Show one-time hint on first collapse
+      if (isCollapsing && !localStorage.getItem("pcc.hints.collapse-maximize")) {
+        localStorage.setItem("pcc.hints.collapse-maximize", "1");
+        setShowCollapseHint(true);
+        setTimeout(() => setShowCollapseHint(false), 3000);
+      }
       return { ...prev, [section]: !prev[section] };
     });
   }
@@ -1017,6 +1025,12 @@ function OverviewTab({
 
   return (
     <div ref={containerRef} className="flex flex-1 flex-col overflow-hidden">
+      {/* One-time collapse hint */}
+      {showCollapseHint && (
+        <div className="shrink-0 bg-blue-50 px-3 py-1 text-[10px] text-blue-600 animate-fade-hint">
+          Tip: double-click any section header to maximize it
+        </div>
+      )}
       {/* Top: Findings table (resizable height) */}
       {collapsed.findings ? (
         <CollapsedStrip
