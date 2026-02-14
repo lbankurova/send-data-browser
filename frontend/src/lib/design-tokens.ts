@@ -92,8 +92,6 @@ export const badge = {
   domainChip: "rounded-md bg-muted px-2 py-0.5 font-mono text-xs hover:bg-primary/20 transition-colors",
   /** Dose badge: colored bg + white text */
   dose: "rounded px-1.5 py-0.5 text-[10px] font-medium text-white",
-  /** Domain dot+outline badge (rails, compact layouts) */
-  domainDot: "inline-flex items-center gap-1 rounded border border-border px-1 py-0.5 text-[9px] font-medium text-foreground/70",
   /** Standard badge padding */
   pad: "px-1.5 py-0.5",
   /** Domain chip padding */
@@ -195,19 +193,6 @@ export const emptyState = {
   truncated: "p-2 text-center text-[10px] text-muted-foreground",
   /** Error box */
   errorBox: "rounded border border-red-200 bg-red-50 p-4",
-} as const;
-
-// ---------------------------------------------------------------------------
-// Collapsible pane (pane)
-// ---------------------------------------------------------------------------
-
-export const pane = {
-  /** Pane header text */
-  header: "text-xs font-semibold uppercase tracking-wider text-muted-foreground",
-  /** Standalone collapsible toggle */
-  toggle: "flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-foreground",
-  /** Chevron size */
-  chevron: "h-3 w-3",
 } as const;
 
 // ---------------------------------------------------------------------------
