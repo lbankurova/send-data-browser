@@ -32,6 +32,7 @@ import { InsightsList } from "./panes/InsightsList";
 import { ConfidencePopover } from "./ScoreBreakdown";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
+import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
 import type {
   NoaelSummaryRow,
   AdverseEffectSummaryRow,
@@ -854,7 +855,9 @@ export function NoaelDecisionView() {
   const selectedOrgan = studySelection.organSystem ?? null;
   const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
   const [selection, setSelection] = useState<NoaelSelection | null>(null);
-  const [sexFilter, setSexFilter] = useState<string | null>(null);
+  const { filters: globalFilters, setFilters: setGlobalFilters } = useGlobalFilters();
+  const sexFilter = globalFilters.sex;
+  const setSexFilter = (v: string | null) => setGlobalFilters({ sex: v });
   const [trFilter, setTrFilter] = useState<string | null>(null);
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
@@ -917,9 +920,8 @@ export function NoaelDecisionView() {
     }
   }, [location.state, aeData, organSummaries]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset filters when organ changes
+  // Reset local filters when organ changes (sex is global, don't reset)
   useEffect(() => {
-    setSexFilter(null);
     setTrFilter(null);
     setSelection(null);
     setViewSelection(null);

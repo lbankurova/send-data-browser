@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useRailMode } from "@/contexts/RailModeContext";
 import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
-import { FilterSelect } from "@/components/ui/FilterBar";
+import { FilterSelect, FilterSearch } from "@/components/ui/FilterBar";
 import { OrganRailMode } from "./OrganRailMode";
 import { SpecimenRailMode } from "./SpecimenRailMode";
 
@@ -43,6 +43,7 @@ export function PolymorphicRail() {
       {/* Global filter bar */}
       <div className="shrink-0 border-b px-2.5 py-1.5">
         <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-muted-foreground">Sex:</span>
           <FilterSelect
             value={filters.sex ?? ""}
             onChange={(e) => setFilters({ sex: e.target.value || null })}
@@ -58,7 +59,7 @@ export function PolymorphicRail() {
               onChange={(e) => setFilters({ adverseOnly: e.target.checked })}
               className="h-3 w-3 rounded border-gray-300"
             />
-            Adverse
+            Adv
           </label>
           <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
             <input
@@ -69,7 +70,7 @@ export function PolymorphicRail() {
               }
               className="h-3 w-3 rounded border-gray-300"
             />
-            Significant
+            Sig
           </label>
           <FilterSelect
             value={filters.minSeverity}
@@ -82,6 +83,12 @@ export function PolymorphicRail() {
             <option value={4}>Sev 4+</option>
           </FilterSelect>
         </div>
+        <FilterSearch
+          value={filters.search}
+          onChange={(v) => setFilters({ search: v })}
+          placeholder="Search..."
+          className="mt-1"
+        />
       </div>
 
       {/* Mode content */}

@@ -81,7 +81,8 @@ export function GlobalFilterProvider({ children }: { children: ReactNode }) {
 
   const resetFilters = useCallback(() => {
     setFiltersState(DEFAULT_FILTERS);
-  }, []);
+    navigateTo({ sex: undefined });
+  }, [navigateTo]);
 
   const activeCount =
     (filters.sex ? 1 : 0) +
