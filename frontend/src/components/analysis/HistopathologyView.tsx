@@ -1082,11 +1082,14 @@ function OverviewTab({
     : null;
 
   // ── Adaptive section layout ─────────────────────────────────
+  // Matrix overhead: filter line + controls + legend + dose headers + subject IDs + sex/examined rows + padding.
+  // Subject mode adds a checkbox row (~20px) and the overall overhead is larger (~200px vs ~130px for group).
+  const matrixOverhead = matrixMode === "subject" ? 200 : 130;
   const naturalHeights = useMemo(() => ({
     findings: filteredTableData.length * 28 + 40,
     doseCharts: 170,
-    matrix: (heatmapData?.findings.length ?? 5) * 24 + 100,
-  }), [filteredTableData.length, heatmapData?.findings.length]);
+    matrix: (heatmapData?.findings.length ?? 5) * 24 + matrixOverhead,
+  }), [filteredTableData.length, heatmapData?.findings.length, matrixOverhead]);
 
   const {
     heights, showHint, isStrip,
@@ -1348,13 +1351,11 @@ function OverviewTab({
             <span
               className={cn("cursor-pointer", matrixMode === "group" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
               onClick={(e) => { e.stopPropagation(); setMatrixMode("group"); }}
-              onDoubleClick={(e) => e.stopPropagation()}
             >GROUP</span>
             <span className="mx-0.5 text-muted-foreground/30">|</span>
             <span
               className={cn("cursor-pointer", matrixMode === "subject" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
               onClick={(e) => { e.stopPropagation(); setMatrixMode("subject"); }}
-              onDoubleClick={(e) => e.stopPropagation()}
             >SUBJECTS</span>
           </span>
         }
