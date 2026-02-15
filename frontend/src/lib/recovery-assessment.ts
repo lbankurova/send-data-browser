@@ -130,7 +130,14 @@ export function buildRecoveryTooltip(assessment: RecoveryAssessment | undefined)
       `  ${a.doseGroupLabel}: ${mainPct} \u2192 ${recPct}, sev ${mainSev} \u2192 ${recSev} \u2014 ${a.verdict}`
     );
   }
-  lines.push(`Overall: ${assessment.overall} (worst case)`);
+  const n = assessment.assessments.filter(
+    (a) => a.verdict !== "not_observed" && a.verdict !== "no_data",
+  ).length;
+  lines.push(
+    n > 1
+      ? `Overall: ${assessment.overall} (most conservative across ${n} dose levels)`
+      : `Overall: ${assessment.overall}`,
+  );
   return lines.join("\n");
 }
 
