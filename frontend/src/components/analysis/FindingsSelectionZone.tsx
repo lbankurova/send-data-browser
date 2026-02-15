@@ -1,10 +1,12 @@
-import { StripSep } from "@/components/ui/CollapsedStrip";
+import { StripSep } from "@/components/ui/SectionHeader";
 import type { FindingTableRow } from "@/components/analysis/HistopathologyView";
 import { verdictArrow } from "@/lib/recovery-assessment";
 
 interface FindingsSelectionZoneProps {
   findings: FindingTableRow[];
   selectedRow: FindingTableRow | null;
+  isStrip?: boolean;
+  onStripRestore?: () => void;
 }
 
 /**
@@ -12,15 +14,28 @@ interface FindingsSelectionZoneProps {
  * - Finding selected: selected finding's key metrics inline.
  * - No selection: top 3 flagged findings with signal + incidence, plus normal count.
  */
-export function FindingsSelectionZone({ findings, selectedRow }: FindingsSelectionZoneProps) {
+export function FindingsSelectionZone({ findings, selectedRow, isStrip, onStripRestore }: FindingsSelectionZoneProps) {
   if (selectedRow) {
     const pct = `${Math.round(selectedRow.maxIncidence * 100)}%`;
     return (
       <span className="text-[10px]">
-        <span className="text-primary">▸</span>{" "}
-        <span className="font-medium text-foreground/80">{selectedRow.finding}</span>{" "}
-        <span className="font-mono text-foreground/70">{pct} {selectedRow.severity}</span>
-        {selectedRow.isDoseDriven && <span className="font-mono text-foreground/70"> ✓dose-dep</span>}
+        <span className="text-primary">&#x25B8;</span>{" "}
+        <span
+          className="cursor-pointer font-medium text-foreground/80 hover:underline"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isStrip && onStripRestore) onStripRestore();
+            requestAnimationFrame(() => {
+              document.querySelector(`[data-finding="${selectedRow.finding}"]`)
+                ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            });
+          }}
+        >
+          {selectedRow.finding}
+        </span>{" "}
+        <span className="font-mono text-foreground/70">{pct}</span>{" "}
+        <span className="text-foreground/70">{selectedRow.severity}</span>
+        {selectedRow.isDoseDriven && <span className="text-foreground/70"> &#x2713;dose-dep</span>}
         {selectedRow.relatedOrgans && selectedRow.relatedOrgans.length > 0 && (
           <><StripSep /><span className="text-muted-foreground">also in: {selectedRow.relatedOrgans.join(", ")}</span></>
         )}

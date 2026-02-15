@@ -31,8 +31,8 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        "flex h-7 shrink-0 select-none items-center gap-2 border-b border-border/50 px-3",
-        isStrip && "cursor-pointer bg-muted/20",
+        "flex h-7 shrink-0 select-none items-center gap-2 px-3",
+        isStrip && "cursor-pointer border-b bg-muted/20",
       )}
       onClick={isStrip ? onStripClick : undefined}
       onDoubleClick={(e) => {
@@ -40,7 +40,13 @@ export function SectionHeader({
         onDoubleClick();
       }}
     >
-      <Chevron className="h-3 w-3 shrink-0 text-muted-foreground" />
+      <Chevron
+        className="h-3 w-3 shrink-0 cursor-pointer text-muted-foreground"
+        onClick={(e) => {
+          e.stopPropagation();
+          onStripClick();
+        }}
+      />
 
       {/* Chrome zone */}
       {titleContent ?? (
@@ -49,11 +55,11 @@ export function SectionHeader({
         </span>
       )}
       {count != null && (
-        <span className="shrink-0 text-[10px] text-muted-foreground/60">({count})</span>
+        <span className="shrink-0 text-[10px] text-muted-foreground">({count})</span>
       )}
 
       {/* Separator */}
-      <span className="mx-0.5 shrink-0 text-muted-foreground/30">·</span>
+      <span className="mx-1.5 shrink-0 text-muted-foreground/30">&middot;</span>
 
       {/* Selection zone */}
       <div className="flex min-w-0 flex-1 items-center gap-1 truncate text-[10px]">
@@ -72,4 +78,9 @@ export function SectionHeader({
       )}
     </div>
   );
+}
+
+/** Dot separator used between items in section headers / selection zones. */
+export function StripSep() {
+  return <span className="mx-1.5 shrink-0 text-muted-foreground/30">&middot;</span>;
 }
