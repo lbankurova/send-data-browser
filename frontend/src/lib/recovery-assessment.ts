@@ -164,12 +164,12 @@ export function buildRecoveryTooltip(
       );
     }
   }
-  lines.push(`Overall: ${assessment.overall}`);
+  lines.push(`  Overall: ${assessment.overall} (worst case)`);
   if (recoveryDays != null) {
     const label = recoveryDays >= 7
       ? `${Math.round(recoveryDays / 7)} week${Math.round(recoveryDays / 7) !== 1 ? "s" : ""}`
       : `${recoveryDays} day${recoveryDays !== 1 ? "s" : ""}`;
-    lines.push(`Recovery period: ${label}`);
+    lines.push(`  Recovery period: ${label}`);
   }
   return lines.join("\n");
 }
@@ -221,7 +221,9 @@ export function deriveRecoveryAssessments(
 
       assessments.push({
         doseLevel: dl,
-        doseGroupLabel: mainGroup[0]?.dose_label?.split(",")[0] ?? `Dose ${dl}`,
+        doseGroupLabel: mainGroup[0]?.dose_label
+          ? formatDoseGroupLabel(mainGroup[0].dose_label)
+          : `Dose ${dl}`,
         main: {
           incidence: mainStats.incidence,
           n: mainStats.n,
@@ -247,6 +249,25 @@ export function deriveRecoveryAssessments(
 }
 
 // ─── Helpers ──────────────────────────────────────────────
+
+/**
+ * Format dose_label into "Group N (dose unit)" for tooltip display.
+ * Input format varies: "Group 2,2 mg/kg PCDRUG", "Group 1, Control", etc.
+ * Output: "Group 2 (2 mg/kg)", "Group 1 (Control)", etc.
+ */
+function formatDoseGroupLabel(doseLabel: string): string {
+  const commaIdx = doseLabel.indexOf(",");
+  if (commaIdx < 0) return doseLabel;
+
+  const groupPart = doseLabel.slice(0, commaIdx).trim();
+  const dosePart = doseLabel.slice(commaIdx + 1).trim();
+
+  // Extract numeric dose value + unit (e.g., "2 mg/kg" from "2 mg/kg PCDRUG")
+  const doseMatch = dosePart.match(/^(\d+\.?\d*\s*\S+)/);
+  const doseStr = doseMatch ? doseMatch[1] : dosePart;
+
+  return `${groupPart} (${doseStr})`;
+}
 
 function groupByDoseLevel(
   subjects: SubjectHistopathEntry[],
