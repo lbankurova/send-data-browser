@@ -94,37 +94,12 @@ function buildDoseYAxis<G extends { doseLevel: number; doseLabel: string }>(
   const categoryColors: string[] = [];
   const isRecoveryFlag: boolean[] = [];
 
-  for (const g of ordered) {
-    const labelColor = getDoseGroupLabelColor(g.doseLevel);
-    const keys = getSexKeys(g);
-    if (multiSex) {
-      for (const sex of keys) {
-        categories.push(`${g.doseLabel} ${sex}`);
-        doseLabels.push(g.doseLabel);
-        sexLabels.push(sex);
-        categoryColors.push(labelColor);
-        isRecoveryFlag.push(false);
-      }
-    } else {
-      const key = keys[0];
-      categories.push(showSexLabel ? `${g.doseLabel} ${key}` : g.doseLabel);
-      doseLabels.push(g.doseLabel);
-      sexLabels.push(showSexLabel ? key : "");
-      categoryColors.push(labelColor);
-      isRecoveryFlag.push(false);
-    }
-  }
-
   let recoveryStartIndex: number | undefined;
 
+  // ECharts renders category axes bottom-to-top, so recovery (which should
+  // appear below main) must come first in the array.
   if (recoveryOrdered && recoveryOrdered.length > 0) {
-    // Spacer category
-    recoveryStartIndex = categories.length + 1; // +1 for the spacer
-    categories.push("");
-    doseLabels.push("");
-    sexLabels.push("");
-    categoryColors.push("transparent");
-    isRecoveryFlag.push(false);
+    recoveryStartIndex = 0;
 
     // Recovery categories with (R) suffix
     for (const g of recoveryOrdered) {
@@ -146,6 +121,34 @@ function buildDoseYAxis<G extends { doseLevel: number; doseLabel: string }>(
         categoryColors.push(RECOVERY_LABEL_COLOR);
         isRecoveryFlag.push(true);
       }
+    }
+
+    // Spacer category between recovery and main
+    categories.push("");
+    doseLabels.push("");
+    sexLabels.push("");
+    categoryColors.push("transparent");
+    isRecoveryFlag.push(false);
+  }
+
+  for (const g of ordered) {
+    const labelColor = getDoseGroupLabelColor(g.doseLevel);
+    const keys = getSexKeys(g);
+    if (multiSex) {
+      for (const sex of keys) {
+        categories.push(`${g.doseLabel} ${sex}`);
+        doseLabels.push(g.doseLabel);
+        sexLabels.push(sex);
+        categoryColors.push(labelColor);
+        isRecoveryFlag.push(false);
+      }
+    } else {
+      const key = keys[0];
+      categories.push(showSexLabel ? `${g.doseLabel} ${key}` : g.doseLabel);
+      doseLabels.push(g.doseLabel);
+      sexLabels.push(showSexLabel ? key : "");
+      categoryColors.push(labelColor);
+      isRecoveryFlag.push(false);
     }
   }
 
@@ -203,39 +206,26 @@ export function buildDoseIncidenceBarOption(
 
   // Build a lookup of main bar data per dose level + sex for recovery tooltips
   const mainIncidenceMap = new Map<string, { pct: number; affected: number; n: number }>();
-
   for (const g of ordered) {
     if (multiSex) {
       for (const sex of sexKeys) {
         const entry = g.bySex[sex];
-        if (!entry || entry.n === 0) {
-          barData.push({ value: 0, _affected: 0, _n: 0, itemStyle: barStyle(0, false) });
-          mainIncidenceMap.set(`${g.doseLevel}|${sex}`, { pct: 0, affected: 0, n: 0 });
-        } else {
-          const pct = (entry.affected / entry.n) * 100;
-          barData.push({ value: pct, _affected: entry.affected, _n: entry.n, itemStyle: barStyle(pct, false) });
-          mainIncidenceMap.set(`${g.doseLevel}|${sex}`, { pct, affected: entry.affected, n: entry.n });
-        }
+        const pct = entry && entry.n > 0 ? (entry.affected / entry.n) * 100 : 0;
+        mainIncidenceMap.set(`${g.doseLevel}|${sex}`, { pct, affected: entry?.affected ?? 0, n: entry?.n ?? 0 });
       }
     } else {
       const key = sexKeys[0];
       const entry = g.bySex[key];
-      if (!entry || entry.n === 0) {
-        barData.push({ value: 0, _affected: 0, _n: 0, itemStyle: barStyle(0, false) });
-        mainIncidenceMap.set(`${g.doseLevel}|${key}`, { pct: 0, affected: 0, n: 0 });
-      } else {
-        const pct = (entry.affected / entry.n) * 100;
-        barData.push({ value: pct, _affected: entry.affected, _n: entry.n, itemStyle: barStyle(pct, false) });
-        mainIncidenceMap.set(`${g.doseLevel}|${key}`, { pct, affected: entry.affected, n: entry.n });
-      }
+      const pct = entry && entry.n > 0 ? (entry.affected / entry.n) * 100 : 0;
+      mainIncidenceMap.set(`${g.doseLevel}|${key}`, { pct, affected: entry?.affected ?? 0, n: entry?.n ?? 0 });
     }
   }
 
+  // Bar data order must match Y-axis categories (bottom-to-top):
+  // recovery bars first, then spacer, then main bars.
+
   // Recovery bars
   if (recoveryOrdered && recoveryOrdered.length > 0) {
-    // Spacer bar (hidden)
-    barData.push({ value: 0, _affected: 0, _n: 0, _isSpacer: true, itemStyle: { color: "transparent", borderWidth: 0 } });
-
     for (const g of recoveryOrdered) {
       if (multiSex) {
         for (const sex of sexKeys) {
@@ -274,6 +264,33 @@ export function buildDoseIncidenceBarOption(
             itemStyle: barStyle(pct, true),
           });
         }
+      }
+    }
+
+    // Spacer bar (hidden)
+    barData.push({ value: 0, _affected: 0, _n: 0, _isSpacer: true, itemStyle: { color: "transparent", borderWidth: 0 } });
+  }
+
+  // Main bars
+  for (const g of ordered) {
+    if (multiSex) {
+      for (const sex of sexKeys) {
+        const entry = g.bySex[sex];
+        if (!entry || entry.n === 0) {
+          barData.push({ value: 0, _affected: 0, _n: 0, itemStyle: barStyle(0, false) });
+        } else {
+          const pct = (entry.affected / entry.n) * 100;
+          barData.push({ value: pct, _affected: entry.affected, _n: entry.n, itemStyle: barStyle(pct, false) });
+        }
+      }
+    } else {
+      const key = sexKeys[0];
+      const entry = g.bySex[key];
+      if (!entry || entry.n === 0) {
+        barData.push({ value: 0, _affected: 0, _n: 0, itemStyle: barStyle(0, false) });
+      } else {
+        const pct = (entry.affected / entry.n) * 100;
+        barData.push({ value: pct, _affected: entry.affected, _n: entry.n, itemStyle: barStyle(pct, false) });
       }
     }
   }
@@ -394,7 +411,7 @@ export function buildDoseIncidenceBarOption(
               label: {
                 show: true,
                 formatter: "Recovery",
-                position: "insideEndTop" as const,
+                position: "insideEndBottom" as const,
                 fontSize: 9,
                 fontWeight: 600,
                 color: "#9CA3AF",
@@ -443,39 +460,26 @@ export function buildDoseSeverityBarOption(
 
   // Build lookup of main severity values for recovery tooltips
   const mainSeverityMap = new Map<string, { avg: number; count: number }>();
-
   for (const g of ordered) {
     if (multiSex) {
       for (const sex of sexKeys) {
         const entry = g.bySex[sex];
-        if (!entry || entry.count === 0) {
-          barData.push({ value: 0, _avg: 0, _count: 0, itemStyle: barStyle(0, false) });
-          mainSeverityMap.set(`${g.doseLevel}|${sex}`, { avg: 0, count: 0 });
-        } else {
-          const avg = entry.totalSeverity / entry.count;
-          barData.push({ value: avg, _avg: avg, _count: entry.count, itemStyle: barStyle(avg, false) });
-          mainSeverityMap.set(`${g.doseLevel}|${sex}`, { avg, count: entry.count });
-        }
+        const avg = entry && entry.count > 0 ? entry.totalSeverity / entry.count : 0;
+        mainSeverityMap.set(`${g.doseLevel}|${sex}`, { avg, count: entry?.count ?? 0 });
       }
     } else {
       const key = sexKeys[0];
       const entry = g.bySex[key];
-      if (!entry || entry.count === 0) {
-        barData.push({ value: 0, _avg: 0, _count: 0, itemStyle: barStyle(0, false) });
-        mainSeverityMap.set(`${g.doseLevel}|${key}`, { avg: 0, count: 0 });
-      } else {
-        const avg = entry.totalSeverity / entry.count;
-        barData.push({ value: avg, _avg: avg, _count: entry.count, itemStyle: barStyle(avg, false) });
-        mainSeverityMap.set(`${g.doseLevel}|${key}`, { avg, count: entry.count });
-      }
+      const avg = entry && entry.count > 0 ? entry.totalSeverity / entry.count : 0;
+      mainSeverityMap.set(`${g.doseLevel}|${key}`, { avg, count: entry?.count ?? 0 });
     }
   }
 
+  // Bar data order must match Y-axis categories (bottom-to-top):
+  // recovery bars first, then spacer, then main bars.
+
   // Recovery bars
   if (recoveryOrdered && recoveryOrdered.length > 0) {
-    // Spacer bar (hidden)
-    barData.push({ value: 0, _avg: 0, _count: 0, _isSpacer: true, itemStyle: { color: "transparent", borderWidth: 0 } });
-
     for (const g of recoveryOrdered) {
       if (multiSex) {
         for (const sex of sexKeys) {
@@ -514,6 +518,33 @@ export function buildDoseSeverityBarOption(
             itemStyle: barStyle(avg, true),
           });
         }
+      }
+    }
+
+    // Spacer bar (hidden)
+    barData.push({ value: 0, _avg: 0, _count: 0, _isSpacer: true, itemStyle: { color: "transparent", borderWidth: 0 } });
+  }
+
+  // Main bars
+  for (const g of ordered) {
+    if (multiSex) {
+      for (const sex of sexKeys) {
+        const entry = g.bySex[sex];
+        if (!entry || entry.count === 0) {
+          barData.push({ value: 0, _avg: 0, _count: 0, itemStyle: barStyle(0, false) });
+        } else {
+          const avg = entry.totalSeverity / entry.count;
+          barData.push({ value: avg, _avg: avg, _count: entry.count, itemStyle: barStyle(avg, false) });
+        }
+      }
+    } else {
+      const key = sexKeys[0];
+      const entry = g.bySex[key];
+      if (!entry || entry.count === 0) {
+        barData.push({ value: 0, _avg: 0, _count: 0, itemStyle: barStyle(0, false) });
+      } else {
+        const avg = entry.totalSeverity / entry.count;
+        barData.push({ value: avg, _avg: avg, _count: entry.count, itemStyle: barStyle(avg, false) });
       }
     }
   }
@@ -626,7 +657,7 @@ export function buildDoseSeverityBarOption(
               label: {
                 show: true,
                 formatter: "Recovery",
-                position: "insideEndTop" as const,
+                position: "insideEndBottom" as const,
                 fontSize: 9,
                 fontWeight: 600,
                 color: "#9CA3AF",
