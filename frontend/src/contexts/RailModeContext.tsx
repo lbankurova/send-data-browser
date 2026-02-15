@@ -17,6 +17,8 @@ interface RailModeContextValue {
    * Ignored if userHasToggled is true.
    */
   declarePreference: (preferred: RailMode) => void;
+  /** Clear the user toggle flag (e.g., on browsing tree navigation). */
+  clearToggle: () => void;
 }
 
 const RailModeContext = createContext<RailModeContextValue>({
@@ -24,6 +26,7 @@ const RailModeContext = createContext<RailModeContextValue>({
   setMode: () => {},
   userHasToggled: false,
   declarePreference: () => {},
+  clearToggle: () => {},
 });
 
 // ---------------------------------------------------------------------------
@@ -62,9 +65,13 @@ export function RailModeProvider({
     [userHasToggled],
   );
 
+  const clearToggle = useCallback(() => {
+    setUserHasToggled(false);
+  }, []);
+
   return (
     <RailModeContext.Provider
-      value={{ mode, setMode, userHasToggled, declarePreference }}
+      value={{ mode, setMode, userHasToggled, declarePreference, clearToggle }}
     >
       {children}
     </RailModeContext.Provider>

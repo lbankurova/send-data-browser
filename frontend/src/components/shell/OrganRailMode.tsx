@@ -9,7 +9,7 @@ import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
 import { EvidenceBar } from "@/components/ui/EvidenceBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { EvidenceScorePopover } from "@/components/analysis/ScoreBreakdown";
-import { FilterSearch } from "@/components/ui/FilterBar";
+import { FilterShowingLine } from "@/components/ui/FilterBar";
 import {
   formatPValue,
   getDoseConsistencyWeight,
@@ -223,15 +223,15 @@ function OrganRailItem({
 
 export function OrganRailMode() {
   const { studyId } = useParams<{ studyId: string }>();
-  const { selection, navigateTo } = useStudySelection();
-  const { filters, setFilters } = useGlobalFilters();
+  const { selection, navigateTo, clearSelection } = useStudySelection();
+  const { filters } = useGlobalFilters();
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: evidenceData } = useOrganEvidenceDetail(studyId);
 
   const [sortBy, setSortBy] = useState<OrganSortMode>("evidence");
   const { containerRef: listRef, onKeyDown: handleListKeyDown } =
-    useRailKeyboard(() => navigateTo({}));
+    useRailKeyboard(clearSelection);
 
   // Sorted organs (targets first, then by evidence_score desc)
   const sortedOrgans = useMemo(() => {
@@ -341,13 +341,10 @@ export function OrganRailMode() {
       <div className="border-b px-2.5 py-1.5">
         <div className="mb-1 flex items-center gap-1.5">
           <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Organs ({sortedOrgans.length})
+            Organs ({sortedOrgans.length === (targetOrgans?.length ?? 0)
+              ? sortedOrgans.length
+              : `${sortedOrgans.length}/${targetOrgans?.length ?? 0}`})
           </span>
-          <FilterSearch
-            value={filters.search}
-            onChange={(v) => setFilters({ search: v })}
-            placeholder="Type to search..."
-          />
         </div>
         <select
           value={sortBy}
@@ -359,6 +356,27 @@ export function OrganRailMode() {
           <option value="effect">Sort: Effect size</option>
           <option value="alpha">Sort: A\u2013Z</option>
         </select>
+        <FilterShowingLine
+          className="mt-0.5"
+          parts={(() => {
+            if (
+              !filters.search &&
+              !filters.sex &&
+              !filters.adverseOnly &&
+              !filters.significantOnly &&
+              !filters.minSeverity
+            )
+              return undefined;
+            const parts: string[] = [];
+            if (filters.search) parts.push(`\u201C${filters.search}\u201D`);
+            if (filters.sex) parts.push(filters.sex === "M" ? "Male" : "Female");
+            if (filters.adverseOnly) parts.push("Adverse only");
+            if (filters.significantOnly) parts.push("Significant only");
+            if (filters.minSeverity > 0) parts.push(`Severity ${filters.minSeverity}+`);
+            parts.push(`${sortedOrgans.length}/${targetOrgans?.length ?? 0}`);
+            return parts;
+          })()}
+        />
       </div>
 
       {/* Organ list */}

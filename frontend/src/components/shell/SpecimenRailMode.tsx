@@ -7,7 +7,7 @@ import { useAnnotations } from "@/hooks/useAnnotations";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { FilterSelect, FilterSearch, FilterShowingLine } from "@/components/ui/FilterBar";
+import { FilterSelect, FilterShowingLine } from "@/components/ui/FilterBar";
 import {
   getNeutralHeatColor as getNeutralHeatColor01,
   getDoseConsistencyWeight,
@@ -147,14 +147,14 @@ type SpecimenSort = "signal" | "organ" | "severity" | "incidence" | "alpha";
 
 export function SpecimenRailMode() {
   const { studyId } = useParams<{ studyId: string }>();
-  const { selection, navigateTo } = useStudySelection();
-  const { filters, setFilters } = useGlobalFilters();
+  const { selection, navigateTo, clearSelection } = useStudySelection();
+  const { filters } = useGlobalFilters();
   const { data: lesionData } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: annotationsData } = useAnnotations<PathologyReview>(studyId, "pathology_review");
 
   const { containerRef: listRef, onKeyDown: handleListKeyDown } =
-    useRailKeyboard(() => navigateTo({}));
+    useRailKeyboard(clearSelection);
 
   // Specimen-specific filters (local to specimen rail, not global)
   const [sortBy, setSortBy] = useState<SpecimenSort>("signal");
@@ -208,7 +208,7 @@ export function SpecimenRailMode() {
       list = list.filter((s) => s.adverseCount > 0);
     }
     if (filters.significantOnly) {
-      list = list.filter((s) => s.adverseCount > 0 || s.warningCount > 0);
+      list = list.filter((s) => s.signalScore > 0);
     }
 
     // Organ filter (from cross-view link or organ mode selection)
@@ -281,11 +281,6 @@ export function SpecimenRailMode() {
           <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Specimens ({specimens.length})
           </span>
-          <FilterSearch
-            value={filters.search}
-            onChange={(v) => setFilters({ search: v })}
-            placeholder="Type to search..."
-          />
         </div>
 
         <FilterShowingLine
@@ -294,14 +289,18 @@ export function SpecimenRailMode() {
             if (
               !filters.minSeverity &&
               !filters.adverseOnly &&
+              !filters.significantOnly &&
+              !filters.sex &&
               doseTrendFilter === "any" &&
               !filters.search
             )
               return undefined;
             const parts: string[] = [];
-            if (filters.search) parts.push(`"${filters.search}"`);
+            if (filters.search) parts.push(`\u201C${filters.search}\u201D`);
+            if (filters.sex) parts.push(filters.sex === "M" ? "Male" : "Female");
             if (filters.minSeverity > 0) parts.push(`Severity ${filters.minSeverity}+`);
             if (filters.adverseOnly) parts.push("Adverse only");
+            if (filters.significantOnly) parts.push("Significant only");
             if (doseTrendFilter === "moderate") parts.push("Moderate+ trend");
             else if (doseTrendFilter === "strong") parts.push("Strong trend");
             parts.push(`${filtered.length}/${specimens.length}`);
@@ -345,7 +344,7 @@ export function SpecimenRailMode() {
             Filtered to: {titleCase(selection.organSystem)}
             <button
               className="ml-0.5 rounded p-0.5 hover:bg-accent"
-              onClick={() => navigateTo({})}
+              onClick={clearSelection}
               title="Clear organ filter"
             >
               {"\u00D7"}

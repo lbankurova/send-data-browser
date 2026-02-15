@@ -12,6 +12,7 @@ import { useScenarios } from "@/hooks/useScenarios";
 import { useCategorizedDomains } from "@/hooks/useDomainsByStudy";
 import { getDomainDescription } from "@/lib/send-categories";
 import { ANALYSIS_VIEWS } from "@/lib/analysis-definitions";
+import { useRailMode } from "@/contexts/RailModeContext";
 import { useTreeControl } from "@/contexts/TreeControlContext";
 import { TreeNode } from "./TreeNode";
 
@@ -41,6 +42,7 @@ function StudyBranch({
     isExpanded ? studyId : undefined
   );
   const navigate = useNavigate();
+  const { clearToggle } = useRailMode();
   const location = useLocation();
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
@@ -130,7 +132,10 @@ function StudyBranch({
               label={view.label}
               depth={1}
               isActive={activeView === view.key}
-              onClick={() => navigate(viewRoute(studyId, view.key))}
+              onClick={() => {
+                clearToggle();
+                navigate(viewRoute(studyId, view.key));
+              }}
             />
           ))}
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef } from "react";
+import { createContext, useContext, useState, useCallback, useRef, useMemo } from "react";
 import type { ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
@@ -25,6 +25,8 @@ interface StudySelectionContextValue {
   selection: StudySelection;
   /** Atomic multi-field setter. Cascading clears apply. Pushes to history. */
   navigateTo: (partial: SelectionUpdate) => void;
+  /** Clear all hierarchy selections (organSystem, specimen, endpoint, subjectId). */
+  clearSelection: () => void;
   /** Pop from history stack — no cascade. */
   back: () => void;
   /** Can we go back? */
@@ -34,6 +36,7 @@ interface StudySelectionContextValue {
 const StudySelectionContext = createContext<StudySelectionContextValue>({
   selection: { studyId: "" },
   navigateTo: () => {},
+  clearSelection: () => {},
   back: () => {},
   canGoBack: false,
 });
@@ -109,6 +112,7 @@ export function StudySelectionProvider({
 }) {
   const [selection, setSelection] = useState<StudySelection>({ studyId });
   const historyRef = useRef<StudySelection[]>([]);
+  const [historyLength, setHistoryLength] = useState(0);
 
   // Reset when studyId changes
   const prevStudyId = useRef(studyId);
@@ -116,6 +120,7 @@ export function StudySelectionProvider({
     prevStudyId.current = studyId;
     setSelection({ studyId });
     historyRef.current = [];
+    setHistoryLength(0);
   }
 
   const navigateTo = useCallback(
@@ -125,6 +130,7 @@ export function StudySelectionProvider({
         const history = historyRef.current;
         history.push(prev);
         if (history.length > MAX_HISTORY) history.shift();
+        setHistoryLength(history.length);
 
         const updated = applyCascade(prev, partial);
         // Keep studyId current
@@ -135,22 +141,36 @@ export function StudySelectionProvider({
     [studyId],
   );
 
+  const clearSelection = useCallback(() => {
+    navigateTo({
+      organSystem: undefined,
+      specimen: undefined,
+      endpoint: undefined,
+      subjectId: undefined,
+    });
+  }, [navigateTo]);
+
   const back = useCallback(() => {
     const history = historyRef.current;
     if (history.length === 0) return;
     const prev = history.pop()!;
+    setHistoryLength(history.length);
     setSelection({ ...prev, studyId });
   }, [studyId]);
 
+  const value = useMemo(
+    () => ({
+      selection,
+      navigateTo,
+      clearSelection,
+      back,
+      canGoBack: historyLength > 0,
+    }),
+    [selection, navigateTo, clearSelection, back, historyLength],
+  );
+
   return (
-    <StudySelectionContext.Provider
-      value={{
-        selection,
-        navigateTo,
-        back,
-        canGoBack: historyRef.current.length > 0,
-      }}
-    >
+    <StudySelectionContext.Provider value={value}>
       {children}
     </StudySelectionContext.Provider>
   );

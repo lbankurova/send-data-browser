@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,14 @@ export function StudySummaryView() {
 
   // Read organ from StudySelectionContext
   const selectedOrgan = studySelection.organSystem ?? null;
+
+  // Auto-select top organ when view loads and nothing is selected
+  useEffect(() => {
+    if (!selectedOrgan && targetOrgans && targetOrgans.length > 0) {
+      const top = [...targetOrgans].sort((a, b) => b.evidence_score - a.evidence_score)[0];
+      navigateTo({ organSystem: top.organ_system });
+    }
+  }, [selectedOrgan, targetOrgans, navigateTo]);
 
   const handleSetSelection = useCallback((sel: SignalSelection | null) => {
     setLocalSignalSel(sel);
