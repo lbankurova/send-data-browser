@@ -3,17 +3,16 @@
  *
  * Renders overlaid subject lines with a control group mean ± SD band.
  * Supports absolute weight and % baseline normalization modes.
+ * Color encodes dose group; solid/dashed encodes main/recovery arm.
  */
 import type { EChartsOption } from "echarts";
 import type { ComparisonBodyWeight, ComparisonSubjectProfile, ControlStats } from "@/types/timecourse";
-
-// Fixed comparison palette (not dose-group colors)
-export const COMPARISON_COLORS = ["#2083D5", "#D97706", "#059669", "#7C3AED", "#DC2626", "#0891B2", "#BE185D", "#65A30D"];
+import { getDoseGroupColor } from "@/lib/severity-colors";
 
 export type BWChartMode = "absolute" | "baseline";
 
 export interface BWChartInput {
-  subjects: ComparisonSubjectProfile[];
+  subjects: (ComparisonSubjectProfile & { isRecovery: boolean })[];
   bodyWeights: ComparisonBodyWeight[];
   controlBW: ControlStats["bw"];
   mode: BWChartMode;
@@ -79,6 +78,8 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
     }
   }
 
+  // Dose-group colors from design system
+
   // Build series
   const series: EChartsOption["series"] = [];
 
@@ -96,7 +97,7 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
 
   // Control upper (shaded band)
   series.push({
-    name: "Control (mean±SD)",
+    name: "Control (mean\u00B1SD)",
     type: "line",
     data: days.map((d, i) => {
       const lo = controlLower[i];
@@ -125,12 +126,13 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
     z: 1,
   });
 
-  // Subject lines
+  // Subject lines — color by dose group, solid/dashed by arm
+  const manySubjects = subjects.length > 8;
   for (let si = 0; si < subjects.length; si++) {
     const subj = subjects[si];
     const values = bySubject.get(subj.usubjid) ?? [];
     const baseline = baselines.get(subj.usubjid) ?? 0;
-    const color = COMPARISON_COLORS[si % COMPARISON_COLORS.length];
+    const color = getDoseGroupColor(subj.dose_level);
 
     const data = values.map((v) => [v.day, normalize(v.weight, baseline)]);
 
@@ -140,12 +142,15 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
     const isFoundDead = disp.includes("FOUND DEAD");
     const isMoribund = disp.includes("MORIBUND");
 
-    const manySubjects = subjects.length > 8;
     series.push({
       name: `${subj.short_id} (${subj.sex}, ${subj.dose_label})`,
       type: "line",
       data,
-      lineStyle: { width: manySubjects ? 1 : 2, color },
+      lineStyle: {
+        width: manySubjects ? 1 : 2,
+        color,
+        type: subj.isRecovery ? "dashed" : "solid",
+      },
       itemStyle: { color },
       symbol: "circle",
       symbolSize: manySubjects ? 3 : 6,
@@ -217,9 +222,9 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
           legend: {
             bottom: 0,
             textStyle: { fontSize: 10 },
-            data: subjects.map((s, i) => ({
+            data: subjects.map((s) => ({
               name: `${s.short_id} (${s.sex}, ${s.dose_label})`,
-              itemStyle: { color: COMPARISON_COLORS[i % COMPARISON_COLORS.length] },
+              itemStyle: { color: getDoseGroupColor(s.dose_level) },
             })),
           },
         }

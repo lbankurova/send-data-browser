@@ -6,6 +6,8 @@
  *   2. Lab values comparison (from useSubjectComparison)
  *   3. Body weight chart (ECharts overlay)
  *   4. Clinical observations diff
+ *
+ * Subjects are grouped by dose group + arm (main/recovery) in all sections.
  */
 import { useState, useMemo, useEffect } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
@@ -18,6 +20,18 @@ import { buildBWComparisonOption } from "@/components/analysis/charts/comparison
 import type { BWChartMode } from "@/components/analysis/charts/comparison-charts";
 import type { SubjectHistopathEntry, ComparisonSubjectProfile } from "@/types/timecourse";
 import { FilterSelect } from "@/components/ui/FilterBar";
+import { getDoseGroupColor } from "@/lib/severity-colors";
+
+// ─── Grouping types ──────────────────────────────────────────
+
+type EnrichedSubject = ComparisonSubjectProfile & { isRecovery: boolean };
+
+interface SubjectGroup {
+  doseLevel: number;
+  doseLabel: string;
+  isRecovery: boolean;
+  subjects: EnrichedSubject[];
+}
 
 // ─── Organ → relevant lab tests mapping ─────────────────────
 
@@ -56,6 +70,46 @@ function CollapsiblePane({
       {open && <div className="px-4 pb-3">{children}</div>}
     </div>
   );
+}
+
+// ─── Grouping helpers ────────────────────────────────────────
+
+function buildGroups(
+  subjectInfo: ComparisonSubjectProfile[],
+  subjData: SubjectHistopathEntry[] | null,
+): SubjectGroup[] {
+  const recoverySet = new Set<string>();
+  if (subjData) {
+    for (const s of subjData) {
+      if (s.is_recovery) recoverySet.add(s.usubjid);
+    }
+  }
+
+  const map = new Map<string, SubjectGroup>();
+  for (const s of subjectInfo) {
+    const isRec = recoverySet.has(s.usubjid);
+    const key = `${s.dose_level}-${isRec ? "R" : "M"}`;
+    if (!map.has(key)) {
+      map.set(key, { doseLevel: s.dose_level, doseLabel: s.dose_label, isRecovery: isRec, subjects: [] });
+    }
+    map.get(key)!.subjects.push({ ...s, isRecovery: isRec });
+  }
+
+  return [...map.values()].sort((a, b) => {
+    if (a.doseLevel !== b.doseLevel) return a.doseLevel - b.doseLevel;
+    return a.isRecovery ? 1 : -1; // main first
+  });
+}
+
+/** IDs of subjects that start a new group boundary (excluding first group). */
+function getGroupStartSet(groups: SubjectGroup[]): Set<string> {
+  const set = new Set<string>();
+  let first = true;
+  for (const g of groups) {
+    if (!first && g.subjects.length > 0) set.add(g.subjects[0].usubjid);
+    first = false;
+  }
+  return set;
 }
 
 // ─── CompareTab ──────────────────────────────────────────────
@@ -100,7 +154,6 @@ export function CompareTab({
     return subjectIds.map((id) => {
       const prof = profileMap.get(id);
       if (prof) return prof;
-      // Fallback from subjData
       const entry = subjData?.find((s) => s.usubjid === id);
       return {
         usubjid: id,
@@ -113,6 +166,9 @@ export function CompareTab({
       };
     });
   }, [subjectIds, profileMap, subjData]);
+
+  // Group subjects by dose group + arm
+  const groups = useMemo(() => buildGroups(subjectInfo, subjData), [subjectInfo, subjData]);
 
   return (
     <div className="flex-1 overflow-auto">
@@ -127,15 +183,19 @@ export function CompareTab({
           </button>
         </div>
         <div className="mt-0.5 text-[10px] text-muted-foreground">
-          {subjectInfo.map((s) => `${s.short_id} (${s.sex}, ${s.dose_label})`).join("  \u00B7  ")}
+          {groups.map((g, i) => (
+            <span key={`${g.doseLevel}-${g.isRecovery}`}>
+              {i > 0 && " \u00B7 "}
+              {g.doseLabel} {g.isRecovery ? "recovery" : "main"} ({g.subjects.length})
+            </span>
+          ))}
         </div>
       </div>
 
       {/* Section 1: Finding Concordance */}
       <CollapsiblePane title="Finding concordance">
         <FindingConcordance
-          subjectIds={subjectIds}
-          subjectInfo={subjectInfo}
+          groups={groups}
           subjData={subjData}
           onFindingClick={onFindingClick}
         />
@@ -147,8 +207,7 @@ export function CompareTab({
           <LoadingSpinner />
         ) : compData ? (
           <LabValuesComparison
-            subjectIds={subjectIds}
-            subjectInfo={subjectInfo}
+            groups={groups}
             labValues={compData.lab_values}
             controlLab={compData.control_stats.lab}
             availableTimepoints={compData.available_timepoints}
@@ -165,7 +224,7 @@ export function CompareTab({
           <LoadingSpinner />
         ) : compData ? (
           <BodyWeightSection
-            subjects={subjectInfo}
+            groups={groups}
             bodyWeights={compData.body_weights}
             controlBW={compData.control_stats.bw}
           />
@@ -180,8 +239,7 @@ export function CompareTab({
           <LoadingSpinner />
         ) : compData ? (
           <ClinicalObsDiff
-            subjectIds={subjectIds}
-            subjectInfo={subjectInfo}
+            groups={groups}
             clinicalObs={compData.clinical_obs}
           />
         ) : (
@@ -209,38 +267,64 @@ function EmptyState({ message }: { message: string }) {
 
 // ─── Section 1: Finding Concordance Matrix ───────────────────
 
+type SortMode = "severity" | "concordance" | "alpha";
+type FilterMode = "all" | "shared" | "graded";
+
 function FindingConcordance({
-  subjectIds,
-  subjectInfo,
+  groups,
   subjData,
   onFindingClick,
 }: {
-  subjectIds: string[];
-  subjectInfo: ComparisonSubjectProfile[];
+  groups: SubjectGroup[];
   subjData: SubjectHistopathEntry[] | null;
   onFindingClick: (finding: string) => void;
 }) {
+  const [sortMode, setSortMode] = useState<SortMode>("severity");
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
+
   if (!subjData) return <EmptyState message="Subject data not available." />;
 
+  const orderedSubjects = groups.flatMap((g) => g.subjects);
+  const orderedIds = orderedSubjects.map((s) => s.usubjid);
+  const N = orderedIds.length;
+  const groupStartSet = getGroupStartSet(groups);
+
   // Filter to selected subjects
-  const selected = subjData.filter((s) => subjectIds.includes(s.usubjid));
+  const selected = subjData.filter((s) => orderedIds.includes(s.usubjid));
   if (selected.length === 0) return <EmptyState message="No data for selected subjects." />;
 
   // Collect all findings across selected subjects
   const findingMaxSev = new Map<string, number>();
   const findingHasGrade = new Map<string, boolean>();
+  const findingCount = new Map<string, number>();
   for (const subj of selected) {
     for (const [finding, val] of Object.entries(subj.findings)) {
       const existing = findingMaxSev.get(finding) ?? 0;
       if (val.severity_num > existing) findingMaxSev.set(finding, val.severity_num);
       if (val.severity_num > 0) findingHasGrade.set(finding, true);
       if (!findingHasGrade.has(finding)) findingHasGrade.set(finding, false);
+      findingCount.set(finding, (findingCount.get(finding) ?? 0) + 1);
     }
   }
 
-  // Sort: severity-graded first (max severity desc), then non-graded alphabetical
-  const findings = [...findingMaxSev.entries()]
+  // Filter findings
+  const filteredEntries = [...findingMaxSev.entries()].filter(([f]) => {
+    if (filterMode === "shared") return (findingCount.get(f) ?? 0) >= Math.ceil(N / 2);
+    if (filterMode === "graded") return findingHasGrade.get(f) ?? false;
+    return true;
+  });
+
+  // Sort findings
+  const findings = filteredEntries
     .sort((a, b) => {
+      if (sortMode === "concordance") {
+        const ca = findingCount.get(a[0]) ?? 0;
+        const cb = findingCount.get(b[0]) ?? 0;
+        if (cb !== ca) return cb - ca;
+        return a[0].localeCompare(b[0]);
+      }
+      if (sortMode === "alpha") return a[0].localeCompare(b[0]);
+      // severity (default)
       const aGraded = findingHasGrade.get(a[0]) ?? false;
       const bGraded = findingHasGrade.get(b[0]) ?? false;
       if (aGraded && !bGraded) return -1;
@@ -250,36 +334,94 @@ function FindingConcordance({
     })
     .map(([f]) => f);
 
-  if (findings.length === 0) return <EmptyState message="No findings observed in selected subjects." />;
-
-  const N = subjectIds.length;
+  if (findingMaxSev.size === 0) return <EmptyState message="No findings observed in selected subjects." />;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[11px]">
+    <div>
+      {/* Sort + filter toolbar */}
+      <div className="mb-1.5 flex items-center gap-3 text-[10px]">
+        <div className="flex items-center gap-1">
+          <span className="text-muted-foreground">Sort:</span>
+          {(["severity", "concordance", "alpha"] as const).map((m) => (
+            <button
+              key={m}
+              className={cn(
+                "rounded px-1.5 py-0.5 transition-colors",
+                sortMode === m ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent/50",
+              )}
+              onClick={() => setSortMode(m)}
+            >
+              {m === "alpha" ? "A-Z" : m}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-muted-foreground">Show:</span>
+          {([["all", "all"], ["shared", "\u226550%"], ["graded", "graded"]] as const).map(([val, label]) => (
+            <button
+              key={val}
+              className={cn(
+                "rounded px-1.5 py-0.5 transition-colors",
+                filterMode === val ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent/50",
+              )}
+              onClick={() => setFilterMode(val)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <span className="text-muted-foreground/50">{findings.length}/{findingMaxSev.size} findings</span>
+      </div>
+
+      {findings.length === 0 ? (
+        <EmptyState message="No findings match the current filter." />
+      ) : (
+      <div className="overflow-x-auto">
+      <table className="text-[11px]" style={{ minWidth: orderedSubjects.length * 44 + 260 }}>
         <thead>
-          <tr className="border-b">
-            <th className="w-48 shrink-0 pb-1 pr-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {/* Row 1: Group spanning headers */}
+          <tr>
+            <th
+              rowSpan={2}
+              className="sticky left-0 z-[1] min-w-[140px] bg-background pb-1 pr-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Finding
             </th>
-            {subjectInfo.map((s) => (
-              <th key={s.usubjid} className="w-20 shrink-0 pb-1 text-center">
-                <div className="text-[10px] font-medium">
-                  {s.short_id}
-                </div>
-                <div className="text-[9px] text-muted-foreground">
-                  {s.sex} / {s.dose_label}
-                </div>
+            {groups.map((g) => (
+              <th
+                key={`${g.doseLevel}-${g.isRecovery}`}
+                colSpan={g.subjects.length}
+                className="border-b border-l border-border/30 pb-0.5 text-center text-[9px] font-medium text-muted-foreground"
+              >
+                {g.doseLabel} {g.isRecovery ? "rec" : "main"}
               </th>
             ))}
-            <th className="w-20 shrink-0 pb-1 text-center text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Concordance
+            <th
+              rowSpan={2}
+              className="min-w-[50px] pb-1 text-center text-[9px] font-semibold uppercase tracking-wider text-muted-foreground"
+            >
+              N
             </th>
+          </tr>
+          {/* Row 2: Subject IDs + sex */}
+          <tr className="border-b">
+            {orderedSubjects.map((s) => (
+              <th
+                key={s.usubjid}
+                className={cn(
+                  "min-w-[36px] pb-1 text-center",
+                  groupStartSet.has(s.usubjid) && "border-l border-border/30",
+                )}
+              >
+                <div className="text-[10px] font-medium leading-tight">{s.short_id}</div>
+                <div className="text-[8px] text-muted-foreground/60">{s.sex}</div>
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {findings.map((finding) => {
-            const count = subjectIds.filter((id) => {
+            const count = orderedIds.filter((id) => {
               const subj = selected.find((s) => s.usubjid === id);
               return subj && finding in subj.findings;
             }).length;
@@ -290,10 +432,10 @@ function FindingConcordance({
                 className="cursor-pointer border-t border-border/20 hover:bg-accent/20"
                 onClick={() => onFindingClick(finding)}
               >
-                <td className="truncate py-0.5 pr-2 text-[10px]" title={finding}>
+                <td className="sticky left-0 z-[1] truncate bg-background py-0.5 pr-2 text-[10px]" title={finding}>
                   {finding}
                 </td>
-                {subjectIds.map((id) => {
+                {orderedIds.map((id) => {
                   const subj = selected.find((s) => s.usubjid === id);
                   const entry = subj?.findings[finding];
                   const sevNum = entry?.severity_num ?? 0;
@@ -302,7 +444,13 @@ function FindingConcordance({
                   const colors = sevNum > 0 ? getNeutralHeatColor(sevNum) : null;
 
                   return (
-                    <td key={id} className="py-0.5 text-center">
+                    <td
+                      key={id}
+                      className={cn(
+                        "py-0.5 text-center",
+                        groupStartSet.has(id) && "border-l border-border/30",
+                      )}
+                    >
                       {sevNum > 0 ? (
                         <div
                           className="mx-auto flex h-5 w-6 items-center justify-center rounded-sm font-mono text-[9px]"
@@ -335,21 +483,21 @@ function FindingConcordance({
         </tbody>
       </table>
     </div>
+      )}
+    </div>
   );
 }
 
 // ─── Section 2: Lab Values Comparison ────────────────────────
 
 function LabValuesComparison({
-  subjectIds,
-  subjectInfo,
+  groups,
   labValues,
   controlLab,
   availableTimepoints,
   specimen,
 }: {
-  subjectIds: string[];
-  subjectInfo: ComparisonSubjectProfile[];
+  groups: SubjectGroup[];
   labValues: { usubjid: string; test: string; unit: string; day: number; value: number }[];
   controlLab: Record<string, { mean: number; sd: number; unit: string; n: number; by_sex?: Record<string, { mean: number; sd: number; unit: string; n: number }> }>;
   availableTimepoints: number[];
@@ -357,6 +505,10 @@ function LabValuesComparison({
 }) {
   const [showAll, setShowAll] = useState(false);
   const [selectedTimepoint, setSelectedTimepoint] = useState<number | null>(null);
+
+  const orderedSubjects = groups.flatMap((g) => g.subjects);
+  const orderedIds = orderedSubjects.map((s) => s.usubjid);
+  const groupStartSet = getGroupStartSet(groups);
 
   // Default timepoint: the day with the most subjects represented
   const defaultDay = useMemo(() => {
@@ -400,7 +552,7 @@ function LabValuesComparison({
     const allTests = [...testSet.entries()].map(([test, unit]) => {
       const isRelevant = relevantTests.includes(test);
       const ctrl = controlLab[test];
-      const subjectValues = subjectIds.map((id) => {
+      const subjectValues = orderedIds.map((id) => {
         const lv = filtered.find((l) => l.usubjid === id && l.test === test);
         return lv?.value ?? null;
       });
@@ -409,7 +561,7 @@ function LabValuesComparison({
       const hasAbnormal = ctrl
         ? subjectValues.some((v, si) => {
             if (v == null) return false;
-            const sexCtrl = ctrl.by_sex?.[subjectInfo[si]?.sex] ?? ctrl;
+            const sexCtrl = ctrl.by_sex?.[orderedSubjects[si]?.sex] ?? ctrl;
             return v > sexCtrl.mean + 2 * sexCtrl.sd || v < sexCtrl.mean - 2 * sexCtrl.sd;
           })
         : false;
@@ -431,7 +583,7 @@ function LabValuesComparison({
     if (showAll) return allTests;
     // Show relevant + abnormal
     return allTests.filter((r) => r.isRelevant || r.hasAbnormal);
-  }, [testSet, subjectIds, filtered, controlLab, relevantTests, showAll]);
+  }, [testSet, orderedIds, orderedSubjects, filtered, controlLab, relevantTests, showAll]);
 
   if (labValues.length === 0) return <EmptyState message="No lab data available for selected subjects." />;
 
@@ -457,24 +609,53 @@ function LabValuesComparison({
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[11px]">
+        <table className="text-[11px]" style={{ minWidth: orderedSubjects.length * 52 + 240 }}>
           <thead>
-            <tr className="border-b">
-              <th className="pb-1 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
+            {/* Row 1: Group spanning headers */}
+            <tr>
+              <th
+                rowSpan={2}
+                className="sticky left-0 z-[1] bg-background pb-1 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                style={{ width: 1, whiteSpace: "nowrap" }}
+              >
                 Test
               </th>
-              <th className="pb-1 pr-3 text-left text-[10px] text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
+              <th
+                rowSpan={2}
+                className="pb-1 pr-3 text-left text-[10px] text-muted-foreground"
+                style={{ width: 1, whiteSpace: "nowrap" }}
+              >
                 Unit
               </th>
-              <th className="w-24 pb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <th
+                rowSpan={2}
+                className="min-w-[80px] pb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+              >
                 Control
-                <div className="font-normal normal-case tracking-normal text-[9px] text-muted-foreground/70">(mean±SD)</div>
+                <div className="font-normal normal-case tracking-normal text-[9px] text-muted-foreground/70">(mean{"\u00B1"}SD)</div>
               </th>
-              {subjectInfo.map((s) => (
-                <th key={s.usubjid} className="w-20 pb-1 text-center">
-                  <span className="text-[10px] font-medium">
-                    {s.short_id}
-                  </span>
+              {groups.map((g) => (
+                <th
+                  key={`${g.doseLevel}-${g.isRecovery}`}
+                  colSpan={g.subjects.length}
+                  className="border-b border-l border-border/30 pb-0.5 text-center text-[9px] font-medium text-muted-foreground"
+                >
+                  {g.doseLabel} {g.isRecovery ? "rec" : "main"}
+                </th>
+              ))}
+            </tr>
+            {/* Row 2: Subject IDs + sex */}
+            <tr className="border-b">
+              {orderedSubjects.map((s) => (
+                <th
+                  key={s.usubjid}
+                  className={cn(
+                    "min-w-[44px] pb-1 text-center",
+                    groupStartSet.has(s.usubjid) && "border-l border-border/30",
+                  )}
+                >
+                  <div className="text-[10px] font-medium leading-tight">{s.short_id}</div>
+                  <div className="text-[8px] text-muted-foreground/60">{s.sex}</div>
                 </th>
               ))}
             </tr>
@@ -482,7 +663,7 @@ function LabValuesComparison({
           <tbody>
             {rows.map((row) => (
               <tr key={row.test} className="border-t border-border/20">
-                <td className="whitespace-nowrap py-0.5 pr-3 font-mono text-[10px] font-medium">
+                <td className="sticky left-0 z-[1] whitespace-nowrap bg-background py-0.5 pr-3 font-mono text-[10px] font-medium">
                   {row.test}
                 </td>
                 <td className="whitespace-nowrap py-0.5 pr-3 text-[10px] text-muted-foreground">
@@ -502,22 +683,30 @@ function LabValuesComparison({
                   ) : "\u2014"}
                 </td>
                 {row.subjectValues.map((val, i) => {
+                  const id = orderedIds[i];
                   if (val == null) {
                     return (
-                      <td key={subjectIds[i]} className="py-0.5 text-center font-mono text-[10px] text-muted-foreground">
+                      <td
+                        key={id}
+                        className={cn(
+                          "py-0.5 text-center font-mono text-[10px] text-muted-foreground",
+                          groupStartSet.has(id) && "border-l border-border/30",
+                        )}
+                      >
                         &mdash;
                       </td>
                     );
                   }
-                  const sexCtrl = row.ctrl?.by_sex?.[subjectInfo[i]?.sex] ?? row.ctrl;
+                  const sexCtrl = row.ctrl?.by_sex?.[orderedSubjects[i]?.sex] ?? row.ctrl;
                   const isHigh = sexCtrl && val > sexCtrl.mean + 2 * sexCtrl.sd;
                   const isLow = sexCtrl && val < sexCtrl.mean - 2 * sexCtrl.sd;
                   return (
                     <td
-                      key={subjectIds[i]}
+                      key={id}
                       className={cn(
                         "py-0.5 text-center font-mono text-[11px]",
                         isHigh ? "font-medium text-red-600/70" : isLow ? "font-medium text-blue-600/70" : "text-foreground",
+                        groupStartSet.has(id) && "border-l border-border/30",
                       )}
                     >
                       {isHigh ? "\u2191" : isLow ? "\u2193" : ""}{val.toFixed(val >= 100 ? 0 : val >= 1 ? 1 : 3)}
@@ -544,48 +733,65 @@ function LabValuesComparison({
 // ─── Section 3: Body Weight Chart ────────────────────────────
 
 function BodyWeightSection({
-  subjects,
+  groups,
   bodyWeights,
   controlBW,
 }: {
-  subjects: ComparisonSubjectProfile[];
+  groups: SubjectGroup[];
   bodyWeights: { usubjid: string; day: number; weight: number }[];
   controlBW: Record<string, { mean: number; sd: number; n: number; by_sex?: Record<string, { mean: number; sd: number; n: number }> }>;
 }) {
+  const subjects = useMemo(() => groups.flatMap((g) => g.subjects), [groups]);
+
   // Default: baseline for mixed sex, absolute for same sex
   const isMixedSex = new Set(subjects.map((s) => s.sex)).size > 1;
   const [mode, setMode] = useState<BWChartMode>(isMixedSex ? "baseline" : "absolute");
 
-  // Re-init mode when sex composition changes (e.g., adding opposite-sex subject)
+  // Re-init mode when sex composition changes
   useEffect(() => {
     setMode(isMixedSex ? "baseline" : "absolute");
   }, [isMixedSex]);
 
   if (bodyWeights.length === 0) return <EmptyState message="No body weight data available." />;
 
-  const option = buildBWComparisonOption({
-    subjects,
-    bodyWeights,
-    controlBW,
-    mode,
-  });
+  const option = buildBWComparisonOption({ subjects, bodyWeights, controlBW, mode });
+
+  const hasRecovery = subjects.some((s) => s.isRecovery);
 
   return (
     <div>
-      {/* Mode toggle */}
-      <div className="mb-1 flex items-center gap-1">
-        {(["baseline", "absolute"] as const).map((m) => (
-          <button
-            key={m}
-            className={cn(
-              "rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
-              mode === m ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent/50",
+      {/* Mode toggle + group legend */}
+      <div className="mb-1 flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          {(["baseline", "absolute"] as const).map((m) => (
+            <button
+              key={m}
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                mode === m ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent/50",
+              )}
+              onClick={() => setMode(m)}
+            >
+              {m === "baseline" ? "% Baseline" : "Absolute"}
+            </button>
+          ))}
+        </div>
+        {subjects.length > 8 && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground">
+            {groups.map((g) => (
+              <span key={`${g.doseLevel}-${g.isRecovery}`} className="flex items-center gap-1">
+                <span
+                  className="inline-block h-[3px] w-3 rounded-full"
+                  style={{ backgroundColor: getDoseGroupColor(g.doseLevel) }}
+                />
+                {g.doseLabel} {g.isRecovery ? "rec" : "main"}
+              </span>
+            ))}
+            {hasRecovery && (
+              <span className="text-muted-foreground/50">(dashed = recovery)</span>
             )}
-            onClick={() => setMode(m)}
-          >
-            {m === "baseline" ? "% Baseline" : "Absolute"}
-          </button>
-        ))}
+          </div>
+        )}
       </div>
       <EChartsWrapper option={option} style={{ width: "100%", height: 180 }} />
     </div>
@@ -595,15 +801,17 @@ function BodyWeightSection({
 // ─── Section 4: Clinical Observations Diff ───────────────────
 
 function ClinicalObsDiff({
-  subjectIds,
-  subjectInfo,
+  groups,
   clinicalObs,
 }: {
-  subjectIds: string[];
-  subjectInfo: ComparisonSubjectProfile[];
+  groups: SubjectGroup[];
   clinicalObs: { usubjid: string; day: number; observation: string }[];
 }) {
   const [showAll, setShowAll] = useState(false);
+
+  const orderedSubjects = groups.flatMap((g) => g.subjects);
+  const orderedIds = orderedSubjects.map((s) => s.usubjid);
+  const groupStartSet = getGroupStartSet(groups);
 
   // Build day × subject matrix
   const matrix = useMemo(() => {
@@ -614,11 +822,10 @@ function ClinicalObsDiff({
     }
 
     // Add disposition as terminal row
-    for (const s of subjectInfo) {
+    for (const s of orderedSubjects) {
       if (s.disposition && s.disposition_day != null) {
         if (!dayMap.has(s.disposition_day)) dayMap.set(s.disposition_day, new Map());
         const existing = dayMap.get(s.disposition_day)!.get(s.usubjid);
-        // Only set if no existing entry or existing is NORMAL
         if (!existing || existing.toUpperCase() === "NORMAL") {
           dayMap.get(s.disposition_day)!.set(s.usubjid, s.disposition);
         }
@@ -628,7 +835,7 @@ function ClinicalObsDiff({
     return [...dayMap.entries()]
       .sort(([a], [b]) => a - b)
       .map(([day, subjects]) => ({ day, subjects }));
-  }, [clinicalObs, subjectInfo]);
+  }, [clinicalObs, orderedSubjects]);
 
   // Filter rows: only show days where at least one subject has non-NORMAL observation
   const visibleRows = useMemo(() => {
@@ -641,7 +848,7 @@ function ClinicalObsDiff({
     });
   }, [matrix, showAll]);
 
-  if (clinicalObs.length === 0 && subjectInfo.every((s) => !s.disposition)) {
+  if (clinicalObs.length === 0 && orderedSubjects.every((s) => !s.disposition)) {
     return <EmptyState message="No clinical observation data available." />;
   }
 
@@ -651,12 +858,14 @@ function ClinicalObsDiff({
         <div className="py-4 text-center text-xs text-muted-foreground">
           All clinical observations normal for selected subjects.
         </div>
-        <button
-          onClick={() => setShowAll(true)}
-          className="text-[10px] text-primary hover:underline"
-        >
-          Show all {matrix.length} days
-        </button>
+        {matrix.length > 0 && (
+          <button
+            onClick={() => setShowAll(true)}
+            className="text-[10px] text-primary hover:underline"
+          >
+            Show all {matrix.length} days
+          </button>
+        )}
       </div>
     );
   }
@@ -664,17 +873,38 @@ function ClinicalObsDiff({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full text-[11px]">
+        <table className="text-[11px]" style={{ minWidth: orderedSubjects.length * 52 + 60 }}>
           <thead>
-            <tr className="border-b">
-              <th className="w-12 pb-1 text-left font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {/* Row 1: Group spanning headers */}
+            <tr>
+              <th
+                rowSpan={2}
+                className="sticky left-0 z-[1] min-w-[40px] bg-background pb-1 text-left font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+              >
                 Day
               </th>
-              {subjectInfo.map((s) => (
-                <th key={s.usubjid} className="pb-1 text-left">
-                  <span className="text-[10px] font-medium">
-                    {s.short_id}
-                  </span>
+              {groups.map((g) => (
+                <th
+                  key={`${g.doseLevel}-${g.isRecovery}`}
+                  colSpan={g.subjects.length}
+                  className="border-b border-l border-border/30 pb-0.5 text-center text-[9px] font-medium text-muted-foreground"
+                >
+                  {g.doseLabel} {g.isRecovery ? "rec" : "main"}
+                </th>
+              ))}
+            </tr>
+            {/* Row 2: Subject IDs + sex */}
+            <tr className="border-b">
+              {orderedSubjects.map((s) => (
+                <th
+                  key={s.usubjid}
+                  className={cn(
+                    "min-w-[44px] pb-1 text-left",
+                    groupStartSet.has(s.usubjid) && "border-l border-border/30",
+                  )}
+                >
+                  <div className="text-[10px] font-medium leading-tight">{s.short_id}</div>
+                  <div className="text-[8px] text-muted-foreground/60">{s.sex}</div>
                 </th>
               ))}
             </tr>
@@ -682,14 +912,20 @@ function ClinicalObsDiff({
           <tbody>
             {visibleRows.map((row) => (
               <tr key={row.day} className="border-t border-border/20">
-                <td className="py-0.5 font-mono text-[10px] text-muted-foreground">
+                <td className="sticky left-0 z-[1] bg-background py-0.5 font-mono text-[10px] text-muted-foreground">
                   {row.day}
                 </td>
-                {subjectIds.map((id) => {
+                {orderedIds.map((id) => {
                   const obs = row.subjects.get(id);
                   if (!obs) {
                     return (
-                      <td key={id} className="py-0.5 text-[10px] text-muted-foreground/30">
+                      <td
+                        key={id}
+                        className={cn(
+                          "py-0.5 text-[10px] text-muted-foreground/30",
+                          groupStartSet.has(id) && "border-l border-border/30",
+                        )}
+                      >
                         &mdash;
                       </td>
                     );
@@ -711,6 +947,7 @@ function ClinicalObsDiff({
                             : isMoribund
                               ? "font-medium text-orange-500/70"
                               : "font-medium text-foreground",
+                        groupStartSet.has(id) && "border-l border-border/30",
                       )}
                     >
                       {obs}
