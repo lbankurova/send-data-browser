@@ -37,6 +37,9 @@ import type {
   AdverseEffectSummaryRow,
   RuleResult,
 } from "@/types/analysis-views";
+import { useOrganRecovery } from "@/hooks/useOrganRecovery";
+import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
+import { verdictArrow, buildRecoveryTooltip } from "@/lib/recovery-assessment";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -282,7 +285,7 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
 
 // ─── OrganHeader ───────────────────────────────────────────
 
-function OrganHeader({ summary }: { summary: OrganSummary }) {
+function OrganHeader({ summary, recovery }: { summary: OrganSummary; recovery?: OrganRecoveryResult }) {
   return (
     <div className="shrink-0 border-b px-4 py-3">
       <div className="flex items-center gap-2">
@@ -292,6 +295,11 @@ function OrganHeader({ summary }: { summary: OrganSummary }) {
         {summary.adverseCount > 0 && (
           <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             {summary.adverseCount} adverse
+          </span>
+        )}
+        {recovery?.hasRecovery && recovery.overall && (
+          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {verdictArrow(recovery.overall)} {recovery.overall}
           </span>
         )}
       </div>
@@ -336,6 +344,7 @@ function OverviewTab({
   selection,
   onEndpointClick,
   studyId,
+  recovery,
 }: {
   organData: AdverseEffectSummaryRow[];
   endpointSummaries: EndpointSummary[];
@@ -344,6 +353,7 @@ function OverviewTab({
   selection: NoaelSelection | null;
   onEndpointClick: (endpoint: string) => void;
   studyId?: string;
+  recovery?: OrganRecoveryResult;
 }) {
   const navigate = useNavigate();
 
@@ -402,6 +412,15 @@ function OverviewTab({
                   {ep.treatmentRelated && (
                     <span className="shrink-0 text-[9px] font-medium text-muted-foreground">TR</span>
                   )}
+                  {recovery?.hasRecovery && (ep.domain === "MI" || ep.domain === "MA") && (() => {
+                    const v = recovery.byEndpointLabel.get(ep.endpoint_label);
+                    if (!v || v === "not_observed" || v === "no_data") return null;
+                    return (
+                      <span className="shrink-0 text-[9px] text-muted-foreground">
+                        {verdictArrow(v)} {v}
+                      </span>
+                    );
+                  })()}
                 </button>
               );
             })}
@@ -445,6 +464,7 @@ function AdversityMatrixTab({
   setTrFilter,
   expandGen,
   collapseGen,
+  recovery,
 }: {
   organData: AdverseEffectSummaryRow[];
   allAeData: AdverseEffectSummaryRow[];
@@ -456,6 +476,7 @@ function AdversityMatrixTab({
   setTrFilter: (v: string | null) => void;
   expandGen?: number;
   collapseGen?: number;
+  recovery?: OrganRecoveryResult;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
@@ -581,8 +602,39 @@ function AdversityMatrixTab({
           <span className="text-muted-foreground">{info.getValue().replace(/_/g, " ")}</span>
         ),
       }),
+      ...(recovery?.hasRecovery ? [
+        col.display({
+          id: "recovery",
+          header: "Recovery",
+          cell: (info) => {
+            const row = info.row.original;
+            if (row.domain !== "MI" && row.domain !== "MA") {
+              return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+            }
+            const verdict = recovery.byEndpointLabel.get(row.endpoint_label);
+            if (!verdict || verdict === "not_observed" || verdict === "no_data") {
+              return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+            }
+            const emphasis = verdict === "persistent" || verdict === "progressing";
+            const assessment = recovery.assessmentByLabel.get(row.endpoint_label);
+            const specimen = row.endpoint_label.split(" \u2014 ")[0];
+            const recDays = specimen ? recovery.recoveryDaysBySpecimen.get(specimen) : undefined;
+            return (
+              <span
+                className={cn(
+                  "text-[9px]",
+                  emphasis ? "font-medium text-foreground/70" : "text-muted-foreground",
+                )}
+                title={buildRecoveryTooltip(assessment, recDays)}
+              >
+                {verdictArrow(verdict)} {verdict}
+              </span>
+            );
+          },
+        }),
+      ] : []),
     ],
-    []
+    [recovery]
   );
 
   const table = useReactTable({
@@ -823,6 +875,21 @@ export function NoaelDecisionView() {
     return deriveEndpointSummaries(organData);
   }, [organData]);
 
+  // Extract unique MI specimens for recovery lookup
+  const organSpecimens = useMemo(() => {
+    const specs = new Set<string>();
+    for (const row of organData) {
+      if (row.domain === "MI" || row.domain === "MA") {
+        const parts = row.endpoint_label.split(" \u2014 ");
+        if (parts.length >= 2) specs.add(parts[0]);
+      }
+    }
+    return [...specs].sort();
+  }, [organData]);
+
+  // Fetch recovery data for all specimens of the selected organ
+  const organRecovery = useOrganRecovery(studyId, organSpecimens);
+
   // Selected organ summary
   const selectedSummary = useMemo(() => {
     if (!selectedOrgan) return null;
@@ -936,7 +1003,7 @@ export function NoaelDecisionView() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/5">
         {selectedSummary && (
           <>
-            <OrganHeader summary={selectedSummary} />
+            <OrganHeader summary={selectedSummary} recovery={organRecovery} />
 
             {/* Tab bar */}
             <ViewTabBar
@@ -961,6 +1028,7 @@ export function NoaelDecisionView() {
                 selection={selection}
                 onEndpointClick={handleEndpointClick}
                 studyId={studyId}
+                recovery={organRecovery}
               />
             ) : (
               <AdversityMatrixTab
@@ -974,6 +1042,7 @@ export function NoaelDecisionView() {
                 setTrFilter={setTrFilter}
                 expandGen={expandGen}
                 collapseGen={collapseGen}
+                recovery={organRecovery}
               />
             )}
           </>

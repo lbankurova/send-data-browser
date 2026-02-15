@@ -526,9 +526,11 @@ function SpecimenOverviewPane({
 function RecoveryPaneContent({
   assessment,
   onSubjectClick,
+  recoveryDays,
 }: {
   assessment: RecoveryAssessment;
   onSubjectClick?: (usubjid: string) => void;
+  recoveryDays?: number | null;
 }) {
   const visible = assessment.assessments.filter(
     (a) => a.verdict !== "not_observed" && a.verdict !== "no_data",
@@ -544,6 +546,7 @@ function RecoveryPaneContent({
           assessment={a}
           onSubjectClick={onSubjectClick}
           showBorder={i < visible.length - 1}
+          recoveryDays={recoveryDays}
         />
       ))}
     </div>
@@ -554,20 +557,28 @@ function RecoveryDoseBlock({
   assessment: a,
   onSubjectClick,
   showBorder,
+  recoveryDays,
 }: {
   assessment: RecoveryDoseAssessment;
   onSubjectClick?: (usubjid: string) => void;
   showBorder: boolean;
+  recoveryDays?: number | null;
 }) {
   const shortId = (id: string) => {
     const parts = id.split("-");
     return parts[parts.length - 1] || id.slice(-4);
   };
 
+  const periodLabel = recoveryDays != null
+    ? recoveryDays >= 7
+      ? `${Math.round(recoveryDays / 7)} week${Math.round(recoveryDays / 7) !== 1 ? "s" : ""} recovery`
+      : `${recoveryDays} day${recoveryDays !== 1 ? "s" : ""} recovery`
+    : null;
+
   return (
     <div className={cn(showBorder && "border-b border-border/40 pb-3")}>
       <div className="mb-1 text-[10px] text-muted-foreground">
-        {a.doseGroupLabel}
+        {a.doseGroupLabel}{periodLabel && ` \u00b7 ${periodLabel}`}
       </div>
       <div className="space-y-1.5 text-xs">
         {/* Main arm */}
@@ -887,6 +898,7 @@ function FindingDetailPane({
             <RecoveryPaneContent
               assessment={findingRecovery}
               onSubjectClick={onSubjectClick}
+              recoveryDays={subjData?.recovery_days}
             />
           </CollapsiblePane>
         )}
