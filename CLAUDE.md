@@ -71,13 +71,49 @@ Before committing changes that alter system or view behavior:
 
 ## Post-Implementation Review Protocol
 
-After implementing a feature from a spec in `docs/incoming/`, the agent **must** perform a completeness review before considering the work done:
+After implementing a feature from a spec in `docs/incoming/`, the agent **must** perform a completeness review before considering the work done. The review checks both structural completeness (does the feature exist?) and behavioral correctness (does it activate under the right conditions?).
 
-1. **Diff the spec against the implementation.** Re-read the full spec section by section. For every requirement, UI element, data field, integration point, and suggested enhancement — verify whether it was implemented.
-2. **Create todo items for all gaps.** Every unimplemented feature, deferred suggestion, or partially implemented behavior gets a todo item with: the spec section reference, a clear description of what's missing, and any blocking dependencies.
-3. **Document decision points.** If the implementation chose one approach over alternatives described in the spec (e.g., "Option A vs Option B"), record the choice and rationale in the todo list or as a comment in the relevant code.
-4. **Flag cross-spec integration gaps.** If the spec references other specs or views that need changes (e.g., "add column to NOAEL view"), create a todo for each.
-5. **Present the full gap list to the user** before moving on, so they can prioritize or dismiss items.
+### Step 1: Four-dimension requirement trace
+
+Re-read the spec section by section. For every requirement, decompose it into four dimensions and verify each against the code:
+
+| Dimension | Question | What to check |
+|-----------|----------|---------------|
+| **WHAT** | Does the right thing happen? | Feature exists, function is called, UI element renders |
+| **WHEN** | Does it trigger under exactly the right conditions? | Every "when", "if", "only when" clause in the spec has a matching code condition |
+| **UNLESS** | Is it suppressed when it should be? | Every "unless", "not when", "hidden when", "at least one" clause has a negation guard |
+| **HOW** | Does the exact format, text, styling match? | See HOW sub-checks below |
+
+**The most common failure mode is WHEN/UNLESS.** A feature that exists but activates unconditionally when the spec says "only when X" is a behavioral gap. Always extract the full conditional logic from spec text and verify it against the code's `if`/`&&`/`||` expressions.
+
+**HOW sub-checks** — when a spec defines presentation details, verify each:
+
+| Sub-check | What to compare | Example failures |
+|-----------|----------------|------------------|
+| **Text content** | Exact wording, labels, suffixes, prefixes | Missing "(worst case)" suffix, bare label instead of "Group N (dose mg/kg)" |
+| **Text layout** | Line breaks, indentation, multi-line structure, separators | Tooltip lines missing 2-space indent, flat list instead of primary/others split |
+| **Typography** | `text-[size]`, `font-weight`, `text-color`, opacity modifiers | `text-muted-foreground/60` instead of `text-muted-foreground`, wrong font-weight |
+| **Spacing** | Margins, padding, gaps (Tailwind `mx-`, `px-`, `gap-`) | `mx-0.5` instead of `mx-1.5`, missing `py-1.5` |
+| **Visual elements** | Icons, markers, symbols, SVG paths, borders, separators | `✕` vs `▼` swapped, missing dashed stroke line, wrong separator character |
+| **Sort/order** | Column order, row sort direction, priority ranking | Column before instead of after, ascending-first instead of descending-first |
+
+When the spec includes a code snippet or className string, compare it **character by character** against the implementation. A single missing class or wrong Tailwind modifier is a gap.
+
+### Step 2: Create todo items for all gaps
+
+Every gap gets a todo item with: the spec section reference, which dimension failed (WHAT/WHEN/UNLESS/HOW), the exact spec quote, the code's actual behavior, and the file:line reference.
+
+### Step 3: Document decision points
+
+If the implementation chose one approach over alternatives described in the spec (e.g., "Option A vs Option B"), record the choice and rationale.
+
+### Step 4: Flag cross-spec integration gaps
+
+If the spec references other specs or views that need changes (e.g., "add column to NOAEL view"), create a todo for each.
+
+### Step 5: Present the full gap list to the user
+
+Present before moving on, so they can prioritize or dismiss items.
 
 ## Architecture
 

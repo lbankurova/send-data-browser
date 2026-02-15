@@ -47,14 +47,14 @@ These files were modified or untracked but not yet committed. They reflect in-pr
 
 ## Summary
 
-| Spec | Completion | Open gaps | Status |
-|------|-----------|-----------|--------|
-| arch-redesign-final.md | 95% | 2 | NEAR-COMPLETE |
-| subject-comparison-spec.md | 100% | 0 | DONE |
-| recovery-reversibility-spec.md | 99% | 2 | NEAR-COMPLETE |
-| subject-matrix-redesign-spec.md | 98% | 1 | NEAR-COMPLETE |
-| adaptive-sections-spec.md | 96% | 1 | NEAR-COMPLETE |
-| recovery-dose-charts-spec.md | 6% | ~94 | NOT STARTED |
+| Spec | Pass 1 | Pass 2 | Total gaps | Status |
+|------|--------|--------|------------|--------|
+| arch-redesign-final.md | 2 | 11 | 13 | GAPS IN CORE MECHANICS |
+| subject-comparison-spec.md | 0 | 6 | 6 | BEHAVIORAL GAPS |
+| recovery-reversibility-spec.md | 2 | 3 | 5 | NEAR-COMPLETE |
+| subject-matrix-redesign-spec.md | 1 | 3 | 4 | NEAR-COMPLETE |
+| adaptive-sections-spec.md | 1 | 8 | 9 | BEHAVIORAL GAPS |
+| recovery-dose-charts-spec.md | ~94 | — | ~94 | NOT STARTED |
 
 **Reference-only documents (not audited as features):**
 - `collapsible-sections-spec.md` — Superseded by adaptive-sections-spec.md
@@ -65,106 +65,107 @@ These files were modified or untracked but not yet committed. They reflect in-pr
 
 ## 1. Architecture Redesign (`arch-redesign-final.md`)
 
-**Status: NEAR-COMPLETE — all 5 phases implemented, 2 gaps remaining.**
+**Status: 13 gaps (2 critical, 3 high, 4 medium, 4 low)**
 
-All phases verified:
-- Phase 1: StudySelectionContext with cascading clears, navigateTo()
-- Phase 2: GlobalFilterContext with bidirectional sex sync
-- Phase 3: RailModeContext, PolymorphicRail at shell level
-- Phase 4: View migration (all 5 analysis views)
-- Phase 5: Cleanup — old contexts removed, no dead code
-
-Known deviations D1–D4 from spec appendix are all accounted for in the implementation.
+All 5 phases structurally implemented. Behavioral audit revealed core mechanics issues — `navigateTo({})` is a no-op (breaking Escape and breadcrumb dismiss), sex filter declared "universal" but only consumed by one view, and several filter/sync gaps.
 
 ### Open gaps
 
-| # | Spec ref | Gap | File | Priority |
+| # | Spec ref | Gap | File | Severity |
 |---|----------|-----|------|----------|
-| AR-1 | §5.2 | HistopathologyView missing organ-level aggregation. When `organSystem` is selected but `specimen` is NOT set, the view should show an organ-level aggregate summary (findings, incidence, severity across all specimens). Currently shows "Select a specimen from the rail" placeholder. | `HistopathologyView.tsx:~2589` | Medium |
-| AR-2 | §6.2 | Cross-view links use `navigate(route, { state: {...} })` instead of calling `navigateTo()` first to populate shared context atomically before routing. Functionally works via `location.state` consumption in target views, but doesn't match the spec pattern. | `StudySummaryContextPanel.tsx` and similar panes | Low |
+| AR-1 | §5.2 | HistopathologyView missing organ-level aggregation. When `organSystem` is selected but `specimen` is NOT set, should show organ-level aggregate summary. Currently shows placeholder. | `HistopathologyView.tsx:~2589` | Medium |
+| AR-2 | §6.2 | Cross-view links use `navigate(route, { state })` instead of calling `navigateTo()` first. Functionally works via `location.state` but doesn't match spec pattern. | `StudySummaryContextPanel.tsx` and similar | Low |
+| AR-3 | §3.2 | `minSeverity` filter not applied in organ mode. `OrganRailMode.tsx` never references `filters.minSeverity`. | `OrganRailMode.tsx:237-253` | Medium |
+| AR-4 | §3.2 | Sex filter declared "universal" but only consumed by HistopathologyView. OrganRailMode, StudySummaryView, DoseResponseView, NoaelDecisionView all ignore it. NoaelDecisionView has its own local `sexFilter` state. | `OrganRailMode.tsx`, `NoaelDecisionView.tsx:857`, `DoseResponseView.tsx`, `StudySummaryView.tsx` | High |
+| AR-5 | §3.3 | `userHasToggled` never cleared on browsing tree navigation. Once user manually toggles rail mode, view preferences stop working until study switch. Only cleared on study switch. | `BrowsingTree.tsx:133`, `RailModeContext.tsx:41-48` | Medium |
+| AR-6 | §4.1 | Filtered count missing from mode toggle. Spec shows `[Organs] [Specimens] (40)` but no count rendered next to toggle. | `PolymorphicRail.tsx:24-41` | Low |
+| AR-7 | §4.1 | FilterShowingLine missing from PolymorphicRail and OrganRailMode. SpecimenRailMode has one but it omits `sex` and `significantOnly` from its condition/display. | `PolymorphicRail.tsx:43-85`, `OrganRailMode.tsx`, `SpecimenRailMode.tsx:293-308` | Low |
+| AR-8 | §4.5 | Breadcrumb dismiss button calls `navigateTo({})` which is a no-op — `applyCascade` with empty update preserves all fields. Organ filter is NOT cleared. | `SpecimenRailMode.tsx:348`, `StudySelectionContext.tsx:57-95` | **Critical** |
+| AR-9 | §4.6 | Escape key calls `navigateTo({})` — same no-op bug as AR-8. Selection is not cleared. | `OrganRailMode.tsx:234`, `SpecimenRailMode.tsx:157` | **Critical** |
+| AR-10 | §5.1 | StudySummaryView does not auto-select top organ on load. | `StudySummaryView.tsx:28-67` | Medium |
+| AR-11 | §3.2 | `significantOnly` in specimen rail checks adversity (`adverseCount > 0 \|\| warningCount > 0`) instead of statistical significance. OrganRailMode correctly uses `n_significant > 0`. | `SpecimenRailMode.tsx:210-211` | High |
+| AR-12 | §3.2 | `resetFilters()` sets `DEFAULT_FILTERS` directly without calling `navigateTo({ sex: undefined })`. After reset, `StudySelection.sex` retains stale value — contexts desync. | `GlobalFilterContext.tsx:82-84` | High |
+| AR-13 | §3.1 | `canGoBack` derived from `historyRef.current.length` (a ref, not state). Technically correct but fragile — future memoization of context value would break reactivity. | `StudySelectionContext.tsx:151` | Low |
 
 ---
 
 ## 2. Subject Comparison (`subject-comparison-spec.md`)
 
-**Status: DONE — 92+ requirements fully implemented.**
+**Status: 6 gaps (1 medium, 5 minor/low)**
 
-All 4 comparison sections verified:
-- Finding concordance table with severity heatmap
-- Lab values sparkline charts (6 analytes)
-- Body weight trajectory chart with control bands + terminal markers
-- Clinical observations timeline
+All 4 sections structurally complete. Behavioral audit found marker symbols swapped, missing sex-specific controls, and missing scroll behavior.
 
-Backend endpoint `/api/study/{id}/histopath/subjects/compare` returns complete data. CompareTab.tsx (~707 lines) implements the full UI. No action items.
+### Open gaps
+
+| # | Spec ref | Gap | File | Severity |
+|---|----------|-----|------|----------|
+| SC-1 | §7.5 | Terminal event markers swapped: found dead uses triangle (should be `✕`), moribund uses X (should be `▼`). SVG paths reversed. | `comparison-charts.ts:144` | Minor |
+| SC-2 | §6.3 | Mixed-sex comparisons pool control stats into single mean±SD instead of showing sex-specific `M: mean±SD / F: mean±SD`. Backend combines both sexes when `len(selected_sexes) > 1`. | `temporal.py:770-775`, `CompareTab.tsx:455-458` | Medium |
+| SC-3 | §4.2 | Edit button switches to Evidence tab but does not scroll to severity matrix. Spec says "switches back...and scrolls to the severity matrix." | `HistopathologyView.tsx:2802` | Minor |
+| SC-4 | §7.3 | Control band missing dashed stroke line on mean. Both upper/lower line series have `lineStyle: { opacity: 0 }`. | `comparison-charts.ts:87-88, 103-104` | Minor |
+| SC-5 | §5.5 | "Not examined" cells render dash (`—`) instead of empty. Code cannot distinguish not-examined from no-finding. | `CompareTab.tsx:317-318` | Low |
+| SC-6 | §7.4 | Body weight chart mode doesn't re-initialize when subject sex composition changes. `useState` initial value set at mount — adding opposite-sex subject doesn't switch to baseline mode. | `CompareTab.tsx:534` | Low |
 
 ---
 
 ## 3. Recovery Reversibility (`recovery-reversibility-spec.md`)
 
-**Status: NEAR-COMPLETE — 209/211 requirements implemented, 2 gaps.**
+**Status: 5 gaps (all minor/low)**
+
+Core logic (thresholds, verdicts, derivation) is behaviorally correct. Gaps are formatting and sort semantics.
 
 ### Open gaps
 
-| # | Spec ref | Gap | File | Priority |
+| # | Spec ref | Gap | File | Severity |
 |---|----------|-----|------|----------|
-| RR-1 | §4.1 | Recovery column is positioned BEFORE "Also in" column; spec says it should come AFTER "Also in" | `HistopathologyView.tsx:1003-1037` | Low |
-| RR-2 | §7.2 | Specimen summary strip shows "Recovery: reversed" when all findings are fully reversed. Spec says the indicator should only appear when there is at least one non-"reversed" finding. Fix: gate on `specimenRecoveryOverall !== "reversed"` at the render site, or return `null` from `specimenRecoveryLabel()` when all verdicts are "reversed". | `HistopathologyView.tsx:2751`, `recovery-assessment.ts:304` | Low |
-
-### Verified complete
-
-- `recovery-assessment.ts`: deriveRecoveryAssessments(), computeVerdict(), worstVerdict(), verdictArrow(), buildRecoveryTooltip(), specimenRecoveryLabel() — all thresholds correct (≥50% partial, 100% full, etc.)
-- Recovery column in findings table with colored verdict arrows (green ↓, amber →, red ↑)
-- Recovery tooltip with main-arm vs recovery-arm comparison, specimen-level verdicts
-- Context panel Recovery pane between "Sex comparison" and "Correlating evidence" (correct per spec)
-- NOAEL view Recovery column with organ-level worst-verdict rollup
-- `useOrganRecovery.ts` hook for NOAEL view data
-- Backend: MI+MA domain joining for recovery subjects, recovery group detection
+| RR-1 | §4.1 | Recovery column positioned BEFORE "Also in" column; spec says AFTER. | `HistopathologyView.tsx:1003-1037` | Low |
+| RR-2 | §7.2 | Specimen strip shows "Recovery: reversed" when all findings reversed. Spec says only show when at least one non-reversed. | `HistopathologyView.tsx:2751`, `recovery-assessment.ts:304` | Low |
+| RR-3 | §4.3 | Tooltip "Overall:" line missing "(worst case)" suffix and 2-space indent. "Recovery period:" also missing indent. | `recovery-assessment.ts:167, 172` | Minor |
+| RR-5 | §4.4 | Sort direction semantics: progressing is at top on ascending (first click) but spec says "at the top when sorted descending." | `HistopathologyView.tsx:1033-1035` | Minor |
+| RR-6 | §4.3 | Tooltip dose label uses bare `doseGroupLabel` instead of spec format "Group N (dose mg/kg)". | `recovery-assessment.ts:163, 224` | Minor |
 
 ---
 
 ## 4. Subject Matrix Redesign (`subject-matrix-redesign-spec.md`)
 
-**Status: NEAR-COMPLETE — 48/49 requirements implemented.**
+**Status: 4 gaps (1 medium, 3 low)**
+
+Core data pipeline and cell rendering correct. Behavioral audit found cell content mismatch in group mode.
 
 ### Open gaps
 
-| # | Spec ref | Gap | File | Priority |
+| # | Spec ref | Gap | File | Severity |
 |---|----------|-----|------|----------|
-| SM-1 | §3.2 | Group mode missing FilterShowingLine summary strip when "Severity graded only" filter is active. The filter works but no visual indicator shows what's being filtered. | `HistopathologyView.tsx:~1427` | Low |
-
-### Verified complete
-
-- All-findings matrix (not just severity-graded) with incidence dots
-- Subject mode: individual animal cells with severity color
-- Group mode: incidence fraction cells with neutral heat coloring
-- "Severity graded only" toggle filter (functional, just missing FilterShowingLine)
-- Correct neutral gray heat ramp per design system
-- Matrix legend below matrix
+| SM-1 | §3.2 | Group mode missing FilterShowingLine for "Severity graded only" filter. | `HistopathologyView.tsx:~1427` | Low |
+| SM-2 | §4.2 | Group mode severity cells show `affected/n` (e.g., "3/5") instead of severity number (e.g., "2.5"). Subtitle says "show average severity grade" but cells show counts. | `HistopathologyView.tsx:1569-1571` | Medium |
+| SM-3 | §7.3 | Group mode legend shows `●` marker that never appears in group mode cells (only used in subject mode). Spec says "no additional legend item needed." | `HistopathologyView.tsx:1485-1490` | Low |
+| SM-4 | §8.2 | Section header finding count always uses group-mode `heatmapData`, even in subject mode. Counts may diverge after filtering. | `HistopathologyView.tsx:1362-1366` | Low |
 
 ---
 
 ## 5. Adaptive Sections (`adaptive-sections-spec.md`)
 
-**Status: NEAR-COMPLETE — 49/51 requirements implemented.**
+**Status: 9 gaps (2 high, 3 medium, 4 low)**
+
+Layout engine (useSectionLayout) is behaviorally correct. Gaps are in selection zone content format and header interaction.
 
 ### Open gaps
 
-| # | Spec ref | Gap | File | Priority |
+| # | Spec ref | Gap | File | Severity |
 |---|----------|-----|------|----------|
-| AS-1 | §6.2 | Finding names in FindingsSelectionZone and MatrixSelectionZone are not clickable for scroll-to-section behavior. The spec says clicking a finding name in a selection zone should scroll the parent section to that finding. | `FindingsSelectionZone.tsx:21`, `MatrixSelectionZone.tsx:24` | Medium |
-
-### Verified complete
-
-- `useSectionLayout.ts` (~291 lines): three-state model (Full/Compressed/Strip), height allocation, focus transitions
-- `SectionHeader.tsx`: unified header with chrome zone (title + controls) and selection zone
-- Selection zones: FindingsSelectionZone, DoseChartsSelectionZone, MatrixSelectionZone — all render correctly
-- Collapsed strip states with content summary
-- Focus on click: clicking a compressed/strip section expands it and compresses others
-- Natural height computation and proportional allocation
+| AS-1 | §6.2 | Finding names in selection zones not clickable for scroll-to-section behavior. | `FindingsSelectionZone.tsx:21`, `MatrixSelectionZone.tsx:24` | Medium |
+| AS-2 | §4.2 | Separator spacing `mx-0.5` instead of spec's `mx-1.5` between chrome zone and selection zone. | `SectionHeader.tsx:56` | Low |
+| AS-3 | §4.4 | Zero severity in dose charts header shows "0" instead of em dash (`—`). | `DoseChartsSelectionZone.tsx:53` | Medium |
+| AS-4 | §4.4 | Missing "(specimen aggregate)" subtitle when no finding selected. Title is just "Dose charts". | `HistopathologyView.tsx:1296` | Medium |
+| AS-5 | §4.5 | Matrix selection zone uses flat list instead of primary/others split with sex breakdown. Spec requires `{F}F + {M}M in {primary}` then `also {others}`. | `MatrixSelectionZone.tsx:17-35` | High |
+| AS-6 | §4.5 | Matrix no-selection digest missing sex breakdown. Shows `"6 affected"` instead of `"6 affected (3M, 3F)"`. | `MatrixSelectionZone.tsx:49-58` | High |
+| AS-7 | §5 | Chevron has no click handler in non-strip mode. Spec defines `onClick` on chevron for toggling. | `SectionHeader.tsx:43` | Medium |
+| AS-8 | §11 | StripSep uses `mx-1` instead of spec's `mx-1.5`. | `CollapsedStrip.tsx:44` | Low |
+| AS-9 | §4.2 | Count text uses `text-muted-foreground/60` instead of `text-muted-foreground`. | `SectionHeader.tsx:52` | Low |
 
 ### Dead code note
 
-`CollapsedStrip.tsx` exists as dead code — artifact from the older collapsible-sections refactor that was superseded by adaptive-sections. Can be safely deleted.
+`CollapsedStrip.tsx` exists as dead code — artifact from the older collapsible-sections refactor. Can be safely deleted.
 
 ---
 
@@ -238,22 +239,63 @@ This is the largest remaining feature. The spec defines how recovery-arm data sh
 
 ## Task overview
 
-### Ready to implement (no blockers)
+### Critical (broken functionality)
 
 | Task ID | From | Description | Effort |
 |---------|------|-------------|--------|
-| RR-1 | Recovery reversibility | Move Recovery column after "Also in" column | Trivial |
-| RR-2 | Recovery reversibility | Suppress "Recovery: reversed" from specimen summary strip (only show non-reversed) | Trivial |
-| SM-1 | Subject matrix | Add FilterShowingLine to group mode | Small |
-| AS-1 | Adaptive sections | Add click-to-scroll on finding names in selection zones | Small |
-| AR-2 | Architecture redesign | Refactor cross-view links to call `navigateTo()` before `navigate()` | Small |
+| AR-8 | Architecture | Fix `navigateTo({})` no-op — breadcrumb dismiss is broken | Trivial (change to `navigateTo({ organSystem: undefined })`) |
+| AR-9 | Architecture | Fix Escape key — same `navigateTo({})` no-op bug | Trivial (explicit clear all hierarchy fields) |
+
+### High priority
+
+| Task ID | From | Description | Effort |
+|---------|------|-------------|--------|
+| AR-4 | Architecture | Make sex filter universal — consumed by all views and rail modes | Medium |
+| AR-11 | Architecture | Fix `significantOnly` in specimen rail — check significance, not adversity | Small |
+| AR-12 | Architecture | Fix `resetFilters()` sex desync — sync sex back to StudySelectionContext | Trivial |
+| AS-5 | Adaptive sections | Matrix selection zone: primary/others split with sex breakdown | Small |
+| AS-6 | Adaptive sections | Matrix no-selection: add sex breakdown to affected counts | Small |
+
+### Medium priority
+
+| Task ID | From | Description | Effort |
+|---------|------|-------------|--------|
+| AR-1 | Architecture | Build organ-level aggregation view for histopathology | Medium |
+| AR-3 | Architecture | Apply `minSeverity` filter in organ rail mode | Small |
+| AR-5 | Architecture | Clear `userHasToggled` on browsing tree navigation | Trivial |
+| AR-10 | Architecture | Auto-select top organ in StudySummaryView | Trivial |
+| SC-2 | Subject comparison | Sex-specific control stats for mixed-sex comparisons | Medium |
+| SM-2 | Subject matrix | Group mode severity cells: show severity number instead of affected/n | Small |
+| AS-1 | Adaptive sections | Click-to-scroll on finding names in selection zones | Small |
+| AS-3 | Adaptive sections | Zero severity in dose charts header: show `—` not "0" | Trivial |
+| AS-4 | Adaptive sections | Add "(specimen aggregate)" subtitle to dose charts header | Trivial |
+| AS-7 | Adaptive sections | Add click handler to chevron in non-strip mode | Small |
+
+### Low priority (formatting/cosmetic)
+
+| Task ID | From | Description | Effort |
+|---------|------|-------------|--------|
+| RR-1 | Recovery reversibility | Move Recovery column after "Also in" | Trivial |
+| RR-2 | Recovery reversibility | Suppress "Recovery: reversed" from specimen strip | Trivial |
+| RR-3 | Recovery reversibility | Tooltip indent and "(worst case)" suffix | Trivial |
+| RR-5 | Recovery reversibility | Sort direction semantics (ascending vs descending) | Trivial |
+| RR-6 | Recovery reversibility | Tooltip dose label format | Trivial |
+| SC-1 | Subject comparison | Swap terminal event marker symbols | Trivial |
+| SC-3 | Subject comparison | Edit button scroll to severity matrix | Small |
+| SC-4 | Subject comparison | Control band dashed stroke line | Small |
+| SC-5 | Subject comparison | "Not examined" cell: empty instead of dash | Small |
+| SC-6 | Subject comparison | BW chart mode re-init on sex composition change | Small |
+| SM-1 | Subject matrix | FilterShowingLine for "Severity graded only" | Small |
+| SM-3 | Subject matrix | Remove `●` from group mode legend | Trivial |
+| SM-4 | Subject matrix | Header count: use mode-appropriate data source | Small |
+| AR-2 | Architecture | Cross-view links: navigateTo() before navigate() | Small |
+| AR-6 | Architecture | Filtered count in mode toggle | Small |
+| AR-7 | Architecture | FilterShowingLine for all global filters | Small |
+| AR-13 | Architecture | `canGoBack` reactivity (ref vs state) | Trivial |
+| AS-2 | Adaptive sections | Separator spacing `mx-0.5` → `mx-1.5` | Trivial |
+| AS-8 | Adaptive sections | StripSep spacing `mx-1` → `mx-1.5` | Trivial |
+| AS-9 | Adaptive sections | Count text opacity: remove `/60` | Trivial |
 | — | Cleanup | Delete dead `CollapsedStrip.tsx` | Trivial |
-
-### Requires design/scope decision
-
-| Task ID | From | Description | Effort |
-|---------|------|-------------|--------|
-| AR-1 | Architecture redesign | Build organ-level aggregation view for histopathology (when organ selected but no specimen) | Medium |
 
 ### Requires full feature build
 
@@ -263,9 +305,39 @@ This is the largest remaining feature. The spec defines how recovery-arm data sh
 
 ---
 
+## Audit methodology
+
+### Pass 1: Structural completeness (done)
+
+Checks whether each spec requirement has a corresponding implementation: function exists, UI element renders, type is defined, endpoint returns data. This is a presence/absence check — "does feature X exist?"
+
+**Limitation:** Pass 1 treats requirements as binary (implemented/not). It misses cases where a feature exists but activates under wrong conditions, uses wrong thresholds, or lacks suppression guards.
+
+### Pass 2: Behavioral correctness (done)
+
+Every spec requirement is decomposed into four dimensions:
+
+| Dimension | Question | Example |
+|-----------|----------|---------|
+| **WHAT** | What should happen? | Show "Recovery: partial" in specimen strip |
+| **WHEN** | Under which conditions? | When `studyHasRecovery` AND specimen has recovery data |
+| **UNLESS** | When should it NOT appear? | Suppress when all findings are "reversed" |
+| **HOW** | Exact format, text, styling? | `text-[10px] text-muted-foreground`, no special emphasis |
+
+For each requirement the agent:
+1. Extracts every conditional clause from the spec text ("when X", "if Y", "only when Z", "at least one", "with non-...")
+2. Finds the corresponding code branch and verifies the condition expression matches
+3. Flags mismatches: missing negation guards, unconditional code where spec is conditional, wrong thresholds, off-by-one errors
+
+A feature that exists but activates under wrong conditions is a **behavioral gap**.
+
+---
+
 ## Audit log
 
-| Date | Auditor | Notes |
-|------|---------|-------|
-| 2026-02-15 | Claude | Initial comprehensive audit of all 9 spec files. 6 feature specs audited against codebase with file:line references. |
-| 2026-02-15 | Claude | Updated arch-redesign from DONE → NEAR-COMPLETE after deeper agent audit found 2 gaps (AR-1: organ-level aggregation, AR-2: cross-view link pattern). |
+| Date | Auditor | Pass | Notes |
+|------|---------|------|-------|
+| 2026-02-15 | Claude | 1 | Initial structural audit of all 9 spec files. 6 feature specs audited. Found 5 gaps total. |
+| 2026-02-15 | Claude | 1 | Updated arch-redesign: found 2 gaps (AR-1, AR-2). |
+| 2026-02-15 | Claude | 1 | Added RR-2 after manual completeness check of §7.2. |
+| 2026-02-15 | Claude | 2 | Behavioral audit of all 5 implemented specs. Found 31 new gaps: AR +11, SC +6, RR +3, SM +3, AS +8. Total gaps now 37 (excl. recovery dose charts). |
