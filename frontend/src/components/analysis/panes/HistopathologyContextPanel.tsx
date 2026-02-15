@@ -23,7 +23,7 @@ import type { PathologyReview } from "@/types/annotations";
 import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
-import { deriveRecoveryAssessments, MIN_RECOVERY_N, verdictArrow } from "@/lib/recovery-assessment";
+import { deriveRecoveryAssessments, MIN_RECOVERY_N, verdictArrow, formatRecoveryFraction } from "@/lib/recovery-assessment";
 import type { RecoveryAssessment, RecoveryDoseAssessment } from "@/lib/recovery-assessment";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 
@@ -559,9 +559,9 @@ function RecoveryPaneContent({
       {visible.map((a, i) => (
         <Fragment key={a.doseLevel}>
           {i > 0 && <div className="border-t border-border/40 my-2" />}
-          {/* E-5: anomaly/insufficient_n container treatment */}
-          {a.verdict === "anomaly" ? (
-            <div className="rounded border border-amber-300/30 bg-amber-50/20 px-2 py-1.5">
+          {/* E-5/v3: Container treatment per verdict tier */}
+          {a.verdict === "not_examined" ? (
+            <div className="rounded border border-red-300/20 bg-red-50/10 px-2 py-1.5 dark:border-red-500/15 dark:bg-red-900/5">
               <RecoveryDoseBlock
                 assessment={a}
                 onSubjectClick={onSubjectClick}
@@ -570,7 +570,17 @@ function RecoveryPaneContent({
                 onCompareSubjects={onCompareSubjects}
               />
             </div>
-          ) : a.verdict === "insufficient_n" ? (
+          ) : a.verdict === "anomaly" ? (
+            <div className="rounded border border-amber-300/30 bg-amber-50/20 px-2 py-1.5 dark:border-amber-500/20 dark:bg-amber-900/10">
+              <RecoveryDoseBlock
+                assessment={a}
+                onSubjectClick={onSubjectClick}
+                recoveryDays={recoveryDays}
+                allSubjects={allSubjects}
+                onCompareSubjects={onCompareSubjects}
+              />
+            </div>
+          ) : a.verdict === "insufficient_n" || a.verdict === "low_power" ? (
             <div className="rounded border border-border/30 bg-muted/10 px-2 py-1.5">
               <RecoveryDoseBlock
                 assessment={a}
@@ -629,8 +639,9 @@ function RecoveryDoseBlock({
       : `${recoveryDays} day${recoveryDays !== 1 ? "s" : ""} recovery`
     : null;
 
-  // E-2: Inline delta computation
-  const showDeltas = a.verdict !== "anomaly" && a.verdict !== "insufficient_n";
+  // E-2: Inline delta computation (suppress for guard verdicts)
+  const showDeltas = a.verdict !== "anomaly" && a.verdict !== "insufficient_n"
+    && a.verdict !== "not_examined" && a.verdict !== "low_power";
   const incDelta = showDeltas && a.main.incidence > 0
     ? Math.round(((a.recovery.incidence - a.main.incidence) / a.main.incidence) * 100)
     : null;
@@ -690,21 +701,43 @@ function RecoveryDoseBlock({
         )}
       </div>
 
-      {/* §5.3: insufficient_n — skip comparison, show message */}
-      {a.verdict === "insufficient_n" ? (
-        <div className="mt-1.5 text-[10px] text-muted-foreground/70">
-          Recovery arm has only {a.recovery.n} subject{a.recovery.n !== 1 ? "s" : ""}.
-          Minimum {MIN_RECOVERY_N} required for meaningful comparison. No assessment computed.
+      {/* v3: not_examined — no data exists, short-circuit */}
+      {a.verdict === "not_examined" ? (
+        <div className="mt-1.5">
+          <div className="text-[10px] font-medium text-foreground/70">
+            {"\u2205"} Tissue not examined in recovery arm.
+          </div>
+          <div className="text-[10px] text-muted-foreground italic">
+            None of the {a.recovery.n} recovery subject{a.recovery.n !== 1 ? "s" : ""} had this tissue evaluated. No reversibility assessment is possible.
+          </div>
+        </div>
+      ) : a.verdict === "insufficient_n" ? (
+        <div className="mt-1.5">
+          <div className="text-[10px] font-medium text-foreground/70">
+            {"\u2020"} Insufficient sample: only {a.recovery.examined} recovery subject{a.recovery.examined !== 1 ? "s" : ""} examined.
+          </div>
+          <div className="text-[10px] text-muted-foreground italic">
+            Ratios with fewer than {MIN_RECOVERY_N} examined subjects are unreliable.
+          </div>
+        </div>
+      ) : a.verdict === "low_power" ? (
+        <div className="mt-1.5">
+          <div className="text-[10px] font-medium text-foreground/70">
+            ~ Low statistical power.
+          </div>
+          <div className="text-[10px] text-muted-foreground italic">
+            Main-arm incidence ({Math.round(a.main.incidence * 100)}%) too low to assess reversibility with {a.recovery.examined} examined recovery subject{a.recovery.examined !== 1 ? "s" : ""}. Expected {"\u2248"}{(a.main.incidence * a.recovery.examined).toFixed(1)} affected; {a.recovery.affected} observed is not informative.
+          </div>
         </div>
       ) : (
         <>
           {/* E-2: Inline delta comparison lines */}
           <div className="space-y-1 text-[10px]">
-            {/* Incidence line: main → recovery with delta */}
+            {/* Incidence line: main → recovery with delta (v3: examination-aware fractions) */}
             <div className="flex items-center flex-wrap gap-x-1">
               <span className="text-muted-foreground shrink-0">Incidence</span>
               <span className="font-mono text-muted-foreground">
-                {a.main.affected}/{a.main.n} ({Math.round(a.main.incidence * 100)}%)
+                {formatRecoveryFraction(a.main.affected, a.main.examined, a.main.n)}
               </span>
               <div
                 className="inline-block h-1.5 rounded-full bg-gray-400"
@@ -712,7 +745,7 @@ function RecoveryDoseBlock({
               />
               <span className="text-muted-foreground/40">{"\u2192"}</span>
               <span className="font-mono text-foreground">
-                {a.recovery.affected}/{a.recovery.n} ({Math.round(a.recovery.incidence * 100)}%)
+                {formatRecoveryFraction(a.recovery.affected, a.recovery.examined, a.recovery.n)}
               </span>
               <div
                 className="inline-block h-1.5 rounded-full bg-gray-400/50"
@@ -820,7 +853,7 @@ function RecoveryDoseBlock({
                 )}
               </>
             ) : (
-              <>none affected (0/{a.recovery.n} examined)</>
+              <>none affected (0/{a.recovery.examined} examined{a.recovery.examined < a.recovery.n ? ` of ${a.recovery.n}` : ""})</>
             )}
           </div>
 

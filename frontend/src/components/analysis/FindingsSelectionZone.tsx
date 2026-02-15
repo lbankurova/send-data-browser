@@ -40,7 +40,7 @@ export function FindingsSelectionZone({ findings, selectedRow, isStrip, onStripR
           <><StripSep /><span className="text-muted-foreground">also in: {selectedRow.relatedOrgans.join(", ")}</span></>
         )}
         {selectedRow.recoveryVerdict && selectedRow.recoveryVerdict !== "not_observed" && selectedRow.recoveryVerdict !== "no_data" && (
-          <><StripSep /><span className="text-muted-foreground">{verdictArrow(selectedRow.recoveryVerdict)} {selectedRow.recoveryVerdict}</span></>
+          <><StripSep /><span className="text-muted-foreground">{verdictArrow(selectedRow.recoveryVerdict)} {selectedRow.recoveryVerdict.replace(/_/g, " ")}</span></>
         )}
       </span>
     );
