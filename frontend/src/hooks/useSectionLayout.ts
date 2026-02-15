@@ -17,7 +17,7 @@ const HANDLE_HEIGHT = 4;
 
 const SECTION_CONFIGS: Record<SectionId, SectionConfig> = {
   findings: { default: 200, minUseful: 80 },
-  doseCharts: { default: 170, minUseful: 100 },
+  doseCharts: { default: 220, minUseful: 140 },
   matrix: { default: 210, minUseful: 120 },
 };
 
