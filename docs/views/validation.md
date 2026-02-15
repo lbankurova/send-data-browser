@@ -22,23 +22,25 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a full-height flex column with a dual-mode tab system and two proportional panes (4:6 split):
+The view itself is a full-height flex column with a dual-mode tab system and two resizable panes managed by `useAutoFitSections`:
 
 ```
 +-----------------------------------------------------------+
-|  [Data quality (N)] [Study design (N)]            [RUN]   |  <-- ViewTabBar (mode tabs + RUN button), border-b bg-muted/30
+|  [Data quality (N)] [Study design (N)]  [±] [RUN]         |  <-- ViewTabBar (mode tabs + CollapseAllButtons + RUN button), border-b bg-muted/30
 +-----------------------------------------------------------+
 |  [x N errors] [! N warnings] [i N info]  Source: [N CORE] [N Custom]  |  <-- severity/source filter bar, border-b
 +-----------------------------------------------------------+
+|  ▸ Rule summary (N)                                       |  <-- ViewSection (fixed, resizable, default 280px)
 |                                                           |
-|  Rules table (flex-[4], 40% of height)                    |
-|  API-driven rules, sortable, clickable, column resizing   |
+|  Rules table                                              |
+|  API-driven rules, sortable on double-click, column resize|
 |                                                           |
-+-----------------------------------------------------------+  <-- border-b
++-----------------------------------------------------------+  <-- resize handle
 |  {N} records for {rule_id} -- {category}  [Fix][Review][Subj] |  <-- FilterBar divider (when rule selected)
 +-----------------------------------------------------------+
+|  ▸ Affected records (N)                                   |  <-- ViewSection (flex, fills remaining space)
 |                                                           |
-|  Affected Records table (flex-[6], 60% of height)         |
+|  Affected Records table                                   |
 |  Shows records for selected rule, filterable              |
 |                                                           |
 +-----------------------------------------------------------+
@@ -73,13 +75,13 @@ When `mode === "rule-catalog"`, the dual-table layout is replaced by the `Valida
 
 The `ViewTabBar` component renders as `flex shrink-0 items-center border-b bg-muted/30`. Tab buttons are `px-4 py-1.5 text-xs font-medium`. Active tab: `text-foreground` with `absolute inset-x-0 bottom-0 h-0.5 bg-primary` underline. Inactive tab: `text-muted-foreground hover:text-foreground`.
 
-The RUN button is placed in the `right` slot of the `ViewTabBar` (`ml-auto`): `mr-3 rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50`. Shows "RUNNING..." while pending, "RUN" otherwise.
+The `right` slot of the `ViewTabBar` (`ml-auto`) contains two elements: `CollapseAllButtons` (expand-all / collapse-all for `ViewSection` panels) and the RUN button. RUN button: `mr-3 rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50`. Shows "RUNNING..." while pending, "RUN" otherwise.
 
 ---
 
 ## URL Parameters
 
-- `?mode=study-design`: Persists the active mode tab. Absent or any other value defaults to "data-quality".
+- `?mode=study-design`: Persists the active mode tab. The `mode` param is deleted for both "data-quality" and "rule-catalog" modes; absent or any other value defaults to "data-quality".
 - `?rule=SD-003`: Auto-selects a matching rule on initial load. Supports both exact match (`r.rule_id === urlRuleParam`) and prefix match (`r.rule_id.startsWith(urlRuleParam)`). Consumed once via `initialRuleConsumed` flag.
 
 ---
@@ -247,16 +249,16 @@ When `validationData.core_conformance` exists, shown after the source pills (als
 
 ---
 
-## Rules Table (Top Pane -- flex-[4])
+## Rules Table (Top Pane -- ViewSection fixed)
 
-`flex-[4] overflow-auto border-b`
+Wrapped in a `ViewSection` with `mode="fixed"`, `title="Rule summary (N)"`, and default height of 280px (resizable via drag handle, min 100px, max 500px). The ViewSection is collapsible and responds to the global expand-all / collapse-all buttons.
 
-TanStack React Table, `text-sm`, client-side sorting. Column resizing enabled (`enableColumnResizing: true`, `columnResizeMode: "onChange"`). Table width set to `ruleTable.getCenterTotalSize()` with `tableLayout: "fixed"`.
+TanStack React Table, `text-sm`, client-side sorting (triggered by **double-click** on column headers). Column resizing enabled (`enableColumnResizing: true`, `columnResizeMode: "onChange"`). Table width set to `ruleTable.getCenterTotalSize()` with `tableLayout: "fixed"`.
 
 ### Header Row
 `sticky top-0 z-10`, `border-b bg-muted/50` (matches all other analysis views)
 
-Headers: `relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground`
+Headers: `relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground`. Sorting is triggered by **double-click** on the header (not single click).
 
 Sort indicators: ` (up arrow)` asc / ` (down arrow)` desc
 
@@ -278,15 +280,17 @@ Column resize handle: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize
 
 The source column (60px) displays `"core"` or `"custom"` as uppercase text in `text-[9px] font-semibold uppercase tracking-wide text-muted-foreground`. The tooltip shows `"CDISC CORE conformance rule"` for core rules or `"Custom study design rule"` for custom rules.
 
-### Severity Badge Styles
+### Severity Column Styles
 
-All severity levels use the same neutral gray styling:
+The severity column uses a left-border badge with colored left border and neutral gray text. The left-border color is set via inline `style.borderLeftColor`:
 
-| Severity | Classes |
-|----------|---------|
-| Error | `bg-gray-100 text-gray-600 border-gray-200` |
-| Warning | `bg-gray-100 text-gray-600 border-gray-200` |
-| Info | `bg-gray-100 text-gray-600 border-gray-200` |
+| Severity | Border Color |
+|----------|-------------|
+| Error | `#dc2626` |
+| Warning | `#d97706` |
+| Info | `#16a34a` |
+
+All use the same base classes: `inline-block border-l-2 pl-1.5 py-0.5 text-[10px] font-semibold text-gray-600`.
 
 ### Row Interactions
 - Hover: `hover:bg-accent/50` (Tailwind class, consistent with other views)
@@ -314,11 +318,11 @@ Only shown when a rule is selected. Uses the shared `<FilterBar>` component:
 
 ---
 
-## Affected Records Table (Bottom Pane -- flex-[6])
+## Affected Records Table (Bottom Pane -- ViewSection flex)
 
-`flex-[6] overflow-auto`
+Wrapped in a `ViewSection` with `mode="flex"` and `title="Affected records (N)"`. The ViewSection is collapsible and responds to the global expand-all / collapse-all buttons.
 
-Only shown when a rule is selected. TanStack React Table, `text-sm`. Column resizing enabled (same pattern as rules table).
+Only shown when a rule is selected. TanStack React Table, `text-sm`, client-side sorting (triggered by **double-click** on column headers). Column resizing enabled (same pattern as rules table).
 
 ### Header Row
 Same styling as rules table: `sticky top-0 z-10`, `border-b bg-muted/50`, `text-[10px] font-semibold uppercase tracking-wider`. Column resize handles present.
@@ -409,7 +413,7 @@ The `ValidationContextPanelWrapper` in `ContextPanel.tsx` casts `ViewSelectionCo
 
 #### Header
 - `sticky top-0 z-10 border-b bg-background px-4 py-3`
-- `flex items-center gap-2`: rule_id in `font-mono text-sm font-semibold` + severity left-border badge (same style as table) + CollapseAllButtons (right-aligned)
+- `flex items-center gap-2`: rule_id in `font-mono text-sm font-semibold` + severity as colored text (`text-[10px] font-semibold` with inline `style.color`: Error = `#dc2626`, Warning = `#d97706`, Info = `#16a34a`) + CollapseAllButtons (right-aligned via `ml-auto`)
 - Subtitle: "{domain} . {category}" in `mt-1 text-xs text-muted-foreground`
 
 #### Pane 1: Rule detail (default open)
@@ -421,7 +425,15 @@ Key-value pairs in `text-[11px]`:
 - How to fix: remediation instructions
 - Empty state: "No detail available for this rule."
 
-#### Pane 2: Review progress (default open)
+#### Pane 2: Rule metadata (default closed, conditional)
+Shown when `getValidationRuleDef(rule_id)` returns a match from the static rule catalog (from `@/lib/validation-rule-catalog.ts`). `CollapsiblePane` with `defaultOpen={false}`. Key-value pairs in `text-[11px]`:
+- Applicable domains: list of `DomainLabel` components
+- Evidence type: `font-mono text-[10px]`
+- Default fix tier: `font-mono text-[10px]` with tier name from `FIX_TIER_DEFINITIONS`
+- Auto-fixable: "Yes" / "No"
+- CDISC reference: shown only when present
+
+#### Pane 3: Review progress (default open)
 Uses `useAffectedRecords` and `useAnnotations` to compute live counts.
 
 - **Progress bar**: `h-1 w-full rounded-full bg-gray-200` with tri-color fill: `bg-green-500` (>=70%), `bg-amber-500` (>=30%), `bg-red-500` (<30%)
@@ -431,7 +443,7 @@ Uses `useAffectedRecords` and `useAnnotations` to compute live counts.
 
 Review/fix count text uses `text-foreground font-mono` for all status values (neutral, no per-status colors).
 
-#### Pane 3: Rule disposition (default open)
+#### Pane 4: Rule disposition (default open)
 `ValidationIssueForm` component (located at `panes/ValidationIssueForm.tsx`) -- rule-level annotation form with:
 - Status dropdown: Not reviewed / In progress / Resolved / Exception / Won't fix
 - Assigned to: text input
@@ -445,8 +457,8 @@ Review/fix count text uses `text-foreground font-mono` for all status values (ne
 
 #### Header
 - `sticky top-0 z-10 border-b bg-background px-4 py-3`
-- issue_id in `font-mono text-sm font-semibold` + severity badge (gray: `border-gray-200 bg-gray-100 text-gray-600`)
-- **Rule popover**: "Rule {rule_id} . {domain} . {category}" with dotted underline. Hover shows portal-based popover (`createPortal` to `document.body`, rendered as `fixed z-[9999] w-72`) with full rule detail (standard, section, description with gray border `border-l-gray-400`, rationale, how to fix). No click-to-navigate -- the rule ID is informational only.
+- issue_id in `font-mono text-sm font-semibold` + severity as colored text (`text-[10px] font-semibold` with inline `style.color`: Error = `#dc2626`, Warning = `#d97706`, Info = `#16a34a`)
+- **Rule popover**: "Rule {rule_id} . {domain} . {category}" with dotted underline (`underline decoration-dotted underline-offset-2`). Hover shows portal-based popover (`createPortal` to `document.body`, rendered as `fixed z-[9999] w-72`) with full rule detail (standard, section, description with gray border `border-l-gray-400`, rationale, how to fix). No click-to-navigate -- the rule ID is informational only.
 
 #### Pane 1: Record context (default open)
 CollapsiblePane with key-value pairs in `text-[11px]`:
@@ -562,6 +574,8 @@ Located at `panes/ValidationRecordForm.tsx`. A standalone record-level annotatio
 | Severity filter | Local | `useState<"" \| "Error" \| "Warning" \| "Info">("")` -- filters rules table, toggled by severity pills |
 | Source filter | Local | `useState<"" \| "core" \| "custom">("")` -- filters rules table, toggled by source pills |
 | Record filters | Local | `useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>` |
+| Section heights | Local | `useAutoFitSections(containerRef, "validation", [...])` -- resizable pane heights |
+| Expand/collapse all | Local | `useCollapseAll()` -- expandGen/collapseGen counters for ViewSection panels |
 | Validation data (rules, scripts, summary, core_conformance) | Server | `useValidationResults(studyId)` -- React Query, 5min stale |
 | Affected records | Server | `useAffectedRecords(studyId, ruleId)` -- React Query, 5min stale |
 | Record annotations | Server | `useAnnotations<ValidationRecordReview>(studyId, "validation-records")` |
@@ -609,6 +623,7 @@ useValidationResults(studyId) ──> { rules[], scripts[], summary, core_confor
                   ValidationContextPanel
                     Mode 1: Rule ──> RuleReviewSummary
                       - Rule detail (from extractRuleDetail)
+                      - Rule metadata (from getValidationRuleDef, conditional)
                       - Review progress (from useAffectedRecords + useAnnotations)
                       - Rule disposition (ValidationIssueForm)
                     Mode 2: Issue ──> IssueReview
@@ -652,7 +667,7 @@ No keyboard shortcuts currently implemented (no Escape handler, no keyboard navi
 | No results (404 or null) | `ViewTabBar` (mode tabs) shown, flex-1 area shows "No validation results available for this study." centered + centered "RUN" button below |
 | Results loaded but zero rules in mode (no filter active) | Mode tabs + filter bar shown, flex-1 area shows "No validation issues found. Dataset passed all checks." centered (data-quality mode) or "No study design issues detected." (study-design mode) |
 | Results loaded but zero rules (severity and/or source filter active) | Mode tabs + filter bar shown, flex-1 area shows "No {severity} {source} rules found." with a "Show all" button that clears both severity and source filters |
-| No rule selected | Rules table visible, bottom 60% shows "Select a rule above to view affected records" centered |
+| No rule selected | Rules table visible, remaining flex space below shows "Select a rule above to view affected records" centered |
 | No matching records (after filter) | Bottom table shows "No records match the current filters." in colspan cell |
 | No rule detail | Context panel Rule Detail pane shows "No detail available for this rule." |
 | No fix scripts for rule | Fix Script Dialog shows "No fix scripts available for this rule." |
