@@ -2795,7 +2795,7 @@ export function HistopathologyView() {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
   const { selection: studySelection, navigateTo } = useStudySelection();
-  const { setSelection: setViewSelection, setSelectedSubject } = useViewSelection();
+  const { setSelection: setViewSelection, setSelectedSubject, pendingCompare, setPendingCompare } = useViewSelection();
   const { data: lesionData, isLoading, error } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: trendData } = useFindingDoseTrends(studyId);
@@ -2808,6 +2808,15 @@ export function HistopathologyView() {
   const { filters } = useGlobalFilters();
   const sexFilter = filters.sex;
   const minSeverity = filters.minSeverity;
+
+  // E-1: Consume pendingCompare from context panel recovery pane
+  useEffect(() => {
+    if (pendingCompare && pendingCompare.length >= 2) {
+      setComparisonSubjects(new Set(pendingCompare.slice(0, MAX_COMPARISON_SUBJECTS)));
+      setActiveTab("compare");
+      setPendingCompare(null);
+    }
+  }, [pendingCompare, setPendingCompare]);
 
   // Subject data for recovery assessment (React Query caches, so shared with OverviewTab)
   const { data: subjData } = useHistopathSubjects(studyId, selectedSpecimen);

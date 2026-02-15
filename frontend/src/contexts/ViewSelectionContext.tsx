@@ -63,6 +63,8 @@ interface ViewSelectionState {
   setSelection: (sel: ViewSelection | null) => void;
   selectedSubject: string | null;
   setSelectedSubject: (usubjid: string | null) => void;
+  pendingCompare: string[] | null;
+  setPendingCompare: (ids: string[] | null) => void;
 }
 
 const ViewSelectionContext = createContext<ViewSelectionState>({
@@ -70,16 +72,20 @@ const ViewSelectionContext = createContext<ViewSelectionState>({
   setSelection: () => {},
   selectedSubject: null,
   setSelectedSubject: () => {},
+  pendingCompare: null,
+  setPendingCompare: () => {},
 });
 
 export function ViewSelectionProvider({ children }: { children: ReactNode }) {
   const [selection, setSelectionRaw] = useState<ViewSelection | null>(null);
   const [selectedSubject, setSelectedSubjectRaw] = useState<string | null>(null);
+  const [pendingCompare, setPendingCompareRaw] = useState<string[] | null>(null);
   const setSelection = useCallback((sel: ViewSelection | null) => setSelectionRaw(sel), []);
   const setSelectedSubject = useCallback((usubjid: string | null) => setSelectedSubjectRaw(usubjid), []);
+  const setPendingCompare = useCallback((ids: string[] | null) => setPendingCompareRaw(ids), []);
 
   return (
-    <ViewSelectionContext.Provider value={{ selection, setSelection, selectedSubject, setSelectedSubject }}>
+    <ViewSelectionContext.Provider value={{ selection, setSelection, selectedSubject, setSelectedSubject, pendingCompare, setPendingCompare }}>
       {children}
     </ViewSelectionContext.Provider>
   );
