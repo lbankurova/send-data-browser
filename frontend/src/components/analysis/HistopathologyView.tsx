@@ -1152,8 +1152,8 @@ function OverviewTab({
                 );
               },
               sortingFn: (a, b) =>
-                verdictPriority(a.original.recoveryVerdict) -
-                verdictPriority(b.original.recoveryVerdict),
+                verdictPriority(b.original.recoveryVerdict) -
+                verdictPriority(a.original.recoveryVerdict),
             }),
           ]
         : []),
@@ -1168,7 +1168,7 @@ function OverviewTab({
           const text = organs.join(", ");
           return (
             <span
-              className="block truncate text-muted-foreground"
+              className="block truncate text-[9px] text-muted-foreground"
               title={`Cross-organ coherence (R16): also observed in ${text}`}
             >
               {text}
