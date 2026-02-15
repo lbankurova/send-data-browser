@@ -6,6 +6,7 @@ import { CollapseAllButtons } from "./CollapseAllButtons";
 import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { getDoseConsistencyWeight, getDoseGroupColor } from "@/lib/severity-colors";
 import { DoseLabel } from "@/components/ui/DoseLabel";
@@ -306,6 +307,7 @@ function SpecimenOverviewPane({
   pathReviews?: Record<string, PathologyReview>;
 }) {
   const navigate = useNavigate();
+  const { navigateTo } = useStudySelection();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // Derive specimen summary
@@ -490,7 +492,10 @@ function SpecimenOverviewPane({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: specimen } });
+              if (studyId) {
+                navigateTo({ organSystem: specimen });
+                navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: specimen } });
+              }
             }}
           >
             View study summary &#x2192;
@@ -500,7 +505,10 @@ function SpecimenOverviewPane({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: specimen } });
+              if (studyId) {
+                navigateTo({ organSystem: specimen });
+                navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: specimen } });
+              }
             }}
           >
             View dose-response &#x2192;
@@ -510,7 +518,10 @@ function SpecimenOverviewPane({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: specimen } });
+              if (studyId) {
+                navigateTo({ organSystem: specimen });
+                navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: specimen } });
+              }
             }}
           >
             View NOAEL decision &#x2192;
@@ -682,6 +693,7 @@ function FindingDetailPane({
   studyId?: string;
 }) {
   const navigate = useNavigate();
+  const { navigateTo } = useStudySelection();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
   const { setSelectedSubject } = useViewSelection();
 
@@ -964,7 +976,10 @@ function FindingDetailPane({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: selection.specimen } });
+              if (studyId) {
+                navigateTo({ organSystem: selection.specimen });
+                navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: selection.specimen } });
+              }
             }}
           >
             View study summary &#x2192;
@@ -974,7 +989,10 @@ function FindingDetailPane({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: selection.specimen } });
+              if (studyId) {
+                navigateTo({ organSystem: selection.specimen });
+                navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: selection.specimen } });
+              }
             }}
           >
             View dose-response &#x2192;
@@ -984,7 +1002,10 @@ function FindingDetailPane({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: selection.specimen } });
+              if (studyId) {
+                navigateTo({ organSystem: selection.specimen });
+                navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: selection.specimen } });
+              }
             }}
           >
             View NOAEL decision &#x2192;
