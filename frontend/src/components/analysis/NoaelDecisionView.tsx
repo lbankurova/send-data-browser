@@ -300,7 +300,7 @@ function OrganHeader({ summary, recovery }: { summary: OrganSummary; recovery?: 
         )}
         {recovery?.hasRecovery && recovery.overall && (
           <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {verdictArrow(recovery.overall)} {recovery.overall}
+            {verdictArrow(recovery.overall)} {recovery.overall.replace(/_/g, " ")}
           </span>
         )}
       </div>
@@ -419,7 +419,7 @@ function OverviewTab({
                     if (!v || v === "not_observed" || v === "no_data") return null;
                     return (
                       <span className="shrink-0 text-[9px] text-muted-foreground">
-                        {verdictArrow(v)} {v}
+                        {verdictArrow(v)} {v.replace(/_/g, " ")}
                       </span>
                     );
                   })()}
@@ -632,7 +632,7 @@ function AdversityMatrixTab({
                 )}
                 title={buildRecoveryTooltip(assessment, recDays)}
               >
-                {verdictArrow(verdict)} {verdict}
+                {verdictArrow(verdict)} {verdict.replace(/_/g, " ")}
               </span>
             );
           },

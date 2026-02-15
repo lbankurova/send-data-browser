@@ -938,12 +938,22 @@ function OverviewTab({
     const doseLevels = [...doseLevelSet.keys()].sort((a, b) => a - b);
     const doseLabels = doseLevelSet;
 
+    // Pre-compute examined count per dose level (v3: examination-aware)
+    // Heuristic: if ANY subject at this dose level has any finding → all examined
+    const examinedByDose = new Map<number, number>();
+    for (const dl of doseLevels) {
+      const doseSubjects = recSubjects.filter((s) => s.dose_level === dl);
+      const anyExamined = doseSubjects.some((s) => Object.keys(s.findings).length > 0);
+      examinedByDose.set(dl, anyExamined ? doseSubjects.length : 0);
+    }
+
     // Build cells: per-finding per-dose incidence and avg severity
-    const cells = new Map<string, { incidence: number; avg_severity: number; affected: number; n: number }>();
+    const cells = new Map<string, { incidence: number; avg_severity: number; affected: number; n: number; examined: number }>();
     for (const finding of heatmapData.findings) {
       for (const dl of doseLevels) {
         const doseSubjects = recSubjects.filter((s) => s.dose_level === dl);
         const n = doseSubjects.length;
+        const examined = examinedByDose.get(dl) ?? 0;
         let affected = 0;
         let totalSev = 0;
         for (const s of doseSubjects) {
@@ -955,10 +965,11 @@ function OverviewTab({
         }
         if (n > 0) {
           cells.set(`${finding}|${dl}`, {
-            incidence: affected / n,
+            incidence: examined > 0 ? affected / examined : 0,
             avg_severity: affected > 0 ? totalSev / affected : 0,
             affected,
             n,
+            examined,
           });
         }
       }
@@ -1166,9 +1177,15 @@ function OverviewTab({
                   (a) => a.finding === info.row.original.finding,
                 );
                 const tip = buildRecoveryTooltip(recAssessment, subjData?.recovery_days);
-                // §4.2: insufficient_n → "— (N<3)" in muted/50
+                // v3: not_examined → "∅ not examined" in font-medium
+                if (v === "not_examined")
+                  return <span className="text-[9px] font-medium text-foreground/70" title={tip}>{"\u2205"} not examined</span>;
+                // v3: low_power → "~ low power" in muted/50
+                if (v === "low_power")
+                  return <span className="text-[9px] text-muted-foreground/50" title={tip}>~ low power</span>;
+                // §4.2: insufficient_n → "† (N<3)" in muted/50
                 if (v === "insufficient_n")
-                  return <span className="text-[9px] text-muted-foreground/50" title={tip}>{"\u2014"} (N&lt;3)</span>;
+                  return <span className="text-[9px] text-muted-foreground/50" title={tip}>{"\u2020"} (N&lt;3)</span>;
                 const arrow = verdictArrow(v);
                 // §4.2: persistent, progressing, anomaly get font-medium emphasis
                 const emphasis = v === "persistent" || v === "progressing" || v === "anomaly";
@@ -1791,21 +1808,35 @@ function OverviewTab({
                           const rMeta = heatmapData.findingMeta.get(finding);
                           const rIsNonGraded = rMeta && !rMeta.hasSeverityData;
 
-                          // §6.5: Recovery N < MIN_RECOVERY_N → "—"
-                          if (rCell && rCell.n < MIN_RECOVERY_N) {
+                          // v3 §6.5 Guard 0: not examined → ∅
+                          if (rCell && rCell.examined === 0) {
                             return (
                               <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
                                 <div
                                   className="flex h-5 w-16 items-center justify-center rounded-sm text-[10px] text-muted-foreground/30"
-                                  title={`Recovery N=${rCell.n}, too few for comparison`}
+                                  title={`Not examined (0/${rCell.n} examined)`}
                                 >
-                                  {"\u2014"}
+                                  {"\u2205"}
                                 </div>
                               </div>
                             );
                           }
 
-                          // §6.5: Main incidence = 0, recovery incidence > 0 → ⚠ anomaly
+                          // v3 §6.5 Guard 1: insufficient examined → †
+                          if (rCell && rCell.examined < MIN_RECOVERY_N) {
+                            return (
+                              <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
+                                <div
+                                  className="flex h-5 w-16 items-center justify-center rounded-sm text-[10px] text-muted-foreground/30"
+                                  title={`Recovery N=${rCell.examined} examined, too few for comparison`}
+                                >
+                                  {"\u2020"}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // §6.5 Guard 2: anomaly — main=0, recovery>0 → ⚠
                           const mainInc = mainCell?.incidence ?? 0;
                           if (rCell && mainInc === 0 && rCell.incidence > 0) {
                             return (
@@ -1815,6 +1846,20 @@ function OverviewTab({
                                   title="Finding present in recovery but not in main arm \u2014 anomaly"
                                 >
                                   {"\u26A0"}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // v3 §6.5 Guard 3: low power → ~
+                          if (rCell && mainInc * rCell.examined < 2) {
+                            return (
+                              <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
+                                <div
+                                  className="flex h-5 w-16 items-center justify-center rounded-sm text-[10px] text-muted-foreground/30"
+                                  title={`Low power: main ${Math.round(mainInc * 100)}%, expected \u2248${(mainInc * rCell.examined).toFixed(1)} affected in ${rCell.examined} examined`}
+                                >
+                                  ~
                                 </div>
                               </div>
                             );

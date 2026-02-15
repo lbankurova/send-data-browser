@@ -2,14 +2,19 @@
  * Recovery reversibility assessment — pure derivation logic.
  * Compares main-arm vs recovery-arm histopathology data
  * to determine whether findings reversed after treatment-free recovery.
+ *
+ * v3: Examination-aware verdicts (recovery-guards-spec.md)
  */
 
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 
 // ─── Constants ───────────────────────────────────────────
 
-/** Minimum recovery-arm subjects for meaningful comparison. */
+/** Minimum examined recovery-arm subjects for meaningful comparison. */
 export const MIN_RECOVERY_N = 3;
+
+/** Minimum expected affected count for statistical power. */
+const LOW_POWER_THRESHOLD = 2;
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -20,6 +25,8 @@ export type RecoveryVerdict =
   | "progressing"
   | "anomaly"
   | "insufficient_n"
+  | "not_examined"     // v3: tissue not examined in recovery arm
+  | "low_power"        // v3: main incidence too low for recovery N
   | "not_observed"
   | "no_data";
 
@@ -29,6 +36,7 @@ export interface RecoveryDoseAssessment {
   main: {
     incidence: number;
     n: number;
+    examined: number;
     affected: number;
     avgSeverity: number;
     maxSeverity: number;
@@ -36,6 +44,7 @@ export interface RecoveryDoseAssessment {
   recovery: {
     incidence: number;
     n: number;
+    examined: number;
     affected: number;
     avgSeverity: number;
     maxSeverity: number;
@@ -77,39 +86,72 @@ export const DEFAULT_VERDICT_THRESHOLDS: VerdictThresholds = {
 };
 
 interface ArmStats {
+  n: number;
+  examined: number;
+  affected: number;
   incidence: number;
   avgSeverity: number;
-  affected: number;
+  maxSeverity: number;
 }
 
+/**
+ * Full guard chain + ratio computation. v3 guard order:
+ *  0. recovery.examined === 0              → not_examined
+ *  1. recovery.examined < 3               → insufficient_n
+ *  2. main incidence=0, recovery>0        → anomaly
+ *  3. main.incidence * recovery.examined < 2 → low_power
+ *  4. main incidence=0, main affected=0   → not_observed
+ *  5. recovery.incidence === 0            → reversed
+ *  6-10. Ratio computation
+ */
 export function computeVerdict(
   main: ArmStats,
   recovery: ArmStats,
   thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
 ): RecoveryVerdict {
-  // Recovery incidence exactly 0 → fully reversed
+  // v3 Guard 0: tissue not examined in recovery arm
+  if (recovery.examined === 0) return "not_examined";
+
+  // Guard 1 (v3 amended): insufficient examined subjects
+  if (recovery.examined < MIN_RECOVERY_N) return "insufficient_n";
+
+  // Guard 2: anomaly — recovery has findings where main arm had none
+  if (main.incidence === 0 && main.affected === 0 && recovery.affected > 0) return "anomaly";
+
+  // v3 Guard 3: low statistical power
+  if (main.incidence * recovery.examined < LOW_POWER_THRESHOLD) return "low_power";
+
+  // Guard 4: main arm had no findings at this dose level
+  if (main.incidence === 0 && main.affected === 0) return "not_observed";
+
+  // Guard 5: recovery has zero affected (tissue was examined — guard 0 passed)
   if (recovery.incidence === 0) return "reversed";
 
-  const incidenceRatio = recovery.incidence / Math.max(main.incidence, 0.01);
-  const severityRatio = recovery.avgSeverity / Math.max(main.avgSeverity, 0.01);
+  // Steps 6-10: compute ratios
+  const incidenceRatio = recovery.incidence / main.incidence;
+  const sevRatio = main.avgSeverity > 0
+    ? recovery.avgSeverity / main.avgSeverity
+    : 1;
 
   // Progressing: incidence or severity increased
   if (incidenceRatio > thresholds.progressingIncidence && recovery.affected > main.affected) return "progressing";
-  if (severityRatio > thresholds.progressingSeverity) return "progressing";
+  if (main.avgSeverity > 0 && sevRatio > thresholds.progressingSeverity) return "progressing";
 
   // Reversed: both incidence and severity substantially decreased
-  if (incidenceRatio <= thresholds.reversedIncidence && severityRatio <= thresholds.reversedSeverity) return "reversed";
+  if (incidenceRatio <= thresholds.reversedIncidence && sevRatio <= thresholds.reversedSeverity) return "reversed";
 
   // Reversing: clear decrease in at least one metric
-  if (incidenceRatio <= thresholds.reversingIncidence || severityRatio <= thresholds.reversingSeverity) return "reversing";
+  if (incidenceRatio <= thresholds.reversingIncidence || sevRatio <= thresholds.reversingSeverity) return "reversing";
 
   // Otherwise persistent
   return "persistent";
 }
 
-// Worst = most conservative for reporting. Anomaly at top per §3.3.
+// v3: Priority order — not_examined and low_power inserted
 const VERDICT_PRIORITY: RecoveryVerdict[] = [
   "anomaly",
+  "not_examined",
+  "low_power",
   "progressing",
   "persistent",
   "reversing",
@@ -133,12 +175,14 @@ export function verdictPriority(verdict: RecoveryVerdict | undefined): number {
 }
 
 const VERDICT_ARROWS: Record<RecoveryVerdict, string> = {
-  reversed: "\u2193",      // ↓
-  reversing: "\u2198",     // ↘
-  persistent: "\u2192",    // →
-  progressing: "\u2191",   // ↑
-  anomaly: "?",
-  insufficient_n: "\u2014", // —
+  reversed: "\u2193",       // ↓
+  reversing: "\u2198",      // ↘
+  persistent: "\u2192",     // →
+  progressing: "\u2191",    // ↑
+  anomaly: "\u26A0",        // ⚠
+  not_examined: "\u2205",   // ∅
+  low_power: "~",
+  insufficient_n: "\u2020", // †
   not_observed: "\u2014",   // —
   no_data: "\u2014",        // —
 };
@@ -148,8 +192,27 @@ export function verdictArrow(verdict: RecoveryVerdict): string {
 }
 
 export function verdictLabel(verdict: RecoveryVerdict): string {
+  const display = verdict === "insufficient_n" ? "insufficient N"
+    : verdict === "not_examined" ? "not examined"
+    : verdict === "low_power" ? "low power"
+    : verdict;
   const arrow = VERDICT_ARROWS[verdict];
-  return arrow ? `${arrow} ${verdict}` : verdict;
+  return arrow ? `${arrow} ${display}` : display;
+}
+
+// ─── Fraction formatting ────────────────────────────────
+
+/**
+ * Format incidence fraction with examination-aware denominator.
+ * - examined === n → "2/30 (7%)" (standard)
+ * - examined < n  → "2/25 (8%) [of 30]"
+ * - examined === 0 → "—/10 (not examined)"
+ */
+export function formatRecoveryFraction(affected: number, examined: number, n: number): string {
+  if (examined === 0) return `\u2014/${n} (not examined)`;
+  const pct = Math.round((affected / examined) * 100);
+  const fraction = `${affected}/${examined} (${pct}%)`;
+  return examined < n ? `${fraction} [of ${n}]` : fraction;
 }
 
 // ─── Tooltip ──────────────────────────────────────────────
@@ -161,8 +224,12 @@ export function buildRecoveryTooltip(
   if (!assessment) return "";
   const lines = ["Recovery assessment:"];
   for (const a of assessment.assessments) {
+    if (a.verdict === "not_examined") {
+      lines.push(`  ${a.doseGroupLabel}: \u2205 not examined (0/${a.recovery.n} examined)`);
+      continue;
+    }
     if (a.verdict === "insufficient_n") {
-      lines.push(`  ${a.doseGroupLabel}: N=${a.recovery.n}, too few subjects for comparison`);
+      lines.push(`  ${a.doseGroupLabel}: \u2020 N=${a.recovery.examined} examined, too few for comparison`);
       continue;
     }
     if (a.verdict === "not_observed") {
@@ -176,12 +243,22 @@ export function buildRecoveryTooltip(
       lines.push("    May indicate delayed onset or data quality issue.");
       continue;
     }
-    const mainPct = `${Math.round(a.main.incidence * 100)}%`;
-    const recPct = `${Math.round(a.recovery.incidence * 100)}%`;
+    if (a.verdict === "low_power") {
+      const mainPct = `${Math.round(a.main.incidence * 100)}%`;
+      const expected = (a.main.incidence * a.recovery.examined).toFixed(1);
+      lines.push(`  ${a.doseGroupLabel}: ~ low power (main ${mainPct}, expected \u2248${expected} affected in ${a.recovery.examined} examined)`);
+      continue;
+    }
+    const mainFrac = a.main.examined < a.main.n
+      ? `${Math.round(a.main.incidence * 100)}% [${a.main.examined} examined]`
+      : `${Math.round(a.main.incidence * 100)}%`;
+    const recFrac = a.recovery.examined < a.recovery.n
+      ? `${Math.round(a.recovery.incidence * 100)}% [${a.recovery.examined} examined]`
+      : `${Math.round(a.recovery.incidence * 100)}%`;
     const mainSev = a.main.avgSeverity.toFixed(1);
     const recSev = a.recovery.avgSeverity.toFixed(1);
     lines.push(
-      `  ${a.doseGroupLabel}: ${mainPct} \u2192 ${recPct}, sev ${mainSev} \u2192 ${recSev} \u2014 ${a.verdict}`
+      `  ${a.doseGroupLabel}: ${mainFrac} \u2192 ${recFrac}, sev ${mainSev} \u2192 ${recSev} \u2014 ${a.verdict}`
     );
   }
   lines.push(`  Overall: ${assessment.overall} (worst case)`);
@@ -254,21 +331,8 @@ export function deriveRecoveryAssessments(
         }
       }
 
-      // Guard 1: recovery N too small for meaningful comparison
-      let verdict: RecoveryVerdict;
-      if (recStats.n < MIN_RECOVERY_N) {
-        verdict = "insufficient_n";
-      // Guard 2: main arm has zero incidence
-      } else if (mainStats.incidence === 0 && mainStats.affected === 0) {
-        if (recStats.incidence > 0) {
-          verdict = "anomaly";
-        } else {
-          verdict = "not_observed";
-        }
-      } else {
-        // Normal comparison
-        verdict = computeVerdict(mainStats, recStats, thresholds);
-      }
+      // All guards handled inside computeVerdict (v3)
+      const verdict = computeVerdict(mainStats, recStats, thresholds);
 
       assessments.push({
         doseLevel: dl,
@@ -278,6 +342,7 @@ export function deriveRecoveryAssessments(
         main: {
           incidence: mainStats.incidence,
           n: mainStats.n,
+          examined: mainStats.examined,
           affected: mainStats.affected,
           avgSeverity: mainStats.avgSeverity,
           maxSeverity: mainStats.maxSeverity,
@@ -285,6 +350,7 @@ export function deriveRecoveryAssessments(
         recovery: {
           incidence: recStats.incidence,
           n: recStats.n,
+          examined: recStats.examined,
           affected: recStats.affected,
           avgSeverity: recStats.avgSeverity,
           maxSeverity: recStats.maxSeverity,
@@ -308,10 +374,11 @@ export function deriveRecoveryAssessments(
         doseGroupLabel: recGroup[0]?.dose_label
           ? formatDoseGroupLabel(recGroup[0].dose_label)
           : `Dose ${dl}`,
-        main: { incidence: 0, n: 0, affected: 0, avgSeverity: 0, maxSeverity: 0 },
+        main: { incidence: 0, n: 0, examined: 0, affected: 0, avgSeverity: 0, maxSeverity: 0 },
         recovery: {
-          incidence: recStats.incidence, n: recStats.n, affected: recStats.affected,
-          avgSeverity: recStats.avgSeverity, maxSeverity: recStats.maxSeverity, subjectDetails,
+          incidence: recStats.incidence, n: recStats.n, examined: recStats.examined,
+          affected: recStats.affected, avgSeverity: recStats.avgSeverity,
+          maxSeverity: recStats.maxSeverity, subjectDetails,
         },
         verdict: "no_data",
       });
@@ -355,16 +422,31 @@ function groupByDoseLevel(
   return map;
 }
 
+/**
+ * Compute group stats with examination-aware incidence.
+ *
+ * Examination heuristic (fallback — backend doesn't provide explicit examination status):
+ * - If ANY subject in the dose group has ANY finding for the specimen → examined = n
+ *   (standard protocol: if tissue was collected, all subjects in the group were examined)
+ * - If ZERO subjects have any findings → examined = 0 (tissue likely not examined)
+ *
+ * Incidence = affected / examined (not affected / n).
+ */
 function computeGroupStats(
   finding: string,
   subjects: SubjectHistopathEntry[],
-): ArmStats & { n: number; maxSeverity: number } {
+): ArmStats {
   const n = subjects.length;
   let affected = 0;
   let totalSev = 0;
   let maxSev = 0;
 
+  // Check if any subject in the group has any findings for this specimen
+  let anyExamined = false;
   for (const s of subjects) {
+    if (Object.keys(s.findings).length > 0) {
+      anyExamined = true;
+    }
     const f = s.findings[finding];
     if (f) {
       affected++;
@@ -373,18 +455,19 @@ function computeGroupStats(
     }
   }
 
-  const incidence = n > 0 ? affected / n : 0;
+  // Examination heuristic: if any subject has any finding → all examined
+  const examined = anyExamined ? n : 0;
+  const incidence = examined > 0 ? affected / examined : 0;
   const avgSeverity = affected > 0 ? totalSev / affected : 0;
 
-  return { incidence, affected, avgSeverity, maxSeverity: maxSev, n };
+  return { incidence, affected, avgSeverity, maxSeverity: maxSev, n, examined };
 }
 
 // ─── Specimen-level summary ───────────────────────────────
 
 /**
  * Compute the overall recovery label for a specimen.
- * "reversed" if all reversed, "partial" if mixed, else worst verdict.
- * Spec §7.2: values = reversed, partial, persistent, progressing.
+ * v3: handles not_examined, low_power, incomplete.
  */
 export function specimenRecoveryLabel(
   assessments: RecoveryAssessment[],
@@ -392,21 +475,36 @@ export function specimenRecoveryLabel(
   const verdicts = assessments
     .flatMap((a) => a.assessments)
     .map((d) => d.verdict)
-    .filter((v) => v !== "not_observed" && v !== "no_data" && v !== "insufficient_n");
+    .filter((v) => v !== "not_observed" && v !== "no_data");
 
   if (verdicts.length === 0) return null;
 
-  const unique = new Set(verdicts);
+  // v3: special specimen-level labels
+  const allNotExamined = verdicts.every((v) => v === "not_examined");
+  if (allNotExamined) return "not examined";
+
+  const anyNotExamined = verdicts.some((v) => v === "not_examined");
+  const allInconclusive = verdicts.every(
+    (v) => v === "low_power" || v === "not_examined" || v === "insufficient_n",
+  );
+  if (allInconclusive) return "inconclusive";
+  if (anyNotExamined) return "incomplete";
+
+  // Filter out informational verdicts for standard logic
+  const substantive = verdicts.filter(
+    (v) => v !== "insufficient_n" && v !== "not_examined" && v !== "low_power",
+  );
+  if (substantive.length === 0) return null;
+
+  const unique = new Set(substantive);
   if (unique.size === 1) {
     const sole = [...unique][0];
-    // Map 'reversing' → 'partial' per spec §7.2 allowed values
     return sole === "reversing" ? "partial" : sole;
   }
 
   // Mix of verdicts → "partial" if any reversed, else worst
   if (unique.has("reversed") && unique.size > 1) return "partial";
 
-  const worst = worstVerdict(verdicts);
-  // Map 'reversing' → 'partial' at specimen level
+  const worst = worstVerdict(substantive);
   return worst === "reversing" ? "partial" : worst;
 }
