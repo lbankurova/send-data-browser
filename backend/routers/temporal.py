@@ -651,8 +651,6 @@ async def compare_subjects(
     raw_ids = [s.strip() for s in ids.split(",") if s.strip()]
     if len(raw_ids) < 2:
         raise HTTPException(status_code=400, detail="At least 2 subject IDs required")
-    if len(raw_ids) > 8:
-        raise HTTPException(status_code=400, detail="Maximum 8 subjects for comparison")
 
     subjects_df = _get_subjects_df(study, include_recovery=True)
 
