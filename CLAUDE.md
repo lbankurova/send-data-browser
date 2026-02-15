@@ -62,6 +62,8 @@ These rules are non-negotiable. No agent may override, reinterpret, or skip them
 
 4. **View spec changes that affect UI/UX require explicit user approval.** No agent may modify view specs (`docs/views/*.md`) in ways that affect the UI or UX without the user's prior explicit approval. Agents must propose changes, then stop and wait for approval before writing. Self-approving is never permitted. Agents may NOT infer, add implicit meaning, or "improve" the design on their own — vague instructions like "improve the design" require the user to approve every individual change. **Exceptions:** (a) Changes explicitly requested or directly required to implement a user-requested feature do not need separate approval. "Change the color to X", "remove element Y", "add a filter for Z" are explicit enough to proceed. "Make it look better" or "clean up the view" are not. (b) Designing from scratch (new view, new spec) is not subject to this rule — there's nothing to protect yet. (c) The user can grant blanket approval for a scope of work (e.g., "redesign this UX, come up with a version you think is better"). Blanket approval covers the stated scope; it does not extend beyond it.
 
+5. **Never add Claude as a co-author.** Do not include `Co-Authored-By` lines in commit messages. All commits are authored by the user.
+
 ## Agent Commit Protocol
 
 Before committing changes that alter system or view behavior:
