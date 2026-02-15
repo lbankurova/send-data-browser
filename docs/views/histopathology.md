@@ -225,10 +225,10 @@ Each chart has a **Compact/Scaled mode toggle** (`ChartModeToggle`) — "C" (com
 - Bar fill color: same white-to-dark gradient mapped from severity scale.
 - Empty state: "No severity data."
 
-**Recovery arm support:** When `specimenHasRecovery` is true and recovery dose groups exist, both charts append recovery bars below main bars with:
-- A spacer category between main and recovery sections.
+**Recovery arm support:** When `specimenHasRecovery` is true and recovery dose groups exist, both charts render recovery bars **below** main bars (recovery categories come first in the ECharts data array since category axes render bottom-to-top):
+- A spacer category between recovery and main sections.
 - Recovery bars render with 50% opacity fills.
-- A dashed `markLine` separator labeled "Recovery" at the spacer position.
+- A dashed `markLine` separator labeled "Recovery" (`insideEndBottom` position) at the spacer.
 - Y-axis labels for recovery groups use gray text (`#9CA3AF`) with "(R)" suffix.
 - Tooltips for recovery bars show current value, main arm value for comparison, and change with directional arrows and percentage (green for decrease, red for increase).
 - Bar end labels for recovery bars use muted text (`rgba(107,114,128,0.5)`).
@@ -288,7 +288,11 @@ Rendered when `heatmapData` exists and has findings.
 - **Graded cells (severity mode):** `flex h-6 w-20 shrink-0 items-center justify-center` with `h-5 w-16 rounded-sm` inner block colored by `getNeutralHeatColor(avg_severity)`. Cell label: severity value (n.n) when > 0, or `{affected}/{n}` fraction when severity is 0. Gray placeholder (`h-5 w-16 bg-gray-100`) when no data.
 - **Non-graded cells (severity mode):** `h-5 w-12 rounded-sm bg-gray-100 font-mono text-[10px] text-muted-foreground` showing `{pct}%` incidence. Narrower (`w-12`) than graded cells to visually distinguish.
 - **Incidence cells:** Percentage format colored by `getNeutralHeatColor01(incidence)`.
-- **Recovery cells:** Same rendering as main cells. Separated by `w-px bg-border mx-0.5` vertical line. Empty recovery cells use `bg-gray-50` instead of `bg-gray-100`.
+- **Recovery cells:** Separated by `w-px bg-border mx-0.5` vertical line. Three special cases checked in order:
+  1. **Insufficient N** (`recovery.n < MIN_RECOVERY_N`): renders `—` with `text-muted-foreground/30`, tooltip "Recovery N={n}, too few subjects for comparison".
+  2. **Anomaly** (main incidence = 0 AND recovery incidence > 0): renders `⚠` with `text-muted-foreground/50`, tooltip "Anomaly: finding present in recovery but not in main arm".
+  3. **Not observed** (main incidence = 0 AND recovery incidence = 0): empty cell with `bg-gray-50`.
+  Otherwise, same rendering as main cells (heat-colored by incidence/severity). Empty recovery cells (no data at all) use `bg-gray-50` instead of `bg-gray-100`.
 
 **Neutral heat color scale:** `getNeutralHeatColor()` — 5 distinct grades: transparent (minimal, grade 1), `#D1D5DB` (mild), `#9CA3AF` (moderate), `#6B7280` (marked), `#4B5563` (severe). Minimal gets no color to reinforce low clinical significance; thresholds are integer-aligned (`>= 2`, `>= 3`, etc.). Incidence mode uses `getNeutralHeatColor01()` (0-1 scale).
 
@@ -433,26 +437,50 @@ Recovery reversibility assessment logic lives in `lib/recovery-assessment.ts`. W
 
 ### Types
 
-- `RecoveryVerdict`: `"reversed" | "reversing" | "persistent" | "progressing" | "not_observed" | "no_data"`
-- `RecoveryAssessment`: per-finding with array of `RecoveryDoseAssessment` (one per shared dose level) + `overall` (worst verdict across dose levels)
+- `RecoveryVerdict`: `"reversed" | "reversing" | "persistent" | "progressing" | "anomaly" | "insufficient_n" | "not_observed" | "no_data"`
+- `RecoveryAssessment`: per-finding with array of `RecoveryDoseAssessment` (one per shared dose level, plus `no_data` entries for recovery-only dose levels) + `overall` (worst verdict across dose levels)
 - `RecoveryDoseAssessment`: per-dose-level with main/recovery stats (incidence, n, affected, avgSeverity, maxSeverity) + verdict + recovery subject details
+- `MIN_RECOVERY_N = 3`: minimum recovery-arm subjects for meaningful comparison
 
 ### Verdict Computation
 
-`computeVerdict(main, recovery, thresholds)`:
-1. Main incidence === 0 and affected === 0 -> `not_observed`
-2. Recovery incidence === 0 -> `reversed`
-3. Compute incidence ratio (recovery/main) and severity ratio
-4. Progressing: incidence ratio > 1.1 with more affected, OR severity ratio > 1.2
-5. Reversed: incidence ratio <= 0.2 AND severity ratio <= 0.3
-6. Reversing: incidence ratio <= 0.5 OR severity ratio <= 0.5
-7. Otherwise: `persistent`
+`deriveRecoveryAssessments()` applies guards before calling `computeVerdict()`:
+
+**Guard 1 — `insufficient_n`:** If recovery N < `MIN_RECOVERY_N` (3), verdict is `insufficient_n`. Runs first — small N makes ratios meaningless.
+
+**Guard 2 — `anomaly`/`not_observed`:** If main incidence === 0 and affected === 0:
+- Recovery incidence > 0 → `anomaly` (finding present in recovery but not main arm — delayed onset or data issue)
+- Recovery incidence === 0 → `not_observed`
+
+**Recovery-only dose levels:** Dose levels with recovery subjects but no matching main arm → `no_data`.
+
+**Standard verdict** via `computeVerdict(main, recovery, thresholds)` (only reached when guards pass):
+1. Recovery incidence === 0 → `reversed`
+2. Compute incidence ratio (recovery/main) and severity ratio
+3. Progressing: incidence ratio > 1.1 with more affected, OR severity ratio > 1.2
+4. Reversed: incidence ratio <= 0.2 AND severity ratio <= 0.3
+5. Reversing: incidence ratio <= 0.5 OR severity ratio <= 0.5
+6. Otherwise: `persistent`
 
 ### Verdict Display
 
-- `verdictArrow()`: `↓` reversed, `↘` reversing, `→` persistent, `↑` progressing, `—` not_observed/no_data
-- `verdictPriority()`: progressing (0) > persistent (1) > reversing (2) > reversed (3) > not_observed (4) > no_data (5)
-- `specimenRecoveryLabel()`: "reversed" if all reversed; "partial" if mixed with some reversed; otherwise worst verdict
+- `verdictArrow()`: `↓` reversed, `↘` reversing, `→` persistent, `↑` progressing, `?` anomaly, `—` insufficient_n/not_observed/no_data
+- `verdictPriority()`: anomaly (0) > progressing (1) > persistent (2) > reversing (3) > reversed (4) > insufficient_n (5) > not_observed (6) > no_data (7)
+- `specimenRecoveryLabel()`: filters out `insufficient_n`/`not_observed`/`no_data`; "reversed" if all reversed; "partial" if mixed or sole "reversing"; otherwise worst verdict (maps "reversing" → "partial" per §7.2)
+
+**Findings table cell rendering** (`text-[9px]`):
+
+| Verdict | Display | Style |
+|---|---|---|
+| `reversed` | `↓ reversed` | `text-muted-foreground` |
+| `reversing` | `↘ reversing` | `text-muted-foreground` |
+| `persistent` | `→ persistent` | `font-medium text-foreground/70` |
+| `progressing` | `↑ progressing` | `font-medium text-foreground/70` |
+| `anomaly` | `? anomaly` | `font-medium text-foreground/70` |
+| `insufficient_n` | `— (N<3)` | `text-muted-foreground/50` |
+| `not_observed`/`no_data` | `—` | `text-muted-foreground/40` |
+
+Arrow icon rendered in a fixed-width `w-[10px] text-center` container for alignment across rows.
 
 ### Tooltip Format
 
@@ -463,6 +491,10 @@ Recovery assessment:
   Overall: {overall} (worst case)
   Recovery period: {N weeks|N days}
 ```
+For `anomaly` verdicts: `Group N (dose): 0% → {recPct}% — ⚠ anomaly` followed by two indented explanation lines ("Finding present in recovery but not in main arm." / "May indicate delayed onset or data quality issue.").
+
+For `insufficient_n` verdicts: `Group N (dose): N={n}, too few subjects for comparison`.
+
 Lines are indented with 2 spaces. `formatDoseGroupLabel()` converts "Group 2,2 mg/kg PCDRUG" -> "Group 2 (2 mg/kg)".
 
 ### Integration Points
@@ -553,7 +585,7 @@ Panes in order (follows design system priority: insights > stats > related > ann
 1. **Insights** (default open) — `SpecimenInsights` with finding-scoped rules. Includes clinical catalog annotations when present.
 2. **Dose detail** (default open) — all dose-level rows for finding + specimen, sorted by dose_level then sex. Table columns: Dose (`<DoseLabel>`), Sex, Incid. (right-aligned font-mono), mini dose ramp bar (color from `getDoseGroupColor(dose_level)`), Avg sev (right-aligned font-mono), Sev (colored text: adverse red, warning amber, normal green). The mini dose ramp is a `h-1.5 rounded-full` horizontal bar (track `bg-gray-100`, fill colored by dose group) showing relative incidence percentage per row.
 3. **Sex comparison** (conditional, default open) — only shown when finding has data from both sexes. Per-sex row: affected/total + max severity badge with `getNeutralHeatColor()`.
-4. **Recovery** (conditional, default open) — only shown when `specimenHasRecovery` and finding has non-trivial recovery verdicts. Uses `RecoveryPaneContent` rendering per-dose `RecoveryDoseBlock` components. Each block shows: dose group label + recovery period, main arm incidence (with mini bar), recovery arm incidence (with mini bar), avg severity for both, verdict assessment, and clickable recovery subject links with severity values.
+4. **Recovery** (conditional, default open) — only shown when `specimenHasRecovery` and finding has non-trivial recovery verdicts. Uses `RecoveryPaneContent` rendering per-dose `RecoveryDoseBlock` components. Each block shows: dose group label + recovery period, main arm incidence (with mini bar), recovery arm incidence (with mini bar), avg severity for both, verdict assessment, and clickable recovery subject links with severity values. Special cases: `insufficient_n` verdict skips the comparison and shows "Recovery arm has only N subject(s). Minimum 3 required for meaningful comparison." `anomaly` verdict adds a bordered warning block (`border-border/50 bg-muted/20`) with explanation text about delayed onset or data quality issues.
 5. **Correlating evidence** (default open) — up to 10 other findings in same specimen, sorted by max severity desc, with severity badge colored by `getNeutralHeatColor()`
 6. **Pathology review** — `PathologyReviewForm` (not wrapped in CollapsiblePane, uses own form state)
 7. **Tox Assessment** — `ToxFindingForm` keyed by finding (not wrapped in CollapsiblePane)

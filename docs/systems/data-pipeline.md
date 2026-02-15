@@ -1097,7 +1097,7 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 - Single study only (`ALLOWED_STUDIES = {"PointCross"}`)
 - No incremental recomputation -- full pipeline reruns on each generation
 - FW domain only in generator pipeline, not in on-demand adverse effects pipeline
-- No recovery arm analysis (recovery subjects excluded entirely)
+- Recovery subjects excluded from generator pipeline statistics (per SEND standard). Recovery reversibility assessments computed frontend-side via `lib/recovery-assessment.ts` using subject-level data from the temporal API.
 
 ---
 
