@@ -606,10 +606,30 @@ async def get_histopath_subjects(
     # Sort by dose_level then sex then USUBJID
     subject_list.sort(key=lambda s: (s["dose_level"], s["sex"], s["usubjid"]))
 
+    # Compute recovery period (days) from DS domain sacrifice days
+    recovery_days = None
+    has_recovery = any(s["is_recovery"] for s in subject_list)
+    if has_recovery and "ds" in study.xpt_files:
+        try:
+            ds_df = _read_domain_df(study, "DS")
+            # SEND uses DSSTDY (disposition study day); fall back to DSDY
+            day_col = "DSSTDY" if "DSSTDY" in ds_df.columns else "DSDY" if "DSDY" in ds_df.columns else None
+            if day_col:
+                recovery_ids = {s["usubjid"] for s in subject_list if s["is_recovery"]}
+                main_ids = {s["usubjid"] for s in subject_list if not s["is_recovery"]}
+                ds_df[day_col] = pd.to_numeric(ds_df[day_col], errors="coerce")
+                rec_days = ds_df[ds_df["USUBJID"].isin(recovery_ids)][day_col].dropna()
+                main_days = ds_df[ds_df["USUBJID"].isin(main_ids)][day_col].dropna()
+                if not rec_days.empty and not main_days.empty:
+                    recovery_days = int(rec_days.max() - main_days.max())
+        except Exception:
+            pass
+
     return {
         "specimen": specimen,
         "findings": all_findings,
         "subjects": subject_list,
+        "recovery_days": recovery_days,
     }
 
 

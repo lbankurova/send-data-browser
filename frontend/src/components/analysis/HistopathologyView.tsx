@@ -1024,7 +1024,7 @@ function OverviewTab({
                         ? "font-medium text-foreground/70"
                         : "text-muted-foreground",
                     )}
-                    title={buildRecoveryTooltip(recAssessment)}
+                    title={buildRecoveryTooltip(recAssessment, subjData?.recovery_days)}
                   >
                     {arrow} {v}
                   </span>
@@ -1056,7 +1056,7 @@ function OverviewTab({
         },
       }),
     ],
-    [doseDepThreshold, specimenHasRecovery, recoveryAssessments]
+    [doseDepThreshold, specimenHasRecovery, recoveryAssessments, subjData?.recovery_days]
   );
 
   const filteredTableData = useMemo(
@@ -1348,11 +1348,13 @@ function OverviewTab({
             <span
               className={cn("cursor-pointer", matrixMode === "group" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
               onClick={(e) => { e.stopPropagation(); setMatrixMode("group"); }}
+              onDoubleClick={(e) => e.stopPropagation()}
             >GROUP</span>
             <span className="mx-0.5 text-muted-foreground/30">|</span>
             <span
               className={cn("cursor-pointer", matrixMode === "subject" ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
               onClick={(e) => { e.stopPropagation(); setMatrixMode("subject"); }}
+              onDoubleClick={(e) => e.stopPropagation()}
             >SUBJECTS</span>
           </span>
         }
@@ -1501,15 +1503,22 @@ function OverviewTab({
                     ))}
                     {recoveryHeatmapData && (<>
                       <div className="mx-0.5 w-px self-stretch bg-border" />
-                      {recoveryHeatmapData.doseLevels.map((dl) => (
-                        <div
-                          key={`R${dl}`}
-                          className="w-20 shrink-0 text-center text-[10px] font-medium text-muted-foreground/60"
-                          title={`Recovery: ${recoveryHeatmapData.doseLabels.get(dl) ?? `Dose ${dl}`}`}
-                        >
-                          {(recoveryHeatmapData.doseLabels.get(dl) ?? `${dl}`)} (R)
+                      <div className="shrink-0">
+                        <div className="text-center text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                          Recovery
                         </div>
-                      ))}
+                        <div className="flex">
+                          {recoveryHeatmapData.doseLevels.map((dl) => (
+                            <div
+                              key={`R${dl}`}
+                              className="w-20 shrink-0 text-center text-[10px] font-medium text-muted-foreground/60"
+                              title={`Recovery: ${recoveryHeatmapData.doseLabels.get(dl) ?? `Dose ${dl}`}`}
+                            >
+                              {(recoveryHeatmapData.doseLabels.get(dl) ?? `${dl}`)} (R)
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </>)}
                   </div>
                   {/* Data rows */}
@@ -1581,10 +1590,25 @@ function OverviewTab({
                         <div className="mx-0.5 w-px self-stretch bg-border" />
                         {recoveryHeatmapData.doseLevels.map((dl) => {
                           const rCell = recoveryHeatmapData.cells.get(`${finding}|${dl}`);
+                          const rMeta = heatmapData.findingMeta.get(finding);
+                          const rIsNonGraded = rMeta && !rMeta.hasSeverityData;
                           if (!rCell) {
                             return (
                               <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
                                 <div className="h-5 w-16 rounded-sm bg-gray-50" />
+                              </div>
+                            );
+                          }
+                          // Non-graded findings in severity mode: show incidence %
+                          if (heatmapView === "severity" && rIsNonGraded) {
+                            return (
+                              <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
+                                <div
+                                  className="flex h-5 w-16 items-center justify-center rounded-sm bg-gray-100 font-mono text-[10px] text-muted-foreground"
+                                  title={`Recovery — Incidence: ${rCell.affected}/${rCell.n} (no severity grade)`}
+                                >
+                                  {`${(rCell.incidence * 100).toFixed(0)}%`}
+                                </div>
                               </div>
                             );
                           }

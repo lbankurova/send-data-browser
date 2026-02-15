@@ -109,6 +109,7 @@ export interface SubjectHistopathResponse {
   specimen: string;
   findings: string[];
   subjects: SubjectHistopathEntry[];
+  recovery_days: number | null;
 }
 
 export interface SubjectHistopathEntry {

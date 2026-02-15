@@ -45,13 +45,41 @@ export interface RecoveryAssessment {
 
 // ─── Verdict computation ──────────────────────────────────
 
+export interface VerdictThresholds {
+  /** Incidence ratio ≤ this AND severity ratio ≤ reversedSeverity → "reversed" (default 0.2) */
+  reversedIncidence: number;
+  /** Severity ratio ≤ this AND incidence ratio ≤ reversedIncidence → "reversed" (default 0.3) */
+  reversedSeverity: number;
+  /** Incidence ratio ≤ this OR severity ratio ≤ reversingSeverity → "reversing" (default 0.5) */
+  reversingIncidence: number;
+  /** Severity ratio ≤ this OR incidence ratio ≤ reversingIncidence → "reversing" (default 0.5) */
+  reversingSeverity: number;
+  /** Incidence ratio > this (with more affected) → "progressing" (default 1.1) */
+  progressingIncidence: number;
+  /** Severity ratio > this → "progressing" (default 1.2) */
+  progressingSeverity: number;
+}
+
+export const DEFAULT_VERDICT_THRESHOLDS: VerdictThresholds = {
+  reversedIncidence: 0.2,
+  reversedSeverity: 0.3,
+  reversingIncidence: 0.5,
+  reversingSeverity: 0.5,
+  progressingIncidence: 1.1,
+  progressingSeverity: 1.2,
+};
+
 interface ArmStats {
   incidence: number;
   avgSeverity: number;
   affected: number;
 }
 
-export function computeVerdict(main: ArmStats, recovery: ArmStats): RecoveryVerdict {
+export function computeVerdict(
+  main: ArmStats,
+  recovery: ArmStats,
+  thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
+): RecoveryVerdict {
   // Finding not in main arm → nothing to assess
   if (main.incidence === 0 && main.affected === 0) return "not_observed";
 
@@ -62,14 +90,14 @@ export function computeVerdict(main: ArmStats, recovery: ArmStats): RecoveryVerd
   const severityRatio = recovery.avgSeverity / Math.max(main.avgSeverity, 0.01);
 
   // Progressing: incidence or severity increased
-  if (incidenceRatio > 1.1 && recovery.affected > main.affected) return "progressing";
-  if (severityRatio > 1.2) return "progressing";
+  if (incidenceRatio > thresholds.progressingIncidence && recovery.affected > main.affected) return "progressing";
+  if (severityRatio > thresholds.progressingSeverity) return "progressing";
 
   // Reversed: both incidence and severity substantially decreased
-  if (incidenceRatio <= 0.2 && severityRatio <= 0.3) return "reversed";
+  if (incidenceRatio <= thresholds.reversedIncidence && severityRatio <= thresholds.reversedSeverity) return "reversed";
 
   // Reversing: clear decrease in at least one metric
-  if (incidenceRatio <= 0.5 || severityRatio <= 0.5) return "reversing";
+  if (incidenceRatio <= thresholds.reversingIncidence || severityRatio <= thresholds.reversingSeverity) return "reversing";
 
   // Otherwise persistent
   return "persistent";
@@ -117,7 +145,10 @@ export function verdictLabel(verdict: RecoveryVerdict): string {
 
 // ─── Tooltip ──────────────────────────────────────────────
 
-export function buildRecoveryTooltip(assessment: RecoveryAssessment | undefined): string {
+export function buildRecoveryTooltip(
+  assessment: RecoveryAssessment | undefined,
+  recoveryDays?: number | null,
+): string {
   if (!assessment) return "";
   const lines = ["Recovery assessment:"];
   for (const a of assessment.assessments) {
@@ -138,6 +169,12 @@ export function buildRecoveryTooltip(assessment: RecoveryAssessment | undefined)
       ? `Overall: ${assessment.overall} (most conservative across ${n} dose levels)`
       : `Overall: ${assessment.overall}`,
   );
+  if (recoveryDays != null) {
+    const label = recoveryDays >= 7
+      ? `${Math.round(recoveryDays / 7)} week${Math.round(recoveryDays / 7) !== 1 ? "s" : ""}`
+      : `${recoveryDays} day${recoveryDays !== 1 ? "s" : ""}`;
+    lines.push(`Recovery period: ${label}`);
+  }
   return lines.join("\n");
 }
 
@@ -146,6 +183,7 @@ export function buildRecoveryTooltip(assessment: RecoveryAssessment | undefined)
 export function deriveRecoveryAssessments(
   findingNames: string[],
   subjects: SubjectHistopathEntry[],
+  thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
 ): RecoveryAssessment[] {
   // Split subjects into main and recovery arms
   const mainSubjects = subjects.filter((s) => !s.is_recovery);
@@ -174,7 +212,7 @@ export function deriveRecoveryAssessments(
       const mainStats = computeGroupStats(finding, mainGroup);
       const recStats = computeGroupStats(finding, recGroup);
 
-      const verdict = computeVerdict(mainStats, recStats);
+      const verdict = computeVerdict(mainStats, recStats, thresholds);
 
       // Recovery subject details
       const subjectDetails: { id: string; severity: number }[] = [];

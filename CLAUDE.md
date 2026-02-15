@@ -69,6 +69,16 @@ Before committing changes that alter system or view behavior:
 2. **Mark MANIFEST.md.** Set "Last validated" to today for any spec you updated. If you can't update the spec, mark it `STALE — <reason>` in MANIFEST.
 3. **Check `docs/incoming/`** for feature specs that conflict with your changes. If a conflict exists, ask the user before committing.
 
+## Post-Implementation Review Protocol
+
+After implementing a feature from a spec in `docs/incoming/`, the agent **must** perform a completeness review before considering the work done:
+
+1. **Diff the spec against the implementation.** Re-read the full spec section by section. For every requirement, UI element, data field, integration point, and suggested enhancement — verify whether it was implemented.
+2. **Create todo items for all gaps.** Every unimplemented feature, deferred suggestion, or partially implemented behavior gets a todo item with: the spec section reference, a clear description of what's missing, and any blocking dependencies.
+3. **Document decision points.** If the implementation chose one approach over alternatives described in the spec (e.g., "Option A vs Option B"), record the choice and rationale in the todo list or as a comment in the relevant code.
+4. **Flag cross-spec integration gaps.** If the spec references other specs or views that need changes (e.g., "add column to NOAEL view"), create a todo for each.
+5. **Present the full gap list to the user** before moving on, so they can prioritize or dismiss items.
+
 ## Architecture
 
 ### Backend (`backend/`)
