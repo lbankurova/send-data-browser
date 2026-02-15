@@ -49,7 +49,7 @@ These files were modified or untracked but not yet committed. They reflect in-pr
 
 | Spec | Pass 1 | Pass 2 | Pass 2b | Total gaps | Status |
 |------|--------|--------|---------|------------|--------|
-| arch-redesign-final.md | 2 | 11 | 5 | 18 (15 fixed, 3 deferred) | 15 FIXED — 3 deferred |
+| arch-redesign-final.md | 2 | 11 | 5 | 18 (16 fixed, 2 deferred) | 16 FIXED — 2 deferred |
 | subject-comparison-spec.md | 0 | 6 | 5 | 11 | BEHAVIORAL + FORMAT GAPS |
 | recovery-reversibility-spec.md | 2 | 3 | 0 | 5 | NEAR-COMPLETE |
 | subject-matrix-redesign-spec.md | 1 | 3 | 3 | 7 | FORMAT GAPS |
@@ -77,7 +77,7 @@ All 5 phases structurally implemented. Behavioral audit revealed core mechanics 
 |---|----------|-----|------|----------|--------|
 | AR-1 | §5.2 | HistopathologyView missing organ-level aggregation. When `organSystem` is selected but `specimen` is NOT set, should show organ-level aggregate summary. Currently shows placeholder. | `HistopathologyView.tsx:~2589` | Medium | Open |
 | AR-2 | §6.2 | Cross-view links use `navigate(route, { state })` instead of calling `navigateTo()` first. Functionally works via `location.state` but doesn't match spec pattern. | `StudySummaryContextPanel.tsx` and similar | Low | Open |
-| AR-3 | §3.2 | `minSeverity` filter not applied in organ mode. `TargetOrganRow` has no severity field — `build_target_organ_summary()` in the generator never computes per-organ max severity. The `OrganEvidenceRow` has per-endpoint `severity` (categorical: adverse/warning/normal) but not numeric. Fix requires adding `max_severity: number` to the generator pipeline and `TargetOrganRow` type. | `backend/generator/view_dataframes.py:73-130`, `OrganRailMode.tsx` | Medium | **Deferred — needs generator pipeline change** |
+| AR-3 | §3.2 | ~~`minSeverity` filter not applied in organ mode.~~ Added `max_severity` (numeric 1–5, from MI/MA/CL `group_stats.avg_severity`) to generator pipeline, JSON output, `TargetOrganRow` type, and OrganRailMode filter. Organs without histopath data have `max_severity: null` and pass through the filter. | `view_dataframes.py`, `analysis-views.ts`, `OrganRailMode.tsx` | Medium | **Fixed** |
 | AR-4 | §3.2 | ~~Sex filter declared "universal" but only consumed by HistopathologyView.~~ NoaelDecisionView wired to global filters. Other views (DoseResponse, StudySummary, OrganRail, SpecimenRail) use pre-aggregated data that is not sex-specific — filter cannot meaningfully apply until backend generates sex-stratified summaries. | `NoaelDecisionView.tsx` | High | **Fixed** (NOAEL); remainder blocked on backend |
 | AR-5 | §3.3 | ~~`userHasToggled` never cleared on browsing tree navigation.~~ Added `clearToggle()` to RailModeContext, called on view navigation in BrowsingTree. | `RailModeContext.tsx`, `BrowsingTree.tsx` | Medium | **Fixed** |
 | AR-6 | §4.1 | Filtered count missing from mode toggle. Spec shows `[Organs] [Specimens] (40)` but no count rendered next to toggle. Requires threading filtered counts from child mode components up to PolymorphicRail toggle. | `PolymorphicRail.tsx:24-41` | Low | **Deferred — needs component boundary refactor** |
@@ -282,7 +282,7 @@ This is the largest remaining feature. The spec defines how recovery-arm data sh
 | Task ID | From | Description | Effort | Status |
 |---------|------|-------------|--------|--------|
 | AR-1 | Architecture | Build organ-level aggregation view for histopathology | Medium | Open |
-| AR-3 | Architecture | Apply `minSeverity` filter in organ rail mode. **Blocked:** `TargetOrganRow` has no severity field. Generator (`build_target_organ_summary()`) never computes per-organ max severity. `OrganEvidenceRow` has categorical severity (adverse/warning/normal) but not numeric. Fix: add `max_severity: number` to generator pipeline → JSON → TS type → filter. | Small (after generator change) | **Deferred** |
+| AR-3 | Architecture | Apply `minSeverity` filter in organ rail mode. Added `max_severity` to generator → JSON → type → filter. | Small | **Fixed** |
 | AR-5 | Architecture | Clear `userHasToggled` on browsing tree navigation | Trivial | **Fixed** `512638d` |
 | AR-7 | Architecture | FilterShowingLine: add to OrganRailMode, add sex/significantOnly to SpecimenRailMode parts | Small | **Fixed** `512638d` |
 | AR-10 | Architecture | Auto-select top organ in StudySummaryView | Trivial | **Fixed** `512638d` |
