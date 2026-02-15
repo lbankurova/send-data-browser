@@ -30,6 +30,20 @@ function sevTypo(v: number): string {
   return "text-muted-foreground/40";
 }
 
+/** Arrow separator between dose values — padded for readability. */
+function Arrow({ muted }: { muted?: boolean }) {
+  return (
+    <span className={cn("mx-0.5", muted ? "text-muted-foreground/40" : "text-foreground/70")}>
+      {"\u203A"}
+    </span>
+  );
+}
+
+/** Severity display — uses "0" instead of em dash to avoid blending with arrows. */
+function SevVal({ v, className }: { v: number; className?: string }) {
+  return <span className={cn(sevTypo(v), className)}>{v > 0 ? v.toFixed(1) : "0"}</span>;
+}
+
 /**
  * Selection zone content for the dose charts section header.
  * - Finding selected: per-dose-group incidence->severity sequence with dose labels.
@@ -42,28 +56,28 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData, re
 
   if (selectedRow && heatmapData) {
     return (
-      <span className="flex items-center gap-0 font-mono text-[10px]">
+      <span className="flex items-center gap-0.5 font-mono text-[10px]">
         <span className="text-foreground/70">Incid:</span>
         {heatmapData.doseLevels.map((dl, i) => {
           const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
           const pct = cell ? Math.round(cell.incidence * 100) : 0;
           return (
-            <span key={dl}>
-              {i > 0 && <span className="text-foreground/70">&rarr;</span>}
+            <span key={dl} className="flex items-center">
+              {i > 0 && <Arrow />}
               <span className={cn(incTypo(pct))}>{pct}%</span>
             </span>
           );
         })}
         {hasRecovery && (
           <>
-            <span className="mx-0.5 text-muted-foreground/40">|</span>
+            <span className="mx-1 text-muted-foreground/40">|</span>
             <span className="text-muted-foreground/50">R:</span>
             {recoveryHeatmapData.doseLevels.map((dl, i) => {
               const cell = recoveryHeatmapData.cells.get(`${selectedRow.finding}|${dl}`);
               const pct = cell ? Math.round(cell.incidence * 100) : 0;
               return (
-                <span key={`r${dl}`}>
-                  {i > 0 && <span className="text-muted-foreground/40">&rarr;</span>}
+                <span key={`r${dl}`} className="flex items-center">
+                  {i > 0 && <Arrow muted />}
                   <span className={cn(incTypo(pct), "opacity-60")}>{pct}%</span>
                 </span>
               );
@@ -76,23 +90,23 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData, re
           const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
           const v = cell?.avg_severity ?? 0;
           return (
-            <span key={dl}>
-              {i > 0 && <span className="text-foreground/70">&rarr;</span>}
-              <span className={cn(sevTypo(v))}>{v > 0 ? v.toFixed(1) : "\u2014"}</span>
+            <span key={dl} className="flex items-center">
+              {i > 0 && <Arrow />}
+              <SevVal v={v} />
             </span>
           );
         })}
         {hasRecovery && (
           <>
-            <span className="mx-0.5 text-muted-foreground/40">|</span>
+            <span className="mx-1 text-muted-foreground/40">|</span>
             <span className="text-muted-foreground/50">R:</span>
             {recoveryHeatmapData.doseLevels.map((dl, i) => {
               const cell = recoveryHeatmapData.cells.get(`${selectedRow.finding}|${dl}`);
               const v = cell?.avg_severity ?? 0;
               return (
-                <span key={`r${dl}`}>
-                  {i > 0 && <span className="text-muted-foreground/40">&rarr;</span>}
-                  <span className={cn(sevTypo(v), "opacity-60")}>{v > 0 ? v.toFixed(1) : "\u2014"}</span>
+                <span key={`r${dl}`} className="flex items-center">
+                  {i > 0 && <Arrow muted />}
+                  <SevVal v={v} className="opacity-60" />
                 </span>
               );
             })}
@@ -149,25 +163,25 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData, re
   const recPeakIncPct = Math.round(recPeakInc * 100);
 
   return (
-    <span className="flex items-center gap-0 font-mono text-[10px]">
+    <span className="flex items-center gap-0.5 font-mono text-[10px]">
       <span className="text-foreground/70">Peak incidence:{" "}</span>
       <span className={cn(incTypo(peakIncPct))}>{peakIncPct}%</span>
       {peakIncGroup && <span className="text-muted-foreground/60">{" "}({peakIncGroup})</span>}
       {hasRecovery && (
         <>
-          <span className="mx-0.5 text-muted-foreground/40">&rarr;</span>
+          <Arrow />
           <span className={cn(incTypo(recPeakIncPct), "opacity-60")}>{recPeakIncPct}%</span>
           <span className="text-muted-foreground/50">{" "}(R)</span>
         </>
       )}
       <StripSep />
       <span className="text-foreground/70">Peak severity:{" "}</span>
-      <span className={cn(sevTypo(peakSev))}>{peakSev.toFixed(1)}</span>
+      <SevVal v={peakSev} />
       {peakSevGroup && <span className="text-muted-foreground/60">{" "}({peakSevGroup})</span>}
       {hasRecovery && (
         <>
-          <span className="mx-0.5 text-muted-foreground/40">&rarr;</span>
-          <span className={cn(sevTypo(recPeakSev), "opacity-60")}>{recPeakSev.toFixed(1)}</span>
+          <Arrow />
+          <SevVal v={recPeakSev} className="opacity-60" />
           <span className="text-muted-foreground/50">{" "}(R)</span>
         </>
       )}
