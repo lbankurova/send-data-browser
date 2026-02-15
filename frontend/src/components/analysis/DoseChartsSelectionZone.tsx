@@ -2,10 +2,18 @@ import { cn } from "@/lib/utils";
 import { StripSep } from "@/components/ui/SectionHeader";
 import type { FindingTableRow, HeatmapData } from "@/components/analysis/HistopathologyView";
 
+interface RecoveryHeatmap {
+  doseLevels: number[];
+  doseLabels: Map<number, string>;
+  cells: Map<string, { incidence: number; avg_severity: number; affected: number; n: number }>;
+}
+
 interface DoseChartsSelectionZoneProps {
   findings: FindingTableRow[];
   selectedRow: FindingTableRow | null;
   heatmapData: HeatmapData | null;
+  recoveryHeatmapData?: RecoveryHeatmap | null;
+  specimenHasRecovery?: boolean;
 }
 
 function incTypo(pct: number): string {
@@ -25,9 +33,13 @@ function sevTypo(v: number): string {
 /**
  * Selection zone content for the dose charts section header.
  * - Finding selected: per-dose-group incidence->severity sequence with dose labels.
+ *   When recovery data exists, appends `| R:` separator and recovery dose sequence.
  * - No selection: peak incidence and peak severity from specimen aggregate.
+ *   When recovery data exists, appends recovery peak after main peak.
  */
-export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData }: DoseChartsSelectionZoneProps) {
+export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData, recoveryHeatmapData, specimenHasRecovery }: DoseChartsSelectionZoneProps) {
+  const hasRecovery = specimenHasRecovery && recoveryHeatmapData && recoveryHeatmapData.doseLevels.length > 0;
+
   if (selectedRow && heatmapData) {
     return (
       <span className="flex items-center gap-0 font-mono text-[10px]">
@@ -42,6 +54,22 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData }: 
             </span>
           );
         })}
+        {hasRecovery && (
+          <>
+            <span className="mx-0.5 text-muted-foreground/40">|</span>
+            <span className="text-muted-foreground/50">R:</span>
+            {recoveryHeatmapData.doseLevels.map((dl, i) => {
+              const cell = recoveryHeatmapData.cells.get(`${selectedRow.finding}|${dl}`);
+              const pct = cell ? Math.round(cell.incidence * 100) : 0;
+              return (
+                <span key={`r${dl}`}>
+                  {i > 0 && <span className="text-muted-foreground/40">&rarr;</span>}
+                  <span className={cn(incTypo(pct), "opacity-60")}>{pct}%</span>
+                </span>
+              );
+            })}
+          </>
+        )}
         <StripSep />
         <span className="text-foreground/70">Sev:</span>
         {heatmapData.doseLevels.map((dl, i) => {
@@ -54,6 +82,22 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData }: 
             </span>
           );
         })}
+        {hasRecovery && (
+          <>
+            <span className="mx-0.5 text-muted-foreground/40">|</span>
+            <span className="text-muted-foreground/50">R:</span>
+            {recoveryHeatmapData.doseLevels.map((dl, i) => {
+              const cell = recoveryHeatmapData.cells.get(`${selectedRow.finding}|${dl}`);
+              const v = cell?.avg_severity ?? 0;
+              return (
+                <span key={`r${dl}`}>
+                  {i > 0 && <span className="text-muted-foreground/40">&rarr;</span>}
+                  <span className={cn(sevTypo(v), "opacity-60")}>{v > 0 ? v.toFixed(1) : "\u2014"}</span>
+                </span>
+              );
+            })}
+          </>
+        )}
       </span>
     );
   }
@@ -86,17 +130,47 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData }: 
     }
   }
 
+  // Recovery peaks
+  let recPeakInc = 0;
+  let recPeakSev = 0;
+  if (hasRecovery) {
+    for (const f of findings) {
+      for (const dl of recoveryHeatmapData.doseLevels) {
+        const cell = recoveryHeatmapData.cells.get(`${f.finding}|${dl}`);
+        if (cell) {
+          if (cell.incidence > recPeakInc) recPeakInc = cell.incidence;
+          if (cell.avg_severity > recPeakSev) recPeakSev = cell.avg_severity;
+        }
+      }
+    }
+  }
+
   const peakIncPct = Math.round(peakInc * 100);
+  const recPeakIncPct = Math.round(recPeakInc * 100);
 
   return (
     <span className="flex items-center gap-0 font-mono text-[10px]">
       <span className="text-foreground/70">Peak incidence:{" "}</span>
       <span className={cn(incTypo(peakIncPct))}>{peakIncPct}%</span>
       {peakIncGroup && <span className="text-muted-foreground/60">{" "}({peakIncGroup})</span>}
+      {hasRecovery && (
+        <>
+          <span className="mx-0.5 text-muted-foreground/40">&rarr;</span>
+          <span className={cn(incTypo(recPeakIncPct), "opacity-60")}>{recPeakIncPct}%</span>
+          <span className="text-muted-foreground/50">{" "}(R)</span>
+        </>
+      )}
       <StripSep />
       <span className="text-foreground/70">Peak severity:{" "}</span>
       <span className={cn(sevTypo(peakSev))}>{peakSev.toFixed(1)}</span>
       {peakSevGroup && <span className="text-muted-foreground/60">{" "}({peakSevGroup})</span>}
+      {hasRecovery && (
+        <>
+          <span className="mx-0.5 text-muted-foreground/40">&rarr;</span>
+          <span className={cn(sevTypo(recPeakSev), "opacity-60")}>{recPeakSev.toFixed(1)}</span>
+          <span className="text-muted-foreground/50">{" "}(R)</span>
+        </>
+      )}
     </span>
   );
 }

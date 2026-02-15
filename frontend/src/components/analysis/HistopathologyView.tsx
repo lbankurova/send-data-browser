@@ -608,6 +608,55 @@ function OverviewTab({
     return { stableDoseLevels: levels, stableAllSexes: allSexes, stableSexKeys: sexKeys, stableUseSexGrouping: useSexGrouping };
   }, [filteredData, sexFilter]);
 
+  // Recovery flag (moved up — needed by recovery chart data builders below)
+  const specimenHasRecovery = useMemo(
+    () => subjData?.subjects?.some((s) => s.is_recovery) ?? false,
+    [subjData],
+  );
+
+  // Recovery incidence groups (built from subject-level data for chart recovery bars)
+  const recoveryIncidenceGroups = useMemo<DoseIncidenceGroup[] | undefined>(() => {
+    if (!specimenHasRecovery || !subjData?.subjects || !availableDoseGroups.recovery.length) return undefined;
+    const recSubjects = subjData.subjects.filter((s) => s.is_recovery);
+    if (recSubjects.length === 0) return undefined;
+
+    // Optionally filter to selected finding
+    const selectedFinding = selection?.finding;
+    // Apply sex filter
+    const filtered = sexFilter ? recSubjects.filter((s) => s.sex === sexFilter) : recSubjects;
+
+    // Group by dose_level → sex → { affected, n }
+    const doseMap = new Map<number, Map<string, { affected: number; n: number }>>();
+    for (const s of filtered) {
+      let bySex = doseMap.get(s.dose_level);
+      if (!bySex) { bySex = new Map(); doseMap.set(s.dose_level, bySex); }
+      const sexEntry = bySex.get(s.sex);
+      const hasF = selectedFinding ? !!s.findings[selectedFinding] : Object.keys(s.findings).length > 0;
+      if (sexEntry) { sexEntry.n += 1; if (hasF) sexEntry.affected += 1; }
+      else { bySex.set(s.sex, { affected: hasF ? 1 : 0, n: 1 }); }
+    }
+
+    return availableDoseGroups.recovery.map(([level, rawLabel]) => {
+      const label = rawLabel.split(",")[0];
+      const bySexMap = doseMap.get(level);
+      if (stableUseSexGrouping) {
+        const bySex: Record<string, { affected: number; n: number }> = {};
+        for (const sex of stableAllSexes) {
+          bySex[sex] = bySexMap?.get(sex) ?? { affected: 0, n: 0 };
+        }
+        return { doseLevel: level, doseLabel: label, bySex };
+      }
+      if (stableAllSexes.length === 1) {
+        const sex = stableAllSexes[0];
+        return { doseLevel: level, doseLabel: label, bySex: { [sex]: bySexMap?.get(sex) ?? { affected: 0, n: 0 } } };
+      }
+      let totalAffected = 0;
+      let totalN = 0;
+      if (bySexMap) for (const [, v] of bySexMap) { totalAffected += v.affected; totalN += v.n; }
+      return { doseLevel: level, doseLabel: label, bySex: { Combined: { affected: totalAffected, n: totalN } } };
+    });
+  }, [specimenHasRecovery, subjData, availableDoseGroups.recovery, selection?.finding, sexFilter, stableUseSexGrouping, stableAllSexes]);
+
   // Dose-incidence chart data
   const { chartOption: doseChartOption, hasDoseChartData } = useMemo(() => {
     if (!stableDoseLevels.length) return { chartOption: null, hasDoseChartData: false };
@@ -649,8 +698,55 @@ function OverviewTab({
       return { doseLevel: level, doseLabel: label, bySex: { Combined: { affected: totalAffected, n: totalN } } };
     });
 
-    return { chartOption: buildDoseIncidenceBarOption(groups, stableSexKeys, incidenceMode), hasDoseChartData: true };
-  }, [filteredData, selection?.finding, stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping, incidenceMode]);
+    return { chartOption: buildDoseIncidenceBarOption(groups, stableSexKeys, incidenceMode, recoveryIncidenceGroups), hasDoseChartData: true };
+  }, [filteredData, selection?.finding, stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping, incidenceMode, recoveryIncidenceGroups]);
+
+  // Recovery severity groups (built from subject-level data for chart recovery bars)
+  const recoverySeverityGroups = useMemo<DoseSeverityGroup[] | undefined>(() => {
+    if (!specimenHasRecovery || !subjData?.subjects || !availableDoseGroups.recovery.length) return undefined;
+    const recSubjects = subjData.subjects.filter((s) => s.is_recovery);
+    if (recSubjects.length === 0) return undefined;
+
+    const selectedFinding = selection?.finding;
+    const filtered = sexFilter ? recSubjects.filter((s) => s.sex === sexFilter) : recSubjects;
+
+    // Group by dose_level → sex → { totalSeverity, count }
+    const doseMap = new Map<number, Map<string, { totalSeverity: number; count: number }>>();
+    for (const s of filtered) {
+      let bySex = doseMap.get(s.dose_level);
+      if (!bySex) { bySex = new Map(); doseMap.set(s.dose_level, bySex); }
+      const findings = selectedFinding
+        ? (s.findings[selectedFinding] ? { [selectedFinding]: s.findings[selectedFinding] } : {})
+        : s.findings;
+      for (const [, f] of Object.entries(findings)) {
+        if (f.severity_num > 0) {
+          const sexEntry = bySex.get(s.sex);
+          if (sexEntry) { sexEntry.totalSeverity += f.severity_num; sexEntry.count += 1; }
+          else { bySex.set(s.sex, { totalSeverity: f.severity_num, count: 1 }); }
+        }
+      }
+    }
+
+    return availableDoseGroups.recovery.map(([level, rawLabel]) => {
+      const label = rawLabel.split(",")[0];
+      const bySexMap = doseMap.get(level);
+      if (stableUseSexGrouping) {
+        const bySex: Record<string, { totalSeverity: number; count: number }> = {};
+        for (const sex of stableAllSexes) {
+          bySex[sex] = bySexMap?.get(sex) ?? { totalSeverity: 0, count: 0 };
+        }
+        return { doseLevel: level, doseLabel: label, bySex };
+      }
+      if (stableAllSexes.length === 1) {
+        const sex = stableAllSexes[0];
+        return { doseLevel: level, doseLabel: label, bySex: { [sex]: bySexMap?.get(sex) ?? { totalSeverity: 0, count: 0 } } };
+      }
+      let totalSev = 0;
+      let totalCount = 0;
+      if (bySexMap) for (const [, v] of bySexMap) { totalSev += v.totalSeverity; totalCount += v.count; }
+      return { doseLevel: level, doseLabel: label, bySex: { Combined: { totalSeverity: totalSev, count: totalCount } } };
+    });
+  }, [specimenHasRecovery, subjData, availableDoseGroups.recovery, selection?.finding, sexFilter, stableUseSexGrouping, stableAllSexes]);
 
   // Dose-severity chart data
   const { chartOption: doseSeverityChartOption, hasSeverityChartData } = useMemo(() => {
@@ -695,8 +791,8 @@ function OverviewTab({
     });
 
     const hasData = sevRows.length > 0;
-    return { chartOption: buildDoseSeverityBarOption(groups, stableSexKeys, severityMode), hasSeverityChartData: hasData };
-  }, [filteredData, selection?.finding, stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping, severityMode]);
+    return { chartOption: buildDoseSeverityBarOption(groups, stableSexKeys, severityMode, recoverySeverityGroups), hasSeverityChartData: hasData };
+  }, [filteredData, selection?.finding, stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping, severityMode, recoverySeverityGroups]);
 
   // Group-level heatmap data (uses matrixBaseData so non-graded findings appear)
   const heatmapData = useMemo(() => {
@@ -761,11 +857,6 @@ function OverviewTab({
   }, [matrixBaseData, severityGradedOnly, minSeverity]);
 
   // ── Recovery assessment ────────────────────────────────
-  const specimenHasRecovery = useMemo(
-    () => subjData?.subjects?.some((s) => s.is_recovery) ?? false,
-    [subjData],
-  );
-
   const recoveryAssessments = useMemo(() => {
     if (!specimenHasRecovery || !subjData?.subjects) return null;
     const findingNames = findingSummaries.map((f) => f.finding);
@@ -1000,6 +1091,25 @@ function OverviewTab({
           ) : null;
         },
       }),
+      findingColHelper.accessor("relatedOrgans", {
+        header: "Also in",
+        size: 120,
+        minSize: 40,
+        maxSize: 300,
+        cell: (info) => {
+          const organs = info.getValue();
+          if (!organs) return null;
+          const text = organs.join(", ");
+          return (
+            <span
+              className="block truncate text-muted-foreground"
+              title={`Cross-organ coherence (R16): also observed in ${text}`}
+            >
+              {text}
+            </span>
+          );
+        },
+      }),
       ...(specimenHasRecovery
         ? [
             findingColHelper.accessor("recoveryVerdict", {
@@ -1036,25 +1146,6 @@ function OverviewTab({
             }),
           ]
         : []),
-      findingColHelper.accessor("relatedOrgans", {
-        header: "Also in",
-        size: 120,
-        minSize: 40,
-        maxSize: 300,
-        cell: (info) => {
-          const organs = info.getValue();
-          if (!organs) return null;
-          const text = organs.join(", ");
-          return (
-            <span
-              className="block truncate text-muted-foreground"
-              title={`Cross-organ coherence (R16): also observed in ${text}`}
-            >
-              {text}
-            </span>
-          );
-        },
-      }),
     ],
     [doseDepThreshold, specimenHasRecovery, recoveryAssessments, subjData?.recovery_days]
   );
@@ -1085,11 +1176,19 @@ function OverviewTab({
   // Matrix overhead: filter line + controls + legend + dose headers + subject IDs + sex/examined rows + padding.
   // Subject mode adds a checkbox row (~20px) and the overall overhead is larger (~200px vs ~130px for group).
   const matrixOverhead = matrixMode === "subject" ? 200 : 130;
-  const naturalHeights = useMemo(() => ({
-    findings: filteredTableData.length * 28 + 40,
-    doseCharts: 170,
-    matrix: (heatmapData?.findings.length ?? 5) * 24 + matrixOverhead,
-  }), [filteredTableData.length, heatmapData?.findings.length, matrixOverhead]);
+  const naturalHeights = useMemo(() => {
+    // Dose charts height: base 170 for main, add recovery bars + spacer when present
+    const barsPerGroup = stableSexKeys.length > 1 ? stableSexKeys.length : 1;
+    const recoveryCount = availableDoseGroups.recovery.length;
+    const doseChartsHeight = specimenHasRecovery && recoveryCount > 0
+      ? (stableDoseLevels.length * barsPerGroup + recoveryCount * barsPerGroup + 1) * 16 + 60
+      : 170;
+    return {
+      findings: filteredTableData.length * 28 + 40,
+      doseCharts: doseChartsHeight,
+      matrix: (heatmapData?.findings.length ?? 5) * 24 + matrixOverhead,
+    };
+  }, [filteredTableData.length, heatmapData?.findings.length, matrixOverhead, specimenHasRecovery, stableDoseLevels.length, stableSexKeys.length, availableDoseGroups.recovery.length]);
 
   const {
     heights, showHint, isStrip,
@@ -1294,7 +1393,7 @@ function OverviewTab({
       <SectionHeader
         height={heights.doseCharts}
         title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts"}
-        selectionZone={<DoseChartsSelectionZone findings={filteredTableData} selectedRow={selectedRow} heatmapData={heatmapData} />}
+        selectionZone={<DoseChartsSelectionZone findings={filteredTableData} selectedRow={selectedRow} heatmapData={heatmapData} recoveryHeatmapData={recoveryHeatmapData} specimenHasRecovery={specimenHasRecovery} />}
         onDoubleClick={() => handleDoubleClick("doseCharts")}
         onStripClick={restoreDefaults}
       />
