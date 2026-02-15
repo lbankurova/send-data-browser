@@ -59,6 +59,7 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
   // Control band series (area between mean-SD and mean+SD)
   const controlLower: (number | null)[] = [];
   const controlUpper: (number | null)[] = [];
+  const controlMean: (number | null)[] = [];
   // For baseline normalization, use Day 1 control mean as baseline
   const ctrlDay1 = controlBW[String(days[0])]?.mean ?? 0;
   for (const day of days) {
@@ -70,9 +71,11 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
         : stat.sd;
       controlLower.push(Math.max(0, mean - sd));
       controlUpper.push(mean + sd);
+      controlMean.push(mean);
     } else {
       controlLower.push(null);
       controlUpper.push(null);
+      controlMean.push(null);
     }
   }
 
@@ -105,10 +108,21 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
     stack: "control",
     areaStyle: {
       color: "#e5e7eb",
-      opacity: 0.4,
+      opacity: 0.3,
     },
     silent: true,
     z: 0,
+  });
+
+  // Control mean dashed line
+  series.push({
+    name: "_ctrl_mean",
+    type: "line",
+    data: days.map((d, i) => [d, controlMean[i]]),
+    lineStyle: { color: "#9CA3AF", width: 1, type: "dashed" },
+    symbol: "none",
+    silent: true,
+    z: 1,
   });
 
   // Subject lines
@@ -133,15 +147,15 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
       lineStyle: { width: 2, color },
       itemStyle: { color },
       symbol: "circle",
-      symbolSize: 4,
-      showSymbol: false,
+      symbolSize: 6,
+      showSymbol: true,
       emphasis: { focus: "series" },
       z: 2,
       markPoint: (isFoundDead || isMoribund) && lastPoint ? {
         data: [{
           name: isFoundDead ? "Found dead" : "Moribund",
           coord: [lastPoint.day, normalize(lastPoint.weight, baseline)],
-          symbol: isFoundDead ? "path://M0,-8L6,8L-6,8Z" : "path://M-6,-6L6,6M-6,6L6,-6",
+          symbol: isFoundDead ? "path://M-6,-6L6,6M-6,6L6,-6" : "path://M0,-8L6,8L-6,8Z",
           symbolSize: 10,
           itemStyle: {
             color: isFoundDead ? "#DC2626" : "#F97316",

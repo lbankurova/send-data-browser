@@ -162,7 +162,22 @@ export interface ComparisonClinicalObs {
   observation: string;
 }
 
+export interface ControlLabStat {
+  mean: number;
+  sd: number;
+  unit: string;
+  n: number;
+  by_sex?: Record<string, { mean: number; sd: number; unit: string; n: number }>;
+}
+
+export interface ControlBWStat {
+  mean: number;
+  sd: number;
+  n: number;
+  by_sex?: Record<string, { mean: number; sd: number; n: number }>;
+}
+
 export interface ControlStats {
-  lab: Record<string, { mean: number; sd: number; unit: string; n: number; sex?: string }>;
-  bw: Record<string, { mean: number; sd: number; n: number; sex?: string }>;
+  lab: Record<string, ControlLabStat>;
+  bw: Record<string, ControlBWStat>;
 }

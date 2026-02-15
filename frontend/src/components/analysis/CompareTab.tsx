@@ -7,14 +7,14 @@
  *   3. Body weight chart (ECharts overlay)
  *   4. Clinical observations diff
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
 import { useSubjectComparison } from "@/hooks/useSubjectComparison";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
-import { buildBWComparisonOption, COMPARISON_COLORS } from "@/components/analysis/charts/comparison-charts";
+import { buildBWComparisonOption } from "@/components/analysis/charts/comparison-charts";
 import type { BWChartMode } from "@/components/analysis/charts/comparison-charts";
 import type { SubjectHistopathEntry, ComparisonSubjectProfile } from "@/types/timecourse";
 import { FilterSelect } from "@/components/ui/FilterBar";
@@ -262,9 +262,9 @@ function FindingConcordance({
             <th className="w-48 shrink-0 pb-1 pr-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Finding
             </th>
-            {subjectInfo.map((s, i) => (
+            {subjectInfo.map((s) => (
               <th key={s.usubjid} className="w-20 shrink-0 pb-1 text-center">
-                <div className="text-[10px] font-medium" style={{ color: COMPARISON_COLORS[i % COMPARISON_COLORS.length] }}>
+                <div className="text-[10px] font-medium">
                   {s.short_id}
                 </div>
                 <div className="text-[9px] text-muted-foreground">
@@ -314,9 +314,7 @@ function FindingConcordance({
                         <span className="text-[9px] text-muted-foreground">&mdash;</span>
                       ) : hasEntry ? (
                         <span className="text-[10px] text-gray-400">&#x25CF;</span>
-                      ) : (
-                        <span className="text-[9px] text-muted-foreground">&mdash;</span>
-                      )}
+                      ) : null}
                     </td>
                   );
                 })}
@@ -353,7 +351,7 @@ function LabValuesComparison({
   subjectIds: string[];
   subjectInfo: ComparisonSubjectProfile[];
   labValues: { usubjid: string; test: string; unit: string; day: number; value: number }[];
-  controlLab: Record<string, { mean: number; sd: number; unit: string; n: number; sex?: string }>;
+  controlLab: Record<string, { mean: number; sd: number; unit: string; n: number; by_sex?: Record<string, { mean: number; sd: number; unit: string; n: number }> }>;
   availableTimepoints: number[];
   specimen: string;
 }) {
@@ -395,9 +393,13 @@ function LabValuesComparison({
         return lv?.value ?? null;
       });
 
-      // Check if any value is abnormal
+      // Check if any value is abnormal (use sex-specific controls when available)
       const hasAbnormal = ctrl
-        ? subjectValues.some((v) => v != null && (v > ctrl.mean + 2 * ctrl.sd || v < ctrl.mean - 2 * ctrl.sd))
+        ? subjectValues.some((v, si) => {
+            if (v == null) return false;
+            const sexCtrl = ctrl.by_sex?.[subjectInfo[si]?.sex] ?? ctrl;
+            return v > sexCtrl.mean + 2 * sexCtrl.sd || v < sexCtrl.mean - 2 * sexCtrl.sd;
+          })
         : false;
 
       return { test, unit, isRelevant, ctrl, subjectValues, hasAbnormal };
@@ -454,10 +456,11 @@ function LabValuesComparison({
               </th>
               <th className="w-24 pb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Control
+                <div className="font-normal normal-case tracking-normal text-[9px] text-muted-foreground/70">(mean±SD)</div>
               </th>
-              {subjectInfo.map((s, i) => (
+              {subjectInfo.map((s) => (
                 <th key={s.usubjid} className="w-20 pb-1 text-center">
-                  <span className="text-[10px] font-medium" style={{ color: COMPARISON_COLORS[i % COMPARISON_COLORS.length] }}>
+                  <span className="text-[10px] font-medium">
                     {s.short_id}
                   </span>
                 </th>
@@ -474,9 +477,17 @@ function LabValuesComparison({
                   {row.unit}
                 </td>
                 <td className="py-0.5 text-center font-mono text-[10px] text-muted-foreground">
-                  {row.ctrl
-                    ? `${row.ctrl.mean.toFixed(1)}\u00B1${row.ctrl.sd.toFixed(1)}`
-                    : "\u2014"}
+                  {row.ctrl ? (
+                    row.ctrl.by_sex ? (
+                      <span className="flex flex-col items-center leading-tight">
+                        {Object.entries(row.ctrl.by_sex).map(([sex, s]) => (
+                          <span key={sex}>{sex}: {s.mean.toFixed(1)}{"\u00B1"}{s.sd.toFixed(1)}</span>
+                        ))}
+                      </span>
+                    ) : (
+                      `${row.ctrl.mean.toFixed(1)}\u00B1${row.ctrl.sd.toFixed(1)}`
+                    )
+                  ) : "\u2014"}
                 </td>
                 {row.subjectValues.map((val, i) => {
                   if (val == null) {
@@ -486,9 +497,9 @@ function LabValuesComparison({
                       </td>
                     );
                   }
-                  const ctrl = row.ctrl;
-                  const isHigh = ctrl && val > ctrl.mean + 2 * ctrl.sd;
-                  const isLow = ctrl && val < ctrl.mean - 2 * ctrl.sd;
+                  const sexCtrl = row.ctrl?.by_sex?.[subjectInfo[i]?.sex] ?? row.ctrl;
+                  const isHigh = sexCtrl && val > sexCtrl.mean + 2 * sexCtrl.sd;
+                  const isLow = sexCtrl && val < sexCtrl.mean - 2 * sexCtrl.sd;
                   return (
                     <td
                       key={subjectIds[i]}
@@ -527,11 +538,16 @@ function BodyWeightSection({
 }: {
   subjects: ComparisonSubjectProfile[];
   bodyWeights: { usubjid: string; day: number; weight: number }[];
-  controlBW: Record<string, { mean: number; sd: number; n: number; sex?: string }>;
+  controlBW: Record<string, { mean: number; sd: number; n: number; by_sex?: Record<string, { mean: number; sd: number; n: number }> }>;
 }) {
   // Default: baseline for mixed sex, absolute for same sex
   const isMixedSex = new Set(subjects.map((s) => s.sex)).size > 1;
   const [mode, setMode] = useState<BWChartMode>(isMixedSex ? "baseline" : "absolute");
+
+  // Re-init mode when sex composition changes (e.g., adding opposite-sex subject)
+  useEffect(() => {
+    setMode(isMixedSex ? "baseline" : "absolute");
+  }, [isMixedSex]);
 
   if (bodyWeights.length === 0) return <EmptyState message="No body weight data available." />;
 
@@ -559,7 +575,7 @@ function BodyWeightSection({
           </button>
         ))}
       </div>
-      <EChartsWrapper option={option} style={{ width: "100%", height: 200 }} />
+      <EChartsWrapper option={option} style={{ width: "100%", height: 180 }} />
     </div>
   );
 }
@@ -642,9 +658,9 @@ function ClinicalObsDiff({
               <th className="w-12 pb-1 text-left font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Day
               </th>
-              {subjectInfo.map((s, i) => (
+              {subjectInfo.map((s) => (
                 <th key={s.usubjid} className="pb-1 text-left">
-                  <span className="text-[10px] font-medium" style={{ color: COMPARISON_COLORS[i % COMPARISON_COLORS.length] }}>
+                  <span className="text-[10px] font-medium">
                     {s.short_id}
                   </span>
                 </th>
