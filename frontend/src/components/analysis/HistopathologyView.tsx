@@ -44,6 +44,7 @@ import {
   verdictPriority,
   verdictArrow,
   buildRecoveryTooltip,
+  MIN_RECOVERY_N,
 } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 
@@ -1145,11 +1146,16 @@ function OverviewTab({
                 const v = info.getValue();
                 if (!v || v === "not_observed" || v === "no_data")
                   return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-                const arrow = verdictArrow(v);
-                const emphasis = v === "persistent" || v === "progressing";
                 const recAssessment = recoveryAssessments?.find(
                   (a) => a.finding === info.row.original.finding,
                 );
+                const tip = buildRecoveryTooltip(recAssessment, subjData?.recovery_days);
+                // §4.2: insufficient_n → "— (N<3)" in muted/50
+                if (v === "insufficient_n")
+                  return <span className="text-[9px] text-muted-foreground/50" title={tip}>{"\u2014"} (N&lt;3)</span>;
+                const arrow = verdictArrow(v);
+                // §4.2: persistent, progressing, anomaly get font-medium emphasis
+                const emphasis = v === "persistent" || v === "progressing" || v === "anomaly";
                 return (
                   <span
                     className={cn(
@@ -1158,7 +1164,7 @@ function OverviewTab({
                         ? "font-medium text-foreground/70"
                         : "text-muted-foreground",
                     )}
-                    title={buildRecoveryTooltip(recAssessment, subjData?.recovery_days)}
+                    title={tip}
                   >
                     {arrow} {v}
                   </span>
@@ -1726,15 +1732,48 @@ function OverviewTab({
                         <div className="mx-0.5 w-px self-stretch bg-border" />
                         {recoveryHeatmapData.doseLevels.map((dl) => {
                           const rCell = recoveryHeatmapData.cells.get(`${finding}|${dl}`);
+                          const mainCell = heatmapData.cells.get(`${finding}|${dl}`);
                           const rMeta = heatmapData.findingMeta.get(finding);
                           const rIsNonGraded = rMeta && !rMeta.hasSeverityData;
-                          if (!rCell) {
+
+                          // §6.5: Recovery N < MIN_RECOVERY_N → "—"
+                          if (rCell && rCell.n < MIN_RECOVERY_N) {
+                            return (
+                              <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
+                                <div
+                                  className="flex h-5 w-16 items-center justify-center rounded-sm text-[10px] text-muted-foreground/30"
+                                  title={`Recovery N=${rCell.n}, too few for comparison`}
+                                >
+                                  {"\u2014"}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // §6.5: Main incidence = 0, recovery incidence > 0 → ⚠ anomaly
+                          const mainInc = mainCell?.incidence ?? 0;
+                          if (rCell && mainInc === 0 && rCell.incidence > 0) {
+                            return (
+                              <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
+                                <div
+                                  className="flex h-5 w-16 items-center justify-center rounded-sm text-[10px] text-muted-foreground/50"
+                                  title="Finding present in recovery but not in main arm \u2014 anomaly"
+                                >
+                                  {"\u26A0"}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // §6.5: Main incidence = 0, recovery incidence = 0 → empty
+                          if (!rCell || (mainInc === 0 && rCell.incidence === 0)) {
                             return (
                               <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
                                 <div className="h-5 w-16 rounded-sm bg-gray-50" />
                               </div>
                             );
                           }
+
                           // Non-graded findings in severity mode: show incidence %
                           if (heatmapView === "severity" && rIsNonGraded) {
                             return (
@@ -1748,6 +1787,8 @@ function OverviewTab({
                               </div>
                             );
                           }
+
+                          // Normal heat-colored cell
                           const rColors = heatmapView === "incidence"
                             ? getNeutralHeatColor01(rCell.incidence)
                             : getNeutralHeatColor(rCell.avg_severity ?? 0);

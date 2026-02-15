@@ -6,6 +6,11 @@
 
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 
+// ─── Constants ───────────────────────────────────────────
+
+/** Minimum recovery-arm subjects for meaningful comparison. */
+export const MIN_RECOVERY_N = 3;
+
 // ─── Types ────────────────────────────────────────────────
 
 export type RecoveryVerdict =
@@ -13,6 +18,8 @@ export type RecoveryVerdict =
   | "reversing"
   | "persistent"
   | "progressing"
+  | "anomaly"
+  | "insufficient_n"
   | "not_observed"
   | "no_data";
 
@@ -80,9 +87,6 @@ export function computeVerdict(
   recovery: ArmStats,
   thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
 ): RecoveryVerdict {
-  // Finding not in main arm → nothing to assess
-  if (main.incidence === 0 && main.affected === 0) return "not_observed";
-
   // Recovery incidence exactly 0 → fully reversed
   if (recovery.incidence === 0) return "reversed";
 
@@ -103,11 +107,14 @@ export function computeVerdict(
   return "persistent";
 }
 
+// Worst = most conservative for reporting. Anomaly at top per §3.3.
 const VERDICT_PRIORITY: RecoveryVerdict[] = [
+  "anomaly",
   "progressing",
   "persistent",
   "reversing",
   "reversed",
+  "insufficient_n",
   "not_observed",
   "no_data",
 ];
@@ -130,8 +137,10 @@ const VERDICT_ARROWS: Record<RecoveryVerdict, string> = {
   reversing: "\u2198",     // ↘
   persistent: "\u2192",    // →
   progressing: "\u2191",   // ↑
-  not_observed: "\u2014",  // —
-  no_data: "\u2014",       // —
+  anomaly: "?",
+  insufficient_n: "\u2014", // —
+  not_observed: "\u2014",   // —
+  no_data: "\u2014",        // —
 };
 
 export function verdictArrow(verdict: RecoveryVerdict): string {
@@ -152,17 +161,28 @@ export function buildRecoveryTooltip(
   if (!assessment) return "";
   const lines = ["Recovery assessment:"];
   for (const a of assessment.assessments) {
+    if (a.verdict === "insufficient_n") {
+      lines.push(`  ${a.doseGroupLabel}: N=${a.recovery.n}, too few subjects for comparison`);
+      continue;
+    }
+    if (a.verdict === "not_observed") {
+      lines.push(`  ${a.doseGroupLabel}: not observed`);
+      continue;
+    }
+    if (a.verdict === "anomaly") {
+      const recPct = `${Math.round(a.recovery.incidence * 100)}%`;
+      lines.push(`  ${a.doseGroupLabel}: 0% \u2192 ${recPct} \u2014 \u26A0 anomaly`);
+      lines.push("    Finding present in recovery but not in main arm.");
+      lines.push("    May indicate delayed onset or data quality issue.");
+      continue;
+    }
     const mainPct = `${Math.round(a.main.incidence * 100)}%`;
     const recPct = `${Math.round(a.recovery.incidence * 100)}%`;
     const mainSev = a.main.avgSeverity.toFixed(1);
     const recSev = a.recovery.avgSeverity.toFixed(1);
-    if (a.verdict === "not_observed") {
-      lines.push(`  ${a.doseGroupLabel}: not observed`);
-    } else {
-      lines.push(
-        `  ${a.doseGroupLabel}: ${mainPct} \u2192 ${recPct}, sev ${mainSev} \u2192 ${recSev} \u2014 ${a.verdict}`
-      );
-    }
+    lines.push(
+      `  ${a.doseGroupLabel}: ${mainPct} \u2192 ${recPct}, sev ${mainSev} \u2192 ${recSev} \u2014 ${a.verdict}`
+    );
   }
   lines.push(`  Overall: ${assessment.overall} (worst case)`);
   if (recoveryDays != null) {
@@ -208,8 +228,6 @@ export function deriveRecoveryAssessments(
       const mainStats = computeGroupStats(finding, mainGroup);
       const recStats = computeGroupStats(finding, recGroup);
 
-      const verdict = computeVerdict(mainStats, recStats, thresholds);
-
       // Recovery subject details
       const subjectDetails: { id: string; severity: number }[] = [];
       for (const s of recGroup) {
@@ -217,6 +235,22 @@ export function deriveRecoveryAssessments(
         if (f) {
           subjectDetails.push({ id: s.usubjid, severity: f.severity_num });
         }
+      }
+
+      // Guard 1: recovery N too small for meaningful comparison
+      let verdict: RecoveryVerdict;
+      if (recStats.n < MIN_RECOVERY_N) {
+        verdict = "insufficient_n";
+      // Guard 2: main arm has zero incidence
+      } else if (mainStats.incidence === 0 && mainStats.affected === 0) {
+        if (recStats.incidence > 0) {
+          verdict = "anomaly";
+        } else {
+          verdict = "not_observed";
+        }
+      } else {
+        // Normal comparison
+        verdict = computeVerdict(mainStats, recStats, thresholds);
       }
 
       assessments.push({
@@ -310,6 +344,7 @@ function computeGroupStats(
 /**
  * Compute the overall recovery label for a specimen.
  * "reversed" if all reversed, "partial" if mixed, else worst verdict.
+ * Spec §7.2: values = reversed, partial, persistent, progressing.
  */
 export function specimenRecoveryLabel(
   assessments: RecoveryAssessment[],
@@ -317,15 +352,21 @@ export function specimenRecoveryLabel(
   const verdicts = assessments
     .flatMap((a) => a.assessments)
     .map((d) => d.verdict)
-    .filter((v) => v !== "not_observed" && v !== "no_data");
+    .filter((v) => v !== "not_observed" && v !== "no_data" && v !== "insufficient_n");
 
   if (verdicts.length === 0) return null;
 
   const unique = new Set(verdicts);
-  if (unique.size === 1) return [...unique][0];
+  if (unique.size === 1) {
+    const sole = [...unique][0];
+    // Map 'reversing' → 'partial' per spec §7.2 allowed values
+    return sole === "reversing" ? "partial" : sole;
+  }
 
-  // Mix of verdicts → "partial"
+  // Mix of verdicts → "partial" if any reversed, else worst
   if (unique.has("reversed") && unique.size > 1) return "partial";
 
-  return worstVerdict(verdicts);
+  const worst = worstVerdict(verdicts);
+  // Map 'reversing' → 'partial' at specimen level
+  return worst === "reversing" ? "partial" : worst;
 }

@@ -22,7 +22,7 @@ import type { PathologyReview } from "@/types/annotations";
 import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
-import { deriveRecoveryAssessments } from "@/lib/recovery-assessment";
+import { deriveRecoveryAssessments, MIN_RECOVERY_N } from "@/lib/recovery-assessment";
 import type { RecoveryAssessment, RecoveryDoseAssessment } from "@/lib/recovery-assessment";
 
 // ─── Specimen-scoped insights (purpose-built for context panel) ──────────────
@@ -580,70 +580,90 @@ function RecoveryDoseBlock({
       <div className="mb-1 text-[10px] text-muted-foreground">
         {a.doseGroupLabel}{periodLabel && ` \u00b7 ${periodLabel}`}
       </div>
-      <div className="space-y-1.5 text-xs">
-        {/* Main arm */}
-        <div className="flex items-center gap-2">
-          <span className="w-20 shrink-0 text-[10px] text-muted-foreground">Main arm</span>
-          <span className="font-mono text-[10px]">
-            {a.main.affected}/{a.main.n} ({Math.round(a.main.incidence * 100)}%)
-          </span>
-          <div className="h-1.5 w-16 rounded-full bg-gray-100">
-            <div
-              className="h-1.5 rounded-full bg-gray-400"
-              style={{ width: `${Math.min(a.main.incidence * 100, 100)}%` }}
-            />
-          </div>
-        </div>
-        <div className="pl-[88px] text-[10px] text-muted-foreground">
-          avg sev {a.main.avgSeverity.toFixed(1)}
-        </div>
 
-        {/* Recovery arm */}
-        <div className="flex items-center gap-2">
-          <span className="w-20 shrink-0 text-[10px] text-muted-foreground">Recovery arm</span>
-          <span className="font-mono text-[10px]">
-            {a.recovery.affected}/{a.recovery.n} ({Math.round(a.recovery.incidence * 100)}%)
-          </span>
-          <div className="h-1.5 w-16 rounded-full bg-gray-100">
-            <div
-              className="h-1.5 rounded-full bg-gray-400"
-              style={{ width: `${Math.min(a.recovery.incidence * 100, 100)}%` }}
-            />
-          </div>
+      {/* §5.3: insufficient_n — skip comparison, show message */}
+      {a.verdict === "insufficient_n" ? (
+        <div className="mt-1.5 text-[10px] text-muted-foreground/70">
+          Recovery arm has only {a.recovery.n} subject{a.recovery.n !== 1 ? "s" : ""}.
+          Minimum {MIN_RECOVERY_N} required for meaningful comparison. No assessment computed.
         </div>
-        <div className="pl-[88px] text-[10px] text-muted-foreground">
-          avg sev {a.recovery.avgSeverity.toFixed(1)}
-        </div>
-      </div>
-
-      {/* Assessment */}
-      <div className="mt-1.5 text-[10px]">
-        <span className="text-muted-foreground">Assessment: </span>
-        <span className="font-medium">{a.verdict}</span>
-      </div>
-
-      {/* Recovery subjects */}
-      <div className="mt-1 text-[10px] text-muted-foreground">
-        {a.recovery.subjectDetails.length > 0 ? (
-          <>
-            Recovery subjects:{" "}
-            {a.recovery.subjectDetails.map((s, i) => (
-              <span key={s.id}>
-                {i > 0 && ", "}
-                <button
-                  className="text-primary hover:underline"
-                  onClick={() => onSubjectClick?.(s.id)}
-                >
-                  {shortId(s.id)}
-                </button>
-                <span className="text-muted-foreground"> (sev {s.severity.toFixed(1)})</span>
+      ) : (
+        <>
+          <div className="space-y-1.5 text-xs">
+            {/* Main arm */}
+            <div className="flex items-center gap-2">
+              <span className="w-20 shrink-0 text-[10px] text-muted-foreground">Main arm</span>
+              <span className="font-mono text-[10px]">
+                {a.main.affected}/{a.main.n} ({Math.round(a.main.incidence * 100)}%)
               </span>
-            ))}
-          </>
-        ) : (
-          <>none affected (0/{a.recovery.n} examined)</>
-        )}
-      </div>
+              <div className="h-1.5 w-16 rounded-full bg-gray-100">
+                <div
+                  className="h-1.5 rounded-full bg-gray-400"
+                  style={{ width: `${Math.min(a.main.incidence * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+            <div className="pl-[88px] text-[10px] text-muted-foreground">
+              avg sev {a.main.avgSeverity.toFixed(1)}
+            </div>
+
+            {/* Recovery arm */}
+            <div className="flex items-center gap-2">
+              <span className="w-20 shrink-0 text-[10px] text-muted-foreground">Recovery arm</span>
+              <span className="font-mono text-[10px]">
+                {a.recovery.affected}/{a.recovery.n} ({Math.round(a.recovery.incidence * 100)}%)
+              </span>
+              <div className="h-1.5 w-16 rounded-full bg-gray-100">
+                <div
+                  className="h-1.5 rounded-full bg-gray-400"
+                  style={{ width: `${Math.min(a.recovery.incidence * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+            <div className="pl-[88px] text-[10px] text-muted-foreground">
+              avg sev {a.recovery.avgSeverity.toFixed(1)}
+            </div>
+          </div>
+
+          {/* Assessment */}
+          <div className="mt-1.5 text-[10px]">
+            <span className="text-muted-foreground">Assessment: </span>
+            <span className="font-medium">{a.verdict}</span>
+          </div>
+
+          {/* §5.3: anomaly warning block */}
+          {a.verdict === "anomaly" && (
+            <div className="mt-1.5 rounded border border-border/50 bg-muted/20 px-2 py-1.5 text-[10px] text-muted-foreground">
+              <span className="font-medium text-foreground/70">{"\u26A0"} Anomaly:</span> finding present in recovery
+              arm but not in main arm at this dose level. This may indicate delayed onset
+              (e.g., neoplasm) or a data quality issue. Requires pathologist assessment.
+            </div>
+          )}
+
+          {/* Recovery subjects */}
+          <div className="mt-1 text-[10px] text-muted-foreground">
+            {a.recovery.subjectDetails.length > 0 ? (
+              <>
+                Recovery subjects:{" "}
+                {a.recovery.subjectDetails.map((s, i) => (
+                  <span key={s.id}>
+                    {i > 0 && ", "}
+                    <button
+                      className="text-primary hover:underline"
+                      onClick={() => onSubjectClick?.(s.id)}
+                    >
+                      {shortId(s.id)}
+                    </button>
+                    <span className="text-muted-foreground"> (sev {s.severity.toFixed(1)})</span>
+                  </span>
+                ))}
+              </>
+            ) : (
+              <>none affected (0/{a.recovery.n} examined)</>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
