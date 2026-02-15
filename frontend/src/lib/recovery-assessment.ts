@@ -152,23 +152,19 @@ export function buildRecoveryTooltip(
   if (!assessment) return "";
   const lines = ["Recovery assessment:"];
   for (const a of assessment.assessments) {
-    if (a.verdict === "not_observed" || a.verdict === "no_data") continue;
     const mainPct = `${Math.round(a.main.incidence * 100)}%`;
     const recPct = `${Math.round(a.recovery.incidence * 100)}%`;
     const mainSev = a.main.avgSeverity.toFixed(1);
     const recSev = a.recovery.avgSeverity.toFixed(1);
-    lines.push(
-      `  ${a.doseGroupLabel}: ${mainPct} \u2192 ${recPct}, sev ${mainSev} \u2192 ${recSev} \u2014 ${a.verdict}`
-    );
+    if (a.verdict === "not_observed") {
+      lines.push(`  ${a.doseGroupLabel}: not observed`);
+    } else {
+      lines.push(
+        `  ${a.doseGroupLabel}: ${mainPct} \u2192 ${recPct}, sev ${mainSev} \u2192 ${recSev} \u2014 ${a.verdict}`
+      );
+    }
   }
-  const n = assessment.assessments.filter(
-    (a) => a.verdict !== "not_observed" && a.verdict !== "no_data",
-  ).length;
-  lines.push(
-    n > 1
-      ? `Overall: ${assessment.overall} (most conservative across ${n} dose levels)`
-      : `Overall: ${assessment.overall}`,
-  );
+  lines.push(`Overall: ${assessment.overall}`);
   if (recoveryDays != null) {
     const label = recoveryDays >= 7
       ? `${Math.round(recoveryDays / 7)} week${Math.round(recoveryDays / 7) !== 1 ? "s" : ""}`
