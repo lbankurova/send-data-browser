@@ -73,9 +73,13 @@ Before committing changes that alter system or view behavior:
 
 After implementing a feature from a spec in `docs/incoming/`, the agent **must** perform a completeness review before considering the work done. The review checks both structural completeness (does the feature exist?) and behavioral correctness (does it activate under the right conditions?).
 
+### Step 0: Run the spec's own verification checklist
+
+Many specs include a verification/gate checklist (often the final section, e.g., "§11 Verification Checklist"). If the spec has one, **run it first** — it was written by the spec author to catch the most important gaps. Every item must be evaluated as PASS, FAIL, or N/A with a file:line reference. Do not skip items or mark them as PASS without reading the corresponding code.
+
 ### Step 1: Four-dimension requirement trace
 
-Re-read the spec section by section. For every requirement, decompose it into four dimensions and verify each against the code:
+After the spec's checklist (if any), re-read the spec section by section. For every requirement, decompose it into four dimensions and verify each against the code:
 
 | Dimension | Question | What to check |
 |-----------|----------|---------------|
