@@ -39,7 +39,7 @@ export interface RecoveryDoseAssessment {
     affected: number;
     avgSeverity: number;
     maxSeverity: number;
-    subjectDetails: { id: string; severity: number }[];
+    subjectDetails: { id: string; severity: number; mainArmSeverity: number | null; mainArmAvgSeverity: number }[];
   };
   verdict: RecoveryVerdict;
 }
@@ -233,12 +233,24 @@ export function deriveRecoveryAssessments(
       const mainStats = computeGroupStats(finding, mainGroup);
       const recStats = computeGroupStats(finding, recGroup);
 
-      // Recovery subject details
-      const subjectDetails: { id: string; severity: number }[] = [];
+      // Recovery subject details (E-3: include main-arm severity for trajectory)
+      const mainSubjectSevMap = new Map<string, number>();
+      for (const s of mainGroup) {
+        const f = s.findings[finding];
+        if (f) mainSubjectSevMap.set(s.usubjid, f.severity_num);
+      }
+      const mainAvgSev = mainStats.avgSeverity;
+
+      const subjectDetails: { id: string; severity: number; mainArmSeverity: number | null; mainArmAvgSeverity: number }[] = [];
       for (const s of recGroup) {
         const f = s.findings[finding];
         if (f) {
-          subjectDetails.push({ id: s.usubjid, severity: f.severity_num });
+          subjectDetails.push({
+            id: s.usubjid,
+            severity: f.severity_num,
+            mainArmSeverity: mainSubjectSevMap.get(s.usubjid) ?? null,
+            mainArmAvgSeverity: mainAvgSev,
+          });
         }
       }
 
@@ -286,10 +298,10 @@ export function deriveRecoveryAssessments(
     for (const dl of recoveryOnlyDoseLevels) {
       const recGroup = recoveryByDose.get(dl)!;
       const recStats = computeGroupStats(finding, recGroup);
-      const subjectDetails: { id: string; severity: number }[] = [];
+      const subjectDetails: { id: string; severity: number; mainArmSeverity: number | null; mainArmAvgSeverity: number }[] = [];
       for (const s of recGroup) {
         const f = s.findings[finding];
-        if (f) subjectDetails.push({ id: s.usubjid, severity: f.severity_num });
+        if (f) subjectDetails.push({ id: s.usubjid, severity: f.severity_num, mainArmSeverity: null, mainArmAvgSeverity: 0 });
       }
       assessments.push({
         doseLevel: dl,
