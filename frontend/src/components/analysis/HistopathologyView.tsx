@@ -856,6 +856,30 @@ function OverviewTab({
     return { doseLevels, doseLabels, findings, cells, findingMeta, totalFindings } satisfies HeatmapData;
   }, [matrixBaseData, severityGradedOnly, minSeverity]);
 
+  // Subject-mode finding counts for section header (SM-4)
+  const subjectModeFindingCounts = useMemo(() => {
+    if (!subjData?.subjects) return { filtered: 0, total: 0 };
+    let filtered = subjData.subjects;
+    if (sexFilter) filtered = filtered.filter((s) => s.sex === sexFilter);
+    if (affectedOnly) filtered = filtered.filter((s) => Object.keys(s.findings).length > 0);
+    const findingMaxSev = new Map<string, number>();
+    for (const subj of filtered) {
+      for (const [finding, val] of Object.entries(subj.findings)) {
+        const sev = val.severity_num;
+        const existing = findingMaxSev.get(finding) ?? 0;
+        if (sev > existing) findingMaxSev.set(finding, sev);
+      }
+    }
+    const total = findingMaxSev.size;
+    let entries = [...findingMaxSev.entries()].map(([f, maxSev]) => {
+      const hasGrade = heatmapData?.findingMeta?.get(f)?.hasSeverityData ?? (maxSev > 0);
+      return { maxSev, hasSeverityData: hasGrade };
+    });
+    if (severityGradedOnly) entries = entries.filter((e) => e.hasSeverityData);
+    entries = entries.filter((e) => !e.hasSeverityData || e.maxSev >= minSeverity);
+    return { filtered: entries.length, total };
+  }, [subjData, sexFilter, affectedOnly, severityGradedOnly, minSeverity, heatmapData?.findingMeta]);
+
   // ── Recovery assessment ────────────────────────────────
   const recoveryAssessments = useMemo(() => {
     if (!specimenHasRecovery || !subjData?.subjects) return null;
@@ -1191,7 +1215,7 @@ function OverviewTab({
   }, [filteredTableData.length, heatmapData?.findings.length, matrixOverhead, specimenHasRecovery, stableDoseLevels.length, stableSexKeys.length, availableDoseGroups.recovery.length]);
 
   const {
-    heights, showHint, isStrip,
+    heights, showHint, hintFading, isStrip,
     handleDoubleClick, restoreDefaults, makeResizePointerDown,
   } = useSectionLayout(containerRef, naturalHeights);
 
@@ -1204,7 +1228,10 @@ function OverviewTab({
     <div ref={containerRef} className="relative flex flex-1 flex-col overflow-hidden">
       {/* One-time focus hint */}
       {showHint && (
-        <div className="absolute bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-md bg-muted/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+        <div className={cn(
+          "absolute bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-md bg-muted/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm transition-opacity duration-500",
+          hintFading ? "opacity-0" : "opacity-100",
+        )}>
           Tip: double-click any section header to maximize it. Double-click again to restore.
         </div>
       )}
@@ -1214,7 +1241,7 @@ function OverviewTab({
         height={heights.findings}
         title="Observed findings"
         count={`${filteredTableData.length}${hideZeroSeverity ? ` of ${findingSummaries.length}` : ""}`}
-        selectionZone={<FindingsSelectionZone findings={filteredTableData} selectedRow={selectedRow} />}
+        selectionZone={<FindingsSelectionZone findings={filteredTableData} selectedRow={selectedRow} isStrip={isStrip("findings")} onStripRestore={restoreDefaults} />}
         headerRight={
           <label className="flex items-center gap-1 text-[9px] font-normal normal-case tracking-normal text-muted-foreground">
             <input
@@ -1392,7 +1419,7 @@ function OverviewTab({
       {/* ── Dose charts ─────────────────────────────────────── */}
       <SectionHeader
         height={heights.doseCharts}
-        title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts"}
+        title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts (specimen aggregate)"}
         selectionZone={<DoseChartsSelectionZone findings={filteredTableData} selectedRow={selectedRow} heatmapData={heatmapData} recoveryHeatmapData={recoveryHeatmapData} specimenHasRecovery={specimenHasRecovery} />}
         onDoubleClick={() => handleDoubleClick("doseCharts")}
         onStripClick={restoreDefaults}
@@ -1459,12 +1486,20 @@ function OverviewTab({
             >SUBJECTS</span>
           </span>
         }
-        count={heatmapData ? (
-          heatmapData.findings.length < heatmapData.totalFindings
-            ? `${heatmapData.findings.length} of ${heatmapData.totalFindings}`
-            : `${heatmapData.findings.length}`
-        ) : undefined}
-        selectionZone={<MatrixSelectionZone selectedRow={selectedRow} heatmapData={heatmapData} />}
+        count={(() => {
+          if (matrixMode === "subject") {
+            const { filtered, total } = subjectModeFindingCounts;
+            if (total === 0) return undefined;
+            return filtered < total
+              ? `${filtered} of ${total} findings`
+              : `${filtered} findings`;
+          }
+          if (!heatmapData) return undefined;
+          return heatmapData.findings.length < heatmapData.totalFindings
+            ? `${heatmapData.findings.length} of ${heatmapData.totalFindings} findings`
+            : `${heatmapData.findings.length} findings`;
+        })()}
+        selectionZone={<MatrixSelectionZone selectedRow={selectedRow} heatmapData={heatmapData} subjects={subjData?.subjects} isStrip={isStrip("matrix")} onStripRestore={restoreDefaults} />}
         onDoubleClick={() => handleDoubleClick("matrix")}
         onStripClick={restoreDefaults}
       />
@@ -1526,6 +1561,12 @@ function OverviewTab({
             />
           ) : heatmapData && heatmapData.findings.length > 0 ? (
             <div className="px-4 py-2">
+              {severityGradedOnly && (() => {
+                const parts: string[] = ["Severity graded only"];
+                if (sexFilter) parts.push(sexFilter === "M" ? "Male" : "Female");
+                if (minSeverity > 0) parts.push(`Severity ${minSeverity}+`);
+                return <FilterShowingLine className="mb-1" parts={parts} />;
+              })()}
               <FilterBar className="border-0 bg-transparent px-0">
                 <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                   <input
@@ -1570,11 +1611,11 @@ function OverviewTab({
                       { label: "80\u2013100%", color: "#4B5563" },
                     ]
                   : [
-                      { label: "Minimal", color: getNeutralHeatColor(1).bg },
-                      { label: "Mild", color: getNeutralHeatColor(2).bg },
-                      { label: "Moderate", color: getNeutralHeatColor(3).bg },
-                      { label: "Marked", color: getNeutralHeatColor(4).bg },
-                      { label: "Severe", color: getNeutralHeatColor(5).bg },
+                      { label: "1 Minimal", color: getNeutralHeatColor(1).bg },
+                      { label: "2 Mild", color: getNeutralHeatColor(2).bg },
+                      { label: "3 Moderate", color: getNeutralHeatColor(3).bg },
+                      { label: "4 Marked", color: getNeutralHeatColor(4).bg },
+                      { label: "5 Severe", color: getNeutralHeatColor(5).bg },
                     ]
                 ).map(({ label, color }) => (
                   <span key={label} className="flex items-center gap-0.5">
@@ -1582,12 +1623,6 @@ function OverviewTab({
                     {label}
                   </span>
                 ))}
-                {heatmapView === "severity" && (
-                  <span className="ml-2 flex items-center gap-1">
-                    <span className="text-[10px] text-gray-400">●</span>
-                    = present (no grade)
-                  </span>
-                )}
               </div>
               <div className="overflow-x-auto">
                 <div className="inline-block">
@@ -1655,7 +1690,7 @@ function OverviewTab({
                           return (
                             <div key={dl} className="flex h-6 w-20 shrink-0 items-center justify-center">
                               <div
-                                className="flex h-5 w-16 items-center justify-center rounded-sm bg-gray-100 font-mono text-[10px] text-muted-foreground"
+                                className="flex h-5 w-12 items-center justify-center rounded-sm bg-gray-100 font-mono text-[10px] text-muted-foreground"
                                 title={`Incidence: ${cell.affected}/${cell.n} (no severity grade)`}
                               >
                                 {`${(cell.incidence * 100).toFixed(0)}%`}
@@ -1668,7 +1703,7 @@ function OverviewTab({
                           : getNeutralHeatColor(cell.avg_severity ?? 0);
                         const cellLabel = heatmapView === "incidence"
                           ? `${(cell.incidence * 100).toFixed(0)}%`
-                          : `${cell.affected}/${cell.n}`;
+                          : (cell.avg_severity ?? 0) > 0 ? cell.avg_severity.toFixed(1) : `${cell.affected}/${cell.n}`;
                         return (
                           <div
                             key={dl}
@@ -1705,7 +1740,7 @@ function OverviewTab({
                             return (
                               <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
                                 <div
-                                  className="flex h-5 w-16 items-center justify-center rounded-sm bg-gray-100 font-mono text-[10px] text-muted-foreground"
+                                  className="flex h-5 w-12 items-center justify-center rounded-sm bg-gray-100 font-mono text-[10px] text-muted-foreground"
                                   title={`Recovery — Incidence: ${rCell.affected}/${rCell.n} (no severity grade)`}
                                 >
                                   {`${(rCell.incidence * 100).toFixed(0)}%`}
@@ -1718,7 +1753,7 @@ function OverviewTab({
                             : getNeutralHeatColor(rCell.avg_severity ?? 0);
                           const rLabel = heatmapView === "incidence"
                             ? `${(rCell.incidence * 100).toFixed(0)}%`
-                            : `${rCell.affected}/${rCell.n}`;
+                            : (rCell.avg_severity ?? 0) > 0 ? rCell.avg_severity.toFixed(1) : `${rCell.affected}/${rCell.n}`;
                           return (
                             <div
                               key={`R${dl}`}
@@ -2848,7 +2883,7 @@ export function HistopathologyView() {
               {selectedSummary.sexSkew && (
                 <span>Sex: <span className="font-medium">{selectedSummary.sexSkew === "M>F" ? "males higher" : selectedSummary.sexSkew === "F>M" ? "females higher" : "balanced"}</span></span>
               )}
-              {specimenRecoveryOverall && (
+              {specimenRecoveryOverall && specimenRecoveryOverall !== "reversed" && (
                 <span>Recovery: <span className="font-medium">{specimenRecoveryOverall}</span></span>
               )}
             </div>
@@ -2901,8 +2936,11 @@ export function HistopathologyView() {
               subjectIds={[...comparisonSubjects]}
               onEditSelection={() => {
                 setActiveTab("overview");
+                // Double rAF ensures DOM has updated after tab switch before scrolling
                 requestAnimationFrame(() => {
-                  document.getElementById("severity-matrix-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  requestAnimationFrame(() => {
+                    document.getElementById("severity-matrix-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  });
                 });
               }}
               onFindingClick={handleFindingClick}

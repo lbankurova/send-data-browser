@@ -144,6 +144,7 @@ export function useSectionLayout(
   heights: Record<SectionId, number>;
   focusedSection: SectionId | null;
   showHint: boolean;
+  hintFading: boolean;
   isStrip: (s: SectionId) => boolean;
   handleDoubleClick: (s: SectionId) => void;
   restoreDefaults: () => void;
@@ -156,6 +157,7 @@ export function useSectionLayout(
   }));
   const [focusedSection, setFocusedSection] = useState<SectionId | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [hintFading, setHintFading] = useState(false);
 
   // Refs to avoid stale closures
   const focusedRef = useRef(focusedSection);
@@ -210,11 +212,13 @@ export function useSectionLayout(
       if (!container) return;
       const total = container.clientHeight;
 
-      // One-time hint
+      // One-time hint with fade-out
       if (!localStorage.getItem(HINT_KEY)) {
         localStorage.setItem(HINT_KEY, "true");
         setShowHint(true);
-        setTimeout(() => setShowHint(false), 3000);
+        setHintFading(false);
+        setTimeout(() => setHintFading(true), 2500);
+        setTimeout(() => { setShowHint(false); setHintFading(false); }, 3500);
       }
 
       if (focusedRef.current === section) {
@@ -283,6 +287,7 @@ export function useSectionLayout(
     heights,
     focusedSection,
     showHint,
+    hintFading,
     isStrip,
     handleDoubleClick,
     restoreDefaults,
