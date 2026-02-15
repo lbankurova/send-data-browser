@@ -1281,7 +1281,15 @@ function OverviewTab({
       <SectionHeader
         height={heights.findings}
         title="Observed findings"
-        count={`${filteredTableData.length}${hideZeroSeverity ? ` of ${findingSummaries.length}` : ""}`}
+        count={(() => {
+          const countStr = `${filteredTableData.length}${hideZeroSeverity ? ` of ${findingSummaries.length}` : ""} findings`;
+          const peakSev = filteredTableData.reduce((max, f) => Math.max(max, f.maxSeverity), 0);
+          const adverseCount = filteredTableData.filter((f) => f.severity === "adverse").length;
+          const parts = [countStr];
+          if (peakSev > 0) parts.push(`peak sev ${peakSev.toFixed(1)}`);
+          if (adverseCount > 0) parts.push(`${adverseCount} adverse`);
+          return parts.join(", ");
+        })()}
         selectionZone={<FindingsSelectionZone findings={filteredTableData} selectedRow={selectedRow} isStrip={isStrip("findings")} onStripRestore={restoreDefaults} />}
         headerRight={
           <label className="flex items-center gap-1 text-[9px] font-normal normal-case tracking-normal text-muted-foreground">
