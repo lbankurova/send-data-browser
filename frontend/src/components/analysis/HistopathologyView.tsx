@@ -1343,6 +1343,7 @@ function OverviewTab({
       )}
 
       {/* ── Severity matrix ─────────────────────────────────── */}
+      <div id="severity-matrix-section" />
       <SectionHeader
         height={heights.matrix}
         titleContent={
@@ -2799,7 +2800,12 @@ export function HistopathologyView() {
               studyId={studyId}
               specimen={selectedSpecimen!}
               subjectIds={[...comparisonSubjects]}
-              onEditSelection={() => setActiveTab("overview")}
+              onEditSelection={() => {
+                setActiveTab("overview");
+                requestAnimationFrame(() => {
+                  document.getElementById("severity-matrix-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+              }}
               onFindingClick={handleFindingClick}
             />
           )}

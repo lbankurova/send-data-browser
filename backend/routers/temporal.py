@@ -768,11 +768,40 @@ async def compare_subjects(
     # --- Control group stats ---
     # Sexes of the selected subjects (for sex-specific controls)
     selected_sexes = set(p["sex"] for p in profiles)
-    control_subjects = subjects_df[subjects_df["dose_level"] == 0]
-    if selected_sexes and len(selected_sexes) == 1:
+    is_mixed_sex = len(selected_sexes) > 1
+    all_control = subjects_df[subjects_df["dose_level"] == 0]
+    if not is_mixed_sex and selected_sexes:
         sex_val = next(iter(selected_sexes))
-        control_subjects = control_subjects[control_subjects["SEX"] == sex_val]
+        control_subjects = all_control[all_control["SEX"] == sex_val]
+    else:
+        control_subjects = all_control
     control_ids = control_subjects["USUBJID"].tolist()
+
+    # Per-sex control ID sets (for mixed-sex by_sex breakdown)
+    control_ids_by_sex: dict[str, list] = {}
+    if is_mixed_sex:
+        for sex_val in sorted(selected_sexes):
+            sex_ctrl = all_control[all_control["SEX"] == sex_val]
+            control_ids_by_sex[sex_val] = sex_ctrl["USUBJID"].tolist()
+
+    # Helper: compute lab stats for a subset of control IDs from pre-filtered lb data
+    def _compute_lab_stats(lb_ctrl_subset, val_col, day_col, unit_col, testcd_col):
+        result = {}
+        if lb_ctrl_subset.empty:
+            return result
+        for test, tgrp in lb_ctrl_subset.groupby(testcd_col):
+            max_day = tgrp[day_col].max()
+            terminal = tgrp[tgrp[day_col] == max_day]
+            vals = terminal[val_col].dropna()
+            if len(vals) >= 1:
+                unit = str(terminal[unit_col].iloc[0]) if unit_col in terminal.columns and terminal[unit_col].iloc[0] != "" else ""
+                result[str(test)] = {
+                    "mean": round(float(vals.mean()), 4),
+                    "sd": round(float(vals.std(ddof=1)), 4) if len(vals) > 1 else 0.0,
+                    "unit": unit,
+                    "n": int(len(vals)),
+                }
+        return result
 
     # Control lab stats (terminal timepoint = max day per test)
     control_lab: dict[str, dict] = {}
@@ -784,22 +813,32 @@ async def compare_subjects(
             lb_ctrl[val_col] = pd.to_numeric(lb_ctrl[val_col], errors="coerce")
             lb_ctrl[day_col] = pd.to_numeric(lb_ctrl[day_col], errors="coerce")
             lb_ctrl = lb_ctrl.dropna(subset=[val_col, day_col])
-            if not lb_ctrl.empty:
-                # Use terminal timepoint (max day) per test
-                for test, tgrp in lb_ctrl.groupby(testcd_col):
-                    max_day = tgrp[day_col].max()
-                    terminal = tgrp[tgrp[day_col] == max_day]
-                    vals = terminal[val_col].dropna()
-                    if len(vals) >= 1:
-                        unit = str(terminal[unit_col].iloc[0]) if unit_col in terminal.columns and terminal[unit_col].iloc[0] != "" else ""
-                        control_lab[str(test)] = {
-                            "mean": round(float(vals.mean()), 4),
-                            "sd": round(float(vals.std(ddof=1)), 4) if len(vals) > 1 else 0.0,
-                            "unit": unit,
-                            "n": int(len(vals)),
-                        }
+            control_lab = _compute_lab_stats(lb_ctrl, val_col, day_col, unit_col, testcd_col)
+            # Add per-sex breakdown for mixed-sex comparisons
+            if is_mixed_sex and not lb_ctrl.empty:
+                for sex_val, sex_ids in control_ids_by_sex.items():
+                    sex_stats = _compute_lab_stats(
+                        lb_ctrl[lb_ctrl["USUBJID"].isin(sex_ids)],
+                        val_col, day_col, unit_col, testcd_col,
+                    )
+                    for test, stats in sex_stats.items():
+                        if test in control_lab:
+                            control_lab[test].setdefault("by_sex", {})[sex_val] = stats
         except Exception:
             pass
+
+    # Helper: compute BW stats for a subset
+    def _compute_bw_stats(bw_subset, val_col, day_col):
+        result = {}
+        for day_val, dgrp in bw_subset.groupby(day_col):
+            vals = dgrp[val_col].dropna()
+            if len(vals) >= 1:
+                result[str(int(day_val))] = {
+                    "mean": round(float(vals.mean()), 2),
+                    "sd": round(float(vals.std(ddof=1)), 2) if len(vals) > 1 else 0.0,
+                    "n": int(len(vals)),
+                }
+        return result
 
     # Control BW stats (mean/SD per day)
     control_bw: dict[str, dict] = {}
@@ -811,14 +850,17 @@ async def compare_subjects(
             bw_ctrl[val_col] = pd.to_numeric(bw_ctrl[val_col], errors="coerce")
             bw_ctrl[day_col] = pd.to_numeric(bw_ctrl[day_col], errors="coerce")
             bw_ctrl = bw_ctrl.dropna(subset=[val_col, day_col])
-            for day_val, dgrp in bw_ctrl.groupby(day_col):
-                vals = dgrp[val_col].dropna()
-                if len(vals) >= 1:
-                    control_bw[str(int(day_val))] = {
-                        "mean": round(float(vals.mean()), 2),
-                        "sd": round(float(vals.std(ddof=1)), 2) if len(vals) > 1 else 0.0,
-                        "n": int(len(vals)),
-                    }
+            control_bw = _compute_bw_stats(bw_ctrl, val_col, day_col)
+            # Add per-sex breakdown for mixed-sex comparisons
+            if is_mixed_sex and not bw_ctrl.empty:
+                for sex_val, sex_ids in control_ids_by_sex.items():
+                    sex_stats = _compute_bw_stats(
+                        bw_ctrl[bw_ctrl["USUBJID"].isin(sex_ids)],
+                        val_col, day_col,
+                    )
+                    for day_key, stats in sex_stats.items():
+                        if day_key in control_bw:
+                            control_bw[day_key].setdefault("by_sex", {})[sex_val] = stats
         except Exception:
             pass
 
