@@ -38,6 +38,14 @@ import { CompareTab } from "@/components/analysis/CompareTab";
 import type { LesionSeverityRow, RuleResult, FindingDoseTrend } from "@/types/analysis-views";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import type { PathologyReview } from "@/types/annotations";
+import {
+  deriveRecoveryAssessments,
+  specimenRecoveryLabel,
+  verdictPriority,
+  verdictArrow,
+  buildRecoveryTooltip,
+} from "@/lib/recovery-assessment";
+import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 
 // ─── Neutral heat color (§6.1 evidence tier) ─────────────
 export function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
@@ -88,6 +96,7 @@ export interface FindingTableRow extends FindingSummary {
   trendData?: FindingDoseTrend;
   clinicalClass?: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent";
   catalogId?: string;
+  recoveryVerdict?: RecoveryVerdict;
 }
 
 export interface HeatmapData {
@@ -476,10 +485,10 @@ function OverviewTab({
     setSeverityGradedOnly(false);
   }, [specimen]);
 
-  // Subject-level data (fetch when in subject mode)
+  // Subject-level data (always fetch — needed for recovery assessment + subject matrix)
   const { data: subjData, isLoading: subjLoading } = useHistopathSubjects(
-    matrixMode === "subject" ? studyId : undefined,
-    matrixMode === "subject" ? (specimen ?? null) : null,
+    studyId,
+    specimen ?? null,
   );
 
   // Available dose groups for filter (from subject data), separated main vs recovery
@@ -751,6 +760,62 @@ function OverviewTab({
     return { doseLevels, doseLabels, findings, cells, findingMeta, totalFindings } satisfies HeatmapData;
   }, [matrixBaseData, severityGradedOnly, minSeverity]);
 
+  // ── Recovery assessment ────────────────────────────────
+  const specimenHasRecovery = useMemo(
+    () => subjData?.subjects?.some((s) => s.is_recovery) ?? false,
+    [subjData],
+  );
+
+  const recoveryAssessments = useMemo(() => {
+    if (!specimenHasRecovery || !subjData?.subjects) return null;
+    const findingNames = findingSummaries.map((f) => f.finding);
+    return deriveRecoveryAssessments(findingNames, subjData.subjects);
+  }, [specimenHasRecovery, subjData, findingSummaries]);
+
+  // Recovery heatmap data for group heatmap
+  const recoveryHeatmapData = useMemo(() => {
+    if (!specimenHasRecovery || !subjData?.subjects || !heatmapData) return null;
+    const recSubjects = subjData.subjects.filter((s) => s.is_recovery);
+    if (recSubjects.length === 0) return null;
+
+    // Dose levels and labels for recovery groups
+    const doseLevelSet = new Map<number, string>();
+    for (const s of recSubjects) {
+      if (!doseLevelSet.has(s.dose_level))
+        doseLevelSet.set(s.dose_level, s.dose_label.split(",")[0]);
+    }
+    const doseLevels = [...doseLevelSet.keys()].sort((a, b) => a - b);
+    const doseLabels = doseLevelSet;
+
+    // Build cells: per-finding per-dose incidence and avg severity
+    const cells = new Map<string, { incidence: number; avg_severity: number; affected: number; n: number }>();
+    for (const finding of heatmapData.findings) {
+      for (const dl of doseLevels) {
+        const doseSubjects = recSubjects.filter((s) => s.dose_level === dl);
+        const n = doseSubjects.length;
+        let affected = 0;
+        let totalSev = 0;
+        for (const s of doseSubjects) {
+          const f = s.findings[finding];
+          if (f) {
+            affected++;
+            totalSev += f.severity_num;
+          }
+        }
+        if (n > 0) {
+          cells.set(`${finding}|${dl}`, {
+            incidence: affected / n,
+            avg_severity: affected > 0 ? totalSev / affected : 0,
+            affected,
+            n,
+          });
+        }
+      }
+    }
+
+    return { doseLevels, doseLabels, cells };
+  }, [specimenHasRecovery, subjData, heatmapData]);
+
   // Combined table data
   const tableData = useMemo<FindingTableRow[]>(
     () =>
@@ -773,15 +838,17 @@ function OverviewTab({
             break;
         }
         const clin = findingClinical.get(fs.finding);
+        const recAssessment = recoveryAssessments?.find((a) => a.finding === fs.finding);
         return {
           ...fs, isDoseDriven,
           relatedOrgans: findingRelatedOrgans.get(fs.finding),
           trendData: trend,
           clinicalClass: clin?.clinicalClass as FindingTableRow["clinicalClass"],
           catalogId: clin?.catalogId,
+          recoveryVerdict: recAssessment?.overall,
         };
       }),
-    [findingSummaries, findingConsistency, findingRelatedOrgans, findingClinical, doseDepThreshold, trendsByFinding]
+    [findingSummaries, findingConsistency, findingRelatedOrgans, findingClinical, doseDepThreshold, trendsByFinding, recoveryAssessments]
   );
 
   const findingColumns = useMemo(
@@ -952,8 +1019,44 @@ function OverviewTab({
           );
         },
       }),
+      ...(specimenHasRecovery
+        ? [
+            findingColHelper.accessor("recoveryVerdict", {
+              header: "Recovery",
+              size: 70,
+              minSize: 55,
+              maxSize: 120,
+              cell: (info) => {
+                const v = info.getValue();
+                if (!v || v === "not_observed" || v === "no_data")
+                  return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+                const arrow = verdictArrow(v);
+                const emphasis = v === "persistent" || v === "progressing";
+                const recAssessment = recoveryAssessments?.find(
+                  (a) => a.finding === info.row.original.finding,
+                );
+                return (
+                  <span
+                    className={cn(
+                      "text-[9px]",
+                      emphasis
+                        ? "font-medium text-foreground/70"
+                        : "text-muted-foreground",
+                    )}
+                    title={buildRecoveryTooltip(recAssessment)}
+                  >
+                    {arrow} {v}
+                  </span>
+                );
+              },
+              sortingFn: (a, b) =>
+                verdictPriority(a.original.recoveryVerdict) -
+                verdictPriority(b.original.recoveryVerdict),
+            }),
+          ]
+        : []),
     ],
-    [doseDepThreshold]
+    [doseDepThreshold, specimenHasRecovery, recoveryAssessments]
   );
 
   const filteredTableData = useMemo(
@@ -1396,6 +1499,18 @@ function OverviewTab({
                         <DoseHeader level={dl} label={heatmapData.doseLabels.get(dl) ?? `Dose ${dl}`} />
                       </div>
                     ))}
+                    {recoveryHeatmapData && (<>
+                      <div className="mx-0.5 w-px self-stretch bg-border" />
+                      {recoveryHeatmapData.doseLevels.map((dl) => (
+                        <div
+                          key={`R${dl}`}
+                          className="w-20 shrink-0 text-center text-[10px] font-medium text-muted-foreground/60"
+                          title={`Recovery: ${recoveryHeatmapData.doseLabels.get(dl) ?? `Dose ${dl}`}`}
+                        >
+                          {(recoveryHeatmapData.doseLabels.get(dl) ?? `${dl}`)} (R)
+                        </div>
+                      ))}
+                    </>)}
                   </div>
                   {/* Data rows */}
                   {heatmapData.findings.map((finding) => (
@@ -1462,6 +1577,42 @@ function OverviewTab({
                           </div>
                         );
                       })}
+                      {recoveryHeatmapData && (<>
+                        <div className="mx-0.5 w-px self-stretch bg-border" />
+                        {recoveryHeatmapData.doseLevels.map((dl) => {
+                          const rCell = recoveryHeatmapData.cells.get(`${finding}|${dl}`);
+                          if (!rCell) {
+                            return (
+                              <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
+                                <div className="h-5 w-16 rounded-sm bg-gray-50" />
+                              </div>
+                            );
+                          }
+                          const rColors = heatmapView === "incidence"
+                            ? getNeutralHeatColor01(rCell.incidence)
+                            : getNeutralHeatColor(rCell.avg_severity ?? 0);
+                          const rLabel = heatmapView === "incidence"
+                            ? `${(rCell.incidence * 100).toFixed(0)}%`
+                            : `${rCell.affected}/${rCell.n}`;
+                          return (
+                            <div
+                              key={`R${dl}`}
+                              className="flex h-6 w-20 shrink-0 items-center justify-center"
+                            >
+                              <div
+                                className="flex h-5 w-16 items-center justify-center rounded-sm text-[9px] font-medium"
+                                style={{
+                                  backgroundColor: rColors.bg,
+                                  color: rColors.text,
+                                }}
+                                title={`Recovery — Severity: ${rCell.avg_severity != null ? rCell.avg_severity.toFixed(1) : "N/A"}, Incidence: ${rCell.affected}/${rCell.n}`}
+                              >
+                                {rLabel}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>)}
                     </div>
                   ))}
                 </div>
@@ -2402,6 +2553,9 @@ export function HistopathologyView() {
   const sexFilter = filters.sex;
   const minSeverity = filters.minSeverity;
 
+  // Subject data for recovery assessment (React Query caches, so shared with OverviewTab)
+  const { data: subjData } = useHistopathSubjects(studyId, selectedSpecimen);
+
   // Derived: specimen summaries
   const specimenSummaries = useMemo(() => {
     if (!lesionData) return [];
@@ -2450,6 +2604,15 @@ export function HistopathologyView() {
     }
     return map;
   }, [trendData, selectedSpecimen]);
+
+  // Recovery assessment for specimen summary strip
+  const specimenRecoveryOverall = useMemo(() => {
+    if (!subjData?.subjects?.some((s) => s.is_recovery)) return null;
+    const findingNames = findingSummaries.map((f) => f.finding);
+    if (findingNames.length === 0) return null;
+    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects);
+    return specimenRecoveryLabel(assessments);
+  }, [subjData, findingSummaries]);
 
   // Reset finding selection and comparison when specimen changes (from shell rail)
   useEffect(() => {
@@ -2560,8 +2723,8 @@ export function HistopathologyView() {
               {selectedSummary.sexSkew && (
                 <span>Sex: <span className="font-medium">{selectedSummary.sexSkew === "M>F" ? "males higher" : selectedSummary.sexSkew === "F>M" ? "females higher" : "balanced"}</span></span>
               )}
-              {selectedSummary.hasRecovery && (
-                <span className="font-medium">Recovery data</span>
+              {specimenRecoveryOverall && (
+                <span>Recovery: <span className="font-medium">{specimenRecoveryOverall}</span></span>
               )}
             </div>
           </div>

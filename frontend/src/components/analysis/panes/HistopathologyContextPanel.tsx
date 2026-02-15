@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CollapsiblePane } from "./CollapsiblePane";
@@ -20,6 +20,10 @@ import { aggregateByFinding } from "@/lib/finding-aggregation";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 import type { PathologyReview } from "@/types/annotations";
 import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
+import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
+import { useViewSelection } from "@/contexts/ViewSelectionContext";
+import { deriveRecoveryAssessments } from "@/lib/recovery-assessment";
+import type { RecoveryAssessment, RecoveryDoseAssessment } from "@/lib/recovery-assessment";
 
 // ─── Specimen-scoped insights (purpose-built for context panel) ──────────────
 
@@ -517,6 +521,122 @@ function SpecimenOverviewPane({
   );
 }
 
+// ─── Recovery pane content ────────────────────────────────────────────────────
+
+function RecoveryPaneContent({
+  assessment,
+  onSubjectClick,
+}: {
+  assessment: RecoveryAssessment;
+  onSubjectClick?: (usubjid: string) => void;
+}) {
+  const visible = assessment.assessments.filter(
+    (a) => a.verdict !== "not_observed" && a.verdict !== "no_data",
+  );
+
+  if (visible.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {visible.map((a, i) => (
+        <RecoveryDoseBlock
+          key={a.doseLevel}
+          assessment={a}
+          onSubjectClick={onSubjectClick}
+          showBorder={i < visible.length - 1}
+        />
+      ))}
+    </div>
+  );
+}
+
+function RecoveryDoseBlock({
+  assessment: a,
+  onSubjectClick,
+  showBorder,
+}: {
+  assessment: RecoveryDoseAssessment;
+  onSubjectClick?: (usubjid: string) => void;
+  showBorder: boolean;
+}) {
+  const shortId = (id: string) => {
+    const parts = id.split("-");
+    return parts[parts.length - 1] || id.slice(-4);
+  };
+
+  return (
+    <div className={cn(showBorder && "border-b border-border/40 pb-3")}>
+      <div className="mb-1 text-[10px] text-muted-foreground">
+        {a.doseGroupLabel}
+      </div>
+      <div className="space-y-1.5 text-xs">
+        {/* Main arm */}
+        <div className="flex items-center gap-2">
+          <span className="w-20 shrink-0 text-[10px] text-muted-foreground">Main arm</span>
+          <span className="font-mono text-[10px]">
+            {a.main.affected}/{a.main.n} ({Math.round(a.main.incidence * 100)}%)
+          </span>
+          <div className="h-1.5 w-16 rounded-full bg-gray-100">
+            <div
+              className="h-1.5 rounded-full bg-gray-400"
+              style={{ width: `${Math.min(a.main.incidence * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+        <div className="pl-[88px] text-[10px] text-muted-foreground">
+          avg sev {a.main.avgSeverity.toFixed(1)}
+        </div>
+
+        {/* Recovery arm */}
+        <div className="flex items-center gap-2">
+          <span className="w-20 shrink-0 text-[10px] text-muted-foreground">Recovery arm</span>
+          <span className="font-mono text-[10px]">
+            {a.recovery.affected}/{a.recovery.n} ({Math.round(a.recovery.incidence * 100)}%)
+          </span>
+          <div className="h-1.5 w-16 rounded-full bg-gray-100">
+            <div
+              className="h-1.5 rounded-full bg-gray-400"
+              style={{ width: `${Math.min(a.recovery.incidence * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+        <div className="pl-[88px] text-[10px] text-muted-foreground">
+          avg sev {a.recovery.avgSeverity.toFixed(1)}
+        </div>
+      </div>
+
+      {/* Assessment */}
+      <div className="mt-1.5 text-[10px]">
+        <span className="text-muted-foreground">Assessment: </span>
+        <span className="font-medium">{a.verdict}</span>
+      </div>
+
+      {/* Recovery subjects */}
+      <div className="mt-1 text-[10px] text-muted-foreground">
+        {a.recovery.subjectDetails.length > 0 ? (
+          <>
+            Recovery subjects:{" "}
+            {a.recovery.subjectDetails.map((s, i) => (
+              <span key={s.id}>
+                {i > 0 && ", "}
+                <button
+                  className="text-primary hover:underline"
+                  onClick={() => onSubjectClick?.(s.id)}
+                >
+                  {shortId(s.id)}
+                </button>
+                <span className="text-muted-foreground"> (sev {s.severity.toFixed(1)})</span>
+              </span>
+            ))}
+          </>
+        ) : (
+          <>none affected (0/{a.recovery.n} examined)</>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Finding Detail (when finding is selected) ───────────────────────────────
 
 function FindingDetailPane({
@@ -532,6 +652,24 @@ function FindingDetailPane({
 }) {
   const navigate = useNavigate();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+  const { setSelectedSubject } = useViewSelection();
+
+  // Recovery assessment
+  const { data: subjData } = useHistopathSubjects(studyId, selection.specimen);
+  const specimenHasRecovery = useMemo(
+    () => subjData?.subjects?.some((s) => s.is_recovery) ?? false,
+    [subjData],
+  );
+  const findingRecovery = useMemo(() => {
+    if (!specimenHasRecovery || !subjData?.subjects) return null;
+    const assessments = deriveRecoveryAssessments([selection.finding], subjData.subjects);
+    return assessments[0] ?? null;
+  }, [specimenHasRecovery, subjData, selection.finding]);
+
+  const onSubjectClick = useCallback(
+    (usubjid: string) => setSelectedSubject(usubjid),
+    [setSelectedSubject],
+  );
 
   // Dose-level detail for selected finding
   const findingRows = useMemo(() => {
@@ -734,6 +872,24 @@ function FindingDetailPane({
           </div>
         </CollapsiblePane>
       )}
+
+      {/* Recovery */}
+      {findingRecovery &&
+        findingRecovery.assessments.some(
+          (a) => a.verdict !== "not_observed" && a.verdict !== "no_data",
+        ) && (
+          <CollapsiblePane
+            title="Recovery"
+            defaultOpen
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+          >
+            <RecoveryPaneContent
+              assessment={findingRecovery}
+              onSubjectClick={onSubjectClick}
+            />
+          </CollapsiblePane>
+        )}
 
       {/* Correlating evidence */}
       <CollapsiblePane title="Correlating evidence" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>

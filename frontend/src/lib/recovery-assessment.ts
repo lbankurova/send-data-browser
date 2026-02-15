@@ -1,0 +1,269 @@
+/**
+ * Recovery reversibility assessment — pure derivation logic.
+ * Compares main-arm vs recovery-arm histopathology data
+ * to determine whether findings reversed after treatment-free recovery.
+ */
+
+import type { SubjectHistopathEntry } from "@/types/timecourse";
+
+// ─── Types ────────────────────────────────────────────────
+
+export type RecoveryVerdict =
+  | "reversed"
+  | "reversing"
+  | "persistent"
+  | "progressing"
+  | "not_observed"
+  | "no_data";
+
+export interface RecoveryDoseAssessment {
+  doseLevel: number;
+  doseGroupLabel: string;
+  main: {
+    incidence: number;
+    n: number;
+    affected: number;
+    avgSeverity: number;
+    maxSeverity: number;
+  };
+  recovery: {
+    incidence: number;
+    n: number;
+    affected: number;
+    avgSeverity: number;
+    maxSeverity: number;
+    subjectDetails: { id: string; severity: number }[];
+  };
+  verdict: RecoveryVerdict;
+}
+
+export interface RecoveryAssessment {
+  finding: string;
+  assessments: RecoveryDoseAssessment[];
+  overall: RecoveryVerdict;
+}
+
+// ─── Verdict computation ──────────────────────────────────
+
+interface ArmStats {
+  incidence: number;
+  avgSeverity: number;
+  affected: number;
+}
+
+export function computeVerdict(main: ArmStats, recovery: ArmStats): RecoveryVerdict {
+  // Finding not in main arm → nothing to assess
+  if (main.incidence === 0 && main.affected === 0) return "not_observed";
+
+  // Recovery incidence exactly 0 → fully reversed
+  if (recovery.incidence === 0) return "reversed";
+
+  const incidenceRatio = recovery.incidence / Math.max(main.incidence, 0.01);
+  const severityRatio = recovery.avgSeverity / Math.max(main.avgSeverity, 0.01);
+
+  // Progressing: incidence or severity increased
+  if (incidenceRatio > 1.1 && recovery.affected > main.affected) return "progressing";
+  if (severityRatio > 1.2) return "progressing";
+
+  // Reversed: both incidence and severity substantially decreased
+  if (incidenceRatio <= 0.2 && severityRatio <= 0.3) return "reversed";
+
+  // Reversing: clear decrease in at least one metric
+  if (incidenceRatio <= 0.5 || severityRatio <= 0.5) return "reversing";
+
+  // Otherwise persistent
+  return "persistent";
+}
+
+const VERDICT_PRIORITY: RecoveryVerdict[] = [
+  "progressing",
+  "persistent",
+  "reversing",
+  "reversed",
+  "not_observed",
+  "no_data",
+];
+
+export function worstVerdict(verdicts: RecoveryVerdict[]): RecoveryVerdict {
+  for (const v of VERDICT_PRIORITY) {
+    if (verdicts.includes(v)) return v;
+  }
+  return "no_data";
+}
+
+export function verdictPriority(verdict: RecoveryVerdict | undefined): number {
+  if (!verdict) return VERDICT_PRIORITY.length;
+  const idx = VERDICT_PRIORITY.indexOf(verdict);
+  return idx >= 0 ? idx : VERDICT_PRIORITY.length;
+}
+
+const VERDICT_ARROWS: Record<RecoveryVerdict, string> = {
+  reversed: "\u2193",      // ↓
+  reversing: "\u2198",     // ↘
+  persistent: "\u2192",    // →
+  progressing: "\u2191",   // ↑
+  not_observed: "\u2014",  // —
+  no_data: "\u2014",       // —
+};
+
+export function verdictArrow(verdict: RecoveryVerdict): string {
+  return VERDICT_ARROWS[verdict] ?? "";
+}
+
+export function verdictLabel(verdict: RecoveryVerdict): string {
+  const arrow = VERDICT_ARROWS[verdict];
+  return arrow ? `${arrow} ${verdict}` : verdict;
+}
+
+// ─── Tooltip ──────────────────────────────────────────────
+
+export function buildRecoveryTooltip(assessment: RecoveryAssessment | undefined): string {
+  if (!assessment) return "";
+  const lines = ["Recovery assessment:"];
+  for (const a of assessment.assessments) {
+    if (a.verdict === "not_observed" || a.verdict === "no_data") continue;
+    const mainPct = `${Math.round(a.main.incidence * 100)}%`;
+    const recPct = `${Math.round(a.recovery.incidence * 100)}%`;
+    const mainSev = a.main.avgSeverity.toFixed(1);
+    const recSev = a.recovery.avgSeverity.toFixed(1);
+    lines.push(
+      `  ${a.doseGroupLabel}: ${mainPct} \u2192 ${recPct}, sev ${mainSev} \u2192 ${recSev} \u2014 ${a.verdict}`
+    );
+  }
+  lines.push(`Overall: ${assessment.overall} (worst case)`);
+  return lines.join("\n");
+}
+
+// ─── Main derivation ─────────────────────────────────────
+
+export function deriveRecoveryAssessments(
+  findingNames: string[],
+  subjects: SubjectHistopathEntry[],
+): RecoveryAssessment[] {
+  // Split subjects into main and recovery arms
+  const mainSubjects = subjects.filter((s) => !s.is_recovery);
+  const recoverySubjects = subjects.filter((s) => s.is_recovery);
+
+  if (recoverySubjects.length === 0) return [];
+
+  // Get all dose levels that have both main and recovery subjects
+  const mainByDose = groupByDoseLevel(mainSubjects);
+  const recoveryByDose = groupByDoseLevel(recoverySubjects);
+
+  // Shared dose levels
+  const sharedDoseLevels = [...mainByDose.keys()].filter((dl) =>
+    recoveryByDose.has(dl),
+  );
+  if (sharedDoseLevels.length === 0) return [];
+  sharedDoseLevels.sort((a, b) => a - b);
+
+  return findingNames.map((finding) => {
+    const assessments: RecoveryDoseAssessment[] = [];
+
+    for (const dl of sharedDoseLevels) {
+      const mainGroup = mainByDose.get(dl)!;
+      const recGroup = recoveryByDose.get(dl)!;
+
+      const mainStats = computeGroupStats(finding, mainGroup);
+      const recStats = computeGroupStats(finding, recGroup);
+
+      const verdict = computeVerdict(mainStats, recStats);
+
+      // Recovery subject details
+      const subjectDetails: { id: string; severity: number }[] = [];
+      for (const s of recGroup) {
+        const f = s.findings[finding];
+        if (f) {
+          subjectDetails.push({ id: s.usubjid, severity: f.severity_num });
+        }
+      }
+
+      assessments.push({
+        doseLevel: dl,
+        doseGroupLabel: mainGroup[0]?.dose_label?.split(",")[0] ?? `Dose ${dl}`,
+        main: {
+          incidence: mainStats.incidence,
+          n: mainStats.n,
+          affected: mainStats.affected,
+          avgSeverity: mainStats.avgSeverity,
+          maxSeverity: mainStats.maxSeverity,
+        },
+        recovery: {
+          incidence: recStats.incidence,
+          n: recStats.n,
+          affected: recStats.affected,
+          avgSeverity: recStats.avgSeverity,
+          maxSeverity: recStats.maxSeverity,
+          subjectDetails,
+        },
+        verdict,
+      });
+    }
+
+    const overall = worstVerdict(assessments.map((a) => a.verdict));
+    return { finding, assessments, overall };
+  });
+}
+
+// ─── Helpers ──────────────────────────────────────────────
+
+function groupByDoseLevel(
+  subjects: SubjectHistopathEntry[],
+): Map<number, SubjectHistopathEntry[]> {
+  const map = new Map<number, SubjectHistopathEntry[]>();
+  for (const s of subjects) {
+    const list = map.get(s.dose_level);
+    if (list) list.push(s);
+    else map.set(s.dose_level, [s]);
+  }
+  return map;
+}
+
+function computeGroupStats(
+  finding: string,
+  subjects: SubjectHistopathEntry[],
+): ArmStats & { n: number; maxSeverity: number } {
+  const n = subjects.length;
+  let affected = 0;
+  let totalSev = 0;
+  let maxSev = 0;
+
+  for (const s of subjects) {
+    const f = s.findings[finding];
+    if (f) {
+      affected++;
+      totalSev += f.severity_num;
+      if (f.severity_num > maxSev) maxSev = f.severity_num;
+    }
+  }
+
+  const incidence = n > 0 ? affected / n : 0;
+  const avgSeverity = affected > 0 ? totalSev / affected : 0;
+
+  return { incidence, affected, avgSeverity, maxSeverity: maxSev, n };
+}
+
+// ─── Specimen-level summary ───────────────────────────────
+
+/**
+ * Compute the overall recovery label for a specimen.
+ * "reversed" if all reversed, "partial" if mixed, else worst verdict.
+ */
+export function specimenRecoveryLabel(
+  assessments: RecoveryAssessment[],
+): string | null {
+  const verdicts = assessments
+    .flatMap((a) => a.assessments)
+    .map((d) => d.verdict)
+    .filter((v) => v !== "not_observed" && v !== "no_data");
+
+  if (verdicts.length === 0) return null;
+
+  const unique = new Set(verdicts);
+  if (unique.size === 1) return [...unique][0];
+
+  // Mix of verdicts → "partial"
+  if (unique.has("reversed") && unique.size > 1) return "partial";
+
+  return worstVerdict(verdicts);
+}

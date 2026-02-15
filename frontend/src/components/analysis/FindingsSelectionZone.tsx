@@ -1,5 +1,6 @@
 import { StripSep } from "@/components/ui/CollapsedStrip";
 import type { FindingTableRow } from "@/components/analysis/HistopathologyView";
+import { verdictArrow } from "@/lib/recovery-assessment";
 
 interface FindingsSelectionZoneProps {
   findings: FindingTableRow[];
@@ -22,6 +23,9 @@ export function FindingsSelectionZone({ findings, selectedRow }: FindingsSelecti
         {selectedRow.isDoseDriven && <span className="font-mono text-foreground/70"> ✓dose-dep</span>}
         {selectedRow.relatedOrgans && selectedRow.relatedOrgans.length > 0 && (
           <><StripSep /><span className="text-muted-foreground">also in: {selectedRow.relatedOrgans.join(", ")}</span></>
+        )}
+        {selectedRow.recoveryVerdict && selectedRow.recoveryVerdict !== "not_observed" && selectedRow.recoveryVerdict !== "no_data" && (
+          <><StripSep /><span className="text-muted-foreground">{verdictArrow(selectedRow.recoveryVerdict)} {selectedRow.recoveryVerdict}</span></>
         )}
       </span>
     );
