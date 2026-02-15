@@ -85,8 +85,8 @@ Each section has:
 #### Treatment arms ({count})
 Conditional — only renders if `meta.dose_groups` is non-empty.
 
-Table in `overflow-x-auto rounded-md border`, `text-xs`:
-- Header row: `border-b bg-muted/30`, all `<th>` use `px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
+Table in `max-h-60 overflow-auto rounded-md border`, `text-xs` (scrollable if tall):
+- Sticky header: `sticky top-0 z-10 bg-background`, `border-b bg-muted/30`, all `<th>` use `px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
 - Body rows: `border-b last:border-b-0`, all `<td>` use `px-2 py-1`
 
 | Column | Align | Cell rendering |
@@ -109,9 +109,9 @@ Table in `overflow-x-auto rounded-md border`, `text-xs`:
 
 ---
 
-## Tab 2: Signals — Two-Panel Master-Detail
+## Tab 2: Signals
 
-Vertical stack, fills remaining height. Contains Decision Bar, Study Statements Bar, and a two-panel master-detail layout.
+Vertical stack, fills remaining height. Contains Decision Bar, Study Statements Bar, Protective Signals Bar, and the Evidence Panel. Organ selection is provided by the shell-level organ rail (not embedded in the view).
 
 ```
 +-----------------------------------------------------------+
@@ -119,19 +119,21 @@ Vertical stack, fills remaining height. Contains Decision Bar, Study Statements 
 +-----------------------------------------------------------+
 | Study Statements Bar (study-level facts/modifiers/caveats)|  border-b (if content)
 +-----------------------------------------------------------+
-| Organ Rail (300px)  |  Evidence Panel (flex-1)            |
-| ┌─────────────────┐ | ┌──────────────────────────────────┐|
-| │ Search input    │ | │ Organ Header (name, stats)       │|
-| │ ─ ─ ─ ─ ─ ─ ─  │ | │ [Overview] [Signal matrix]  tabs │|
-| │ Organ items     │ | │ ┌────────────────────────────────┐│|
-| │  (scrollable)   │ | │ │ Tab content (scrollable)      ││|
-| │                 │ | │ │                                ││|
-| └─────────────────┘ | │ └────────────────────────────────┘│|
-|                     | └──────────────────────────────────┘|
+| Protective Signals Bar (R18/R19 findings)                 |  border-b (if content)
++-----------------------------------------------------------+
+| Evidence Panel (flex-1, full width)                       |
+| ┌──────────────────────────────────────────────────────┐  |
+| │ Organ Header (name, stats)                           │  |
+| │ [Evidence] [Signal matrix] [Metrics] [Rules]  tabs   │  |
+| │ ┌──────────────────────────────────────────────────┐ │  |
+| │ │ Tab content (scrollable)                         │ │  |
+| │ │                                                  │ │  |
+| │ └──────────────────────────────────────────────────┘ │  |
+| └──────────────────────────────────────────────────────┘  |
 +-----------------------------------------------------------+
 ```
 
-Responsive: `max-[1200px]:flex-col` — stacks vertically on narrow screens.
+The shell organ rail (`OrganRailMode`) lives in the left rail panel of the three-panel layout. The view declares `useRailModePreference("organ")` in `StudySummaryViewWrapper`.
 
 ### Decision Bar
 
@@ -143,7 +145,7 @@ Persistent across the Signals tab. Neutral muted background: `shrink-0 border-b 
    - Each: label (`text-[10px] font-medium uppercase tracking-wider text-muted-foreground`) + value (`text-xs font-semibold text-foreground`)
    - NOAEL value: amber-600 only if "Not established"; all other values (including "Control") use `text-foreground`
    - NOAEL sex qualifier: `text-[10px] text-muted-foreground` inline after value
-   - NOAEL confidence badge (if present): text color only (`text-[10px] font-medium`, no background pill) — `text-green-700` if ≥80%, `text-amber-700` if ≥60%, `text-red-700` if <60%
+   - NOAEL confidence badge (if present): text color only (`text-[10px] font-medium`, no background pill) — `text-green-700` if ≥80%, `text-amber-700` if ≥60%, `text-red-700` if <60%. Wrapped in `ConfidencePopover` (from `ScoreBreakdown.tsx`) when NOAEL data is available.
    - Driver (if exists): `text-xs font-medium text-foreground`
 
 2. **Alert/warning statements** (if any from `panelData.decisionBar` with warning/review-flag icons): `text-xs leading-snug text-amber-700` with triangle/warning icon
@@ -164,52 +166,50 @@ Shows study-level statements, modifiers, and caveats from `panelData`. Only rend
 
 **Component:** `ProtectiveSignalsBar` (inline in `StudySummaryView.tsx`)
 
-Shows below the Study Statements Bar, above the Evidence Panel. Only renders when R18 (protective findings) or R19 (repurposing candidates) rules are present.
+Shows below the Study Statements Bar, above the Evidence Panel. Only renders when R18 (protective findings) or R19 (repurposing candidates) rules are present in the ruleResults.
 
-Aggregates protective findings:
-- Count of findings with decreased incidence
-- Per-finding rows with incidence percentages (control → high dose), specimen, and sex
-- **Repurposing candidates** (R19): rendered with purple accent, flagged distinctly from protective-only findings
-- **Protective-only findings** (R18): rendered with emerald green accent
-- Clickable navigation: each finding links to the histopathology view for that specimen
+Container: `shrink-0 border-b px-4 py-2`. Header: "PROTECTIVE SIGNALS" label + count summary.
 
-### Organ Rail (left panel, resizable 180-500px, default 300px)
+Aggregates protective findings via `aggregateProtectiveFindings()`:
+- Groups by finding name across R18/R19 rules, collecting specimens, sexes, control/high-dose percentages
+- **Repurposing candidates** (R19): `border-l-2 border-l-purple-400`, "repurposing" label in `text-purple-600`, incidence text shows "potential therapeutic target"
+- **Protective-only findings** (R18): `border-l-2 border-l-emerald-400`, compact layout with incidence percentages (`font-mono`), capped at 5 items with "+N more" overflow
+- Sorted: repurposing candidates first, then by control incidence descending
+- Clickable navigation: each finding name is a `<button>` that navigates to the histopathology view with `{ state: { specimen, finding } }`
 
-**Component:** `SignalsOrganRail` (from `SignalsPanel.tsx`)
-**Resizable:** Uses `useResizePanel(300, 180, 500)` with `PanelResizeHandle` between rail and evidence panel. Handle hidden at `max-[1200px]` (stacked layout).
+### Organ Selection (shell-level rail)
 
-Header: "ORGAN SYSTEMS ({count})" + search input (`text-xs`).
+The Signals tab does **not** embed its own organ rail. Organ selection flows from the shell-level `OrganRailMode` (declared via `useRailModePreference("organ")` in `StudySummaryViewWrapper`). The `SignalsOrganRail` component exists in `SignalsPanel.tsx` but is used by the shell rail mode, not embedded in the view.
 
-Each rail item (`SignalsOrganRailItem`):
+The selected organ flows from `StudySelectionContext` (`studySelection.organSystem`). Each rail item (`SignalsOrganRailItem`) shows:
+
 - **Row 1: Name line** — `flex items-center gap-2`:
   - Organ name: `text-xs font-semibold` + `titleCase()`
-  - Dominant direction arrow (if available): `text-[10px] text-muted-foreground/60` — ↑ (mostly up), ↓ (mostly down), ↕ (mixed). Computed from significant signals (p < 0.05) in `computeOrganRailStats()`.
-  - "TARGET" badge (if target organ): `text-[9px] font-semibold uppercase text-red-600` — sole red element per rail item (C-31 compliance)
-- Selected: `bg-blue-50/60 dark:bg-blue-950/20`
-- Not selected: `hover:bg-accent/30`
-- **Row 2: Evidence score bar** — uses `<EvidenceBar>` reusable component (from `@/components/ui/EvidenceBar`). Neutral gray track and fill, width normalized to max across all organs. Score number: `font-mono text-[10px] tabular-nums`, font-semibold if ≥0.5, font-medium if ≥0.3.
-- **Row 3: Stats line** — `text-[10px] text-muted-foreground`: `{n_significant} sig · {n_treatment_related} TR · {n_domains} domains` + domain chips (plain colored text `text-[9px] font-semibold` with `getDomainBadgeColor().text`)
-- **Row 4: Effect metrics** (if available from computed stats) — `text-[10px] text-muted-foreground tabular-nums`: `|d|={maxAbsEffectSize}` (font-semibold if ≥0.8) + `trend p={minTrendP}` (font-semibold if <0.01)
+  - Dominant direction arrow (if available): `text-[10px] text-muted-foreground/60` — up/down/mixed. Computed from significant signals (p < 0.05) in `computeOrganRailStats()`.
+  - "TARGET" badge (if target organ): `text-[9px] font-semibold uppercase text-red-600`
+- **Row 2: Evidence score bar** — uses `<EvidenceBar>` reusable component. Neutral gray track and fill, width normalized to max across all organs.
+- **Row 3: Stats line** — `text-[10px] text-muted-foreground`: `{n_significant} sig · {n_treatment_related} TR · {n_domains} domains` + domain chips
+- **Row 4: Effect metrics** (if available) — `text-[10px] text-muted-foreground tabular-nums`: `|d|={maxAbsEffectSize}` + `trend p={minTrendP}`
 - **Row 5: D-R summary** (if available from OrganBlock): `text-[10px] text-muted-foreground` — `D-R: {nEndpoints} ({topEndpoint})`
 
-**Target/non-target separator:** A subtle divider label ("Other organs") appears between the last target organ and the first non-target organ. Style: `text-[9px] uppercase tracking-wider text-muted-foreground/50 px-3 py-1.5 border-b`.
+**Target/non-target separator:** "Other organs" divider between target and non-target groups.
 
 **Sorted by:** Targets first, then by `evidence_score` descending within each group.
-**Auto-select:** Highest-evidence organ is auto-selected when data loads and no organ is selected.
+**Auto-select:** Highest-evidence organ is auto-selected when data loads and no organ is selected (via `useEffect` in `StudySummaryView`).
 
-### Evidence Panel (right panel, flex-1, `bg-muted/5`)
+### Evidence Panel (full width, flex-1, `bg-muted/5`)
 
 **Component:** `SignalsEvidencePanel` (from `SignalsPanel.tsx`)
 
 #### Organ Header (compact, 2-line format)
 - Line 1: Organ name `text-sm font-semibold` + "TARGET" badge (if applicable)
-- Line 2: Metrics in `text-[11px] text-muted-foreground tabular-nums`: `{n_domains} domains · {n_significant}/{n_endpoints} sig ({pct}%) · {n_treatment_related} TR · Max {max_signal} · Evidence {evidence_score} · |d| {maxAbsEffectSize} · trend p {minTrendP}`
+- Line 2: Metrics in `text-[11px] text-muted-foreground tabular-nums`: `{n_domains} domains · {n_significant}/{n_endpoints} sig ({pct}%) · {n_treatment_related} TR · Max {max_signal} · Evidence {evidence_score} · |d| {maxAbsEffectSize} · trend p {minTrendP}`. Evidence score is wrapped in `EvidenceScorePopover` for breakdown details.
 - No conclusion sentence — all relevant information is conveyed by the metrics line
 
 #### Tab Bar
 Four tabs: "Evidence", "Signal matrix", "Metrics", "Rules"
 - Same styling as main tab bar (`text-xs font-medium`, `h-0.5 bg-primary` underline)
-- The "Rules" tab renders `RuleInspectorTab` for browsing and inspecting rule results
+- The "Rules" tab renders `RuleInspectorTab` for browsing and inspecting rule results filtered to the selected organ
 
 #### Evidence Tab (`SignalsOverviewTab`)
 
@@ -332,7 +332,8 @@ Route-detected: when pathname matches `/studies/{studyId}`, shows `StudySummaryC
 - Reads `studySel` from `useStudySelection()` hook
 - Extracts `organSelection = studySel.organSystem ?? null`
 - Fetches `signalData` (via `useStudySignalSummary`) and `ruleResults` (via `useRuleResults`)
-- Passes props to `StudySummaryContextPanel` which selects between `OrganPanel` (organ selected, no endpoint) and `EndpointPanel` (endpoint selected)
+- Always passes `selection={null}` — endpoint-level selection is managed locally within `SignalsEvidencePanel` and does not flow to the context panel
+- Passes `organSelection` to `StudySummaryContextPanel` which shows `OrganPanel` (organ selected) or empty state (no organ selected)
 
 ### No Selection State
 - Primary message: "Select a signal from the heatmap or grid to view details."
@@ -341,7 +342,7 @@ Route-detected: when pathname matches `/studies/{studyId}`, shows `StudySummaryC
 
 ### Organ Selected (`OrganPanel`)
 
-Triggered when an organ is selected in the rail (and no endpoint selection is active).
+Triggered when an organ is selected in the rail. Since `selection` is always `null` from the wrapper, this panel shows whenever an organ is selected.
 
 #### Header
 - `sticky top-0 z-10 border-b bg-background px-4 py-3`
@@ -363,7 +364,7 @@ Table showing up to 15 endpoints in this organ, grouped by max signal score per 
 | Signal | `font-mono` 2 decimals, right-aligned |
 | p | `font-mono` formatted p-value, right-aligned |
 
-Rows: `cursor-pointer border-b border-dashed hover:bg-accent/30`. Click navigates to Target Organs view with `{ state: { organ_system } }`.
+Rows: `cursor-pointer border-b border-dashed hover:bg-accent/30`. Click navigates to Dose-Response view with `{ state: { organ_system } }`.
 
 #### Pane 3: Evidence breakdown (default open)
 - Domains: colored text chips (`text-[9px] font-semibold`)
@@ -371,9 +372,13 @@ Rows: `cursor-pointer border-b border-dashed hover:bg-accent/30`. Click navigate
 - Sex comparison (below separator): Males (sig/total), Females (sig/total)
 
 #### Pane 4: Related views (default closed)
-Links to Target Organs, Dose-Response, Histopathology, NOAEL Decision — all with `{ state: { organ_system } }`. Style: `text-[11px]`, `text-primary hover:underline`.
+Links to Histopathology (with organ name in label), Dose-Response, Histopathology, NOAEL Decision — all with `{ state: { organ_system } }`. Style: `text-[11px]`, `text-primary hover:underline`.
+
+Note: There is a duplicate "View histopathology" link — one with the organ name in the label (e.g., "View histopathology: Hepatic") and one without. Both navigate to the same destination.
 
 ### Endpoint Selected (`EndpointPanel`)
+
+**Note:** This panel exists in the codebase but is currently **not reachable** from the wrapper. `StudySummaryContextPanelWrapper` always passes `selection={null}`, so this panel never renders in normal operation. The code is preserved for future use if endpoint selection is wired through to the context panel.
 
 #### Header
 - `sticky top-0 z-10 border-b bg-background px-4 py-3`
@@ -388,11 +393,11 @@ Rules filtered to: matching context_key (`{domain}_{test_code}_{sex}`), matching
 `CollapsiblePane` with `InsightsList` component and `tierFilter` from TierCountBadges.
 
 #### Pane 2: Statistics (default open)
-Key-value pairs, `text-[11px] tabular-nums`:
+Key-value pairs, `text-[11px] tabular-nums`. Signal score value is wrapped in `SignalScorePopover` for breakdown details.
 
 | Metric | Display |
 |--------|---------|
-| Signal score | `font-mono` 3 decimals |
+| Signal score | `font-mono` 3 decimals (clickable popover) |
 | Direction | Text value or em dash |
 | Best p-value | `font-mono` formatted |
 | Trend p-value | `font-mono` formatted |
@@ -401,27 +406,29 @@ Key-value pairs, `text-[11px] tabular-nums`:
 | Severity | Raw value |
 | Treatment-related | Yes/No |
 
-#### Pane 3: Correlations (default open)
+#### Pane 3: Source records
+`SourceRecordsExpander` component (not wrapped in CollapsiblePane — manages its own expand/collapse). Expands to show individual animal/subject records matching the signal. Allows drill-down to raw data level. Related to TRUST-07p1 feature. Only rendered when selection, selectedRow, and studyId are all present.
+
+#### Pane 4: Correlations (default open)
 - Header text: "Other findings in {organ system}"
 - Shows other findings in same `organ_system`, up to 10, sorted by signal_score desc
 - Table: Endpoint (truncated 25 chars), Dom (colored text), Signal (font-mono), p (font-mono)
 - Rows clickable — navigate to dose-response view with `{ state: { endpoint_label, organ_system } }`
 - Empty state: "No correlations in this organ system."
 
-#### Pane 4: Source records (default closed)
-`CollapsiblePane` — `SourceRecordsExpander` component. Expands to show individual animal/subject records matching the signal. Allows drill-down to raw data level. Related to TRUST-07p1 feature.
+#### Pane 5: Tox Assessment (no pane header — direct `ToxFindingForm`)
+`ToxFindingForm` component with treatment-related dropdown, adversity dropdown, comment textarea, and SAVE button. Uses `deriveToxSuggestion()` for system suggestion.
 
-#### Pane 5: Audit trail (default closed)
-`CollapsiblePane` — `AuditTrailPanel` component. Shows annotation history for the selected endpoint. Related to TRUST-06 feature.
+#### Pane 6: Related views (default closed)
+Links to Histopathology (with organ name in label and organ_system), Dose-Response (with endpoint_label + organ_system), Histopathology (generic, with organ_system), NOAEL Decision (with organ_system). Style: `text-[11px]`, `text-primary hover:underline`.
 
-#### Pane 6: Statistical methodology (default closed)
-`CollapsiblePane` — `MethodologyPanel` component. Explains how the signal score was calculated. Related to TRUST-03 feature.
+Note: There is a duplicate "View histopathology" link — one with the organ name in the label and one without.
 
-#### Pane 7: Tox Assessment (no pane header — direct `ToxFindingForm`)
-`ToxFindingForm` component with treatment-related dropdown, adversity dropdown, comment textarea, and SAVE button.
+#### Pane 7: Audit trail (default closed)
+`AuditTrailPanel` component (manages its own CollapsiblePane internally). Shows annotation history for the selected endpoint. Related to TRUST-06 feature.
 
-#### Pane 8: Related views (default closed)
-Links to Target Organs (with organ_system), Dose-Response (with endpoint_label + organ_system), Histopathology (with organ_system), NOAEL Decision (with organ_system). Style: `text-[11px]`, `text-primary hover:underline`.
+#### Pane 8: Statistical methodology (default closed)
+`MethodologyPanel` component (manages its own CollapsiblePane internally). Explains how the signal score was calculated. Related to TRUST-03 feature.
 
 ---
 
@@ -429,13 +436,13 @@ Links to Target Organs (with organ_system), Dose-Response (with endpoint_label +
 
 | State | Scope | Managed By |
 |-------|-------|-----------|
-| Active tab | Local | `useState<"details" \| "signals" \| "insights">` — defaults to "details" |
-| Selected organ | Local | `useState<string \| null>` — auto-selects top organ on load |
-| Selection | Shared via context | `SignalSelectionContext` — syncs heatmap cells and context panel; mutually exclusive with organ selection |
-| Evidence panel tab | Local (SignalsEvidencePanel) | `useState<"overview" \| "matrix" \| "metrics">` — defaults to "overview" |
+| Active tab | Local | `useState<Tab>` — "details" \| "signals" \| "insights", initialized from `?tab=` query parameter or defaults to "details" |
+| Selected organ | Shared via context | `StudySelectionContext` (`studySelection.organSystem`) — set by shell-level organ rail |
+| Local signal selection | Local | `useState<SignalSelection \| null>` — endpoint-level selection within the evidence panel, not forwarded to context panel |
+| Evidence panel tab | Local (SignalsEvidencePanel) | `useState<"overview" \| "matrix" \| "metrics" \| "rules">` — defaults to "overview" |
 | Show all insights | Local (CrossStudyInsightsTab) | `useState<boolean>` — toggles visibility of priority 2-3 insights |
-| Rail width | Local | `useResizePanel(300, 180, 500)` |
-| Rail search | Local (SignalsOrganRail) | `useState<string>` |
+| Rail width | Shell | Managed by shell-level `OrganRailMode` (not embedded in this view) |
+| Rail search | Shell (SignalsOrganRail) | `useState<string>` |
 | Metrics tab filters | Local (SignalsMetricsTab) | `useState<{ sex, severity, significant_only }>` |
 | Metrics tab sorting | Local (SignalsMetricsTab) | `useState<SortingState>` — default `signal_score` desc |
 | Signal data | Server | `useStudySignalSummary` hook (React Query, 5min stale) |
@@ -446,9 +453,9 @@ Links to Target Organs (with organ_system), Dose-Response (with endpoint_label +
 | Provenance messages | Server | `useProvenanceMessages` hook |
 | Insights | Server | `useInsights` hook — cross-study intelligence (19 rules, 0-18) |
 | Panel data | Derived | `buildSignalsPanelData(noaelData, targetOrgans, signalData)` |
-| Sorted organs | Derived | Targets first, then by `evidence_score` desc |
-| OrganBlocksMap | Derived | Map from `panelData.organBlocks` keyed by `organKey` |
-| RailStatsMap | Derived | Per-organ `{ maxAbsEffectSize, minTrendP, dominantDirection }` from signal data |
+| Selected organ data | Derived | Matched from `targetOrgans` by `selectedOrgan` |
+| OrganBlocksMap | Derived (in SignalsOrganRail) | Map from `panelData.organBlocks` keyed by `organKey` |
+| RailStatsMap | Derived (in SignalsOrganRail) | Per-organ `{ maxAbsEffectSize, minTrendP, dominantDirection }` from signal data |
 
 ---
 
@@ -467,27 +474,28 @@ useRuleResults(studyId)         ──> ruleResults
          |
     ┌────┴────────────────────────────────────┐
     │                                         │
-SignalsOrganRail                    SignalsEvidencePanel
-(sorted organs,                     (selected organ's data)
- organBlocksMap)                    ├── Overview (InsightsList, domain table,
-    │                               │            top findings, cross-view links)
-    └── selectedOrgan ──────────>  └── Signal matrix (filtered heatmap)
+Shell OrganRailMode              SignalsEvidencePanel
+(SignalsOrganRail,                (selected organ's data)
+ organBlocksMap)                  ├── Evidence (InsightsList, domain table,
+    │                             │            top findings)
+    └── selectedOrgan ──────>     ├── Signal matrix (filtered heatmap)
+         (via                     ├── Metrics (sortable data table)
+    StudySelectionContext)         └── Rules (RuleInspectorTab)
                                          │
-                                    SignalSelection (shared)
+                                    localSignalSel (local only)
                                          │
                                   StudySummaryContextPanel
-                                    /     |      \
-                              Insights  Stats  Correlations
+                                    (receives organSelection, NOT endpoint sel)
+                                    /          \
+                              OrganPanel     Empty state
+                              (organ mode)   (no organ)
 ```
 
 ---
 
 ## Keyboard
 
-| Key | Action |
-|-----|--------|
-| Escape | Clears both organ selection and endpoint selection |
-| ↑ / ↓ | Navigates between organs in the organ rail (wraps at boundaries). Only active when Signals tab is focused. |
+No keyboard shortcuts are implemented in the Study Summary view. Organ navigation and selection clearing are handled via mouse interaction only.
 
 ---
 
@@ -495,14 +503,15 @@ SignalsOrganRail                    SignalsEvidencePanel
 
 | From | Action | Navigates To |
 |------|--------|-------------|
-| Overview tab cross-view links | Click | Target Organs / Dose-Response / Histopathology / NOAEL Decision (with `organ_system` state) |
-| Overview tab top findings row | Click | Dose-Response (with `endpoint_label` + `organ_system` state) |
-| Context panel: OrganPanel related views | Click | Target Organs / Dose-Response / Histopathology / NOAEL Decision (with `organ_system`) |
-| Context panel: OrganPanel contributing endpoints | Click | Target Organs (with `organ_system`) |
-| Context panel: EndpointPanel correlations | Click | Dose-Response (with `endpoint_label` + `organ_system`) |
-| Context panel: EndpointPanel related views | Click | Target Organs / Dose-Response / Histopathology / NOAEL Decision |
+| Evidence tab top findings row | Click | Dose-Response (with `endpoint_label` + `organ_system` state) |
+| Context panel: OrganPanel related views | Click | Histopathology / Dose-Response / Histopathology / NOAEL Decision (with `organ_system`) |
+| Context panel: OrganPanel contributing endpoints | Click | Dose-Response (with `organ_system`) |
+| Protective signals bar finding | Click | Histopathology (with `specimen` + `finding` state) |
 | Domain chip (Details tab) | Click | `/studies/{studyId}/domains/{domain}` |
-| Generate Report button | Click | Opens HTML report in new browser tab |
+| Provenance "Review" link | Click | Validation view with rule pre-selected |
+| Generate Report button | Click | Opens HTML report in new browser tab via `generateStudyReport()` |
+
+Note: The context panel `EndpointPanel` is currently not reachable because `StudySummaryContextPanelWrapper` always passes `selection={null}`. It shows only `OrganPanel` (organ selected) or empty state (no organ selected).
 
 ---
 
@@ -511,8 +520,9 @@ SignalsOrganRail                    SignalsEvidencePanel
 | State | Display |
 |-------|---------|
 | Loading | Centered spinner `Loader2` (animate-spin) + "Loading study summary..." |
-| Error (no generated data) | Amber-themed box (`bg-amber-50`, `text-amber-600`/`text-amber-700`, `Info` icon) with instructions to run generator command. Includes a "View cross-study insights" button that switches to the insights tab (graceful degradation for portfolio-only studies) |
-| Cross-study insights error | "Cross-study insights are not available for this study. (Only portfolio studies with metadata have insights)" |
-| Empty organ search | "No matches for '{search}'" centered in rail |
-| No signal data for organ | "No signal data for this organ." centered in overview tab |
+| Error (no generated data) + insights tab active | Tab bar still shown; CrossStudyInsightsTab renders normally (graceful degradation — insights work without analysis data) |
+| Error (no generated data) + other tab active | Amber-themed box (`bg-amber-50`, `text-amber-600`/`text-amber-700`, `Info` icon) with instructions to run generator command. Includes a "View cross-study insights" button that switches to the insights tab. Below: gray box with generator command for studies with XPT data. |
+| Cross-study insights error | `Info` icon + "Cross-study insights are not available for this study." + "(Only portfolio studies with metadata have insights)" |
+| Cross-study insights empty | "No cross-study insights available (no reference studies)." |
+| No organ selected (signals tab) | "Select an organ system from the rail to view evidence" centered in evidence panel area |
 | No metadata (Details tab) | Spinner + "Loading details..." |

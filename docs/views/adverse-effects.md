@@ -1,6 +1,6 @@
 # Adverse Effects View
 
-**Route:** `/studies/:studyId/analyses/adverse-effects`
+**Route:** `/studies/:studyId/adverse-effects` (primary), `/studies/:studyId/analyses/adverse-effects` (legacy redirect)
 **Component:** `AdverseEffectsView.tsx` (in `components/analysis/findings/`)
 **Scientific question:** "What are all the findings and how do they compare across dose groups?"
 **Role:** Dynamic server-side adverse effects analysis. Paginated findings table with per-dose-group values, server-side filtering, and detailed finding context panel.
@@ -35,7 +35,7 @@ The view itself is a traditional page-style layout with padding `p-4`:
 +-----------------------------------------------------------+
 |                                                           |
 |  Findings table (dynamic columns: fixed + per-dose-group)  |
-|  (horizontally scrollable via overflow-x-auto)             |
+|  (scrollable via max-h-[60vh] overflow-auto)               |
 |                                                           |
 +-----------------------------------------------------------+
 |  {total} rows | Rows per page [v] | Page X of Y |◀◀ ◀ ▶ ▶▶|
@@ -73,14 +73,14 @@ Only shown when data is loaded. Three classification badges plus a total count. 
 
 `flex flex-wrap items-center gap-3`
 
-Wrapped in a `mb-4` container div. Uses `FindingsFilterBar` component, which renders native `<select>` elements via the `FilterSelect` component (from `@/components/ui/FilterBar`). `FilterSelect` applies the design-token class `filter.select` = `h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary`. Each filter is wrapped in a `<label>` with classes `flex items-center gap-1.5 text-xs text-muted-foreground`.
+Wrapped in a `mb-4` container div. Uses `FindingsFilterBar` component, which renders native `<select>` elements via the `FilterSelect` component (from `@/components/ui/FilterBar`). `FilterSelect` applies the design-token class `filter.select` = `h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary`. Filters are rendered as bare `FilterSelect` components without label wrappers -- the default option text serves as the label.
 
-| Filter | Label Text | Control | Options | Default |
-|--------|-----------|---------|---------|---------|
-| Domain | "Domain" | `FilterSelect` (native `<select>`) | "All" + LB / BW / OM / MI / MA / CL | All |
-| Sex | "Sex" | `FilterSelect` (native `<select>`) | "All" / Male / Female | All |
-| Classification | "Classification" | `FilterSelect` (native `<select>`) | "All" / Adverse / Warning / Normal | All |
-| Search | -- | Native `<input>` with placeholder "Search findings..." | Free text | Empty |
+| Filter | Control | Options | Default |
+|--------|---------|---------|---------|
+| Domain | `FilterSelect` (native `<select>`) | "All domains" + LB / BW / OM / MI / MA / CL | All domains |
+| Sex | `FilterSelect` (native `<select>`) | "All sexes" / Male / Female | All sexes |
+| Classification | `FilterSelect` (native `<select>`) | "All classifications" / Adverse / Warning / Normal | All classifications |
+| Search | Native `<input>` with placeholder "Search findings..." | Free text | Empty |
 
 The search input uses classes: `rounded border bg-background px-2 py-0.5 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary`.
 
@@ -91,7 +91,7 @@ The search input uses classes: `rounded border bg-background px-2 py-0.5 text-xs
 ## Findings Table
 
 ### Structure
-Plain HTML `<table>` with `w-full text-xs`, wrapped in `overflow-x-auto` for horizontal scrolling. No TanStack sorting (data comes server-sorted).
+Plain HTML `<table>` with `w-full text-xs`, wrapped in `max-h-[60vh] overflow-auto` for both horizontal and vertical scrolling. No TanStack sorting (data comes server-sorted).
 
 ### Header Row
 - Wrapper `<thead>`: `sticky top-0 z-10 bg-background` (sticky header on vertical scroll)
@@ -111,7 +111,7 @@ Plain HTML `<table>` with `w-full text-xs`, wrapped in `overflow-x-auto` for hor
 
 One column per dose group (from `data.dose_groups` array), rendered dynamically.
 
-- **Header:** dose value + unit (e.g., "0 mg/kg/day"), or dose label if no value. `text-right`, with `title` tooltip showing label.
+- **Header:** `DoseHeader` component -- dose value + unit (e.g., "0 mg/kg/day"), or dose label if no value. Rendered via `DoseHeader` which shows the label text with a colored underline indicator (`h-0.5 w-full rounded-full` with color from `getDoseGroupColor(level)`). `text-right`, with `title` tooltip showing label.
 - **Cell:** `text-right font-mono`
   - Continuous: mean value `.toFixed(2)`, em dash if null
   - Incidence: "{affected}/{n}", em dash if null
@@ -124,11 +124,11 @@ One column per dose group (from `data.dose_groups` array), rendered dynamically.
 | trend_p | Trend | Right | `font-mono text-muted-foreground` -- formatted via `formatPValue()`. No color scale applied. |
 | direction | Dir | Center | `text-sm` with direction-specific color via `getDirectionColor()` (see below) |
 | max_effect_size | Effect | Right | `font-mono text-muted-foreground` -- formatted via `formatEffectSize()`. No color scale applied. |
-| severity | Severity | Center | `inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-semibold` with uniform gray classes from `getSeverityBadgeClasses()` |
+| severity | Severity | Center | Left-border badge: `inline-block border-l-2 pl-1.5 py-0.5 text-[10px] font-semibold text-gray-600` with colored left border from `getSeverityDotColor()` |
 
 **Note on p-value and effect-size columns:** Although `getPValueColor()` and `getEffectSizeColor()` functions exist in `severity-colors.ts`, they are **not called** in the `FindingsTable` rendering. Both p-value and effect-size cells use a hardcoded `text-muted-foreground` class. The `data-evidence=""` attribute is set on the outer `<td>`, and the inner `<span>` uses class `ev font-mono text-muted-foreground`.
 
-**Note on severity badges:** `getSeverityBadgeClasses()` returns uniform gray for all severity values (`bg-gray-100 text-gray-600 border-gray-200 border`). There is no color differentiation between adverse, warning, and normal.
+**Note on severity badges:** The severity column uses a left-border badge with `getSeverityDotColor()` providing the border color: adverse = `#dc2626`, warning = `#d97706`, normal = `#16a34a`. The text label is always gray (`text-gray-600`).
 
 ### Domain Label Colors
 
@@ -199,7 +199,7 @@ Uses `DataTablePagination` component below the table.
 
 ## Context Panel (Right Sidebar -- 280px)
 
-Route-detected: when pathname matches `/studies/{studyId}/analyses/adverse-effects`, shows `AdverseEffectsContextPanel` (uses `FindingSelectionContext`).
+Route-detected: when pathname matches `/studies/{studyId}/analyses/adverse-effects` (legacy route pattern), shows `AdverseEffectsContextPanel` (uses `FindingSelectionContext`). Note: the context panel route detection regex in `ContextPanel.tsx` only matches the legacy `/analyses/adverse-effects` path, not the primary `/adverse-effects` path.
 
 ### No Selection State
 - Header: `text-sm font-semibold` -- "Adverse Effects" (`<h3>` with `mb-2`)

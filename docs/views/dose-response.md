@@ -54,13 +54,13 @@ flex items-center gap-1.5 rounded border px-2 py-1 text-left text-xs transition-
 ```
 - Open: `border-primary bg-accent`
 - Closed: `border-border hover:border-primary/50 hover:bg-accent/50`
-- Content: selected endpoint name (`max-w-[280px] truncate font-medium`) + organ system label (`text-[10px] text-muted-foreground`, via `titleCase()`) + `ChevronDown` icon (rotates 180° when open)
+- Content: selected endpoint name (`max-w-[280px] truncate font-medium`) + organ system label (`text-[10px] text-muted-foreground`, via `titleCase()`) + endpoint count in parentheses (`text-[10px] text-muted-foreground/60`) + `ChevronDown` icon (rotates 180° when open)
 
 ### Dropdown Panel
 
 `absolute left-0 top-full z-50 mt-1 w-[420px] rounded-md border bg-popover shadow-lg`
 
-**Search input:** Top of dropdown with placeholder text for filtering endpoints by name or organ system.
+**Search input:** Top of dropdown with `Search` icon and placeholder "Search endpoints..." for filtering endpoints by name, organ system, or domain (case-insensitive substring match).
 
 **Bookmark filter toggle:** Conditionally rendered when bookmarks exist. Same bookmark pill styling as described in endpoint item features.
 
@@ -71,25 +71,25 @@ flex items-center gap-1.5 rounded border px-2 py-1 text-left text-xs transition-
 ### Endpoint Row Details
 
 Each endpoint in the dropdown shows:
-- Endpoint name: truncated, `font-semibold` when selected
-- Bookmark star: `BookmarkStar` component, toggleable
-- Direction arrow: neutral `text-muted-foreground` (categorical identity)
-- Pattern badge: neutral gray (`bg-gray-100 text-gray-600`)
-- Trend p-value: `ev text-[10px] font-mono text-muted-foreground`
-- Max effect size: `ev text-[10px] font-mono text-muted-foreground`
-- Timecourse indicator: clock symbol when `has_timecourse`
-- Assessment checkmark: when ToxFinding annotation exists
+- Endpoint name: truncated, `font-medium` when selected (via `bg-accent font-medium` on selected row)
+- Domain label: `DomainLabel` colored text next to endpoint name
+- Bookmark star: `BookmarkStar` component, toggleable (rendered last in row)
+- Direction arrow: neutral `text-[10px] text-muted-foreground` (categorical identity)
+- Pattern badge: `rounded bg-gray-100 px-1 py-0.5 text-[9px] font-medium text-gray-500` — short labels (e.g., "Mon↑", "Thresh", "Flat")
+- Trend p-value: `font-mono text-[10px] text-muted-foreground`, `font-semibold` when p < 0.01, shows "p={value}" prefix
+- Max effect size: `font-mono text-[10px] text-muted-foreground`, `font-semibold` when |d| >= 0.8, shows "|d|={value}" prefix (2 decimal places)
 
 ### Endpoint Selection
 
 - Click: selects endpoint, closes dropdown, switches to Evidence tab, updates `StudySelectionContext`
 - Auto-select on data load: highest-signal endpoint
+- Auto-select on organ filter change: when `organFilter` changes (via StudySelectionContext organ system), auto-selects the top endpoint in the filtered organ group
 
 ---
 
-## Evidence Panel (Right, flex-1)
+## Evidence Panel (flex-1)
 
-Container: `flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5`
+Container: `flex h-full flex-col bg-muted/5`
 
 ### Endpoint Summary Header
 
@@ -100,8 +100,8 @@ Container: `flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5`
 `shrink-0 border-b px-3 py-1.5`
 
 **Title row:** `flex items-start justify-between gap-2`
-- Left: `min-w-0` div with endpoint label (`text-sm font-semibold`) + subtitle on next line
-- Right: full pattern badge (`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium` with neutral gray -- same `bg-gray-100 text-gray-600` as rail badges, or pattern-specific gray variant from `PATTERN_BG`)
+- Left: `min-w-0 flex-1` div with `DoseResponseEndpointPicker` dropdown (in a `mb-1 flex items-center gap-2` container) + subtitle on next line
+- Right: full pattern badge (`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium` with pattern-specific gray variant from `PATTERN_BG`, defaulting to `bg-gray-100 text-gray-500`)
 
 **Subtitle:** `text-[11px] text-muted-foreground`
 - Format: "`<DomainLabel domain={domain} />` &middot; {titleCase(organ_system)}" — domain code rendered as colored text via DomainLabel component
@@ -122,7 +122,8 @@ Container: `flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/5`
 #### No Endpoint Selected State
 
 `shrink-0 border-b px-3 py-1.5`
-- Message: "Select an endpoint from the list to view dose-response details." -- `text-xs text-muted-foreground`
+- Shows `DoseResponseEndpointPicker` dropdown (in `mb-1 flex items-center gap-2` container)
+- Message: "Select an endpoint to view dose-response details." -- `text-xs text-muted-foreground`
 
 ### Tab Bar
 
@@ -134,9 +135,9 @@ Three tabs (left to right):
 - "Metrics"
 
 **Tab bar `right` prop content:**
-- Evidence tab: `CollapseAllButtons` (expand/collapse all sections in the Evidence tab)
-- Metrics tab: `mr-3 text-[10px] text-muted-foreground` -- "{filtered} of {total} rows"
-- Hypotheses tab: none
+- Evidence tab: `CollapseAllButtons` (expand/collapse all `ViewSection` components in the Evidence tab)
+- Metrics tab: `mr-3 text-[10px] text-muted-foreground` -- "{metricsData.length} of {drData.length} rows"
+- Hypotheses tab: none (undefined)
 
 ---
 
@@ -144,15 +145,15 @@ Three tabs (left to right):
 
 ### No Data State
 
-When no endpoint is selected: "Select an endpoint to view chart and overview." -- centered, `flex items-center justify-center p-12 text-xs text-muted-foreground`
+When no endpoint is selected or no chart data available: "Select an endpoint to view chart and overview." -- centered, `flex items-center justify-center p-12 text-xs text-muted-foreground`
 
 ### Chart Area
 
-Container: `flex border-b` -- two charts side-by-side with a `PanelResizeHandle` between them.
+Container: `ViewSection` component with `mode="fixed"`, title "Charts". Height managed by `useAutoFitSections` hook (default 280px, min 120, max 600). Two charts side-by-side with a `PanelResizeHandle` between them.
 
 **Layout:** Combined dose-response chart (left, resizable) + effect size bar chart (right, flex-1). Both sexes overlaid on each chart (not per-sex split). Overlaying sexes makes comparison immediate -- divergence/convergence is visible at a glance. The effect size chart provides magnitude context alongside the main dose-response curve.
 
-**Chart split:** Default 50/50, resizable via pointer drag (20%-80% range). The resize handle uses the shared `PanelResizeHandle` component. Effect size chart only appears when effect data exists.
+**Chart split:** Default 50/50, resizable via pointer drag (20%-80% range). The resize handle uses the shared `PanelResizeHandle` component. Effect size chart only appears when effect data exists. When no effect data, dose-response chart takes 100% width.
 
 **Charting library:** All charts use ECharts via the `EChartsWrapper` component. Option objects are built by pure functions from `dose-response-charts.ts`:
 - `buildDoseResponseLineOption()` -- continuous data line chart
@@ -208,23 +209,14 @@ Below each chart, centered: `mt-1 flex items-center justify-center gap-3 text-[1
 | M | `#3b82f6` (blue-500) |
 | F | `#ec4899` (pink-500) |
 
-### Time-course Toggle Section
+### Time-course Section
 
-**Position:** Below the chart area, ABOVE the pairwise comparison table. Rendered when `selectedEndpoint && selectedSummary` is truthy. Enclosed in a `border-t` div.
+**Position:** Below the chart area, ABOVE the pairwise comparison table. Rendered when `selectedEndpoint && selectedSummary` is truthy.
 
-**Default state:** **expanded** (`useState(true)`).
-
-**Toggle button:** `flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground`
-- Chevron: `ChevronRight` (collapsed) or `ChevronDown` (expanded), `h-3 w-3 shrink-0`
-- Label: "Time-course"
-
-**Section header:** `flex items-center justify-between px-3 py-1`
-- Left: the toggle button
-- Right (when expanded): Y-axis mode pills + "Show subjects" toggle (continuous only)
+**Container:** `ViewSection` component with `mode="fixed"`, title "Time-course". Height managed by `useAutoFitSections` hook (default 250px, min 80, max 500). The `headerRight` prop renders Y-axis mode pills and "Show subjects" toggle.
 
 **Behavior:**
-- `expanded` state persists within session (local `useState`, default `true`)
-- Data is fetched **only when expanded** (lazy loading via conditional hook arguments)
+- Data is fetched conditionally based on endpoint type (continuous vs CL)
 - Returns null (renders nothing) for non-CL categorical endpoints (`!isContinuous && !isCL`)
 
 | Condition | Rendering |
@@ -320,17 +312,15 @@ For CL (Clinical observations) endpoints, time-course data comes from the CL tem
 
 ### Pairwise Comparison Table
 
-Below the time-course section, `p-4`.
+Below the time-course section. Wrapped in a `ViewSection` component with `mode="flex"` and title "Pairwise comparison ({count})".
 
-**Header:** `mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground` -- "Pairwise comparison"
+**Table:** `w-full text-xs`
 
-**Table:** `w-full text-xs`, wrapped in `overflow-x-auto`
-
-**Header row:** `sticky top-0 z-10 bg-background` wrapping `tr` with `border-b bg-muted/50`. Header cells: `px-2 py-1.5 font-medium text-muted-foreground`.
+**Header row:** `sticky top-0 z-10 bg-background` wrapping `tr` with `border-b bg-muted/50`. Header cells: `px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`.
 
 | Column | Header | Alignment | Cell Rendering |
 |--------|--------|-----------|----------------|
-| Dose | Dose | Left | `font-mono text-[11px]` -- plain text, `dose_label.split(",")[0]`. No colored badge. |
+| Dose | Dose | Left | `DoseLabel` component -- `font-mono text-[11px]` with dose-group-colored text via `getDoseGroupColor(level)`. |
 | Sex | Sex | Left | Plain text |
 | Mean | Mean | Right | `font-mono`, 2 decimal places, em dash if null |
 | SD | SD | Right | `font-mono text-muted-foreground`, 2 decimal places, em dash if null |
@@ -376,7 +366,7 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 
 **Header row:** `sticky top-0 z-10 bg-background` wrapping `tr` with `border-b bg-muted/50`
 - Headers: `relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50` with `style={{ width: header.getSize() }}`
-- Clickable for sorting (shows triangle arrow: `\u25b2` asc / `\u25bc` desc)
+- Double-click for sorting (via `onDoubleClick={header.column.getToggleSortingHandler()}`). Shows arrow indicator: ` ↑` asc / ` ↓` desc.
 - No default sort applied
 
 **Columns (in order):**
@@ -385,7 +375,7 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 |--------|--------|----------------|
 | endpoint_label | Endpoint | Truncated at 25 chars with ellipsis, `title` tooltip for full name |
 | domain | Domain | Colored text only: `text-[9px] font-semibold` with `getDomainBadgeColor(domain).text`. No background badge. |
-| dose_level | Dose | `font-mono text-[11px]` -- plain text, `dose_label.split(",")[0]`. No colored badge. |
+| dose_level | Dose | `DoseLabel` component -- `font-mono text-[11px]` with dose-group-colored text via `getDoseGroupColor(level)`. |
 | n | N | Plain text, em dash if null |
 | sex | Sex | Plain text |
 | mean | Mean | `font-mono`, 2 decimal places, em dash if null |
@@ -414,7 +404,7 @@ Domain codes use colored-text-only rendering per the project-wide design rule. C
 
 ### Dose Group Rendering
 
-Dose groups use plain `font-mono` text (dose label). No colored badges -- color in tables encodes signal strength, not categorical identity. Dose group colors are reserved for chart series only.
+Dose groups use the `DoseLabel` component: `font-mono text-[11px]` with dose-group-colored text via `getDoseGroupColor(level)`. This applies in both the pairwise comparison table and the metrics grid.
 
 ### P-value Color Scale (text classes)
 
@@ -450,7 +440,9 @@ Dose groups use plain `font-mono` text (dose label). No colored badges -- color 
 
 ## Context Panel (Right Sidebar -- 280px)
 
-Route-detected: when pathname matches `/studies/{studyId}/dose-response`, shows `DoseResponseContextPanel`.
+Route-detected: when pathname matches `/studies/{studyId}/dose-response`, shows `DoseResponseContextPanel` via `DoseResponseContextPanelWrapper` in `ContextPanel.tsx`.
+
+The wrapper reads selection from `StudySelectionContext` (`studySel.endpoint` and `studySel.organSystem`), fetches `ruleResults` and `signalData` from shared React Query cache, and passes them to `DoseResponseContextPanel`.
 
 ### No Selection State
 
@@ -465,8 +457,8 @@ Route-detected: when pathname matches `/studies/{studyId}/dose-response`, shows 
 - Top row: `flex items-center justify-between` with:
   - Endpoint label: `text-sm font-semibold`
   - `CollapseAllButtons` component for expand/collapse all panes
-- Subtitle: `mt-1 text-xs text-muted-foreground` -- "`<DomainLabel domain={domain} />` &middot; {titleCase(organ_system)}", optionally " &middot; {sex}" if sex is set. Domain code rendered as colored text via DomainLabel component.
-- `TierCountBadges`: `mt-1.5 text-xs` -- shows tier count badges from `computeTierCounts(endpointRules)`, with clickable tier filtering
+- Subtitle: `mt-1 text-xs text-muted-foreground` -- "`<DomainLabel domain={domain} />` &middot; {titleCase(organ_system)}", optionally " &middot; {sex}" if sex is set in selection. Domain code rendered as colored text via DomainLabel component.
+- `TierCountBadges`: `mt-1.5 text-xs` -- shows tier count badges from `computeTierCounts(endpointRules)`, with clickable tier filtering via `tierFilter` state
 
 #### Pane 1: Insights (default open)
 
@@ -510,7 +502,7 @@ Data is aggregated by dose level across sexes: N is summed, mean/SD/incidence ar
 
 Empty state: "No dose-level data for selected endpoint."
 
-Note: The `selectedSignalRow` computation (for key-value signal statistics) is fully commented out in the code. The Statistics pane uses the dose-level breakdown table exclusively.
+Note: `selectedSignalRow` is computed from `signalData` (best signal row for the selected endpoint) and used by the `ToxFindingForm` to derive system suggestions via `deriveToxSuggestion()`. The Statistics pane itself uses the dose-level breakdown table exclusively.
 
 #### Pane 3: Correlations (default open)
 
@@ -530,9 +522,9 @@ Empty state: "No other endpoints in this organ system."
 
 #### Pane 4: Tox Assessment
 
-`ToxFindingForm` component keyed by `endpointLabel` (the selected endpoint).
+`ToxFindingForm` component with `endpointLabel` (the selected endpoint) and `systemSuggestion` derived from `selectedSignalRow` via `deriveToxSuggestion()`.
 - Treatment related dropdown, adversity dropdown, comment textarea, SAVE button.
-- Only rendered when `studyId` is available.
+- Only rendered when `studyId` is available. Not wrapped in a `CollapsiblePane`.
 
 #### Pane 5: Related views (default closed)
 
@@ -551,20 +543,21 @@ All links: `block text-primary hover:underline`, arrow suffix (`&#x2192;`).
 |-------|-------|------------|
 | Selected endpoint | Local | `useState<string \| null>` -- tracks which endpoint is active in the picker and evidence panel |
 | Active tab | Local | `useState<"evidence" \| "hypotheses" \| "metrics">` -- switches between evidence, metrics, and hypotheses views |
-| Rail search | Local | `useState<string>` -- text input for filtering endpoints in the rail |
-| Expanded organs | Local | `useState<Set<string>>` -- tracks which organ groups are expanded in the picker dropdown |
-| Selection | Shared via context | `StudySelectionContext` via `useStudySelection()` hook |
+| Selection (local) | Local | `useState<DoseResponseSelection \| null>` -- full selection object with endpoint_label, sex, domain, organ_system |
+| Section collapse | Local | `useCollapseAll()` -- generation counters for Evidence tab ViewSection expand/collapse |
+| Selection (shared) | Shared via context | `StudySelectionContext` via `useStudySelection()` hook -- syncs `studySelection.endpoint` and `studySelection.organSystem` |
 | Metrics filters | Local | `useState` -- `{ sex, data_type, organ_system }`, each nullable string |
 | sigOnly | Local | `useState<boolean>(false)` -- checkbox filter for p < 0.05 rows |
 | Sorting | Local | `useState<SortingState>` -- TanStack sorting state for metrics table |
 | Column sizing | Local | `useState<ColumnSizingState>` -- TanStack column resize state for metrics table |
-| Bookmark filter | Local | `useState<boolean>(false)` -- toggles picker to show only bookmarked endpoints |
-| Bookmarks | Server | `useEndpointBookmarks(studyId)` hook |
+| Bookmark filter | Local (picker) | `useState<boolean>(false)` inside `DoseResponseEndpointPicker` -- toggles to show only bookmarked endpoints |
+| Picker search | Local (picker) | `useState<string>` inside `DoseResponseEndpointPicker` -- text input for filtering endpoints |
+| Bookmarks | Server | `useEndpointBookmarks(studyId)` hook (inside picker) |
 | Dose-response data | Server | `useDoseResponseMetrics(studyId)` hook (React Query) |
 | Rule results | Server | `useRuleResults(studyId)` hook (consumed by Hypotheses tab and context panel) |
 | Signal summary | Server | `useStudySignalSummary(studyId)` hook (consumed by Hypotheses tab) |
 | NOAEL summary | Server | `useNoaelSummary(studyId)` hook (consumed by summary header and chart NOAEL reference line) |
-| ToxFinding annotations | Server | `useAnnotations<ToxFinding>(studyId, "tox-finding")` (consumed by rail checkmarks and header "Assessed" field) |
+| ToxFinding annotations | Server | `useAnnotations<ToxFinding>(studyId, "tox-finding")` (consumed by header "Assessed" field) |
 
 ---
 
@@ -592,17 +585,15 @@ Groups all rows by `endpoint_label`, then for each endpoint extracts:
 
 Returned sorted by `signal_score` descending.
 
-### OrganGroup
+### OrganPickerGroup (inside DoseResponseEndpointPicker)
 
-Computed by `deriveOrganGroups()` from `EndpointSummary[]`:
+Computed by `groupByOrgan()` from `EndpointPickerSummary[]` (inside the picker component):
 
 Groups summaries by `organ_system`. Each group has:
 - `organ_system` -- the organ system name
-- `endpoints` -- the endpoint summaries in that group (already sorted by signal score)
-- `max_signal_score` -- the highest signal score among its endpoints
-- `domains` -- sorted array of unique domain codes across the group's endpoints
+- `endpoints` -- the endpoint picker summaries in that group (already sorted by signal score)
 
-Returned sorted by `max_signal_score` descending.
+Returned sorted by max signal score descending across each group's endpoints.
 
 ---
 
@@ -615,26 +606,22 @@ useDoseResponseMetrics(studyId)  --> drData (rows)
          |
     endpointSummaries (ranked by signal_score)
          |
-    deriveOrganGroups()
-         |
-    organGroups (for rail)
-         |
-    [user selects endpoint in rail or metrics table]
+    [user selects endpoint in picker or metrics table]
          |
     chartData + pairwiseRows (filtered by selectedEndpoint)
          |
-    DoseResponseSelection (shared via ViewSelectionContext)
+    DoseResponseSelection (synced via StudySelectionContext)
          |
-    DoseResponseContextPanel
+    DoseResponseContextPanel (via ContextPanel.tsx wrapper)
          /        |        \
     Insights  Statistics  ToxAssessment
                  (dose-level breakdown table)
 ```
 
 Additional data flows:
-- `useEndpointBookmarks(studyId)` --> bookmark state for rail filtering and BookmarkStar rendering
+- `useEndpointBookmarks(studyId)` --> bookmark state for picker filtering and BookmarkStar rendering (inside picker component)
 - `useNoaelSummary(studyId)` --> NOAEL reference line on charts + NOAEL info in summary header
-- `useAnnotations<ToxFinding>(studyId, "tox-finding")` --> assessment checkmarks in rail + "Assessed" field in header
+- `useAnnotations<ToxFinding>(studyId, "tox-finding")` --> "Assessed" field in summary header
 - `useRuleResults(studyId)` + `useStudySignalSummary(studyId)` --> passed to HypothesesTabContent for Causality tool
 
 ---
@@ -660,8 +647,10 @@ Accepts `location.state` with `{ organ_system?, endpoint_label? }`:
 
 ## Auto-Selection Behavior
 
-- **On data load** (if no endpoint selected): auto-selects the highest-signal endpoint, expands its organ group, sets selection for context panel.
-- **On rail endpoint click:** selects endpoint, switches to "Evidence" tab, updates selection.
+- **On data load** (if no endpoint selected): auto-selects the highest-signal endpoint (scoped to selected organ system if one exists in `StudySelectionContext`), sets selection for context panel.
+- **On StudySelectionContext endpoint change:** syncs local `selectedEndpoint` to `studySelection.endpoint` when they differ.
+- **On StudySelectionContext organ change:** clears local endpoint so auto-select re-fires for the new organ.
+- **On picker endpoint click:** selects endpoint, closes dropdown, switches to "Evidence" tab, updates selection and `StudySelectionContext`.
 - **On metrics table row click:** sets selection with `endpoint_label` + `sex` + `domain` + `organ_system`, syncs `selectedEndpoint`. Click again to deselect (toggle).
 
 ---
@@ -672,8 +661,9 @@ Accepts `location.state` with `{ organ_system?, endpoint_label? }`:
 |-------|---------|
 | Loading | Centered spinner `Loader2` (animate-spin) + "Loading dose-response data..." |
 | Error (no generated data) | Red box with instructions to run generator command: `cd backend && python -m generator.generate {studyId}` |
-| No endpoint selected | "Select an endpoint from the list to view dose-response details." in evidence panel header area |
-| Rail search no matches | "No endpoints match your search." in rail body |
+| No endpoint selected (header) | "Select an endpoint to view dose-response details." in evidence panel header area |
+| No endpoint selected (chart) | "Select an endpoint to view chart and overview." centered in chart area |
+| Picker no matches | "No endpoints match." in dropdown body |
 | Metrics no matches | "No rows match the current filters." below table |
 
 ---
@@ -1091,7 +1081,7 @@ All Hypotheses tab state is session-scoped:
 - Update NOAEL or target organ decisions
 - Rewrite text on the Evidence tab
 - Store model parameters as authoritative results
-- Modify the `DoseResponseSelection` shared via `ViewSelectionContext`
+- Modify the `DoseResponseSelection` shared via `StudySelectionContext`
 - Override conclusions from the Evidence tab or any other view
 - (Causality exception: may persist Bradford Hill reasoning via annotations API, but this documents rationale -- it does not change computed results)
 
@@ -1103,6 +1093,7 @@ All Hypotheses tab state is session-scoped:
 
 ```tsx
 export function DoseResponseViewWrapper() {
+  // No rail mode preference — respects user's current mode
   return <DoseResponseView />;
 }
 ```
@@ -1113,10 +1104,9 @@ The view uses `StudySelectionContext` (not `ViewSelectionContext`) for selection
 
 ## Current Issues / Improvement Opportunities
 
-### Rail
-- No keyboard navigation between endpoints or organ groups
+### Endpoint Picker
+- No keyboard navigation between endpoints or organ groups in the dropdown
 - Signal score is computed locally (not from generated data) -- may diverge from `study_signal_summary.json` scores
-- Organ group headers don't show aggregate statistics (unlike Target Organs rail items which show evidence scores)
 
 ### Charts
 - Error bars use raw SD, not SEM
@@ -1140,6 +1130,22 @@ The view uses `StudySelectionContext` (not `ViewSelectionContext`) for selection
 ---
 
 ## Changelog
+
+### 2026-02-15 -- Spec sync with codebase
+
+- **Endpoint picker details:** Updated trigger button to include endpoint count. Search placeholder now documented. Endpoint row details corrected: `font-medium` not `font-semibold` for selected, added `DomainLabel`, removed timecourse indicator and assessment checkmark (not in picker code). Pattern badge uses short labels (Mon↑, Thresh, etc.) with `text-[9px] font-medium text-gray-500`. P-value and effect size use font-weight emphasis (not `ev` class in picker).
+- **No endpoint state:** Both states (selected/unselected) now show the `DoseResponseEndpointPicker` dropdown. "Select an endpoint" message corrected from "from the list" to just "to view dose-response details."
+- **Chart area container:** Updated from `flex border-b` to `ViewSection` with `mode="fixed"` and `useAutoFitSections` for height management (default 280px, min 120, max 600).
+- **Time-course section:** Replaced manual collapsible toggle description with `ViewSection` component using `mode="fixed"` and `useAutoFitSections` (default 250px, min 80, max 500). `headerRight` prop for Y-axis pills and Show subjects toggle.
+- **Pairwise table:** Updated from `p-4` wrapper to `ViewSection` with `mode="flex"` and title "Pairwise comparison ({count})". Header cells corrected from `font-medium` to `font-semibold uppercase tracking-wider`.
+- **Dose columns:** Updated from "plain font-mono text, no colored badge" to `DoseLabel` component with `getDoseGroupColor(level)` colored text. Applies to both pairwise table and metrics grid.
+- **Metrics sorting:** Changed from `onClick` to `onDoubleClick` for sort toggling. Sort arrows changed from triangles to `↑`/`↓`.
+- **Context panel:** Updated wrapper description. Selection reads from `StudySelectionContext` (not `ViewSelectionContext`). Wrapper documented (`DoseResponseContextPanelWrapper` in `ContextPanel.tsx`).
+- **ToxFindingForm:** Documented `systemSuggestion` prop derived from `selectedSignalRow`. Noted that `selectedSignalRow` is active (not commented out).
+- **State management:** Removed stale "Rail search" and "Expanded organs" states. Added local `selection` state, section collapse state, and reorganized picker-internal state (bookmark filter, search).
+- **Data flow:** Removed `deriveOrganGroups()` (deleted function). Updated OrganGroup to OrganPickerGroup (internal to picker).
+- **Auto-selection:** Documented StudySelectionContext sync (endpoint change, organ change), organ-scoped auto-select.
+- **Error states:** Updated messages to match code. Added "No endpoints match." for empty picker.
 
 ### 2026-02-12 -- 78-rule audit fixes (Phase 4)
 

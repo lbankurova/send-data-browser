@@ -73,7 +73,7 @@ Container: `border-b px-8 py-4`
 `flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-foreground hover:text-foreground`
 - Chevron: `ChevronRight h-3 w-3`, rotates 90deg when open
 - Label: "Import new study" (rendered uppercase via CSS `uppercase` class)
-- Default: closed (opens by default when no studies loaded)
+- Default: closed (opens by default when not loading and no studies loaded: `!isLoading && (studies ?? []).length === 0`)
 
 ### Expanded Content (when open)
 `mt-4 space-y-4`
@@ -160,7 +160,7 @@ Container: `px-8 py-6`
 - "Import your first study to get started." -- `mt-1 text-sm text-muted-foreground`
 
 ### Table
-`overflow-x-auto rounded-md border bg-card`
+`max-h-[60vh] overflow-auto rounded-md border bg-card`
 
 Plain HTML table, `w-full text-xs`
 
@@ -224,14 +224,19 @@ Header cells: `px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text
 | `useProjects()` | Server (React Query) | Program list for filter dropdown |
 | `useScenarios(designMode)` | Server (React Query) | Scenario studies (only when design mode enabled) |
 
-**Study merging:** Real studies from `useStudies()` are mapped to `DisplayStudy` with portfolio fields set to undefined. Portfolio studies from `useStudyPortfolio()` are mapped with full metadata including `pipeline_stage`, `duration_weeks`, `noael_value` (resolved via `noael()` accessor with derived "(d)" suffix), and `validation` status computed from error/warning counts. Both arrays are concatenated into `allStudiesUnfiltered`, then filtered by `projectFilter` to produce `allStudies`.
+**Study merging:** Real studies from `useStudies()` are mapped to `DisplayStudy` with portfolio-specific fields (`pipeline_stage`, `noael_value`) set to undefined. The `duration_weeks` is calculated from `start_date`/`end_date` if both are available. Portfolio studies from `useStudyPortfolio()` are mapped with full metadata including `pipeline_stage`, `duration_weeks`, `noael_value` (resolved via `noael()` accessor with derived "(d)" suffix), and `validation` status computed from error/warning counts. Both arrays are concatenated into `allStudiesUnfiltered`, then filtered by `projectFilter` to produce `allStudies`.
 
 ### Scenario Studies Section
-When design mode is active, scenario studies appear below a dashed separator (`border-t border-dashed`). Each scenario row shows:
-- `Wrench` icon instead of `MoreVertical` actions button (`mx-auto h-3.5 w-3.5 text-muted-foreground/60`)
-- Study name in `font-medium text-muted-foreground`
-- study_type, subjects, and "Scenario" status label
-- Validation icon from `VAL_DISPLAY` lookup
+When design mode is active, scenario studies appear below a dashed separator (`border-t border-dashed`). Separator row uses `colSpan={9}`. Each scenario row renders 9 `<td>` elements (fewer than the 12-column header):
+1. `Wrench` icon (`mx-auto h-3.5 w-3.5 text-muted-foreground/60`)
+2. Study name in `font-medium text-muted-foreground`
+3. study_type in `text-muted-foreground/60`, em dash if null
+4. em dash in `text-muted-foreground/60`
+5. Subjects in `text-right tabular-nums text-muted-foreground/60`, em dash if null
+6. em dash in `text-muted-foreground/60`
+7. em dash in `text-muted-foreground/60`
+8. "Scenario" label in `text-xs text-muted-foreground/60`
+9. Validation icon from `VAL_DISPLAY` lookup
 
 ### Design Mode Toggle
 Below the table: `mt-3 flex items-center gap-2`
@@ -359,7 +364,7 @@ When the selected study ID starts with `"SCENARIO-"`, the context panel renders 
 | (header) | -- | Wrench icon + scenario name, description text |
 | Expected issues | Open | List of rule IDs with severity and count, or "No issues expected (clean study)." |
 | What to check | Open | Bulleted checklist items |
-| Actions | -- | "Open scenario" and "Validation report" links |
+| Actions | Closed | "Open scenario" and "Validation report" links |
 
 ---
 

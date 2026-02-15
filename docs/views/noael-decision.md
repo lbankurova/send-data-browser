@@ -84,7 +84,7 @@ The NOAEL view does **not** embed its own organ rail. Instead, it declares a pre
 
 The selected organ flows from `StudySelectionContext` (`studySelection.organSystem`). Organ items, sorting, and search are managed by `OrganRailMode` (see `docs/systems/navigation-and-layout.md`).
 
-When the user clicks an organ in the shell rail, the view reads the selection and filters adverse effect data accordingly. Clicking an organ resets both sex and TR filters to null and clears any endpoint selection.
+When the user clicks an organ in the shell rail, the view reads the selection and filters adverse effect data accordingly. Clicking an organ resets the TR filter to null and clears any endpoint selection. The sex filter is **not** reset because it is managed globally via `GlobalFilterContext`.
 
 ---
 
@@ -94,6 +94,7 @@ When the user clicks an organ in the shell rail, the view reads the selection an
 
 - Organ name: `text-sm font-semibold` (displayed via `titleCase()` from `severity-colors.ts`)
 - Adverse badge (if adverseCount > 0): `rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground` — "{N} adverse" (neutral bordered pill, matching S-05 badge padding)
+- Recovery badge (if recovery data present and organ has an overall verdict): `rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground` — shows verdict arrow + verdict text (e.g., "reversed", "persistent"). Uses `verdictArrow()` from `recovery-assessment.ts`.
 - Summary text: `mt-1 text-xs leading-relaxed text-muted-foreground` — "{N} endpoints across {D} domains, {M} adverse, {T} treatment-related."
 - Compact metrics: `mt-2 flex flex-wrap gap-3 text-[11px]` — max |d| (font-mono, font-semibold if >= 0.8), min p (font-mono, font-semibold if < 0.01). Typography-only, no color.
 
@@ -107,6 +108,8 @@ Two tabs: **Evidence** and **Adversity matrix**
 
 Active tab: `text-foreground` + `h-0.5 bg-primary` underline.
 Inactive tab: `text-muted-foreground hover:text-foreground`.
+
+When the Adversity matrix tab is active, `CollapseAllButtons` are rendered in the right slot of the tab bar via `ViewTabBar`'s `right` prop.
 
 This matches the canonical tab bar pattern (CLAUDE.md hard rule).
 
@@ -129,6 +132,7 @@ Each endpoint is a clickable `<button>` row:
 - Max effect size: `shrink-0 font-mono text-[10px] text-muted-foreground`
 - Severity label: `shrink-0 text-[9px] text-muted-foreground` — plain text (adverse/warning/normal)
 - TR badge (if treatment-related): `shrink-0 text-[9px] font-medium text-muted-foreground` — "TR"
+- Recovery verdict (if recovery data present, MI/MA domain endpoints only): `shrink-0 text-[9px] text-muted-foreground` — shows verdict arrow + verdict text via `verdictArrow()`. Only shown for endpoints with meaningful recovery verdicts (not "not_observed" or "no_data").
 
 All evidence columns use neutral muted text except domain codes, which use colored text via `<DomainLabel>` per the domain label hard rule.
 
@@ -146,14 +150,14 @@ Two zones: filter bar + scrollable content (adversity matrix in `ViewSection mod
 
 ### Filter Bar
 
-`flex items-center gap-2 border-b bg-muted/30 px-4 py-2`
+Uses `FilterBar` component (standard `border-b bg-muted/30 px-4 py-2` layout).
 
 | Filter | Type | Control | Default |
 |--------|------|---------|---------|
-| Sex | Dropdown | `<select>` with "All sexes" / Male / Female | All |
-| Treatment related | Dropdown | `<select>` with "All TR status" / "Treatment-related" / "Not treatment-related" | All |
+| Sex | Dropdown | `FilterSelect` with "All sexes" / Male / Female | Global (`GlobalFilterContext`) |
+| Treatment related | Dropdown | `FilterSelect` with "All TR status" / "Treatment-related" / "Not treatment-related" | All (local) |
 
-No organ dropdown (organ already selected via rail). Row count indicator: right-aligned `ml-auto text-[10px] text-muted-foreground`, "{filtered} of {total} findings".
+No organ dropdown (organ already selected via rail). Row count indicator: `FilterBarCount` component, "{filtered} of {total} findings".
 
 ### Adversity Matrix
 
@@ -163,7 +167,7 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 
 **Structure:** `overflow-x-auto` > `inline-block` — horizontal scrollable flex layout.
 
-**Header row:** Endpoint label column `w-48 shrink-0` + dose columns each `w-16 shrink-0 text-center text-[10px] font-medium text-muted-foreground`. Dose headers show actual dose labels (from allAeData), falling back to "Dose {level}".
+**Header row:** Endpoint label column `w-48 shrink-0` + dose columns each `w-16 shrink-0 text-center text-[10px] font-medium text-muted-foreground`. Dose headers use `DoseHeader` component, showing actual dose labels (from allAeData), falling back to "Dose {level}".
 
 **Data rows:** Only endpoints with at least one adverse + treatment_related finding. Sort: first adverse dose level ascending, then alphabetically by endpoint label.
 - Each `flex border-t` row
@@ -189,11 +193,11 @@ Each cell has a tooltip: `"{endpoint} at {dose}: {severity} [(TR)]"`.
 
 ### Adverse Effect Grid
 
-Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Adverse effect summary ({N} rows)"
+Rendered inside `ViewSection mode="flex"` with title "Adverse effect summary ({N})" where N is the filtered count.
 
 TanStack React Table, `text-xs`, client-side sorting with column resizing. Scoped to selected organ.
 
-Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` for resize support. Column resizing enabled via `enableColumnResizing: true` and `columnResizeMode: "onChange"`. Each header has a resize handle (`absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize`). Cell widths use `header.getSize()` / `cell.column.getSize()`.
+Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` for resize support. Column resizing enabled via `enableColumnResizing: true` and `columnResizeMode: "onChange"`. Each header has a resize handle (`absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize`). Sorting is triggered by double-clicking column headers. Cell widths use `header.getSize()` / `cell.column.getSize()`.
 
 **Columns:**
 
@@ -201,7 +205,7 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 |--------|--------|----------------|
 | endpoint_label | Endpoint | Truncated at 30 chars with ellipsis, `title` tooltip |
 | domain | Domain | Plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` |
-| dose_level | Dose | `text-muted-foreground`, shows `dose_label.split(",")[0]` |
+| dose_level | Dose | Shows `DoseLabel` component with dose level + first segment of `dose_label` |
 | sex | Sex | Plain text |
 | p_value | P-value | `ev font-mono` — interaction-driven evidence color (neutral at rest, `#DC2626` on row hover/selection via `ev` CSS class) |
 | effect_size | Effect | `ev font-mono` — interaction-driven evidence color |
@@ -209,6 +213,7 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 | severity | Severity | `text-muted-foreground` (plain text) |
 | treatment_related | TR | `text-muted-foreground` — "Yes" or "No" |
 | dose_response_pattern | Pattern | `text-muted-foreground`, underscores replaced with spaces |
+| recovery | Recovery | **Conditional column** — only present when `recovery.hasRecovery` is true. For MI/MA domain rows: shows verdict arrow + verdict text (`text-[9px]`, `font-medium text-foreground/70` for persistent/progressing, else `text-muted-foreground`). Tooltip shows full recovery assessment details via `buildRecoveryTooltip()`. For non-MI/MA rows: em dash. |
 
 Row cap: 200 rows with message. Row interactions: click to select/deselect, hover highlight.
 
@@ -236,9 +241,9 @@ Header: sticky, endpoint name (`text-sm font-semibold`) + `CollapseAllButtons`. 
 
 Panes (ordered per design system priority — insights → stats → annotation → navigation):
 1. **Insights** (default open) — `InsightsList` with endpoint-scoped rules + `tierFilter` from header badges
-2. **Adversity rationale** (default open) — dose-level rows for selected endpoint + sex, with p-value, effect size, severity badge (`getSeverityBadgeClasses`)
-3. **Tox Assessment** — `ToxFindingForm` keyed by endpoint_label (annotation before navigation)
-4. **Related views** (default closed) — "View dose-response" (passes endpoint_label + organ_system), "View target organs", "View histopathology" (pass organ_system)
+2. **Adversity rationale** (default open) — dose-level rows for selected endpoint + sex, with p-value, effect size, severity text colored via `getSeverityDotColor()`. Empty state: "No data for selected endpoint."
+3. **Tox Assessment** — `ToxFindingForm` keyed by endpoint_label, with `systemSuggestion` derived from the best row (preferring adverse) via `deriveToxSuggestion()`
+4. **Related views** (default closed) — "View dose-response" (passes endpoint_label + organ_system), "View study summary" (passes organ_system), "View histopathology" (passes organ_system)
 
 ---
 
@@ -248,16 +253,18 @@ Panes (ordered per design system priority — insights → stats → annotation 
 |-------|-------|------------|
 | Selected organ | Shared via context | `StudySelectionContext` (`studySelection.organSystem`) — set by shell-level organ rail |
 | Active tab | Local | `useState<EvidenceTab>` — "overview" (Evidence tab) or "matrix" (Adversity matrix tab) |
-| Selection (endpoint) | Local | `useState<NoaelSelection \| null>` — endpoint + dose + sex selection |
-| Sex filter | Local | `useState<string \| null>` — for Adversity matrix tab |
-| TR filter | Local | `useState<string \| null>` — for Adversity matrix tab |
+| Selection (endpoint) | Local | `useState<NoaelSelection \| null>` — endpoint + dose + sex selection, bridged to `ViewSelectionContext` with `_view: "noael"` tag |
+| Sex filter | Global | `GlobalFilterContext` (`globalFilters.sex`) — shared across views, persists when switching organs |
+| TR filter | Local | `useState<string \| null>` — for Adversity matrix tab, reset to null on organ change |
 | Sorting | Local | `useState<SortingState>` — TanStack sorting state (in AdversityMatrixTab) |
 | Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in AdversityMatrixTab) |
 | Section heights | Local (AdversityMatrixTab) | `useAutoFitSections` — matrix section (250px default, 80-500px) |
+| Expand/collapse all | Local | `useCollapseAll` — `expandGen`/`collapseGen` counters for ViewSection and CollapseAllButtons |
 | Rail width | Shell | Managed by shell-level `OrganRailMode` (not embedded in this view) |
 | NOAEL summary data | Server | `useNoaelSummary` hook (React Query, 5min stale) |
 | Adverse effect data | Server | `useAdverseEffectSummary` hook (React Query, 5min stale) |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
+| Recovery data | Server | `useOrganRecovery` hook — fetches histopath subject data per MI/MA specimen, derives recovery assessments via `deriveRecoveryAssessments()` |
 
 ---
 
@@ -270,18 +277,23 @@ useRuleResults(studyId)           ──> ruleResults (shared React Query cache)
                                           |
                               deriveOrganSummaries() → OrganSummary[]
                                           |
-                                  OrganRail (sorted by adverseCount desc)
-                                          |
                               [selectedOrgan] → filter aeData
                                           |
                                   organData → deriveEndpointSummaries()
+                                          |
+                              extract MI/MA specimens from organData
+                                          |
+                              useOrganRecovery(studyId, specimens)
+                                          |
+                                  organRecovery → { bySpecimen, byEndpointLabel,
+                                                    assessmentByLabel, overall, hasRecovery }
                                      /              \
                             OverviewTab          AdversityMatrixTab
                             (endpoints,          (matrix + grid,
-                             insights,            sex/TR filter)
-                             cross-view)               |
+                             insights,            sex/TR filter,
+                             recovery)            recovery column)
                                   \              /
-                              NoaelSelection (shared)
+                              NoaelSelection (shared via ViewSelectionContext)
                                           |
                                 NoaelContextPanel
                                   /    |     |      \
@@ -300,14 +312,19 @@ useRuleResults(studyId)           ──> ruleResults (shared React Query cache)
 | Action | Navigates To | State Passed |
 |--------|-------------|-------------|
 | "View dose-response" | `/studies/{studyId}/dose-response` | `{ endpoint_label, organ_system }` |
-| "View target organs" | `/studies/{studyId}/target-organs` | `{ organ_system }` |
-| "View histopathology" | `/studies/{studyId}/histopathology` | `{ organ_system }` |
+| "View study summary" | `/studies/{studyId}` | `{ organ_system }` (if available) |
+| "View histopathology" | `/studies/{studyId}/histopathology` | `{ organ_system }` (if available) |
+
+### Outbound (Overview tab — Insights `onEndpointClick`)
+| Action | Navigates To | State Passed |
+|--------|-------------|-------------|
+| Click organ name in insight | `/studies/{studyId}/dose-response` | `{ organ_system }` |
 
 ---
 
 ## Keyboard
 
-- **Escape**: clears endpoint-level selection (via `keydown` listener on `window`)
+- **Escape**: clears endpoint-level selection and `ViewSelectionContext` (via `keydown` listener on `window`)
 
 ---
 
