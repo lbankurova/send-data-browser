@@ -251,6 +251,11 @@ export function OrganRailMode() {
     if (filters.significantOnly) {
       list = list.filter((o) => o.n_significant > 0);
     }
+    if (filters.minSeverity > 0) {
+      list = list.filter(
+        (o) => o.max_severity !== null && o.max_severity >= filters.minSeverity,
+      );
+    }
 
     // Sort
     switch (sortBy) {
@@ -273,7 +278,7 @@ export function OrganRailMode() {
         break;
     }
     return list;
-  }, [targetOrgans, filters.search, filters.adverseOnly, filters.significantOnly, sortBy]);
+  }, [targetOrgans, filters.search, filters.adverseOnly, filters.significantOnly, filters.minSeverity, sortBy]);
 
   // Evidence stats per organ
   const organStatsMap = useMemo(() => {

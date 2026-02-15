@@ -83,6 +83,7 @@ def build_target_organ_summary(findings: list[dict]) -> list[dict]:
         "n_significant": 0,
         "n_treatment_related": 0,
         "n_endpoints": 0,
+        "max_severity": None,  # numeric 1-5 scale from MI/MA/CL group_stats
     })
 
     for finding in findings:
@@ -107,6 +108,13 @@ def build_target_organ_summary(findings: list[dict]) -> list[dict]:
         if finding.get("treatment_related"):
             data["n_treatment_related"] += 1
 
+        # Track max numeric severity from histopath group stats (MI/MA/CL)
+        for gs in finding.get("group_stats", []):
+            sev = gs.get("avg_severity")
+            if sev is not None:
+                if data["max_severity"] is None or sev > data["max_severity"]:
+                    data["max_severity"] = sev
+
     rows = []
     for organ, data in organ_data.items():
         evidence_score = data["total_signal"] / max(len(data["endpoints"]), 1)
@@ -114,6 +122,7 @@ def build_target_organ_summary(findings: list[dict]) -> list[dict]:
         domain_count = len(data["domains"])
         evidence_score *= (1 + 0.2 * (domain_count - 1))
 
+        max_sev = data["max_severity"]
         rows.append({
             "organ_system": organ,
             "evidence_score": round(evidence_score, 3),
@@ -124,6 +133,7 @@ def build_target_organ_summary(findings: list[dict]) -> list[dict]:
             "n_significant": data["n_significant"],
             "n_treatment_related": data["n_treatment_related"],
             "target_organ_flag": evidence_score >= 0.3 and data["n_significant"] >= 1,
+            "max_severity": round(max_sev, 2) if max_sev is not None else None,
         })
 
     rows.sort(key=lambda r: r["evidence_score"], reverse=True)

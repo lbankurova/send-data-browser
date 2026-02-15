@@ -35,6 +35,8 @@ export interface TargetOrganRow {
   n_significant: number;
   n_treatment_related: number;
   target_organ_flag: boolean;
+  /** Max numeric severity (1-5 scale) from MI/MA/CL findings, null if no histopath data. */
+  max_severity: number | null;
 }
 
 export interface RuleParams {
