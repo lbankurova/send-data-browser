@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState, useEffect, Fragment } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CollapsiblePane } from "./CollapsiblePane";
@@ -23,8 +23,9 @@ import type { PathologyReview } from "@/types/annotations";
 import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
-import { deriveRecoveryAssessments, MIN_RECOVERY_N } from "@/lib/recovery-assessment";
+import { deriveRecoveryAssessments, MIN_RECOVERY_N, verdictArrow } from "@/lib/recovery-assessment";
 import type { RecoveryAssessment, RecoveryDoseAssessment } from "@/lib/recovery-assessment";
+import type { SubjectHistopathEntry } from "@/types/timecourse";
 
 // ─── Specimen-scoped insights (purpose-built for context panel) ──────────────
 
@@ -538,10 +539,14 @@ function RecoveryPaneContent({
   assessment,
   onSubjectClick,
   recoveryDays,
+  allSubjects,
+  onCompareSubjects,
 }: {
   assessment: RecoveryAssessment;
   onSubjectClick?: (usubjid: string) => void;
   recoveryDays?: number | null;
+  allSubjects?: SubjectHistopathEntry[];
+  onCompareSubjects?: (subjectIds: string[]) => void;
 }) {
   const visible = assessment.assessments.filter(
     (a) => a.verdict !== "not_observed" && a.verdict !== "no_data",
@@ -550,31 +555,70 @@ function RecoveryPaneContent({
   if (visible.length === 0) return null;
 
   return (
-    <div className="space-y-3">
+    <div>
       {visible.map((a, i) => (
-        <RecoveryDoseBlock
-          key={a.doseLevel}
-          assessment={a}
-          onSubjectClick={onSubjectClick}
-          showBorder={i < visible.length - 1}
-          recoveryDays={recoveryDays}
-        />
+        <Fragment key={a.doseLevel}>
+          {i > 0 && <div className="border-t border-border/40 my-2" />}
+          {/* E-5: anomaly/insufficient_n container treatment */}
+          {a.verdict === "anomaly" ? (
+            <div className="rounded border border-amber-300/30 bg-amber-50/20 px-2 py-1.5">
+              <RecoveryDoseBlock
+                assessment={a}
+                onSubjectClick={onSubjectClick}
+                recoveryDays={recoveryDays}
+                allSubjects={allSubjects}
+                onCompareSubjects={onCompareSubjects}
+              />
+            </div>
+          ) : a.verdict === "insufficient_n" ? (
+            <div className="rounded border border-border/30 bg-muted/10 px-2 py-1.5">
+              <RecoveryDoseBlock
+                assessment={a}
+                onSubjectClick={onSubjectClick}
+                recoveryDays={recoveryDays}
+                allSubjects={allSubjects}
+                onCompareSubjects={onCompareSubjects}
+              />
+            </div>
+          ) : (
+            <RecoveryDoseBlock
+              assessment={a}
+              onSubjectClick={onSubjectClick}
+              recoveryDays={recoveryDays}
+              allSubjects={allSubjects}
+              onCompareSubjects={onCompareSubjects}
+            />
+          )}
+        </Fragment>
       ))}
     </div>
   );
 }
 
+const SUBJECT_COLLAPSE_THRESHOLD = 4;
+const MAX_COMPARISON_SUBJECTS = 8;
+
 function RecoveryDoseBlock({
   assessment: a,
   onSubjectClick,
-  showBorder,
   recoveryDays,
+  allSubjects,
+  onCompareSubjects,
 }: {
   assessment: RecoveryDoseAssessment;
   onSubjectClick?: (usubjid: string) => void;
-  showBorder: boolean;
   recoveryDays?: number | null;
+  allSubjects?: SubjectHistopathEntry[];
+  onCompareSubjects?: (subjectIds: string[]) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // E-6: Reset collapsed state on finding change (new subject set)
+  const subjectIds = a.recovery.subjectDetails.map((s) => s.id).join(",");
+  useEffect(() => {
+    setExpanded(false);
+  }, [subjectIds]);
+
   const shortId = (id: string) => {
     const parts = id.split("-");
     return parts[parts.length - 1] || id.slice(-4);
@@ -586,10 +630,65 @@ function RecoveryDoseBlock({
       : `${recoveryDays} day${recoveryDays !== 1 ? "s" : ""} recovery`
     : null;
 
+  // E-2: Inline delta computation
+  const showDeltas = a.verdict !== "anomaly" && a.verdict !== "insufficient_n";
+  const incDelta = showDeltas && a.main.incidence > 0
+    ? Math.round(((a.recovery.incidence - a.main.incidence) / a.main.incidence) * 100)
+    : null;
+  const sevDelta = showDeltas && a.main.avgSeverity > 0
+    ? Math.round(((a.recovery.avgSeverity - a.main.avgSeverity) / a.main.avgSeverity) * 100)
+    : null;
+
+  // E-6: Collapsible subject list
+  const subjects = a.recovery.subjectDetails;
+  const visible = expanded ? subjects : subjects.slice(0, SUBJECT_COLLAPSE_THRESHOLD);
+  const hiddenCount = subjects.length - SUBJECT_COLLAPSE_THRESHOLD;
+
+  // E-1: Compare subject handlers
+  const handleCompareRecovery = useCallback(() => {
+    if (!onCompareSubjects) return;
+    const ids = subjects.map((s) => s.id);
+    onCompareSubjects(ids.slice(0, MAX_COMPARISON_SUBJECTS));
+  }, [onCompareSubjects, subjects]);
+
+  const handleCompareWithMain = useCallback(() => {
+    if (!onCompareSubjects || !allSubjects) return;
+    const recoveryIds = subjects.map((s) => s.id);
+    const mainIds = allSubjects
+      .filter((s) => s.dose_level === a.doseLevel && !s.is_recovery)
+      .map((s) => s.usubjid);
+    // Interleave recovery/main for balanced truncation
+    const combined: string[] = [];
+    const maxLen = Math.max(recoveryIds.length, mainIds.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < recoveryIds.length) combined.push(recoveryIds[i]);
+      if (i < mainIds.length) combined.push(mainIds[i]);
+    }
+    // Deduplicate (same subjects could be in both arms)
+    const unique = [...new Set(combined)];
+    onCompareSubjects(unique.slice(0, MAX_COMPARISON_SUBJECTS));
+  }, [onCompareSubjects, allSubjects, subjects, a.doseLevel]);
+
+  const totalCompareCount = useMemo(() => {
+    if (!allSubjects) return 0;
+    const recoveryIds = subjects.map((s) => s.id);
+    const mainIds = allSubjects
+      .filter((s) => s.dose_level === a.doseLevel && !s.is_recovery)
+      .map((s) => s.usubjid);
+    return new Set([...recoveryIds, ...mainIds]).size;
+  }, [allSubjects, subjects, a.doseLevel]);
+
   return (
-    <div className={cn(showBorder && "border-b border-border/40 pb-3")}>
-      <div className="mb-1 text-[10px] text-muted-foreground">
-        {a.doseGroupLabel}{periodLabel && ` \u00b7 ${periodLabel}`}
+    <div>
+      {/* E-4: Enhanced dose label typography */}
+      <div className="mb-1 pt-0.5">
+        <span className="text-[11px] font-medium text-foreground">{a.doseGroupLabel}</span>
+        {periodLabel && (
+          <>
+            <span className="mx-1 text-muted-foreground/30">{"\u00b7"}</span>
+            <span className="text-[10px] text-muted-foreground">{periodLabel}</span>
+          </>
+        )}
       </div>
 
       {/* §5.3: insufficient_n — skip comparison, show message */}
@@ -600,39 +699,58 @@ function RecoveryDoseBlock({
         </div>
       ) : (
         <>
-          <div className="space-y-1.5 text-xs">
-            {/* Main arm */}
-            <div className="flex items-center gap-2">
-              <span className="w-20 shrink-0 text-[10px] text-muted-foreground">Main arm</span>
-              <span className="font-mono text-[10px]">
+          {/* E-2: Inline delta comparison lines */}
+          <div className="space-y-1 text-[10px]">
+            {/* Incidence line: main → recovery with delta */}
+            <div className="flex items-center flex-wrap gap-x-1">
+              <span className="text-muted-foreground shrink-0">Incidence</span>
+              <span className="font-mono text-muted-foreground">
                 {a.main.affected}/{a.main.n} ({Math.round(a.main.incidence * 100)}%)
               </span>
-              <div className="h-1.5 w-16 rounded-full bg-gray-100">
-                <div
-                  className="h-1.5 rounded-full bg-gray-400"
-                  style={{ width: `${Math.min(a.main.incidence * 100, 100)}%` }}
-                />
-              </div>
-            </div>
-            <div className="pl-[88px] text-[10px] text-muted-foreground">
-              avg sev {a.main.avgSeverity.toFixed(1)}
-            </div>
-
-            {/* Recovery arm */}
-            <div className="flex items-center gap-2">
-              <span className="w-20 shrink-0 text-[10px] text-muted-foreground">Recovery arm</span>
-              <span className="font-mono text-[10px]">
+              <div
+                className="inline-block h-1.5 rounded-full bg-gray-400"
+                style={{ width: `${Math.min(a.main.incidence * 48, 48)}px` }}
+              />
+              <span className="text-muted-foreground/40">{"\u2192"}</span>
+              <span className="font-mono text-foreground">
                 {a.recovery.affected}/{a.recovery.n} ({Math.round(a.recovery.incidence * 100)}%)
               </span>
-              <div className="h-1.5 w-16 rounded-full bg-gray-100">
-                <div
-                  className="h-1.5 rounded-full bg-gray-400"
-                  style={{ width: `${Math.min(a.recovery.incidence * 100, 100)}%` }}
-                />
-              </div>
+              <div
+                className="inline-block h-1.5 rounded-full bg-gray-400/50"
+                style={{ width: `${Math.min(a.recovery.incidence * 48, 48)}px` }}
+              />
+              {incDelta != null && (
+                <span className={cn(
+                  "ml-1 font-mono",
+                  incDelta > 0 ? "font-medium text-foreground/70" :
+                  incDelta < 0 ? "text-muted-foreground" :
+                  "text-muted-foreground/50",
+                )}>
+                  {verdictArrow(a.verdict)} {incDelta > 0 ? "+" : ""}{incDelta}%
+                </span>
+              )}
             </div>
-            <div className="pl-[88px] text-[10px] text-muted-foreground">
-              avg sev {a.recovery.avgSeverity.toFixed(1)}
+
+            {/* Severity line: main → recovery with delta */}
+            <div className="flex items-center flex-wrap gap-x-1">
+              <span className="text-muted-foreground shrink-0">Severity</span>
+              <span className="font-mono text-muted-foreground">
+                avg {a.main.avgSeverity.toFixed(1)}
+              </span>
+              <span className="text-muted-foreground/40">{"\u2192"}</span>
+              <span className="font-mono text-foreground">
+                avg {a.recovery.avgSeverity.toFixed(1)}
+              </span>
+              {sevDelta != null && (
+                <span className={cn(
+                  "ml-1 font-mono",
+                  sevDelta > 0 ? "font-medium text-foreground/70" :
+                  sevDelta < 0 ? "text-muted-foreground" :
+                  "text-muted-foreground/50",
+                )}>
+                  {verdictArrow(a.verdict)} {sevDelta > 0 ? "+" : ""}{sevDelta}%
+                </span>
+              )}
             </div>
           </div>
 
@@ -642,37 +760,97 @@ function RecoveryDoseBlock({
             <span className="font-medium">{a.verdict}</span>
           </div>
 
-          {/* §5.3: anomaly warning block */}
+          {/* E-5: Anomaly explanation text (two-line format) */}
           {a.verdict === "anomaly" && (
-            <div className="mt-1.5 rounded border border-border/50 bg-muted/20 px-2 py-1.5 text-[10px] text-muted-foreground">
-              <span className="font-medium text-foreground/70">{"\u26A0"} Anomaly:</span> finding present in recovery
-              arm but not in main arm at this dose level. This may indicate delayed onset
-              (e.g., neoplasm) or a data quality issue. Requires pathologist assessment.
+            <div className="mt-1.5">
+              <div className="text-[10px] font-medium text-foreground/70">
+                {"\u26A0"} Anomaly: recovery incidence {Math.round(a.recovery.incidence * 100)}% at a dose level where main arm had 0%.
+              </div>
+              <div className="text-[10px] text-muted-foreground italic">
+                This may indicate delayed onset or a data quality issue. Requires pathologist assessment.
+              </div>
             </div>
           )}
 
-          {/* Recovery subjects */}
+          {/* E-3/E-6: Recovery subjects with severity trajectories and collapsible list */}
           <div className="mt-1 text-[10px] text-muted-foreground">
-            {a.recovery.subjectDetails.length > 0 ? (
+            {subjects.length > 0 ? (
               <>
                 Recovery subjects:{" "}
-                {a.recovery.subjectDetails.map((s, i) => (
-                  <span key={s.id}>
-                    {i > 0 && ", "}
+                {visible.map((s, i) => {
+                  // E-3: Severity trajectory
+                  const mainPart = s.mainArmSeverity !== null
+                    ? `${s.mainArmSeverity}`
+                    : s.mainArmAvgSeverity > 0
+                      ? `avg ${s.mainArmAvgSeverity.toFixed(1)}`
+                      : "\u2014";
+                  const unexpected = s.mainArmSeverity !== null
+                    ? s.severity >= s.mainArmSeverity
+                    : s.mainArmAvgSeverity > 0
+                      ? s.severity >= s.mainArmAvgSeverity
+                      : false;
+
+                  return (
+                    <span key={s.id}>
+                      {i > 0 && ", "}
+                      <button
+                        className="text-primary hover:underline"
+                        onClick={() => onSubjectClick?.(s.id)}
+                      >
+                        {shortId(s.id)}
+                      </button>
+                      <span className={cn("font-mono", unexpected ? "font-medium" : "text-muted-foreground")}>
+                        {" "}({mainPart}
+                        <span className="text-muted-foreground/40"> {"\u2192"} </span>
+                        {s.severity})
+                      </span>
+                    </span>
+                  );
+                })}
+                {/* E-6: Collapse toggle */}
+                {hiddenCount > 0 && (
+                  <>
+                    {" "}
                     <button
-                      className="text-primary hover:underline"
-                      onClick={() => onSubjectClick?.(s.id)}
+                      className="text-[10px] text-primary hover:underline"
+                      onClick={() => setExpanded((p) => !p)}
                     >
-                      {shortId(s.id)}
+                      {expanded ? "Show fewer" : `+${hiddenCount} more`}
                     </button>
-                    <span className="text-muted-foreground"> (sev {s.severity.toFixed(1)})</span>
-                  </span>
-                ))}
+                  </>
+                )}
               </>
             ) : (
               <>none affected (0/{a.recovery.n} examined)</>
             )}
           </div>
+
+          {/* E-1: Compare action links */}
+          {onCompareSubjects && subjects.length > 0 && showDeltas && (
+            <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
+              <button
+                className="text-primary hover:underline cursor-pointer"
+                onClick={handleCompareRecovery}
+              >
+                Compare recovery subjects
+              </button>
+              {subjects.length > MAX_COMPARISON_SUBJECTS && (
+                <span className="text-muted-foreground/50">(max {MAX_COMPARISON_SUBJECTS})</span>
+              )}
+              <span className="text-muted-foreground/30">{"\u00b7"}</span>
+              <button
+                className="text-primary hover:underline cursor-pointer"
+                onClick={handleCompareWithMain}
+              >
+                Compare with main arm
+              </button>
+              {totalCompareCount > MAX_COMPARISON_SUBJECTS && (
+                <span className="text-muted-foreground/50">
+                  (showing {MAX_COMPARISON_SUBJECTS} of {totalCompareCount})
+                </span>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
@@ -695,7 +873,7 @@ function FindingDetailPane({
   const navigate = useNavigate();
   const { navigateTo } = useStudySelection();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
-  const { setSelectedSubject } = useViewSelection();
+  const { setSelectedSubject, setPendingCompare } = useViewSelection();
 
   // Recovery assessment
   const { data: subjData } = useHistopathSubjects(studyId, selection.specimen);
@@ -712,6 +890,12 @@ function FindingDetailPane({
   const onSubjectClick = useCallback(
     (usubjid: string) => setSelectedSubject(usubjid),
     [setSelectedSubject],
+  );
+
+  // E-1: Compare callback — sets pendingCompare in ViewSelectionContext
+  const onCompareSubjects = useCallback(
+    (subjectIds: string[]) => setPendingCompare(subjectIds),
+    [setPendingCompare],
   );
 
   // Dose-level detail for selected finding
@@ -931,6 +1115,8 @@ function FindingDetailPane({
               assessment={findingRecovery}
               onSubjectClick={onSubjectClick}
               recoveryDays={subjData?.recovery_days}
+              allSubjects={subjData?.subjects}
+              onCompareSubjects={onCompareSubjects}
             />
           </CollapsiblePane>
         )}
