@@ -51,7 +51,7 @@ These files were modified or untracked but not yet committed. They reflect in-pr
 |------|-----------|-----------|--------|
 | arch-redesign-final.md | 95% | 2 | NEAR-COMPLETE |
 | subject-comparison-spec.md | 100% | 0 | DONE |
-| recovery-reversibility-spec.md | 99.5% | 1 | NEAR-COMPLETE |
+| recovery-reversibility-spec.md | 99% | 2 | NEAR-COMPLETE |
 | subject-matrix-redesign-spec.md | 98% | 1 | NEAR-COMPLETE |
 | adaptive-sections-spec.md | 96% | 1 | NEAR-COMPLETE |
 | recovery-dose-charts-spec.md | 6% | ~94 | NOT STARTED |
@@ -101,13 +101,14 @@ Backend endpoint `/api/study/{id}/histopath/subjects/compare` returns complete d
 
 ## 3. Recovery Reversibility (`recovery-reversibility-spec.md`)
 
-**Status: NEAR-COMPLETE — 209/211 requirements implemented.**
+**Status: NEAR-COMPLETE — 209/211 requirements implemented, 2 gaps.**
 
 ### Open gaps
 
 | # | Spec ref | Gap | File | Priority |
 |---|----------|-----|------|----------|
 | RR-1 | §4.1 | Recovery column is positioned BEFORE "Also in" column; spec says it should come AFTER "Also in" | `HistopathologyView.tsx:1003-1037` | Low |
+| RR-2 | §7.2 | Specimen summary strip shows "Recovery: reversed" when all findings are fully reversed. Spec says the indicator should only appear when there is at least one non-"reversed" finding. Fix: gate on `specimenRecoveryOverall !== "reversed"` at the render site, or return `null` from `specimenRecoveryLabel()` when all verdicts are "reversed". | `HistopathologyView.tsx:2751`, `recovery-assessment.ts:304` | Low |
 
 ### Verified complete
 
@@ -242,6 +243,7 @@ This is the largest remaining feature. The spec defines how recovery-arm data sh
 | Task ID | From | Description | Effort |
 |---------|------|-------------|--------|
 | RR-1 | Recovery reversibility | Move Recovery column after "Also in" column | Trivial |
+| RR-2 | Recovery reversibility | Suppress "Recovery: reversed" from specimen summary strip (only show non-reversed) | Trivial |
 | SM-1 | Subject matrix | Add FilterShowingLine to group mode | Small |
 | AS-1 | Adaptive sections | Add click-to-scroll on finding names in selection zones | Small |
 | AR-2 | Architecture redesign | Refactor cross-view links to call `navigateTo()` before `navigate()` | Small |
