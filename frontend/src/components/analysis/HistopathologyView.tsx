@@ -1147,7 +1147,7 @@ function OverviewTab({
                     )}
                     title={tip}
                   >
-                    {arrow} {v}
+                    <span className="inline-block w-[10px] text-center">{arrow}</span> {v}
                   </span>
                 );
               },
