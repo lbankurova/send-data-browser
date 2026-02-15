@@ -6,6 +6,7 @@ import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { useStudySelection } from "@/contexts/StudySelectionContext";
 import {
   formatPValue,
   formatEffectSize,
@@ -36,6 +37,7 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
   const { studyId: studyIdParam } = useParams<{ studyId: string }>();
   const studyId = studyIdProp ?? studyIdParam;
   const navigate = useNavigate();
+  const { navigateTo } = useStudySelection();
   const [tierFilter, setTierFilter] = useState<Tier | null>(null);
 
   // NOAEL-related rules (scope=study)
@@ -87,7 +89,10 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
         {/* 1. NOAEL narrative (interpretive value — banner shows numbers, this shows meaning) */}
         <CollapsiblePane title="NOAEL narrative" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <InsightsList rules={noaelRules} onEndpointClick={(organ) => {
-            if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+            if (studyId) {
+              navigateTo({ organSystem: organ });
+              navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+            }
           }} />
         </CollapsiblePane>
 
@@ -124,7 +129,10 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
       {/* 1. Endpoint insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <InsightsList rules={endpointRules} tierFilter={tierFilter} onEndpointClick={(organ) => {
-          if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+          if (studyId) {
+            navigateTo({ organSystem: organ });
+            navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+          }
         }} />
       </CollapsiblePane>
 
@@ -175,12 +183,15 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, {
-                state: {
-                  endpoint_label: selection.endpoint_label,
-                  ...(selectedOrganSystem && { organ_system: selectedOrganSystem }),
-                },
-              });
+              if (studyId) {
+                if (selectedOrganSystem) navigateTo({ organSystem: selectedOrganSystem });
+                navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, {
+                  state: {
+                    endpoint_label: selection.endpoint_label,
+                    ...(selectedOrganSystem && { organ_system: selectedOrganSystem }),
+                  },
+                });
+              }
             }}
           >
             View dose-response &#x2192;
@@ -190,9 +201,12 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`, {
-                state: selectedOrganSystem ? { organ_system: selectedOrganSystem } : undefined,
-              });
+              if (studyId) {
+                if (selectedOrganSystem) navigateTo({ organSystem: selectedOrganSystem });
+                navigate(`/studies/${encodeURIComponent(studyId)}`, {
+                  state: selectedOrganSystem ? { organ_system: selectedOrganSystem } : undefined,
+                });
+              }
             }}
           >
             View study summary &#x2192;
@@ -202,9 +216,12 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, {
-                state: selectedOrganSystem ? { organ_system: selectedOrganSystem } : undefined,
-              });
+              if (studyId) {
+                if (selectedOrganSystem) navigateTo({ organSystem: selectedOrganSystem });
+                navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, {
+                  state: selectedOrganSystem ? { organ_system: selectedOrganSystem } : undefined,
+                });
+              }
             }}
           >
             View histopathology &#x2192;

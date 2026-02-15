@@ -366,6 +366,7 @@ function ProtectiveSignalsBar({
   studyId: string;
 }) {
   const navigate = useNavigate();
+  const { navigateTo } = useStudySelection();
   const findings = useMemo(() => aggregateProtectiveFindings(rules), [rules]);
 
   if (findings.length === 0) return null;
@@ -393,7 +394,10 @@ function ProtectiveSignalsBar({
                 className="text-[11px] font-semibold hover:underline"
                 onClick={() => {
                   const spec = f.specimens[0];
-                  if (spec) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
+                  if (spec) {
+                    navigateTo({ specimen: spec });
+                    navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
+                  }
                 }}
               >
                 {f.finding}
@@ -416,7 +420,10 @@ function ProtectiveSignalsBar({
                     className="text-[11px] font-medium hover:underline"
                     onClick={() => {
                       const spec = f.specimens[0];
-                      if (spec) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
+                      if (spec) {
+                        navigateTo({ specimen: spec });
+                        navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
+                      }
                     }}
                   >
                     {f.finding}

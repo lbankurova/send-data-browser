@@ -6,6 +6,7 @@ import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import {
   titleCase,
@@ -48,6 +49,7 @@ export function DoseResponseContextPanel({
   const { studyId: studyIdParam } = useParams<{ studyId: string }>();
   const studyId = studyIdProp ?? studyIdParam;
   const navigate = useNavigate();
+  const { navigateTo } = useStudySelection();
   const [tierFilter, setTierFilter] = useState<Tier | null>(null);
 
   // Dose-response metrics for dose-level breakdown table
@@ -277,6 +279,7 @@ export function DoseResponseContextPanel({
                       className="cursor-pointer border-b border-dashed hover:bg-accent/30"
                       onClick={() => {
                         if (studyId) {
+                          navigateTo({ organSystem: f.organ_system });
                           navigate(
                             `/studies/${encodeURIComponent(studyId)}/dose-response`,
                             { state: { endpoint_label: f.endpoint_label, organ_system: f.organ_system } }
@@ -324,7 +327,10 @@ export function DoseResponseContextPanel({
               className="block text-primary hover:underline"
               onClick={(e) => {
                 e.preventDefault();
-                if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: selection.organ_system } });
+                if (studyId) {
+                  navigateTo({ organSystem: selection.organ_system });
+                  navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: selection.organ_system } });
+                }
               }}
             >
               View study summary: {titleCase(selection.organ_system)} &#x2192;
@@ -335,7 +341,10 @@ export function DoseResponseContextPanel({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: selection.organ_system } });
+              if (studyId) {
+                if (selection.organ_system) navigateTo({ organSystem: selection.organ_system });
+                navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: selection.organ_system } });
+              }
             }}
           >
             View histopathology &#x2192;
@@ -345,7 +354,10 @@ export function DoseResponseContextPanel({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: selection.organ_system } });
+              if (studyId) {
+                if (selection.organ_system) navigateTo({ organSystem: selection.organ_system });
+                navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: selection.organ_system } });
+              }
             }}
           >
             View NOAEL decision &#x2192;

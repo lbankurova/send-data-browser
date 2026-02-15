@@ -389,7 +389,8 @@ export function buildDoseIncidenceBarOption(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const p = params as any;
             const d = p.data;
-            if (!d || d.value === 0 || d._isSpacer) return "";
+            if (!d || d._isSpacer) return "";
+            if (d.value === 0) return "";
             const pctStr = `${Math.round(d.value)}%`;
             const countStr = `${d._affected}/${d._n}`;
             if (d._isRecovery) {
@@ -637,7 +638,8 @@ export function buildDoseSeverityBarOption(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const p = params as any;
             const d = p.data;
-            if (!d || d.value === 0 || d._isSpacer) return "";
+            if (!d || d._isSpacer) return "";
+            if (d.value === 0) return "";
             if (d._isRecovery) {
               return `{muted|${d._avg.toFixed(1)}}`;
             }

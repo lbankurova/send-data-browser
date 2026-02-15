@@ -32,15 +32,15 @@ git diff 4ebfbb9..HEAD --stat
 
 | Spec | Total gaps | Fixed | Open | Deferred | Resolved/Moot/N/A |
 |------|-----------|-------|------|----------|-------------------|
-| arch-redesign-final.md | 18 | 14 | 2 | 2 | — |
+| arch-redesign-final.md | 18 | 16 | 0 | 2 | — |
 | subject-comparison-spec.md | 11 | 11 | 0 | 0 | — |
-| recovery-reversibility-spec.md | 5 | 3 | 1 | 0 | 1 resolved |
+| recovery-reversibility-spec.md | 5 | 4 | 0 | 0 | 1 resolved |
 | subject-matrix-redesign-spec.md | 7 | 7 | 0 | 0 | — |
 | adaptive-sections-spec.md | 15 | 14 | 0 | 0 | 1 moot |
-| recovery-dose-charts-spec.md | 17 | 14 | 1 | 1 | 1 N/A |
-| **Totals** | **73** | **63** | **4** | **3** | **3** |
+| recovery-dose-charts-spec.md | 17 | 15 | 0 | 1 | 1 N/A |
+| **Totals** | **73** | **67** | **0** | **3** | **3** |
 
-**4 open gaps remaining.** 3 deferred (require architectural changes or are speculative requirements).
+**0 open gaps remaining.** 3 deferred (require architectural changes or are speculative requirements).
 
 **Reference-only documents (not audited as features):**
 - `collapsible-sections-spec.md` — Superseded by adaptive-sections-spec.md
@@ -51,16 +51,16 @@ git diff 4ebfbb9..HEAD --stat
 
 ## 1. Architecture Redesign (`arch-redesign-final.md`)
 
-**Status: 14 fixed, 2 open, 2 deferred**
+**Status: 16 fixed, 0 open, 2 deferred**
 
-All 5 phases structurally implemented. Critical bugs (navigateTo no-op, significantOnly checking adversity, resetFilters desync) all fixed. Remaining open: organ-level aggregation and cross-view link pattern.
+All 5 phases structurally implemented. Critical bugs (navigateTo no-op, significantOnly checking adversity, resetFilters desync) all fixed. Organ-level aggregation and cross-view navigateTo wiring complete.
 
 ### Gaps
 
 | # | Spec ref | Gap | File | Severity | Status |
 |---|----------|-----|------|----------|--------|
-| AR-1 | §5.2 | HistopathologyView missing organ-level aggregation. When `organSystem` is selected but `specimen` is NOT set, should show organ-level aggregate summary. Currently shows placeholder. | `HistopathologyView.tsx:~2589` | Medium | **Open** |
-| AR-2 | §6.2 | Cross-view links use `navigate(route, { state })` instead of calling `navigateTo()` first. Functionally works via `location.state` but doesn't match spec pattern. | `StudySummaryContextPanel.tsx` and similar | Low | **Open** |
+| AR-1 | §5.2 | ~~HistopathologyView missing organ-level aggregation.~~ Shows organ header, aggregate stats (specimens, findings, subjects), clickable specimen list when `organSystem` set but no `specimen`. | `HistopathologyView.tsx:~3007` | Medium | **Fixed** |
+| AR-2 | §6.2 | ~~Cross-view links use `navigate()` without `navigateTo()`.~~ All cross-view links now call `navigateTo()` before `navigate()` to set selection context. | 7 files (context panels, SignalsPanel, views) | Low | **Fixed** |
 | AR-3 | §3.2 | ~~`minSeverity` filter not applied in organ mode.~~ Added `max_severity` to generator → JSON → type → OrganRailMode filter. | `view_dataframes.py`, `analysis-views.ts`, `OrganRailMode.tsx` | Medium | **Fixed** `aa58b05` |
 | AR-4 | §3.2 | ~~Sex filter declared "universal" but only consumed by HistopathologyView.~~ NoaelDecisionView wired to global filters. Others blocked on backend sex-stratified data. | `NoaelDecisionView.tsx` | High | **Fixed** `512638d` |
 | AR-5 | §3.3 | ~~`userHasToggled` never cleared on browsing tree navigation.~~ Added `clearToggle()` to RailModeContext. | `RailModeContext.tsx`, `BrowsingTree.tsx` | Medium | **Fixed** `512638d` |
@@ -106,9 +106,9 @@ All gaps fixed in workstream B. Marker symbols swapped, sex-specific control sta
 
 ## 3. Recovery Reversibility (`recovery-reversibility-spec.md`)
 
-**Status: 3 fixed, 1 resolved (spec corrected), 1 open**
+**Status: 4 fixed, 1 resolved (spec corrected), 0 open**
 
-Core logic correct. Tooltip formatting fixed. Recovery column placement confirmed correct (spec was wrong, corrected in commit `4ebfbb9`). Only remaining: sort direction semantics.
+Core logic correct. Tooltip formatting fixed. Recovery column placement confirmed correct (spec was wrong, corrected in commit `4ebfbb9`). Sort direction semantics corrected.
 
 ### Gaps
 
@@ -117,7 +117,7 @@ Core logic correct. Tooltip formatting fixed. Recovery column placement confirme
 | RR-1 | §4.1 | ~~Recovery column positioned BEFORE "Also in" — spec said AFTER.~~ Spec corrected: BEFORE is the intended placement. | — | — | **Resolved** `4ebfbb9` |
 | RR-2 | §7.2 | ~~Specimen strip shows "Recovery: reversed" when all findings reversed.~~ Now suppressed when `specimenRecoveryOverall === "reversed"`. | `HistopathologyView.tsx` | Low | **Fixed** `9ff8a18` |
 | RR-3 | §4.3 | ~~Tooltip "Overall:" line missing "(worst case)" suffix and 2-space indent.~~ Added indent and suffix. | `recovery-assessment.ts` | Minor | **Fixed** `deb44c3` |
-| RR-5 | §4.4 | Sort direction semantics: progressing is at top on ascending (first click) but spec says "at the top when sorted descending." | `HistopathologyView.tsx:1033-1035` | Minor | **Open** |
+| RR-5 | §4.4 | ~~Sort direction semantics inverted.~~ Comparator flipped: ascending now shows reversed (benign) first, descending shows progressing (worst) first per spec. | `HistopathologyView.tsx:~1154` | Minor | **Fixed** |
 | RR-6 | §4.3 | ~~Tooltip dose label uses bare `doseGroupLabel`.~~ New `formatDoseGroupLabel()` formats as "Group N (dose mg/kg)". | `recovery-assessment.ts` | Minor | **Fixed** `deb44c3` |
 
 ---
@@ -172,9 +172,9 @@ All gaps fixed across workstreams C and D. Selection zones have click-to-scroll,
 
 ## 6. Recovery Dose Charts (`recovery-dose-charts-spec.md`)
 
-**Status: 14 fixed, 1 open, 1 deferred, 1 N/A**
+**Status: 15 fixed, 0 open, 1 deferred, 1 N/A**
 
-Recovery bars implemented in both incidence and severity charts. Spacer category separates main from recovery. 50% opacity fills, muted axis labels, comparison tooltips with directional arrows. Selection zone shows recovery sequences. Remaining: §4.4 suppression markers (⚠/†) not rendered in charts.
+Recovery bars implemented in both incidence and severity charts. Spacer category separates main from recovery. 50% opacity fills, muted axis labels, comparison tooltips with directional arrows. Selection zone shows recovery sequences. Suppression markers (⚠ anomaly, † insufficient_n) now rendered via recovery verdict threading to chart builders.
 
 ### Gaps
 
@@ -195,19 +195,14 @@ Recovery bars implemented in both incidence and severity charts. Spacer category
 | DC-13 | §13.2 | ~~No minimum bar height guarantee.~~ Defaults increased to 220px default / 140px minUseful for recovery studies. | Low | **Fixed** `b2df8b4` |
 | DC-14 | §14 | ~~No recovery sequence in DoseChartsSelectionZone.~~ Strip shows `| R:` separator + recovery sequence for both incidence and severity. No-selection shows `→ {value} (R)` recovery peaks. | Medium | **Fixed** `b2df8b4` |
 | DC-15 | §7 | No recovery toggle/filter in chart controls. Spec says "May need" — speculative requirement. | Low | **Deferred** |
-| DC-16 | §4.4 | Recovery bar suppression markers not implemented. Spec §4.4 requires: (a) `⚠` marker when main incidence=0 but recovery>0 (anomaly), (b) `†` marker when recovery N < 3 (insufficient_n). Chart builders currently render raw bars without checking recovery verdicts. The recovery assessment logic correctly computes these verdicts but they aren't threaded to chart builders. | Medium | **Open** |
+| DC-16 | §4.4 | ~~Recovery bar suppression markers not implemented.~~ Chart builders accept `recoveryVerdicts` map, suppress anomaly/insufficient_n bars (transparent + zero value), render ⚠/† markers via ECharts rich text labels, tooltips explain suppression reason. | Medium | **Fixed** |
 | DC-17 | §8.3 | ~~No handling for partial recovery groups.~~ Chart uses `availableDoseGroups.recovery` which only contains existing recovery dose levels. | Low | **Fixed** `b2df8b4` |
 
 ---
 
 ## Open gaps remaining
 
-| # | Spec | Description | Severity | Effort |
-|---|------|-------------|----------|--------|
-| AR-1 | Architecture | Histopath organ-level aggregation view (placeholder when organSystem set but no specimen) | Medium | Medium |
-| AR-2 | Architecture | Cross-view links: call `navigateTo()` before `navigate()` | Low | Small |
-| RR-5 | Recovery | Sort direction semantics: ascending first-click vs spec's descending | Minor | Trivial |
-| DC-16 | Dose charts | Recovery bar suppression markers (⚠ anomaly, † insufficient_n) | Medium | Small |
+**None.** All audited gaps have been fixed or resolved.
 
 ## Deferred gaps
 
@@ -285,3 +280,4 @@ Recovery dose charts feature implemented as separate commit: `b2df8b4`.
 | 2026-02-15 | Claude | 2 | Behavioral audit of all 5 implemented specs. Found 31 new gaps: AR +11, SC +6, RR +3, SM +3, AS +8. Total gaps 37 (excl. dose charts). |
 | 2026-02-15 | Claude | 2b | HOW-focused audit of all 5 implemented specs. Found 19 net new gaps: AR +5, SC +5, RR +0, SM +3, AS +6. AR-7 refined with line-level detail. Total gaps 56 (excl. dose charts). |
 | 2026-02-15 | Claude | Fix | All 5 workstreams (A–E) executed. 63 of 73 gaps fixed. Recovery dose charts feature built (DC-1–DC-17). 4 gaps remain open, 3 deferred. View specs synced with codebase (`ac8dfd5`). RR-1 resolved by correcting spec (not code). |
+| 2026-02-15 | Claude | Fix-2 | Final 4 open gaps fixed: RR-5 (sort direction), DC-16 (suppression markers), AR-2 (navigateTo wiring across 7 files), AR-1 (organ-level aggregate view). 0 open gaps remaining, 3 deferred. |
