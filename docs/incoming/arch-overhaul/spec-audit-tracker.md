@@ -130,7 +130,7 @@ Core logic (thresholds, verdicts, derivation) is behaviorally correct. Gaps are 
 
 | # | Spec ref | Gap | File | Severity |
 |---|----------|-----|------|----------|
-| RR-1 | §4.1 | Recovery column positioned BEFORE "Also in" column; spec says AFTER. | `HistopathologyView.tsx:1003-1037` | Low |
+| ~~RR-1~~ | §4.1 | ~~Recovery column positioned BEFORE "Also in" column; spec says AFTER.~~ Spec corrected — BEFORE is the intended placement. | — | Resolved |
 | RR-2 | §7.2 | Specimen strip shows "Recovery: reversed" when all findings reversed. Spec says only show when at least one non-reversed. | `HistopathologyView.tsx:2751`, `recovery-assessment.ts:304` | Low |
 | RR-3 | §4.3 | Tooltip "Overall:" line missing "(worst case)" suffix and 2-space indent. "Recovery period:" also missing indent. | `recovery-assessment.ts:167, 172` | Minor |
 | RR-5 | §4.4 | Sort direction semantics: progressing is at top on ascending (first click) but spec says "at the top when sorted descending." | `HistopathologyView.tsx:1033-1035` | Minor |

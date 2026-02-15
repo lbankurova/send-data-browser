@@ -1116,25 +1116,6 @@ function OverviewTab({
           ) : null;
         },
       }),
-      findingColHelper.accessor("relatedOrgans", {
-        header: "Also in",
-        size: 120,
-        minSize: 40,
-        maxSize: 300,
-        cell: (info) => {
-          const organs = info.getValue();
-          if (!organs) return null;
-          const text = organs.join(", ");
-          return (
-            <span
-              className="block truncate text-muted-foreground"
-              title={`Cross-organ coherence (R16): also observed in ${text}`}
-            >
-              {text}
-            </span>
-          );
-        },
-      }),
       ...(specimenHasRecovery
         ? [
             findingColHelper.accessor("recoveryVerdict", {
@@ -1176,6 +1157,25 @@ function OverviewTab({
             }),
           ]
         : []),
+      findingColHelper.accessor("relatedOrgans", {
+        header: "Also in",
+        size: 120,
+        minSize: 40,
+        maxSize: 300,
+        cell: (info) => {
+          const organs = info.getValue();
+          if (!organs) return null;
+          const text = organs.join(", ");
+          return (
+            <span
+              className="block truncate text-muted-foreground"
+              title={`Cross-organ coherence (R16): also observed in ${text}`}
+            >
+              {text}
+            </span>
+          );
+        },
+      }),
     ],
     [doseDepThreshold, specimenHasRecovery, recoveryAssessments, subjData?.recovery_days]
   );
