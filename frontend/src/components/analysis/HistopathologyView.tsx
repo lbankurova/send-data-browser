@@ -22,7 +22,7 @@ import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterSelect, FilterMultiSelect, FilterShowingLine } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
-import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight } from "@/lib/severity-colors";
+import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight, titleCase } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { FindingsSelectionZone } from "@/components/analysis/FindingsSelectionZone";
@@ -621,20 +621,37 @@ function OverviewTab({
     const recSubjects = subjData.subjects.filter((s) => s.is_recovery);
     if (recSubjects.length === 0) return undefined;
 
-    // Optionally filter to selected finding
     const selectedFinding = selection?.finding;
-    // Apply sex filter
     const filtered = sexFilter ? recSubjects.filter((s) => s.sex === sexFilter) : recSubjects;
 
     // Group by dose_level → sex → { affected, n }
     const doseMap = new Map<number, Map<string, { affected: number; n: number }>>();
-    for (const s of filtered) {
-      let bySex = doseMap.get(s.dose_level);
-      if (!bySex) { bySex = new Map(); doseMap.set(s.dose_level, bySex); }
-      const sexEntry = bySex.get(s.sex);
-      const hasF = selectedFinding ? !!s.findings[selectedFinding] : Object.keys(s.findings).length > 0;
-      if (sexEntry) { sexEntry.n += 1; if (hasF) sexEntry.affected += 1; }
-      else { bySex.set(s.sex, { affected: hasF ? 1 : 0, n: 1 }); }
+
+    if (selectedFinding) {
+      // Single finding: one affected/n observation per subject
+      for (const s of filtered) {
+        let bySex = doseMap.get(s.dose_level);
+        if (!bySex) { bySex = new Map(); doseMap.set(s.dose_level, bySex); }
+        const hasF = !!s.findings[selectedFinding];
+        const sexEntry = bySex.get(s.sex);
+        if (sexEntry) { sexEntry.n += 1; if (hasF) sexEntry.affected += 1; }
+        else { bySex.set(s.sex, { affected: hasF ? 1 : 0, n: 1 }); }
+      }
+    } else {
+      // Aggregate: iterate per-finding, sum affected/n across findings
+      // (matches main arm which sums per-finding rows from filteredData)
+      const allFindings = new Set<string>();
+      for (const s of filtered) for (const f of Object.keys(s.findings)) allFindings.add(f);
+      for (const finding of allFindings) {
+        for (const s of filtered) {
+          let bySex = doseMap.get(s.dose_level);
+          if (!bySex) { bySex = new Map(); doseMap.set(s.dose_level, bySex); }
+          const hasF = !!s.findings[finding];
+          const sexEntry = bySex.get(s.sex);
+          if (sexEntry) { sexEntry.n += 1; if (hasF) sexEntry.affected += 1; }
+          else { bySex.set(s.sex, { affected: hasF ? 1 : 0, n: 1 }); }
+        }
+      }
     }
 
     return availableDoseGroups.recovery.map(([level, rawLabel]) => {
@@ -657,6 +674,31 @@ function OverviewTab({
       return { doseLevel: level, doseLabel: label, bySex: { Combined: { affected: totalAffected, n: totalN } } };
     });
   }, [specimenHasRecovery, subjData, availableDoseGroups.recovery, selection?.finding, sexFilter, stableUseSexGrouping, stableAllSexes]);
+
+  // ── Recovery assessment (needed by chart verdicts below) ──
+  const recoveryAssessments = useMemo(() => {
+    if (!specimenHasRecovery || !subjData?.subjects) return null;
+    const findingNames = findingSummaries.map((f) => f.finding);
+    return deriveRecoveryAssessments(findingNames, subjData.subjects);
+  }, [specimenHasRecovery, subjData, findingSummaries]);
+
+  // Recovery chart anomaly summary for header icon (§4.4)
+  const recoveryChartAnomalies = useMemo(() => {
+    if (!selection?.finding || !recoveryAssessments) return undefined;
+    const assessment = recoveryAssessments.find((a) => a.finding === selection.finding);
+    if (!assessment) return undefined;
+    let anomalyCount = 0;
+    let insufficientCount = 0;
+    for (const a of assessment.assessments) {
+      if (a.verdict === "anomaly") anomalyCount++;
+      else if (a.verdict === "insufficient_n") insufficientCount++;
+    }
+    if (anomalyCount === 0 && insufficientCount === 0) return undefined;
+    const parts: string[] = [];
+    if (anomalyCount > 0) parts.push(`${anomalyCount} anomal${anomalyCount === 1 ? "y" : "ies"}: finding absent in main arm`);
+    if (insufficientCount > 0) parts.push(`${insufficientCount} dose group${insufficientCount === 1 ? "" : "s"} with insufficient recovery N`);
+    return { anomalyCount, insufficientCount, tooltip: parts.join("; ") };
+  }, [selection?.finding, recoveryAssessments]);
 
   // Dose-incidence chart data
   const { chartOption: doseChartOption, hasDoseChartData } = useMemo(() => {
@@ -880,13 +922,6 @@ function OverviewTab({
     entries = entries.filter((e) => !e.hasSeverityData || e.maxSev >= minSeverity);
     return { filtered: entries.length, total };
   }, [subjData, sexFilter, affectedOnly, severityGradedOnly, minSeverity, heatmapData?.findingMeta]);
-
-  // ── Recovery assessment ────────────────────────────────
-  const recoveryAssessments = useMemo(() => {
-    if (!specimenHasRecovery || !subjData?.subjects) return null;
-    const findingNames = findingSummaries.map((f) => f.finding);
-    return deriveRecoveryAssessments(findingNames, subjData.subjects);
-  }, [specimenHasRecovery, subjData, findingSummaries]);
 
   // Recovery heatmap data for group heatmap
   const recoveryHeatmapData = useMemo(() => {
@@ -1437,6 +1472,12 @@ function OverviewTab({
             <div className="absolute left-2 top-1 z-10 flex items-center gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Incidence</span>
               <ChartModeToggle mode={incidenceMode} onChange={setIncidenceMode} />
+              {recoveryChartAnomalies && (
+                <span className="text-[10px] text-muted-foreground" title={recoveryChartAnomalies.tooltip}>
+                  {recoveryChartAnomalies.anomalyCount > 0 && <span className="mr-0.5">{"\u26A0"}</span>}
+                  {recoveryChartAnomalies.insufficientCount > 0 && <span>{"\u2020"}</span>}
+                </span>
+              )}
             </div>
             {hasDoseChartData && doseChartOption ? (
               <EChartsWrapper
@@ -1453,6 +1494,12 @@ function OverviewTab({
             <div className="absolute left-2 top-1 z-10 flex items-center gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Severity</span>
               <ChartModeToggle mode={severityMode} onChange={setSeverityMode} />
+              {recoveryChartAnomalies && (
+                <span className="text-[10px] text-muted-foreground" title={recoveryChartAnomalies.tooltip}>
+                  {recoveryChartAnomalies.anomalyCount > 0 && <span className="mr-0.5">{"\u26A0"}</span>}
+                  {recoveryChartAnomalies.insufficientCount > 0 && <span>{"\u2020"}</span>}
+                </span>
+              )}
             </div>
             {hasSeverityChartData && doseSeverityChartOption ? (
               <EChartsWrapper
@@ -2990,11 +3037,70 @@ export function HistopathologyView() {
         </>
       )}
 
-      {!selectedSummary && specimenSummaries.length > 0 && (
-        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-          Select a specimen from the rail to view histopathology details.
-        </div>
-      )}
+      {!selectedSummary && specimenSummaries.length > 0 && (() => {
+        const organFilter = studySelection.organSystem;
+        if (organFilter) {
+          // Organ-level aggregate: show specimens belonging to this organ system
+          const organSpecimens = specimenSummaries.filter(
+            (s) => specimenToOrganSystem(s.specimen).toLowerCase() === organFilter.toLowerCase()
+          );
+          const totalFindings = organSpecimens.reduce((sum, s) => sum + s.findingCount, 0);
+          const totalAdverse = organSpecimens.reduce((sum, s) => sum + s.adverseCount, 0);
+          const maxScore = organSpecimens.length > 0
+            ? Math.max(...organSpecimens.map((s) => s.signalScore))
+            : 0;
+
+          return (
+            <div className="flex flex-1 flex-col overflow-y-auto p-4">
+              {/* Organ system header */}
+              <div className="mb-3">
+                <h2 className="text-sm font-semibold">{titleCase(organFilter)}</h2>
+                <div className="mt-1 flex items-center gap-4 text-[10px] text-muted-foreground">
+                  <span>{organSpecimens.length} specimen{organSpecimens.length !== 1 ? "s" : ""}</span>
+                  <span>{totalFindings} finding{totalFindings !== 1 ? "s" : ""}</span>
+                  {totalAdverse > 0 && <span>{totalAdverse} adverse</span>}
+                  <span>Peak signal: <span className="font-mono font-medium">{maxScore.toFixed(2)}</span></span>
+                </div>
+              </div>
+
+              {/* Specimen list */}
+              <div className="flex flex-col gap-1">
+                {organSpecimens.map((s) => (
+                  <button
+                    key={s.specimen}
+                    className="flex items-center gap-3 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/40"
+                    onClick={() => navigateTo({ organSystem: organFilter, specimen: s.specimen })}
+                  >
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+                      {s.specimen.replace(/_/g, " ")}
+                    </span>
+                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                      {s.signalScore.toFixed(2)}
+                    </span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                      {s.findingCount} finding{s.findingCount !== 1 ? "s" : ""}
+                    </span>
+                    {s.adverseCount > 0 && (
+                      <span className="shrink-0 rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        {s.adverseCount} adverse
+                      </span>
+                    )}
+                    <span className={cn("shrink-0 text-[10px]", getDoseConsistencyWeight(s.doseConsistency))}>
+                      {s.doseConsistency}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            Select a specimen from the rail to view histopathology details.
+          </div>
+        );
+      })()}
 
       {specimenSummaries.length === 0 && (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">

@@ -10,6 +10,7 @@ import { SourceRecordsExpander } from "../SourceRecordsExpander";
 import { AuditTrailPanel } from "../AuditTrailPanel";
 import { MethodologyPanel } from "../MethodologyPanel";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import type { Tier } from "@/lib/rule-synthesis";
 import type {
@@ -99,6 +100,7 @@ function EndpointPanel({
   studyId: string | undefined;
   navigate: ReturnType<typeof useNavigate>;
 }) {
+  const { navigateTo } = useStudySelection();
   const filteredRules = useMemo(() => {
     const contextKey = `${selection.domain}_${selection.test_code}_${selection.sex}`;
     const organKey = `organ_${selection.organ_system}`;
@@ -155,7 +157,10 @@ function EndpointPanel({
 
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <InsightsList rules={filteredRules} tierFilter={tierFilter} onEndpointClick={(organ) => {
-          if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+          if (studyId) {
+            navigateTo({ organSystem: organ });
+            navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+          }
         }} />
       </CollapsiblePane>
 
@@ -252,6 +257,7 @@ function EndpointPanel({
                     className="cursor-pointer border-b border-dashed hover:bg-accent/30"
                     onClick={() => {
                       if (studyId) {
+                        navigateTo({ organSystem: f.organ_system });
                         navigate(
                           `/studies/${encodeURIComponent(studyId)}/dose-response`,
                           { state: { endpoint_label: f.endpoint_label, organ_system: f.organ_system } }
@@ -296,7 +302,10 @@ function EndpointPanel({
               className="block text-primary hover:underline"
               onClick={(e) => {
                 e.preventDefault();
-                if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: selection.organ_system } });
+                if (studyId) {
+                  navigateTo({ organSystem: selection.organ_system });
+                  navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: selection.organ_system } });
+                }
               }}
             >
               View histopathology: {titleCase(selection.organ_system)} &#x2192;
@@ -307,12 +316,15 @@ function EndpointPanel({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, {
-                state: {
-                  endpoint_label: selection.endpoint_label,
-                  ...(selection.organ_system && { organ_system: selection.organ_system }),
-                },
-              });
+              if (studyId) {
+                navigateTo({ organSystem: selection.organ_system });
+                navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, {
+                  state: {
+                    endpoint_label: selection.endpoint_label,
+                    ...(selection.organ_system && { organ_system: selection.organ_system }),
+                  },
+                });
+              }
             }}
           >
             View dose-response &#x2192;
@@ -322,9 +334,12 @@ function EndpointPanel({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, {
-                state: selection.organ_system ? { organ_system: selection.organ_system } : undefined,
-              });
+              if (studyId) {
+                if (selection.organ_system) navigateTo({ organSystem: selection.organ_system });
+                navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, {
+                  state: selection.organ_system ? { organ_system: selection.organ_system } : undefined,
+                });
+              }
             }}
           >
             View histopathology &#x2192;
@@ -334,9 +349,12 @@ function EndpointPanel({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, {
-                state: selection.organ_system ? { organ_system: selection.organ_system } : undefined,
-              });
+              if (studyId) {
+                if (selection.organ_system) navigateTo({ organSystem: selection.organ_system });
+                navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, {
+                  state: selection.organ_system ? { organ_system: selection.organ_system } : undefined,
+                });
+              }
             }}
           >
             View NOAEL decision &#x2192;
@@ -372,6 +390,7 @@ function OrganPanel({
   studyId: string | undefined;
   navigate: ReturnType<typeof useNavigate>;
 }) {
+  const { navigateTo } = useStudySelection();
   const displayName = titleCase(organSystem);
 
   // Filter rules to this organ + study scope
@@ -465,7 +484,10 @@ function OrganPanel({
       {/* Pane 1: Organ insights */}
       <CollapsiblePane title="Organ insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <InsightsList rules={organRules} tierFilter={tierFilter} onEndpointClick={(organ) => {
-          if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+          if (studyId) {
+            navigateTo({ organSystem: organ });
+            navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+          }
         }} />
       </CollapsiblePane>
 
@@ -497,6 +519,7 @@ function OrganPanel({
                   className="cursor-pointer border-b border-dashed hover:bg-accent/30"
                   onClick={() => {
                     if (studyId) {
+                      navigateTo({ organSystem: ep.organ_system });
                       navigate(
                         `/studies/${encodeURIComponent(studyId)}/dose-response`,
                         { state: { organ_system: ep.organ_system } }
@@ -577,7 +600,10 @@ function OrganPanel({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: organSystem } });
+              if (studyId) {
+                navigateTo({ organSystem: organSystem });
+                navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: organSystem } });
+              }
             }}
           >
             View histopathology: {displayName} &#x2192;
@@ -587,7 +613,10 @@ function OrganPanel({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organSystem } });
+              if (studyId) {
+                navigateTo({ organSystem: organSystem });
+                navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organSystem } });
+              }
             }}
           >
             View dose-response &#x2192;
@@ -597,7 +626,10 @@ function OrganPanel({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: organSystem } });
+              if (studyId) {
+                navigateTo({ organSystem: organSystem });
+                navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { organ_system: organSystem } });
+              }
             }}
           >
             View histopathology &#x2192;
@@ -607,7 +639,10 @@ function OrganPanel({
             className="block text-primary hover:underline"
             onClick={(e) => {
               e.preventDefault();
-              if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: organSystem } });
+              if (studyId) {
+                navigateTo({ organSystem: organSystem });
+                navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: organSystem } });
+              }
             }}
           >
             View NOAEL decision &#x2192;
