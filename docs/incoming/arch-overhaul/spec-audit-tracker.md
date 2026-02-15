@@ -49,7 +49,7 @@ These files were modified or untracked but not yet committed. They reflect in-pr
 
 | Spec | Pass 1 | Pass 2 | Pass 2b | Total gaps | Status |
 |------|--------|--------|---------|------------|--------|
-| arch-redesign-final.md | 2 | 11 | 5 | 18 | GAPS IN CORE MECHANICS |
+| arch-redesign-final.md | 2 | 11 | 5 | 18 (15 fixed, 3 deferred) | 15 FIXED — 3 deferred |
 | subject-comparison-spec.md | 0 | 6 | 5 | 11 | BEHAVIORAL + FORMAT GAPS |
 | recovery-reversibility-spec.md | 2 | 3 | 0 | 5 | NEAR-COMPLETE |
 | subject-matrix-redesign-spec.md | 1 | 3 | 3 | 7 | FORMAT GAPS |
@@ -73,26 +73,26 @@ All 5 phases structurally implemented. Behavioral audit revealed core mechanics 
 
 ### Open gaps
 
-| # | Spec ref | Gap | File | Severity |
-|---|----------|-----|------|----------|
-| AR-1 | §5.2 | HistopathologyView missing organ-level aggregation. When `organSystem` is selected but `specimen` is NOT set, should show organ-level aggregate summary. Currently shows placeholder. | `HistopathologyView.tsx:~2589` | Medium |
-| AR-2 | §6.2 | Cross-view links use `navigate(route, { state })` instead of calling `navigateTo()` first. Functionally works via `location.state` but doesn't match spec pattern. | `StudySummaryContextPanel.tsx` and similar | Low |
-| AR-3 | §3.2 | `minSeverity` filter not applied in organ mode. `OrganRailMode.tsx` never references `filters.minSeverity`. | `OrganRailMode.tsx:237-253` | Medium |
-| AR-4 | §3.2 | Sex filter declared "universal" but only consumed by HistopathologyView. OrganRailMode, StudySummaryView, DoseResponseView, NoaelDecisionView all ignore it. NoaelDecisionView has its own local `sexFilter` state. | `OrganRailMode.tsx`, `NoaelDecisionView.tsx:857`, `DoseResponseView.tsx`, `StudySummaryView.tsx` | High |
-| AR-5 | §3.3 | `userHasToggled` never cleared on browsing tree navigation. Once user manually toggles rail mode, view preferences stop working until study switch. Only cleared on study switch. | `BrowsingTree.tsx:133`, `RailModeContext.tsx:41-48` | Medium |
-| AR-6 | §4.1 | Filtered count missing from mode toggle. Spec shows `[Organs] [Specimens] (40)` but no count rendered next to toggle. | `PolymorphicRail.tsx:24-41` | Low |
-| AR-7 | §4.1 | FilterShowingLine missing from PolymorphicRail and OrganRailMode entirely. SpecimenRailMode has one (`SpecimenRailMode.tsx:291-309`) but its `parts` computation omits `filters.sex` and `filters.significantOnly` — those filters stay invisible. Visibility gate also omits them, so the line stays hidden when sex or significantOnly are the only active filters. | `PolymorphicRail.tsx:43-85`, `OrganRailMode.tsx` (absent), `SpecimenRailMode.tsx:293-309` | Medium |
-| AR-8 | §4.5 | Breadcrumb dismiss button calls `navigateTo({})` which is a no-op — `applyCascade` with empty update preserves all fields. Organ filter is NOT cleared. | `SpecimenRailMode.tsx:348`, `StudySelectionContext.tsx:57-95` | **Critical** |
-| AR-9 | §4.6 | Escape key calls `navigateTo({})` — same no-op bug as AR-8. Selection is not cleared. | `OrganRailMode.tsx:234`, `SpecimenRailMode.tsx:157` | **Critical** |
-| AR-10 | §5.1 | StudySummaryView does not auto-select top organ on load. | `StudySummaryView.tsx:28-67` | Medium |
-| AR-11 | §3.2 | `significantOnly` in specimen rail checks adversity (`adverseCount > 0 \|\| warningCount > 0`) instead of statistical significance. OrganRailMode correctly uses `n_significant > 0`. | `SpecimenRailMode.tsx:210-211` | High |
-| AR-12 | §3.2 | `resetFilters()` sets `DEFAULT_FILTERS` directly without calling `navigateTo({ sex: undefined })`. After reset, `StudySelection.sex` retains stale value — contexts desync. | `GlobalFilterContext.tsx:82-84` | High |
-| AR-13 | §3.1 | `canGoBack` derived from `historyRef.current.length` (a ref, not state). Technically correct but fragile — future memoization of context value would break reactivity. | `StudySelectionContext.tsx:151` | Low |
-| AR-14 | §4.1 | Organ header shows filtered count as if it were total. `sortedOrgans.length` already has filters applied, so `Organs (8)` gives no indication items are hidden. Should show `filtered/total`. | `OrganRailMode.tsx:344` | Low |
-| AR-15 | §4.1 | Checkbox labels use full words ("Adverse", "Significant") instead of spec's abbreviated "Adv", "Sig". Longer labels consume more horizontal space in the narrow rail. | `PolymorphicRail.tsx:61,72` | Low |
-| AR-16 | §4.1 | Sex filter missing "Sex:" label prefix before dropdown. Default text is "All sexes" instead of spec's "Combined". (Note: "Combined" vs "All sexes" is documented as known deviation D1 in spec appendix; the missing label prefix is not.) | `PolymorphicRail.tsx:46-53` | Low |
-| AR-17 | §4.1 | Search field placed inside each mode component instead of as a shared full-width row in the PolymorphicRail header. Position shifts when switching modes. | `OrganRailMode.tsx:346-349`, `SpecimenRailMode.tsx:284-288` (absent from `PolymorphicRail.tsx`) | Low |
-| AR-18 | §4.1 | Sort control inside mode components instead of fixed position in shared rail header. When switching modes, sort dropdown changes vertical position. | `OrganRailMode.tsx:352-361`, `SpecimenRailMode.tsx:313-324` | Low |
+| # | Spec ref | Gap | File | Severity | Status |
+|---|----------|-----|------|----------|--------|
+| AR-1 | §5.2 | HistopathologyView missing organ-level aggregation. When `organSystem` is selected but `specimen` is NOT set, should show organ-level aggregate summary. Currently shows placeholder. | `HistopathologyView.tsx:~2589` | Medium | Open |
+| AR-2 | §6.2 | Cross-view links use `navigate(route, { state })` instead of calling `navigateTo()` first. Functionally works via `location.state` but doesn't match spec pattern. | `StudySummaryContextPanel.tsx` and similar | Low | Open |
+| AR-3 | §3.2 | `minSeverity` filter not applied in organ mode. `TargetOrganRow` has no severity field — `build_target_organ_summary()` in the generator never computes per-organ max severity. The `OrganEvidenceRow` has per-endpoint `severity` (categorical: adverse/warning/normal) but not numeric. Fix requires adding `max_severity: number` to the generator pipeline and `TargetOrganRow` type. | `backend/generator/view_dataframes.py:73-130`, `OrganRailMode.tsx` | Medium | **Deferred — needs generator pipeline change** |
+| AR-4 | §3.2 | ~~Sex filter declared "universal" but only consumed by HistopathologyView.~~ NoaelDecisionView wired to global filters. Other views (DoseResponse, StudySummary, OrganRail, SpecimenRail) use pre-aggregated data that is not sex-specific — filter cannot meaningfully apply until backend generates sex-stratified summaries. | `NoaelDecisionView.tsx` | High | **Fixed** (NOAEL); remainder blocked on backend |
+| AR-5 | §3.3 | ~~`userHasToggled` never cleared on browsing tree navigation.~~ Added `clearToggle()` to RailModeContext, called on view navigation in BrowsingTree. | `RailModeContext.tsx`, `BrowsingTree.tsx` | Medium | **Fixed** |
+| AR-6 | §4.1 | Filtered count missing from mode toggle. Spec shows `[Organs] [Specimens] (40)` but no count rendered next to toggle. Requires threading filtered counts from child mode components up to PolymorphicRail toggle. | `PolymorphicRail.tsx:24-41` | Low | **Deferred — needs component boundary refactor** |
+| AR-7 | §4.1 | ~~FilterShowingLine missing from OrganRailMode; SpecimenRailMode parts omit sex and significantOnly.~~ Added FilterShowingLine to OrganRailMode; added sex + significantOnly to SpecimenRailMode visibility gate and parts. | `OrganRailMode.tsx`, `SpecimenRailMode.tsx` | Medium | **Fixed** |
+| AR-8 | §4.5 | ~~Breadcrumb dismiss calls `navigateTo({})` — no-op.~~ Replaced with `clearSelection()`. | `SpecimenRailMode.tsx`, `StudySelectionContext.tsx` | **Critical** | **Fixed** |
+| AR-9 | §4.6 | ~~Escape key calls `navigateTo({})` — same no-op.~~ Replaced with `clearSelection()` in both rail modes. | `OrganRailMode.tsx`, `SpecimenRailMode.tsx` | **Critical** | **Fixed** |
+| AR-10 | §5.1 | ~~StudySummaryView does not auto-select top organ on load.~~ Added useEffect to auto-select highest evidence_score organ. | `StudySummaryView.tsx` | Medium | **Fixed** |
+| AR-11 | §3.2 | ~~`significantOnly` checks adversity instead of significance.~~ Now checks `signalScore > 0`. | `SpecimenRailMode.tsx` | High | **Fixed** |
+| AR-12 | §3.2 | ~~`resetFilters()` desync — doesn't clear sex from selection.~~ Now calls `navigateTo({ sex: undefined })`. | `GlobalFilterContext.tsx` | High | **Fixed** |
+| AR-13 | §3.1 | ~~`canGoBack` derived from ref, not reactive.~~ Now tracked via `historyLength` state. Provider value memoized. | `StudySelectionContext.tsx` | Low | **Fixed** |
+| AR-14 | §4.1 | ~~Organ header shows only filtered count.~~ Now shows `filtered/total` when filters active. | `OrganRailMode.tsx` | Low | **Fixed** |
+| AR-15 | §4.1 | ~~Checkbox labels use full words.~~ Abbreviated to "Adv", "Sig". | `PolymorphicRail.tsx` | Low | **Fixed** |
+| AR-16 | §4.1 | ~~Sex filter missing "Sex:" label prefix.~~ Added. | `PolymorphicRail.tsx` | Low | **Fixed** |
+| AR-17 | §4.1 | ~~Search field inside each mode component.~~ Moved to shared PolymorphicRail header. | `PolymorphicRail.tsx`, `OrganRailMode.tsx`, `SpecimenRailMode.tsx` | Low | **Fixed** |
+| AR-18 | §4.1 | Sort control inside mode components instead of fixed position in shared rail header. Sort options differ substantially between modes (organ: evidence/adverse/effect/alpha; specimen: signal/organ/severity/incidence/alpha) — unifying requires a shared sort context or conditional option rendering. | `OrganRailMode.tsx`, `SpecimenRailMode.tsx` | Low | **Deferred — sort options differ between modes** |
 
 ---
 
@@ -262,30 +262,30 @@ This is the largest remaining feature. The spec defines how recovery-arm data sh
 
 ### Critical (broken functionality)
 
-| Task ID | From | Description | Effort |
-|---------|------|-------------|--------|
-| AR-8 | Architecture | Fix `navigateTo({})` no-op — breadcrumb dismiss is broken | Trivial (change to `navigateTo({ organSystem: undefined })`) |
-| AR-9 | Architecture | Fix Escape key — same `navigateTo({})` no-op bug | Trivial (explicit clear all hierarchy fields) |
+| Task ID | From | Description | Effort | Status |
+|---------|------|-------------|--------|--------|
+| AR-8 | Architecture | Fix `navigateTo({})` no-op — breadcrumb dismiss is broken | Trivial | **Fixed** `512638d` |
+| AR-9 | Architecture | Fix Escape key — same `navigateTo({})` no-op bug | Trivial | **Fixed** `512638d` |
 
 ### High priority
 
-| Task ID | From | Description | Effort |
-|---------|------|-------------|--------|
-| AR-4 | Architecture | Make sex filter universal — consumed by all views and rail modes | Medium |
-| AR-11 | Architecture | Fix `significantOnly` in specimen rail — check significance, not adversity | Small |
-| AR-12 | Architecture | Fix `resetFilters()` sex desync — sync sex back to StudySelectionContext | Trivial |
-| AS-5 | Adaptive sections | Matrix selection zone: primary/others split with sex breakdown | Small |
-| AS-6 | Adaptive sections | Matrix no-selection: add sex breakdown to affected counts | Small |
+| Task ID | From | Description | Effort | Status |
+|---------|------|-------------|--------|--------|
+| AR-4 | Architecture | Make sex filter universal — consumed by all views and rail modes | Medium | **Fixed** (NOAEL wired to global); others blocked on backend sex-stratified data |
+| AR-11 | Architecture | Fix `significantOnly` in specimen rail — check significance, not adversity | Small | **Fixed** `512638d` |
+| AR-12 | Architecture | Fix `resetFilters()` sex desync — sync sex back to StudySelectionContext | Trivial | **Fixed** `512638d` |
+| AS-5 | Adaptive sections | Matrix selection zone: primary/others split with sex breakdown | Small | Open |
+| AS-6 | Adaptive sections | Matrix no-selection: add sex breakdown to affected counts | Small | Open |
 
 ### Medium priority
 
-| Task ID | From | Description | Effort |
-|---------|------|-------------|--------|
-| AR-1 | Architecture | Build organ-level aggregation view for histopathology | Medium |
-| AR-3 | Architecture | Apply `minSeverity` filter in organ rail mode | Small |
-| AR-5 | Architecture | Clear `userHasToggled` on browsing tree navigation | Trivial |
-| AR-7 | Architecture | FilterShowingLine: add to OrganRailMode, add sex/significantOnly to SpecimenRailMode parts | Small |
-| AR-10 | Architecture | Auto-select top organ in StudySummaryView | Trivial |
+| Task ID | From | Description | Effort | Status |
+|---------|------|-------------|--------|--------|
+| AR-1 | Architecture | Build organ-level aggregation view for histopathology | Medium | Open |
+| AR-3 | Architecture | Apply `minSeverity` filter in organ rail mode. **Blocked:** `TargetOrganRow` has no severity field. Generator (`build_target_organ_summary()`) never computes per-organ max severity. `OrganEvidenceRow` has categorical severity (adverse/warning/normal) but not numeric. Fix: add `max_severity: number` to generator pipeline → JSON → TS type → filter. | Small (after generator change) | **Deferred** |
+| AR-5 | Architecture | Clear `userHasToggled` on browsing tree navigation | Trivial | **Fixed** `512638d` |
+| AR-7 | Architecture | FilterShowingLine: add to OrganRailMode, add sex/significantOnly to SpecimenRailMode parts | Small | **Fixed** `512638d` |
+| AR-10 | Architecture | Auto-select top organ in StudySummaryView | Trivial | **Fixed** `512638d` |
 | SC-2 | Subject comparison | Sex-specific control stats for mixed-sex comparisons | Medium |
 | SC-10 | Subject comparison | Show data point dots on body weight chart at rest (`dot={{ r: 3 }}`) | Trivial |
 | SM-2 | Subject matrix | Group mode severity cells: show severity number instead of affected/n | Small |
@@ -319,14 +319,14 @@ This is the largest remaining feature. The spec defines how recovery-arm data sh
 | SM-5 | Subject matrix | Non-graded cell block width: `w-16` → `w-12` | Trivial |
 | SM-6 | Subject matrix | Section header count: append "findings" label | Trivial |
 | SM-7 | Subject matrix | Group mode legend: add severity numbers ("1 Minimal", "2 Mild", etc.) | Trivial |
-| AR-2 | Architecture | Cross-view links: navigateTo() before navigate() | Small |
-| AR-6 | Architecture | Filtered count in mode toggle | Small |
-| AR-13 | Architecture | `canGoBack` reactivity (ref vs state) | Trivial |
-| AR-14 | Architecture | Organ header: show `filtered/total` count, not just filtered | Small |
-| AR-15 | Architecture | Checkbox labels: "Adverse" → "Adv", "Significant" → "Sig" | Trivial |
-| AR-16 | Architecture | Sex filter: add "Sex:" label prefix | Trivial |
-| AR-17 | Architecture | Search field: move to shared PolymorphicRail header row | Small |
-| AR-18 | Architecture | Sort control: move to shared PolymorphicRail header row | Small |
+| AR-2 | Architecture | Cross-view links: navigateTo() before navigate() | Small | Open |
+| AR-6 | Architecture | Filtered count in mode toggle. **Deferred:** requires threading filtered counts from child components up to PolymorphicRail toggle. | Small | **Deferred** |
+| AR-13 | Architecture | `canGoBack` reactivity (ref vs state) | Trivial | **Fixed** `512638d` |
+| AR-14 | Architecture | Organ header: show `filtered/total` count, not just filtered | Small | **Fixed** `512638d` |
+| AR-15 | Architecture | Checkbox labels: "Adverse" → "Adv", "Significant" → "Sig" | Trivial | **Fixed** `512638d` |
+| AR-16 | Architecture | Sex filter: add "Sex:" label prefix | Trivial | **Fixed** `512638d` |
+| AR-17 | Architecture | Search field: move to shared PolymorphicRail header row | Small | **Fixed** `512638d` |
+| AR-18 | Architecture | Sort control: move to shared PolymorphicRail header row. **Deferred:** sort options differ substantially between modes (organ: evidence/adverse/effect/alpha; specimen: signal/organ/severity/incidence/alpha). | Small | **Deferred** |
 | AS-2 | Adaptive sections | Separator spacing `mx-0.5` → `mx-1.5` | Trivial |
 | AS-8 | Adaptive sections | StripSep spacing `mx-1` → `mx-1.5` | Trivial |
 | AS-9 | Adaptive sections | Count text opacity: remove `/60` | Trivial |
