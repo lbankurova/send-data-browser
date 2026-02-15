@@ -211,12 +211,17 @@ export function deriveRecoveryAssessments(
   const mainByDose = groupByDoseLevel(mainSubjects);
   const recoveryByDose = groupByDoseLevel(recoverySubjects);
 
-  // Shared dose levels
+  // Shared dose levels (both main + recovery)
   const sharedDoseLevels = [...mainByDose.keys()].filter((dl) =>
     recoveryByDose.has(dl),
   );
-  if (sharedDoseLevels.length === 0) return [];
+  // Recovery-only dose levels (no matching main arm → no_data)
+  const recoveryOnlyDoseLevels = [...recoveryByDose.keys()].filter((dl) =>
+    !mainByDose.has(dl),
+  );
+  if (sharedDoseLevels.length === 0 && recoveryOnlyDoseLevels.length === 0) return [];
   sharedDoseLevels.sort((a, b) => a - b);
+  recoveryOnlyDoseLevels.sort((a, b) => a - b);
 
   return findingNames.map((finding) => {
     const assessments: RecoveryDoseAssessment[] = [];
@@ -274,6 +279,29 @@ export function deriveRecoveryAssessments(
           subjectDetails,
         },
         verdict,
+      });
+    }
+
+    // Recovery-only dose levels: no main arm match → no_data
+    for (const dl of recoveryOnlyDoseLevels) {
+      const recGroup = recoveryByDose.get(dl)!;
+      const recStats = computeGroupStats(finding, recGroup);
+      const subjectDetails: { id: string; severity: number }[] = [];
+      for (const s of recGroup) {
+        const f = s.findings[finding];
+        if (f) subjectDetails.push({ id: s.usubjid, severity: f.severity_num });
+      }
+      assessments.push({
+        doseLevel: dl,
+        doseGroupLabel: recGroup[0]?.dose_label
+          ? formatDoseGroupLabel(recGroup[0].dose_label)
+          : `Dose ${dl}`,
+        main: { incidence: 0, n: 0, affected: 0, avgSeverity: 0, maxSeverity: 0 },
+        recovery: {
+          incidence: recStats.incidence, n: recStats.n, affected: recStats.affected,
+          avgSeverity: recStats.avgSeverity, maxSeverity: recStats.maxSeverity, subjectDetails,
+        },
+        verdict: "no_data",
       });
     }
 
