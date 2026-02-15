@@ -596,7 +596,6 @@ function RecoveryPaneContent({
 }
 
 const SUBJECT_COLLAPSE_THRESHOLD = 4;
-const MAX_COMPARISON_SUBJECTS = 8;
 
 function RecoveryDoseBlock({
   assessment: a,
@@ -648,7 +647,7 @@ function RecoveryDoseBlock({
   const handleCompareRecovery = useCallback(() => {
     if (!onCompareSubjects) return;
     const ids = subjects.map((s) => s.id);
-    onCompareSubjects(ids.slice(0, MAX_COMPARISON_SUBJECTS));
+    onCompareSubjects(ids);
   }, [onCompareSubjects, subjects]);
 
   const handleCompareWithMain = useCallback(() => {
@@ -657,7 +656,7 @@ function RecoveryDoseBlock({
     const mainIds = allSubjects
       .filter((s) => s.dose_level === a.doseLevel && !s.is_recovery)
       .map((s) => s.usubjid);
-    // Interleave recovery/main for balanced truncation
+    // Interleave recovery/main for balanced comparison
     const combined: string[] = [];
     const maxLen = Math.max(recoveryIds.length, mainIds.length);
     for (let i = 0; i < maxLen; i++) {
@@ -666,7 +665,7 @@ function RecoveryDoseBlock({
     }
     // Deduplicate (same subjects could be in both arms)
     const unique = [...new Set(combined)];
-    onCompareSubjects(unique.slice(0, MAX_COMPARISON_SUBJECTS));
+    onCompareSubjects(unique);
   }, [onCompareSubjects, allSubjects, subjects, a.doseLevel]);
 
   const totalCompareCount = useMemo(() => {
@@ -826,7 +825,7 @@ function RecoveryDoseBlock({
           </div>
 
           {/* E-1: Compare action links */}
-          {onCompareSubjects && subjects.length > 0 && showDeltas && (
+          {onCompareSubjects && subjects.length > 0 && (
             <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
               <button
                 className="text-primary hover:underline cursor-pointer"
@@ -834,9 +833,6 @@ function RecoveryDoseBlock({
               >
                 Compare recovery subjects
               </button>
-              {subjects.length > MAX_COMPARISON_SUBJECTS && (
-                <span className="text-muted-foreground/50">(max {MAX_COMPARISON_SUBJECTS})</span>
-              )}
               <span className="text-muted-foreground/30">{"\u00b7"}</span>
               <button
                 className="text-primary hover:underline cursor-pointer"
@@ -844,10 +840,8 @@ function RecoveryDoseBlock({
               >
                 Compare with main arm
               </button>
-              {totalCompareCount > MAX_COMPARISON_SUBJECTS && (
-                <span className="text-muted-foreground/50">
-                  (showing {MAX_COMPARISON_SUBJECTS} of {totalCompareCount})
-                </span>
+              {totalCompareCount > 0 && (
+                <span className="text-muted-foreground/50">({totalCompareCount})</span>
               )}
             </div>
           )}

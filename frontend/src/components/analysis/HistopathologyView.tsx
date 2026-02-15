@@ -2812,7 +2812,7 @@ export function HistopathologyView() {
   // E-1: Consume pendingCompare from context panel recovery pane
   useEffect(() => {
     if (pendingCompare && pendingCompare.length >= 2) {
-      setComparisonSubjects(new Set(pendingCompare.slice(0, MAX_COMPARISON_SUBJECTS)));
+      setComparisonSubjects(new Set(pendingCompare));
       setActiveTab("compare");
       setPendingCompare(null);
     }

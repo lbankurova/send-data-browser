@@ -358,9 +358,21 @@ function LabValuesComparison({
   const [showAll, setShowAll] = useState(false);
   const [selectedTimepoint, setSelectedTimepoint] = useState<number | null>(null);
 
-  // Terminal timepoint = max day
-  const terminalDay = availableTimepoints.length > 0 ? availableTimepoints[availableTimepoints.length - 1] : null;
-  const activeDay = selectedTimepoint ?? terminalDay;
+  // Default timepoint: the day with the most subjects represented
+  const defaultDay = useMemo(() => {
+    if (availableTimepoints.length === 0) return null;
+    let bestDay = availableTimepoints[availableTimepoints.length - 1]; // fallback: terminal
+    let bestCount = 0;
+    for (const day of availableTimepoints) {
+      const count = new Set(labValues.filter((lv) => lv.day === day).map((lv) => lv.usubjid)).size;
+      if (count > bestCount) {
+        bestCount = count;
+        bestDay = day;
+      }
+    }
+    return bestDay;
+  }, [availableTimepoints, labValues]);
+  const activeDay = selectedTimepoint ?? defaultDay;
 
   // Filter lab values to active timepoint
   const filtered = useMemo(() => {
@@ -437,7 +449,7 @@ function LabValuesComparison({
           >
             {availableTimepoints.map((day) => (
               <option key={day} value={day}>
-                Day {day}{day === terminalDay ? " (terminal)" : ""}
+                Day {day}{day === availableTimepoints[availableTimepoints.length - 1] ? " (terminal)" : ""}
               </option>
             ))}
           </FilterSelect>

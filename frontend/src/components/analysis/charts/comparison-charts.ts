@@ -140,15 +140,16 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
     const isFoundDead = disp.includes("FOUND DEAD");
     const isMoribund = disp.includes("MORIBUND");
 
+    const manySubjects = subjects.length > 8;
     series.push({
       name: `${subj.short_id} (${subj.sex}, ${subj.dose_label})`,
       type: "line",
       data,
-      lineStyle: { width: 2, color },
+      lineStyle: { width: manySubjects ? 1 : 2, color },
       itemStyle: { color },
       symbol: "circle",
-      symbolSize: 6,
-      showSymbol: true,
+      symbolSize: manySubjects ? 3 : 6,
+      showSymbol: !manySubjects,
       emphasis: { focus: "series" },
       z: 2,
       markPoint: (isFoundDead || isMoribund) && lastPoint ? {
@@ -168,11 +169,12 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
 
   return {
     animation: false,
+    series,
     grid: {
       left: 50,
       right: 20,
       top: 10,
-      bottom: 40,
+      bottom: subjects.length <= 8 ? 40 : 25,
     },
     tooltip: {
       trigger: "axis",
@@ -210,13 +212,17 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
       axisLabel: { fontSize: 10 },
       splitLine: { lineStyle: { color: "#f3f4f6" } },
     },
-    legend: {
-      bottom: 0,
-      textStyle: { fontSize: 10 },
-      data: subjects.map((s, i) => ({
-        name: `${s.short_id} (${s.sex}, ${s.dose_label})`,
-        itemStyle: { color: COMPARISON_COLORS[i % COMPARISON_COLORS.length] },
-      })),
-    },
+    ...(subjects.length <= 8
+      ? {
+          legend: {
+            bottom: 0,
+            textStyle: { fontSize: 10 },
+            data: subjects.map((s, i) => ({
+              name: `${s.short_id} (${s.sex}, ${s.dose_label})`,
+              itemStyle: { color: COMPARISON_COLORS[i % COMPARISON_COLORS.length] },
+            })),
+          },
+        }
+      : {}),
   };
 }
