@@ -3,7 +3,7 @@ import { useParams, useLocation } from "react-router-dom";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
-import { Loader2, Microscope, BarChart3, Users, TrendingUp, Search, Plus, Pin } from "lucide-react";
+import { Loader2, Microscope, BarChart3, Users, TrendingUp, Search, Plus, Pin, Undo2 } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -47,6 +47,8 @@ import {
   MIN_RECOVERY_N,
 } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
+import { classifyRecovery, classifySpecimenRecovery, CLASSIFICATION_LABELS, CLASSIFICATION_PRIORITY, CLASSIFICATION_BORDER } from "@/lib/recovery-classification";
+import type { RecoveryClassification } from "@/lib/recovery-classification";
 
 // ─── Neutral heat color (§6.1 evidence tier) ─────────────
 export function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
@@ -312,7 +314,7 @@ export function getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderat
 }
 
 /** Per-finding dose consistency: filters rows to one finding, groups by dose_level, checks monotonicity. */
-function getFindingDoseConsistency(rows: LesionSeverityRow[], finding: string): "Weak" | "Moderate" | "Strong" {
+export function getFindingDoseConsistency(rows: LesionSeverityRow[], finding: string): "Weak" | "Moderate" | "Strong" {
   const findingRows = rows.filter((r) => r.finding === finding);
   const doseMap = new Map<number, { affected: number; n: number }>();
   for (const r of findingRows) {
@@ -2474,7 +2476,7 @@ function SubjectHeatmap({
 
 // ─── Hypotheses tab — specimen-level exploratory tools ──────
 
-type SpecimenToolIntent = "severity" | "treatment" | "peer" | "doseTrend";
+type SpecimenToolIntent = "severity" | "treatment" | "peer" | "doseTrend" | "recovery";
 
 interface SpecimenTool {
   value: SpecimenToolIntent;
@@ -2489,6 +2491,7 @@ const SPECIMEN_TOOLS: SpecimenTool[] = [
   { value: "treatment", label: "Treatment-related assessment", icon: Microscope, available: true, description: "Evaluate whether findings are treatment-related or incidental" },
   { value: "peer", label: "Peer comparison", icon: Users, available: false, description: "Compare against historical control incidence data" },
   { value: "doseTrend", label: "Dose-severity trend", icon: TrendingUp, available: true, description: "Severity and incidence changes across dose groups" },
+  { value: "recovery", label: "Recovery assessment", icon: Undo2, available: false, description: "Classify recovery patterns across all findings in specimen" },
 ];
 
 const DEFAULT_SPECIMEN_FAVORITES: SpecimenToolIntent[] = ["severity", "treatment"];
@@ -2634,19 +2637,49 @@ function HistopathHypothesesTab({
   specimenName,
   findingCount,
   selectedFinding,
+  specimenHasRecovery,
+  recoveryClassifications,
+  specimenRecoveryClassification,
+  onFindingClick,
 }: {
   specimenName: string;
   findingCount: number;
   selectedFinding?: string | null;
+  specimenHasRecovery: boolean;
+  recoveryClassifications: Array<{ finding: string; classification: RecoveryClassification }> | null;
+  specimenRecoveryClassification: RecoveryClassification | undefined;
+  onFindingClick: (finding: string) => void;
 }) {
   const [intent, setIntent] = useState<SpecimenToolIntent>("severity");
 
-  // Auto-switch to treatment assessment when a finding is selected
+  // Build tools list with recovery availability gated on specimenHasRecovery
+  const activeTools = useMemo(() =>
+    SPECIMEN_TOOLS.map((t) =>
+      t.value === "recovery" ? { ...t, available: specimenHasRecovery } : t,
+    ),
+    [specimenHasRecovery],
+  );
+
+  // Auto-switch intent when a finding is selected:
+  // - Treatment-related wins if both apply (higher priority)
+  // - Recovery fires when finding has recovery data but no treatment classification
   useEffect(() => {
-    if (selectedFinding) {
+    if (!selectedFinding) return;
+    // Check if finding has a non-UNCLASSIFIABLE recovery classification
+    const findingRecClass = recoveryClassifications?.find(
+      (c) => c.finding === selectedFinding,
+    );
+    const hasRecovery =
+      findingRecClass != null &&
+      findingRecClass.classification.classification !== "UNCLASSIFIABLE";
+    // Treatment wins by default; recovery only when specimen has recovery data
+    // and finding has a meaningful recovery classification
+    if (hasRecovery) {
+      setIntent("recovery");
+    } else {
       setIntent("treatment");
     }
-  }, [selectedFinding]);
+  }, [selectedFinding, recoveryClassifications]);
   const [favorites, setFavorites] = useState<SpecimenToolIntent[]>(DEFAULT_SPECIMEN_FAVORITES);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dropdownSearch, setDropdownSearch] = useState("");
@@ -2683,16 +2716,17 @@ function HistopathHypothesesTab({
   }, []);
 
   const filteredTools = useMemo(() => {
-    if (!dropdownSearch) return SPECIMEN_TOOLS;
+    const available = activeTools.filter((t) => t.available);
+    if (!dropdownSearch) return available;
     const q = dropdownSearch.toLowerCase();
-    return SPECIMEN_TOOLS.filter(
+    return available.filter(
       (t) => t.label.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
     );
-  }, [dropdownSearch]);
+  }, [dropdownSearch, activeTools]);
 
   const favTools = useMemo(
-    () => favorites.map((f) => SPECIMEN_TOOLS.find((t) => t.value === f)!).filter(Boolean),
-    [favorites]
+    () => favorites.map((f) => activeTools.find((t) => t.value === f)!).filter(Boolean),
+    [favorites, activeTools]
   );
 
   return (
@@ -2827,7 +2861,117 @@ function HistopathHypothesesTab({
         {intent === "doseTrend" && (
           <DoseSeverityTrendPlaceholder specimenName={specimenName} selectedFinding={selectedFinding} />
         )}
+        {intent === "recovery" && (
+          <RecoveryAssessmentToolContent
+            specimenName={specimenName}
+            recoveryClassifications={recoveryClassifications}
+            specimenRecoveryClassification={specimenRecoveryClassification}
+            onFindingClick={onFindingClick}
+          />
+        )}
       </div>
+    </div>
+  );
+}
+
+// ─── Recovery assessment tool content ─────────────────────
+
+function RecoveryAssessmentToolContent({
+  specimenName,
+  recoveryClassifications,
+  specimenRecoveryClassification,
+  onFindingClick,
+}: {
+  specimenName: string;
+  recoveryClassifications: Array<{ finding: string; classification: RecoveryClassification }> | null;
+  specimenRecoveryClassification: RecoveryClassification | undefined;
+  onFindingClick: (finding: string) => void;
+}) {
+  if (!recoveryClassifications || recoveryClassifications.length === 0) {
+    return (
+      <div className="flex h-28 items-center justify-center rounded-md border bg-muted/30">
+        <p className="text-[11px] text-muted-foreground/50">No recovery data for this specimen.</p>
+      </div>
+    );
+  }
+
+  // Count concerning classifications
+  const concerningCount = recoveryClassifications.filter(
+    (c) =>
+      c.classification.classification === "INCOMPLETE_RECOVERY" ||
+      c.classification.classification === "DELAYED_ONSET_POSSIBLE" ||
+      c.classification.classification === "PATTERN_ANOMALY",
+  ).length;
+
+  // Sort by classification priority (most concerning first)
+  const sorted = [...recoveryClassifications].sort(
+    (a, b) =>
+      CLASSIFICATION_PRIORITY[a.classification.classification] -
+      CLASSIFICATION_PRIORITY[b.classification.classification],
+  );
+
+  // Deduplicate missing inputs across all classifications
+  const allMissing = [...new Set(recoveryClassifications.flatMap((c) => c.classification.inputsMissing))];
+
+  return (
+    <div className="space-y-3">
+      <HypViewerPlaceholder icon={Undo2} viewerType="Recovery Assessment" context={specimenName} />
+
+      {/* Specimen-level summary */}
+      {specimenRecoveryClassification && (
+        <div className={cn("py-1 pl-2", CLASSIFICATION_BORDER[specimenRecoveryClassification.classification])}>
+          <div className="text-[11px] font-medium">
+            Specimen-level: {CLASSIFICATION_LABELS[specimenRecoveryClassification.classification]} ({specimenRecoveryClassification.confidence} confidence)
+          </div>
+          <div className="mt-0.5 text-[10px] text-muted-foreground">
+            {concerningCount > 0
+              ? `${concerningCount} of ${recoveryClassifications.length} findings show incomplete or delayed recovery.`
+              : `${recoveryClassifications.length} findings assessed \u2014 no concerning recovery patterns.`}
+          </div>
+        </div>
+      )}
+
+      {/* Findings table */}
+      <table className="w-full text-[10px]">
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Finding</th>
+            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Classification</th>
+            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Confidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map(({ finding, classification }) => (
+            <tr
+              key={finding}
+              className="cursor-pointer border-b border-dashed transition-colors hover:bg-muted/40"
+              onClick={() => onFindingClick(finding)}
+            >
+              <td className="max-w-[120px] truncate py-1 font-medium" title={finding}>
+                {finding}
+              </td>
+              <td className="py-1 text-muted-foreground">
+                {CLASSIFICATION_LABELS[classification.classification]}
+              </td>
+              <td className="py-1 text-right text-muted-foreground">
+                {classification.confidence}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Missing inputs */}
+      {allMissing.length > 0 && (
+        <div className="border-l border-border/40 pl-2 text-[10px] text-muted-foreground/50">
+          {allMissing.map((m) => (
+            <div key={m}>{m.replace(/_/g, " ")} not available</div>
+          ))}
+        </div>
+      )}
+
+      <HypConfigLine items={[["Classification method", "Rule-based (5 categories)"]]} />
+      <HypProductionNote>Include historical controls (toggle disabled \u2014 requires peer comparison data)</HypProductionNote>
     </div>
   );
 }
@@ -2923,6 +3067,81 @@ export function HistopathologyView() {
     const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects);
     return specimenRecoveryLabel(assessments);
   }, [subjData, findingSummaries]);
+
+  // Recovery classifications (interpretive layer — for Hypotheses tab)
+  const specimenHasRecovery = useMemo(
+    () => subjData?.subjects?.some((s) => s.is_recovery) ?? false,
+    [subjData],
+  );
+
+  const allRecoveryClassifications = useMemo(() => {
+    if (!specimenHasRecovery || !subjData?.subjects) return null;
+    const findingNames = findingSummaries.map((f) => f.finding);
+    if (findingNames.length === 0) return null;
+    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects);
+
+    // Build per-finding clinical catalog lookup
+    const findingClinicalMap = new Map<string, { clinicalClass: string; catalogId: string }>();
+    if (ruleResults && selectedSpecimen) {
+      const specLower = selectedSpecimen.toLowerCase();
+      for (const r of ruleResults) {
+        const cc = r.params?.clinical_class;
+        const cid = r.params?.catalog_id;
+        if (!cc || !cid) continue;
+        const rSpec = (r.params?.specimen ?? "").toLowerCase();
+        if (rSpec !== specLower) continue;
+        const finding = r.params?.finding ?? "";
+        if (finding && !findingClinicalMap.has(finding)) {
+          findingClinicalMap.set(finding, { clinicalClass: cc, catalogId: cid });
+        }
+      }
+    }
+
+    return assessments.map((assessment) => {
+      const finding = assessment.finding;
+      const clinical = findingClinicalMap.get(finding);
+      const specLower = (selectedSpecimen ?? "").toLowerCase();
+      const findingLower = finding.toLowerCase();
+      const findingRulesLocal = (ruleResults ?? []).filter(
+        (r) =>
+          (r.params?.finding && r.params.finding.toLowerCase().includes(findingLower)) &&
+          (r.params?.specimen && r.params.specimen.toLowerCase() === specLower),
+      );
+      const isAdverse = findingRulesLocal.some(
+        (r) =>
+          r.rule_id === "R04" || r.rule_id === "R12" || r.rule_id === "R13" ||
+          (r.rule_id === "R10" && r.severity === "warning"),
+      );
+      const doseConsistency = getFindingDoseConsistency(specimenData, finding);
+      const trend = trendData?.find(
+        (t) => t.finding === finding && t.specimen === selectedSpecimen,
+      );
+
+      const signalClass: "adverse" | "warning" | "normal" = isAdverse
+        ? "adverse"
+        : clinical
+          ? "warning"
+          : "normal";
+
+      const classification = classifyRecovery(assessment, {
+        isAdverse,
+        doseConsistency,
+        doseResponsePValue: trend?.ca_trend_p ?? null,
+        clinicalClass: clinical?.clinicalClass ?? null,
+        signalClass,
+        historicalControlIncidence: null,
+        crossDomainCorroboration: null,
+        recoveryPeriodDays: null,
+      });
+
+      return { finding, classification };
+    });
+  }, [specimenHasRecovery, subjData, findingSummaries, ruleResults, specimenData, trendData, selectedSpecimen]);
+
+  const specimenRecoveryClassification = useMemo(() => {
+    if (!allRecoveryClassifications || allRecoveryClassifications.length === 0) return undefined;
+    return classifySpecimenRecovery(allRecoveryClassifications.map((c) => c.classification));
+  }, [allRecoveryClassifications]);
 
   // Reset finding selection and comparison when specimen changes (from shell rail)
   useEffect(() => {
@@ -3077,6 +3296,10 @@ export function HistopathologyView() {
               specimenName={selectedSummary.specimen.replace(/_/g, " ")}
               findingCount={findingSummaries.length}
               selectedFinding={selection?.finding}
+              specimenHasRecovery={specimenHasRecovery}
+              recoveryClassifications={allRecoveryClassifications}
+              specimenRecoveryClassification={specimenRecoveryClassification}
+              onFindingClick={handleFindingClick}
             />
           )}
           {activeTab === "compare" && studyId && (

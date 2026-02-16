@@ -26,6 +26,10 @@ import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { deriveRecoveryAssessments, MIN_RECOVERY_N, verdictArrow, formatRecoveryFraction } from "@/lib/recovery-assessment";
 import type { RecoveryAssessment, RecoveryDoseAssessment } from "@/lib/recovery-assessment";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
+import { classifyRecovery, CLASSIFICATION_LABELS, CLASSIFICATION_BORDER } from "@/lib/recovery-classification";
+import type { RecoveryClassification } from "@/lib/recovery-classification";
+import { getFindingDoseConsistency } from "@/components/analysis/HistopathologyView";
+import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 
 // ─── Specimen-scoped insights (purpose-built for context panel) ──────────────
 
@@ -236,6 +240,48 @@ function InsightSection({ label, blocks }: { label: string; blocks: InsightBlock
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Recovery insight block (interpretive layer — Insights pane only) ─────────
+
+function RecoveryInsightBlock({ classification }: { classification: RecoveryClassification }) {
+  const label = CLASSIFICATION_LABELS[classification.classification];
+  const border = CLASSIFICATION_BORDER[classification.classification];
+
+  return (
+    <div>
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Recovery assessment
+      </div>
+      <div className={cn("py-0.5 pl-2", border)}>
+        <div className="text-[11px] font-medium text-foreground">
+          {label} &middot; {classification.confidence} confidence
+        </div>
+        <div className="mt-0.5 text-[10px] text-muted-foreground">
+          {classification.rationale}
+        </div>
+        {classification.inputsUsed.length > 0 && (
+          <div className="mt-1 border-l border-border/40 pl-2 text-[10px] text-muted-foreground/60">
+            {classification.inputsUsed.join(" \u00b7 ")}
+          </div>
+        )}
+        {classification.qualifiers.length > 0 && (
+          <div className="mt-0.5 space-y-0.5">
+            {classification.qualifiers.map((q, i) => (
+              <div key={i} className="text-[10px] italic text-muted-foreground/50">
+                {q}
+              </div>
+            ))}
+          </div>
+        )}
+        {classification.recommendedAction && (
+          <div className="mt-1 text-[10px] font-medium text-foreground/70">
+            {classification.recommendedAction}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -914,6 +960,62 @@ function FindingDetailPane({
     return assessments[0] ?? null;
   }, [specimenHasRecovery, subjData, selection.finding]);
 
+  // Recovery classification (interpretive layer)
+  const { data: trendData } = useFindingDoseTrends(studyId);
+  const recoveryClassification = useMemo(() => {
+    if (!findingRecovery) return null;
+    // Gather context
+    const findingLower = selection.finding.toLowerCase();
+    const specLower = selection.specimen.toLowerCase();
+    const findingRulesLocal = ruleResults.filter(
+      (r) =>
+        (r.params?.finding && r.params.finding.toLowerCase().includes(findingLower)) &&
+        (r.params?.specimen && r.params.specimen.toLowerCase() === specLower),
+    );
+    const isAdverse = findingRulesLocal.some(
+      (r) =>
+        r.rule_id === "R04" || r.rule_id === "R12" || r.rule_id === "R13" ||
+        (r.rule_id === "R10" && r.severity === "warning"),
+    );
+    const doseConsistency = getFindingDoseConsistency(lesionData, selection.finding);
+    const trend = trendData?.find(
+      (t: { finding: string; specimen: string }) =>
+        t.finding === selection.finding && t.specimen === selection.specimen,
+    );
+    const clinicalRule = ruleResults.find(
+      (r) =>
+        r.params?.clinical_class &&
+        r.params?.finding?.toLowerCase().includes(findingLower) &&
+        r.params?.specimen?.toLowerCase() === specLower,
+    );
+    const clinicalClass = clinicalRule?.params?.clinical_class ?? null;
+    const signalClass: "adverse" | "warning" | "normal" = isAdverse
+      ? "adverse"
+      : clinicalClass
+        ? "warning"
+        : "normal";
+
+    return classifyRecovery(findingRecovery, {
+      isAdverse,
+      doseConsistency,
+      doseResponsePValue: trend?.ca_trend_p ?? null,
+      clinicalClass,
+      signalClass,
+      historicalControlIncidence: null,
+      crossDomainCorroboration: null,
+      recoveryPeriodDays: null,
+    });
+  }, [findingRecovery, ruleResults, lesionData, trendData, selection]);
+
+  // Show recovery insight when: classification exists AND (not UNCLASSIFIABLE, or UNCLASSIFIABLE with not_examined/low_power)
+  const showRecoveryInsight = useMemo(() => {
+    if (!recoveryClassification) return false;
+    if (recoveryClassification.classification !== "UNCLASSIFIABLE") return true;
+    // Show UNCLASSIFIABLE for informative guard verdicts
+    const verdict = findingRecovery?.overall;
+    return verdict === "not_examined" || verdict === "low_power";
+  }, [recoveryClassification, findingRecovery]);
+
   const onSubjectClick = useCallback(
     (usubjid: string) => setSelectedSubject(usubjid),
     [setSelectedSubject],
@@ -1043,6 +1145,11 @@ function FindingDetailPane({
       {/* Insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <SpecimenInsights rules={findingRules} specimen={selection.specimen} />
+        {showRecoveryInsight && recoveryClassification && (
+          <div className="mt-2.5">
+            <RecoveryInsightBlock classification={recoveryClassification} />
+          </div>
+        )}
       </CollapsiblePane>
 
       {/* Dose detail */}
