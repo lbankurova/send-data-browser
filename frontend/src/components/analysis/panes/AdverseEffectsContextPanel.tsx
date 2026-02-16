@@ -19,6 +19,7 @@ export function AdverseEffectsContextPanel() {
     studyId,
     selectedFindingId
   );
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   if (!selectedFindingId || !selectedFinding) {
     return (
@@ -41,8 +42,6 @@ export function AdverseEffectsContextPanel() {
       </div>
     );
   }
-
-  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   if (!context) return null;
 
