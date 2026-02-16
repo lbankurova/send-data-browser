@@ -46,7 +46,7 @@ export function CenterPanel() {
         </div>
       ) : data ? (
         <div className="min-h-0 flex-1 px-6 pb-6">
-          <DataTable columns={data.columns} rows={data.rows} totalRows={data.total_rows} />
+          <DataTable columns={data.columns} rows={data.rows} totalRows={data.total_rows} storageKeyPrefix={`pcc.domain.${domainName}`} />
         </div>
       ) : null}
     </div>
