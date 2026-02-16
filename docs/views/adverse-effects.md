@@ -1,11 +1,12 @@
 # Adverse Effects View
 
 **Route:** `/studies/:studyId/adverse-effects` (primary), `/studies/:studyId/analyses/adverse-effects` (legacy redirect)
+**Wrapper:** `AdverseEffectsViewWrapper.tsx` (in `components/analysis/findings/`) — sets `useRailModePreference("organ")`, renders `AdverseEffectsView`
 **Component:** `AdverseEffectsView.tsx` (in `components/analysis/findings/`)
 **Scientific question:** "What are all the findings and how do they compare across dose groups?"
-**Role:** Dynamic server-side adverse effects analysis. Paginated findings table with per-dose-group values, server-side filtering, and detailed finding context panel.
+**Role:** Dynamic server-side adverse effects analysis. Sortable, resizable findings table with per-dose-group values, client-side sorting, and detailed finding context panel.
 
-**Key difference from other views:** This view uses **server-side pagination and filtering** (not pre-generated JSON). Data is fetched on each page/filter change from `/api/studies/{studyId}/analyses/adverse-effects`.
+**Key difference from other views:** This view uses **server-side filtering** (not pre-generated JSON). Data is fetched from `/api/studies/{studyId}/analyses/adverse-effects` with all results loaded at once (page=1, pageSize=10000). Sorting is client-side via TanStack React Table.
 
 ---
 
@@ -22,58 +23,34 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a traditional page-style layout with padding `p-4`:
+The view itself uses a flex column layout (`flex h-full flex-col overflow-hidden`) with no page-level padding:
 
 ```
 +-----------------------------------------------------------+
-|  Adverse Effects                                           |
-|  {studyId}                                                 |  <-- h1 + subtitle
-+-----------------------------------------------------------+
-|  [N adverse] [N warning] [N normal]  {total} total        |  <-- summary badges (uniform gray)
-+-----------------------------------------------------------+
-|  Domain [v] Sex [v] Classification [v] [Search findings…] |  <-- filter bar (native <select> via FilterSelect)
+|  Domain [v] Sex [v] Class [v] [Search…]  N adv N wrn N nrm  {total} total |  <-- FilterBar with inline badges
 +-----------------------------------------------------------+
 |                                                           |
-|  Findings table (dynamic columns: fixed + per-dose-group)  |
-|  (scrollable via max-h-[60vh] overflow-auto)               |
+|  Findings table (TanStack React Table)                     |
+|  (flex-1 overflow-auto, fills remaining space)             |
 |                                                           |
-+-----------------------------------------------------------+
-|  {total} rows | Rows per page [v] | Page X of Y |◀◀ ◀ ▶ ▶▶|
 +-----------------------------------------------------------+
 ```
 
----
-
-## Header
-
-`mb-3`
-
-- Title: `text-base font-semibold` -- "Adverse Effects"
-- Subtitle: `mt-0.5 text-xs text-muted-foreground` -- study ID
-
----
-
-## Summary Badges
-
-`mb-4 flex items-center gap-2 text-xs`
-
-Only shown when data is loaded. Three classification badges plus a total count. All badges use **uniform gray styling** (categorical identity, not signal color):
-
-| Badge | Classes |
-|-------|---------|
-| adverse | `rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600` |
-| warning | `rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600` |
-| normal | `rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600` |
-
-**Total count:** `ml-1 text-muted-foreground` -- "{total_findings} total"
+No header (title/subtitle) section. No pagination.
 
 ---
 
 ## Filter Bar
 
-`flex flex-wrap items-center gap-3`
+Uses the shared `FilterBar` container component: `flex items-center gap-2 border-b bg-muted/30 px-4 py-2`.
 
-Wrapped in a `mb-4` container div. Uses `FindingsFilterBar` component, which renders native `<select>` elements via the `FilterSelect` component (from `@/components/ui/FilterBar`). `FilterSelect` applies the design-token class `filter.select` = `h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary`. Filters are rendered as bare `FilterSelect` components without label wrappers -- the default option text serves as the label.
+Inside the FilterBar, `FindingsFilterBar` renders the filter controls, followed by inline summary badges and a total count (only shown when data is loaded).
+
+### Filter Controls
+
+`FindingsFilterBar` component (`components/analysis/FindingsFilterBar.tsx`): renders native `<select>` elements via `FilterSelect` (from `@/components/ui/FilterBar`). `FilterSelect` applies the design-token class `filter.select` = `h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary`. Filters are rendered as bare `FilterSelect` components without label wrappers -- the default option text serves as the label.
+
+The filter controls are wrapped in `flex flex-wrap items-center gap-3`.
 
 | Filter | Control | Options | Default |
 |--------|---------|---------|---------|
@@ -84,35 +61,56 @@ Wrapped in a `mb-4` container div. Uses `FindingsFilterBar` component, which ren
 
 The search input uses classes: `rounded border bg-background px-2 py-0.5 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary`.
 
-**Filter change behavior:** Changing any filter resets to page 1 and clears the finding selection.
+### Inline Summary Badges
+
+Three classification count badges rendered after the filter controls inside the same FilterBar. All use uniform neutral styling (categorical identity, not signal color):
+
+| Badge | Classes |
+|-------|---------|
+| adverse | `rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground` |
+| warning | `rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground` |
+| normal | `rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground` |
+
+**Total count:** `FilterBarCount` component — `ml-auto text-[10px] text-muted-foreground` — "{total_findings} total". Pushed to the right edge of the FilterBar via `ml-auto`.
+
+**Filter change behavior:** Changing any filter clears the finding selection (via `useEffect` on `filters`).
 
 ---
 
 ## Findings Table
 
 ### Structure
-Plain HTML `<table>` with `w-full text-xs`, wrapped in `max-h-[60vh] overflow-auto` for both horizontal and vertical scrolling. No TanStack sorting (data comes server-sorted).
+
+TanStack React Table (`useReactTable`) with client-side sorting and column resizing. Table element: `<table>` with `w-full text-[10px]`. Wrapped in `h-full overflow-auto` (a flex child of the view that fills remaining vertical space).
+
+### TanStack Table Features
+
+- **Sorting:** Double-click a column header to toggle sort. Sort indicators `↑` (asc) / `↓` (desc) appended to header text. Session-persisted via `useSessionState("pcc.adverseEffects.sorting", [])`.
+- **Column resizing:** Drag resize handle on column borders. Resize handle: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none`. Shows `bg-primary` when actively resizing, `hover:bg-primary/30` otherwise. Session-persisted via `useSessionState("pcc.adverseEffects.columnSizing", {})`.
+- **Content-hugging + absorber:** All columns except the "finding" column (the absorber) use `width: 1px; white-space: nowrap` so the browser shrinks them to fit content. The finding column uses `width: 100%` to absorb remaining space. Manual resize overrides with an explicit `width` + `maxWidth`.
 
 ### Header Row
+
 - Wrapper `<thead>`: `sticky top-0 z-10 bg-background` (sticky header on vertical scroll)
 - Row `<tr>`: `border-b bg-muted/30`
-- Header cells `<th>`: `px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` (or `text-right` / `text-center` for numeric/icon columns)
+- Header cells `<th>`: `relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`
+- Sort trigger: `onDoubleClick` calls `header.column.getToggleSortingHandler()`
 
 ### Fixed Columns (Left)
 
 | Column | Header | Alignment | Cell Rendering |
 |--------|--------|-----------|----------------|
 | domain | Domain | Left | `DomainLabel` component: colored text only, `text-[9px] font-semibold` with domain-specific text color from `getDomainBadgeColor().text`. No background, no border. |
-| finding | Finding | Left | `max-w-[200px] truncate`, `title` tooltip for full name. If specimen exists: "{specimen}: {finding}" with specimen in `text-muted-foreground` |
+| finding | Finding | Left (absorber) | `overflow-hidden text-ellipsis whitespace-nowrap` div with `title` tooltip for full name. If specimen exists: "{specimen}: {finding}" with specimen in `text-muted-foreground` |
 | sex | Sex | Left | Plain text |
 | day | Day | Left | `text-muted-foreground`, em dash if null |
 
 ### Dynamic Dose-Group Columns (Center)
 
-One column per dose group (from `data.dose_groups` array), rendered dynamically.
+One column per dose group (from `data.dose_groups` array), rendered dynamically. Column IDs: `dose_{dose_level}`.
 
-- **Header:** `DoseHeader` component -- dose value + unit (e.g., "0 mg/kg/day"), or dose label if no value. Rendered via `DoseHeader` which shows the label text with a colored underline indicator (`h-0.5 w-full rounded-full` with color from `getDoseGroupColor(level)`). `text-right`, with `title` tooltip showing label.
-- **Cell:** `text-right font-mono`
+- **Header:** `DoseHeader` component -- dose value + unit (e.g., "0 mg/kg/day"), or `formatDoseShortLabel(label)` if no value. Rendered via `DoseHeader` which shows the label text with a colored underline indicator (`h-0.5 w-full rounded-full` with color from `getDoseGroupColor(level)`).
+- **Cell:** `font-mono`
   - Continuous: mean value `.toFixed(2)`, em dash if null
   - Incidence: "{affected}/{n}", em dash if null
 
@@ -120,15 +118,15 @@ One column per dose group (from `data.dose_groups` array), rendered dynamically.
 
 | Column | Header | Alignment | Cell Rendering |
 |--------|--------|-----------|----------------|
-| min_p_adj | p-value | Right | `font-mono text-muted-foreground` -- formatted via `formatPValue()`. No color scale applied. |
-| trend_p | Trend | Right | `font-mono text-muted-foreground` -- formatted via `formatPValue()`. No color scale applied. |
-| direction | Dir | Center | `text-sm` with direction-specific color via `getDirectionColor()` (see below) |
-| max_effect_size | Effect | Right | `font-mono text-muted-foreground` -- formatted via `formatEffectSize()`. No color scale applied. |
-| severity | Severity | Center | Left-border badge: `inline-block border-l-2 pl-1.5 py-0.5 text-[10px] font-semibold text-gray-600` with colored left border from `getSeverityDotColor()` |
+| min_p_adj | P-value | Left | `ev font-mono text-muted-foreground` -- formatted via `formatPValue()`. Interaction-driven color via `ev` CSS class. |
+| trend_p | Trend | Left | `ev font-mono text-muted-foreground` -- formatted via `formatPValue()`. Interaction-driven color via `ev` CSS class. |
+| direction | Dir | Left | Direction-specific color via `getDirectionColor()` + symbol via `getDirectionSymbol()` (see below) |
+| max_effect_size | Effect | Left | `ev font-mono text-muted-foreground` -- formatted via `formatEffectSize()`. Interaction-driven color via `ev` CSS class. |
+| severity | Severity | Left | Left-border badge: `inline-block border-l-2 pl-1.5 py-0.5 font-semibold text-gray-600` with colored left border from `getSeverityDotColor()` via inline `style` |
 
-**Note on p-value and effect-size columns:** Although `getPValueColor()` and `getEffectSizeColor()` functions exist in `severity-colors.ts`, they are **not called** in the `FindingsTable` rendering. Both p-value and effect-size cells use a hardcoded `text-muted-foreground` class. The `data-evidence=""` attribute is set on the outer `<td>`, and the inner `<span>` uses class `ev font-mono text-muted-foreground`.
+**Note on p-value and effect-size columns:** Both p-value, trend, and effect-size cells use the `ev` CSS class for interaction-driven color: neutral `text-muted-foreground` at rest, `#DC2626` on row hover/selection. The `data-evidence=""` attribute is set on every `<td>`.
 
-**Note on severity badges:** The severity column uses a left-border badge with `getSeverityDotColor()` providing the border color: adverse = `#dc2626`, warning = `#d97706`, normal = `#16a34a`. The text label is always gray (`text-gray-600`).
+**Note on severity badges:** The severity column uses a left-border badge with `getSeverityDotColor()` providing the `borderLeftColor` via inline style: adverse = `#dc2626`, warning = `#d97706`, normal = `#16a34a`. The text label is always gray (`text-gray-600`).
 
 ### Domain Label Colors
 
@@ -174,32 +172,20 @@ The `DomainLabel` component renders text-only colored labels (no background) usi
 ### Row Interactions
 
 - Hover: `hover:bg-accent/50`
-- Selected: `bg-accent` (matched on finding ID), also sets `data-selected` attribute
-- Click: selects finding via `FindingSelectionContext`. Click again to deselect.
-- Row cells: `px-2 py-1`
+- Selected: `bg-accent font-medium` (matched on finding ID), also sets `data-selected` attribute
+- Click: selects finding via `FindingSelectionContext`. Click again to deselect (toggles to `null`).
+- Row cells: `px-1.5 py-px`
 - Row base: `cursor-pointer border-b transition-colors`
 
----
+### Empty State
 
-## Pagination
-
-Uses `DataTablePagination` component below the table.
-
-- Default page size: 50
-- Page size options: 25, 50, 100, 250 (via shadcn `Select` dropdown)
-- Shows: total row count (left), "Rows per page" selector, "Page X of Y" text, and 4 navigation buttons (right)
-- **Navigation buttons** (all `variant="outline" size="icon"` with `h-8 w-8`):
-  - First page (`ChevronsLeft` icon) -- disabled when on page 1
-  - Previous page (`ChevronLeft` icon) -- disabled when on page 1
-  - Next page (`ChevronRight` icon) -- disabled when on last page
-  - Last page (`ChevronsRight` icon) -- disabled when on last page
-- Layout: `flex items-center justify-between py-4`
+When `findings.length === 0`, a message is shown below the table: `p-4 text-center text-xs text-muted-foreground` — "No findings match the current filters."
 
 ---
 
 ## Context Panel (Right Sidebar -- 280px)
 
-Route-detected: when pathname matches `/studies/{studyId}/analyses/adverse-effects` (legacy route pattern), shows `AdverseEffectsContextPanel` (uses `FindingSelectionContext`). Note: the context panel route detection regex in `ContextPanel.tsx` only matches the legacy `/analyses/adverse-effects` path, not the primary `/adverse-effects` path.
+Route-detected: when pathname matches regex `/\/studies\/[^/]+\/(analyses\/)?adverse-effects/`, shows `AdverseEffectsContextPanel` (uses `FindingSelectionContext`). This regex matches both the primary `/adverse-effects` path and the legacy `/analyses/adverse-effects` path.
 
 ### No Selection State
 - Header: `text-sm font-semibold` -- "Adverse Effects" (`<h3>` with `mb-2`)
@@ -237,6 +223,18 @@ Route-detected: when pathname matches `/studies/{studyId}/analyses/adverse-effec
 #### Pane 5: Effect size (default closed)
 `EffectSizePane` component -- effect size analysis. Explicitly passed `defaultOpen={false}`.
 
+#### Pane 6: Related views (default closed)
+Navigation links to other views. Explicitly passed `defaultOpen={false}`. Contains 4 links:
+
+| Link Text | Target Route |
+|-----------|-------------|
+| View histopathology → | `/studies/{studyId}/histopathology` |
+| View dose-response → | `/studies/{studyId}/dose-response` |
+| View NOAEL decision → | `/studies/{studyId}/noael-decision` |
+| View study summary → | `/studies/{studyId}` |
+
+Links: `block text-[11px] text-primary hover:underline`, use `<a href="#">` with `onClick` handler calling `navigate()`. Wrapped in `space-y-1`.
+
 #### Pane Rendering
 All panes use the `CollapsiblePane` component:
 - Toggle button: `flex w-full items-center gap-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`
@@ -253,24 +251,25 @@ All panes use the `CollapsiblePane` component:
 
 | State | Scope | Managed By |
 |-------|-------|------------|
-| Page | Local | `useState<number>` -- resets to 1 on filter change |
-| Page size | Local | `useState<number>` -- default 50 |
 | Filters | Local | `useState<AdverseEffectsFilters>` -- domain, sex, severity, search |
 | Finding selection | Shared via context | `FindingSelectionContext` -- syncs table and context panel |
 | Study selection | Shared via context | `SelectionContext` -- synced on mount |
-| Findings data | Server | `useAdverseEffects(studyId, page, pageSize, filters)` hook (React Query) |
+| Table sorting | Session-persisted | `useSessionState<SortingState>("pcc.adverseEffects.sorting", [])` |
+| Column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.adverseEffects.columnSizing", {})` |
+| Findings data | Server | `useAdverseEffects(studyId, 1, 10000, filters)` hook (React Query, 5 min stale) |
 | Finding context | Server | `useFindingContext(studyId, findingId)` hook -- loaded on selection |
 | Collapse all | Local (context panel) | `useCollapseAll()` hook -- provides expandGen/collapseGen counters |
+| Rail mode | Shared | `useRailModePreference("organ")` -- set by wrapper |
 
 ---
 
 ## Data Flow
 
 ```
-useAdverseEffects(studyId, page, pageSize, filters)
-    --> { findings, dose_groups, summary, page, page_size, total_pages, total_findings }
+useAdverseEffects(studyId, 1, 10000, filters)
+    --> { findings, dose_groups, summary, ... }
                                   |
-                            FindingsTable + DataTablePagination
+                            FindingsTable (TanStack)
                                   |
                           FindingSelectionContext
                                   |
@@ -278,15 +277,21 @@ useAdverseEffects(studyId, page, pageSize, filters)
                           --> context data
                                   |
                      AdverseEffectsContextPanel
-                      /     |      |      \      \
-                    TR   Stats   D-R   Corr   Effect
+                      /     |      |      \      \       \
+                    TR   Stats   D-R   Corr   Effect   Related
 ```
 
 ---
 
 ## Cross-View Navigation
 
-No direct cross-view links from this view's context panel (unlike the pre-generated analysis views).
+The "Related views" pane in the context panel provides navigation links to:
+- Histopathology view
+- Dose-response view
+- NOAEL decision view
+- Study summary view
+
+All links use `react-router-dom` `navigate()` for client-side navigation.
 
 ---
 
@@ -294,6 +299,6 @@ No direct cross-view links from this view's context panel (unlike the pre-genera
 
 | State | Display |
 |-------|---------|
-| Loading | Skeleton rows: 1 `h-10 w-full` header + 10 `h-8 w-full` body rows, in `space-y-2` |
+| Loading | Skeleton rows: 1 `h-10 w-full` header + 10 `h-8 w-full` body rows, in `space-y-2 p-4` |
 | Error | `p-6 text-destructive` -- "Failed to load analysis: {message}" |
-| No data | Table renders but with no rows |
+| Empty | "No findings match the current filters." (`p-4 text-center text-xs text-muted-foreground`) |
