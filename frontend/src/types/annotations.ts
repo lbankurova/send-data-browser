@@ -119,9 +119,23 @@ export interface CustomValidationRule {
 
 export interface PathologyReview {
   peerReviewStatus: "Not Reviewed" | "Agreed" | "Disagreed" | "Deferred";
+  comment: string;
+  // Disagreement details
+  disagreementCategory?: "" | "terminology" | "severity_grade" | "presence" | "interpretation";
+  originalDiagnosis?: string;
+  peerDiagnosis?: string;
+  originalSeverity?: number;
+  peerSeverity?: number;
+  // Resolution
+  resolution?: "" | "original_upheld" | "peer_accepted" | "compromise" | "pwg_pending";
+  resolutionNotes?: string;
+  // Reviewer identity
+  reviewerRole?: "" | "original" | "peer" | "pwg_chair" | "pwg_member";
+  reviewerName?: string;
+  reviewedAt?: string;
+  // Legacy fields (kept for backwards compat)
   revisedSeverity: "Minimal" | "Mild" | "Moderate" | "Marked" | "Severe" | "N/A";
   revisedDiagnosis: string;
-  comment: string;
   pathologist: string;
   reviewDate: string;
 }

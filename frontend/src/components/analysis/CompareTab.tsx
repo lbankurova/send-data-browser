@@ -21,6 +21,7 @@ import type { BWChartMode } from "@/components/analysis/charts/comparison-charts
 import type { SubjectHistopathEntry, ComparisonSubjectProfile } from "@/types/timecourse";
 import { FilterSelect } from "@/components/ui/FilterBar";
 import { getDoseGroupColor } from "@/lib/severity-colors";
+import { ORGAN_RELEVANT_TESTS } from "@/lib/organ-test-mapping";
 
 // ─── Grouping types ──────────────────────────────────────────
 
@@ -32,17 +33,6 @@ interface SubjectGroup {
   isRecovery: boolean;
   subjects: EnrichedSubject[];
 }
-
-// ─── Organ → relevant lab tests mapping ─────────────────────
-
-const ORGAN_RELEVANT_TESTS: Record<string, string[]> = {
-  LIVER: ["ALT", "AST", "ALP", "ALB", "BILI", "GGT", "TBIL", "TP", "CHOL", "TRIG"],
-  KIDNEY: ["BUN", "CREA", "TP", "ALB", "PHOS", "CA", "K", "NA", "CL"],
-  "BONE MARROW": ["WBC", "RBC", "HGB", "HCT", "PLT", "NEUT", "LYMPH", "MONO", "EOS", "BASO", "RETIC"],
-  SPLEEN: ["WBC", "RBC", "HGB", "HCT", "PLT", "NEUT", "LYMPH"],
-  HEART: ["CK", "LDH", "AST", "TROP"],
-  ADRENAL: ["NA", "K", "CL", "GLUC", "CHOL"],
-};
 
 // ─── CollapsiblePane ─────────────────────────────────────────
 
