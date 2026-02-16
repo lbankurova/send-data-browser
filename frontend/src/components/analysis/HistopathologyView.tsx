@@ -1661,10 +1661,10 @@ function OverviewTab({
         {findingSummaries.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No findings for this specimen.</p>
         ) : (
-          <table className="w-full text-[11px]">
+          <table className="w-full text-[10px]">
             <thead className="sticky top-0 z-10 bg-background">
               {findingsTable.getHeaderGroups().map((hg) => (
-                <tr key={hg.id} className="border-b border-border/40">
+                <tr key={hg.id} className="border-b bg-muted/30">
                   {hg.headers.map((header) => {
                     // Absorber column gets remaining space; all others shrink-to-content.
                     // Manual resize overrides with an explicit width.
@@ -1680,7 +1680,7 @@ function OverviewTab({
                       <th
                         key={header.id}
                         className={cn(
-                          "relative cursor-pointer whitespace-nowrap pb-2 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground/70",
+                          "relative cursor-pointer whitespace-nowrap px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground/70",
                           id === "maxSeverity" && "text-right",
                           id === "incidence" && "text-right",
                           id === "isDoseDriven" && "text-center",
@@ -1718,7 +1718,7 @@ function OverviewTab({
                     data-finding={orig.finding}
                     className={cn(
                       "cursor-pointer border-b border-border/20 transition-colors hover:bg-accent/30",
-                      isSelected && "bg-accent"
+                      isSelected && "bg-accent font-medium"
                     )}
                     onClick={() => onFindingClick(orig.finding)}
                   >
@@ -1735,7 +1735,7 @@ function OverviewTab({
                         <td
                           key={cell.id}
                           className={cn(
-                            "whitespace-nowrap py-1 pr-3",
+                            "whitespace-nowrap py-px px-1.5",
                             id === "maxSeverity" && "text-right",
                             id === "incidence" && "text-right",
                             id === "isDoseDriven" && "text-center",
