@@ -32,7 +32,9 @@ import { useSectionLayout } from "@/hooks/useSectionLayout";
 import { HorizontalResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
 import { buildDoseIncidenceBarOption, buildDoseSeverityBarOption } from "@/components/analysis/charts/histopathology-charts";
-import type { DoseIncidenceGroup, DoseSeverityGroup, ChartDisplayMode } from "@/components/analysis/charts/histopathology-charts";
+import type { DoseIncidenceGroup, DoseSeverityGroup } from "@/components/analysis/charts/histopathology-charts";
+import { ChartModeToggle } from "@/components/ui/ChartModeToggle";
+import type { ChartDisplayMode } from "@/components/ui/ChartModeToggle";
 import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { CompareTab } from "@/components/analysis/CompareTab";
 import type { LesionSeverityRow, RuleResult, FindingDoseTrend } from "@/types/analysis-views";
@@ -589,28 +591,7 @@ export function deriveSpecimenReviewStatus(
   return "In review";
 }
 
-// ─── ChartModeToggle ──────────────────────────────────────
-
-function ChartModeToggle({ mode, onChange }: { mode: ChartDisplayMode; onChange: (m: ChartDisplayMode) => void }) {
-  return (
-    <div className="flex gap-px rounded-sm bg-muted/40 p-px">
-      {(["compact", "scaled"] as const).map((m) => (
-        <button
-          key={m}
-          type="button"
-          title={m === "compact" ? "Compact — auto-scale to data" : "Scaled — fixed axis range"}
-          className={cn(
-            "rounded-sm px-1 py-px text-[9px] font-semibold leading-none transition-colors",
-            mode === m ? "bg-foreground text-background" : "text-muted-foreground/50 hover:text-muted-foreground",
-          )}
-          onClick={() => onChange(m)}
-        >
-          {m === "compact" ? "C" : "S"}
-        </button>
-      ))}
-    </div>
-  );
-}
+// ChartModeToggle is now imported from @/components/ui/ChartModeToggle
 
 // ─── OverviewTab ───────────────────────────────────────────
 

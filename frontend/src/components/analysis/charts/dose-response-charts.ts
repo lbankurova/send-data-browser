@@ -236,8 +236,22 @@ export function buildIncidenceBarOption(
   sexColors: Record<string, string>,
   sexLabels: Record<string, string>,
   noaelLabel?: string | null,
+  compactMode?: boolean,
 ): EChartsOption {
   const categories = mergedPoints.map((p) => String(p.dose_label));
+
+  // Compute max incidence for compact mode auto-scale
+  let yAxisMax = 1;
+  if (compactMode) {
+    const maxInc = Math.max(
+      0,
+      ...mergedPoints.flatMap((pt) =>
+        sexes.map((sex) => (pt[`incidence_${sex}`] as number | null) ?? 0)
+      ),
+    );
+    yAxisMax = Math.min(1, Math.ceil(maxInc * 10) / 10 + 0.1);
+    if (yAxisMax < 0.1) yAxisMax = 0.1; // minimum visible range
+  }
 
   const series: EChartsOption["series"] = [];
 
@@ -297,7 +311,7 @@ export function buildIncidenceBarOption(
     yAxis: {
       type: "value",
       min: 0,
-      max: 1,
+      max: yAxisMax,
       axisLabel: {
         ...axisLabel(),
         formatter: (v: number) => `${(v * 100).toFixed(0)}%`,
@@ -328,6 +342,22 @@ export function buildIncidenceBarOption(
     },
     series,
     legend: { show: false },
+    ...(compactMode && yAxisMax < 1
+      ? {
+          graphic: [
+            {
+              type: "text",
+              right: 8,
+              top: 2,
+              style: {
+                text: `Scale: 0\u2013${(yAxisMax * 100).toFixed(0)}%`,
+                fontSize: 9,
+                fill: "#9CA3AF",
+              },
+            },
+          ],
+        }
+      : {}),
     animation: true,
     animationDuration: 300,
   };
