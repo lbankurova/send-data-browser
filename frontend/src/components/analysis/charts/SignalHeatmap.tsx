@@ -3,7 +3,9 @@ import type { SignalSummaryRow, SignalSelection } from "@/types/analysis-views";
 import {
   getSignalScoreHeatmapColor,
   getSignificanceStars,
+  formatDoseShortLabel,
 } from "@/lib/severity-colors";
+import { DoseHeader } from "@/components/ui/DoseLabel";
 
 interface Props {
   data: SignalSummaryRow[];
@@ -24,7 +26,7 @@ export function SignalHeatmap({ data, selection, onSelect }: Props) {
     }
     const doseLabels = doseLevels.map((dl) => ({
       level: dl,
-      label: dlMap.get(dl) ?? `Dose ${dl}`,
+      label: formatDoseShortLabel(dlMap.get(dl) ?? `Dose ${dl}`),
     }));
 
     // Aggregate: for each endpoint x dose, take max signal score
@@ -80,7 +82,7 @@ export function SignalHeatmap({ data, selection, onSelect }: Props) {
             key={dl.level}
             className="px-1 py-1 text-center text-[10px] font-semibold text-muted-foreground"
           >
-            {dl.label}
+            <DoseHeader level={dl.level} label={dl.label} />
           </div>
         ))}
 

@@ -7,12 +7,12 @@ interface DoseLabelProps {
   className?: string;
 }
 
-/** Renders a dose label with color-coded text by dose level. */
+/** Renders a dose label with left border color-coded by dose level. */
 export function DoseLabel({ level, label, className }: DoseLabelProps) {
   return (
     <span
-      className={cn("font-mono text-[11px]", className)}
-      style={{ color: getDoseGroupColor(level) }}
+      className={cn("border-l-2 pl-1.5 font-mono text-[11px]", className)}
+      style={{ borderLeftColor: getDoseGroupColor(level) }}
     >
       {label}
     </span>
