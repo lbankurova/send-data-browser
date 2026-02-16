@@ -492,6 +492,7 @@ function SpecimenOverviewPane({
     if (!lesionData.length) return [];
     const organMap = new Map<string, LesionSeverityRow[]>();
     for (const r of lesionData) {
+      if (!r.specimen) continue;
       const key = r.specimen.toUpperCase();
       const arr = organMap.get(key) ?? [];
       arr.push(r);
@@ -1241,6 +1242,7 @@ function FindingDetailPane({
     if (!lesionData.length) return null;
     const organMap = new Map<string, LesionSeverityRow[]>();
     for (const r of lesionData) {
+      if (!r.specimen) continue;
       const key = r.specimen.toUpperCase();
       const arr = organMap.get(key) ?? [];
       arr.push(r);
@@ -1848,7 +1850,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
   const { studyId: studyIdParam } = useParams<{ studyId: string }>();
   const studyId = studyIdProp ?? studyIdParam;
 
-  if (!selection) {
+  if (!selection || !selection.specimen) {
     return (
       <div className="p-4 text-xs text-muted-foreground">
         Select a specimen or finding to view details.
