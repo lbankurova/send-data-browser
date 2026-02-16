@@ -282,7 +282,7 @@ export function DoseResponseView() {
   }>({ sex: null, data_type: null, organ_system: null });
   const [sigOnly, setSigOnly] = useState(false);
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.doseResponse.sorting", []);
-  const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.doseResponse.columnSizing", {});
+  const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.doseResponse.colSize", {});
 
   // ── Derived data ──────────────────────────────────────
 
@@ -443,9 +443,10 @@ export function DoseResponseView() {
       }),
       col.accessor("dose_response_pattern", {
         header: "Pattern",
-        cell: (info) => (
-          <span className="text-muted-foreground">{info.getValue().replace(/_/g, " ")}</span>
-        ),
+        cell: (info) => {
+          const v = info.getValue().replace(/_/g, " ");
+          return <span className="text-muted-foreground" title={v}>{v}</span>;
+        },
       }),
       col.accessor("data_type", {
         header: "Method",
@@ -1640,13 +1641,56 @@ function MetricsTableContent({
   selection,
   handleRowClick,
 }: MetricsTableProps) {
-  const ABSORBER_ID = "endpoint_label";
+  // Compute column widths from actual data: max(header, longest cell) × char_width + padding.
+  // The absorber (endpoint_label) has no width and takes all remaining space.
+  const colWidths = useMemo(() => {
+    const CH = 7;           // avg char width at 10px uppercase/mono
+    const PAD = 16;         // cell padding (px-1.5 = 6px) + breathing room
+    const DOSE_EXTRA = 8;   // DoseLabel border-l-2 + pl-1.5
+
+    const headers: [string, string][] = [
+      ["domain", "DOMAIN"], ["dose_level", "DOSE"], ["n", "N"], ["sex", "SEX"],
+      ["mean", "MEAN"], ["sd", "SD"], ["incidence", "INCID."],
+      ["p_value", "P-VALUE"], ["effect_size", "EFFECT"], ["trend_p", "TREND P"],
+      ["dose_response_pattern", "PATTERN"], ["data_type", "METHOD"],
+    ];
+
+    const maxLen: Record<string, number> = {};
+    for (const [id, hdr] of headers) maxLen[id] = hdr.length;
+
+    for (const row of metricsData) {
+      const fmt: [string, string][] = [
+        ["domain", row.domain],
+        ["dose_level", formatDoseShortLabel(row.dose_label)],
+        ["n", String(row.n ?? "\u2014")],
+        ["sex", row.sex],
+        ["mean", row.mean != null ? row.mean.toFixed(2) : "\u2014"],
+        ["sd", row.sd != null ? row.sd.toFixed(2) : "\u2014"],
+        ["incidence", row.incidence != null ? (row.incidence * 100).toFixed(0) + "%" : "\u2014"],
+        ["p_value", formatPValue(row.p_value)],
+        ["effect_size", formatEffectSize(row.effect_size)],
+        ["trend_p", formatPValue(row.trend_p)],
+        ["dose_response_pattern", row.dose_response_pattern.replace(/_/g, " ")],
+        ["data_type", row.data_type === "continuous" ? "Dunnett" : "Fisher"],
+      ];
+      for (const [id, text] of fmt) {
+        if (text.length > (maxLen[id] ?? 0)) maxLen[id] = text.length;
+      }
+    }
+
+    const widths: Record<string, number> = {};
+    for (const [id] of headers) {
+      let w = Math.ceil(maxLen[id] * CH + PAD);
+      if (id === "dose_level") w += DOSE_EXTRA;
+      widths[id] = w;
+    }
+    return widths;
+  }, [metricsData]);
+
   const { columnSizing: cs } = table.getState();
-  function colStyle(colId: string) {
-    const manualWidth = cs[colId];
-    if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
-    if (colId === ABSORBER_ID) return { width: "100%" };
-    return { width: 1, whiteSpace: "nowrap" as const };
+  function colWidth(colId: string): number | undefined {
+    if (cs[colId]) return cs[colId];
+    return colWidths[colId]; // undefined for absorber → takes remaining space
   }
 
   return (
@@ -1692,31 +1736,34 @@ function MetricsTableContent({
         <FilterBarCount>{metricsData.length} rows</FilterBarCount>
       </FilterBar>
 
-      {/* Table */}
+      {/* Table — fixed layout so the absorber column truly fills remaining space */}
       <div className="flex-1 overflow-auto">
-        <table className="w-full text-[10px]">
+        <table className="w-full table-fixed text-[10px]">
           <thead className="sticky top-0 z-10 bg-background">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b bg-muted/30">
-                {hg.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="relative cursor-pointer px-2.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
-                    style={colStyle(header.id)}
-                    onDoubleClick={header.column.getToggleSortingHandler()}
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
-                    <div
-                      onMouseDown={header.getResizeHandler()}
-                      onTouchStart={header.getResizeHandler()}
-                      className={cn(
-                        "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
-                        header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
-                      )}
-                    />
-                  </th>
-                ))}
+                {hg.headers.map((header) => {
+                  const w = colWidth(header.id);
+                  return (
+                    <th
+                      key={header.id}
+                      className="relative cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                      style={w ? { width: w } : undefined}
+                      onDoubleClick={header.column.getToggleSortingHandler()}
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        className={cn(
+                          "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
+                          header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                        )}
+                      />
+                    </th>
+                  );
+                })}
               </tr>
             ))}
           </thead>
@@ -1736,22 +1783,15 @@ function MetricsTableContent({
                   data-selected={isSelected || undefined}
                   onClick={() => handleRowClick(orig)}
                 >
-                  {row.getVisibleCells().map((cell) => {
-                    const isAbsorber = cell.column.id === ABSORBER_ID;
-                    return (
-                      <td
-                        key={cell.id}
-                        className={cn(
-                          "px-2.5 py-px",
-                          isAbsorber && !cs[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
-                        )}
-                        style={colStyle(cell.column.id)}
-                        data-evidence=""
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    );
-                  })}
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className="overflow-hidden text-ellipsis whitespace-nowrap px-1.5 py-px"
+                      data-evidence=""
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
                 </tr>
               );
             })}
