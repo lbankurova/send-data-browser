@@ -475,10 +475,10 @@ function RailFiltersSection({
           value={grouping}
           onChange={(e) => onGroupingChange(e.target.value as GroupingMode)}
         >
-          <option value="organ">Group by: Organ</option>
-          <option value="domain">Group by: Domain</option>
-          <option value="pattern">Group by: Pattern</option>
-          <option value="finding">Group by: Finding</option>
+          <option value="organ">Group: Organ</option>
+          <option value="domain">Group: Domain</option>
+          <option value="pattern">Group: Pattern</option>
+          <option value="finding">Group: Finding</option>
         </FilterSelect>
         {grouping !== "finding" && (
           <FilterMultiSelect
@@ -492,10 +492,10 @@ function RailFiltersSection({
           value={sortMode}
           onChange={(e) => onSortChange(e.target.value as SortMode)}
         >
-          <option value="signal">Sort by: Signal</option>
-          <option value="pvalue">Sort by: P-value</option>
-          <option value="effect">Sort by: Effect size</option>
-          <option value="az">Sort by: A–Z</option>
+          <option value="signal">Sort: Signal</option>
+          <option value="pvalue">Sort: P-value</option>
+          <option value="effect">Sort: Effect</option>
+          <option value="az">Sort: A–Z</option>
         </FilterSelect>
       </div>
 
