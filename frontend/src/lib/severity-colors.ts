@@ -180,6 +180,19 @@ export function getSignificanceStars(p: number | null): string {
   return "ns";
 }
 
+/** Domain code to text color — colored text only per design decision C-04. */
+export function getDomainBadgeColor(domain: string): { text: string } {
+  switch (domain.toUpperCase()) {
+    case "LB": return { text: "text-blue-700" };
+    case "BW": return { text: "text-emerald-700" };
+    case "OM": return { text: "text-purple-700" };
+    case "MI": return { text: "text-rose-700" };
+    case "MA": return { text: "text-orange-700" };
+    case "CL": return { text: "text-cyan-700" };
+    default:   return { text: "text-muted-foreground" };
+  }
+}
+
 /** Parse raw dose labels into short display labels.
  *  "Group 2,2 mg/kg PCDRUG" → "2 mg/kg"
  *  "Group 1, Control"        → "Control"

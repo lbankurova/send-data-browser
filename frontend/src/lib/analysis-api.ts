@@ -29,6 +29,8 @@ export function fetchAdverseEffects(
   if (filters.sex) params.set("sex", filters.sex);
   if (filters.severity) params.set("severity", filters.severity);
   if (filters.search) params.set("search", filters.search);
+  if (filters.organ_system) params.set("organ_system", filters.organ_system);
+  if (filters.endpoint_label) params.set("endpoint_label", filters.endpoint_label);
 
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects?${params}`
