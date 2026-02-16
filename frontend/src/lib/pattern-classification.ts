@@ -9,6 +9,8 @@
 
 import type { SyndromeMatch } from "./syndrome-rules";
 import type { LesionSeverityRow, FindingDoseTrend, SignalSummaryRow } from "@/types/analysis-views";
+import type { LateralityAggregate } from "./laterality";
+import { lateralitySignalModifier } from "./laterality";
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -302,6 +304,7 @@ export function computeConfidence(
   trendP: number | null,
   syndromeMatch: SyndromeMatch | null,
   organWeightSignificant: boolean,
+  laterality?: LateralityAggregate | null,
 ): { level: ConfidenceLevel; factors: string[] } {
   const treated = groups.filter((g) => !g.is_control);
   const totalAffected = treated.reduce((s, g) => s + g.n_affected, 0);
@@ -340,6 +343,18 @@ export function computeConfidence(
   if (peakSeverity >= 3.0) {
     level = Math.min(level + 1, 2);
     factors.push(`peak severity ${peakSeverity.toFixed(1)}`);
+  }
+
+  // Laterality modifier (IMP-08)
+  if (laterality) {
+    const { modifier, interpretation } = lateralitySignalModifier(laterality);
+    if (modifier > 0) {
+      level = Math.min(level + 1, 2);
+      factors.push(interpretation);
+    } else if (modifier < 0) {
+      level = Math.max(level - 1, 0);
+      factors.push(interpretation);
+    }
   }
 
   return {

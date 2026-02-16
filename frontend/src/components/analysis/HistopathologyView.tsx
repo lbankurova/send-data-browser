@@ -2159,13 +2159,16 @@ function OverviewTab({
                             </div>
                           );
                         }
-                        // Non-graded findings in severity mode: show incidence %
+                        // Non-graded findings in severity mode: show incidence % with hatch pattern (IMP-11)
                         if (heatmapView === "severity" && isNonGraded) {
                           return (
                             <div key={dl} className="flex h-6 w-20 shrink-0 items-center justify-center">
                               <div
-                                className="flex h-5 w-12 items-center justify-center rounded-sm bg-gray-100 font-mono text-[10px] text-muted-foreground"
-                                title={`Incidence: ${cell.affected}/${cell.n} (no severity grade)`}
+                                className="flex h-5 w-12 items-center justify-center rounded-sm font-mono text-[10px] text-muted-foreground"
+                                style={{
+                                  background: "repeating-linear-gradient(-45deg, #E5E7EB, #E5E7EB 2px, #F3F4F6 2px, #F3F4F6 6px)",
+                                }}
+                                title={`${finding} \u2014 ${heatmapData.doseLabels.get(dl) ?? `Dose ${dl}`}\nPresent (severity not graded)\nAffected: ${cell.affected}/${cell.n}`}
                               >
                                 {`${(cell.incidence * 100).toFixed(0)}%`}
                               </div>
@@ -2279,13 +2282,16 @@ function OverviewTab({
                             );
                           }
 
-                          // Non-graded findings in severity mode: show incidence %
+                          // Non-graded findings in severity mode: hatch pattern (IMP-11)
                           if (heatmapView === "severity" && rIsNonGraded) {
                             return (
                               <div key={`R${dl}`} className="flex h-6 w-20 shrink-0 items-center justify-center">
                                 <div
-                                  className="flex h-5 w-12 items-center justify-center rounded-sm bg-gray-100 font-mono text-[10px] text-muted-foreground"
-                                  title={`Recovery — Incidence: ${rCell.affected}/${rCell.n} (no severity grade)`}
+                                  className="flex h-5 w-12 items-center justify-center rounded-sm font-mono text-[10px] text-muted-foreground"
+                                  style={{
+                                    background: "repeating-linear-gradient(-45deg, #E5E7EB, #E5E7EB 2px, #F3F4F6 2px, #F3F4F6 6px)",
+                                  }}
+                                  title={`Recovery \u2014 ${finding}\nPresent (severity not graded)\nAffected: ${rCell.affected}/${rCell.n}`}
                                 >
                                   {`${(rCell.incidence * 100).toFixed(0)}%`}
                                 </div>
@@ -2846,7 +2852,7 @@ function SubjectHeatmap({
                         )}
                         title={
                           hasEntry
-                            ? `${subj.usubjid}: ${finding} \u2014 ${entry.severity ?? SEV_LABELS[sevNum] ?? "N/A"}`
+                            ? `${subj.usubjid}: ${finding} \u2014 ${sevNum > 0 ? (entry.severity ?? SEV_LABELS[sevNum] ?? "N/A") : "Present (severity not graded)"}`
                             : `${subj.usubjid}: not observed`
                         }
                       >
