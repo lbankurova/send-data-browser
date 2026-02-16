@@ -15,6 +15,7 @@ import type { FindingNatureInfo } from "./finding-nature";
 export type RecoveryClassificationType =
   | "EXPECTED_REVERSIBILITY"
   | "INCOMPLETE_RECOVERY"
+  | "ASSESSMENT_LIMITED_BY_DURATION"
   | "DELAYED_ONSET_POSSIBLE"
   | "INCIDENTAL_RECOVERY_SIGNAL"
   | "PATTERN_ANOMALY"
@@ -52,6 +53,7 @@ export interface RecoveryContext {
 export const CLASSIFICATION_LABELS: Record<RecoveryClassificationType, string> = {
   EXPECTED_REVERSIBILITY: "Expected reversibility",
   INCOMPLETE_RECOVERY: "Incomplete recovery",
+  ASSESSMENT_LIMITED_BY_DURATION: "Assessment limited by duration",
   DELAYED_ONSET_POSSIBLE: "Delayed onset possible",
   INCIDENTAL_RECOVERY_SIGNAL: "Incidental recovery signal",
   PATTERN_ANOMALY: "Pattern anomaly",
@@ -61,6 +63,7 @@ export const CLASSIFICATION_LABELS: Record<RecoveryClassificationType, string> =
 export const CLASSIFICATION_BORDER: Record<RecoveryClassificationType, string> = {
   EXPECTED_REVERSIBILITY: "border-l-2 border-l-emerald-400/40",
   INCOMPLETE_RECOVERY: "border-l-2 border-l-amber-400/60",
+  ASSESSMENT_LIMITED_BY_DURATION: "border-l-2 border-l-blue-400/40",
   DELAYED_ONSET_POSSIBLE: "border-l-2 border-l-amber-400/60",
   INCIDENTAL_RECOVERY_SIGNAL: "border-l-2 border-l-gray-300/40",
   PATTERN_ANOMALY: "border-l-2 border-l-red-400/40",
@@ -72,9 +75,10 @@ export const CLASSIFICATION_PRIORITY: Record<RecoveryClassificationType, number>
   PATTERN_ANOMALY: 0,
   DELAYED_ONSET_POSSIBLE: 1,
   INCOMPLETE_RECOVERY: 2,
-  EXPECTED_REVERSIBILITY: 3,
-  INCIDENTAL_RECOVERY_SIGNAL: 4,
-  UNCLASSIFIABLE: 5,
+  ASSESSMENT_LIMITED_BY_DURATION: 3,
+  EXPECTED_REVERSIBILITY: 4,
+  INCIDENTAL_RECOVERY_SIGNAL: 5,
+  UNCLASSIFIABLE: 6,
 };
 
 // ─── Confidence model ────────────────────────────────────
@@ -250,6 +254,34 @@ export function classifyRecovery(
       qualifiers,
       recommendedAction:
         "Pathologist assessment required \u2014 evaluate whether finding is treatment-related with delayed manifestation.",
+      inputsUsed,
+      inputsMissing,
+    };
+  }
+
+  // Step 2b: ASSESSMENT_LIMITED_BY_DURATION (v4)
+  const hasTooShort = assessment.assessments.some(
+    (d) => d.verdict === "recovery_too_short",
+  );
+  if (hasTooShort || assessment.overall === "recovery_too_short") {
+    const qualifiers: string[] = [];
+    if (context.findingNature?.typical_recovery_weeks != null && context.recoveryPeriodDays != null) {
+      const recWeeks = Math.round(context.recoveryPeriodDays / 7);
+      const low = Math.max(1, context.findingNature.typical_recovery_weeks - 2);
+      const high = context.findingNature.typical_recovery_weeks + 2;
+      qualifiers.push(
+        `Recovery period (${recWeeks} weeks) is shorter than expected reversibility window for ${context.findingNature.nature} findings (${low}\u2013${high} weeks).`,
+      );
+    }
+    qualifiers.push(
+      "Persistence at this time point does not confirm irreversibility.",
+    );
+    return {
+      classification: "ASSESSMENT_LIMITED_BY_DURATION",
+      confidence: "Low",
+      rationale:
+        "Recovery period is shorter than the expected reversibility window for this finding type. Cannot distinguish true persistence from insufficient recovery time.",
+      qualifiers,
       inputsUsed,
       inputsMissing,
     };

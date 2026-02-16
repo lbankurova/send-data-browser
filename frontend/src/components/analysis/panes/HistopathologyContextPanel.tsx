@@ -30,7 +30,9 @@ import type { SubjectHistopathEntry } from "@/types/timecourse";
 import { classifyRecovery, CLASSIFICATION_LABELS, CLASSIFICATION_BORDER } from "@/lib/recovery-classification";
 import type { RecoveryClassification } from "@/lib/recovery-classification";
 import { classifyFindingNature } from "@/lib/finding-nature";
-import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
+import { getHistoricalControl, classifyVsHCD, queryHistoricalControl, classifyControlVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
+import type { HistoricalControlData, HistoricalControlResult, HCDStatus } from "@/lib/mock-historical-controls";
+import { useStudyContext } from "@/hooks/useStudyContext";
 // getFindingDoseConsistency removed — use classifyFindingPattern from pattern-classification.ts
 import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { fishersExact2x2 } from "@/lib/statistics";
@@ -1231,7 +1233,7 @@ function FindingDetailPane({
   );
   const findingRecovery = useMemo(() => {
     if (!specimenHasRecovery || !subjData?.subjects) return null;
-    const assessments = deriveRecoveryAssessments([selection.finding], subjData.subjects);
+    const assessments = deriveRecoveryAssessments([selection.finding], subjData.subjects, undefined, subjData.recovery_days);
     return assessments[0] ?? null;
   }, [specimenHasRecovery, subjData, selection.finding]);
 
@@ -1307,9 +1309,9 @@ function FindingDetailPane({
       findingNature,
       historicalControlIncidence: null,
       crossDomainCorroboration: null,
-      recoveryPeriodDays: null,
+      recoveryPeriodDays: subjData?.recovery_days ?? null,
     });
-  }, [findingRecovery, ruleResults, lesionData, trendData, selection]);
+  }, [findingRecovery, ruleResults, lesionData, trendData, selection, subjData]);
 
   // Show recovery insight when: classification exists AND (not UNCLASSIFIABLE, or UNCLASSIFIABLE with not_examined/low_power)
   const showRecoveryInsight = useMemo(() => {
@@ -1331,12 +1333,9 @@ function FindingDetailPane({
     [setPendingCompare],
   );
 
-  // Historical control lookup for this finding
+  // Historical control lookup for this finding — context-aware when StudyContext available
+  const { data: studyCtx } = useStudyContext(studyId);
   const historicalContext = useMemo(() => {
-    const organName = selection.specimen.toLowerCase().replace(/_/g, " ");
-    const hcd = getHistoricalControl(selection.finding, organName);
-    if (!hcd) return null;
-
     // Compute control group incidence from lesion data
     const controlRows = lesionData.filter(
       (r) =>
@@ -1352,9 +1351,38 @@ function FindingDetailPane({
       n += r.n;
     }
     const controlInc = n > 0 ? affected / n : 0;
+
+    // Context-aware lookup (IMP-02)
+    if (studyCtx) {
+      // Determine sex from the data for this finding, default to "M"
+      const sexes = [...new Set(controlRows.map(r => r.sex))];
+      const sex: "M" | "F" = sexes.includes("F") && !sexes.includes("M") ? "F" : "M";
+      const result = queryHistoricalControl({
+        finding: selection.finding,
+        specimen: selection.specimen,
+        sex,
+        context: studyCtx,
+      });
+      if (!result) return null;
+      const cls = classifyControlVsHCD(controlInc, result);
+      const statusMap: Record<string, HCDStatus> = {
+        ABOVE: "above_range", WITHIN: "within_range", BELOW: "below_range",
+      };
+      return {
+        hcd: null as HistoricalControlData | null,
+        hcdResult: result,
+        controlInc,
+        status: statusMap[cls] ?? ("no_data" as HCDStatus),
+      };
+    }
+
+    // Legacy fallback
+    const organName = selection.specimen.toLowerCase().replace(/_/g, " ");
+    const hcd = getHistoricalControl(selection.finding, organName);
+    if (!hcd) return null;
     const status = classifyVsHCD(controlInc, hcd);
-    return { hcd, controlInc, status };
-  }, [lesionData, selection]);
+    return { hcd, hcdResult: null as HistoricalControlResult | null, controlInc, status };
+  }, [lesionData, selection, studyCtx]);
 
   // Dose-level detail for selected finding
   const findingRows = useMemo(() => {
@@ -1521,20 +1549,38 @@ function FindingDetailPane({
             <RecoveryInsightBlock classification={recoveryClassification} />
           </div>
         )}
-        {historicalContext && (
-          <div className="mt-2.5 border-l-2 border-l-gray-300/40 py-0.5 pl-2">
-            <div className="text-[10px] leading-snug text-muted-foreground">
-              {(historicalContext.status === "above_range" || historicalContext.status === "at_upper") && (
-                <span className="mr-1">{"\u26A0"}</span>
-              )}
-              Historical context <span className="text-amber-600">(mock)</span>: Control incidence {Math.round(historicalContext.controlInc * 100)}% is{" "}
-              <span className="font-medium">{HCD_STATUS_LABELS[historicalContext.status].toLowerCase()}</span>
-              {" "}({Math.round(historicalContext.hcd.min_incidence * 100)}{"\u2013"}{Math.round(historicalContext.hcd.max_incidence * 100)}%,
-              mean {Math.round(historicalContext.hcd.mean_incidence * 100)}%,
-              n={historicalContext.hcd.n_studies} studies)
+        {historicalContext && (() => {
+          const r = historicalContext.hcdResult;
+          const h = historicalContext.hcd;
+          const rangeLow = r ? Math.round(r.range[0] * 100) : h ? Math.round(h.min_incidence * 100) : 0;
+          const rangeHigh = r ? Math.round(r.range[1] * 100) : h ? Math.round(h.max_incidence * 100) : 0;
+          const meanPct = r ? Math.round(r.meanIncidence * 100) : h ? Math.round(h.mean_incidence * 100) : 0;
+          const nStudies = r?.nStudies ?? h?.n_studies ?? 0;
+          const isMock = r ? r.isMock : true;
+          const contextLabel = r?.contextLabel ?? null;
+          return (
+            <div className="mt-2.5 border-l-2 border-l-gray-300/40 py-0.5 pl-2">
+              <div className="text-[10px] leading-snug text-muted-foreground">
+                {(historicalContext.status === "above_range" || historicalContext.status === "at_upper") && (
+                  <span className="mr-1">{"\u26A0"}</span>
+                )}
+                Historical context{" "}
+                {isMock
+                  ? <span className="text-amber-600">(mock)</span>
+                  : <span className="text-emerald-600">(published)</span>
+                }
+                : Control incidence {Math.round(historicalContext.controlInc * 100)}% is{" "}
+                <span className="font-medium">{HCD_STATUS_LABELS[historicalContext.status].toLowerCase()}</span>
+                {" "}({rangeLow}{"\u2013"}{rangeHigh}%,
+                mean {meanPct}%,
+                n={nStudies} studies)
+                {contextLabel && (
+                  <span className="block mt-0.5 text-[9px] text-muted-foreground/60">{contextLabel}</span>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </CollapsiblePane>
 
       {/* Dose-response pattern block (§6e) */}
