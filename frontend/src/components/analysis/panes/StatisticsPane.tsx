@@ -18,7 +18,7 @@ export function StatisticsPane({ data }: Props) {
       {/* Group comparison table */}
       <div className="max-h-60 overflow-auto">
         <table className="w-full text-[11px]">
-          <thead className="sticky top-0 z-10 bg-background">
+          <thead>
             <tr className="border-b">
               <th className="py-1 text-left font-medium">Group</th>
               <th className="py-1 text-right font-medium">n</th>

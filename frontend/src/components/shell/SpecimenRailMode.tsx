@@ -17,6 +17,7 @@ import { detectSyndromes } from "@/lib/syndrome-rules";
 import { SparklineGlyph } from "@/components/ui/SparklineGlyph";
 import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
+import { useStudyContext } from "@/hooks/useStudyContext";
 import type { LesionSeverityRow } from "@/types/analysis-views";
 import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
 import {
@@ -203,6 +204,7 @@ export function SpecimenRailMode() {
   const { data: lesionData } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: annotationsData } = useAnnotations<PathologyReview>(studyId, "pathology_review");
+  const { data: _studyCtx } = useStudyContext(studyId);
 
   const { containerRef: listRef, onKeyDown: handleListKeyDown } =
     useRailKeyboard(clearSelection);
