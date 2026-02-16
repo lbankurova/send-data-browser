@@ -6,7 +6,15 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  CornerRightUp,
+  Activity,
+  Minus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
@@ -129,24 +137,36 @@ export function FindingsRail({
     onEndpointSelect?.(null);
   }, [onGroupScopeChange, onEndpointSelect]);
 
-  const toggleExpand = useCallback((key: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }, []);
-
   const handleCardClick = useCallback((card: GroupCard) => {
-    toggleExpand(card.key);
-    // Toggle group scope
-    if (activeGroupScope?.value === card.key) {
+    const isExpanded = expanded.has(card.key);
+    const isScopedToThis = activeGroupScope?.value === card.key;
+
+    if (!isExpanded && !activeGroupScope) {
+      // State 1: Collapsed, no filter → Expand + apply scope
+      setExpanded((prev) => new Set(prev).add(card.key));
+      onGroupScopeChange?.({ type: grouping, value: card.key });
+    } else if (isExpanded && isScopedToThis) {
+      // State 2: Expanded + scoped same → Collapse + clear scope
+      setExpanded((prev) => { const n = new Set(prev); n.delete(card.key); return n; });
       onGroupScopeChange?.(null);
+    } else if (isExpanded && !isScopedToThis) {
+      // State 3: Expanded, not scoped (or different group) → Apply scope (stay expanded)
+      // Also collapse previously scoped card if different
+      if (activeGroupScope) {
+        setExpanded((prev) => { const n = new Set(prev); n.delete(activeGroupScope.value); n.add(card.key); return n; });
+      }
+      onGroupScopeChange?.({ type: grouping, value: card.key });
     } else {
+      // State 4: Collapsed, different group scoped → Collapse old, expand this, apply new scope
+      setExpanded((prev) => {
+        const n = new Set(prev);
+        if (activeGroupScope) n.delete(activeGroupScope.value);
+        n.add(card.key);
+        return n;
+      });
       onGroupScopeChange?.({ type: grouping, value: card.key });
     }
-  }, [toggleExpand, activeGroupScope, grouping, onGroupScopeChange]);
+  }, [expanded, activeGroupScope, grouping, onGroupScopeChange]);
 
   const handleEndpointClick = useCallback((endpointLabel: string) => {
     if (activeEndpoint === endpointLabel) {
@@ -200,9 +220,7 @@ export function FindingsRail({
         <ScopeIndicator
           scope={activeGroupScope}
           grouping={grouping}
-          endpointCount={
-            sortedCards.find((c) => c.key === activeGroupScope.value)?.totalEndpoints ?? 0
-          }
+          endpointCount={unfilteredGroupTotals.get(activeGroupScope.value) ?? 0}
           onClear={() => onGroupScopeChange?.(null)}
         />
       )}
@@ -303,7 +321,7 @@ function ScopeIndicator({
   else label = getPatternLabel(scope.value);
 
   return (
-    <div className="flex shrink-0 items-center justify-between border-b bg-accent/30 px-3 py-1.5 text-xs">
+    <div className="flex shrink-0 items-center gap-2 border-b bg-accent/30 px-3 py-1.5 text-xs">
       <span className="font-semibold">{label}</span>
       <span className="text-muted-foreground">&middot; {endpointCount} endpoints</span>
       <button
@@ -320,6 +338,14 @@ function ScopeIndicator({
 }
 
 // ─── Grouping Toggle ───────────────────────────────────────
+
+const PATTERN_ICONS: Record<string, typeof TrendingUp> = {
+  monotonic_increase: TrendingUp,
+  monotonic_decrease: TrendingDown,
+  threshold: CornerRightUp,
+  non_monotonic: Activity,
+  flat: Minus,
+};
 
 const GROUPING_OPTIONS: { value: GroupingMode; label: string }[] = [
   { value: "organ", label: "Organ" },
@@ -529,9 +555,10 @@ function CardLabel({ grouping, value }: { grouping: GroupingMode; value: string 
   }
 
   if (grouping === "pattern") {
+    const PatternIcon = PATTERN_ICONS[value] ?? Minus;
     return (
       <span className="flex min-w-0 items-center gap-1.5 truncate font-semibold">
-        <PatternGlyph pattern={value} className="h-3 w-3 text-muted-foreground" />
+        <PatternIcon className="h-3 w-3 shrink-0 text-muted-foreground" />
         <span className="truncate">{getPatternLabel(value)}</span>
       </span>
     );

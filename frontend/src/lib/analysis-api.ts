@@ -31,6 +31,7 @@ export function fetchAdverseEffects(
   if (filters.search) params.set("search", filters.search);
   if (filters.organ_system) params.set("organ_system", filters.organ_system);
   if (filters.endpoint_label) params.set("endpoint_label", filters.endpoint_label);
+  if (filters.dose_response_pattern) params.set("dose_response_pattern", filters.dose_response_pattern);
 
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects?${params}`

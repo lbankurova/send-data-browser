@@ -42,6 +42,7 @@ export function AdverseEffectsView() {
     search: "",
     organ_system: null,
     endpoint_label: null,
+    dose_response_pattern: null,
   });
 
   // Sync study selection
@@ -49,21 +50,23 @@ export function AdverseEffectsView() {
     if (studyId) selectStudy(studyId);
   }, [studyId, selectStudy]);
 
-  // Clear finding selection when filters change
+  // Clear finding selection when non-endpoint filters change
+  const nonEndpointFilters = `${filters.domain}|${filters.sex}|${filters.severity}|${filters.search}|${filters.organ_system}|${filters.dose_response_pattern}`;
   useEffect(() => {
     selectFinding(null);
-  }, [filters, selectFinding]);
+  }, [nonEndpointFilters, selectFinding]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Rail group scope → update API filters
   const handleGroupScopeChange = useCallback((scope: { type: GroupingMode; value: string } | null) => {
     if (!scope) {
-      setFilters((prev) => ({ ...prev, organ_system: null, endpoint_label: null }));
+      setFilters((prev) => ({ ...prev, organ_system: null, endpoint_label: null, dose_response_pattern: null }));
     } else if (scope.type === "organ") {
       setFilters((prev) => ({ ...prev, organ_system: scope.value, endpoint_label: null }));
     } else if (scope.type === "domain") {
-      setFilters((prev) => ({ ...prev, domain: scope.value, organ_system: null, endpoint_label: null }));
+      setFilters((prev) => ({ ...prev, domain: scope.value, organ_system: null, endpoint_label: null, dose_response_pattern: null }));
+    } else if (scope.type === "pattern") {
+      setFilters((prev) => ({ ...prev, dose_response_pattern: scope.value, organ_system: null, endpoint_label: null }));
     }
-    // Pattern grouping scope doesn't map to a backend filter yet
   }, []);
 
   // Rail endpoint click → filter table + select finding
@@ -91,6 +94,15 @@ export function AdverseEffectsView() {
     10000,
     filters
   );
+
+  // Auto-select first finding when rail endpoint filter is applied and data arrives
+  useEffect(() => {
+    if (filters.endpoint_label && data?.findings?.length) {
+      selectFinding(data.findings[0]);
+    } else if (!filters.endpoint_label) {
+      selectFinding(null);
+    }
+  }, [filters.endpoint_label, data, selectFinding]);
 
   if (error) {
     return (

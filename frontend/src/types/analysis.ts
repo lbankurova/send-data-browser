@@ -177,4 +177,5 @@ export interface AdverseEffectsFilters {
   search: string;
   organ_system: string | null;
   endpoint_label: string | null;
+  dose_response_pattern: string | null;
 }
