@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { getPValueColor, formatPValue } from "@/lib/severity-colors";
+import { getPValueColor, formatPValue, getDoseGroupColor } from "@/lib/severity-colors";
 import type { FindingContext } from "@/types/analysis";
 import { InsightBlock } from "./InsightBlock";
 
@@ -39,7 +39,11 @@ export function StatisticsPane({ data }: Props) {
             {data.rows.map((row) => (
               <tr key={row.dose_level} className="border-b border-border/50">
                 <td className="py-1 font-mono text-[10px]">
-                  {row.label}
+                  <span className="inline-block border-l-2 pl-1.5" style={{ borderLeftColor: getDoseGroupColor(row.dose_level) }} title={row.label}>
+                    {row.dose_value != null && row.dose_value > 0
+                      ? `${row.dose_value} ${row.dose_unit ?? ""}`.trim()
+                      : "Control"}
+                  </span>
                 </td>
                 <td className="py-1 text-right font-mono">{row.n}</td>
                 {isContinuous ? (
