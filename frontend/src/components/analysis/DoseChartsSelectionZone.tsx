@@ -40,7 +40,8 @@ function Arrow({ muted }: { muted?: boolean }) {
 }
 
 /** Severity display — uses "0" instead of em dash to avoid blending with arrows. */
-function SevVal({ v, className }: { v: number; className?: string }) {
+function SevVal({ v, ungraded, className }: { v: number; ungraded?: boolean; className?: string }) {
+  if (ungraded) return <span className={cn("text-muted-foreground/50 italic", className)}>P</span>;
   return <span className={cn(sevTypo(v), className)}>{v > 0 ? v.toFixed(1) : "0"}</span>;
 }
 
@@ -91,10 +92,11 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData, re
         {heatmapData.doseLevels.map((dl, i) => {
           const cell = heatmapData.cells.get(`${selectedRow.finding}|${dl}`);
           const v = cell?.avg_severity ?? 0;
+          const ungraded = cell != null && cell.affected > 0 && cell.avg_severity == null;
           return (
             <span key={dl} className="flex items-center">
               {i > 0 && <Arrow />}
-              <SevVal v={v} />
+              <SevVal v={v} ungraded={ungraded} />
             </span>
           );
         })}
@@ -105,10 +107,11 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData, re
             {recoveryHeatmapData.doseLevels.map((dl, i) => {
               const cell = recoveryHeatmapData.cells.get(`${selectedRow.finding}|${dl}`);
               const v = cell?.avg_severity ?? 0;
+              const ungraded = cell != null && cell.affected > 0 && cell.avg_severity == null;
               return (
                 <span key={`r${dl}`} className="flex items-center">
                   {i > 0 && <Arrow muted />}
-                  <SevVal v={v} className="opacity-60" />
+                  <SevVal v={v} ungraded={ungraded} className="opacity-60" />
                 </span>
               );
             })}
