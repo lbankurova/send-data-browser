@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { useSelection } from "@/contexts/SelectionContext";
@@ -235,11 +235,26 @@ function StudySummaryContextPanelWrapper({ studyId }: { studyId: string }) {
 
   const organSelection = studySel.organSystem ?? null;
 
+  // Build endpoint selection from StudySelectionContext
+  const endpointSel = useMemo(() => {
+    if (!studySel.endpoint || !signalData) return null;
+    const row = signalData.find(r => r.endpoint_label === studySel.endpoint);
+    if (!row) return null;
+    return {
+      endpoint_label: row.endpoint_label,
+      dose_level: row.dose_level,
+      sex: row.sex,
+      domain: row.domain,
+      test_code: row.test_code,
+      organ_system: row.organ_system,
+    };
+  }, [studySel.endpoint, signalData]);
+
   return (
     <StudySummaryContextPanel
       signalData={signalData ?? []}
       ruleResults={ruleResults ?? []}
-      selection={null}
+      selection={endpointSel}
       organSelection={organSelection}
       studyId={studyId}
     />
@@ -421,7 +436,7 @@ export function ContextPanel() {
 
   // Route detection
   const isLandingPageRoute = location.pathname === "/";
-  const isAdverseEffectsRoute = /\/studies\/[^/]+\/analyses\/adverse-effects/.test(
+  const isAdverseEffectsRoute = /\/studies\/[^/]+\/(analyses\/)?adverse-effects/.test(
     location.pathname
   );
   const isStudySummaryRoute =

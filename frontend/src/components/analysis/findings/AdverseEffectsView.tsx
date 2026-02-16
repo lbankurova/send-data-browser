@@ -6,6 +6,7 @@ import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { FindingsFilterBar } from "../FindingsFilterBar";
 import { FindingsTable } from "../FindingsTable";
 import { DataTablePagination } from "@/components/data-table/DataTablePagination";
+import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AdverseEffectsFilters } from "@/types/analysis";
 
@@ -54,36 +55,28 @@ export function AdverseEffectsView() {
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-3">
-        <h1 className="text-base font-semibold">Adverse Effects</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">{studyId}</p>
-      </div>
-
-      {/* Summary counts */}
-      {data && (
-        <div className="mb-4 flex items-center gap-2 text-xs">
-          <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
-            {data.summary.total_adverse} adverse
-          </span>
-          <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
-            {data.summary.total_warning} warning
-          </span>
-          <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
-            {data.summary.total_normal} normal
-          </span>
-          <span className="ml-1 text-muted-foreground">
-            {data.summary.total_findings} total
-          </span>
-        </div>
-      )}
-
-      {/* Filter bar */}
-      <div className="mb-4">
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Filter bar — aligned with other views */}
+      <FilterBar>
         <FindingsFilterBar filters={filters} onFiltersChange={setFilters} />
-      </div>
+        {data && (
+          <>
+            <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {data.summary.total_adverse} adverse
+            </span>
+            <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {data.summary.total_warning} warning
+            </span>
+            <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {data.summary.total_normal} normal
+            </span>
+            <FilterBarCount>{data.summary.total_findings} total</FilterBarCount>
+          </>
+        )}
+      </FilterBar>
 
       {/* Table */}
+      <div className="flex-1 overflow-auto p-4">
       {isLoading ? (
         <div className="space-y-2">
           <Skeleton className="h-10 w-full" />
@@ -110,6 +103,7 @@ export function AdverseEffectsView() {
           />
         </>
       ) : null}
+      </div>
     </div>
   );
 }
