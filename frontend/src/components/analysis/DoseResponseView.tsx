@@ -38,6 +38,8 @@ import {
   getSexColor,
   titleCase,
 } from "@/lib/severity-colors";
+import { ChartModeToggle } from "@/components/ui/ChartModeToggle";
+import type { ChartDisplayMode } from "@/components/ui/ChartModeToggle";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
@@ -877,6 +879,24 @@ function ChartOverviewContent({
     chartData.mergedPoints.some((p) => p[`effect_${s}`] != null)
   );
 
+  // Auto-detect incidence scale mode: compact when max < 30%
+  const maxIncidence = useMemo(() => {
+    if (chartData.dataType !== "categorical") return 1;
+    return Math.max(
+      0,
+      ...chartData.mergedPoints.flatMap((pt) =>
+        chartData.sexes.map((sex) => (pt[`incidence_${sex}`] as number | null) ?? 0)
+      ),
+    );
+  }, [chartData]);
+  const [incidenceScale, setIncidenceScale] = useState<ChartDisplayMode>(
+    maxIncidence < 0.3 ? "compact" : "scaled"
+  );
+  // Update default when endpoint changes and max incidence changes
+  useEffect(() => {
+    setIncidenceScale(maxIncidence < 0.3 ? "compact" : "scaled");
+  }, [maxIncidence]);
+
   // Find NOAEL dose label for reference line
   const noaelLabel = noaelDoseLevel != null
     ? (chartData.mergedPoints.find((p) => p.dose_level === noaelDoseLevel) as Record<string, unknown> | undefined)?.dose_label as string | undefined
@@ -900,8 +920,13 @@ function ChartOverviewContent({
           className="flex shrink-0 flex-col overflow-hidden px-2 py-1.5"
           style={{ width: hasEffect ? `${splitPct}%` : "100%" }}
         >
-          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {chartData.dataType === "continuous" ? "Mean \u00b1 SD by dose" : "Incidence by dose"}
+          <div className="mb-0.5 flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {chartData.dataType === "continuous" ? "Mean \u00b1 SD by dose" : "Incidence by dose"}
+            </span>
+            {chartData.dataType === "categorical" && (
+              <ChartModeToggle mode={incidenceScale} onChange={setIncidenceScale} />
+            )}
           </div>
           {chartData.dataType === "continuous" ? (
             <EChartsWrapper
@@ -910,7 +935,7 @@ function ChartOverviewContent({
             />
           ) : (
             <EChartsWrapper
-              option={buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, noaelLabel)}
+              option={buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, noaelLabel, incidenceScale === "compact")}
               style={{ width: "100%", height: 220 }}
             />
           )}

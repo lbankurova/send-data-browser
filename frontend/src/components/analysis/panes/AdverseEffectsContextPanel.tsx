@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useFindingContext } from "@/hooks/useFindingContext";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function AdverseEffectsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
+  const navigate = useNavigate();
   const { selectedFindingId, selectedFinding } = useFindingSelection();
   const { data: context, isLoading } = useFindingContext(
     studyId,
@@ -76,6 +77,60 @@ export function AdverseEffectsContextPanel() {
 
       <CollapsiblePane title="Effect size" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <EffectSizePane data={context.effect_size} />
+      </CollapsiblePane>
+
+      {/* Related views */}
+      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <div className="space-y-1 text-[11px]">
+          <a
+            href="#"
+            className="block text-primary hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) {
+                navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`);
+              }
+            }}
+          >
+            View histopathology &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block text-primary hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) {
+                navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`);
+              }
+            }}
+          >
+            View dose-response &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block text-primary hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) {
+                navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`);
+              }
+            }}
+          >
+            View NOAEL decision &#x2192;
+          </a>
+          <a
+            href="#"
+            className="block text-primary hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              if (studyId) {
+                navigate(`/studies/${encodeURIComponent(studyId)}`);
+              }
+            }}
+          >
+            View study summary &#x2192;
+          </a>
+        </div>
       </CollapsiblePane>
     </div>
   );

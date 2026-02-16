@@ -7,6 +7,7 @@ import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
+import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import {
   formatPValue,
   formatEffectSize,
@@ -14,6 +15,8 @@ import {
 } from "@/lib/severity-colors";
 import { computeTierCounts } from "@/lib/rule-synthesis";
 import { deriveToxSuggestion } from "@/types/annotations";
+import { generateNoaelNarrative } from "@/lib/noael-narrative";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 import type { Tier } from "@/lib/rule-synthesis";
 import type {
   AdverseEffectSummaryRow,
@@ -76,6 +79,14 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
 
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
+  // NOAEL narrative for context panel
+  const { data: noaelData } = useNoaelSummary(studyId);
+  const narrative = useMemo(() => {
+    if (!noaelData || noaelData.length === 0) return null;
+    const primary = noaelData.find((r) => r.sex === "Combined") ?? noaelData[0];
+    return generateNoaelNarrative(primary, aeData, primary.sex as "Combined" | "M" | "F");
+  }, [noaelData, aeData]);
+
   // -------------------------------------------------------------------------
   // No-selection mode: study-level NOAEL overview
   // -------------------------------------------------------------------------
@@ -86,8 +97,45 @@ export function NoaelContextPanel({ aeData, ruleResults, selection, studyId: stu
           <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
         </div>
 
-        {/* 1. NOAEL narrative (interpretive value — banner shows numbers, this shows meaning) */}
-        <CollapsiblePane title="NOAEL narrative" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        {/* NOAEL rationale narrative */}
+        {narrative && (
+          <CollapsiblePane title="NOAEL rationale" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+            <p className="text-[11px] leading-relaxed text-foreground/80">
+              {narrative.summary}
+            </p>
+            {narrative.loael_details.length > 0 && (
+              <div className="mt-2">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Dose-limiting findings at LOAEL
+                </div>
+                <div className="space-y-0.5">
+                  {narrative.loael_details.map((f) => (
+                    <button
+                      key={f.finding}
+                      type="button"
+                      className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-[10px] hover:bg-muted/40"
+                      onClick={() => {
+                        if (studyId) {
+                          navigateTo({ endpoint: f.finding });
+                        }
+                      }}
+                    >
+                      <span className="font-medium">{f.finding}</span>
+                      <DomainLabel domain={f.domain} />
+                      <span className="ml-auto text-muted-foreground">
+                        {f.effect_size != null && `|d|=${Math.abs(f.effect_size).toFixed(1)}`}
+                        {f.p_value != null && `, p=${formatPValue(f.p_value)}`}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CollapsiblePane>
+        )}
+
+        {/* Insights */}
+        <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <InsightsList rules={noaelRules} onEndpointClick={(organ) => {
             if (studyId) {
               navigateTo({ organSystem: organ });

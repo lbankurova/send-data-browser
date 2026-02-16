@@ -139,3 +139,13 @@ export interface PathologyReview {
   pathologist: string;
   reviewDate: string;
 }
+
+/** Expert override of computed NOAEL determination. */
+export interface NoaelOverride {
+  sex: "Combined" | "M" | "F";
+  override_dose_level: number | null;
+  override_dose_value: string;
+  rationale: string;
+  override_type: "agree" | "higher" | "lower" | "not_established";
+  timestamp: string;
+}
