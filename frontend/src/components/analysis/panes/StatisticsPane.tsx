@@ -1,7 +1,8 @@
 import { cn } from "@/lib/utils";
-import { getPValueColor, formatPValue, getDoseGroupColor } from "@/lib/severity-colors";
+import { getPValueColor, formatPValue } from "@/lib/severity-colors";
 import type { FindingContext } from "@/types/analysis";
 import { InsightBlock } from "./InsightBlock";
+import { DoseLabel } from "@/components/ui/DoseLabel";
 
 interface Props {
   data: FindingContext["statistics"];
@@ -38,12 +39,15 @@ export function StatisticsPane({ data }: Props) {
           <tbody>
             {data.rows.map((row) => (
               <tr key={row.dose_level} className="border-b border-border/50">
-                <td className="py-1 font-mono text-[10px]">
-                  <span className="inline-block border-l-2 pl-1.5" style={{ borderLeftColor: getDoseGroupColor(row.dose_level) }} title={row.label}>
-                    {row.dose_value != null && row.dose_value > 0
+                <td className="py-1">
+                  <DoseLabel
+                    level={row.dose_level}
+                    label={row.dose_value != null && row.dose_value > 0
                       ? `${row.dose_value} ${row.dose_unit ?? ""}`.trim()
                       : "Control"}
-                  </span>
+                    tooltip={row.label}
+                    className="text-[10px]"
+                  />
                 </td>
                 <td className="py-1 text-right font-mono">{row.n}</td>
                 {isContinuous ? (
