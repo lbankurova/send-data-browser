@@ -1158,7 +1158,7 @@ function FindingDetailPane({
           <p className="text-[11px] text-muted-foreground">No data.</p>
         ) : (
           <table className="w-full text-[10px]">
-            <thead className="sticky top-0 z-10 bg-background">
+            <thead className="bg-background">
               <tr className="border-b text-muted-foreground">
                 <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Dose</th>
                 <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Sex</th>
