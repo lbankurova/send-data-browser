@@ -1,10 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PolymorphicRail } from "./PolymorphicRail";
 import { FindingsRail } from "@/components/analysis/findings/FindingsRail";
 import { getAERailCallback } from "@/components/analysis/findings/AdverseEffectsView";
+import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 
 /**
@@ -31,6 +32,23 @@ export function ShellRailPanel() {
     setActiveEndpoint(endpointLabel);
     getAERailCallback()?.({ activeEndpoint: endpointLabel });
   }, []);
+
+  // ── Bidirectional sync: table row click → rail highlight ──
+  // When FindingSelectionContext changes (table click), update activeEndpoint
+  // WITHOUT calling AE callback (the table already shows the finding).
+  const { selectedFinding } = useFindingSelection();
+  const prevEndpointRef = useRef(activeEndpoint);
+  useEffect(() => {
+    prevEndpointRef.current = activeEndpoint;
+  }, [activeEndpoint]);
+
+  useEffect(() => {
+    const newEndpoint = selectedFinding?.endpoint_label ?? null;
+    // Only sync if the change didn't originate from the rail
+    if (newEndpoint !== prevEndpointRef.current) {
+      setActiveEndpoint(newEndpoint);
+    }
+  }, [selectedFinding]);
 
   // Don't render on landing page, non-study routes, or domain browser
   if (!studyId || domainName) return null;
