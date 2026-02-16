@@ -5,7 +5,6 @@ import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { FindingsFilterBar } from "../FindingsFilterBar";
 import { FindingsTable } from "../FindingsTable";
-import { DataTablePagination } from "@/components/data-table/DataTablePagination";
 import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AdverseEffectsFilters } from "@/types/analysis";
@@ -15,8 +14,6 @@ export function AdverseEffectsView() {
   const { selectStudy } = useSelection();
   const { selectFinding } = useFindingSelection();
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
   const [filters, setFilters] = useState<AdverseEffectsFilters>({
     domain: null,
     sex: null,
@@ -34,15 +31,10 @@ export function AdverseEffectsView() {
     selectFinding(null);
   }, [filters, selectFinding]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filters]);
-
   const { data, isLoading, error } = useAdverseEffects(
     studyId,
-    page,
-    pageSize,
+    1,
+    10000,
     filters
   );
 
@@ -76,32 +68,19 @@ export function AdverseEffectsView() {
       </FilterBar>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-hidden">
       {isLoading ? (
-        <div className="space-y-2">
+        <div className="space-y-2 p-4">
           <Skeleton className="h-10 w-full" />
           {Array.from({ length: 10 }).map((_, i) => (
             <Skeleton key={i} className="h-8 w-full" />
           ))}
         </div>
       ) : data ? (
-        <>
-          <FindingsTable
-            findings={data.findings}
-            doseGroups={data.dose_groups}
-          />
-          <DataTablePagination
-            page={data.page}
-            pageSize={data.page_size}
-            totalPages={data.total_pages}
-            totalRows={data.total_findings}
-            onPageChange={setPage}
-            onPageSizeChange={(s) => {
-              setPageSize(s);
-              setPage(1);
-            }}
-          />
-        </>
+        <FindingsTable
+          findings={data.findings}
+          doseGroups={data.dose_groups}
+        />
       ) : null}
       </div>
     </div>
