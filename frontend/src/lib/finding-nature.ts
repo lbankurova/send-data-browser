@@ -50,6 +50,7 @@ const KEYWORD_TABLE: KeywordEntry[] = [
 
   // Adaptive — generally reversible
   { keyword: "glycogen depletion", nature: "adaptive", expected_reversibility: "high", typical_recovery_weeks: 6 },
+  { keyword: "weight change", nature: "adaptive", expected_reversibility: "high", typical_recovery_weeks: 6 },
   { keyword: "pigmentation", nature: "adaptive", expected_reversibility: "high", typical_recovery_weeks: 6 },
   { keyword: "hyperplasia", nature: "adaptive", expected_reversibility: "high", typical_recovery_weeks: 6 },
   { keyword: "hypertrophy", nature: "adaptive", expected_reversibility: "high", typical_recovery_weeks: 6 },
@@ -94,13 +95,22 @@ export function classifyFindingNature(findingName: string): FindingNatureInfo {
 
 // ─── Display helpers ──────────────────────────────────────
 
-const REVERSIBILITY_LABELS: Record<FindingNatureInfo["expected_reversibility"], string> = {
+const REVERSIBILITY_DESCRIPTIONS: Record<FindingNatureInfo["expected_reversibility"], string> = {
   high: "typically reversible",
   moderate: "may be reversible",
   low: "poorly reversible",
   none: "not expected to reverse",
 };
 
+/**
+ * Build a reversibility description with recovery timeline when available.
+ * E.g., "expected to reverse within 4–8 weeks" or "not expected to reverse".
+ */
 export function reversibilityLabel(info: FindingNatureInfo): string {
-  return REVERSIBILITY_LABELS[info.expected_reversibility];
+  if (info.typical_recovery_weeks != null) {
+    const low = Math.max(1, info.typical_recovery_weeks - 2);
+    const high = info.typical_recovery_weeks + 2;
+    return `expected to reverse within ${low}\u2013${high} weeks`;
+  }
+  return REVERSIBILITY_DESCRIPTIONS[info.expected_reversibility];
 }
