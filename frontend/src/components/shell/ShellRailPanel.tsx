@@ -8,11 +8,11 @@ import { PolymorphicRail } from "./PolymorphicRail";
  * Only renders when inside a study route (studyId present).
  */
 export function ShellRailPanel() {
-  const { studyId } = useParams<{ studyId: string }>();
+  const { studyId, domainName } = useParams<{ studyId: string; domainName: string }>();
   const { width, onPointerDown } = useResizePanel(300, 180, 500);
 
-  // Don't render on landing page or non-study routes
-  if (!studyId) return null;
+  // Don't render on landing page, non-study routes, or domain browser
+  if (!studyId || domainName) return null;
 
   return (
     <>
