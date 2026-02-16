@@ -55,7 +55,7 @@ export function getSeverityDotColor(severity: string): string {
   }
 }
 
-/** Font-weight class for dose consistency level. */
+/** Font-weight class for dose consistency level (used by OrganRailMode's organ evidence path). */
 export function getDoseConsistencyWeight(level: "Strong" | "Moderate" | "Weak" | "NonMonotonic" | string): string {
   switch (level) {
     case "Strong": return "font-semibold";
