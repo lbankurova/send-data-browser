@@ -36,15 +36,21 @@ function SpecimenRailItem({
   isSelected,
   onClick,
   reviewStatus,
+  sortBy,
 }: {
   summary: SpecimenSummary;
   isSelected: boolean;
   onClick: () => void;
   reviewStatus?: SpecimenReviewStatus;
+  sortBy?: string;
 }) {
   const sevColors = getNeutralHeatColor(summary.maxSeverity);
   const incColors = getNeutralHeatColor01(summary.maxIncidence);
   const incPct = Math.round(summary.maxIncidence * 100);
+  const bd = summary.signalScoreBreakdown;
+  const scoreTooltip = sortBy === "signal"
+    ? `Signal score: ${summary.signalScore.toFixed(1)}\n  Adverse findings (${summary.adverseCount} × 3): ${bd.adverse}\n  Max severity: ${bd.severity.toFixed(1)}\n  Peak incidence (${incPct}% × 5): ${bd.incidence.toFixed(1)}\n  Dose consistency (${summary.doseConsistency}): ${bd.dose}\n  Clinical class (${summary.highestClinicalClass ?? "none"}): ${bd.clinicalFloor}\n  Sentinel boost: ${bd.sentinelBoost}`
+    : undefined;
   return (
     <button
       className={cn(
@@ -53,6 +59,7 @@ function SpecimenRailItem({
         isSelected ? rail.itemSelected : rail.itemIdle,
       )}
       onClick={onClick}
+      title={scoreTooltip}
     >
       {/* Line 1: specimen name + quantitative indicators */}
       <div className="flex items-center">
@@ -83,7 +90,9 @@ function SpecimenRailItem({
               ? "text-muted-foreground"
               : summary.doseConsistency === "Moderate"
                 ? "text-muted-foreground/60"
-                : "text-muted-foreground/30",
+                : summary.doseConsistency === "NonMonotonic"
+                  ? "text-muted-foreground/50"
+                  : "text-muted-foreground/30",
           )}
           title={`Dose trend: ${summary.doseConsistency}`}
         >
@@ -91,7 +100,9 @@ function SpecimenRailItem({
             ? "\u25B2\u25B2\u25B2"
             : summary.doseConsistency === "Moderate"
               ? "\u25B2\u25B2"
-              : "\u25B2"}
+              : summary.doseConsistency === "NonMonotonic"
+                ? "\u25B2\u25BC"
+                : "\u25B2"}
         </span>
         <span
           className="ml-2 w-7 shrink-0 rounded-sm text-center font-mono text-[9px]"
@@ -124,6 +135,14 @@ function SpecimenRailItem({
         >
           {summary.adverseCount}A
         </span>
+        {summary.hasSentinel && (
+          <span
+            className="ml-0.5 shrink-0 rounded bg-gray-200 px-0.5 font-mono text-[9px] text-muted-foreground"
+            title={`Contains sentinel finding(s) — highest clinical class: ${summary.highestClinicalClass ?? "Sentinel"}`}
+          >
+            S
+          </span>
+        )}
       </div>
 
       {/* Line 2: organ system + domains */}
@@ -225,7 +244,7 @@ export function SpecimenRailMode() {
     if (doseTrendFilter === "moderate") {
       list = list.filter(
         (s) =>
-          s.doseConsistency === "Moderate" || s.doseConsistency === "Strong",
+          s.doseConsistency === "Moderate" || s.doseConsistency === "Strong" || s.doseConsistency === "NonMonotonic",
       );
     } else if (doseTrendFilter === "strong") {
       list = list.filter((s) => s.doseConsistency === "Strong");
@@ -393,6 +412,7 @@ export function SpecimenRailMode() {
                           findingNamesBySpecimen.get(s.specimen) ?? [],
                           pathReviews,
                         )}
+                        sortBy={sortBy}
                       />
                     ))}
                   </div>
@@ -409,6 +429,7 @@ export function SpecimenRailMode() {
                   findingNamesBySpecimen.get(s.specimen) ?? [],
                   pathReviews,
                 )}
+                sortBy={sortBy}
               />
             ))}
         {filtered.length === 0 && (

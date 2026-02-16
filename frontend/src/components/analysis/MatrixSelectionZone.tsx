@@ -168,10 +168,18 @@ export function MatrixSelectionZone({
     // Per-group totals for sorting
     const groupTotals = heatmapData.doseLevels.map((dl) => {
       let affected = 0;
+      let groupMaxSev = 0;
+      let groupAvgSev = 0;
+      let cellCount = 0;
       for (const finding of heatmapData.findings) {
         const cell = heatmapData.cells.get(`${finding}|${dl}`);
-        if (cell) affected += cell.affected;
+        if (cell) {
+          affected += cell.affected;
+          if (cell.max_severity > groupMaxSev) groupMaxSev = cell.max_severity;
+          if (cell.avg_severity > 0) { groupAvgSev += cell.avg_severity; cellCount++; }
+        }
       }
+      const avgSev = cellCount > 0 ? groupAvgSev / cellCount : 0;
       // Compute sex counts for this group
       const mainSubjects = subjects.filter((s) => !s.is_recovery && s.dose_level === dl);
       const maleAff = new Set<string>();
@@ -191,6 +199,8 @@ export function MatrixSelectionZone({
         maleCount: maleAff.size,
         femaleCount: femaleAff.size,
         label: heatmapData.doseLabels.get(dl) ?? `Dose ${dl}`,
+        maxSev: groupMaxSev,
+        avgSev,
       };
     }).sort((a, b) => b.affected - a.affected);
 
@@ -202,6 +212,9 @@ export function MatrixSelectionZone({
           <span key={g.dl}>
             {i > 0 && <StripSep />}
             {g.label}: {g.affected} affected ({g.maleCount}M, {g.femaleCount}F)
+            {g.maxSev >= 3 && (g.maxSev - g.avgSev) >= 2 && (
+              <span className="text-muted-foreground/60"> · max sev {g.maxSev}</span>
+            )}
           </span>
         ))}
         {top.length === 0 && "No affected subjects"}

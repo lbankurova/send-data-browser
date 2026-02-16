@@ -32,7 +32,7 @@ export interface RecoveryClassification {
 export interface RecoveryContext {
   // Available now
   isAdverse: boolean;
-  doseConsistency: "Weak" | "Moderate" | "Strong";
+  doseConsistency: "Weak" | "Moderate" | "Strong" | "NonMonotonic";
   doseResponsePValue: number | null;
   clinicalClass: string | null;
   signalClass: "adverse" | "warning" | "normal";

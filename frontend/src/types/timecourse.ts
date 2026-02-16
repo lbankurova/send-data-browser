@@ -119,6 +119,8 @@ export interface SubjectHistopathEntry {
   dose_label: string;
   is_recovery: boolean;
   findings: Record<string, { severity: string | null; severity_num: number }>;
+  disposition: string | null;
+  disposition_day: number | null;
 }
 
 // --- Endpoint 5: Multi-subject comparison ---
