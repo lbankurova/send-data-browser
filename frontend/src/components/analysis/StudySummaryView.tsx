@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getDoseGroupColor } from "@/lib/severity-colors";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
@@ -770,7 +771,11 @@ function DetailsTab({
               </thead>
               <tbody>
                 {meta.dose_groups.map((dg) => (
-                  <tr key={dg.armcd} className="border-b last:border-b-0">
+                  <tr
+                    key={dg.armcd}
+                    className="border-b last:border-b-0 border-l-2"
+                    style={{ borderLeftColor: getDoseGroupColor(dg.dose_level) }}
+                  >
                     <td className="px-2 py-1 font-mono text-xs">{dg.armcd}</td>
                     <td className="px-2 py-1">{dg.label}</td>
                     <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">

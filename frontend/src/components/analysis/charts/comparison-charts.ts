@@ -7,7 +7,7 @@
  */
 import type { EChartsOption } from "echarts";
 import type { ComparisonBodyWeight, ComparisonSubjectProfile, ControlStats } from "@/types/timecourse";
-import { getDoseGroupColor } from "@/lib/severity-colors";
+import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
 
 export type BWChartMode = "absolute" | "baseline";
 
@@ -143,7 +143,7 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
     const isMoribund = disp.includes("MORIBUND");
 
     series.push({
-      name: `${subj.short_id} (${subj.sex}, ${subj.dose_label})`,
+      name: `${subj.short_id} (${subj.sex}, ${formatDoseShortLabel(subj.dose_label)})`,
       type: "line",
       data,
       lineStyle: {
@@ -223,7 +223,7 @@ export function buildBWComparisonOption(input: BWChartInput): EChartsOption {
             bottom: 0,
             textStyle: { fontSize: 10 },
             data: subjects.map((s) => ({
-              name: `${s.short_id} (${s.sex}, ${s.dose_label})`,
+              name: `${s.short_id} (${s.sex}, ${formatDoseShortLabel(s.dose_label)})`,
               itemStyle: { color: getDoseGroupColor(s.dose_level) },
             })),
           },

@@ -22,7 +22,7 @@ import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterSelect, FilterMultiSelect, FilterShowingLine } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
-import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight, titleCase } from "@/lib/severity-colors";
+import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight, titleCase, formatDoseShortLabel } from "@/lib/severity-colors";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { FindingsSelectionZone } from "@/components/analysis/FindingsSelectionZone";
@@ -818,7 +818,7 @@ function OverviewTab({
     const doseLabels = new Map<number, string>();
     const sexSet = new Set<string>();
     for (const r of filteredData) {
-      if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, r.dose_label.split(",")[0]);
+      if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, formatDoseShortLabel(r.dose_label));
       sexSet.add(r.sex);
     }
     const levels = [...doseLabels.entries()].sort((a, b) => a[0] - b[0]).map(([level, label]) => ({ level, label }));
@@ -880,7 +880,7 @@ function OverviewTab({
     }
 
     return availableDoseGroups.recovery.map(([level, rawLabel]) => {
-      const label = rawLabel.split(",")[0];
+      const label = formatDoseShortLabel(rawLabel);
       const bySexMap = doseMap.get(level);
       if (stableUseSexGrouping) {
         const bySex: Record<string, { affected: number; n: number }> = {};
@@ -1000,7 +1000,7 @@ function OverviewTab({
     }
 
     return availableDoseGroups.recovery.map(([level, rawLabel]) => {
-      const label = rawLabel.split(",")[0];
+      const label = formatDoseShortLabel(rawLabel);
       const bySexMap = doseMap.get(level);
       if (stableUseSexGrouping) {
         const bySex: Record<string, { totalSeverity: number; count: number }> = {};
@@ -1073,7 +1073,7 @@ function OverviewTab({
     const doseLabels = new Map<number, string>();
     for (const r of matrixBaseData) {
       if (!doseLabels.has(r.dose_level)) {
-        doseLabels.set(r.dose_level, r.dose_label.split(",")[0]);
+        doseLabels.set(r.dose_level, formatDoseShortLabel(r.dose_label));
       }
     }
 
@@ -1177,7 +1177,7 @@ function OverviewTab({
     const doseLevelSet = new Map<number, string>();
     for (const s of recSubjects) {
       if (!doseLevelSet.has(s.dose_level))
-        doseLevelSet.set(s.dose_level, s.dose_label.split(",")[0]);
+        doseLevelSet.set(s.dose_level, formatDoseShortLabel(s.dose_label));
     }
     const doseLevels = [...doseLevelSet.keys()].sort((a, b) => a - b);
     const doseLabels = doseLevelSet;
@@ -2787,7 +2787,7 @@ function SubjectHeatmap({
               >
                 <div className="text-center" style={{ width: dg.subjects.length * 32 }}>
                   <div className="h-0.5 rounded-full" style={{ backgroundColor: getDoseGroupColor(dg.doseLevel) }} />
-                  <div className="flex items-center justify-center gap-1 px-1 py-0.5 text-[10px] font-semibold" style={{ color: getDoseGroupColor(dg.doseLevel) }}>
+                  <div className="flex items-center justify-center gap-1 px-1 py-0.5 text-[10px] font-semibold text-muted-foreground">
                     {comparisonSubjects && onComparisonChange && (
                       <input
                         type="checkbox"

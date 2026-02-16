@@ -1,4 +1,5 @@
 import type { NoaelSummaryRow, AdverseEffectSummaryRow } from "@/types/analysis-views";
+import { formatDoseShortLabel } from "@/lib/severity-colors";
 
 /** Structured NOAEL narrative for display in banner and context panel. */
 export interface NoaelNarrative {
@@ -61,7 +62,7 @@ export function generateNoaelNarrative(
 
   const noaelDose = noaelRow.noael_dose_value;
   const noaelUnit = noaelRow.noael_dose_unit ?? "mg/kg/day";
-  const loaelLabel = noaelRow.loael_label?.split(",")[0] ?? `${loaelDoseLevel}`;
+  const loaelLabel = noaelRow.loael_label ? formatDoseShortLabel(noaelRow.loael_label) : `${loaelDoseLevel}`;
 
   // Determine basis
   let basis: NoaelNarrative["noael_basis"];

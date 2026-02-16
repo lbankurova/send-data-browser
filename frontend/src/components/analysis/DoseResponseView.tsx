@@ -30,13 +30,14 @@ import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { DoseLabel } from "@/components/ui/DoseLabel";
+import { DoseLabel, DoseHeader } from "@/components/ui/DoseLabel";
 import {
   formatPValue,
   formatEffectSize,
   getDoseGroupColor,
   getSexColor,
   titleCase,
+  formatDoseShortLabel,
 } from "@/lib/severity-colors";
 import { ChartModeToggle } from "@/components/ui/ChartModeToggle";
 import type { ChartDisplayMode } from "@/components/ui/ChartModeToggle";
@@ -318,7 +319,7 @@ export function DoseResponseView() {
       const anyRow = rows.find((r) => r.dose_level === dl);
       const point: MergedPoint = {
         dose_level: dl,
-        dose_label: anyRow?.dose_label.split(",")[0] ?? `Dose ${dl}`,
+        dose_label: anyRow ? formatDoseShortLabel(anyRow.dose_label) : `Dose ${dl}`,
       };
       for (const sex of sexes) {
         const r = lookup.get(`${sex}_${dl}`);
@@ -376,7 +377,7 @@ export function DoseResponseView() {
       col.accessor("dose_level", {
         header: "Dose",
         cell: (info) => (
-          <DoseLabel level={info.getValue()} label={info.row.original.dose_label.split(",")[0]} />
+          <DoseLabel level={info.getValue()} label={formatDoseShortLabel(info.row.original.dose_label)} />
         ),
       }),
       col.accessor("n", {
@@ -1029,7 +1030,7 @@ function ChartOverviewContent({
                 {pairwiseRows.map((row, i) => (
                   <tr key={i} className="border-b border-dashed">
                     <td className="px-2 py-1">
-                      <DoseLabel level={row.dose_level} label={row.dose_label.split(",")[0]} />
+                      <DoseLabel level={row.dose_level} label={formatDoseShortLabel(row.dose_label)} />
                     </td>
                     <td className="px-2 py-1">{row.sex}</td>
                     <td className="px-2 py-1 text-right font-mono">
@@ -1279,12 +1280,12 @@ function CLTimecourseCharts({
       {/* Legend */}
       <div className="flex items-center justify-center gap-3 px-2 py-1 text-[10px] text-muted-foreground">
         {doseLevels.map(([dl, label]) => (
-          <span key={dl} className="flex items-center gap-1">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-sm"
-              style={{ backgroundColor: getDoseGroupColor(dl) }}
-            />
-            {label.split(",")[0]}
+          <span
+            key={dl}
+            className="border-l-2 pl-1.5"
+            style={{ borderLeftColor: getDoseGroupColor(dl) }}
+          >
+            {formatDoseShortLabel(label)}
           </span>
         ))}
       </div>
@@ -1465,15 +1466,14 @@ function TimecourseCharts({
       {/* Legend */}
       <div className="flex items-center justify-center gap-3 border-b px-2 py-1 text-[10px] text-muted-foreground">
         {doseLevels.map((dl) => {
-          // Get label from first available timepoint
           const label = tcData.timepoints[0]?.groups.find((g) => g.dose_level === dl)?.dose_label ?? `Dose ${dl}`;
           return (
-            <span key={dl} className="flex items-center gap-1">
-              <span
-                className="inline-block h-0.5 w-3 rounded"
-                style={{ backgroundColor: getDoseGroupColor(dl) }}
-              />
-              {label}
+            <span
+              key={dl}
+              className="border-l-2 pl-1.5"
+              style={{ borderLeftColor: getDoseGroupColor(dl) }}
+            >
+              {formatDoseShortLabel(label)}
             </span>
           );
         })}
@@ -1548,9 +1548,9 @@ function TimecourseTable({
               {doseInfo.map(([dl, label]) => (
                 <th
                   key={dl}
-                  className="px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                  className="px-2 py-1.5 text-right text-[10px] font-semibold tracking-wider text-muted-foreground"
                 >
-                  {label.split(",")[0]}
+                  <DoseHeader level={dl} label={formatDoseShortLabel(label)} />
                 </th>
               ))}
             </tr>

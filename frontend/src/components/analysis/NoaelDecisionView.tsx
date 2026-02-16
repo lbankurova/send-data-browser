@@ -23,6 +23,7 @@ import {
   getDirectionSymbol,
   titleCase,
   getNeutralHeatColor,
+  formatDoseShortLabel,
 } from "@/lib/severity-colors";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
@@ -362,7 +363,7 @@ function NoaelBanner({ data, aeData, studyId, onFindingClick }: { data: NoaelSum
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">LOAEL</span>
-                  <span className="font-medium">{r.loael_label.split(",")[0]}</span>
+                  <span className="font-medium">{formatDoseShortLabel(r.loael_label)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Adverse at LOAEL</span>
@@ -721,7 +722,7 @@ function AdversityMatrixTab({
     const doseLabels = new Map<number, string>();
     for (const r of allAeData) {
       if (!doseLabels.has(r.dose_level)) {
-        doseLabels.set(r.dose_level, r.dose_label.split(",")[0]);
+        doseLabels.set(r.dose_level, formatDoseShortLabel(r.dose_label));
       }
     }
 
@@ -768,7 +769,7 @@ function AdversityMatrixTab({
       col.accessor("dose_level", {
         header: "Dose",
         cell: (info) => (
-          <DoseLabel level={info.getValue()} label={info.row.original.dose_label.split(",")[0]} />
+          <DoseLabel level={info.getValue()} label={formatDoseShortLabel(info.row.original.dose_label)} />
         ),
       }),
       col.accessor("sex", { header: "Sex" }),

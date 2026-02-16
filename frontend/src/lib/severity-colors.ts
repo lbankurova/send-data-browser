@@ -180,6 +180,20 @@ export function getSignificanceStars(p: number | null): string {
   return "ns";
 }
 
+/** Parse raw dose labels into short display labels.
+ *  "Group 2,2 mg/kg PCDRUG" → "2 mg/kg"
+ *  "Group 1, Control"        → "Control"
+ */
+export function formatDoseShortLabel(rawLabel: string): string {
+  const parts = rawLabel.split(/,\s*/);
+  if (parts.length < 2) return rawLabel;
+  const detail = parts.slice(1).join(", ").trim();
+  if (/control/i.test(detail)) return "Control";
+  // "200 mg/kg PCDRUG" → "200 mg/kg"
+  const match = detail.match(/^([\d.]+\s*\S+\/\S+)/);
+  return match ? match[1] : detail;
+}
+
 /** Convert endpoint labels to title case: "ALBUMIN" → "Albumin", "LIVER_VACUOLIZATION" → "Liver Vacuolization" */
 export function titleCase(s: string | null | undefined): string {
   if (!s) return "";

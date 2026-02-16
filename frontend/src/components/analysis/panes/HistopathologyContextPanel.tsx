@@ -8,7 +8,7 @@ import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { getDoseConsistencyWeight, getDoseGroupColor } from "@/lib/severity-colors";
+import { getDoseConsistencyWeight, getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
 import { DoseLabel } from "@/components/ui/DoseLabel";
 import {
   deriveSpecimenSummaries,
@@ -563,7 +563,7 @@ function SpecimenOverviewPane({
         existing.affected += r.affected;
         existing.n += r.n;
       } else {
-        doseMap.set(r.dose_level, { label: r.dose_label.split(",")[0], affected: r.affected, n: r.n });
+        doseMap.set(r.dose_level, { label: formatDoseShortLabel(r.dose_label), affected: r.affected, n: r.n });
       }
     }
     const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
@@ -1494,7 +1494,7 @@ function FindingDetailPane({
                 return (
                   <tr key={i} className="border-b border-dashed">
                     <td className="py-0.5">
-                      <DoseLabel level={row.dose_level} label={row.dose_label.split(",")[0]} />
+                      <DoseLabel level={row.dose_level} label={formatDoseShortLabel(row.dose_label)} />
                     </td>
                     <td className="py-0.5">{row.sex}</td>
                     <td className="py-0.5 text-right font-mono">
