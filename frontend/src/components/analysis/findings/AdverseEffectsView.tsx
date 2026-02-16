@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useAdverseEffects } from "@/hooks/useAdverseEffects";
 import { useSelection } from "@/contexts/SelectionContext";
@@ -8,6 +8,27 @@ import { FindingsTable } from "../FindingsTable";
 import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AdverseEffectsFilters } from "@/types/analysis";
+import type { GroupingMode } from "@/lib/findings-rail-engine";
+
+/** Context bridge so ShellRailPanel can pass rail callbacks to the AE view. */
+export interface AERailState {
+  activeGroupScope: { type: GroupingMode; value: string } | null;
+  activeEndpoint: string | null;
+  onGroupScopeChange: (scope: { type: GroupingMode; value: string } | null) => void;
+  onEndpointSelect: (endpointLabel: string | null) => void;
+}
+
+// Singleton event bus — rail and view are siblings, not parent-child.
+// ShellRailPanel renders FindingsRail, Layout renders AdverseEffectsView via Outlet.
+// We use a simple callback registry so the rail can communicate scope changes.
+let _aeRailCallback: ((state: Partial<Pick<AERailState, "activeGroupScope" | "activeEndpoint">>) => void) | null = null;
+
+export function setAERailCallback(cb: typeof _aeRailCallback) {
+  _aeRailCallback = cb;
+}
+export function getAERailCallback() {
+  return _aeRailCallback;
+}
 
 export function AdverseEffectsView() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -19,6 +40,8 @@ export function AdverseEffectsView() {
     sex: null,
     severity: null,
     search: "",
+    organ_system: null,
+    endpoint_label: null,
   });
 
   // Sync study selection
@@ -30,6 +53,37 @@ export function AdverseEffectsView() {
   useEffect(() => {
     selectFinding(null);
   }, [filters, selectFinding]);
+
+  // Rail group scope → update API filters
+  const handleGroupScopeChange = useCallback((scope: { type: GroupingMode; value: string } | null) => {
+    if (!scope) {
+      setFilters((prev) => ({ ...prev, organ_system: null, endpoint_label: null }));
+    } else if (scope.type === "organ") {
+      setFilters((prev) => ({ ...prev, organ_system: scope.value, endpoint_label: null }));
+    } else if (scope.type === "domain") {
+      setFilters((prev) => ({ ...prev, domain: scope.value, organ_system: null, endpoint_label: null }));
+    }
+    // Pattern grouping scope doesn't map to a backend filter yet
+  }, []);
+
+  // Rail endpoint click → filter table + select finding
+  const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
+    if (endpointLabel) {
+      setFilters((prev) => ({ ...prev, endpoint_label: endpointLabel }));
+    } else {
+      // Deselect: revert to group scope filter if active
+      setFilters((prev) => ({ ...prev, endpoint_label: null }));
+    }
+  }, []);
+
+  // Register callback so FindingsRail (in ShellRailPanel) can communicate
+  useEffect(() => {
+    setAERailCallback((state) => {
+      if (state.activeGroupScope !== undefined) handleGroupScopeChange(state.activeGroupScope);
+      if (state.activeEndpoint !== undefined) handleEndpointSelect(state.activeEndpoint);
+    });
+    return () => setAERailCallback(null);
+  }, [handleGroupScopeChange, handleEndpointSelect]);
 
   const { data, isLoading, error } = useAdverseEffects(
     studyId,

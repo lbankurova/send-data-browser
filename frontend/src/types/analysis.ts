@@ -175,4 +175,6 @@ export interface AdverseEffectsFilters {
   sex: string | null;
   severity: string | null;
   search: string;
+  organ_system: string | null;
+  endpoint_label: string | null;
 }

@@ -21,6 +21,7 @@ from services.analysis.classification import (
 )
 from services.analysis.correlations import compute_correlations
 from services.analysis.context_panes import build_finding_context
+from generator.organ_map import get_organ_system
 
 
 def _sanitize_floats(obj):
@@ -105,6 +106,19 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
             finding.get("data_type", "continuous"),
         )
         finding["treatment_related"] = determine_treatment_related(finding)
+
+        # Enrich with organ_system and endpoint_label (same logic as generator)
+        finding["organ_system"] = get_organ_system(
+            finding.get("specimen"),
+            finding.get("test_code"),
+            finding.get("domain"),
+        )
+        test_name = finding.get("test_name", finding.get("test_code", ""))
+        specimen = finding.get("specimen")
+        if specimen and finding.get("domain") in ("MI", "MA", "CL", "OM"):
+            finding["endpoint_label"] = f"{specimen} \u2014 {test_name}"
+        else:
+            finding["endpoint_label"] = test_name
 
     # Step 4: Correlations
     correlations = compute_correlations(all_findings)
