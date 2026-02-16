@@ -78,10 +78,13 @@ export interface SpecimenSummary {
   /** Highest incidence (0–1) from any single (finding × dose × sex) row */
   maxIncidence: number;
   domains: string[];
-  doseConsistency: "Weak" | "Moderate" | "Strong";
+  doseConsistency: "Weak" | "Moderate" | "Strong" | "NonMonotonic";
   signalScore: number;
   sexSkew: "M>F" | "F>M" | "M=F" | null;
   hasRecovery: boolean;
+  hasSentinel: boolean;
+  highestClinicalClass: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent" | null;
+  signalScoreBreakdown: { adverse: number; severity: number; incidence: number; dose: number; clinicalFloor: number; sentinelBoost: number };
 }
 
 export interface FindingSummary {
@@ -95,6 +98,7 @@ export interface FindingSummary {
 
 export interface FindingTableRow extends FindingSummary {
   isDoseDriven: boolean;
+  isNonMonotonic: boolean;
   relatedOrgans: string[] | undefined;
   trendData?: FindingDoseTrend;
   clinicalClass?: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent";
@@ -106,7 +110,7 @@ export interface HeatmapData {
   doseLevels: number[];
   doseLabels: Map<number, string>;
   findings: string[];
-  cells: Map<string, { incidence: number; avg_severity: number; affected: number; n: number }>;
+  cells: Map<string, { incidence: number; avg_severity: number; affected: number; n: number; max_severity: number }>;
   findingMeta: Map<string, { maxSev: number; hasSeverityData: boolean }>;
   totalFindings: number;
 }
@@ -180,13 +184,43 @@ export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?:
     );
   };
 
+  // Build clinical class map per specimen (from rule results)
+  const CLINICAL_PRIORITY: Record<string, number> = { Sentinel: 4, HighConcern: 3, ModerateConcern: 2, ContextDependent: 1 };
+  const CLINICAL_FLOOR: Record<string, number> = { Sentinel: 20, HighConcern: 12, ModerateConcern: 6, ContextDependent: 2 };
+  const clinicalBySpecimen = new Map<string, { highest: string; hasSentinel: boolean }>();
+  for (const r of ruleResults ?? []) {
+    const cc = r.params?.clinical_class;
+    if (!cc) continue;
+    const rSpec = (r.params?.specimen ?? "").toLowerCase();
+    if (!rSpec) continue;
+    const existing = clinicalBySpecimen.get(rSpec);
+    const pri = CLINICAL_PRIORITY[cc] ?? 0;
+    if (!existing) {
+      clinicalBySpecimen.set(rSpec, { highest: cc, hasSentinel: cc === "Sentinel" });
+    } else {
+      if (pri > (CLINICAL_PRIORITY[existing.highest] ?? 0)) existing.highest = cc;
+      if (cc === "Sentinel") existing.hasSentinel = true;
+    }
+  }
+
   const summaries: SpecimenSummary[] = [];
   for (const [specimen, entry] of map) {
     const specimenRows = data.filter((r) => r.specimen === specimen);
     const heuristic = getDoseConsistency(specimenRows);
     const doseConsistency = hasDoseRuleFor(specimen) ? "Strong" as const : heuristic;
-    const doseW = doseConsistency === "Strong" ? 2 : doseConsistency === "Moderate" ? 1 : 0;
-    const signalScore = entry.adverseFindings.size * 3 + entry.maxSev + entry.maxIncidence * 5 + doseW;
+    const doseW = doseConsistency === "Strong" ? 2 : (doseConsistency === "Moderate" || doseConsistency === "NonMonotonic") ? 1 : 0;
+
+    // Clinical-aware signal score
+    const clin = clinicalBySpecimen.get(specimen.toLowerCase());
+    const highestClinicalClass = (clin?.highest ?? null) as SpecimenSummary["highestClinicalClass"];
+    const hasSentinel = clin?.hasSentinel ?? false;
+    const clinicalFloor = CLINICAL_FLOOR[highestClinicalClass ?? ""] ?? 0;
+    const sentinelBoost = hasSentinel ? 15 : 0;
+
+    const adverseComponent = entry.adverseFindings.size * 3;
+    const severityComponent = entry.maxSev;
+    const incidenceComponent = entry.maxIncidence * 5;
+    const signalScore = adverseComponent + severityComponent + incidenceComponent + doseW + clinicalFloor + sentinelBoost;
 
     // Sex skew: compare max incidence per sex
     let sexSkew: "M>F" | "F>M" | "M=F" | null = null;
@@ -210,6 +244,16 @@ export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?:
       signalScore,
       sexSkew,
       hasRecovery: entry.hasRecovery,
+      hasSentinel,
+      highestClinicalClass,
+      signalScoreBreakdown: {
+        adverse: adverseComponent,
+        severity: severityComponent,
+        incidence: incidenceComponent,
+        dose: doseW,
+        clinicalFloor,
+        sentinelBoost,
+      },
     });
   }
 
@@ -267,7 +311,7 @@ export function deriveSexLabel(rows: LesionSeverityRow[]): string {
   return "Both sexes";
 }
 
-export function getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderate" | "Strong" {
+export function getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderate" | "Strong" | "NonMonotonic" {
   // Group by finding, then check dose-incidence monotonicity
   const byFinding = new Map<string, Map<number, { affected: number; n: number }>>();
   for (const r of rows) {
@@ -286,11 +330,14 @@ export function getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderat
   }
 
   let monotonic = 0;
+  let hasNonMonotonic = false;
   const doseGroupsAffected = new Set<number>();
-  for (const [, doseMap] of byFinding) {
+  for (const [finding] of byFinding) {
+    const consistency = getFindingDoseConsistency(rows, finding);
+    if (consistency === "NonMonotonic") hasNonMonotonic = true;
+    const doseMap = byFinding.get(finding)!;
     const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
     const incidences = sorted.map(([, v]) => (v.n > 0 ? v.affected / v.n : 0));
-    // Check if incidence is non-decreasing (monotonic)
     let isMonotonic = true;
     for (let i = 1; i < incidences.length; i++) {
       if (incidences[i] < incidences[i - 1] - 0.001) {
@@ -310,11 +357,13 @@ export function getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderat
   const monotonePct = monotonic / totalFindings;
   if (monotonePct > 0.5 && doseGroupsAffected.size >= 3) return "Strong";
   if (monotonePct > 0 || doseGroupsAffected.size >= 2) return "Moderate";
+  // If any finding is NonMonotonic and specimen doesn't qualify for Strong/Moderate
+  if (hasNonMonotonic) return "NonMonotonic";
   return "Weak";
 }
 
 /** Per-finding dose consistency: filters rows to one finding, groups by dose_level, checks monotonicity. */
-export function getFindingDoseConsistency(rows: LesionSeverityRow[], finding: string): "Weak" | "Moderate" | "Strong" {
+export function getFindingDoseConsistency(rows: LesionSeverityRow[], finding: string): "Weak" | "Moderate" | "Strong" | "NonMonotonic" {
   const findingRows = rows.filter((r) => r.finding === finding);
   const doseMap = new Map<number, { affected: number; n: number }>();
   for (const r of findingRows) {
@@ -341,6 +390,18 @@ export function getFindingDoseConsistency(rows: LesionSeverityRow[], finding: st
   const doseGroupsAffected = sorted.filter(([, v]) => v.affected > 0).length;
   if (isMonotonic && doseGroupsAffected >= 3) return "Strong";
   if (isMonotonic || doseGroupsAffected >= 2) return "Moderate";
+
+  // NonMonotonic detection: NOT monotonic, ≥3 dose groups with incidence > 0,
+  // peak incidence ≥ 20%, and at least one group below peak with incidence ≥ 10%
+  if (!isMonotonic && doseGroupsAffected >= 3) {
+    const peak = Math.max(...incidences);
+    if (peak >= 0.2) {
+      const peakIdx = incidences.indexOf(peak);
+      const hasMidDoseAboveThreshold = incidences.some((inc, i) => i !== peakIdx && inc >= 0.1);
+      if (hasMidDoseAboveThreshold) return "NonMonotonic";
+    }
+  }
+
   return "Weak";
 }
 
@@ -372,6 +433,8 @@ export function deriveSpecimenConclusion(
     doseDesc = "with dose-related increase, strong trend (▲▲▲)";
   } else if (consistency === "Moderate") {
     doseDesc = "with dose-related increase, moderate trend (▲▲)";
+  } else if (consistency === "NonMonotonic") {
+    doseDesc = "non-monotonic dose-response pattern (▲▼)";
   } else {
     doseDesc = "without clear dose-related increase, weak trend (▲)";
   }
@@ -531,7 +594,7 @@ function OverviewTab({
 
   // Per-finding dose consistency
   const findingConsistency = useMemo(() => {
-    const map = new Map<string, "Weak" | "Moderate" | "Strong">();
+    const map = new Map<string, "Weak" | "Moderate" | "Strong" | "NonMonotonic">();
     for (const fs of findingSummaries) {
       map.set(fs.finding, getFindingDoseConsistency(specimenData, fs.finding));
     }
@@ -879,7 +942,7 @@ function OverviewTab({
       .map(([f]) => f);
 
     // Build cells from matrixBaseData
-    const cells = new Map<string, { incidence: number; avg_severity: number; affected: number; n: number }>();
+    const cells = new Map<string, { incidence: number; avg_severity: number; affected: number; n: number; max_severity: number }>();
     for (const r of matrixBaseData) {
       const key = `${r.finding}|${r.dose_level}`;
       const existing = cells.get(key);
@@ -894,12 +957,27 @@ function OverviewTab({
           avg_severity: r.avg_severity ?? 0,
           affected: r.affected,
           n: r.n,
+          max_severity: 0,
         });
       }
     }
 
+    // Second pass: compute max_severity from subject-level data
+    if (subjData?.subjects) {
+      for (const subj of subjData.subjects) {
+        if (subj.is_recovery) continue;
+        for (const [finding, val] of Object.entries(subj.findings)) {
+          const key = `${finding}|${subj.dose_level}`;
+          const cell = cells.get(key);
+          if (cell && val.severity_num > cell.max_severity) {
+            cell.max_severity = val.severity_num;
+          }
+        }
+      }
+    }
+
     return { doseLevels, doseLabels, findings, cells, findingMeta, totalFindings } satisfies HeatmapData;
-  }, [matrixBaseData, severityGradedOnly, minSeverity]);
+  }, [matrixBaseData, severityGradedOnly, minSeverity, subjData]);
 
   // Subject-mode finding counts for section header (SM-4)
   const subjectModeFindingCounts = useMemo(() => {
@@ -987,6 +1065,7 @@ function OverviewTab({
         const c = findingConsistency.get(fs.finding) ?? "Weak";
         const trend = trendsByFinding.get(fs.finding);
         let isDoseDriven: boolean;
+        let isNonMonotonic = false;
         switch (doseDepThreshold) {
           case "strong":
             isDoseDriven = c === "Strong";
@@ -1001,10 +1080,11 @@ function OverviewTab({
             isDoseDriven = c !== "Weak";
             break;
         }
+        if (c === "NonMonotonic") isNonMonotonic = true;
         const clin = findingClinical.get(fs.finding);
         const recAssessment = recoveryAssessments?.find((a) => a.finding === fs.finding);
         return {
-          ...fs, isDoseDriven,
+          ...fs, isDoseDriven, isNonMonotonic,
           relatedOrgans: findingRelatedOrgans.get(fs.finding),
           trendData: trend,
           clinicalClass: clin?.clinicalClass as FindingTableRow["clinicalClass"],
@@ -1014,6 +1094,53 @@ function OverviewTab({
       }),
     [findingSummaries, findingConsistency, findingRelatedOrgans, findingClinical, doseDepThreshold, trendsByFinding, recoveryAssessments]
   );
+
+  // Mortality masking: for NonMonotonic findings, check if high-dose mortality may mask findings
+  const mortalityMaskFindings = useMemo(() => {
+    const mask = new Set<string>();
+    if (!subjData?.subjects) return mask;
+    const mainSubjects = subjData.subjects.filter((s) => !s.is_recovery);
+    if (mainSubjects.length === 0) return mask;
+
+    // Get sorted dose levels
+    const doseLevels = [...new Set(mainSubjects.map((s) => s.dose_level))].sort((a, b) => a - b);
+    if (doseLevels.length < 3) return mask;
+    const highestDose = doseLevels[doseLevels.length - 1];
+
+    for (const row of tableData) {
+      if (!row.isNonMonotonic) continue;
+      // Check if highest dose has lower incidence than a mid-dose group
+      const byDose = new Map<number, { affected: number; n: number }>();
+      for (const dl of doseLevels) {
+        const groupSubjects = mainSubjects.filter((s) => s.dose_level === dl);
+        let affected = 0;
+        for (const s of groupSubjects) {
+          if (s.findings[row.finding] && s.findings[row.finding].severity_num > 0) affected++;
+        }
+        byDose.set(dl, { affected, n: groupSubjects.length });
+      }
+      const highDoseData = byDose.get(highestDose);
+      if (!highDoseData || highDoseData.n === 0) continue;
+      const highInc = highDoseData.affected / highDoseData.n;
+      // Check mid-dose groups
+      const midGroupsHigher = doseLevels.slice(0, -1).some((dl) => {
+        const d = byDose.get(dl);
+        return d && d.n > 0 && (d.affected / d.n) > highInc + 0.001;
+      });
+      if (!midGroupsHigher) continue;
+      // Check for moribund/dead subjects at highest dose
+      const highDoseSubjects = mainSubjects.filter((s) => s.dose_level === highestDose);
+      const mortalityCount = highDoseSubjects.filter((s) =>
+        s.disposition != null && (
+          s.disposition.toUpperCase().includes("MORIBUND") ||
+          s.disposition.toUpperCase().includes("FOUND DEAD") ||
+          s.disposition.toUpperCase().includes("DIED")
+        )
+      ).length;
+      if (mortalityCount > 0) mask.add(row.finding);
+    }
+    return mask;
+  }, [tableData, subjData]);
 
   const findingColumns = useMemo(
     () => [
@@ -1152,6 +1279,17 @@ function OverviewTab({
             );
           }
           // Heuristic modes
+          if (info.row.original.isNonMonotonic) {
+            const hasMortMask = mortalityMaskFindings.has(info.row.original.finding);
+            return (
+              <span
+                className="text-muted-foreground/70"
+                title={`Non-monotonic dose-response: incidence does not increase consistently with dose but shows a significant pattern across multiple dose groups${hasMortMask ? "\n⚠ High-dose mortality may mask findings at top dose." : ""}`}
+              >
+                ⚡
+              </span>
+            );
+          }
           return info.getValue() ? (
             <span
               className="text-muted-foreground"
@@ -1231,7 +1369,7 @@ function OverviewTab({
         },
       }),
     ],
-    [doseDepThreshold, specimenHasRecovery, recoveryAssessments, subjData?.recovery_days]
+    [doseDepThreshold, specimenHasRecovery, recoveryAssessments, subjData?.recovery_days, mortalityMaskFindings]
   );
 
   const filteredTableData = useMemo(
@@ -1680,7 +1818,7 @@ function OverviewTab({
                   : "Cells show average severity grade per dose group. Non-graded findings show incidence."}
               </p>
               {/* Legend */}
-              <div className="mb-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+              <div className="mb-1 flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[10px] text-muted-foreground">
                 <span>{heatmapView === "incidence" ? "Incidence:" : "Severity:"}</span>
                 {(heatmapView === "incidence"
                   ? [
@@ -1703,6 +1841,19 @@ function OverviewTab({
                     {label}
                   </span>
                 ))}
+                <span className="mx-0.5 text-muted-foreground/30">|</span>
+                <span className="flex items-center gap-0.5">
+                  <span className="inline-block h-3 w-3 rounded-sm border border-dashed border-gray-200 bg-gray-50" />
+                  0/N = examined, no finding
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <span className="inline-block h-3 w-3 rounded-sm" />
+                  blank = not examined
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <span className="text-[7px] font-medium text-foreground/50">▴</span>
+                  = max severity outlier
+                </span>
               </div>
               <div className="overflow-x-auto">
                 <div className="inline-block">
@@ -1759,9 +1910,21 @@ function OverviewTab({
                         const meta = heatmapData.findingMeta.get(finding);
                         const isNonGraded = meta && !meta.hasSeverityData;
                         if (!cell) {
+                          // Not examined — blank (no inner block)
+                          return (
+                            <div key={dl} className="flex h-6 w-20 shrink-0 items-center justify-center" />
+                          );
+                        }
+                        // Examined, no findings — dashed border with 0/N
+                        if (cell.affected === 0 && (cell.avg_severity ?? 0) === 0) {
                           return (
                             <div key={dl} className="flex h-6 w-20 shrink-0 items-center justify-center">
-                              <div className="h-5 w-16 rounded-sm bg-gray-100" />
+                              <div
+                                className="flex h-5 w-16 items-center justify-center rounded-sm border border-dashed border-gray-200 bg-gray-50 font-mono text-[9px] text-muted-foreground/50"
+                                title={`${finding} — ${heatmapData.doseLabels.get(dl) ?? `Dose ${dl}`}\nExamined: ${cell.n} subjects\nFinding not observed`}
+                              >
+                                0/{cell.n}
+                              </div>
                             </div>
                           );
                         }
@@ -1784,20 +1947,28 @@ function OverviewTab({
                         const cellLabel = heatmapView === "incidence"
                           ? `${(cell.incidence * 100).toFixed(0)}%`
                           : (cell.avg_severity ?? 0) > 0 ? cell.avg_severity.toFixed(1) : `${cell.affected}/${cell.n}`;
+                        const hasMaxSevOutlier = cell.max_severity >= 3 && (cell.max_severity - (cell.avg_severity ?? 0)) >= 2;
+                        const incPct = (cell.incidence * 100).toFixed(0);
+                        const extendedTooltip = `${finding} — ${heatmapData.doseLabels.get(dl) ?? `Dose ${dl}`}\nAvg severity: ${cell.avg_severity != null ? cell.avg_severity.toFixed(1) : "N/A"}\nMax severity: ${cell.max_severity}\nAffected: ${cell.affected}/${cell.n} (${incPct}%)`;
                         return (
                           <div
                             key={dl}
                             className="flex h-6 w-20 shrink-0 items-center justify-center"
                           >
                             <div
-                              className="flex h-5 w-16 items-center justify-center rounded-sm text-[9px] font-medium"
+                              className="relative flex h-5 w-16 items-center justify-center rounded-sm text-[9px] font-medium"
                               style={{
                                 backgroundColor: cellColors.bg,
                                 color: cellColors.text,
                               }}
-                              title={`Severity: ${cell.avg_severity != null ? cell.avg_severity.toFixed(1) : "N/A"}, Incidence: ${cell.affected}/${cell.n}`}
+                              title={extendedTooltip}
                             >
                               {cellLabel}
+                              {hasMaxSevOutlier && (
+                                <span className="absolute right-0.5 top-0 text-[7px] font-medium text-foreground/50" title={`Max severity outlier: ${cell.max_severity}`}>
+                                  ▴
+                                </span>
+                              )}
                             </div>
                           </div>
                         );

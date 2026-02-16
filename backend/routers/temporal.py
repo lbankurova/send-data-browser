@@ -590,10 +590,34 @@ async def get_histopath_subjects(
                     "severity_num": sev_num,
                 }
 
+    # Read DS domain once for disposition + recovery_days
+    disposition_map: dict[str, tuple[str | None, int | None]] = {}  # usubjid → (disposition, disposition_day)
+    ds_df_loaded = None
+    if "ds" in study.xpt_files:
+        try:
+            ds_df_loaded = _read_domain_df(study, "DS")
+            # Per-subject disposition
+            decod_col = "DSDECOD" if "DSDECOD" in ds_df_loaded.columns else "DSTERM" if "DSTERM" in ds_df_loaded.columns else None
+            day_col_ds = "DSDY" if "DSDY" in ds_df_loaded.columns else None
+            if decod_col:
+                for _, ds_row in ds_df_loaded.iterrows():
+                    uid = str(ds_row["USUBJID"])
+                    disp = str(ds_row[decod_col]) if pd.notna(ds_row.get(decod_col)) else None
+                    disp_day = None
+                    if day_col_ds and pd.notna(ds_row.get(day_col_ds)):
+                        disp_day_val = pd.to_numeric(ds_row[day_col_ds], errors="coerce")
+                        if pd.notna(disp_day_val):
+                            disp_day = int(disp_day_val)
+                    if uid not in disposition_map or disp is not None:
+                        disposition_map[uid] = (disp, disp_day)
+        except Exception:
+            pass
+
     # Build per-subject entries from ALL subjects (not just those with findings)
     subject_list = []
     for _, row in subjects_df.iterrows():
         usubjid = str(row["USUBJID"])
+        disp_info = disposition_map.get(usubjid, (None, None))
         subject_list.append({
             "usubjid": usubjid,
             "sex": str(row["SEX"]),
@@ -601,6 +625,8 @@ async def get_histopath_subjects(
             "dose_label": str(row["dose_label"]),
             "is_recovery": bool(row.get("is_recovery", False)),
             "findings": findings_by_subj.get(usubjid, {}),
+            "disposition": disp_info[0],
+            "disposition_day": disp_info[1],
         })
 
     # Sort by dose_level then sex then USUBJID
@@ -609,17 +635,16 @@ async def get_histopath_subjects(
     # Compute recovery period (days) from DS domain sacrifice days
     recovery_days = None
     has_recovery = any(s["is_recovery"] for s in subject_list)
-    if has_recovery and "ds" in study.xpt_files:
+    if has_recovery and ds_df_loaded is not None:
         try:
-            ds_df = _read_domain_df(study, "DS")
             # SEND uses DSSTDY (disposition study day); fall back to DSDY
-            day_col = "DSSTDY" if "DSSTDY" in ds_df.columns else "DSDY" if "DSDY" in ds_df.columns else None
+            day_col = "DSSTDY" if "DSSTDY" in ds_df_loaded.columns else "DSDY" if "DSDY" in ds_df_loaded.columns else None
             if day_col:
                 recovery_ids = {s["usubjid"] for s in subject_list if s["is_recovery"]}
                 main_ids = {s["usubjid"] for s in subject_list if not s["is_recovery"]}
-                ds_df[day_col] = pd.to_numeric(ds_df[day_col], errors="coerce")
-                rec_days = ds_df[ds_df["USUBJID"].isin(recovery_ids)][day_col].dropna()
-                main_days = ds_df[ds_df["USUBJID"].isin(main_ids)][day_col].dropna()
+                ds_df_loaded[day_col] = pd.to_numeric(ds_df_loaded[day_col], errors="coerce")
+                rec_days = ds_df_loaded[ds_df_loaded["USUBJID"].isin(recovery_ids)][day_col].dropna()
+                main_days = ds_df_loaded[ds_df_loaded["USUBJID"].isin(main_ids)][day_col].dropna()
                 if not rec_days.empty and not main_days.empty:
                     recovery_days = int(rec_days.max() - main_days.max())
         except Exception:

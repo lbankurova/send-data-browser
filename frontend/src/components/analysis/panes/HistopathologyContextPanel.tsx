@@ -30,6 +30,7 @@ import { classifyRecovery, CLASSIFICATION_LABELS, CLASSIFICATION_BORDER } from "
 import type { RecoveryClassification } from "@/lib/recovery-classification";
 import { getFindingDoseConsistency } from "@/components/analysis/HistopathologyView";
 import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
+import { fishersExact2x2 } from "@/lib/statistics";
 
 // ─── Specimen-scoped insights (purpose-built for context panel) ──────────────
 
@@ -435,17 +436,55 @@ function SpecimenOverviewPane({
       ? "dose-response: \u2191 strong"
       : trend === "Moderate"
       ? "dose-response: \u2191 moderate"
+      : trend === "NonMonotonic"
+      ? "dose-response: \u2191\u2193 non-monotonic"
       : "dose-response: no clear trend";
     const findingBreakdown = summary.warningCount > 0
       ? `${summary.findingCount} findings (${summary.adverseCount}adv/${summary.warningCount}warn)`
       : `${summary.findingCount} findings`;
+    // Enhanced sexSkew: require ratio > 1.5× AND incidence difference ≥ 20pp AND Fisher's p < 0.10
+    let sexSkewLabel: string | null = null;
+    if (summary.sexSkew && summary.sexSkew !== "M=F") {
+      // Compute Fisher's from highest-affected dose group with both sexes
+      const byDoseSex = new Map<number, Map<string, { affected: number; n: number }>>();
+      for (const r of specimenData) {
+        let sexMap = byDoseSex.get(r.dose_level);
+        if (!sexMap) { sexMap = new Map(); byDoseSex.set(r.dose_level, sexMap); }
+        const existing = sexMap.get(r.sex);
+        if (existing) { existing.affected += r.affected; existing.n += r.n; }
+        else sexMap.set(r.sex, { affected: r.affected, n: r.n });
+      }
+      let bestDose: number | null = null;
+      let bestTotal = 0;
+      for (const [dl, sexMap] of byDoseSex) {
+        const m = sexMap.get("M");
+        const f = sexMap.get("F");
+        if (!m || !f || m.n === 0 || f.n === 0) continue;
+        const total = m.affected + f.affected;
+        if (total > bestTotal) { bestTotal = total; bestDose = dl; }
+      }
+      if (bestDose !== null) {
+        const sexMap = byDoseSex.get(bestDose)!;
+        const m = sexMap.get("M")!;
+        const f = sexMap.get("F")!;
+        const mInc = m.n > 0 ? m.affected / m.n : 0;
+        const fInc = f.n > 0 ? f.affected / f.n : 0;
+        const incDiff = Math.abs(mInc - fInc);
+        const p = fishersExact2x2(m.affected, m.n - m.affected, f.affected, f.n - f.affected);
+        // Require both: incidence difference ≥ 20pp AND Fisher's p < 0.10
+        if (incDiff >= 0.2 && p < 0.10) {
+          const pLabel = p < 0.001 ? "<0.001" : p.toFixed(3);
+          sexSkewLabel = `sex difference: ${summary.sexSkew === "M>F" ? "males" : "females"} >1.5× higher (p=${pLabel})`;
+        }
+        // Below both thresholds: sexSkew suppressed (null)
+      }
+    }
+
     return {
       incidence: `incidence: ${incidenceLabel}, ${incPct}%`,
       severity: sevLabel,
       sex: sexLabel,
-      sexSkew: summary.sexSkew && summary.sexSkew !== "M=F"
-        ? `sex difference: ${summary.sexSkew === "M>F" ? "males" : "females"} >1.5× higher`
-        : null,
+      sexSkew: sexSkewLabel,
       doseRelation,
       findings: findingBreakdown,
       hasRecovery: summary.hasRecovery,
@@ -1045,24 +1084,7 @@ function FindingDetailPane({
       if (r.incidence > maxInc) maxInc = r.incidence;
       sexes.add(r.sex);
     }
-    const doseMap = new Map<number, { affected: number; n: number }>();
-    for (const r of findingRows) {
-      const existing = doseMap.get(r.dose_level);
-      if (existing) { existing.affected += r.affected; existing.n += r.n; }
-      else doseMap.set(r.dose_level, { affected: r.affected, n: r.n });
-    }
-    const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
-    let doseTrend: "Weak" | "Moderate" | "Strong" = "Weak";
-    if (sorted.length >= 2) {
-      const incidences = sorted.map(([, v]) => (v.n > 0 ? v.affected / v.n : 0));
-      let isMonotonic = true;
-      for (let i = 1; i < incidences.length; i++) {
-        if (incidences[i] < incidences[i - 1] - 0.001) { isMonotonic = false; break; }
-      }
-      const doseGroupsAffected = sorted.filter(([, v]) => v.affected > 0).length;
-      if (isMonotonic && doseGroupsAffected >= 3) doseTrend = "Strong";
-      else if (isMonotonic || doseGroupsAffected >= 2) doseTrend = "Moderate";
-    }
+    const doseTrend = getFindingDoseConsistency(findingRows, selection.finding);
     const sexLabel = sexes.size === 1 ? ([...sexes][0] === "M" ? "M" : "F") : "M/F";
     const incPct = Math.round(maxInc * 100);
     return { incPct, maxSev, doseTrend, sexLabel };
@@ -1122,6 +1144,39 @@ function FindingDetailPane({
     }
     return bySex;
   }, [lesionData, selection]);
+
+  // Fisher's exact test for sex difference (uses highest-affected dose group where both sexes have n > 0)
+  const sexFisherP = useMemo(() => {
+    if (!sexSummary || sexSummary.size < 2) return null;
+    const findingRows = lesionData.filter(
+      (r) => r.finding === selection.finding && r.specimen === selection.specimen
+    );
+    // Group by dose level and sex
+    const byDoseSex = new Map<number, Map<string, { affected: number; n: number }>>();
+    for (const r of findingRows) {
+      let sexMap = byDoseSex.get(r.dose_level);
+      if (!sexMap) { sexMap = new Map(); byDoseSex.set(r.dose_level, sexMap); }
+      const existing = sexMap.get(r.sex);
+      if (existing) { existing.affected += r.affected; existing.n += r.n; }
+      else sexMap.set(r.sex, { affected: r.affected, n: r.n });
+    }
+    // Find highest-affected dose group where both M and F have n > 0
+    let bestDose: number | null = null;
+    let bestTotal = 0;
+    for (const [dl, sexMap] of byDoseSex) {
+      const m = sexMap.get("M");
+      const f = sexMap.get("F");
+      if (!m || !f || m.n === 0 || f.n === 0) continue;
+      const total = m.affected + f.affected;
+      if (total > bestTotal) { bestTotal = total; bestDose = dl; }
+    }
+    if (bestDose === null) return null;
+    const sexMap = byDoseSex.get(bestDose)!;
+    const m = sexMap.get("M")!;
+    const f = sexMap.get("F")!;
+    // 2×2 table: maleAffected, maleUnaffected, femaleAffected, femaleUnaffected
+    return fishersExact2x2(m.affected, m.n - m.affected, f.affected, f.n - f.affected);
+  }, [lesionData, selection, sexSummary]);
 
   return (
     <div>
@@ -1230,6 +1285,16 @@ function FindingDetailPane({
                 </span>
               </div>
             ))}
+            {sexFisherP !== null && sexFisherP < 0.05 && (
+              <div className={cn(
+                "mt-1 font-mono text-[10px]",
+                sexFisherP < 0.01
+                  ? "font-medium text-foreground/70"
+                  : "font-medium text-muted-foreground",
+              )}>
+                Sex difference: p = {sexFisherP < 0.001 ? "<0.001" : sexFisherP.toFixed(3)} (Fisher&apos;s exact)
+              </div>
+            )}
           </div>
         </CollapsiblePane>
       )}

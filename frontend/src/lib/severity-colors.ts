@@ -56,10 +56,11 @@ export function getSeverityDotColor(severity: string): string {
 }
 
 /** Font-weight class for dose consistency level. */
-export function getDoseConsistencyWeight(level: "Strong" | "Moderate" | "Weak" | string): string {
+export function getDoseConsistencyWeight(level: "Strong" | "Moderate" | "Weak" | "NonMonotonic" | string): string {
   switch (level) {
     case "Strong": return "font-semibold";
     case "Moderate": return "font-medium";
+    case "NonMonotonic": return "font-medium";
     default: return "font-normal";
   }
 }
