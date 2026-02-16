@@ -8,6 +8,7 @@
  */
 
 import type { RecoveryAssessment } from "./recovery-assessment";
+import type { FindingNatureInfo } from "./finding-nature";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -36,6 +37,9 @@ export interface RecoveryContext {
   doseResponsePValue: number | null;
   clinicalClass: string | null;
   signalClass: "adverse" | "warning" | "normal";
+
+  // Finding nature classification (keyword-based)
+  findingNature?: FindingNatureInfo;
 
   // Future (nullable)
   historicalControlIncidence: number | null;
@@ -82,6 +86,12 @@ const CONFIDENCE_RANK: Record<"High" | "Moderate" | "Low", number> = {
 };
 
 const CONFIDENCE_ORDER: ("Low" | "Moderate" | "High")[] = ["Low", "Moderate", "High"];
+
+/** Boost confidence by one tier (Low→Moderate, Moderate→High, High stays High). */
+function boostConfidence(c: "Low" | "Moderate" | "High"): "Low" | "Moderate" | "High" {
+  const idx = CONFIDENCE_RANK[c];
+  return CONFIDENCE_ORDER[Math.min(idx + 1, 2)];
+}
 
 // ─── Guard verdicts ──────────────────────────────────────
 
@@ -156,6 +166,21 @@ export function classifyRecovery(
       inputsMissing: [],
     };
   }
+
+  // Step 0b: Proliferative short-circuit — neoplastic findings are not expected to reverse
+  if (context.findingNature?.nature === "proliferative") {
+    return {
+      classification: "UNCLASSIFIABLE",
+      confidence: "High",
+      rationale: "Neoplastic findings are not expected to reverse.",
+      qualifiers: [],
+      inputsUsed: ["mechanical_verdict", "finding_nature"],
+      inputsMissing: [],
+    };
+  }
+
+  // Track finding nature if available
+  if (context.findingNature) inputsUsed.push("finding_nature");
 
   // Step 1: PATTERN_ANOMALY
   const isPatternAnomaly =
@@ -269,6 +294,17 @@ export function classifyRecovery(
         "Finding shows progression \u2014 regulatory significance may be elevated.",
       );
     }
+    // Finding nature qualifiers for INCOMPLETE_RECOVERY
+    if (context.findingNature?.nature === "adaptive") {
+      qualifiers.push(
+        "Adaptive finding unexpectedly persistent \u2014 may indicate ongoing pharmacological activity.",
+      );
+    }
+    if (context.findingNature?.nature === "degenerative" && context.findingNature.expected_reversibility === "none") {
+      qualifiers.push(
+        "Fibrotic changes are generally considered irreversible.",
+      );
+    }
     return {
       classification: "INCOMPLETE_RECOVERY",
       confidence: computeConfidence("INCOMPLETE_RECOVERY", assessment, context, inputsMissing),
@@ -295,9 +331,14 @@ export function classifyRecovery(
         "Dose-response in treatment phase was moderate \u2014 treatment-relatedness should be confirmed.",
       );
     }
+    // Adaptive finding nature boost: increase confidence by one tier
+    let confidence = computeConfidence("EXPECTED_REVERSIBILITY", assessment, context, inputsMissing);
+    if (context.findingNature?.nature === "adaptive") {
+      confidence = boostConfidence(confidence);
+    }
     return {
       classification: "EXPECTED_REVERSIBILITY",
-      confidence: computeConfidence("EXPECTED_REVERSIBILITY", assessment, context, inputsMissing),
+      confidence,
       rationale: `Treatment-related finding shows ${resolution}`,
       qualifiers,
       inputsUsed,

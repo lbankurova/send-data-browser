@@ -7,6 +7,8 @@
  */
 
 import type { SubjectHistopathEntry } from "@/types/timecourse";
+import type { FindingNatureInfo } from "./finding-nature";
+import { reversibilityLabel } from "./finding-nature";
 
 // ─── Constants ───────────────────────────────────────────
 
@@ -220,6 +222,7 @@ export function formatRecoveryFraction(affected: number, examined: number, n: nu
 export function buildRecoveryTooltip(
   assessment: RecoveryAssessment | undefined,
   recoveryDays?: number | null,
+  findingNature?: FindingNatureInfo | null,
 ): string {
   if (!assessment) return "";
   const lines = ["Recovery assessment:"];
@@ -267,6 +270,9 @@ export function buildRecoveryTooltip(
       ? `${Math.round(recoveryDays / 7)} week${Math.round(recoveryDays / 7) !== 1 ? "s" : ""}`
       : `${recoveryDays} day${recoveryDays !== 1 ? "s" : ""}`;
     lines.push(`  Recovery period: ${label}`);
+  }
+  if (findingNature && findingNature.nature !== "other") {
+    lines.push(`  Finding type: ${findingNature.nature} (${reversibilityLabel(findingNature)})`);
   }
   return lines.join("\n");
 }
