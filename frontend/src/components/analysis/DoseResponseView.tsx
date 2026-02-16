@@ -47,7 +47,6 @@ import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
-import { DoseResponseEndpointPicker } from "@/components/analysis/DoseResponseEndpointPicker";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { DoseResponseRow, RuleResult, SignalSummaryRow, NoaelSummaryRow } from "@/types/analysis-views";
 import type { TimecourseResponse } from "@/types/timecourse";
@@ -623,17 +622,6 @@ export function DoseResponseView() {
           <div className="sticky top-0 z-10 shrink-0 border-b bg-background px-3 py-1.5">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <div className="mb-1 flex items-center gap-2">
-                  {drData && (
-                    <DoseResponseEndpointPicker
-                      data={drData}
-                      studyId={studyId}
-                      selectedEndpoint={selectedEndpoint}
-                      organFilter={studySelection.organSystem ?? null}
-                      onSelect={selectEndpoint}
-                    />
-                  )}
-                </div>
                 <p className="text-[11px] text-muted-foreground">
                   <DomainLabel domain={selectedSummary.domain} /> &middot; {titleCase(selectedSummary.organ_system)}
                   {selectedSummary.data_type === "categorical" && " &middot; Categorical"}
@@ -727,17 +715,6 @@ export function DoseResponseView() {
           </div>
         ) : (
           <div className="shrink-0 border-b px-3 py-1.5">
-            <div className="mb-1 flex items-center gap-2">
-              {drData && (
-                <DoseResponseEndpointPicker
-                  data={drData}
-                  studyId={studyId}
-                  selectedEndpoint={selectedEndpoint}
-                  organFilter={studySelection.organSystem ?? null}
-                  onSelect={selectEndpoint}
-                />
-              )}
-            </div>
             <p className="text-xs text-muted-foreground">
               Select an endpoint to view dose-response details.
             </p>
