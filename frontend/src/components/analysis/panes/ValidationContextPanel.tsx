@@ -461,7 +461,7 @@ function FixScriptDialog({
               <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Preview</label>
               <div className="max-h-40 overflow-auto rounded border">
                 <table className="w-full text-[10px]">
-                  <thead className="sticky top-0 z-10 bg-background">
+                  <thead>
                     <tr className="border-b bg-muted/30">
                       <th className="px-2 py-1 text-left font-medium text-muted-foreground">Subject</th>
                       <th className="px-2 py-1 text-left font-medium text-muted-foreground">Field</th>
