@@ -86,7 +86,7 @@ export function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSumm
   return summaries.sort((a, b) =>
     b.adverseCount - a.adverseCount ||
     b.trCount - a.trCount ||
-    b.maxEffectSize - a.maxEffectSize
+    Math.abs(b.maxEffectSize) - Math.abs(a.maxEffectSize)
   );
 }
 
@@ -125,7 +125,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     if (row.treatment_related) entry.tr = true;
     if (row.effect_size != null) {
       const abs = Math.abs(row.effect_size);
-      if (entry.maxEffect === null || abs > entry.maxEffect) entry.maxEffect = abs;
+      if (entry.maxEffect === null || abs > Math.abs(entry.maxEffect)) entry.maxEffect = row.effect_size;
     }
     if (row.p_value != null && (entry.minP === null || row.p_value < entry.minP)) entry.minP = row.p_value;
     if (row.direction === "up" || row.direction === "down") entry.direction = row.direction;
@@ -157,6 +157,6 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     const sevDiff = sevOrder[a.worstSeverity] - sevOrder[b.worstSeverity];
     if (sevDiff !== 0) return sevDiff;
     if (a.treatmentRelated !== b.treatmentRelated) return a.treatmentRelated ? -1 : 1;
-    return (b.maxEffectSize ?? 0) - (a.maxEffectSize ?? 0);
+    return Math.abs(b.maxEffectSize ?? 0) - Math.abs(a.maxEffectSize ?? 0);
   });
 }
