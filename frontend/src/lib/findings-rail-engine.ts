@@ -131,11 +131,14 @@ export interface RailFilters {
   search: string;
   trOnly: boolean;
   sigOnly: boolean;
+  /** null = all selected (no filter). Set of group keys to include. */
+  groupFilter: ReadonlySet<string> | null;
 }
 
 export function filterEndpoints(
   endpoints: EndpointWithSignal[],
   filters: RailFilters,
+  grouping: GroupingMode,
 ): EndpointWithSignal[] {
   let result = endpoints;
   if (filters.search) {
@@ -148,11 +151,14 @@ export function filterEndpoints(
   if (filters.sigOnly) {
     result = result.filter((ep) => ep.minPValue !== null && ep.minPValue < 0.05);
   }
+  if (filters.groupFilter !== null) {
+    result = result.filter((ep) => filters.groupFilter!.has(groupKey(ep, grouping)));
+  }
   return result;
 }
 
 export function isFiltered(filters: RailFilters): boolean {
-  return filters.search !== "" || filters.trOnly || filters.sigOnly;
+  return filters.search !== "" || filters.trOnly || filters.sigOnly || filters.groupFilter !== null;
 }
 
 // ─── Sort modes ────────────────────────────────────────────
