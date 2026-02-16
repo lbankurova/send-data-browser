@@ -54,6 +54,8 @@ import type { FindingNatureInfo } from "@/lib/finding-nature";
 import { fishersExact2x2 } from "@/lib/statistics";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS, HCD_STATUS_SORT } from "@/lib/mock-historical-controls";
 import type { HistoricalControlData, HCDStatus } from "@/lib/mock-historical-controls";
+import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality, lateralityShortLabel, lateralitySummary } from "@/lib/laterality";
+import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 
 // ─── Neutral heat color (§6.1 evidence tier) ─────────────
 export function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
@@ -120,6 +122,7 @@ export interface FindingTableRow extends FindingSummary {
   clinicalClass?: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent";
   catalogId?: string;
   recoveryVerdict?: RecoveryVerdict;
+  laterality?: { left: number; right: number; bilateral: number };
 }
 
 export interface HeatmapData {
@@ -552,17 +555,37 @@ export function deriveSpecimenConclusion(
 
 // ─── Review status aggregation ────────────────────────────
 
-export type SpecimenReviewStatus = "Preliminary" | "In review" | "Confirmed" | "Revised";
+export type SpecimenReviewStatus = "Preliminary" | "In review" | "Under dispute" | "Confirmed" | "Revised" | "PWG pending";
 
 export function deriveSpecimenReviewStatus(
   findingNames: string[],
   reviews: Record<string, PathologyReview> | undefined
 ): SpecimenReviewStatus {
   if (!reviews || findingNames.length === 0) return "Preliminary";
+  const reviewList = findingNames.map(f => reviews[f]).filter(Boolean) as PathologyReview[];
+  if (reviewList.length === 0) return "Preliminary";
+
   const statuses = findingNames.map(f => reviews[f]?.peerReviewStatus ?? "Not Reviewed");
   if (statuses.every(s => s === "Not Reviewed")) return "Preliminary";
-  if (statuses.some(s => s === "Disagreed")) return "Revised";
-  if (statuses.every(s => s === "Agreed")) return "Confirmed";
+
+  // Priority: PWG pending > Under dispute > In review > Revised > Confirmed > Preliminary
+  const hasPwgPending = reviewList.some(r => r.resolution === "pwg_pending");
+  if (hasPwgPending) return "PWG pending";
+
+  const hasUnresolvedDisagreement = reviewList.some(
+    r => r.peerReviewStatus === "Disagreed" && !r.resolution
+  );
+  if (hasUnresolvedDisagreement) return "Under dispute";
+
+  const hasResolvedDisagreement = reviewList.some(
+    r => r.peerReviewStatus === "Disagreed" && !!r.resolution
+  );
+  const hasNotReviewed = statuses.some(s => s === "Not Reviewed");
+  const allReviewed = !hasNotReviewed;
+
+  if (hasNotReviewed) return "In review";
+  if (hasResolvedDisagreement) return "Revised";
+  if (allReviewed && statuses.every(s => s === "Agreed" || s === "Deferred")) return "Confirmed";
   return "In review";
 }
 
@@ -828,6 +851,12 @@ function OverviewTab({
   const specimenHasRecovery = useMemo(
     () => subjData?.subjects?.some((s) => s.is_recovery) ?? false,
     [subjData],
+  );
+
+  // Laterality flag — show column only for paired organs with laterality data
+  const showLaterality = useMemo(
+    () => !!selection?.specimen && isPairedOrgan(selection.specimen) && specimenHasLaterality(subjData?.subjects ?? []),
+    [selection?.specimen, subjData?.subjects],
   );
 
   // Recovery incidence groups (built from subject-level data for chart recovery bars)
@@ -1303,6 +1332,11 @@ function OverviewTab({
         // Override severity to "decreased" for decreasing findings (warning → decreased; adverse stays adverse)
         const effectiveSeverity: FindingTableRow["severity"] =
           doseDirection === "decreasing" && fs.severity === "warning" ? "decreased" : fs.severity;
+        // Laterality aggregation (only for paired organs with laterality data)
+        const latAgg = subjData?.subjects
+          ? aggregateFindingLaterality(subjData.subjects, fs.finding)
+          : undefined;
+        const hasLat = latAgg && (latAgg.left > 0 || latAgg.right > 0 || latAgg.bilateral > 0);
         return {
           ...fs, severity: effectiveSeverity, isDoseDriven, isNonMonotonic, doseDirection,
           controlIncidence, highDoseIncidence,
@@ -1312,9 +1346,10 @@ function OverviewTab({
           clinicalClass: clin?.clinicalClass as FindingTableRow["clinicalClass"],
           catalogId: clin?.catalogId,
           recoveryVerdict: recAssessment?.overall,
+          laterality: hasLat ? { left: latAgg.left, right: latAgg.right, bilateral: latAgg.bilateral } : undefined,
         };
       }),
-    [findingSummaries, findingConsistency, findingRelatedOrgans, findingRelatedOrgansWithIncidence, findingClinical, doseDepThreshold, trendsByFinding, recoveryAssessments, pairwiseFisherResults]
+    [findingSummaries, findingConsistency, findingRelatedOrgans, findingRelatedOrgansWithIncidence, findingClinical, doseDepThreshold, trendsByFinding, recoveryAssessments, pairwiseFisherResults, subjData?.subjects]
   );
 
   // Mortality masking: for NonMonotonic findings, check if high-dose mortality may mask findings
@@ -1612,6 +1647,26 @@ function OverviewTab({
             }),
           ]
         : []),
+      ...(showLaterality
+        ? [
+            findingColHelper.display({
+              id: "laterality",
+              header: "Lat",
+              size: 60,
+              minSize: 40,
+              maxSize: 90,
+              cell: (info) => {
+                const lat = info.row.original.laterality;
+                if (!lat) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+                return (
+                  <span className="text-[9px] text-muted-foreground" title={`Left: ${lat.left}, Right: ${lat.right}, Bilateral: ${lat.bilateral}`}>
+                    {lateralitySummary({ ...lat, total: lat.left + lat.right + lat.bilateral })}
+                  </span>
+                );
+              },
+            }),
+          ]
+        : []),
       findingColHelper.accessor("relatedOrgans", {
         header: () => (
           <span title={"Cross-organ coherence (Rule R16):\nFindings with the same standardized name appearing in other specimens within this study. Matching is case-insensitive on the finding term.\n\nThis indicates anatomical spread, not necessarily biological relatedness. Use clinical judgment to assess whether cross-organ presence reflects systemic toxicity."}>
@@ -1650,7 +1705,7 @@ function OverviewTab({
         },
       }),
     ],
-    [doseDepThreshold, specimenHasRecovery, recoveryAssessments, subjData?.recovery_days, mortalityMaskFindings, pairwiseFisherResults, doseGroupLabels]
+    [doseDepThreshold, specimenHasRecovery, recoveryAssessments, subjData?.recovery_days, mortalityMaskFindings, pairwiseFisherResults, doseGroupLabels, showLaterality]
   );
 
   const filteredTableData = useMemo(
@@ -2049,6 +2104,7 @@ function OverviewTab({
               comparisonSubjects={comparisonSubjects}
               onComparisonChange={onComparisonChange}
               onCompareClick={onCompareClick}
+              showLaterality={showLaterality}
               controls={
                 <FilterBar className="border-0 bg-transparent px-0">
                   <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
@@ -2439,6 +2495,7 @@ function SubjectHeatmap({
   comparisonSubjects,
   onComparisonChange,
   onCompareClick,
+  showLaterality = false,
 }: {
   subjData: SubjectHistopathEntry[] | null;
   isLoading: boolean;
@@ -2457,6 +2514,7 @@ function SubjectHeatmap({
   comparisonSubjects?: Set<string>;
   onComparisonChange?: (subjects: Set<string>) => void;
   onCompareClick?: () => void;
+  showLaterality?: boolean;
 }) {
   // Selected subject for column highlight
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -2893,15 +2951,27 @@ function SubjectHeatmap({
                       >
                         {sevNum > 0 ? (
                           <div
-                            className="flex h-5 w-6 items-center justify-center rounded-sm font-mono text-[9px]"
+                            className="relative flex h-5 w-6 items-center justify-center rounded-sm font-mono text-[9px]"
                             style={{ backgroundColor: colors!.bg, color: colors!.text }}
                           >
                             {sevNum}
+                            {showLaterality && entry?.laterality && (
+                              <span className="absolute -bottom-0.5 -right-0.5 text-[7px] leading-none opacity-70">
+                                {lateralityShortLabel(entry.laterality)}
+                              </span>
+                            )}
                           </div>
                         ) : hasEntry && findingGradeMap.get(finding) ? (
                           <span className="text-[9px] text-muted-foreground">&mdash;</span>
                         ) : hasEntry ? (
-                          <span className="text-[10px] text-gray-400">●</span>
+                          <span className="relative text-[10px] text-gray-400">
+                            ●
+                            {showLaterality && entry?.laterality && (
+                              <span className="absolute -bottom-1 -right-1.5 text-[7px] leading-none text-muted-foreground/70">
+                                {lateralityShortLabel(entry.laterality)}
+                              </span>
+                            )}
+                          </span>
                         ) : null}
                       </div>
                     );
@@ -3626,6 +3696,9 @@ export function HistopathologyView() {
   // Subject data for recovery assessment (React Query caches, so shared with OverviewTab)
   const { data: subjData } = useHistopathSubjects(studyId, selectedSpecimen);
 
+  // Lab correlation for summary strip
+  const labCorrelation = useSpecimenLabCorrelation(studyId, selectedSpecimen);
+
   // Derived: specimen summaries
   const specimenSummaries = useMemo(() => {
     if (!lesionData) return [];
@@ -3879,6 +3952,14 @@ export function HistopathologyView() {
               )}
               {specimenRecoveryOverall && specimenRecoveryOverall !== "reversed" && (
                 <span>Recovery: <span className="font-medium">{specimenRecoveryOverall}</span></span>
+              )}
+              {labCorrelation.hasData && labCorrelation.topSignal && labCorrelation.topSignal.signal > 0 && (
+                <span title={`Top lab signal: ${labCorrelation.topSignal.test} ${labCorrelation.topSignal.pctChange >= 0 ? "+" : ""}${labCorrelation.topSignal.pctChange.toFixed(0)}% vs control`}>
+                  Lab: <span className="font-mono font-medium">
+                    {labCorrelation.topSignal.signal >= 3 ? "●●●" : labCorrelation.topSignal.signal >= 2 ? "●●" : "●"}{" "}
+                    {labCorrelation.topSignal.test} {labCorrelation.topSignal.pctChange >= 0 ? "+" : ""}{labCorrelation.topSignal.pctChange.toFixed(0)}%
+                  </span>
+                </span>
               )}
             </div>
           </div>

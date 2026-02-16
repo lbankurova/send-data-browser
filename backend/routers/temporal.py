@@ -526,10 +526,12 @@ async def get_histopath_subjects(
     ma_specimen_df = None
     ma_finding_col = None
     ma_sev_col = None
+    ma_lat_col = None
     if "ma" in study.xpt_files:
         ma_df = _read_domain_df(study, "MA")
         ma_spec_col = "MASPEC" if "MASPEC" in ma_df.columns else None
         if ma_spec_col:
+            ma_lat_col = "MALAT" if "MALAT" in ma_df.columns else None
             ma_finding_col = "MASTRESC" if "MASTRESC" in ma_df.columns else "MAORRES"
             ma_sev_col = "MASEV" if "MASEV" in ma_df.columns else None
             ma_specimen_df = ma_df[ma_df[ma_spec_col].str.upper() == specimen.upper()]
@@ -549,6 +551,9 @@ async def get_histopath_subjects(
         "MINIMAL": 1, "MILD": 2, "MODERATE": 3, "MARKED": 4, "SEVERE": 5,
     }
 
+    # Detect laterality columns
+    mi_lat_col = "MILAT" if "MILAT" in mi_df.columns else None
+
     # Join MI specimen findings with subject metadata
     findings_by_subj: dict[str, dict] = {}
     if not specimen_df.empty:
@@ -563,9 +568,11 @@ async def get_histopath_subjects(
                 f = str(r[finding_col])
                 sev_str = str(r[sev_col]).strip().upper() if sev_col and sev_col in subj_grp.columns and r.get(sev_col, "") != "" else None
                 sev_num = SEV_MAP.get(sev_str, 0) if sev_str else 0
+                lat = str(r[mi_lat_col]).strip().upper() if mi_lat_col and mi_lat_col in subj_grp.columns and pd.notna(r.get(mi_lat_col)) and str(r.get(mi_lat_col, "")).strip() else None
                 findings_map[f] = {
                     "severity": sev_str,
                     "severity_num": sev_num,
+                    "laterality": lat,
                 }
             findings_by_subj[str(usubjid)] = findings_map
 
@@ -585,9 +592,11 @@ async def get_histopath_subjects(
                     continue  # MI finding takes precedence
                 sev_str = str(r[ma_sev_col]).strip().upper() if ma_sev_col and ma_sev_col in subj_grp.columns and r.get(ma_sev_col, "") not in ("", "nan") else None
                 sev_num = SEV_MAP.get(sev_str, 0) if sev_str else 0
+                lat = str(r[ma_lat_col]).strip().upper() if ma_lat_col and ma_lat_col in subj_grp.columns and pd.notna(r.get(ma_lat_col)) and str(r.get(ma_lat_col, "")).strip() else None
                 findings_by_subj[subj_key][f] = {
                     "severity": sev_str,
                     "severity_num": sev_num,
+                    "laterality": lat,
                 }
 
     # Read DS domain once for disposition + recovery_days

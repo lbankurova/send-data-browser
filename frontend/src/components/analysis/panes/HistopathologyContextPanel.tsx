@@ -35,6 +35,66 @@ import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { fishersExact2x2 } from "@/lib/statistics";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import type { SignalSummaryRow } from "@/types/analysis-views";
+import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
+import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
+import type { LabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
+
+// ─── Lab Correlates Pane ─────────────────────────────────────────────────────
+
+function signalDots(signal: number): string {
+  return signal >= 3 ? "●●●" : signal >= 2 ? "●●" : signal >= 1 ? "●" : "";
+}
+
+function LabCorrelatesPane({
+  correlations,
+  isLoading,
+}: {
+  correlations: LabCorrelation[];
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return <p className="text-[11px] text-muted-foreground">Loading lab data...</p>;
+  }
+  if (correlations.length === 0) {
+    return <p className="text-[11px] text-muted-foreground">No clinical pathology data available.</p>;
+  }
+
+  return (
+    <div className="space-y-0.5">
+      {/* Header row */}
+      <div className="flex items-center gap-1 text-[9px] font-medium text-muted-foreground/60">
+        <span className="w-12">Test</span>
+        <span className="w-14 text-right">Control</span>
+        <span className="w-14 text-right">High dose</span>
+        <span className="w-14 text-right">Change</span>
+        <span className="w-8 text-center">Signal</span>
+      </div>
+      {correlations.map((c) => (
+        <div
+          key={c.test}
+          className={`flex items-center gap-1 rounded px-0.5 py-0.5 text-[10px] ${c.isRelevant ? "bg-muted/20" : ""}`}
+          title={`${c.test}: control ${c.controlMean.toFixed(2)} ± ${c.controlSD.toFixed(2)}, high dose ${c.highDoseMean.toFixed(2)} (${c.pctChange >= 0 ? "+" : ""}${c.pctChange.toFixed(0)}%)`}
+        >
+          <span className={`w-12 truncate font-mono text-[9px] ${c.isRelevant ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+            {c.test}
+          </span>
+          <span className="w-14 text-right font-mono text-[9px] text-muted-foreground">
+            {c.controlMean.toFixed(1)}
+          </span>
+          <span className="w-14 text-right font-mono text-[9px] text-muted-foreground">
+            {c.highDoseMean.toFixed(1)}
+          </span>
+          <span className={`w-14 text-right font-mono text-[9px] ${c.signal > 0 ? "text-foreground" : "text-muted-foreground/60"}`}>
+            {c.direction === "up" ? "+" : ""}{c.pctChange.toFixed(0)}%
+          </span>
+          <span className="w-8 text-center font-mono text-[9px] text-muted-foreground">
+            {signalDots(c.signal)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ─── Specimen-scoped insights (purpose-built for context panel) ──────────────
 
@@ -356,7 +416,9 @@ const REVIEW_STATUS_TOOLTIPS: Record<SpecimenReviewStatus, string> = {
   "Preliminary": "No peer review recorded yet",
   "In review": "Some findings reviewed, others pending",
   "Confirmed": "All findings agreed by peer reviewer",
-  "Revised": "One or more findings disagreed by peer reviewer",
+  "Revised": "One or more findings disagreed and resolved",
+  "Under dispute": "One or more findings disagreed, awaiting resolution",
+  "PWG pending": "Pathology Working Group review pending",
 };
 
 interface HistopathSelection {
@@ -397,6 +459,36 @@ function SpecimenOverviewPane({
     const summaries = deriveSpecimenSummaries(lesionData, ruleResults);
     return summaries.find((s) => s.specimen === specimen) ?? null;
   }, [lesionData, ruleResults, specimen]);
+
+  // Subject-level data (for laterality)
+  const { data: subjData } = useHistopathSubjects(studyId, specimen);
+
+  // Laterality summary for paired organs
+  const lateralityInfo = useMemo(() => {
+    if (!isPairedOrgan(specimen) || !subjData?.subjects || !specimenHasLaterality(subjData.subjects)) return null;
+    // Aggregate across all findings
+    const findings = subjData.findings ?? [];
+    const perFinding = findings.map((f) => ({
+      finding: f,
+      agg: aggregateFindingLaterality(subjData.subjects, f),
+    })).filter((x) => x.agg.left > 0 || x.agg.right > 0 || x.agg.bilateral > 0);
+    if (perFinding.length === 0) return null;
+    // Overall totals
+    const total = { left: 0, right: 0, bilateral: 0, total: 0 };
+    for (const pf of perFinding) {
+      total.left += pf.agg.left;
+      total.right += pf.agg.right;
+      total.bilateral += pf.agg.bilateral;
+      total.total += pf.agg.total;
+    }
+    // Predominantly unilateral?
+    const unilateral = total.left + total.right;
+    const isUnilateral = unilateral > total.bilateral * 2;
+    return { perFinding, total, isUnilateral };
+  }, [specimen, subjData]);
+
+  // Lab correlation (specimen-level)
+  const labCorrelation = useSpecimenLabCorrelation(studyId, specimen);
 
   // Specimen-scoped data
   const specimenData = useMemo(
@@ -596,6 +688,37 @@ function SpecimenOverviewPane({
       {specimenRules.length > 0 && (
         <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <SpecimenInsightsWithSignals rules={specimenRules} specimen={specimen} studyId={studyId} />
+        </CollapsiblePane>
+      )}
+
+      {/* Lab correlates (specimen-level) */}
+      {(labCorrelation.hasData || labCorrelation.isLoading) && (
+        <CollapsiblePane title="Lab correlates" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <LabCorrelatesPane correlations={labCorrelation.correlations} isLoading={labCorrelation.isLoading} />
+        </CollapsiblePane>
+      )}
+
+      {/* Laterality note (paired organs only) */}
+      {lateralityInfo && (
+        <CollapsiblePane title="Laterality" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="space-y-1 text-[11px]">
+            <p className="text-muted-foreground">
+              Laterality: {lateralitySummary(lateralityInfo.total)}
+              {lateralityInfo.isUnilateral && (
+                <span className="ml-1 text-foreground/70"> — predominantly unilateral</span>
+              )}
+            </p>
+            {lateralityInfo.perFinding.length > 1 && (
+              <div className="mt-1 space-y-0.5">
+                {lateralityInfo.perFinding.map((pf) => (
+                  <div key={pf.finding} className="flex items-baseline gap-1.5">
+                    <span className="min-w-0 flex-1 truncate text-muted-foreground/70">{pf.finding}</span>
+                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{lateralitySummary(pf.agg)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </CollapsiblePane>
       )}
 
@@ -1262,6 +1385,9 @@ function FindingDetailPane({
     return fishersExact2x2(m.affected, m.n - m.affected, f.affected, f.n - f.affected);
   }, [lesionData, selection, sexSummary]);
 
+  // Lab correlation (finding-level)
+  const findingLabCorrelation = useSpecimenLabCorrelation(studyId, selection.specimen, selection.finding);
+
   return (
     <div>
       {/* Header */}
@@ -1469,6 +1595,29 @@ function FindingDetailPane({
           </div>
         )}
       </CollapsiblePane>
+
+      {/* Lab correlates (finding-level) */}
+      {(findingLabCorrelation.hasData || findingLabCorrelation.isLoading) && (
+        <CollapsiblePane title="Lab correlates" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <LabCorrelatesPane correlations={findingLabCorrelation.correlations} isLoading={findingLabCorrelation.isLoading} />
+        </CollapsiblePane>
+      )}
+
+      {/* Finding-level laterality note */}
+      {isPairedOrgan(selection.specimen) && subjData?.subjects && (() => {
+        const agg = aggregateFindingLaterality(subjData.subjects, selection.finding);
+        if (agg.left === 0 && agg.right === 0 && agg.bilateral === 0) return null;
+        const unilateral = agg.left + agg.right;
+        return (
+          <CollapsiblePane title="Laterality" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+            <p className="text-[11px] text-muted-foreground">
+              {lateralitySummary(agg)}
+              {unilateral > agg.bilateral * 2 && <span className="ml-1 text-foreground/70"> — predominantly unilateral</span>}
+              {agg.bilateral > unilateral * 2 && <span className="ml-1 text-foreground/70"> — predominantly bilateral</span>}
+            </p>
+          </CollapsiblePane>
+        );
+      })()}
 
       {/* Pathology Review */}
       {studyId && (
