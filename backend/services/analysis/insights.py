@@ -419,17 +419,17 @@ def correlations_insights(
             "level": "warning",
         })
     elif not related:
-        insights.append({
-            "text": "No correlated findings identified for this endpoint",
-            "level": "info",
-        })
-
-    # D2: Specimen with no correlations
-    if specimen and not related:
-        insights.append({
-            "text": f"No correlated findings in {specimen} — isolated endpoint",
-            "level": "info",
-        })
+        # D2: No correlations — use specimen-specific message when available
+        if specimen:
+            insights.append({
+                "text": f"No correlated findings in {specimen} — isolated endpoint",
+                "level": "info",
+            })
+        else:
+            insights.append({
+                "text": "No correlated findings identified for this endpoint",
+                "level": "info",
+            })
 
     # D3: Biomarker + histopath correlation
     if bio and bio.get("organ"):
