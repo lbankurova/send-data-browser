@@ -183,6 +183,7 @@ export function buildDoseIncidenceBarOption(
   sexKeys: string[],
   mode: ChartDisplayMode = "scaled",
   recoveryGroups?: DoseIncidenceGroup[],
+  direction?: "increasing" | "decreasing" | "mixed" | "flat",
 ): EChartsOption {
   const ordered = [...groups].reverse();
   const recoveryOrdered = recoveryGroups ? [...recoveryGroups].reverse() : undefined;
@@ -426,6 +427,19 @@ export function buildDoseIncidenceBarOption(
     legend: { show: false },
     animation: true,
     animationDuration: 300,
+    ...(direction === "decreasing" ? {
+      graphic: [{
+        type: "text",
+        right: 10,
+        top: 4,
+        style: {
+          text: "\u2193 decreasing with dose",
+          fontSize: 9,
+          fontStyle: "italic",
+          fill: "rgba(37, 99, 235, 0.6)",
+        },
+      }],
+    } : {}),
   };
 }
 

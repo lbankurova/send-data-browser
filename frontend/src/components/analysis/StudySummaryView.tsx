@@ -22,6 +22,8 @@ import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { SignalSelection, ProvenanceMessage, NoaelSummaryRow, RuleResult } from "@/types/analysis-views";
 import type { StudyMetadata } from "@/types";
 import type { Insight } from "@/hooks/useInsights";
+import { classifyProtectiveSignal, getProtectiveBadgeStyle } from "@/lib/protective-signal";
+import type { ProtectiveClassification } from "@/lib/protective-signal";
 
 type Tab = "details" | "signals" | "insights";
 
@@ -321,11 +323,11 @@ interface ProtectiveFinding {
   sexes: string;
   ctrlPct: string;
   highPct: string;
-  isRepurposing: boolean;
+  classification: ProtectiveClassification;
 }
 
 function aggregateProtectiveFindings(rules: RuleResult[]): ProtectiveFinding[] {
-  const map = new Map<string, { specimens: Set<string>; sexes: Set<string>; ctrlPct: string; highPct: string; isRepurposing: boolean }>();
+  const map = new Map<string, { specimens: Set<string>; sexes: Set<string>; ctrlPct: string; highPct: string; hasR19: boolean }>();
 
   for (const r of rules) {
     if (r.rule_id !== "R18" && r.rule_id !== "R19") continue;
@@ -333,27 +335,41 @@ function aggregateProtectiveFindings(rules: RuleResult[]): ProtectiveFinding[] {
     const p = r.params;
     if (p?.finding && p?.specimen && p?.ctrl_pct) {
       const findingName = p.finding;
-      const entry = map.get(findingName) ?? { specimens: new Set(), sexes: new Set(), ctrlPct: p.ctrl_pct, highPct: p.high_pct ?? "", isRepurposing: false };
+      const entry = map.get(findingName) ?? { specimens: new Set(), sexes: new Set(), ctrlPct: p.ctrl_pct, highPct: p.high_pct ?? "", hasR19: false };
       entry.specimens.add(p.specimen);
       if (p.sex) entry.sexes.add(p.sex);
       if (parseInt(p.ctrl_pct) > parseInt(entry.ctrlPct)) { entry.ctrlPct = p.ctrl_pct; entry.highPct = p.high_pct ?? ""; }
-      if (r.rule_id === "R19") entry.isRepurposing = true;
+      if (r.rule_id === "R19") entry.hasR19 = true;
       map.set(findingName, entry);
     }
   }
 
   return [...map.entries()]
-    .map(([finding, info]) => ({
-      finding,
-      specimens: [...info.specimens].sort(),
-      sexes: [...info.sexes].sort().join(", "),
-      ctrlPct: info.ctrlPct,
-      highPct: info.highPct,
-      isRepurposing: info.isRepurposing,
-    }))
+    .map(([finding, info]) => {
+      const ctrlInc = parseInt(info.ctrlPct) / 100;
+      const highInc = parseInt(info.highPct) / 100;
+      const result = classifyProtectiveSignal({
+        finding,
+        controlIncidence: ctrlInc,
+        highDoseIncidence: highInc,
+        doseConsistency: info.hasR19 ? "Moderate" : "Weak",
+        direction: "decreasing",
+        crossDomainCorrelateCount: info.hasR19 ? 2 : 0,
+      });
+      return {
+        finding,
+        specimens: [...info.specimens].sort(),
+        sexes: [...info.sexes].sort().join(", "),
+        ctrlPct: info.ctrlPct,
+        highPct: info.highPct,
+        classification: result?.classification ?? "background" as ProtectiveClassification,
+      };
+    })
     .sort((a, b) => {
-      // Repurposing signals first, then by control incidence (highest first)
-      if (a.isRepurposing !== b.isRepurposing) return a.isRepurposing ? -1 : 1;
+      // Pharmacological first, then treatment-decrease, then background
+      const order: Record<ProtectiveClassification, number> = { pharmacological: 0, "treatment-decrease": 1, background: 2 };
+      const d = order[a.classification] - order[b.classification];
+      if (d !== 0) return d;
       return parseInt(b.ctrlPct) - parseInt(a.ctrlPct);
     });
 }
@@ -371,8 +387,11 @@ function ProtectiveSignalsBar({
 
   if (findings.length === 0) return null;
 
-  const repurposingCount = findings.filter((f) => f.isRepurposing).length;
-  const protectiveOnly = findings.filter((f) => !f.isRepurposing);
+  const pharmacological = findings.filter((f) => f.classification === "pharmacological");
+  const treatmentDecrease = findings.filter((f) => f.classification === "treatment-decrease");
+  const background = findings.filter((f) => f.classification === "background");
+
+  const classifiedCount = pharmacological.length + treatmentDecrease.length;
 
   return (
     <div className="shrink-0 border-b px-4 py-2">
@@ -382,13 +401,13 @@ function ProtectiveSignalsBar({
         </span>
         <span className="text-[10px] text-muted-foreground">
           {findings.length} finding{findings.length !== 1 ? "s" : ""} with decreased incidence
-          {repurposingCount > 0 && ` · ${repurposingCount} repurposing candidate${repurposingCount !== 1 ? "s" : ""}`}
+          {classifiedCount > 0 && ` \u00b7 ${pharmacological.length} pharmacological \u00b7 ${treatmentDecrease.length} treatment-related`}
         </span>
       </div>
       <div className="space-y-1.5">
-        {/* Repurposing candidates first */}
-        {findings.filter((f) => f.isRepurposing).map((f) => (
-          <div key={`r-${f.finding}`} className="border-l-2 border-l-purple-400 py-1 pl-2.5">
+        {/* Pharmacological candidates */}
+        {pharmacological.map((f) => (
+          <div key={`ph-${f.finding}`} className="border-l-2 border-l-blue-400 py-1 pl-2.5">
             <div className="flex items-baseline gap-2">
               <button
                 className="text-[11px] font-semibold hover:underline"
@@ -403,18 +422,48 @@ function ProtectiveSignalsBar({
                 {f.finding}
               </button>
               <span className="text-[10px] font-medium text-muted-foreground">{f.sexes}</span>
-              <span className="text-[9px] font-medium text-purple-600">repurposing</span>
+              <span className={cn("rounded px-1 py-0.5", getProtectiveBadgeStyle("pharmacological"))}>pharmacological</span>
             </div>
             <div className="text-[10px] leading-snug text-muted-foreground">
-              {f.ctrlPct}% control → {f.highPct}% high dose in {f.specimens.join(", ")} — potential therapeutic target
+              {f.ctrlPct}% control {"\u2192"} {f.highPct}% high dose in {f.specimens.join(", ")}
             </div>
           </div>
         ))}
-        {/* Protective-only */}
-        {protectiveOnly.length > 0 && (
+        {/* Treatment-decrease */}
+        {treatmentDecrease.map((f) => (
+          <div key={`td-${f.finding}`} className="border-l-2 border-l-slate-400 py-0.5 pl-2.5">
+            <div className="flex items-baseline gap-2">
+              <button
+                className="text-[11px] font-medium hover:underline"
+                onClick={() => {
+                  const spec = f.specimens[0];
+                  if (spec) {
+                    navigateTo({ specimen: spec });
+                    navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
+                  }
+                }}
+              >
+                {f.finding}
+              </button>
+              <span className="text-[10px] text-muted-foreground">{f.sexes}</span>
+              <span className={cn("rounded px-1 py-0.5", getProtectiveBadgeStyle("treatment-decrease"))}>treatment decrease</span>
+              <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                {f.ctrlPct}% {"\u2192"} {f.highPct}%
+              </span>
+            </div>
+            {f.specimens.length > 0 && (
+              <div className="text-[9px] text-muted-foreground/70">{f.specimens.join(", ")}</div>
+            )}
+          </div>
+        ))}
+        {/* Background (other decreased) */}
+        {background.length > 0 && (
           <div className="space-y-0.5">
-            {protectiveOnly.slice(0, 5).map((f) => (
-              <div key={`p-${f.finding}`} className="border-l-2 border-l-emerald-400 py-0.5 pl-2.5">
+            <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+              Other decreased findings
+            </div>
+            {background.slice(0, 5).map((f) => (
+              <div key={`bg-${f.finding}`} className="border-l-2 border-l-gray-300 py-0.5 pl-2.5">
                 <div className="flex items-baseline gap-2">
                   <button
                     className="text-[11px] font-medium hover:underline"
@@ -430,17 +479,14 @@ function ProtectiveSignalsBar({
                   </button>
                   <span className="text-[10px] text-muted-foreground">{f.sexes}</span>
                   <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-                    {f.ctrlPct}% → {f.highPct}%
+                    {f.ctrlPct}% {"\u2192"} {f.highPct}%
                   </span>
                 </div>
-                {f.specimens.length > 0 && (
-                  <div className="text-[9px] text-muted-foreground/70">{f.specimens.join(", ")}</div>
-                )}
               </div>
             ))}
-            {protectiveOnly.length > 5 && (
+            {background.length > 5 && (
               <div className="pl-2.5 text-[10px] text-muted-foreground/50">
-                +{protectiveOnly.length - 5} more
+                +{background.length - 5} more
               </div>
             )}
           </div>

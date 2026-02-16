@@ -85,23 +85,37 @@ function SpecimenRailItem({
           className={cn(
             "w-5 shrink-0 text-right text-[9px]",
             getDoseConsistencyWeight(summary.doseConsistency),
-            summary.doseConsistency === "Strong"
-              ? "text-muted-foreground"
-              : summary.doseConsistency === "Moderate"
-                ? "text-muted-foreground/60"
-                : summary.doseConsistency === "NonMonotonic"
-                  ? "text-muted-foreground/50"
-                  : "text-muted-foreground/30",
+            summary.doseDirection === "decreasing"
+              ? summary.doseConsistency === "Strong"
+                ? "text-blue-600/70"
+                : summary.doseConsistency === "Moderate"
+                  ? "text-blue-600/50"
+                  : "text-blue-600/30"
+              : summary.doseConsistency === "Strong"
+                ? "text-muted-foreground"
+                : summary.doseConsistency === "Moderate"
+                  ? "text-muted-foreground/60"
+                  : summary.doseConsistency === "NonMonotonic"
+                    ? "text-muted-foreground/50"
+                    : "text-muted-foreground/30",
           )}
-          title={`Dose trend: ${summary.doseConsistency}`}
+          title={`Dose trend: ${summary.doseConsistency} ${summary.doseDirection}`}
         >
-          {summary.doseConsistency === "Strong"
-            ? "\u25B2\u25B2\u25B2"
-            : summary.doseConsistency === "Moderate"
-              ? "\u25B2\u25B2"
-              : summary.doseConsistency === "NonMonotonic"
-                ? "\u25B2\u25BC"
-                : "\u25B2"}
+          {summary.doseDirection === "decreasing"
+            ? summary.doseConsistency === "Strong"
+              ? "\u25BC\u25BC\u25BC"
+              : summary.doseConsistency === "Moderate"
+                ? "\u25BC\u25BC"
+                : "\u25BC"
+            : summary.doseDirection === "mixed"
+              ? "\u25B2\u25BC"
+              : summary.doseConsistency === "Strong"
+                ? "\u25B2\u25B2\u25B2"
+                : summary.doseConsistency === "Moderate"
+                  ? "\u25B2\u25B2"
+                  : summary.doseConsistency === "NonMonotonic"
+                    ? "\u25B2\u25BC"
+                    : "\u25B2"}
         </span>
         <span
           className="ml-2 w-7 shrink-0 rounded-sm text-center font-mono text-[9px]"

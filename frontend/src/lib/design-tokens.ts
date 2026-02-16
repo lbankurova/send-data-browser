@@ -274,6 +274,8 @@ export const signal = {
   warning: "inline-block border-l-2 border-l-amber-600 pl-1.5 py-px text-[9px] font-medium text-gray-600",
   /** Statistical normal (no clinical catalog match) — muted emerald border, quiet text */
   normal: "inline-block border-l-2 border-l-emerald-400/40 pl-1.5 py-px text-[9px] text-muted-foreground",
+  /** Decreased (direction-aware) — blue border, quiet text */
+  decreased: "inline-block border-l-2 border-l-blue-400 pl-1.5 py-px text-[9px] font-medium text-blue-700/70",
   /** Clinical override (any catalog class) — gray border, typographic emphasis.
    *  Label differentiates severity (Sentinel > High concern > Moderate > Flag), not styling.
    *  font-medium + text-foreground gives the clinical label more weight than plain "normal"

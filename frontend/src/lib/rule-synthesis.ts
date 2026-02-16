@@ -238,16 +238,15 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
     (r) => (r.rule_id === "R18" || r.rule_id === "R19") && !r.params?.protective_excluded
   );
   if (protectiveRules.length > 0) {
-    const findingMap = new Map<string, { sexes: Set<string>; repurposing: boolean }>();
+    const findingMap = new Map<string, { sexes: Set<string> }>();
     for (const r of protectiveRules) {
       const ctx = parseContextKey(r.context_key);
       const sex = r.params?.sex ?? ctx?.sex ?? "";
 
       if (r.params?.finding && r.params?.specimen) {
         const key = `${r.params.finding} in ${r.params.specimen}`;
-        const entry = findingMap.get(key) ?? { sexes: new Set(), repurposing: false };
+        const entry = findingMap.get(key) ?? { sexes: new Set() };
         if (sex) entry.sexes.add(sex);
-        if (r.rule_id === "R19") entry.repurposing = true;
         findingMap.set(key, entry);
       }
     }
@@ -255,8 +254,7 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
       const items: string[] = [];
       for (const [finding, info] of findingMap) {
         const sexStr = info.sexes.size > 0 ? ` (${[...info.sexes].sort().join(", ")})` : "";
-        const tag = info.repurposing ? " — potential protective effect" : "";
-        items.push(finding + sexStr + tag);
+        items.push(finding + sexStr);
       }
       lines.push({ text: "Decreased with treatment", isWarning: false, listItems: items });
     }
