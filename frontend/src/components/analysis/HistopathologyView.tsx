@@ -54,7 +54,7 @@ import type { FindingNatureInfo } from "@/lib/finding-nature";
 import { fishersExact2x2 } from "@/lib/statistics";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS, HCD_STATUS_SORT } from "@/lib/mock-historical-controls";
 import type { HistoricalControlData, HCDStatus } from "@/lib/mock-historical-controls";
-import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality, lateralityShortLabel, lateralitySummary } from "@/lib/laterality";
+import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality } from "@/lib/laterality";
 import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 
 // ─── Neutral heat color (§6.1 evidence tier) ─────────────
@@ -573,12 +573,12 @@ export function deriveSpecimenReviewStatus(
   if (hasPwgPending) return "PWG pending";
 
   const hasUnresolvedDisagreement = reviewList.some(
-    r => r.peerReviewStatus === "Disagreed" && !r.resolution
+    r => r.peerReviewStatus === "Disagreed" && (!r.resolution || r.resolution === "unresolved")
   );
   if (hasUnresolvedDisagreement) return "Under dispute";
 
   const hasResolvedDisagreement = reviewList.some(
-    r => r.peerReviewStatus === "Disagreed" && !!r.resolution
+    r => r.peerReviewStatus === "Disagreed" && !!r.resolution && r.resolution !== "unresolved"
   );
   const hasNotReviewed = statuses.some(s => s === "Not Reviewed");
   const allReviewed = !hasNotReviewed;
@@ -1651,16 +1651,36 @@ function OverviewTab({
         ? [
             findingColHelper.display({
               id: "laterality",
-              header: "Lat",
+              header: "Lat.",
               size: 60,
               minSize: 40,
               maxSize: 90,
               cell: (info) => {
                 const lat = info.row.original.laterality;
                 if (!lat) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+                const total = lat.left + lat.right + lat.bilateral;
+                const tooltip = `Bilateral: ${lat.bilateral} subjects, Left only: ${lat.left}, Right only: ${lat.right}`;
+                // Determine display label and style per spec
+                const hasUnilateral = lat.left > 0 || lat.right > 0;
+                const hasBilateral = lat.bilateral > 0;
+                const isMixed = hasUnilateral && hasBilateral;
+                const label = isMixed
+                  ? "mixed"
+                  : hasBilateral
+                    ? "B"
+                    : lat.left > 0 && lat.right > 0
+                      ? "mixed"
+                      : lat.left > 0
+                        ? "L"
+                        : "R";
+                const colorClass = isMixed || (lat.left > 0 && lat.right > 0 && !hasBilateral)
+                  ? "text-amber-600/70"
+                  : label === "B"
+                    ? "text-foreground"
+                    : "text-muted-foreground";
                 return (
-                  <span className="text-[9px] text-muted-foreground" title={`Left: ${lat.left}, Right: ${lat.right}, Bilateral: ${lat.bilateral}`}>
-                    {lateralitySummary({ ...lat, total: lat.left + lat.right + lat.bilateral })}
+                  <span className={`text-[9px] ${colorClass}`} title={tooltip}>
+                    {label}{total > 1 && <span className="ml-0.5 text-muted-foreground/50">({total})</span>}
                   </span>
                 );
               },
@@ -2832,6 +2852,38 @@ function SubjectHeatmap({
             ))}
           </div>
 
+          {/* Laterality header row (paired organs only) */}
+          {showLaterality && (
+            <div className="flex">
+              <div className="sticky left-0 z-10 shrink-0 bg-background" style={{ width: labelColW }} />
+              {doseGroups.map((dg, gi) => (
+                <div key={`lat-${dg.isRecovery ? "R" : ""}${dg.doseLevel}`} className={cn("flex", gi > 0 && "border-l-2 border-border")}>
+                  {dg.subjects.map((subj) => {
+                    // Compute per-subject laterality summary
+                    const latValues = Object.values(subj.findings)
+                      .map((f) => f.laterality?.toUpperCase())
+                      .filter(Boolean) as string[];
+                    const hasLeft = latValues.some((l) => l === "LEFT");
+                    const hasRight = latValues.some((l) => l === "RIGHT");
+                    const hasBilateral = latValues.some((l) => l === "BILATERAL");
+                    const label = hasBilateral ? "B" : (hasLeft && hasRight) ? "B" : hasLeft ? "L" : hasRight ? "R" : "";
+                    return (
+                      <div
+                        key={subj.usubjid}
+                        className={cn(
+                          "w-8 shrink-0 text-center text-[7px] font-medium text-muted-foreground",
+                          colTint(subj.usubjid),
+                        )}
+                      >
+                        {label}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Checkbox row for comparison selection */}
           {comparisonSubjects && onComparisonChange && (
             <div className="flex">
@@ -2955,22 +3007,33 @@ function SubjectHeatmap({
                             style={{ backgroundColor: colors!.bg, color: colors!.text }}
                           >
                             {sevNum}
-                            {showLaterality && entry?.laterality && (
-                              <span className="absolute -bottom-0.5 -right-0.5 text-[7px] leading-none opacity-70">
-                                {lateralityShortLabel(entry.laterality)}
-                              </span>
-                            )}
+                            {showLaterality && entry?.laterality && (() => {
+                              const lat = entry.laterality!.toUpperCase();
+                              if (lat === "BILATERAL") return null;
+                              return (
+                                <span
+                                  className={cn("absolute top-0 h-1.5 w-1.5 rounded-full opacity-70", lat === "LEFT" ? "left-0" : "right-0")}
+                                  style={{ backgroundColor: colors!.text }}
+                                  title={lat === "LEFT" ? "Left" : "Right"}
+                                />
+                              );
+                            })()}
                           </div>
                         ) : hasEntry && findingGradeMap.get(finding) ? (
                           <span className="text-[9px] text-muted-foreground">&mdash;</span>
                         ) : hasEntry ? (
                           <span className="relative text-[10px] text-gray-400">
                             ●
-                            {showLaterality && entry?.laterality && (
-                              <span className="absolute -bottom-1 -right-1.5 text-[7px] leading-none text-muted-foreground/70">
-                                {lateralityShortLabel(entry.laterality)}
-                              </span>
-                            )}
+                            {showLaterality && entry?.laterality && (() => {
+                              const lat = entry.laterality!.toUpperCase();
+                              if (lat === "BILATERAL") return null;
+                              return (
+                                <span
+                                  className={cn("absolute top-0 h-1 w-1 rounded-full bg-gray-400", lat === "LEFT" ? "-left-1" : "-right-1")}
+                                  title={lat === "LEFT" ? "Left" : "Right"}
+                                />
+                              );
+                            })()}
                           </span>
                         ) : null}
                       </div>
@@ -3953,10 +4016,18 @@ export function HistopathologyView() {
               {specimenRecoveryOverall && specimenRecoveryOverall !== "reversed" && (
                 <span>Recovery: <span className="font-medium">{specimenRecoveryOverall}</span></span>
               )}
-              {labCorrelation.hasData && labCorrelation.topSignal && labCorrelation.topSignal.signal > 0 && (
-                <span title={`Top lab signal: ${labCorrelation.topSignal.test} ${labCorrelation.topSignal.pctChange >= 0 ? "+" : ""}${labCorrelation.topSignal.pctChange.toFixed(0)}% vs control`}>
+              {labCorrelation.hasData && labCorrelation.topSignal && labCorrelation.topSignal.signal >= 2 && (
+                <span
+                  className="cursor-pointer hover:underline"
+                  title={`Top lab signal: ${labCorrelation.topSignal.test} ${labCorrelation.topSignal.pctChange >= 0 ? "+" : ""}${labCorrelation.topSignal.pctChange.toFixed(0)}% vs control — click to view lab correlates`}
+                  onClick={() => {
+                    // Scroll to / expand Lab correlates pane in context panel
+                    const el = document.querySelector('[data-pane="lab-correlates"]');
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                  }}
+                >
                   Lab: <span className="font-mono font-medium">
-                    {labCorrelation.topSignal.signal >= 3 ? "●●●" : labCorrelation.topSignal.signal >= 2 ? "●●" : "●"}{" "}
+                    {labCorrelation.topSignal.signal >= 3 ? "●●●" : "●●"}{" "}
                     {labCorrelation.topSignal.test} {labCorrelation.topSignal.pctChange >= 0 ? "+" : ""}{labCorrelation.topSignal.pctChange.toFixed(0)}%
                   </span>
                 </span>

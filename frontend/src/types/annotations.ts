@@ -127,7 +127,7 @@ export interface PathologyReview {
   originalSeverity?: number;
   peerSeverity?: number;
   // Resolution
-  resolution?: "" | "original_upheld" | "peer_accepted" | "compromise" | "pwg_pending";
+  resolution?: "" | "original_upheld" | "peer_accepted" | "compromise" | "pwg_pending" | "unresolved";
   resolutionNotes?: string;
   // Reviewer identity
   reviewerRole?: "" | "original" | "peer" | "pwg_chair" | "pwg_member";

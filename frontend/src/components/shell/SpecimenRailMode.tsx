@@ -36,12 +36,14 @@ function SpecimenRailItem({
   isSelected,
   onClick,
   reviewStatus,
+  reviewTooltip,
   sortBy,
 }: {
   summary: SpecimenSummary;
   isSelected: boolean;
   onClick: () => void;
   reviewStatus?: SpecimenReviewStatus;
+  reviewTooltip?: string;
   sortBy?: string;
 }) {
   const sevColors = getNeutralHeatColor(summary.maxSeverity);
@@ -68,7 +70,7 @@ function SpecimenRailItem({
         {reviewStatus === "Confirmed" && (
           <span
             className="shrink-0 text-[9px] text-muted-foreground"
-            title="All findings confirmed"
+            title={reviewTooltip}
           >
             {"\u2713"}
           </span>
@@ -76,7 +78,7 @@ function SpecimenRailItem({
         {reviewStatus === "Revised" && (
           <span
             className="shrink-0 text-[9px] text-muted-foreground"
-            title="Findings revised"
+            title={reviewTooltip}
           >
             {"\u007E"}
           </span>
@@ -84,7 +86,7 @@ function SpecimenRailItem({
         {reviewStatus === "Under dispute" && (
           <span
             className="shrink-0 text-[9px] text-muted-foreground"
-            title="Under dispute — unresolved disagreement"
+            title={reviewTooltip}
           >
             !
           </span>
@@ -92,7 +94,7 @@ function SpecimenRailItem({
         {reviewStatus === "PWG pending" && (
           <span
             className="shrink-0 text-[9px] text-muted-foreground"
-            title="PWG review pending"
+            title={reviewTooltip}
           >
             P
           </span>
@@ -100,7 +102,7 @@ function SpecimenRailItem({
         {reviewStatus === "In review" && (
           <span
             className="shrink-0 text-[9px] text-muted-foreground/40"
-            title="In review — partially reviewed"
+            title={reviewTooltip}
           >
             {"\u00B7"}
           </span>
@@ -193,6 +195,18 @@ function SpecimenRailItem({
       </div>
     </button>
   );
+}
+
+function buildReviewTooltip(
+  status: SpecimenReviewStatus,
+  findingNames: string[],
+  reviews: Record<string, PathologyReview> | undefined,
+): string {
+  const total = findingNames.length;
+  const reviewed = reviews
+    ? findingNames.filter((f) => reviews[f] && reviews[f].peerReviewStatus !== "Not Reviewed").length
+    : 0;
+  return `${status} \u2014 ${reviewed}/${total} findings reviewed`;
 }
 
 // ---------------------------------------------------------------------------
@@ -449,6 +463,11 @@ export function SpecimenRailMode() {
                           findingNamesBySpecimen.get(s.specimen) ?? [],
                           pathReviews,
                         )}
+                        reviewTooltip={buildReviewTooltip(
+                          deriveSpecimenReviewStatus(findingNamesBySpecimen.get(s.specimen) ?? [], pathReviews),
+                          findingNamesBySpecimen.get(s.specimen) ?? [],
+                          pathReviews,
+                        )}
                         sortBy={sortBy}
                       />
                     ))}
@@ -463,6 +482,11 @@ export function SpecimenRailMode() {
                 isSelected={selection.specimen === s.specimen}
                 onClick={() => handleSpecimenClick(s.specimen)}
                 reviewStatus={deriveSpecimenReviewStatus(
+                  findingNamesBySpecimen.get(s.specimen) ?? [],
+                  pathReviews,
+                )}
+                reviewTooltip={buildReviewTooltip(
+                  deriveSpecimenReviewStatus(findingNamesBySpecimen.get(s.specimen) ?? [], pathReviews),
                   findingNamesBySpecimen.get(s.specimen) ?? [],
                   pathReviews,
                 )}

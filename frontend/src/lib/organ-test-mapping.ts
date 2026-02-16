@@ -8,20 +8,21 @@
 
 /** Specimen (uppercase) → relevant lab test codes. */
 export const ORGAN_RELEVANT_TESTS: Record<string, string[]> = {
-  LIVER: ["ALT", "AST", "ALP", "ALB", "BILI", "GGT", "TBIL", "TP", "CHOL", "TRIG"],
-  KIDNEY: ["BUN", "CREA", "TP", "ALB", "PHOS", "CA", "K", "NA", "CL"],
-  "BONE MARROW": ["WBC", "RBC", "HGB", "HCT", "PLT", "NEUT", "LYMPH", "MONO", "EOS", "BASO", "RETIC"],
-  SPLEEN: ["WBC", "RBC", "HGB", "HCT", "PLT", "NEUT", "LYMPH"],
+  LIVER: ["ALT", "AST", "ALP", "GGT", "TBIL", "DBIL", "ALB", "TP", "CHOL", "TRIG", "GLUC"],
+  KIDNEY: ["BUN", "CREA", "TP", "ALB", "NA", "K", "CL", "CA", "PHOS", "UA"],
+  "BONE MARROW": ["WBC", "RBC", "HGB", "HCT", "PLT", "RETIC", "MCV", "MCH", "MCHC", "NEUT", "LYMPH", "MONO", "EOS", "BASO"],
+  SPLEEN: ["WBC", "RBC", "HGB", "HCT", "PLT", "RETIC", "NEUT", "LYMPH"],
   HEART: ["CK", "LDH", "AST", "TROP"],
-  ADRENAL: ["NA", "K", "CL", "GLUC", "CHOL"],
-  "ADRENAL GLAND": ["NA", "K", "CL", "GLUC", "CHOL"],
+  ADRENAL: ["NA", "K", "GLUC", "CHOL", "CORT"],
+  "ADRENAL GLAND": ["NA", "K", "GLUC", "CHOL", "CORT"],
   THYROID: ["T3", "T4", "TSH", "CHOL", "TRIG"],
   "THYROID GLAND": ["T3", "T4", "TSH", "CHOL", "TRIG"],
   PANCREAS: ["GLUC", "AMY", "LIP", "INS"],
+  STOMACH: ["TP", "ALB"],
   TESTIS: ["TEST", "LH", "FSH"],
   TESTES: ["TEST", "LH", "FSH"],
-  OVARY: ["ESTR", "LH", "FSH", "PROG"],
-  OVARIES: ["ESTR", "LH", "FSH", "PROG"],
+  OVARY: ["ESTRADIOL", "LH", "FSH", "PROG"],
+  OVARIES: ["ESTRADIOL", "LH", "FSH", "PROG"],
 };
 
 /** Finding (lowercase) → relevant lab test codes for targeted correlation. */
