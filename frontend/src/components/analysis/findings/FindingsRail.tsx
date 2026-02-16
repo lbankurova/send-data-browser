@@ -41,7 +41,7 @@ import type {
 import { formatPValue, titleCase, getDomainBadgeColor, getDirectionColor } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FilterSearch, FilterSelect } from "@/components/ui/FilterBar";
+import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
 
 // ─── Props ─────────────────────────────────────────────────
 
@@ -78,6 +78,7 @@ export function FindingsRail({
     search: "",
     trOnly: false,
     sigOnly: false,
+    groupFilter: null,
   });
   const [sortMode, setSortMode] = useState<SortMode>("signal");
 
@@ -88,7 +89,7 @@ export function FindingsRail({
       prevStudyRef.current = studyId;
       setGrouping("organ");
       setExpanded(new Set());
-      setRailFilters({ search: "", trOnly: false, sigOnly: false });
+      setRailFilters({ search: "", trOnly: false, sigOnly: false, groupFilter: null });
       setSortMode("signal");
     }
   }, [studyId]);
@@ -104,6 +105,27 @@ export function FindingsRail({
     [endpointSummaries],
   );
 
+  // Dynamic group filter options — derived from unique values in the current grouping dimension
+  const groupFilterOptions = useMemo(() => {
+    const seen = new Map<string, number>();
+    for (const ep of endpointsWithSignal) {
+      const key =
+        grouping === "organ" ? ep.organ_system
+        : grouping === "domain" ? ep.domain
+        : ep.pattern;
+      seen.set(key, (seen.get(key) ?? 0) + 1);
+    }
+    // Sort by count descending
+    const entries = [...seen.entries()].sort((a, b) => b[1] - a[1]);
+    return entries.map(([key]) => ({
+      key,
+      label:
+        grouping === "organ" ? titleCase(key)
+        : grouping === "domain" ? getDomainFullLabel(key)
+        : getPatternLabel(key),
+    }));
+  }, [endpointsWithSignal, grouping]);
+
   // Signal summary — always full dataset, unfiltered
   const signalSummary = useMemo<SignalSummaryStats>(
     () => computeSignalSummary(endpointSummaries),
@@ -112,8 +134,8 @@ export function FindingsRail({
 
   // Apply rail filters → then group → then sort within each card
   const filteredEndpoints = useMemo(
-    () => filterEndpoints(endpointsWithSignal, railFilters),
-    [endpointsWithSignal, railFilters],
+    () => filterEndpoints(endpointsWithSignal, railFilters, grouping),
+    [endpointsWithSignal, railFilters, grouping],
   );
 
   const cards = useMemo(
@@ -181,6 +203,7 @@ export function FindingsRail({
   const handleGroupingChange = useCallback((mode: GroupingMode) => {
     setGrouping(mode);
     setExpanded(new Set());
+    setRailFilters((prev) => ({ ...prev, groupFilter: null }));
     onGroupScopeChange?.(null);
     onEndpointSelect?.(null);
     onGroupingChange?.(mode);
@@ -281,6 +304,8 @@ export function FindingsRail({
       <RailFiltersSection
         filters={railFilters}
         sortMode={sortMode}
+        grouping={grouping}
+        groupFilterOptions={groupFilterOptions}
         onFiltersChange={setRailFilters}
         onSortChange={setSortMode}
       />
@@ -436,14 +461,24 @@ function GroupingToggle({
 
 // ─── Rail Filters ──────────────────────────────────────────
 
+const GROUPING_ALL_LABELS: Record<GroupingMode, string> = {
+  organ: "All organs",
+  domain: "All domains",
+  pattern: "All patterns",
+};
+
 function RailFiltersSection({
   filters,
   sortMode,
+  grouping,
+  groupFilterOptions,
   onFiltersChange,
   onSortChange,
 }: {
   filters: RailFilters;
   sortMode: SortMode;
+  grouping: GroupingMode;
+  groupFilterOptions: { key: string; label: string }[];
   onFiltersChange: (f: RailFilters) => void;
   onSortChange: (s: SortMode) => void;
 }) {
@@ -468,8 +503,14 @@ function RailFiltersSection({
         </FilterSelect>
       </div>
 
-      {/* Row 2: Quick toggles */}
-      <div className="flex items-center gap-3">
+      {/* Row 2: Group filter + quick toggles */}
+      <div className="flex items-center gap-2">
+        <FilterMultiSelect
+          options={groupFilterOptions}
+          selected={filters.groupFilter}
+          onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
+          allLabel={GROUPING_ALL_LABELS[grouping]}
+        />
         <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
           <input
             type="checkbox"
