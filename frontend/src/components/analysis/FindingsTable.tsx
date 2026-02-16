@@ -167,7 +167,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold text-muted-foreground hover:bg-accent/50"
                   style={colStyle(header.id)}
                   onDoubleClick={header.column.getToggleSortingHandler()}
                 >
