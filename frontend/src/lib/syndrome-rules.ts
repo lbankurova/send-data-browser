@@ -4,6 +4,7 @@
  */
 
 import type { LesionSeverityRow, SignalSummaryRow } from "@/types/analysis-views";
+import type { StudyContext } from "@/types/study-context";
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -42,6 +43,14 @@ export interface SyndromeMatch {
   relatedEndpointMatches: string[];
   confidenceBoost: boolean;
   exclusionWarning: string | null;
+  /** IMP-06a: Which sex the syndrome was detected in */
+  detectedInSex: "M" | "F" | "BOTH";
+  /** IMP-06a: Restrict display to this sex (null = both) */
+  sexRestriction: "M" | "F" | null;
+  /** IMP-06b: Strain context note (e.g., "Common spontaneous finding in SD males") */
+  strainNote: string | null;
+  /** IMP-06b: Confidence adjustment for strain-expected findings (-0.3, -0.2, etc.) */
+  confidenceAdjustment: number;
 }
 
 // ── Hardcoded ruleset ────────────────────────────────────────
@@ -240,6 +249,51 @@ export const SYNDROME_RULES: SyndromeRule[] = [
     related_endpoints: [],
     interpretation_note: "Foamy/lamellar vacuolation across multiple organs simultaneously suggests phospholipidosis \u2014 a class effect of cationic amphiphilic drugs.",
   },
+  // IMP-06c: New syndromes
+  {
+    syndrome_id: "spontaneous_cardiomyopathy",
+    syndrome_name: "Spontaneous Cardiomyopathy",
+    organ: ["HEART"],
+    sex: "M",
+    required_findings: ["cardiomyopathy"],
+    supporting_findings: ["myocardial degeneration", "fibrosis", "mononuclear cell infiltrate"],
+    min_supporting: 0,
+    exclusion_findings: ["necrosis", "myocardial necrosis"],
+    max_severity_for_required: null,
+    related_organ_findings: [],
+    related_endpoints: [],
+    interpretation_note: "Spontaneous cardiomyopathy is a common age-related finding in male SD rats. If severity is minimal-mild and without necrosis, consider background origin before attributing to treatment.",
+  },
+  {
+    syndrome_id: "gi_mucosal_toxicity",
+    syndrome_name: "GI Mucosal Toxicity",
+    organ: ["DUODENUM", "JEJUNUM", "ILEUM", "COLON"],
+    sex: "both",
+    required_findings: ["villous atrophy", "crypt hyperplasia", "erosion"],
+    supporting_findings: ["inflammation", "necrosis", "degeneration", "hemorrhage"],
+    min_supporting: 1,
+    exclusion_findings: [],
+    max_severity_for_required: null,
+    related_organ_findings: [
+      { organ: "STOMACH", findings: ["erosion", "ulceration", "inflammation"] },
+    ],
+    related_endpoints: [],
+    interpretation_note: "Villous atrophy with crypt hyperplasia and mucosal erosion across GI segments is a hallmark of cytotoxic compound effects.",
+  },
+  {
+    syndrome_id: "injection_site_reaction",
+    syndrome_name: "Injection Site Reaction",
+    organ: ["INJECTION SITE", "SKIN"],
+    sex: "both",
+    required_findings: ["inflammation", "necrosis"],
+    supporting_findings: ["fibrosis", "hemorrhage", "edema", "granuloma"],
+    min_supporting: 0,
+    exclusion_findings: [],
+    max_severity_for_required: null,
+    related_organ_findings: [],
+    related_endpoints: [],
+    interpretation_note: "Injection site inflammation/necrosis is route-dependent. Expected for parenteral (SC/IM/IV) routes. If study uses oral gavage, this is an unexpected finding.",
+  },
 ];
 
 // ── Finding name matching ────────────────────────────────────
@@ -267,15 +321,54 @@ export function findingMatches(studyFinding: string, ruleFinding: string): boole
   return false;
 }
 
+// ── Strain-specific syndrome suppression (IMP-06b) ───────────
+
+interface StrainSuppression {
+  syndromeId: string;
+  strains: string[];
+  sex: "M" | "F" | null;
+  confidenceAdjustment: number;
+  note: string;
+}
+
+const STRAIN_SUPPRESSIONS: StrainSuppression[] = [
+  {
+    syndromeId: "cpn",
+    strains: ["SPRAGUE-DAWLEY", "SD"],
+    sex: "M",
+    confidenceAdjustment: -0.3,
+    note: "CPN is a common spontaneous finding in SD males (15-30% background)",
+  },
+  {
+    syndromeId: "spontaneous_cardiomyopathy",
+    strains: ["SPRAGUE-DAWLEY", "SD"],
+    sex: "M",
+    confidenceAdjustment: -0.3,
+    note: "Spontaneous cardiomyopathy is common in SD males (8-40% background)",
+  },
+  {
+    syndromeId: "nephrotoxicity_tubular",
+    strains: ["SPRAGUE-DAWLEY", "SD"],
+    sex: null,
+    confidenceAdjustment: -0.2,
+    note: "Renal mineralization/tubular changes are common spontaneous findings in SD rats",
+  },
+];
+
 // ── Detection algorithm ──────────────────────────────────────
 
 export function detectSyndromes(
   studyData: Map<string, LesionSeverityRow[]>,
   signalData: SignalSummaryRow[] | null,
+  studyContext?: StudyContext | null,
 ): SyndromeMatch[] {
   const matches: SyndromeMatch[] = [];
 
   for (const rule of SYNDROME_RULES) {
+    // IMP-06a: Determine sex filter based on rule
+    const sexRestriction: "M" | "F" | null =
+      rule.sex === "M" ? "M" : rule.sex === "F" ? "F" : null;
+
     for (const ruleOrgan of rule.organ) {
       // Find study organs that match this rule organ
       const matchingOrgans = [...studyData.keys()].filter((studyOrgan) =>
@@ -284,7 +377,14 @@ export function detectSyndromes(
       );
 
       for (const organKey of matchingOrgans) {
-        const organRows = studyData.get(organKey)!;
+        const allOrganRows = studyData.get(organKey)!;
+
+        // IMP-06a: Sex-filter rows for sex-restricted syndromes
+        const organRows = sexRestriction
+          ? allOrganRows.filter((r) => r.sex === sexRestriction)
+          : allOrganRows;
+        if (organRows.length === 0) continue;
+
         const organFindings = [...new Set(organRows.map((r) => r.finding))];
 
         // Check required findings
@@ -383,10 +483,39 @@ export function detectSyndromes(
               .join(", ")} also present \u2014 evaluate for progression`
           : null;
 
+        // IMP-06a: Determine detected sex
+        const detectedInSex: "M" | "F" | "BOTH" = sexRestriction ?? "BOTH";
+
+        // IMP-06b: Strain-dependent suppression
+        let strainNote: string | null = null;
+        let confidenceAdjustment = 0;
+        if (studyContext) {
+          const strain = studyContext.strain.toUpperCase();
+          const suppression = STRAIN_SUPPRESSIONS.find(
+            (s) =>
+              s.syndromeId === rule.syndrome_id &&
+              s.strains.some((st) => strain.includes(st)) &&
+              (s.sex === null || s.sex === detectedInSex),
+          );
+          if (suppression) {
+            strainNote = suppression.note;
+            confidenceAdjustment = suppression.confidenceAdjustment;
+          }
+
+          // IMP-06c: Suppress injection site reaction for oral routes
+          if (rule.syndrome_id === "injection_site_reaction") {
+            const route = studyContext.route.toUpperCase();
+            if (route.includes("ORAL") || route.includes("GAVAGE") || route.includes("DIET")) {
+              strainNote = "Unexpected: study uses oral route — injection site findings warrant investigation";
+              confidenceAdjustment = 0.2; // boost confidence — this is unusual
+            }
+          }
+        }
+
         matches.push({
           syndrome: rule,
           organ: organKey,
-          sex: "Combined",
+          sex: detectedInSex === "BOTH" ? "Combined" : detectedInSex,
           requiredFinding: requiredMatch,
           supportingFindings: supportingMatches,
           concordantGroups: concordant.map(String),
@@ -394,6 +523,10 @@ export function detectSyndromes(
           relatedEndpointMatches,
           confidenceBoost,
           exclusionWarning,
+          detectedInSex,
+          sexRestriction,
+          strainNote,
+          confidenceAdjustment,
         });
       }
     }
