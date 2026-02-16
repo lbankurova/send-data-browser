@@ -37,6 +37,8 @@ export interface PatternClassification {
   confidenceFactors: string[];
   alerts: PatternAlert[];
   syndrome: SyndromeMatch | null;
+  /** For SINGLE_GROUP: true when the affected group is the highest dose */
+  isHighestDoseGroup?: boolean;
 }
 
 export interface DoseGroupData {
@@ -67,10 +69,19 @@ const PATTERN_BASE: Record<PatternType, number> = {
   MONOTONIC_UP: 2.5,
   THRESHOLD: 2.0,
   NON_MONOTONIC: 1.5,
-  SINGLE_GROUP: 1.0,
-  MONOTONIC_DOWN: 0.5,
+  SINGLE_GROUP: 0.75,    // IMP-07: lowered from 1.0 (often incidental)
+  MONOTONIC_DOWN: 0.5,   // histopath default; domain-aware in patternWeight
   CONTROL_ONLY: 0,
   NO_PATTERN: 0,
+};
+
+/** Domain-specific MONOTONIC_DOWN weights (IMP-07) */
+const MONOTONIC_DOWN_BY_DOMAIN: Record<string, number> = {
+  MI: 0.5,    // Histopath incidence — decreasing lesion rarely adverse
+  OM: 2.0,    // Organ weight — dose-dependent decrease is classic tox
+  LB: 1.5,    // Clinical chemistry — decreases can be significant
+  BW: 2.0,    // Body weight — dose-dependent decrease is adverse
+  MA: 0.5,    // Macroscopic — similar to histopath
 };
 
 const CONF_MULT: Record<ConfidenceLevel, number> = {
@@ -170,12 +181,15 @@ export function classifyPattern(
   }
 
   if (treatedActive.length === 1) {
-    return makeResult(
+    const isHighest = treatedActive[0].dose_level === treated[treated.length - 1].dose_level;
+    const result = makeResult(
       "SINGLE_GROUP",
       treatedActive[0].dose_label,
       groups,
       _trendP,
     );
+    result.isHighestDoseGroup = isHighest;
+    return result;
   }
 
   // Baseline-awareness gate
@@ -236,12 +250,14 @@ export function classifyPattern(
         _trendP,
       );
     }
-    return makeResult(
+    const peakResult = makeResult(
       "SINGLE_GROUP",
       treated[peakIdx].dose_label,
       groups,
       _trendP,
     );
+    peakResult.isHighestDoseGroup = peakIdx === treated.length - 1;
+    return peakResult;
   }
 
   return makeResult("NO_PATTERN", null, groups, _trendP);
@@ -467,8 +483,21 @@ export function patternWeight(
   pattern: PatternType,
   confidence: ConfidenceLevel,
   syndrome: SyndromeMatch | null,
+  options?: { domain?: string; isHighestDoseGroup?: boolean },
 ): { pw: number; syndromeBoost: number } {
-  const pw = PATTERN_BASE[pattern] * CONF_MULT[confidence];
+  let base = PATTERN_BASE[pattern];
+
+  // IMP-07: Domain-aware MONOTONIC_DOWN weight
+  if (pattern === "MONOTONIC_DOWN" && options?.domain) {
+    base = MONOTONIC_DOWN_BY_DOMAIN[options.domain] ?? 0.5;
+  }
+
+  // IMP-07: SINGLE_GROUP at highest dose → 1.5 (plausible threshold effect)
+  if (pattern === "SINGLE_GROUP" && options?.isHighestDoseGroup) {
+    base = 1.5;
+  }
+
+  const pw = base * CONF_MULT[confidence];
   const syndromeBoost = syndrome ? 1.0 : 0;
   return { pw, syndromeBoost };
 }

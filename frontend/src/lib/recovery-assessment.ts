@@ -315,7 +315,7 @@ export function buildRecoveryTooltip(
       : `${recoveryDays} day${recoveryDays !== 1 ? "s" : ""}`;
     lines.push(`  Recovery period: ${label}`);
   }
-  if (findingNature && findingNature.nature !== "other") {
+  if (findingNature && findingNature.nature !== "unknown") {
     lines.push(`  Finding type: ${findingNature.nature} (${reversibilityLabel(findingNature)})`);
   }
   return lines.join("\n");

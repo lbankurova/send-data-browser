@@ -259,6 +259,7 @@ export function deriveSpecimenSummaries(
       specimenPattern.pattern,
       specimenPattern.confidence,
       specimenPattern.syndrome,
+      { domain: "MI", isHighestDoseGroup: specimenPattern.isHighestDoseGroup },
     );
 
     // Clinical-aware signal score
@@ -1455,7 +1456,7 @@ function OverviewTab({
                   (a) => a.finding === info.row.original.finding,
                 );
                 const nature = classifyFindingNature(info.row.original.finding);
-                const tip = buildRecoveryTooltip(recAssessment, subjData?.recovery_days, nature.nature !== "other" ? nature : null);
+                const tip = buildRecoveryTooltip(recAssessment, subjData?.recovery_days, nature.nature !== "unknown" ? nature : null);
                 // v3: not_examined → "∅ not examined" in font-medium
                 if (v === "not_examined")
                   return <span className="text-[9px] font-medium text-foreground/70" title={tip}>{"\u2205"} not examined</span>;

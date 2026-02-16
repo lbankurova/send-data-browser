@@ -297,9 +297,10 @@ def build_noael_summary(findings: list[dict], dose_groups: list[dict]) -> list[d
             if loael_level > 0:
                 noael_level = loael_level - 1
 
-        # Count adverse findings at LOAEL
+        # Count adverse findings at LOAEL and collect derivation evidence (IMP-10)
         n_adverse_at_loael = 0
         adverse_domains = set()
+        adverse_at_loael = []   # (IMP-10) for noael_derivation
         if loael_level is not None:
             for f in sex_findings:
                 if f.get("severity") == "adverse":
@@ -309,11 +310,31 @@ def build_noael_summary(findings: list[dict], dose_groups: list[dict]) -> list[d
                             if p is not None and p < 0.05:
                                 n_adverse_at_loael += 1
                                 adverse_domains.add(f.get("domain", ""))
+                                adverse_at_loael.append({
+                                    "finding": f.get("finding", f.get("test_code", "unknown")),
+                                    "specimen": f.get("specimen", f.get("organ_system", "")),
+                                    "domain": f.get("domain", ""),
+                                    "p_value": round(p, 5),
+                                })
 
         # Compute NOAEL confidence score
         confidence = _compute_noael_confidence(
             sex_filter, sex_findings, findings, noael_level, n_adverse_at_loael,
         )
+
+        # Build NOAEL derivation trace (IMP-10)
+        noael_derivation = {
+            "method": "highest_dose_no_adverse" if noael_level is not None else "not_established",
+            "loael_dose_level": loael_level,
+            "loael_label": dose_label_map.get(loael_level, "N/A") if loael_level is not None else None,
+            "adverse_findings_at_loael": adverse_at_loael,
+            "n_adverse_at_loael": n_adverse_at_loael,
+            "confidence": round(confidence, 2),
+            "confidence_penalties": [],
+        }
+        if n_adverse_at_loael <= 1:
+            noael_derivation["confidence_penalties"].append("single_endpoint")
+        # Note: sex consistency penalty checked in _compute_noael_confidence
 
         rows.append({
             "sex": sex_filter,
@@ -326,6 +347,7 @@ def build_noael_summary(findings: list[dict], dose_groups: list[dict]) -> list[d
             "n_adverse_at_loael": n_adverse_at_loael,
             "adverse_domains_at_loael": sorted(adverse_domains),
             "noael_confidence": confidence,
+            "noael_derivation": noael_derivation,
         })
 
     return rows

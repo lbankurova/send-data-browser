@@ -217,7 +217,7 @@ def evaluate_rules(
                 **organ_ctx, "endpoint_labels": ", ".join(labels)
             }, params={"endpoint_labels": labels}))
 
-    # NOAEL rules (R14, R15)
+    # NOAEL rules (R14, R15) — with derivation trace (IMP-10)
     for noael_row in noael_summary:
         sex = noael_row["sex"]
         if noael_row["noael_dose_level"] is not None:
@@ -225,6 +225,7 @@ def evaluate_rules(
                 "noael_label": noael_row["noael_label"],
                 "noael_dose_value": noael_row.get("noael_dose_value", ""),
                 "noael_dose_unit": noael_row.get("noael_dose_unit", ""),
+                "noael_derivation": noael_row.get("noael_derivation"),
             }
             results.append(_emit_study(RULES[13], {
                 "sex": sex,
@@ -233,7 +234,10 @@ def evaluate_rules(
                 "noael_dose_unit": noael_row.get("noael_dose_unit", ""),
             }, params=noael_params))
         else:
-            results.append(_emit_study(RULES[14], {"sex": sex}))
+            noael_params_ne = {
+                "noael_derivation": noael_row.get("noael_derivation"),
+            }
+            results.append(_emit_study(RULES[14], {"sex": sex}, params=noael_params_ne))
 
     # R17: Mortality signal (DS domain)
     for finding in findings:

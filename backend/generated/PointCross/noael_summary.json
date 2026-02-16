@@ -12,7 +12,35 @@
       "LB",
       "MI"
     ],
-    "noael_confidence": 0.8
+    "noael_confidence": 0.8,
+    "noael_derivation": {
+      "method": "highest_dose_no_adverse",
+      "loael_dose_level": 1,
+      "loael_label": "Group 2,2 mg/kg PCDRUG",
+      "adverse_findings_at_loael": [
+        {
+          "finding": "Neutrophils",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00026
+        },
+        {
+          "finding": "Leukocytes",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01772
+        },
+        {
+          "finding": "VACUOLIZATION",
+          "specimen": "GLAND, ADRENAL",
+          "domain": "MI",
+          "p_value": 0.01772
+        }
+      ],
+      "n_adverse_at_loael": 3,
+      "confidence": 0.8,
+      "confidence_penalties": []
+    }
   },
   {
     "sex": "F",
@@ -28,7 +56,53 @@
       "MI",
       "OM"
     ],
-    "noael_confidence": 0.8
+    "noael_confidence": 0.8,
+    "noael_derivation": {
+      "method": "highest_dose_no_adverse",
+      "loael_dose_level": 1,
+      "loael_label": "Group 2,2 mg/kg PCDRUG",
+      "adverse_findings_at_loael": [
+        {
+          "finding": "Glucose",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01586
+        },
+        {
+          "finding": "Prothrombin Time",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 1e-05
+        },
+        {
+          "finding": "Reticulocytes",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00321
+        },
+        {
+          "finding": "GLAND, PITUITARY (WEIGHT)",
+          "specimen": "GLAND, PITUITARY",
+          "domain": "OM",
+          "p_value": 0.04312
+        },
+        {
+          "finding": "SPLEEN (WEIGHT)",
+          "specimen": "SPLEEN",
+          "domain": "OM",
+          "p_value": 0.01797
+        },
+        {
+          "finding": "VACUOLIZATION",
+          "specimen": "GLAND, ADRENAL",
+          "domain": "MI",
+          "p_value": 0.01772
+        }
+      ],
+      "n_adverse_at_loael": 6,
+      "confidence": 0.8,
+      "confidence_penalties": []
+    }
   },
   {
     "sex": "Combined",
@@ -44,6 +118,70 @@
       "MI",
       "OM"
     ],
-    "noael_confidence": 0.8
+    "noael_confidence": 0.8,
+    "noael_derivation": {
+      "method": "highest_dose_no_adverse",
+      "loael_dose_level": 1,
+      "loael_label": "Group 2,2 mg/kg PCDRUG",
+      "adverse_findings_at_loael": [
+        {
+          "finding": "Glucose",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01586
+        },
+        {
+          "finding": "Neutrophils",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00026
+        },
+        {
+          "finding": "Prothrombin Time",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 1e-05
+        },
+        {
+          "finding": "Reticulocytes",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00321
+        },
+        {
+          "finding": "Leukocytes",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01772
+        },
+        {
+          "finding": "GLAND, PITUITARY (WEIGHT)",
+          "specimen": "GLAND, PITUITARY",
+          "domain": "OM",
+          "p_value": 0.04312
+        },
+        {
+          "finding": "SPLEEN (WEIGHT)",
+          "specimen": "SPLEEN",
+          "domain": "OM",
+          "p_value": 0.01797
+        },
+        {
+          "finding": "VACUOLIZATION",
+          "specimen": "GLAND, ADRENAL",
+          "domain": "MI",
+          "p_value": 0.01772
+        },
+        {
+          "finding": "VACUOLIZATION",
+          "specimen": "GLAND, ADRENAL",
+          "domain": "MI",
+          "p_value": 0.01772
+        }
+      ],
+      "n_adverse_at_loael": 9,
+      "confidence": 0.8,
+      "confidence_penalties": []
+    }
   }
 ]
