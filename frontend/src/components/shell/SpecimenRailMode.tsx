@@ -59,11 +59,10 @@ function SpecimenRailItem({
         isSelected ? rail.itemSelected : rail.itemIdle,
       )}
       onClick={onClick}
-      title={scoreTooltip}
     >
       {/* Line 1: specimen name + quantitative indicators */}
       <div className="flex items-center">
-        <span className="min-w-0 flex-1 truncate text-xs font-semibold">
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold" title={scoreTooltip}>
           {summary.specimen.replace(/_/g, " ")}
         </span>
         {reviewStatus === "Confirmed" && (
