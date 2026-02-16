@@ -3795,7 +3795,8 @@ export function HistopathologyView() {
       const trend = trendData?.find(
         (t) => t.finding === finding && t.specimen === selectedSpecimen,
       );
-      const findingPattern = classifyFindingPattern(specimenData, finding, trend?.ca_trend_p ?? null, null, false);
+      const findingLat = subjData?.subjects ? aggregateFindingLaterality(subjData.subjects, finding) : null;
+      const findingPattern = classifyFindingPattern(specimenData, finding, trend?.ca_trend_p ?? null, null, false, findingLat);
       const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
       const findingNature = classifyFindingNature(finding);
 

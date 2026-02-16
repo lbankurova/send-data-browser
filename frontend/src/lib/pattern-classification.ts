@@ -525,6 +525,7 @@ export function classifyFindingPattern(
   trendP: number | null,
   syndromeMatch: SyndromeMatch | null,
   organWeightSig: boolean,
+  laterality?: LateralityAggregate | null,
 ): PatternClassification {
   const groups = buildDoseGroupData(specimenRows, finding);
   if (groups.length < 2) {
@@ -546,6 +547,7 @@ export function classifyFindingPattern(
     trendP,
     syndromeMatch,
     organWeightSig,
+    laterality,
   );
   const alerts = computeAlerts(groups, result.pattern, specimenRows);
 
@@ -565,6 +567,7 @@ export function classifySpecimenPattern(
   trendData: FindingDoseTrend[] | null,
   syndromeMatches: SyndromeMatch[],
   signalData: SignalSummaryRow[] | null,
+  laterality?: LateralityAggregate | null,
 ): PatternClassification {
   const findings = [...new Set(specimenData.map((r) => r.finding))];
   if (findings.length === 0) {
@@ -620,6 +623,7 @@ export function classifySpecimenPattern(
       trendP,
       syndrome,
       organWeightSig,
+      laterality,
     );
     const rank = PATTERN_RANK[result.pattern];
     if (rank > worstRank) {
@@ -661,6 +665,7 @@ export function classifySpecimenPattern(
     effectiveTrendP,
     syndrome,
     organWeightSig,
+    laterality,
   );
 
   // Compute specimen-level alerts
