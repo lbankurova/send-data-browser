@@ -313,7 +313,7 @@ function HistopathologyContextPanelWrapper({ studyId }: { studyId: string }) {
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: pathReviews } = useAnnotations<PathologyReview>(studyId, "pathology-reviews");
 
-  const sel = selection?._view === "histopathology"
+  const sel = selection?._view === "histopathology" && (selection as { specimen?: string }).specimen
     ? selection as { specimen: string; finding?: string; sex?: string }
     : null;
 
