@@ -48,9 +48,13 @@ function signalDots(signal: number): string {
 function LabCorrelatesPane({
   correlations,
   isLoading,
+  specimen,
+  finding,
 }: {
   correlations: LabCorrelation[];
   isLoading: boolean;
+  specimen?: string;
+  finding?: string;
 }) {
   if (isLoading) {
     return <p className="text-[11px] text-muted-foreground">Loading lab data...</p>;
@@ -59,39 +63,65 @@ function LabCorrelatesPane({
     return <p className="text-[11px] text-muted-foreground">No clinical pathology data available.</p>;
   }
 
+  const organLabel = specimen?.replace(/_/g, " ") ?? "";
+
+  // Finding-level: compact inline format per spec §4
+  if (finding) {
+    return (
+      <div className="space-y-0.5">
+        <p className="text-[10px] text-muted-foreground">Most relevant for {finding}</p>
+        {correlations.filter((c) => c.signal > 0 || c.isRelevant).slice(0, 8).map((c) => (
+          <div key={c.test} className="text-[10px]">
+            <span className={c.isRelevant ? "font-medium text-foreground" : "text-muted-foreground"}>
+              {c.test}: {c.pctChange >= 0 ? "+" : ""}{c.pctChange.toFixed(0)}% at high dose ({c.controlMean.toFixed(0)} {"\u2192"} {c.highDoseMean.toFixed(0)} {c.unit})
+            </span>
+            {c.signal > 0 && <span className="ml-1 font-mono text-[9px] text-muted-foreground">{signalDots(c.signal)}</span>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Specimen-level: full table format per spec §3
   return (
     <div className="space-y-0.5">
+      {organLabel && <p className="text-[10px] text-muted-foreground">Organ-relevant tests for {organLabel}</p>}
       {/* Header row */}
       <div className="flex items-center gap-1 text-[9px] font-medium text-muted-foreground/60">
         <span className="w-12">Test</span>
-        <span className="w-14 text-right">Control</span>
+        <span className="w-20 text-right">Control</span>
         <span className="w-14 text-right">High dose</span>
-        <span className="w-14 text-right">Change</span>
+        <span className="w-16 text-right">Change</span>
         <span className="w-8 text-center">Signal</span>
       </div>
       {correlations.map((c) => (
         <div
           key={c.test}
           className={`flex items-center gap-1 rounded px-0.5 py-0.5 text-[10px] ${c.isRelevant ? "bg-muted/20" : ""}`}
-          title={`${c.test}: control ${c.controlMean.toFixed(2)} ± ${c.controlSD.toFixed(2)}, high dose ${c.highDoseMean.toFixed(2)} (${c.pctChange >= 0 ? "+" : ""}${c.pctChange.toFixed(0)}%)`}
+          title={`${c.test}: control ${c.controlMean.toFixed(2)} \u00B1 ${c.controlSD.toFixed(2)}, high dose ${c.highDoseMean.toFixed(2)} (${c.pctChange >= 0 ? "+" : ""}${c.pctChange.toFixed(0)}%)`}
         >
           <span className={`w-12 truncate font-mono text-[9px] ${c.isRelevant ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
             {c.test}
           </span>
-          <span className="w-14 text-right font-mono text-[9px] text-muted-foreground">
-            {c.controlMean.toFixed(1)}
+          <span className="w-20 text-right font-mono text-[9px] text-muted-foreground">
+            {c.controlMean.toFixed(1)} {"\u00B1"} {c.controlSD.toFixed(1)}
           </span>
           <span className="w-14 text-right font-mono text-[9px] text-muted-foreground">
             {c.highDoseMean.toFixed(1)}
           </span>
-          <span className={`w-14 text-right font-mono text-[9px] ${c.signal > 0 ? "text-foreground" : "text-muted-foreground/60"}`}>
-            {c.direction === "up" ? "+" : ""}{c.pctChange.toFixed(0)}%
+          <span className={`w-16 text-right font-mono text-[9px] ${c.signal > 0 ? "text-foreground" : "text-muted-foreground/60"}`}>
+            {c.direction === "up" ? "+" : ""}{c.pctChange.toFixed(0)}%{c.signal > 0 ? (c.direction === "up" ? " \u2191" : " \u2193") : ""}
           </span>
           <span className="w-8 text-center font-mono text-[9px] text-muted-foreground">
             {signalDots(c.signal)}
           </span>
         </div>
       ))}
+      {organLabel && (
+        <p className="mt-1 text-[9px] text-muted-foreground/50">
+          {"\u24D8"} Tests from CL/LB domains mapped to {organLabel}.
+        </p>
+      )}
     </div>
   );
 }
@@ -481,10 +511,14 @@ function SpecimenOverviewPane({
       total.bilateral += pf.agg.bilateral;
       total.total += pf.agg.total;
     }
-    // Predominantly unilateral?
+    // Predominantly unilateral? Spec: >70% same laterality and not bilateral
     const unilateral = total.left + total.right;
-    const isUnilateral = unilateral > total.bilateral * 2;
-    return { perFinding, total, isUnilateral };
+    const affected = unilateral + total.bilateral;
+    const isUnilateral = affected > 0 && unilateral / affected >= 0.7;
+    // Determine dominant side for display
+    const dominantSide = total.left >= total.right ? "left" : "right";
+    const dominantCount = Math.max(total.left, total.right);
+    return { perFinding, total, isUnilateral, dominantSide, dominantCount, affected };
   }, [specimen, subjData]);
 
   // Lab correlation (specimen-level)
@@ -693,26 +727,33 @@ function SpecimenOverviewPane({
 
       {/* Lab correlates (specimen-level) */}
       {(labCorrelation.hasData || labCorrelation.isLoading) && (
-        <CollapsiblePane title="Lab correlates" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <LabCorrelatesPane correlations={labCorrelation.correlations} isLoading={labCorrelation.isLoading} />
-        </CollapsiblePane>
+        <div data-pane="lab-correlates">
+          <CollapsiblePane title="Lab correlates" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+            <LabCorrelatesPane correlations={labCorrelation.correlations} isLoading={labCorrelation.isLoading} specimen={specimen} />
+          </CollapsiblePane>
+        </div>
       )}
 
       {/* Laterality note (paired organs only) */}
       {lateralityInfo && (
         <CollapsiblePane title="Laterality" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-1 text-[11px]">
-            <p className="text-muted-foreground">
-              Laterality: {lateralitySummary(lateralityInfo.total)}
-              {lateralityInfo.isUnilateral && (
-                <span className="ml-1 text-foreground/70"> — predominantly unilateral</span>
-              )}
+          <div className="space-y-1">
+            <p className="text-[10px] text-muted-foreground italic">
+              Laterality: Predominantly {lateralityInfo.isUnilateral
+                ? `${lateralityInfo.dominantSide}-sided (${lateralityInfo.dominantCount}/${lateralityInfo.affected} affected subjects)`
+                : `${lateralitySummary(lateralityInfo.total)}`
+              }
             </p>
+            {lateralityInfo.isUnilateral && (
+              <p className="text-[10px] text-muted-foreground italic">
+                Unilateral findings in paired organs may suggest local etiology rather than systemic treatment effect.
+              </p>
+            )}
             {lateralityInfo.perFinding.length > 1 && (
               <div className="mt-1 space-y-0.5">
                 {lateralityInfo.perFinding.map((pf) => (
                   <div key={pf.finding} className="flex items-baseline gap-1.5">
-                    <span className="min-w-0 flex-1 truncate text-muted-foreground/70">{pf.finding}</span>
+                    <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground/70">{pf.finding}</span>
                     <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{lateralitySummary(pf.agg)}</span>
                   </div>
                 ))}
@@ -1599,7 +1640,7 @@ function FindingDetailPane({
       {/* Lab correlates (finding-level) */}
       {(findingLabCorrelation.hasData || findingLabCorrelation.isLoading) && (
         <CollapsiblePane title="Lab correlates" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <LabCorrelatesPane correlations={findingLabCorrelation.correlations} isLoading={findingLabCorrelation.isLoading} />
+          <LabCorrelatesPane correlations={findingLabCorrelation.correlations} isLoading={findingLabCorrelation.isLoading} specimen={selection.specimen} finding={selection.finding} />
         </CollapsiblePane>
       )}
 
@@ -1608,13 +1649,25 @@ function FindingDetailPane({
         const agg = aggregateFindingLaterality(subjData.subjects, selection.finding);
         if (agg.left === 0 && agg.right === 0 && agg.bilateral === 0) return null;
         const unilateral = agg.left + agg.right;
+        const affected = unilateral + agg.bilateral;
+        const isUnilateral = affected > 0 && unilateral / affected >= 0.7;
+        const dominantSide = agg.left >= agg.right ? "left" : "right";
+        const dominantCount = Math.max(agg.left, agg.right);
         return (
           <CollapsiblePane title="Laterality" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-            <p className="text-[11px] text-muted-foreground">
-              {lateralitySummary(agg)}
-              {unilateral > agg.bilateral * 2 && <span className="ml-1 text-foreground/70"> — predominantly unilateral</span>}
-              {agg.bilateral > unilateral * 2 && <span className="ml-1 text-foreground/70"> — predominantly bilateral</span>}
-            </p>
+            <div className="space-y-1">
+              <p className="text-[10px] text-muted-foreground italic">
+                Laterality: {isUnilateral
+                  ? `Predominantly ${dominantSide}-sided (${dominantCount}/${affected} affected subjects)`
+                  : lateralitySummary(agg)
+                }
+              </p>
+              {isUnilateral && (
+                <p className="text-[10px] text-muted-foreground italic">
+                  Unilateral findings in paired organs may suggest local etiology rather than systemic treatment effect.
+                </p>
+              )}
+            </div>
           </CollapsiblePane>
         );
       })()}

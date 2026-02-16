@@ -19,6 +19,7 @@ const RESOLUTION_OPTIONS = [
   { value: "peer_accepted", label: "Peer accepted" },
   { value: "compromise", label: "Compromise" },
   { value: "pwg_pending", label: "PWG pending" },
+  { value: "unresolved", label: "Unresolved" },
 ] as const;
 
 const REVIEWER_ROLES = [
@@ -104,7 +105,13 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
 
   const handleStatusSelect = (status: PathologyReview["peerReviewStatus"]) => {
     setPeerReviewStatus(status);
-    if (status !== "Disagreed") {
+    if (status === "Disagreed") {
+      // Pre-fill original diagnosis with current finding name
+      if (!originalDiagnosis) {
+        const displayFinding = finding.startsWith("specimen:") ? finding.slice(9) : finding;
+        setOriginalDiagnosis(displayFinding);
+      }
+    } else {
       // Clear disagreement fields
       setDisagreementCategory("");
       setOriginalDiagnosis("");
@@ -163,6 +170,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
 
   const showSeverityFields = disagreementCategory === "severity_grade";
   const showDiagnosisFields = disagreementCategory === "terminology" || disagreementCategory === "presence" || disagreementCategory === "interpretation";
+  const notesRequiredButMissing = peerReviewStatus === "Disagreed" && !comment.trim();
 
   return (
     <CollapsiblePane title="Pathology review" defaultOpen={defaultOpen}>
@@ -281,9 +289,11 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
             )}
 
             <div>
-              <label className="mb-0.5 block font-medium text-muted-foreground">Notes</label>
+              <label className="mb-0.5 block font-medium text-muted-foreground">
+                Notes <span className="text-muted-foreground/60">(required)</span>
+              </label>
               <textarea
-                className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+                className={cn("w-full rounded border bg-background px-2 py-1 text-[11px]", notesRequiredButMissing && "border-red-300")}
                 rows={2}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
@@ -381,7 +391,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
                 : "bg-primary text-primary-foreground hover:bg-primary/90",
             )}
             onClick={handleSave}
-            disabled={!dirty || isPending || isSuccess}
+            disabled={!dirty || isPending || isSuccess || notesRequiredButMissing}
           >
             {isPending ? "SAVING..." : isSuccess ? "SAVED" : "SAVE"}
           </button>
