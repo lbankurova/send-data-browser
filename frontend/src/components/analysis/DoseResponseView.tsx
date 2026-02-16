@@ -1639,6 +1639,14 @@ function MetricsTableContent({
   selection,
   handleRowClick,
 }: MetricsTableProps) {
+  const ABSORBER_ID = "endpoint_label";
+  function colStyle(colId: string) {
+    const manualWidth = table.getState().columnSizing[colId];
+    if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
+    if (colId === ABSORBER_ID) return undefined;
+    return { width: 1, whiteSpace: "nowrap" as const };
+  }
+
   return (
     <div className="flex h-full flex-col">
       {/* Filter bar */}
@@ -1684,15 +1692,15 @@ function MetricsTableContent({
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
-        <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
+        <table className="w-full text-[10px]">
           <thead className="sticky top-0 z-10 bg-background">
             {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="border-b bg-muted/50">
+              <tr key={hg.id} className="border-b bg-muted/30">
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
-                    style={{ width: header.getSize() }}
+                    className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                    style={colStyle(header.id)}
                     onDoubleClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
@@ -1721,13 +1729,21 @@ function MetricsTableContent({
                   key={row.id}
                   className={cn(
                     "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                    isSelected && "bg-accent"
+                    isSelected && "bg-accent font-medium"
                   )}
                   data-selected={isSelected || undefined}
                   onClick={() => handleRowClick(orig)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }} data-evidence="">
+                    <td
+                      key={cell.id}
+                      className={cn(
+                        "px-1.5 py-px",
+                        cell.column.id === ABSORBER_ID && !table.getState().columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
+                      )}
+                      style={colStyle(cell.column.id)}
+                      data-evidence=""
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

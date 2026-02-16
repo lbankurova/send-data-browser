@@ -602,7 +602,7 @@ function OverviewTab({
                   key={ep.endpoint_label}
                   className={cn(
                     "group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-accent/30",
-                    isSelected && "bg-accent"
+                    isSelected && "bg-accent font-medium"
                   )}
                   onClick={() => onEndpointClick(ep.endpoint_label)}
                 >
@@ -866,6 +866,14 @@ function AdversityMatrixTab({
     columnResizeMode: "onChange",
   });
 
+  const ABSORBER_ID = "endpoint_label";
+  function colStyle(colId: string) {
+    const manualWidth = columnSizing[colId];
+    if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
+    if (colId === ABSORBER_ID) return undefined;
+    return { width: 1, whiteSpace: "nowrap" as const };
+  }
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Filter bar */}
@@ -978,16 +986,16 @@ function AdversityMatrixTab({
           expandGen={expandGen}
           collapseGen={collapseGen}
         >
-        <div className="overflow-auto">
-            <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
+        <div className="h-full overflow-auto">
+            <table className="w-full text-[10px]">
               <thead className="sticky top-0 z-10 bg-background">
                 {table.getHeaderGroups().map((hg) => (
-                  <tr key={hg.id} className="border-b bg-muted/50">
+                  <tr key={hg.id} className="border-b bg-muted/30">
                     {hg.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
-                        style={{ width: header.getSize() }}
+                        className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                        style={colStyle(header.id)}
                         onDoubleClick={header.column.getToggleSortingHandler()}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
@@ -1017,7 +1025,7 @@ function AdversityMatrixTab({
                       key={row.id}
                       className={cn(
                         "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                        isSelected && "bg-accent"
+                        isSelected && "bg-accent font-medium"
                       )}
                       data-selected={isSelected || undefined}
                       onClick={() => onRowClick(orig)}
@@ -1025,8 +1033,11 @@ function AdversityMatrixTab({
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
-                          className="px-2 py-1"
-                          style={{ width: cell.column.getSize() }}
+                          className={cn(
+                            "px-1.5 py-px",
+                            cell.column.id === ABSORBER_ID && !columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
+                          )}
+                          style={colStyle(cell.column.id)}
                           {...(cell.column.id === "p_value" || cell.column.id === "effect_size" ? { "data-evidence": "" } : {})}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}

@@ -758,15 +758,15 @@ function DetailsTab({
             Treatment arms ({meta.dose_groups.length})
           </h2>
           <div className="max-h-60 overflow-auto rounded-md border">
-            <table className="w-full text-xs">
+            <table className="w-full text-[10px]">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/30">
-                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Arm code</th>
-                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Label</th>
-                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dose</th>
-                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">M</th>
-                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">F</th>
-                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
+                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Arm code</th>
+                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Label</th>
+                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dose</th>
+                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">M</th>
+                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">F</th>
+                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -776,16 +776,16 @@ function DetailsTab({
                     className="border-b last:border-b-0 border-l-2"
                     style={{ borderLeftColor: getDoseGroupColor(dg.dose_level) }}
                   >
-                    <td className="px-2 py-1 font-mono text-xs">{dg.armcd}</td>
-                    <td className="px-2 py-1">{dg.label}</td>
-                    <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
+                    <td className="px-1.5 py-px font-mono">{dg.armcd}</td>
+                    <td className="px-1.5 py-px">{dg.label}</td>
+                    <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">
                       {dg.dose_value != null
                         ? `${dg.dose_value}${dg.dose_unit ? ` ${dg.dose_unit}` : ""}`
                         : "—"}
                     </td>
-                    <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{dg.n_male}</td>
-                    <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{dg.n_female}</td>
-                    <td className="px-2 py-1 text-right tabular-nums font-medium">{dg.n_total}</td>
+                    <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">{dg.n_male}</td>
+                    <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">{dg.n_female}</td>
+                    <td className="px-1.5 py-px text-right tabular-nums font-medium">{dg.n_total}</td>
                   </tr>
                 ))}
               </tbody>
