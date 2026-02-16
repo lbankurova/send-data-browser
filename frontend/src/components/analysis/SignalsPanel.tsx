@@ -343,7 +343,7 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
   function colStyle(colId: string) {
     const manualWidth = columnSizing[colId];
     if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
-    if (colId === ABSORBER_ID) return undefined;
+    if (colId === ABSORBER_ID) return { width: "100%" };
     return { width: 1, whiteSpace: "nowrap" as const };
   }
 

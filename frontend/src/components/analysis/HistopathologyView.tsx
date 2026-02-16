@@ -1675,7 +1675,7 @@ function OverviewTab({
                     const colStyle: React.CSSProperties = isResized
                       ? { width: header.getSize() }
                       : isAbsorber
-                        ? {}
+                        ? { width: "100%" }
                         : { width: 1, maxWidth: header.column.columnDef.maxSize };
                     return (
                       <th
@@ -1730,7 +1730,7 @@ function OverviewTab({
                       const colStyle: React.CSSProperties = isResized
                         ? { width: cell.column.getSize() }
                         : isAbsorber
-                          ? {}
+                          ? { width: "100%" }
                           : { width: 1, maxWidth: cell.column.columnDef.maxSize };
                       return (
                         <td

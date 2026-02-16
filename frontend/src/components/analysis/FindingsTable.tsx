@@ -154,7 +154,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
   function colStyle(colId: string) {
     const manualWidth = columnSizing[colId];
     if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
-    if (colId === ABSORBER_ID) return undefined; // absorb remaining space
+    if (colId === ABSORBER_ID) return { width: "100%" };
     return { width: 1, whiteSpace: "nowrap" as const };
   }
 
