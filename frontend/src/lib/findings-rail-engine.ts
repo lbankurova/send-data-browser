@@ -7,7 +7,7 @@ import type { EndpointSummary } from "@/lib/derive-summaries";
 
 // ─── Types ─────────────────────────────────────────────────
 
-export type GroupingMode = "organ" | "domain" | "pattern";
+export type GroupingMode = "organ" | "domain" | "pattern" | "finding";
 export type SortMode = "signal" | "pvalue" | "effect" | "az";
 
 export interface EndpointWithSignal extends EndpointSummary {
@@ -75,6 +75,7 @@ function groupKey(ep: EndpointWithSignal, mode: GroupingMode): string {
     case "organ": return ep.organ_system;
     case "domain": return ep.domain;
     case "pattern": return ep.pattern;
+    case "finding": return "_all";
   }
 }
 
@@ -151,7 +152,7 @@ export function filterEndpoints(
   if (filters.sigOnly) {
     result = result.filter((ep) => ep.minPValue !== null && ep.minPValue < 0.05);
   }
-  if (filters.groupFilter !== null) {
+  if (filters.groupFilter !== null && grouping !== "finding") {
     result = result.filter((ep) => filters.groupFilter!.has(groupKey(ep, grouping)));
   }
   return result;
