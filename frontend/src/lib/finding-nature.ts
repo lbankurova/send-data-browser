@@ -1,9 +1,11 @@
 /**
- * Finding nature classification — keyword-based toxicological categorization.
+ * Finding nature classification — CT-normalized lookup + keyword fallback.
  * Classifies histopathology findings into biological nature categories
  * with expected reversibility, typical recovery timelines, and severity-aware
- * modulation of recovery expectations (IMP-04).
+ * modulation of recovery expectations (IMP-04, IMP-12).
  */
+
+import { normalizeFinding } from "./finding-term-map";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -23,6 +25,8 @@ export interface FindingNatureInfo {
   expected_reversibility: "high" | "moderate" | "low" | "none";
   typical_recovery_weeks: number | null;
   reversibilityQualifier: ReversibilityQualifier;
+  source?: "ct_mapped" | "substring_match";
+  normalizedTerm?: string;
 }
 
 // ─── Keyword tables (longest-match priority via ordered scan) ───
@@ -137,8 +141,32 @@ export function classifyFindingNature(
   findingName: string,
   maxSeverity?: number | null,
 ): FindingNatureInfo {
-  const lower = findingName.toLowerCase();
+  // 1. Try CT-normalized lookup (IMP-12)
+  const mapped = normalizeFinding(findingName);
+  if (mapped) {
+    const rev = mapped.reversibility;
+    const weeks = rev.weeksLow != null && rev.weeksHigh != null
+      ? Math.round((rev.weeksLow + rev.weeksHigh) / 2)
+      : null;
+    const expectedRev: FindingNatureInfo["expected_reversibility"] =
+      rev.qualifier === "none" ? "none"
+        : rev.qualifier === "expected" ? "high"
+          : rev.qualifier === "unlikely" ? "low"
+            : rev.qualifier === "unknown" ? "moderate"
+              : "moderate";
+    const base: FindingNatureInfo = {
+      nature: mapped.category,
+      expected_reversibility: expectedRev,
+      typical_recovery_weeks: weeks,
+      reversibilityQualifier: rev.qualifier,
+      source: "ct_mapped",
+      normalizedTerm: mapped.normalizedTerm,
+    };
+    return maxSeverity != null ? modulateBySeverity(base, maxSeverity) : base;
+  }
 
+  // 2. Fall back to legacy substring matching
+  const lower = findingName.toLowerCase();
   for (const entry of KEYWORD_TABLE) {
     if (lower.includes(entry.keyword)) {
       const base: FindingNatureInfo = {
@@ -146,17 +174,19 @@ export function classifyFindingNature(
         expected_reversibility: entry.expected_reversibility,
         typical_recovery_weeks: entry.typical_recovery_weeks,
         reversibilityQualifier: baseQualifier(entry.nature, entry.expected_reversibility),
+        source: "substring_match",
       };
       return maxSeverity != null ? modulateBySeverity(base, maxSeverity) : base;
     }
   }
 
-  // Explicit "unknown" fallback (IMP-04c)
+  // 3. Explicit "unknown" fallback (IMP-04c)
   return {
     nature: "unknown",
     expected_reversibility: "moderate",
     typical_recovery_weeks: null,
     reversibilityQualifier: "unknown",
+    source: "substring_match",
   };
 }
 
