@@ -26,12 +26,23 @@ export function FilterSelect({
   children: ReactNode;
 }) {
   return (
-    <select
-      className={cn(filter.select, className)}
-      {...props}
-    >
-      {children}
-    </select>
+    <div className="relative inline-flex items-center">
+      <select
+        className={cn(filter.select, "appearance-none pr-3.5", className)}
+        {...props}
+      >
+        {children}
+      </select>
+      <svg
+        className="pointer-events-none absolute right-1 h-3 w-3 opacity-50"
+        viewBox="0 0 12 12"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      >
+        <path d="M3 5l3 3 3-3" />
+      </svg>
+    </div>
   );
 }
 
