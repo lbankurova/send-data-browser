@@ -303,7 +303,8 @@ export function detectSyndromes(
           const reqRows = organRows.filter((r) =>
             findingMatches(r.finding, requiredMatch),
           );
-          const maxSev = Math.max(...reqRows.map((r) => r.avg_severity ?? 0));
+          const gradedSevs = reqRows.filter((r) => r.severity_status === "graded").map((r) => r.avg_severity!);
+          const maxSev = gradedSevs.length > 0 ? Math.max(...gradedSevs) : 0;
           if (maxSev > rule.max_severity_for_required) continue;
         }
 

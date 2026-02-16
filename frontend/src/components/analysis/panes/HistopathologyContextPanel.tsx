@@ -1370,7 +1370,7 @@ function FindingDetailPane({
     let maxInc = 0;
     const sexes = new Set<string>();
     for (const r of findingRows) {
-      if ((r.avg_severity ?? 0) > maxSev) maxSev = r.avg_severity ?? 0;
+      if (r.severity_status === "graded" && r.avg_severity! > maxSev) maxSev = r.avg_severity!;
       if (r.incidence > maxInc) maxInc = r.incidence;
       sexes.add(r.sex);
     }
@@ -1407,9 +1407,9 @@ function FindingDetailPane({
       const existing = unique.get(r.finding);
       if (existing) {
         existing.count++;
-        if ((r.avg_severity ?? 0) > existing.maxSev) existing.maxSev = r.avg_severity ?? 0;
+        if (r.severity_status === "graded" && r.avg_severity! > existing.maxSev) existing.maxSev = r.avg_severity!;
       } else {
-        unique.set(r.finding, { maxSev: r.avg_severity ?? 0, count: 1 });
+        unique.set(r.finding, { maxSev: r.severity_status === "graded" ? r.avg_severity! : 0, count: 1 });
       }
     }
     return [...unique.entries()]
@@ -1428,9 +1428,9 @@ function FindingDetailPane({
       const existing = bySpec.get(r.specimen);
       if (existing) {
         if (r.incidence > existing.incidence) existing.incidence = r.incidence;
-        if ((r.avg_severity ?? 0) > existing.maxSev) existing.maxSev = r.avg_severity ?? 0;
+        if (r.severity_status === "graded" && r.avg_severity! > existing.maxSev) existing.maxSev = r.avg_severity!;
       } else {
-        bySpec.set(r.specimen, { incidence: r.incidence, maxSev: r.avg_severity ?? 0 });
+        bySpec.set(r.specimen, { incidence: r.incidence, maxSev: r.severity_status === "graded" ? r.avg_severity! : 0 });
       }
     }
     return [...bySpec.entries()]
@@ -1450,9 +1450,9 @@ function FindingDetailPane({
       if (existing) {
         existing.affected += r.affected;
         existing.total += r.n;
-        if ((r.avg_severity ?? 0) > existing.maxSev) existing.maxSev = r.avg_severity ?? 0;
+        if (r.severity_status === "graded" && r.avg_severity! > existing.maxSev) existing.maxSev = r.avg_severity!;
       } else {
-        bySex.set(r.sex, { affected: r.affected, total: r.n, maxSev: r.avg_severity ?? 0 });
+        bySex.set(r.sex, { affected: r.affected, total: r.n, maxSev: r.severity_status === "graded" ? r.avg_severity! : 0 });
       }
     }
     return bySex;

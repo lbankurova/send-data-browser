@@ -11,6 +11,7 @@
     "affected": 10,
     "incidence": 1.0,
     "avg_severity": 2.3,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -25,6 +26,7 @@
     "affected": 10,
     "incidence": 0.6667,
     "avg_severity": 2.5,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -39,6 +41,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -53,6 +56,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -67,6 +71,7 @@
     "affected": 10,
     "incidence": 1.0,
     "avg_severity": 2.3,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -81,6 +86,7 @@
     "affected": 10,
     "incidence": 0.6667,
     "avg_severity": 2.5,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -95,6 +101,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -109,6 +116,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -123,6 +131,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -137,6 +146,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -151,6 +161,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -165,6 +176,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -179,6 +191,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -193,6 +206,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -207,6 +221,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -221,6 +236,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -235,6 +251,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -249,6 +266,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -263,6 +281,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -277,6 +296,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -291,6 +311,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -305,6 +326,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -319,6 +341,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -333,6 +356,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -347,6 +371,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -361,6 +386,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -375,6 +401,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -389,6 +416,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -403,6 +431,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -417,6 +446,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -431,6 +461,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -445,6 +476,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -459,6 +491,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -473,6 +506,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -487,6 +521,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -501,6 +536,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -515,6 +551,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 4.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -529,6 +566,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -543,6 +581,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -557,6 +596,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -571,6 +611,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -585,6 +626,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -599,6 +641,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -613,6 +656,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -627,6 +671,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -641,6 +686,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -655,6 +701,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -669,6 +716,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -683,6 +731,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -697,6 +746,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -711,6 +761,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -725,6 +776,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -739,6 +791,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -753,6 +806,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -767,6 +821,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -781,6 +836,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -795,6 +851,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -809,6 +866,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -823,6 +881,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -837,6 +896,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -851,6 +911,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -865,6 +926,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -879,6 +941,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -893,6 +956,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -907,6 +971,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "adverse"
   },
   {
@@ -921,6 +986,7 @@
     "affected": 9,
     "incidence": 0.6,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "adverse"
   },
   {
@@ -935,6 +1001,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "adverse"
   },
   {
@@ -949,6 +1016,7 @@
     "affected": 10,
     "incidence": 0.6667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "adverse"
   },
   {
@@ -963,6 +1031,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "adverse"
   },
   {
@@ -977,6 +1046,7 @@
     "affected": 9,
     "incidence": 0.6,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "adverse"
   },
   {
@@ -991,6 +1061,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "adverse"
   },
   {
@@ -1005,6 +1076,7 @@
     "affected": 10,
     "incidence": 0.6667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "adverse"
   },
   {
@@ -1019,6 +1091,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1033,6 +1106,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1047,6 +1121,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1061,6 +1136,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1075,6 +1151,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1089,6 +1166,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1103,6 +1181,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1117,6 +1196,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1131,6 +1211,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -1145,6 +1226,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -1159,6 +1241,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -1173,6 +1256,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.6,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -1187,6 +1271,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -1201,6 +1286,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -1215,6 +1301,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -1229,6 +1316,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.6,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -1243,6 +1331,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1257,6 +1346,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1271,6 +1361,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1285,6 +1376,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1299,6 +1391,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1313,6 +1406,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1327,6 +1421,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1341,6 +1436,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1355,6 +1451,7 @@
     "affected": 5,
     "incidence": 0.5,
     "avg_severity": 2.33,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1369,6 +1466,7 @@
     "affected": 6,
     "incidence": 0.4,
     "avg_severity": 2.33,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1383,6 +1481,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.4,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1397,6 +1496,7 @@
     "affected": 7,
     "incidence": 0.4667,
     "avg_severity": 2.29,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1411,6 +1511,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1425,6 +1526,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1439,6 +1541,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1453,6 +1556,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1467,6 +1571,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1481,6 +1586,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1495,6 +1601,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1509,6 +1616,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1523,6 +1631,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1537,6 +1646,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1551,6 +1661,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1565,6 +1676,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1579,6 +1691,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1593,6 +1706,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1607,6 +1721,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1621,6 +1736,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1635,6 +1751,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1649,6 +1766,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1663,6 +1781,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1677,6 +1796,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1691,6 +1811,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1705,6 +1826,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1719,6 +1841,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1733,6 +1856,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1747,6 +1871,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1761,6 +1886,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1775,6 +1901,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1789,6 +1916,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1803,6 +1931,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1817,6 +1946,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1831,6 +1961,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1845,6 +1976,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1859,6 +1991,7 @@
     "affected": 2,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -1873,6 +2006,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -1887,6 +2021,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -1901,6 +2036,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -1915,6 +2051,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1929,6 +2066,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1943,6 +2081,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1957,6 +2096,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1971,6 +2111,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -1985,6 +2126,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -1999,6 +2141,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2013,6 +2156,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2027,6 +2171,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2041,6 +2186,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2055,6 +2201,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2069,6 +2216,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2083,6 +2231,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2097,6 +2246,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2111,6 +2261,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2125,6 +2276,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2139,6 +2291,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -2153,6 +2306,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -2167,6 +2321,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2181,6 +2336,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2195,6 +2351,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -2209,6 +2366,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -2223,6 +2381,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2237,6 +2396,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2251,6 +2411,7 @@
     "affected": 7,
     "incidence": 0.7,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2265,6 +2426,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2279,6 +2441,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2293,6 +2456,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2307,6 +2471,7 @@
     "affected": 7,
     "incidence": 0.7,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2321,6 +2486,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2335,6 +2501,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2349,6 +2516,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -2363,6 +2531,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2377,6 +2546,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2391,6 +2561,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2405,6 +2576,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2419,6 +2591,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2433,6 +2606,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2447,6 +2621,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2461,6 +2636,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2471,66 +2647,71 @@
     "dose_level": 0,
     "dose_label": "Group 1, Control",
     "sex": "F",
-    "n": 10,
-    "affected": 1,
-    "incidence": 0.1,
-    "avg_severity": 2.0,
-    "severity": "normal"
-  },
-  {
-    "endpoint_label": "KIDNEY \u2014 CYST",
-    "specimen": "KIDNEY",
-    "finding": "CYST",
-    "domain": "MI",
-    "dose_level": 1,
-    "dose_label": "Group 2,2 mg/kg PCDRUG",
-    "sex": "F",
-    "n": 15,
-    "affected": 0,
-    "incidence": 0.0,
-    "avg_severity": null,
-    "severity": "normal"
-  },
-  {
-    "endpoint_label": "KIDNEY \u2014 CYST",
-    "specimen": "KIDNEY",
-    "finding": "CYST",
-    "domain": "MI",
-    "dose_level": 2,
-    "dose_label": "Group 3,20 mg/kg PCDRUG",
-    "sex": "F",
-    "n": 15,
-    "affected": 1,
-    "incidence": 0.0667,
-    "avg_severity": 2.0,
-    "severity": "normal"
-  },
-  {
-    "endpoint_label": "KIDNEY \u2014 CYST",
-    "specimen": "KIDNEY",
-    "finding": "CYST",
-    "domain": "MI",
-    "dose_level": 3,
-    "dose_label": "Group 4,200 mg/kg PCDRUG",
-    "sex": "F",
-    "n": 15,
-    "affected": 1,
-    "incidence": 0.0667,
-    "avg_severity": 2.0,
-    "severity": "normal"
-  },
-  {
-    "endpoint_label": "KIDNEY \u2014 CYST",
-    "specimen": "KIDNEY",
-    "finding": "CYST",
-    "domain": "MI",
-    "dose_level": 0,
-    "dose_label": "Group 1, Control",
-    "sex": "M",
     "n": 10,
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
+    "severity": "normal"
+  },
+  {
+    "endpoint_label": "KIDNEY \u2014 CYST",
+    "specimen": "KIDNEY",
+    "finding": "CYST",
+    "domain": "MI",
+    "dose_level": 1,
+    "dose_label": "Group 2,2 mg/kg PCDRUG",
+    "sex": "F",
+    "n": 15,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal"
+  },
+  {
+    "endpoint_label": "KIDNEY \u2014 CYST",
+    "specimen": "KIDNEY",
+    "finding": "CYST",
+    "domain": "MI",
+    "dose_level": 2,
+    "dose_label": "Group 3,20 mg/kg PCDRUG",
+    "sex": "F",
+    "n": 15,
+    "affected": 1,
+    "incidence": 0.0667,
+    "avg_severity": 2.0,
+    "severity_status": "graded",
+    "severity": "normal"
+  },
+  {
+    "endpoint_label": "KIDNEY \u2014 CYST",
+    "specimen": "KIDNEY",
+    "finding": "CYST",
+    "domain": "MI",
+    "dose_level": 3,
+    "dose_label": "Group 4,200 mg/kg PCDRUG",
+    "sex": "F",
+    "n": 15,
+    "affected": 1,
+    "incidence": 0.0667,
+    "avg_severity": 2.0,
+    "severity_status": "graded",
+    "severity": "normal"
+  },
+  {
+    "endpoint_label": "KIDNEY \u2014 CYST",
+    "specimen": "KIDNEY",
+    "finding": "CYST",
+    "domain": "MI",
+    "dose_level": 0,
+    "dose_label": "Group 1, Control",
+    "sex": "M",
+    "n": 10,
+    "affected": 1,
+    "incidence": 0.1,
+    "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2545,6 +2726,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2559,6 +2741,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2573,6 +2756,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2587,6 +2771,7 @@
     "affected": 2,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2601,6 +2786,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2615,6 +2801,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2629,6 +2816,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2643,6 +2831,7 @@
     "affected": 2,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2657,6 +2846,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2671,6 +2861,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2685,6 +2876,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2699,6 +2891,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2713,6 +2906,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 3.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2727,6 +2921,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2741,6 +2936,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 3.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2755,6 +2951,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2769,6 +2966,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 3.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2783,6 +2981,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2797,6 +2996,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 3.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2811,6 +3011,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2825,6 +3026,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2839,6 +3041,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2853,6 +3056,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2867,6 +3071,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2881,6 +3086,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2895,6 +3101,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -2909,6 +3116,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2923,6 +3131,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2937,6 +3146,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2951,6 +3161,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2965,6 +3176,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -2979,6 +3191,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -2993,6 +3206,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3007,6 +3221,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3021,6 +3236,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -3035,6 +3251,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "adverse"
   },
   {
@@ -3049,6 +3266,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "adverse"
   },
   {
@@ -3063,6 +3281,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "adverse"
   },
   {
@@ -3077,6 +3296,7 @@
     "affected": 9,
     "incidence": 0.6,
     "avg_severity": 2.56,
+    "severity_status": "graded",
     "severity": "adverse"
   },
   {
@@ -3091,6 +3311,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -3105,6 +3326,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -3119,6 +3341,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -3133,6 +3356,7 @@
     "affected": 6,
     "incidence": 0.4,
     "avg_severity": 2.4,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -3147,6 +3371,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3161,6 +3386,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3175,6 +3401,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3189,6 +3416,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3203,6 +3431,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3217,6 +3446,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3231,6 +3461,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3245,6 +3476,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3259,6 +3491,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3273,6 +3506,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3287,6 +3521,7 @@
     "affected": 4,
     "incidence": 0.2667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3301,6 +3536,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3315,6 +3551,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3329,6 +3566,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3343,6 +3581,7 @@
     "affected": 4,
     "incidence": 0.2667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3357,6 +3596,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3371,6 +3611,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3385,6 +3626,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3399,6 +3641,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3413,6 +3656,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 3.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3427,6 +3671,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3441,6 +3686,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3455,6 +3701,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3469,6 +3716,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 3.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3483,6 +3731,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3497,6 +3746,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3511,6 +3761,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3525,6 +3776,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3539,6 +3791,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3553,6 +3806,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3567,6 +3821,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3581,6 +3836,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3595,6 +3851,7 @@
     "affected": 2,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3609,6 +3866,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3623,6 +3881,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3637,6 +3896,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3651,6 +3911,7 @@
     "affected": 2,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3665,6 +3926,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3679,6 +3941,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3693,6 +3956,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3707,6 +3971,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3721,6 +3986,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3735,6 +4001,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3749,6 +4016,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3763,6 +4031,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3777,6 +4046,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3791,6 +4061,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3805,6 +4076,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3819,6 +4091,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3833,6 +4106,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3847,6 +4121,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3861,6 +4136,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3875,6 +4151,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3889,6 +4166,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3903,6 +4181,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3917,6 +4196,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -3931,6 +4211,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 3.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3945,6 +4226,7 @@
     "affected": 4,
     "incidence": 0.2667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3959,6 +4241,7 @@
     "affected": 6,
     "incidence": 0.4,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3973,6 +4256,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -3987,6 +4271,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 3.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4001,6 +4286,7 @@
     "affected": 4,
     "incidence": 0.2667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4015,6 +4301,7 @@
     "affected": 6,
     "incidence": 0.4,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4029,6 +4316,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4043,6 +4331,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4057,6 +4346,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4071,6 +4361,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4085,6 +4376,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4099,6 +4391,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4113,6 +4406,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4127,6 +4421,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4141,6 +4436,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4155,6 +4451,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4169,6 +4466,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4183,6 +4481,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4197,6 +4496,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4211,6 +4511,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4225,6 +4526,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4239,6 +4541,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4253,6 +4556,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4267,6 +4571,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4281,6 +4586,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4295,6 +4601,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4309,6 +4616,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.33,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4323,6 +4631,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4337,6 +4646,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4351,6 +4661,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4365,6 +4676,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.33,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4379,6 +4691,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -4393,6 +4706,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4407,6 +4721,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4421,6 +4736,7 @@
     "affected": 6,
     "incidence": 0.4,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4435,6 +4751,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -4449,6 +4766,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4463,6 +4781,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4477,6 +4796,7 @@
     "affected": 6,
     "incidence": 0.4,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4491,6 +4811,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4505,6 +4826,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4519,6 +4841,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4533,6 +4856,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4547,6 +4871,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4561,6 +4886,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4575,6 +4901,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4589,6 +4916,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4603,6 +4931,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4617,6 +4946,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4631,6 +4961,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4645,6 +4976,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4659,6 +4991,7 @@
     "affected": 4,
     "incidence": 0.4,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4673,6 +5006,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4687,6 +5021,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4701,6 +5036,7 @@
     "affected": 8,
     "incidence": 0.5333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4715,6 +5051,7 @@
     "affected": 4,
     "incidence": 0.4,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4729,6 +5066,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4743,6 +5081,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4757,6 +5096,7 @@
     "affected": 8,
     "incidence": 0.5333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4771,6 +5111,7 @@
     "affected": 2,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4785,6 +5126,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4799,6 +5141,7 @@
     "affected": 7,
     "incidence": 0.4667,
     "avg_severity": 2.14,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4813,6 +5156,7 @@
     "affected": 8,
     "incidence": 0.5333,
     "avg_severity": 2.25,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4827,6 +5171,7 @@
     "affected": 2,
     "incidence": 0.2,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4841,6 +5186,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4855,6 +5201,7 @@
     "affected": 7,
     "incidence": 0.4667,
     "avg_severity": 2.14,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4869,6 +5216,7 @@
     "affected": 8,
     "incidence": 0.5333,
     "avg_severity": 2.25,
+    "severity_status": "graded",
     "severity": "warning"
   },
   {
@@ -4883,6 +5231,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4897,6 +5246,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4911,6 +5261,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4925,6 +5276,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4939,6 +5291,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4953,6 +5306,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -4967,6 +5321,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4981,6 +5336,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -4995,6 +5351,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5009,6 +5366,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5023,6 +5381,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5037,6 +5396,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5051,6 +5411,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5065,6 +5426,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 4.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5079,6 +5441,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5093,6 +5456,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5107,6 +5471,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5121,6 +5486,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5135,6 +5501,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5149,6 +5516,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5163,6 +5531,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5177,6 +5546,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5191,6 +5561,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5205,6 +5576,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5219,6 +5591,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5233,6 +5606,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5247,6 +5621,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5261,6 +5636,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5275,6 +5651,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5289,6 +5666,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5303,6 +5681,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5317,6 +5696,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5331,6 +5711,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5345,6 +5726,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5359,6 +5741,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5373,6 +5756,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5387,6 +5771,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5401,6 +5786,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5415,6 +5801,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5429,6 +5816,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5443,6 +5831,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5457,6 +5846,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5471,6 +5861,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5485,6 +5876,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5499,6 +5891,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5513,6 +5906,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5527,6 +5921,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5541,6 +5936,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5555,6 +5951,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5569,6 +5966,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": 2.0,
+    "severity_status": "graded",
     "severity": "normal"
   },
   {
@@ -5583,6 +5981,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5597,6 +5996,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5611,6 +6011,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5625,6 +6026,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5639,6 +6041,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5653,6 +6056,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5667,6 +6071,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5681,6 +6086,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5695,6 +6101,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5709,6 +6116,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5723,6 +6131,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5737,6 +6146,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5751,6 +6161,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5765,6 +6176,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5779,6 +6191,7 @@
     "affected": 2,
     "incidence": 0.2,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5793,6 +6206,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5807,6 +6221,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5821,6 +6236,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5835,6 +6251,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5849,6 +6266,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5863,6 +6281,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5877,6 +6296,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5891,6 +6311,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5905,6 +6326,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5919,6 +6341,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5933,6 +6356,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5947,6 +6371,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5961,6 +6386,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -5975,6 +6401,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -5989,6 +6416,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6003,6 +6431,7 @@
     "affected": 2,
     "incidence": 0.2,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -6017,6 +6446,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -6031,6 +6461,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -6045,6 +6476,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -6059,6 +6491,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6073,6 +6506,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6087,6 +6521,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6101,67 +6536,12 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
     "endpoint_label": "GLAND, COAGULATING \u2014 SMALL",
     "specimen": "GLAND, COAGULATING",
-    "finding": "SMALL",
-    "domain": "MA",
-    "dose_level": 0,
-    "dose_label": "Group 1, Control",
-    "sex": "M",
-    "n": 10,
-    "affected": 1,
-    "incidence": 0.1,
-    "avg_severity": null,
-    "severity": "normal"
-  },
-  {
-    "endpoint_label": "GLAND, COAGULATING \u2014 SMALL",
-    "specimen": "GLAND, COAGULATING",
-    "finding": "SMALL",
-    "domain": "MA",
-    "dose_level": 1,
-    "dose_label": "Group 2,2 mg/kg PCDRUG",
-    "sex": "M",
-    "n": 15,
-    "affected": 0,
-    "incidence": 0.0,
-    "avg_severity": null,
-    "severity": "normal"
-  },
-  {
-    "endpoint_label": "GLAND, COAGULATING \u2014 SMALL",
-    "specimen": "GLAND, COAGULATING",
-    "finding": "SMALL",
-    "domain": "MA",
-    "dose_level": 2,
-    "dose_label": "Group 3,20 mg/kg PCDRUG",
-    "sex": "M",
-    "n": 15,
-    "affected": 1,
-    "incidence": 0.0667,
-    "avg_severity": null,
-    "severity": "normal"
-  },
-  {
-    "endpoint_label": "GLAND, COAGULATING \u2014 SMALL",
-    "specimen": "GLAND, COAGULATING",
-    "finding": "SMALL",
-    "domain": "MA",
-    "dose_level": 3,
-    "dose_label": "Group 4,200 mg/kg PCDRUG",
-    "sex": "M",
-    "n": 15,
-    "affected": 0,
-    "incidence": 0.0,
-    "avg_severity": null,
-    "severity": "normal"
-  },
-  {
-    "endpoint_label": "GLAND, SEMINAL VESICLE \u2014 SMALL",
-    "specimen": "GLAND, SEMINAL VESICLE",
     "finding": "SMALL",
     "domain": "MA",
     "dose_level": 0,
@@ -6171,6 +6551,67 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
+    "severity": "normal"
+  },
+  {
+    "endpoint_label": "GLAND, COAGULATING \u2014 SMALL",
+    "specimen": "GLAND, COAGULATING",
+    "finding": "SMALL",
+    "domain": "MA",
+    "dose_level": 1,
+    "dose_label": "Group 2,2 mg/kg PCDRUG",
+    "sex": "M",
+    "n": 15,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal"
+  },
+  {
+    "endpoint_label": "GLAND, COAGULATING \u2014 SMALL",
+    "specimen": "GLAND, COAGULATING",
+    "finding": "SMALL",
+    "domain": "MA",
+    "dose_level": 2,
+    "dose_label": "Group 3,20 mg/kg PCDRUG",
+    "sex": "M",
+    "n": 15,
+    "affected": 1,
+    "incidence": 0.0667,
+    "avg_severity": null,
+    "severity_status": "present_ungraded",
+    "severity": "normal"
+  },
+  {
+    "endpoint_label": "GLAND, COAGULATING \u2014 SMALL",
+    "specimen": "GLAND, COAGULATING",
+    "finding": "SMALL",
+    "domain": "MA",
+    "dose_level": 3,
+    "dose_label": "Group 4,200 mg/kg PCDRUG",
+    "sex": "M",
+    "n": 15,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal"
+  },
+  {
+    "endpoint_label": "GLAND, SEMINAL VESICLE \u2014 SMALL",
+    "specimen": "GLAND, SEMINAL VESICLE",
+    "finding": "SMALL",
+    "domain": "MA",
+    "dose_level": 0,
+    "dose_label": "Group 1, Control",
+    "sex": "M",
+    "n": 10,
+    "affected": 1,
+    "incidence": 0.1,
+    "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6185,6 +6626,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6199,6 +6641,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6213,6 +6656,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6227,6 +6671,7 @@
     "affected": 2,
     "incidence": 0.2,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -6241,6 +6686,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -6255,6 +6701,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -6269,6 +6716,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -6283,6 +6731,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6297,6 +6746,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6311,6 +6761,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6325,6 +6776,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6339,6 +6791,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6353,6 +6806,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6367,6 +6821,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6381,6 +6836,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6395,6 +6851,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6409,6 +6866,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6423,6 +6881,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6437,6 +6896,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6451,6 +6911,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6465,6 +6926,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6479,6 +6941,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6493,6 +6956,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6507,6 +6971,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6521,6 +6986,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6535,6 +7001,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6549,6 +7016,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6563,6 +7031,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6577,6 +7046,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6591,6 +7061,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6605,6 +7076,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6619,6 +7091,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6633,6 +7106,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6647,6 +7121,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6661,6 +7136,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6675,6 +7151,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6689,6 +7166,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6703,6 +7181,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6717,6 +7196,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6731,6 +7211,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6745,6 +7226,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6759,6 +7241,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6773,6 +7256,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6787,6 +7271,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6801,6 +7286,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6815,6 +7301,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6829,6 +7316,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6843,6 +7331,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6857,6 +7346,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6871,6 +7361,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6885,6 +7376,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6899,6 +7391,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6913,6 +7406,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6927,6 +7421,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6941,6 +7436,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6955,6 +7451,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6969,6 +7466,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -6983,6 +7481,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -6997,6 +7496,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7011,6 +7511,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7025,6 +7526,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7039,6 +7541,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7053,6 +7556,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7067,6 +7571,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7081,6 +7586,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7095,6 +7601,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7109,6 +7616,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7123,6 +7631,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7137,6 +7646,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7151,6 +7661,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7165,6 +7676,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7179,6 +7691,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7193,6 +7706,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7207,6 +7721,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7221,6 +7736,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7235,6 +7751,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7249,6 +7766,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7263,6 +7781,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7277,6 +7796,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7291,6 +7811,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7305,6 +7826,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7319,6 +7841,7 @@
     "affected": 4,
     "incidence": 0.2667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7333,6 +7856,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7347,6 +7871,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -7361,6 +7886,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -7375,6 +7901,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -7389,6 +7916,7 @@
     "affected": 5,
     "incidence": 0.3333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -7403,6 +7931,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -7417,6 +7946,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -7431,6 +7961,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -7445,6 +7976,7 @@
     "affected": 4,
     "incidence": 0.2667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -7459,6 +7991,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7473,6 +8006,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7487,6 +8021,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7501,6 +8036,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7515,6 +8051,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7529,6 +8066,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7543,6 +8081,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7557,6 +8096,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7571,6 +8111,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7585,6 +8126,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7599,6 +8141,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7613,6 +8156,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7627,6 +8171,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7641,6 +8186,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7655,6 +8201,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7669,6 +8216,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7683,6 +8231,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7697,6 +8246,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7711,6 +8261,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7725,6 +8276,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7739,6 +8291,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7753,6 +8306,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7767,6 +8321,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7781,6 +8336,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7795,6 +8351,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7809,6 +8366,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7823,6 +8381,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7837,6 +8396,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7851,6 +8411,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7865,6 +8426,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7879,6 +8441,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7893,6 +8456,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7907,6 +8471,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7921,6 +8486,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -7935,6 +8501,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7949,6 +8516,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7963,6 +8531,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7977,6 +8546,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -7991,6 +8561,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8005,6 +8576,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8019,6 +8591,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8033,6 +8606,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8047,6 +8621,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8061,6 +8636,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8075,6 +8651,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8089,6 +8666,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8103,6 +8681,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8117,6 +8696,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8131,6 +8711,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8145,6 +8726,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8159,6 +8741,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8173,6 +8756,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8187,6 +8771,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -8201,6 +8786,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -8215,6 +8801,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -8229,6 +8816,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -8243,6 +8831,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8257,6 +8846,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8271,6 +8861,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8285,6 +8876,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8299,6 +8891,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8313,6 +8906,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8327,6 +8921,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8341,6 +8936,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8355,6 +8951,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8369,6 +8966,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8383,6 +8981,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8397,6 +8996,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8411,6 +9011,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8425,6 +9026,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8439,6 +9041,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8453,6 +9056,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8467,6 +9071,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8481,6 +9086,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8495,6 +9101,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8509,6 +9116,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8523,6 +9131,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8537,6 +9146,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8551,6 +9161,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8565,6 +9176,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8579,6 +9191,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8593,6 +9206,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8607,6 +9221,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8621,6 +9236,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8635,6 +9251,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8649,6 +9266,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8663,6 +9281,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8677,6 +9296,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8691,6 +9311,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8705,6 +9326,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8719,6 +9341,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8733,6 +9356,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8747,6 +9371,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8761,6 +9386,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8775,6 +9401,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8789,6 +9416,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8803,6 +9431,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8817,6 +9446,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8831,6 +9461,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8845,6 +9476,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8859,6 +9491,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8873,6 +9506,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8887,6 +9521,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8901,6 +9536,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8915,6 +9551,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8929,6 +9566,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8943,6 +9581,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8957,6 +9596,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8971,6 +9611,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -8985,6 +9626,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -8999,6 +9641,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9013,6 +9656,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9027,6 +9671,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9041,6 +9686,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9055,6 +9701,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9069,6 +9716,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9083,6 +9731,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9097,6 +9746,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9111,6 +9761,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9125,6 +9776,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9139,6 +9791,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9153,6 +9806,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9167,6 +9821,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9181,6 +9836,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9195,6 +9851,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9209,6 +9866,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9223,6 +9881,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9237,6 +9896,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9251,6 +9911,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9265,6 +9926,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9279,6 +9941,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9293,6 +9956,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9307,6 +9971,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9321,6 +9986,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9335,6 +10001,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9349,6 +10016,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9363,6 +10031,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9377,6 +10046,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9391,6 +10061,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9405,6 +10076,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9419,6 +10091,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -9433,6 +10106,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -9447,6 +10121,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -9461,6 +10136,7 @@
     "affected": 6,
     "incidence": 0.4,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -9475,6 +10151,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9489,6 +10166,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9503,6 +10181,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9517,6 +10196,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9531,6 +10211,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -9545,6 +10226,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -9559,6 +10241,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -9573,6 +10256,7 @@
     "affected": 4,
     "incidence": 0.2667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -9587,6 +10271,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9601,6 +10286,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9615,6 +10301,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9629,6 +10316,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9643,6 +10331,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9657,6 +10346,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9671,6 +10361,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9685,6 +10376,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9699,6 +10391,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9713,6 +10406,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9727,6 +10421,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9741,6 +10436,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9755,6 +10451,7 @@
     "affected": 7,
     "incidence": 0.7,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -9769,6 +10466,7 @@
     "affected": 10,
     "incidence": 0.6667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -9783,6 +10481,7 @@
     "affected": 10,
     "incidence": 0.6667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "warning"
   },
   {
@@ -9797,6 +10496,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "warning"
   },
   {
@@ -9811,6 +10511,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9825,6 +10526,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9839,6 +10541,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9853,6 +10556,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9867,6 +10571,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9881,6 +10586,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9895,6 +10601,7 @@
     "affected": 3,
     "incidence": 0.2,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9909,6 +10616,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9923,6 +10631,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9937,6 +10646,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9951,6 +10661,7 @@
     "affected": 2,
     "incidence": 0.1333,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -9965,6 +10676,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9979,6 +10691,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -9993,6 +10706,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -10007,6 +10721,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -10021,6 +10736,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -10035,6 +10751,7 @@
     "affected": 1,
     "incidence": 0.1,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -10049,6 +10766,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -10063,6 +10781,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -10077,6 +10796,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -10091,6 +10811,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -10105,6 +10826,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -10119,6 +10841,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -10133,6 +10856,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -10147,6 +10871,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -10161,6 +10886,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   },
   {
@@ -10175,6 +10901,7 @@
     "affected": 1,
     "incidence": 0.0667,
     "avg_severity": null,
+    "severity_status": "present_ungraded",
     "severity": "normal"
   },
   {
@@ -10189,6 +10916,7 @@
     "affected": 0,
     "incidence": 0.0,
     "avg_severity": null,
+    "severity_status": "absent",
     "severity": "normal"
   }
 ]

@@ -45,6 +45,14 @@ export interface StudyMetadata {
   study_director: string | null;
   glp: string | null;
   send_version: string | null;
+  recovery_sacrifice: string | null;   // RECSAC — e.g., "P14D"
+  terminal_sacrifice: string | null;   // TRMSAC — e.g., "P13W"
+  ct_version: string | null;           // SNDCTVER
+  diet: string | null;                 // DIET
+  age_text: string | null;             // AGETXT — e.g., "6-7"
+  age_unit: string | null;             // AGEU — e.g., "WEEKS"
+  sex_population: string | null;       // SEXPOP — e.g., "BOTH"
+  supplier: string | null;             // SPLRNAM
   domain_count: number;
   domains: string[];
   dose_groups: DoseGroup[] | null;
