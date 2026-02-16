@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSessionState } from "@/hooks/useSessionState";
 import {
   flexRender,
   getCoreRowModel,
@@ -22,12 +23,14 @@ interface DataTableProps {
   columns: ColumnInfo[];
   rows: Record<string, string | null>[];
   totalRows?: number;
+  storageKeyPrefix?: string;
 }
 
-export function DataTable({ columns, rows, totalRows }: DataTableProps) {
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-  const [sorting, setSorting] = useState<SortingState>([]);
+export function DataTable({ columns, rows, totalRows, storageKeyPrefix }: DataTableProps) {
+  const k = (field: string) => storageKeyPrefix ? `${storageKeyPrefix}.${field}` : `pcc._dt.${field}`;
+  const [columnVisibility, setColumnVisibility] = useSessionState<VisibilityState>(k("columnVisibility"), {});
+  const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>(k("columnSizing"), {});
+  const [sorting, setSorting] = useSessionState<SortingState>(k("sorting"), []);
   const [search, setSearch] = useState("");
 
   const tableColumns: ColumnDef<Record<string, string | null>>[] = columns.map(

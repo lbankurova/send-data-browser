@@ -9,7 +9,7 @@ import { PolymorphicRail } from "./PolymorphicRail";
  */
 export function ShellRailPanel() {
   const { studyId, domainName } = useParams<{ studyId: string; domainName: string }>();
-  const { width, onPointerDown } = useResizePanel(300, 180, 500);
+  const { width, onPointerDown } = useResizePanel(300, 180, 500, "left", "pcc.layout.railWidth");
 
   // Don't render on landing page, non-study routes, or domain browser
   if (!studyId || domainName) return null;

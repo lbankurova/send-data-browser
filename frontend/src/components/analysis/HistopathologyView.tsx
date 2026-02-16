@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useSessionState } from "@/hooks/useSessionState";
 import { useParams, useLocation } from "react-router-dom";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
@@ -482,8 +483,8 @@ function OverviewTab({
   allLesionData?: LesionSeverityRow[];
   onSpecimenNavigate?: (specimen: string) => void;
 }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [findingColSizing, setFindingColSizing] = useState<ColumnSizingState>({});
+  const [sorting, setSorting] = useSessionState<SortingState>("pcc.histopath.sorting", []);
+  const [findingColSizing, setFindingColSizing] = useSessionState<ColumnSizingState>("pcc.histopath.columnSizing", {});
   const [heatmapView, setHeatmapView] = useState<"severity" | "incidence">("severity");
   const [matrixMode, setMatrixMode] = useState<"group" | "subject">("group");
   const [affectedOnly, setAffectedOnly] = useState(true);
@@ -3579,7 +3580,7 @@ export function HistopathologyView() {
 
   // Read selected specimen from StudySelectionContext
   const selectedSpecimen = studySelection.specimen ?? null;
-  const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
+  const [activeTab, setActiveTab] = useSessionState<EvidenceTab>("pcc.histopath.tab", "overview");
   const [selection, setSelection] = useState<HistopathSelection | null>(null);
   const [comparisonSubjects, setComparisonSubjects] = useState<Set<string>>(new Set());
   const { filters } = useGlobalFilters();

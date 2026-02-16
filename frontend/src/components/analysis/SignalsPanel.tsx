@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSessionState } from "@/hooks/useSessionState";
 import { useNavigate } from "react-router-dom";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import {
@@ -317,8 +318,8 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
   signalData: SignalSummaryRow[]; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void;
 }) {
   const [filters, setFilters] = useState<MetricsFilters>({ sex: null, severity: null, significant_only: false });
-  const [sorting, setSorting] = useState<SortingState>([{ id: "signal_score", desc: true }]);
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [sorting, setSorting] = useSessionState<SortingState>("pcc.signals.sorting", [{ id: "signal_score", desc: true }]);
+  const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.signals.columnSizing", {});
 
   const filteredData = useMemo(() => signalData.filter((row) => {
     if (filters.sex && row.sex !== filters.sex) return false;
@@ -425,7 +426,7 @@ type EvidenceTab = "overview" | "matrix" | "metrics" | "rules";
 export function SignalsEvidencePanel({ organ, signalData, ruleResults, modifiers, caveats, selection, onSelect, studyId }: {
   organ: TargetOrganRow; signalData: SignalSummaryRow[]; ruleResults: RuleResult[]; modifiers: PanelStatement[]; caveats: PanelStatement[]; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void; studyId: string;
 }) {
-  const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
+  const [activeTab, setActiveTab] = useSessionState<EvidenceTab>("pcc.signals.tab", "overview");
   const organSignalData = useMemo(() => signalData.filter((r) => r.organ_system === organ.organ_system), [signalData, organ.organ_system]);
   const significantPct = organ.n_endpoints > 0 ? ((organ.n_significant / organ.n_endpoints) * 100).toFixed(0) : "0";
 
