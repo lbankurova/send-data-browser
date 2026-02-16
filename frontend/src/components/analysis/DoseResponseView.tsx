@@ -365,9 +365,9 @@ export function DoseResponseView() {
         cell: (info) => {
           const v = info.getValue();
           return (
-            <span className="truncate" title={v}>
-              {v.length > 25 ? v.slice(0, 25) + "\u2026" : v}
-            </span>
+            <div className="overflow-hidden text-ellipsis whitespace-nowrap" title={v}>
+              {v}
+            </div>
           );
         },
       }),
@@ -1641,10 +1641,11 @@ function MetricsTableContent({
   handleRowClick,
 }: MetricsTableProps) {
   const ABSORBER_ID = "endpoint_label";
+  const { columnSizing: cs } = table.getState();
   function colStyle(colId: string) {
-    const manualWidth = table.getState().columnSizing[colId];
+    const manualWidth = cs[colId];
     if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
-    if (colId === ABSORBER_ID) return undefined;
+    if (colId === ABSORBER_ID) return { width: "100%" };
     return { width: 1, whiteSpace: "nowrap" as const };
   }
 
@@ -1700,7 +1701,7 @@ function MetricsTableContent({
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                    className="relative cursor-pointer px-2.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                     style={colStyle(header.id)}
                     onDoubleClick={header.column.getToggleSortingHandler()}
                   >
@@ -1735,19 +1736,22 @@ function MetricsTableContent({
                   data-selected={isSelected || undefined}
                   onClick={() => handleRowClick(orig)}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className={cn(
-                        "px-1.5 py-px",
-                        cell.column.id === ABSORBER_ID && !table.getState().columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
-                      )}
-                      style={colStyle(cell.column.id)}
-                      data-evidence=""
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const isAbsorber = cell.column.id === ABSORBER_ID;
+                    return (
+                      <td
+                        key={cell.id}
+                        className={cn(
+                          "px-2.5 py-px",
+                          isAbsorber && !cs[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
+                        )}
+                        style={colStyle(cell.column.id)}
+                        data-evidence=""
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}
