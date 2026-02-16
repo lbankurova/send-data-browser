@@ -4,7 +4,7 @@ import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PolymorphicRail } from "./PolymorphicRail";
 import { FindingsRail } from "@/components/analysis/findings/FindingsRail";
-import { getAERailCallback } from "@/components/analysis/findings/AdverseEffectsView";
+import { getAERailCallback, setAEClearScopeCallback } from "@/components/analysis/findings/AdverseEffectsView";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
@@ -46,6 +46,15 @@ export function ShellRailPanel() {
       getAERailCallback()?.({ activeGroupScope: null, activeEndpoint: null, activeGrouping: "organ" });
     }
   }, [studyId]);
+
+  // Register reverse callback so AE filter bar chip can clear rail scope
+  useEffect(() => {
+    setAEClearScopeCallback(() => {
+      setGroupScope(null);
+      setActiveEndpoint(null);
+    });
+    return () => setAEClearScopeCallback(null);
+  }, []);
 
   // ── View-aware handlers ──
 
