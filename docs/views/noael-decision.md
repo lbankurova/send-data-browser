@@ -65,16 +65,32 @@ Card surface is always neutral (plain `border`). Color is confined to the status
 
 **Row 1:** `mb-1 flex items-center justify-between`
 - Sex label: `text-xs font-semibold` — "Combined" / "Males" / "Females"
-- Status text: `text-[10px] font-medium` — "Established" (green) or "Not established" (red)
+- Status area: `flex items-center gap-1.5`
+  - If override exists: `text-[10px] font-medium text-blue-600` — "Overridden"
+  - If no override: `text-[10px] font-medium` — "Established" (green `#15803d`) or "Not established" (red `#dc2626`)
+  - Pencil edit button: `text-muted-foreground/40 hover:text-muted-foreground`, Lucide `Pencil` icon (h-3 w-3). Toggles inline override form.
 
 **Row 2+:** `space-y-0.5 text-[11px]`
-- NOAEL: label `text-muted-foreground`, value `font-medium` — "{dose_value} {dose_unit}"
-- LOAEL: label `text-muted-foreground`, value `font-medium` — loael_label (first part before comma)
+- NOAEL: `flex justify-between` — label `text-muted-foreground`, value `font-medium`. If override: shows override value + original value in `text-[10px] text-muted-foreground line-through` strikethrough.
+- LOAEL: label `text-muted-foreground`, value `font-medium` — `formatDoseShortLabel(loael_label)`
 - Adverse at LOAEL: label `text-muted-foreground`, value `font-medium` — count
-- Confidence (if `noael_confidence != null`): label `text-muted-foreground`, value wrapped in `ConfidencePopover` — clickable `font-medium` with color (`text-green-700` >= 80%, `text-amber-700` >= 60%, `text-red-700` < 60%) showing percentage. Popover shows confidence breakdown and comparison across sexes.
+- Override rationale (if override exists and not editing): `mt-0.5 text-[10px] italic text-muted-foreground line-clamp-2` with `title` tooltip for full text
+- LOAEL dose-limiting findings (if present): `mt-0.5 text-[10px] text-muted-foreground` — up to 3 finding buttons (`hover:text-foreground hover:underline`) with DomainLabel chips, separated by `·`. Each clicks `onFindingClick`. "+N more" overflow if > 3.
+- Confidence (if `noael_confidence != null` and no override): label `text-muted-foreground`, value wrapped in `ConfidencePopover` — clickable `font-medium` with color (`text-green-700` >= 80%, `text-amber-700` >= 60%, `text-red-700` < 60%) showing percentage. Popover shows confidence breakdown and comparison across sexes.
+- Domain badges (if `adverse_domains_at_loael` not empty and no override): `mt-1 flex flex-wrap gap-1` — `DomainLabel` components (plain colored text, no background)
 
-**Row 3 (conditional):** Only rendered if `adverse_domains_at_loael` is not empty. `mt-1 flex flex-wrap gap-1`
-- Domain labels: plain colored text `text-[9px] font-semibold` with `getDomainBadgeColor().text` (no background — consistent with domain label rule)
+**Inline override form (conditional, when editing):**
+- Container: `mt-2 rounded-md border border-dashed border-primary/30 bg-muted/10 p-2`
+- Title: `mb-1.5 text-[10px] font-semibold` — "Override NOAEL determination"
+- Dose select: `w-full rounded border bg-background px-1.5 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary` — options from unique dose labels in aeData + "Not established"
+- Rationale textarea: same styling, `rows={2}`, placeholder "Required — explain why..."
+- Buttons: Cancel (`text-muted-foreground hover:bg-muted/40`), Save (`bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground disabled:opacity-50`). Save disabled if no rationale or no change.
+
+**Narrative summary (below cards):**
+- Container: `mt-2 line-clamp-3 text-xs leading-relaxed text-foreground/80`
+- Generated via `generateNoaelNarrative()` from `lib/noael-narrative.ts`
+- If sexes have different NOAEL levels (divergent): shows "Males: {narrative}" + "Females: {narrative}" with `font-medium` labels
+- Otherwise: shows single combined narrative
 
 ---
 
@@ -195,9 +211,11 @@ Each cell has a tooltip: `"{endpoint} at {dose}: {severity} [(TR)]"`.
 
 Rendered inside `ViewSection mode="flex"` with title "Adverse effect summary ({N})" where N is the filtered count.
 
-TanStack React Table, `text-xs`, client-side sorting with column resizing. Scoped to selected organ.
+TanStack React Table, `w-full text-[10px]`, client-side sorting with column resizing and content-hugging + absorber pattern. Scoped to selected organ.
 
-Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` for resize support. Column resizing enabled via `enableColumnResizing: true` and `columnResizeMode: "onChange"`. Each header has a resize handle (`absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize`). Sorting is triggered by double-clicking column headers. Cell widths use `header.getSize()` / `cell.column.getSize()`.
+**Table styling:** Header: `sticky top-0 z-10 bg-background`, `<tr>` with `border-b bg-muted/30`. Header cells: `relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`. Body cells: `px-1.5 py-px`. Sort on double-click, sort indicators `↑`/`↓`. Resize handles: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none` with `bg-primary` when resizing, `hover:bg-primary/30` otherwise.
+
+**Content-hugging + absorber:** All columns except `endpoint_label` (the absorber) use `width: 1px; white-space: nowrap`. The absorber uses `width: 100%`. Manual resize overrides with explicit width + maxWidth.
 
 **Columns:**
 
@@ -215,7 +233,7 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 | dose_response_pattern | Pattern | `text-muted-foreground`, underscores replaced with spaces |
 | recovery | Recovery | **Conditional column** — only present when `recovery.hasRecovery` is true. For MI/MA domain rows: shows verdict arrow + verdict text (`text-[9px]`, `font-medium text-foreground/70` for persistent/progressing, else `text-muted-foreground`). Tooltip shows full recovery assessment details via `buildRecoveryTooltip()`. For non-MI/MA rows: em dash. |
 
-Row cap: 200 rows with message. Row interactions: click to select/deselect, hover highlight.
+Row cap: 200 rows with truncation message ("Showing first 200 of {N} rows. Use filters to narrow results."). Row interactions: `cursor-pointer border-b transition-colors hover:bg-accent/50`, `bg-accent font-medium` on selection. Click to select/deselect. Empty state: "No rows match the current filters."
 
 ---
 
@@ -227,11 +245,12 @@ The `NoaelContextPanelWrapper` in `ContextPanel.tsx` fetches `aeData` and `ruleR
 
 ### No Selection State
 
-Header: `CollapseAllButtons` (right-aligned, no title).
+Header: `flex items-center justify-end border-b px-4 py-1.5` with `CollapseAllButtons` (right-aligned, no title).
 
 Panes:
-1. **NOAEL narrative** (default open) — `InsightsList` with rules where `scope === "study"`. Provides interpretive value the banner doesn't (study-level rule insights, contextual reasoning).
-2. Footer: "Select an endpoint to view adversity rationale."
+1. **NOAEL rationale** (CollapsiblePane, default open) — narrative text from `generateNoaelNarrative()` in `text-[11px] leading-relaxed text-foreground/80`. Below: "Dose-limiting findings at LOAEL" section (if present) with clickable finding buttons: `flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-[10px] hover:bg-muted/40` — finding name (`font-medium`) + `DomainLabel` + right-aligned stats (`ml-auto text-muted-foreground` — "|d|={ES}, p={P}").
+2. **Insights** (CollapsiblePane, default open) — `InsightsList` with rules where `scope === "study"`. `onEndpointClick` navigates to dose-response view.
+3. Footer: `px-4 py-3 text-xs text-muted-foreground` — "Select an endpoint to view adversity rationale."
 
 Note: NOAEL summary table and confidence factors were removed (RED-02) — the persistent banner already shows sex × NOAEL × LOAEL × confidence numerics. Duplicating them in the context panel added no interpretive value.
 
@@ -252,16 +271,17 @@ Panes (ordered per design system priority — insights → stats → annotation 
 | State | Scope | Managed By |
 |-------|-------|------------|
 | Selected organ | Shared via context | `StudySelectionContext` (`studySelection.organSystem`) — set by shell-level organ rail |
-| Active tab | Local | `useState<EvidenceTab>` — "overview" (Evidence tab) or "matrix" (Adversity matrix tab) |
+| Active tab | Session-persisted | `useSessionState<EvidenceTab>("pcc.noael.tab", "overview")` — "overview" (Evidence tab) or "matrix" (Adversity matrix tab) |
 | Selection (endpoint) | Local | `useState<NoaelSelection \| null>` — endpoint + dose + sex selection, bridged to `ViewSelectionContext` with `_view: "noael"` tag |
 | Sex filter | Global | `GlobalFilterContext` (`globalFilters.sex`) — shared across views, persists when switching organs |
 | TR filter | Local | `useState<string \| null>` — for Adversity matrix tab, reset to null on organ change |
-| Sorting | Local | `useState<SortingState>` — TanStack sorting state (in AdversityMatrixTab) |
-| Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in AdversityMatrixTab) |
+| Sorting | Session-persisted | `useSessionState<SortingState>("pcc.noael.sorting", [])` — TanStack sorting state (in AdversityMatrixTab) |
+| Column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.noael.columnSizing", {})` — TanStack column resize state (in AdversityMatrixTab) |
 | Section heights | Local (AdversityMatrixTab) | `useAutoFitSections` — matrix section (250px default, 80-500px) |
 | Expand/collapse all | Local | `useCollapseAll` — `expandGen`/`collapseGen` counters for ViewSection and CollapseAllButtons |
 | Rail width | Shell | Managed by shell-level `OrganRailMode` (not embedded in this view) |
-| NOAEL summary data | Server | `useNoaelSummary` hook (React Query, 5min stale) |
+| NOAEL summary data | Server | `useEffectiveNoael` hook — merges `useNoaelSummary` (React Query, 5min stale) with `useAnnotations<NoaelOverride>` override annotations |
+| NOAEL override annotations | Server | `useAnnotations<NoaelOverride>(studyId, "noael-override")` — override edits saved via `useSaveAnnotation` |
 | Adverse effect data | Server | `useAdverseEffectSummary` hook (React Query, 5min stale) |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
 | Recovery data | Server | `useOrganRecovery` hook — fetches histopath subject data per MI/MA specimen, derives recovery assessments via `deriveRecoveryAssessments()` |
@@ -271,7 +291,7 @@ Panes (ordered per design system priority — insights → stats → annotation 
 ## Data Flow
 
 ```
-useNoaelSummary(studyId)          ──> noaelData (3 rows: M/F/Combined)
+useEffectiveNoael(studyId)        ──> noaelData (3 rows: M/F/Combined, merged with overrides)
 useAdverseEffectSummary(studyId)  ──> aeData (357 rows)
 useRuleResults(studyId)           ──> ruleResults (shared React Query cache)
                                           |
