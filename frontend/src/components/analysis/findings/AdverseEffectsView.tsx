@@ -14,6 +14,7 @@ import type { GroupingMode } from "@/lib/findings-rail-engine";
 export interface AERailState {
   activeGroupScope: { type: GroupingMode; value: string } | null;
   activeEndpoint: string | null;
+  activeGrouping: GroupingMode;
   onGroupScopeChange: (scope: { type: GroupingMode; value: string } | null) => void;
   onEndpointSelect: (endpointLabel: string | null) => void;
 }
@@ -21,7 +22,7 @@ export interface AERailState {
 // Singleton event bus — rail and view are siblings, not parent-child.
 // ShellRailPanel renders FindingsRail, Layout renders AdverseEffectsView via Outlet.
 // We use a simple callback registry so the rail can communicate scope changes.
-let _aeRailCallback: ((state: Partial<Pick<AERailState, "activeGroupScope" | "activeEndpoint">>) => void) | null = null;
+let _aeRailCallback: ((state: Partial<Pick<AERailState, "activeGroupScope" | "activeEndpoint" | "activeGrouping">>) => void) | null = null;
 
 export function setAERailCallback(cb: typeof _aeRailCallback) {
   _aeRailCallback = cb;
@@ -44,6 +45,7 @@ export function AdverseEffectsView() {
     endpoint_label: null,
     dose_response_pattern: null,
   });
+  const [activeGrouping, setActiveGrouping] = useState<GroupingMode>("organ");
 
   // Sync study selection
   useEffect(() => {
@@ -59,13 +61,14 @@ export function AdverseEffectsView() {
   // Rail group scope → update API filters
   const handleGroupScopeChange = useCallback((scope: { type: GroupingMode; value: string } | null) => {
     if (!scope) {
-      setFilters((prev) => ({ ...prev, organ_system: null, endpoint_label: null, dose_response_pattern: null }));
+      // Clear ALL rail-driven filters (domain included — it may have been set by domain grouping)
+      setFilters((prev) => ({ ...prev, domain: null, organ_system: null, endpoint_label: null, dose_response_pattern: null }));
     } else if (scope.type === "organ") {
-      setFilters((prev) => ({ ...prev, organ_system: scope.value, endpoint_label: null }));
+      setFilters((prev) => ({ ...prev, organ_system: scope.value, domain: null, endpoint_label: null, dose_response_pattern: null }));
     } else if (scope.type === "domain") {
       setFilters((prev) => ({ ...prev, domain: scope.value, organ_system: null, endpoint_label: null, dose_response_pattern: null }));
     } else if (scope.type === "pattern") {
-      setFilters((prev) => ({ ...prev, dose_response_pattern: scope.value, organ_system: null, endpoint_label: null }));
+      setFilters((prev) => ({ ...prev, dose_response_pattern: scope.value, domain: null, organ_system: null, endpoint_label: null }));
     }
   }, []);
 
@@ -84,6 +87,7 @@ export function AdverseEffectsView() {
     setAERailCallback((state) => {
       if (state.activeGroupScope !== undefined) handleGroupScopeChange(state.activeGroupScope);
       if (state.activeEndpoint !== undefined) handleEndpointSelect(state.activeEndpoint);
+      if (state.activeGrouping !== undefined) setActiveGrouping(state.activeGrouping);
     });
     return () => setAERailCallback(null);
   }, [handleGroupScopeChange, handleEndpointSelect]);
@@ -116,7 +120,7 @@ export function AdverseEffectsView() {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Filter bar — aligned with other views */}
       <FilterBar>
-        <FindingsFilterBar filters={filters} onFiltersChange={setFilters} />
+        <FindingsFilterBar filters={filters} onFiltersChange={setFilters} hideDomain={activeGrouping === "domain"} />
         {data && (
           <>
             <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">

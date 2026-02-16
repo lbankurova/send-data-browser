@@ -22,6 +22,17 @@ export function ShellRailPanel() {
   const [groupScope, setGroupScope] = useState<{ type: GroupingMode; value: string } | null>(null);
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
 
+  // Reset rail-driven state on study change
+  const prevStudyRef = useRef(studyId);
+  useEffect(() => {
+    if (studyId !== prevStudyRef.current) {
+      prevStudyRef.current = studyId;
+      setGroupScope(null);
+      setActiveEndpoint(null);
+      getAERailCallback()?.({ activeGroupScope: null, activeEndpoint: null, activeGrouping: "organ" });
+    }
+  }, [studyId]);
+
   const handleGroupScopeChange = useCallback((scope: { type: GroupingMode; value: string } | null) => {
     setGroupScope(scope);
     setActiveEndpoint(null);
@@ -31,6 +42,10 @@ export function ShellRailPanel() {
   const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
     setActiveEndpoint(endpointLabel);
     getAERailCallback()?.({ activeEndpoint: endpointLabel });
+  }, []);
+
+  const handleGroupingChange = useCallback((mode: GroupingMode) => {
+    getAERailCallback()?.({ activeGrouping: mode });
   }, []);
 
   // ── Bidirectional sync: table row click → rail highlight ──
@@ -68,6 +83,7 @@ export function ShellRailPanel() {
             activeEndpoint={activeEndpoint}
             onGroupScopeChange={handleGroupScopeChange}
             onEndpointSelect={handleEndpointSelect}
+            onGroupingChange={handleGroupingChange}
           />
         ) : (
           <PolymorphicRail />
