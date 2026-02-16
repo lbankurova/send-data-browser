@@ -101,7 +101,7 @@ Container: `flex h-full flex-col bg-muted/5`
 
 **Title row:** `flex items-start justify-between gap-2`
 - Left: `min-w-0 flex-1` div with `DoseResponseEndpointPicker` dropdown (in a `mb-1 flex items-center gap-2` container) + subtitle on next line
-- Right: full pattern badge (`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium` with pattern-specific gray variant from `PATTERN_BG`, defaulting to `bg-gray-100 text-gray-500`)
+- Right: full pattern badge (`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium` with pattern-specific gray variant from `PATTERN_BG`). Per-pattern colors: monotonic_increase/decrease/threshold/non_monotonic = `bg-gray-100 text-gray-600`; flat = `bg-gray-100 text-gray-500`; insufficient_data = `bg-gray-100 text-gray-400`.
 
 **Subtitle:** `text-[11px] text-muted-foreground`
 - Format: "`<DomainLabel domain={domain} />` &middot; {titleCase(organ_system)}" — domain code rendered as colored text via DomainLabel component
@@ -177,14 +177,17 @@ Container: `ViewSection` component with `mode="fixed"`, title "Charts". Height m
 
 #### Categorical Data: Bar Chart (ECharts via `buildIncidenceBarOption`)
 
+- Header: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` -- "Incidence by dose" + `ChartModeToggle` (only for categorical endpoints)
 - Container: `<EChartsWrapper style={{ width: "100%", height: 220 }}>`
 - Grid: same `{ left: 44, right: 12, top: 16, bottom: 28 }`
 - X-axis: dose labels, category axis, tick fontSize 10
-- Y-axis: domain `[0, 1]`, tick fontSize 10, label formatter shows percentage
+- Y-axis: domain `[0, 1]`, tick fontSize 10, label formatter shows percentage. When `isCompact` mode, Y-axis auto-scales to data range.
 - Tooltip: custom HTML formatter showing incidence as percentage `{(value * 100).toFixed(0)}%`
 - Bar: one series per sex, `barMaxWidth: 30`, `borderRadius: [2, 2, 0, 0]`
   - Fill: sex-colored (`#3b82f6` M, `#ec4899` F). Significant bars (p < 0.05) get a dark border (`borderColor: "#1F2937"`, `borderWidth: 1.5`) rather than red fill -- this preserves sex identity encoding while marking significance via a non-color channel.
 - NOAEL reference line: same markLine pattern as the continuous chart.
+
+**Incidence scale toggle (`ChartModeToggle`):** Appears next to the "Incidence by dose" header for categorical endpoints. Two modes: "C" (compact — auto-scale to data) and "S" (scaled — fixed 0-1 axis range). Default: compact when `maxIncidence < 0.3`, scaled otherwise. Auto-updates on endpoint change. Component: `flex gap-px rounded-sm bg-muted/40 p-px`, buttons: `rounded-sm px-1 py-px text-[9px] font-semibold leading-none`, active: `bg-foreground text-background`, inactive: `text-muted-foreground/50 hover:text-muted-foreground`.
 
 #### Effect Size Bar Chart (right panel, ECharts via `buildEffectSizeBarOption`)
 
@@ -358,14 +361,14 @@ Each checkbox: `flex cursor-pointer items-center gap-1 text-xs text-muted-foregr
 
 ### Metrics Grid
 
-TanStack React Table, `text-xs`, client-side sorting with column resizing.
+TanStack React Table, `text-[10px]`, client-side sorting with column resizing.
 
-Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` for resize support.
+**Content-hugging + absorber:** The `endpoint_label` column is the absorber (`width: 100%`). All other columns use `width: 1px; white-space: nowrap` so the browser shrinks them to fit content. Manual resize overrides with an explicit `width` + `maxWidth`.
 
 **Column resizing:** Enabled via `enableColumnResizing: true` and `columnResizeMode: "onChange"`. Each header cell has a resize handle `<div>` positioned at `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none`. Active resize: `bg-primary`; hover: `hover:bg-primary/30`.
 
-**Header row:** `sticky top-0 z-10 bg-background` wrapping `tr` with `border-b bg-muted/50`
-- Headers: `relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50` with `style={{ width: header.getSize() }}`
+**Header row:** `sticky top-0 z-10 bg-background` wrapping `tr` with `border-b bg-muted/30`
+- Headers: `relative cursor-pointer px-2.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`
 - Double-click for sorting (via `onDoubleClick={header.column.getToggleSortingHandler()}`). Shows arrow indicator: ` ↑` asc / ` ↓` desc.
 - No default sort applied
 
@@ -373,7 +376,7 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 
 | Column | Header | Cell Rendering |
 |--------|--------|----------------|
-| endpoint_label | Endpoint | Truncated at 25 chars with ellipsis, `title` tooltip for full name |
+| endpoint_label | Endpoint | CSS text-overflow ellipsis via `overflow-hidden text-ellipsis whitespace-nowrap` div, `title` tooltip for full name. Absorber column. |
 | domain | Domain | Colored text only: `text-[9px] font-semibold` with `getDomainBadgeColor(domain).text`. No background badge. |
 | dose_level | Dose | `DoseLabel` component -- `font-mono text-[11px]` with dose-group-colored text via `getDoseGroupColor(level)`. |
 | n | N | Plain text, em dash if null |
@@ -389,10 +392,10 @@ Table width is set to `table.getCenterTotalSize()` with `tableLayout: "fixed"` f
 
 **Row interactions:**
 - Hover: `hover:bg-accent/50`
-- Selected: `bg-accent` (matched on `endpoint_label` + `sex`)
+- Selected: `bg-accent font-medium` (matched on `endpoint_label` + `sex`)
 - Click: sets selection (`endpoint_label`, `sex`, `domain`, `organ_system`). Click again to deselect (toggle).
 - Selection syncs `selectedEndpoint` state so chart/header update.
-- Row cells: `px-2 py-1` with `data-evidence=""`
+- Row cells: `px-2.5 py-px` with `data-evidence=""`
 
 **Row cap:** None -- all rows rendered regardless of count.
 
@@ -406,16 +409,6 @@ Domain codes use colored-text-only rendering per the project-wide design rule. C
 
 Dose groups use the `DoseLabel` component: `font-mono text-[11px]` with dose-group-colored text via `getDoseGroupColor(level)`. This applies in both the pairwise comparison table and the metrics grid.
 
-### P-value Color Scale (text classes)
-
-| Threshold | Class |
-|-----------|-------|
-| p < 0.001 | `text-red-600 font-semibold` |
-| p < 0.01 | `text-red-500 font-medium` |
-| p < 0.05 | `text-amber-600 font-medium` |
-| p < 0.1 | `text-amber-500` |
-| p >= 0.1 | `text-muted-foreground` |
-
 ### P-value Formatting
 
 | Range | Format |
@@ -425,16 +418,6 @@ Dose groups use the `DoseLabel` component: `font-mono text-[11px]` with dose-gro
 | p < 0.01 | 3 decimal places |
 | p >= 0.01 | 2 decimal places |
 | null | em dash |
-
-### Effect Size Color Scale
-
-| Threshold | Class |
-|-----------|-------|
-| |d| >= 1.2 | `text-red-600 font-semibold` |
-| |d| >= 0.8 | `text-red-500 font-medium` |
-| |d| >= 0.5 | `text-amber-600` |
-| |d| >= 0.2 | `text-amber-500` |
-| |d| < 0.2 | `text-muted-foreground` |
 
 ---
 
@@ -542,21 +525,22 @@ All links: `block text-primary hover:underline`, arrow suffix (`&#x2192;`).
 | State | Scope | Managed By |
 |-------|-------|------------|
 | Selected endpoint | Local | `useState<string \| null>` -- tracks which endpoint is active in the picker and evidence panel |
-| Active tab | Local | `useState<"evidence" \| "hypotheses" \| "metrics">` -- switches between evidence, metrics, and hypotheses views |
+| Active tab | Session-persisted | `useSessionState<"evidence" \| "hypotheses" \| "metrics">("pcc.doseResponse.tab", "evidence")` -- switches between evidence, metrics, and hypotheses views |
 | Selection (local) | Local | `useState<DoseResponseSelection \| null>` -- full selection object with endpoint_label, sex, domain, organ_system |
 | Section collapse | Local | `useCollapseAll()` -- generation counters for Evidence tab ViewSection expand/collapse |
 | Selection (shared) | Shared via context | `StudySelectionContext` via `useStudySelection()` hook -- syncs `studySelection.endpoint` and `studySelection.organSystem` |
 | Metrics filters | Local | `useState` -- `{ sex, data_type, organ_system }`, each nullable string |
 | sigOnly | Local | `useState<boolean>(false)` -- checkbox filter for p < 0.05 rows |
-| Sorting | Local | `useState<SortingState>` -- TanStack sorting state for metrics table |
-| Column sizing | Local | `useState<ColumnSizingState>` -- TanStack column resize state for metrics table |
+| Incidence scale | Local (evidence tab) | `useState<ChartDisplayMode>` -- "compact" (auto-scale) or "scaled" (fixed 0-1). Default based on `maxIncidence < 0.3`. Auto-updates on endpoint change. |
+| Sorting | Session-persisted | `useSessionState<SortingState>("pcc.doseResponse.sorting", [])` -- TanStack sorting state for metrics table |
+| Column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.doseResponse.columnSizing", {})` -- TanStack column resize state for metrics table |
 | Bookmark filter | Local (picker) | `useState<boolean>(false)` inside `DoseResponseEndpointPicker` -- toggles to show only bookmarked endpoints |
 | Picker search | Local (picker) | `useState<string>` inside `DoseResponseEndpointPicker` -- text input for filtering endpoints |
 | Bookmarks | Server | `useEndpointBookmarks(studyId)` hook (inside picker) |
 | Dose-response data | Server | `useDoseResponseMetrics(studyId)` hook (React Query) |
 | Rule results | Server | `useRuleResults(studyId)` hook (consumed by Hypotheses tab and context panel) |
 | Signal summary | Server | `useStudySignalSummary(studyId)` hook (consumed by Hypotheses tab) |
-| NOAEL summary | Server | `useNoaelSummary(studyId)` hook (consumed by summary header and chart NOAEL reference line) |
+| NOAEL summary | Server | `useEffectiveNoael(studyId)` hook (consumed by summary header and chart NOAEL reference line) |
 | ToxFinding annotations | Server | `useAnnotations<ToxFinding>(studyId, "tox-finding")` (consumed by header "Assessed" field) |
 
 ---
@@ -620,7 +604,7 @@ useDoseResponseMetrics(studyId)  --> drData (rows)
 
 Additional data flows:
 - `useEndpointBookmarks(studyId)` --> bookmark state for picker filtering and BookmarkStar rendering (inside picker component)
-- `useNoaelSummary(studyId)` --> NOAEL reference line on charts + NOAEL info in summary header
+- `useEffectiveNoael(studyId)` --> NOAEL reference line on charts + NOAEL info in summary header
 - `useAnnotations<ToxFinding>(studyId, "tox-finding")` --> "Assessed" field in summary header
 - `useRuleResults(studyId)` + `useStudySignalSummary(studyId)` --> passed to HypothesesTabContent for Causality tool
 
@@ -1111,7 +1095,6 @@ The view uses `StudySelectionContext` (not `ViewSelectionContext`) for selection
 ### Charts
 - Error bars use raw SD, not SEM
 - No dose-response curve fitting or trend line overlay
-- Categorical bar chart Y-axis always 0-1 even if incidence is low
 
 ### Metrics Table
 - No row cap -- all rows rendered, could cause performance issues with larger datasets
@@ -1130,6 +1113,18 @@ The view uses `StudySelectionContext` (not `ViewSelectionContext`) for selection
 ---
 
 ## Changelog
+
+### 2026-02-16 -- Spec sync with codebase (session state, ChartModeToggle, metrics layout)
+
+- **Session-persisted state:** `activeTab`, `sorting`, and `columnSizing` now use `useSessionState` (not plain `useState`) with keys `pcc.doseResponse.tab`, `pcc.doseResponse.sorting`, `pcc.doseResponse.columnSizing`.
+- **NOAEL hook:** Renamed `useNoaelSummary` to `useEffectiveNoael` throughout.
+- **Categorical incidence scale toggle:** Added `ChartModeToggle` component documentation for categorical bar chart compact/scaled modes. Default "compact" when `maxIncidence < 0.3`.
+- **Pattern badge colors:** Documented per-pattern text colors (text-gray-600, text-gray-500, text-gray-400) instead of single default.
+- **Metrics grid layout:** Replaced `table.getCenterTotalSize()` + `tableLayout: "fixed"` with content-hugging + absorber pattern (absorber = `endpoint_label`). Updated text size to `text-[10px]`, header row to `bg-muted/30`, header cell padding to `px-2.5 py-1`, row cell padding to `px-2.5 py-px`.
+- **Metrics endpoint column:** Changed from "truncated at 25 chars" to CSS text-overflow ellipsis.
+- **Metrics selected row:** Added `font-medium` to selected row styling.
+- **Removed P-value/Effect size color scale sections:** These functions exist in severity-colors.ts but are not used in this view — all evidence columns use `ev` interaction-driven class only.
+- **Fixed issue:** Removed "Categorical bar chart Y-axis always 0-1" from issues (now fixed with ChartModeToggle).
 
 ### 2026-02-15 -- Spec sync with codebase
 
@@ -1180,7 +1175,7 @@ The view uses `StudySelectionContext` (not `ViewSelectionContext`) for selection
 - **Significance legend:** Corrected to gray dot with dark border (`border-2 border-gray-700 bg-gray-400`), not red dot.
 - **Endpoint bookmarks:** Added documentation for `useEndpointBookmarks`, `useToggleBookmark`, `BookmarkStar`, bookmark filter toggle.
 - **NOAEL reference line:** Documented `noaelLabel` param in chart builders and NOAEL markLine rendering.
-- **NOAEL summary:** Documented `useNoaelSummary` integration in header.
+- **NOAEL summary:** Documented `useEffectiveNoael` integration in header.
 - **ToxFinding annotations:** Documented assessment checkmarks in rail and "Assessed" field in header.
 - **`onSubjectClick` callback:** Documented for time-course chart subject lines and wrapper connection.
 - **`TimecourseTable` component:** Documented day-by-dose comparison table below time-course chart.
