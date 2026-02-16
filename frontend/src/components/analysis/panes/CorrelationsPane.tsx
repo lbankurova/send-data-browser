@@ -13,9 +13,6 @@ export function CorrelationsPane({ data }: Props) {
     return (
       <div className="space-y-3">
         <InsightBlock insights={data.insights} />
-        <p className="text-xs text-muted-foreground">
-          No correlated findings for this endpoint.
-        </p>
       </div>
     );
   }
