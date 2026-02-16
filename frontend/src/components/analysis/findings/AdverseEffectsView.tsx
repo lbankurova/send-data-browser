@@ -8,7 +8,9 @@ import { FindingsTable } from "../FindingsTable";
 import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AdverseEffectsFilters } from "@/types/analysis";
+import { getDomainFullLabel, getPatternLabel } from "@/lib/findings-rail-engine";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
+import { titleCase } from "@/lib/severity-colors";
 
 /** Context bridge so ShellRailPanel can pass rail callbacks to the AE view. */
 export interface AERailState {
@@ -23,12 +25,20 @@ export interface AERailState {
 // ShellRailPanel renders FindingsRail, Layout renders AdverseEffectsView via Outlet.
 // We use a simple callback registry so the rail can communicate scope changes.
 let _aeRailCallback: ((state: Partial<Pick<AERailState, "activeGroupScope" | "activeEndpoint" | "activeGrouping">>) => void) | null = null;
+/** Reverse channel: AE view → ShellRailPanel (for clearing rail scope from filter bar chip). */
+let _aeClearScopeCallback: (() => void) | null = null;
 
 export function setAERailCallback(cb: typeof _aeRailCallback) {
   _aeRailCallback = cb;
 }
 export function getAERailCallback() {
   return _aeRailCallback;
+}
+export function setAEClearScopeCallback(cb: typeof _aeClearScopeCallback) {
+  _aeClearScopeCallback = cb;
+}
+export function getAEClearScopeCallback() {
+  return _aeClearScopeCallback;
 }
 
 export function AdverseEffectsView() {
@@ -108,6 +118,20 @@ export function AdverseEffectsView() {
     }
   }, [filters.endpoint_label, data, selectFinding]);
 
+  // Derive scope label for filter bar chip
+  const scopeLabel = filters.organ_system
+    ? titleCase(filters.organ_system)
+    : filters.domain
+      ? getDomainFullLabel(filters.domain)
+      : filters.dose_response_pattern
+        ? getPatternLabel(filters.dose_response_pattern)
+        : null;
+
+  const clearScope = useCallback(() => {
+    handleGroupScopeChange(null);
+    _aeClearScopeCallback?.();
+  }, [handleGroupScopeChange]);
+
   if (error) {
     return (
       <div className="p-6 text-destructive">
@@ -120,7 +144,13 @@ export function AdverseEffectsView() {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Filter bar — aligned with other views */}
       <FilterBar>
-        <FindingsFilterBar filters={filters} onFiltersChange={setFilters} hideDomain={activeGrouping === "domain"} />
+        <FindingsFilterBar
+          filters={filters}
+          onFiltersChange={setFilters}
+          hideDomain={activeGrouping === "domain"}
+          scopeLabel={scopeLabel}
+          onClearScope={clearScope}
+        />
         {data && (
           <>
             <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
