@@ -81,6 +81,18 @@ export function FindingsRail({
   });
   const [sortMode, setSortMode] = useState<SortMode>("signal");
 
+  // Reset local state on study change
+  const prevStudyRef = useRef(studyId);
+  useEffect(() => {
+    if (studyId !== prevStudyRef.current) {
+      prevStudyRef.current = studyId;
+      setGrouping("organ");
+      setExpanded(new Set());
+      setRailFilters({ search: "", trOnly: false, sigOnly: false });
+      setSortMode("signal");
+    }
+  }, [studyId]);
+
   // ── Derived data ───────────────────────────────────────
   const endpointSummaries = useMemo<EndpointSummary[]>(
     () => (rawData ? deriveEndpointSummaries(rawData) : []),
