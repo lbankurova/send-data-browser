@@ -73,12 +73,18 @@ export function generateNoaelNarrative(
     basis = "adverse_findings";
   }
 
+  // Total count before capping
+  const totalFindingCount = loaelFindings.length;
+
   // Build finding list string (e.g. "hepatocellular necrosis, ALT, and AST")
-  const formatFindings = (names: string[]) => {
+  const formatFindings = (names: string[], total: number) => {
     if (names.length === 0) return "adverse findings";
-    if (names.length === 1) return names[0];
-    if (names.length === 2) return `${names[0]} and ${names[1]}`;
-    return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+    if (names.length === 1 && total <= 1) return names[0];
+    if (names.length === 1 && total > 1) return `${names[0]} (and ${total - 1} others)`;
+    if (names.length === 2 && total <= 2) return `${names[0]} and ${names[1]}`;
+    const listed = `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+    if (total > names.length) return `${listed} (and ${total - names.length} others)`;
+    return listed;
   };
 
   // Check dose-dependence
@@ -92,7 +98,7 @@ export function generateNoaelNarrative(
   switch (basis) {
     case "adverse_findings":
       summary =
-        `The NOAEL is ${noaelDose} ${noaelUnit} based on ${formatFindings(findingNames)} ` +
+        `The NOAEL is ${noaelDose} ${noaelUnit} based on ${formatFindings(findingNames, totalFindingCount)} ` +
         `observed at ${loaelLabel} (LOAEL). ` +
         `These findings were adverse, treatment-related, and ${doseDepPhrase}. ` +
         `No adverse findings were observed at ${noaelDose} ${noaelUnit}.`;
@@ -100,7 +106,7 @@ export function generateNoaelNarrative(
     case "control_noael":
       summary =
         `The NOAEL could not be established above the control dose. ` +
-        `Adverse, treatment-related findings (${formatFindings(findingNames)}) ` +
+        `Adverse, treatment-related findings (${formatFindings(findingNames, totalFindingCount)}) ` +
         `were observed at the lowest dose tested (${loaelLabel}).`;
       break;
     case "not_established":

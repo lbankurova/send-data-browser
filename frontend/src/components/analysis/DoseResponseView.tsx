@@ -24,7 +24,7 @@ import { useTimecourseGroup, useTimecourseSubject } from "@/hooks/useTimecourse"
 import { useClinicalObservations } from "@/hooks/useClinicalObservations";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
-import { useNoaelSummary } from "@/hooks/useNoaelSummary";
+import { useEffectiveNoael } from "@/hooks/useEffectiveNoael";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
@@ -264,7 +264,7 @@ export function DoseResponseView() {
   // Data for Causality tool (fetched at view level, passed to Hypotheses tab)
   const { data: ruleResultsData } = useRuleResults(studyId);
   const { data: signalSummaryData } = useStudySignalSummary(studyId);
-  const { data: noaelData } = useNoaelSummary(studyId);
+  const { data: noaelData } = useEffectiveNoael(studyId);
   const ruleResults: RuleResult[] = ruleResultsData ?? [];
   const signalSummary: SignalSummaryRow[] = signalSummaryData ?? [];
   const noaelSummary: NoaelSummaryRow[] = noaelData ?? [];
