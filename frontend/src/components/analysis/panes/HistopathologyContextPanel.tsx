@@ -8,12 +8,13 @@ import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { getDoseConsistencyWeight, getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
+import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
+import { classifyFindingPattern, formatPatternLabel, patternToLegacyConsistency } from "@/lib/pattern-classification";
+import { detectSyndromes } from "@/lib/syndrome-rules";
 import { DoseLabel } from "@/components/ui/DoseLabel";
 import {
   deriveSpecimenSummaries,
   deriveSexLabel,
-  getDoseConsistency,
   deriveSpecimenReviewStatus,
 } from "@/components/analysis/HistopathologyView";
 import type { SpecimenReviewStatus } from "@/components/analysis/HistopathologyView";
@@ -30,7 +31,7 @@ import { classifyRecovery, CLASSIFICATION_LABELS, CLASSIFICATION_BORDER } from "
 import type { RecoveryClassification } from "@/lib/recovery-classification";
 import { classifyFindingNature } from "@/lib/finding-nature";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
-import { getFindingDoseConsistency } from "@/components/analysis/HistopathologyView";
+// getFindingDoseConsistency removed — use classifyFindingPattern from pattern-classification.ts
 import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { fishersExact2x2 } from "@/lib/statistics";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
@@ -484,11 +485,26 @@ function SpecimenOverviewPane({
   const { navigateTo } = useStudySelection();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
+  // Hooks for pattern classification
+  const { data: trendDataSpec } = useFindingDoseTrends(studyId);
+  const { data: signalDataSpec } = useStudySignalSummary(studyId);
+  const syndromeMatchesSpec = useMemo(() => {
+    if (!lesionData.length) return [];
+    const organMap = new Map<string, LesionSeverityRow[]>();
+    for (const r of lesionData) {
+      const key = r.specimen.toUpperCase();
+      const arr = organMap.get(key) ?? [];
+      arr.push(r);
+      organMap.set(key, arr);
+    }
+    return detectSyndromes(organMap, signalDataSpec ?? null);
+  }, [lesionData, signalDataSpec]);
+
   // Derive specimen summary
   const summary = useMemo(() => {
-    const summaries = deriveSpecimenSummaries(lesionData, ruleResults);
+    const summaries = deriveSpecimenSummaries(lesionData, ruleResults, trendDataSpec ?? null, syndromeMatchesSpec, signalDataSpec ?? null);
     return summaries.find((s) => s.specimen === specimen) ?? null;
-  }, [lesionData, ruleResults, specimen]);
+  }, [lesionData, ruleResults, specimen, trendDataSpec, syndromeMatchesSpec, signalDataSpec]);
 
   // Subject-level data (for laterality)
   const { data: subjData } = useHistopathSubjects(studyId, specimen);
@@ -573,14 +589,15 @@ function SpecimenOverviewPane({
     const matchingRuleIds = specimenRules
       .filter((r) => r.rule_id === "R01" || r.rule_id === "R04")
       .map((r) => r.rule_id);
-    const heuristicResult = getDoseConsistency(specimenData);
-    const finalTrend = hasDoseRule ? "Strong" as const : heuristicResult;
     const method = hasDoseRule
       ? `Rule engine (${[...new Set(matchingRuleIds)].join("/")})`
-      : "Incidence heuristic";
+      : "Pattern classification";
 
-    return { doses: sorted, method, trend: finalTrend };
-  }, [specimenData, specimenRules]);
+    // Use pattern from precomputed summary, or fall back to legacy label
+    const patternLabel = summary ? formatPatternLabel(summary.pattern) : "—";
+
+    return { doses: sorted, method, patternLabel };
+  }, [specimenData, specimenRules, summary]);
 
   // Structured conclusion parts (rendered as individual chips)
   const conclusionParts = useMemo(() => {
@@ -591,14 +608,7 @@ function SpecimenOverviewPane({
       ? `max severity ${summary.maxSeverity.toFixed(1)}`
       : "non-adverse";
     const sexLabel = deriveSexLabel(specimenData).toLowerCase();
-    const trend = doseTrendDetail.trend;
-    const doseRelation = trend === "Strong"
-      ? "dose-response: \u2191 strong"
-      : trend === "Moderate"
-      ? "dose-response: \u2191 moderate"
-      : trend === "NonMonotonic"
-      ? "dose-response: \u2191\u2193 non-monotonic"
-      : "dose-response: no clear trend";
+    const doseRelation = `pattern: ${doseTrendDetail.patternLabel}`;
     const findingBreakdown = summary.warningCount > 0
       ? `${summary.findingCount} findings (${summary.adverseCount}adv/${summary.warningCount}warn)`
       : `${summary.findingCount} findings`;
@@ -649,7 +659,7 @@ function SpecimenOverviewPane({
       findings: findingBreakdown,
       hasRecovery: summary.hasRecovery,
     };
-  }, [summary, specimenData, doseTrendDetail.trend]);
+  }, [summary, specimenData, doseTrendDetail.patternLabel]);
 
   // Review status
   const findingNames = useMemo(
@@ -707,9 +717,7 @@ function SpecimenOverviewPane({
             {conclusionParts.sexSkew && (
               <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">{conclusionParts.sexSkew}</span>
             )}
-            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
-              <span className={getDoseConsistencyWeight(doseTrendDetail.trend)}>{conclusionParts.doseRelation}</span>
-            </span>
+            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.doseRelation}</span>
             <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.findings}</span>
             {conclusionParts.hasRecovery && (
               <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">recovery data available</span>
@@ -724,6 +732,35 @@ function SpecimenOverviewPane({
           <SpecimenInsightsWithSignals rules={specimenRules} specimen={specimen} studyId={studyId} />
         </CollapsiblePane>
       )}
+
+      {/* Syndrome detected (§6f) */}
+      {(() => {
+        const syndromeMatch = syndromeMatchesSpec.find(
+          (m) => m.organ.toUpperCase() === specimen.toUpperCase(),
+        );
+        if (!syndromeMatch) return null;
+        return (
+          <CollapsiblePane title="Syndrome detected" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+            <div className="border-l-2 border-l-primary/30 pl-2 py-1 text-[10px] leading-relaxed text-muted-foreground">
+              <div className="font-medium">{"\uD83D\uDD17"} {syndromeMatch.syndrome.syndrome_name}</div>
+              <div className="mt-0.5 pl-2">
+                {syndromeMatch.requiredFinding}
+                {syndromeMatch.supportingFindings.length > 0 && ` + ${syndromeMatch.supportingFindings.join(" + ")}`}
+                {syndromeMatch.concordantGroups.length > 0 && ` in concordant dose groups`}
+              </div>
+              {syndromeMatch.relatedOrganMatches.length > 0 && (
+                <div className="pl-2">Related organs: {syndromeMatch.relatedOrganMatches.join("; ")}</div>
+              )}
+              {syndromeMatch.relatedEndpointMatches.length > 0 && (
+                <div className="pl-2">Related: {syndromeMatch.relatedEndpointMatches.join("; ")}</div>
+              )}
+              {syndromeMatch.exclusionWarning && (
+                <div className="mt-0.5 pl-2 font-medium">{syndromeMatch.exclusionWarning}</div>
+              )}
+            </div>
+          </CollapsiblePane>
+        );
+      })()}
 
       {/* Lab correlates (specimen-level) */}
       {(labCorrelation.hasData || labCorrelation.isLoading) && (
@@ -1197,8 +1234,26 @@ function FindingDetailPane({
     return assessments[0] ?? null;
   }, [specimenHasRecovery, subjData, selection.finding]);
 
-  // Recovery classification (interpretive layer)
+  // Hooks for pattern & syndrome (finding-level)
   const { data: trendData } = useFindingDoseTrends(studyId);
+  const { data: signalDataFinding } = useStudySignalSummary(studyId);
+  const findingSyndromeMatch = useMemo(() => {
+    if (!lesionData.length) return null;
+    const organMap = new Map<string, LesionSeverityRow[]>();
+    for (const r of lesionData) {
+      const key = r.specimen.toUpperCase();
+      const arr = organMap.get(key) ?? [];
+      arr.push(r);
+      organMap.set(key, arr);
+    }
+    const matches = detectSyndromes(organMap, signalDataFinding ?? null);
+    // Find syndrome relevant to current specimen
+    return matches.find(
+      (m) => m.organ.toUpperCase() === selection.specimen.toUpperCase(),
+    ) ?? null;
+  }, [lesionData, signalDataFinding, selection.specimen]);
+
+  // Recovery classification (interpretive layer)
   const recoveryClassification = useMemo(() => {
     if (!findingRecovery) return null;
     // Gather context
@@ -1214,7 +1269,14 @@ function FindingDetailPane({
         r.rule_id === "R04" || r.rule_id === "R12" || r.rule_id === "R13" ||
         (r.rule_id === "R10" && r.severity === "warning"),
     );
-    const doseConsistency = getFindingDoseConsistency(lesionData, selection.finding);
+    const findingPattern = classifyFindingPattern(
+      lesionData.filter((r) => r.specimen === selection.specimen),
+      selection.finding,
+      trendData?.find((t: { finding: string; specimen: string }) => t.finding === selection.finding && t.specimen === selection.specimen)?.ca_trend_p ?? null,
+      null,
+      false,
+    );
+    const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
     const trend = trendData?.find(
       (t: { finding: string; specimen: string }) =>
         t.finding === selection.finding && t.specimen === selection.specimen,
@@ -1310,11 +1372,12 @@ function FindingDetailPane({
       if (r.incidence > maxInc) maxInc = r.incidence;
       sexes.add(r.sex);
     }
-    const doseTrend = getFindingDoseConsistency(findingRows, selection.finding);
+    const findingPattern = classifyFindingPattern(findingRows, selection.finding, null, null, false);
+    const doseTrend = formatPatternLabel(findingPattern);
     const sexLabel = sexes.size === 1 ? ([...sexes][0] === "M" ? "M" : "F") : "M/F";
     const incPct = Math.round(maxInc * 100);
-    return { incPct, maxSev, doseTrend, sexLabel };
-  }, [findingRows]);
+    return { incPct, maxSev, doseTrend, sexLabel, findingPattern };
+  }, [findingRows, selection.finding]);
 
   // Rules matching finding
   const findingRules = useMemo(() => {
@@ -1442,7 +1505,7 @@ function FindingDetailPane({
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
             <span>Peak incidence: <span className="font-mono font-medium">{headerMetrics.incPct}%</span></span>
             <span>Max sev: <span className="font-mono font-medium">{headerMetrics.maxSev.toFixed(1)}</span></span>
-            <span>Dose: <span className="font-medium">{headerMetrics.doseTrend}</span></span>
+            <span>Pattern: <span className="font-medium">{headerMetrics.doseTrend}</span></span>
             <span>Sex: <span className="font-medium">{headerMetrics.sexLabel}</span></span>
           </div>
         )}
@@ -1471,6 +1534,55 @@ function FindingDetailPane({
           </div>
         )}
       </CollapsiblePane>
+
+      {/* Dose-response pattern block (§6e) */}
+      {headerMetrics?.findingPattern && (
+        <CollapsiblePane title="Dose-response pattern" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="border-l-2 border-l-muted-foreground/30 pl-2 py-1 text-[10px] leading-relaxed text-muted-foreground">
+            <div>Pattern: <span className="font-medium">{headerMetrics.findingPattern.detail ?? headerMetrics.findingPattern.pattern.replace(/_/g, " ").toLowerCase()}</span></div>
+            <div>Confidence: <span className="font-medium">{headerMetrics.findingPattern.confidence.toLowerCase()}</span>
+              {headerMetrics.findingPattern.confidenceFactors.length > 0 && (
+                <span className="text-muted-foreground/60"> ({headerMetrics.findingPattern.confidenceFactors.join(", ")})</span>
+              )}
+            </div>
+            {headerMetrics.findingPattern.alerts.length > 0 && (
+              <div className="mt-0.5">
+                {headerMetrics.findingPattern.alerts.map((a, i) => (
+                  <div key={i}>{a.priority === "HIGH" ? "\u26A0" : "\u2139\uFE0F"} {a.text}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CollapsiblePane>
+      )}
+
+      {/* Concordant findings block (§6e) — when syndrome detected */}
+      {findingSyndromeMatch && (
+        <CollapsiblePane title="Concordant findings" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="border-l-2 border-l-primary/30 pl-2 py-1 text-[10px] leading-relaxed text-muted-foreground">
+            <div className="font-medium">{"\uD83D\uDD17"} {findingSyndromeMatch.syndrome.syndrome_name}</div>
+            <div className="mt-0.5 pl-2">
+              Primary: <span className="font-medium">{findingSyndromeMatch.requiredFinding}</span>
+              {findingSyndromeMatch.concordantGroups.length > 0 && (
+                <span className="text-muted-foreground/60"> (Grp {findingSyndromeMatch.concordantGroups.join(", ")})</span>
+              )}
+            </div>
+            {findingSyndromeMatch.supportingFindings.length > 0 && (
+              <div className="pl-2">Supporting: <span className="font-medium">{findingSyndromeMatch.supportingFindings.join(", ")}</span></div>
+            )}
+            {findingSyndromeMatch.relatedOrganMatches.length > 0 && (
+              <div className="pl-2">Related organs: {findingSyndromeMatch.relatedOrganMatches.join("; ")}</div>
+            )}
+            {findingSyndromeMatch.relatedEndpointMatches.length > 0 && (
+              <div className="pl-2">Related: {findingSyndromeMatch.relatedEndpointMatches.join("; ")}</div>
+            )}
+            {findingSyndromeMatch.exclusionWarning && (
+              <div className="mt-0.5 pl-2 font-medium">{findingSyndromeMatch.exclusionWarning}</div>
+            )}
+            <div className="mt-1 pl-2 italic text-muted-foreground/60">{findingSyndromeMatch.syndrome.interpretation_note}</div>
+          </div>
+        </CollapsiblePane>
+      )}
 
       {/* Dose detail */}
       <CollapsiblePane title="Dose detail" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
