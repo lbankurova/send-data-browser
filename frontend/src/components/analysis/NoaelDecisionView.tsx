@@ -9,7 +9,7 @@ import {
   createColumnHelper,
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
-import { useNoaelSummary } from "@/hooks/useNoaelSummary";
+import { useEffectiveNoael } from "@/hooks/useEffectiveNoael";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { cn } from "@/lib/utils";
@@ -209,7 +209,7 @@ function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): EndpointSumma
 
 // ─── NOAEL Banner (compact, persistent) ────────────────────
 
-function NoaelBanner({ data, aeData, studyId }: { data: NoaelSummaryRow[]; aeData: AdverseEffectSummaryRow[]; studyId: string }) {
+function NoaelBanner({ data, aeData, studyId, onFindingClick }: { data: NoaelSummaryRow[]; aeData: AdverseEffectSummaryRow[]; studyId: string; onFindingClick?: (finding: string, organSystem: string) => void }) {
   const combined = data.find((r) => r.sex === "Combined");
   const males = data.find((r) => r.sex === "M");
   const females = data.find((r) => r.sex === "F");
@@ -377,12 +377,20 @@ function NoaelBanner({ data, aeData, studyId }: { data: NoaelSummaryRow[]; aeDat
                 {/* LOAEL dose-limiting findings callout (#4) */}
                 {cardNarr && cardNarr.loael_findings.length > 0 && (
                   <div className="mt-0.5 text-[10px] text-muted-foreground">
-                    {cardNarr.loael_details.slice(0, 3).map((f, i) => (
-                      <span key={f.finding}>
-                        {i > 0 && " \u00b7 "}
-                        {f.finding} (<DomainLabel domain={f.domain} />)
-                      </span>
-                    ))}
+                    {cardNarr.loael_details.slice(0, 3).map((f, i) => {
+                      const organSystem = aeData.find(a => a.endpoint_label === f.finding)?.organ_system;
+                      return (
+                        <button
+                          key={f.finding}
+                          type="button"
+                          className="hover:text-foreground hover:underline"
+                          onClick={() => onFindingClick?.(f.finding, organSystem ?? "")}
+                        >
+                          {i > 0 && " \u00b7 "}
+                          {f.finding} (<DomainLabel domain={f.domain} />)
+                        </button>
+                      );
+                    })}
                     {cardNarr.loael_findings.length > 3 && (
                       <span className="ml-1">+{cardNarr.loael_findings.length - 3} more</span>
                     )}
@@ -451,7 +459,12 @@ function NoaelBanner({ data, aeData, studyId }: { data: NoaelSummaryRow[]; aeDat
                       </button>
                       <button
                         type="button"
-                        disabled={!overrideRationale.trim()}
+                        disabled={
+                          !overrideRationale.trim() ||
+                          (override != null &&
+                            overrideDose === override.override_dose_value &&
+                            overrideRationale.trim() === override.rationale)
+                        }
                         className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground disabled:opacity-50"
                         onClick={() => handleSave(r.sex, r)}
                       >
@@ -467,7 +480,7 @@ function NoaelBanner({ data, aeData, studyId }: { data: NoaelSummaryRow[]; aeDat
       </div>
       {/* Narrative summary (#2) */}
       {narrative && (
-        <div className="mt-2 text-xs leading-relaxed text-foreground/80">
+        <div className="mt-2 line-clamp-3 text-xs leading-relaxed text-foreground/80">
           {sexDivergent && maleNarrative && femaleNarrative ? (
             <>
               <div><span className="font-medium">Males:</span> {maleNarrative.summary}</div>
@@ -1049,7 +1062,7 @@ export function NoaelDecisionView() {
   const location = useLocation();
   const { selection: studySelection, navigateTo } = useStudySelection();
   const { setSelection: setViewSelection } = useViewSelection();
-  const { data: noaelData, isLoading: noaelLoading, error: noaelError } = useNoaelSummary(studyId);
+  const { data: noaelData, isLoading: noaelLoading, error: noaelError } = useEffectiveNoael(studyId);
   const { data: aeData, isLoading: aeLoading, error: aeError } = useAdverseEffectSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
 
@@ -1201,7 +1214,17 @@ export function NoaelDecisionView() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* NOAEL Banner (persistent, non-scrolling) */}
-      {noaelData && studyId && <NoaelBanner data={noaelData} aeData={aeData ?? []} studyId={studyId} />}
+      {noaelData && studyId && (
+        <NoaelBanner
+          data={noaelData}
+          aeData={aeData ?? []}
+          studyId={studyId}
+          onFindingClick={(_finding, organSystem) => {
+            if (organSystem) navigateTo({ organSystem });
+            setActiveTab("overview");
+          }}
+        />
+      )}
 
       {/* Evidence panel — full width */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/5">
