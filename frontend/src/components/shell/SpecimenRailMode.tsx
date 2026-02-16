@@ -81,6 +81,30 @@ function SpecimenRailItem({
             {"\u007E"}
           </span>
         )}
+        {reviewStatus === "Under dispute" && (
+          <span
+            className="shrink-0 text-[9px] text-muted-foreground"
+            title="Under dispute — unresolved disagreement"
+          >
+            !
+          </span>
+        )}
+        {reviewStatus === "PWG pending" && (
+          <span
+            className="shrink-0 text-[9px] text-muted-foreground"
+            title="PWG review pending"
+          >
+            P
+          </span>
+        )}
+        {reviewStatus === "In review" && (
+          <span
+            className="shrink-0 text-[9px] text-muted-foreground/40"
+            title="In review — partially reviewed"
+          >
+            {"\u00B7"}
+          </span>
+        )}
         <span
           className={cn(
             "w-5 shrink-0 text-right text-[9px]",
