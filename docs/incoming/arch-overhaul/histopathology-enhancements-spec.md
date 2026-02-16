@@ -1074,3 +1074,40 @@ Effort: S = 1–2 days, M = 3–5 days, L = 1–2 weeks, XL = multi-sprint initi
 | D-2 | #11.3 DS domain read added to `get_histopath_subjects()` | Single read serves both per-subject disposition and existing recovery_days calculation |
 | D-3 | #14 Fisher's exact hand-rolled in `lib/statistics.ts` | Log-factorial approach, N ≤ 50 in practice, no external dependency |
 | D-4 | #14 sexSkew suppression when Fisher's p ≥ 0.10 or incidence diff < 20pp | Spec requires both thresholds met; below both → sexSkew chip not shown |
+
+---
+
+## Phase 2 Implementation Status
+
+**Committed:** `6e96707` — all 4 enhancements (#1, #7, #8, #12) implemented and build-verified.
+
+### Decision Points
+
+| ID | Decision | Rationale |
+|----|----------|-----------|
+| D-5 | #1 HCD interface uses existing field names (`mean_incidence`, `sd_incidence`, etc.) plus new spec fields (`species`, `sex`, `n_animals`, `p5_incidence`, `severity_mean`, `severity_max`, `last_updated`) | Spec used `incidence_mean` naming; kept existing convention for backward compatibility and added all spec fields. A `hcd()` factory function generates mock entries with derived defaults for new fields (e.g., `p5_incidence`, `n_animals = n_studies * 20`). |
+| D-6 | #7 Fisher's compact display uses G-labels (`G1`, `G2`, etc.) in cell but full dose labels with `*`/`**` markers in tooltip | Full dose labels don't fit in the compact cell rendering at `text-[9px]`. Tooltip shows `Fisher's exact test vs control:` header with full dose labels and significance markers. |
+| D-7 | #1 "Below range" threshold uses `< mean - 1 SD` (matching spec) instead of initial implementation `< min_incidence` | Spec §1.2 Status logic table says "Study control < historical mean - 1 SD" for Below range. Corrected to match. |
+| D-8 | #1 Removed dead third block in `getHistoricalControl()` | Third lookup block was identical to the first (same conditions). Reduced to two-step: organ-specific match → general fallback. |
+
+### Minor Gaps (all resolved)
+
+All 15 gaps from post-implementation review have been fixed:
+
+| ID | Enhancement | Gap | Fix |
+|----|------------|-----|-----|
+| G-1 | #8 | Missing "weight change" keyword in adaptive | Added to `finding-nature.ts` keyword table |
+| G-2 | #8 | Proliferative rationale missing second sentence | Added "Recovery assessment is not applicable." |
+| G-3 | #8 | Adaptive INCOMPLETE_RECOVERY qualifier missing "or irreversible transition" | Appended to qualifier text |
+| G-4 | #8 | Tooltip shows generic label instead of week ranges | `reversibilityLabel()` now computes `"expected to reverse within N–M weeks"` from `typical_recovery_weeks` |
+| G-5 | #8 | Nature column uses lowercase instead of titleCase | Applied `titleCase()` to nature value in recovery assessment table |
+| G-6 | #12 | R16 tooltip shorter than spec's multi-line text | Expanded to full multi-line spec text with all 3 paragraphs |
+| G-7 | #12 | Cross-organ entry format missing finding name | Format now `{Specimen}: {finding} · {incidence}%, max sev {n}` |
+| G-8 | #12 | Cross-organ click doesn't auto-select finding | Uses `endpoint` field in `StudySelection` to carry finding name; consumed on specimen change |
+| G-9 | #7 | Fisher tooltip uses G-labels, no `*`/`**` markers | Tooltip now shows `Fisher's exact test vs control:` header with full dose labels and `*`/`**` significance markers |
+| G-10 | #1 | HCD interface had 10 fields vs spec's 16 | Expanded interface with all spec fields; `hcd()` factory generates entries with derived defaults |
+| G-11 | #1 | Above range uses ⚠ instead of ▲, wrong text style | Changed to `▲ Above range` with `font-medium text-foreground` |
+| G-12 | #1 | At upper too prominent (font-medium) | Changed to `text-muted-foreground` without font-medium |
+| G-13 | #1 | Within range missing /60 opacity | Changed to `text-muted-foreground/60` |
+| G-14 | #1 | Below range uses `< min_incidence` | Changed to `< mean - 1 SD` per spec |
+| G-15 | #1 | Finding text `text-[10px]` vs spec's `text-[11px]` | Added explicit `text-[11px]` to finding cell |
