@@ -315,21 +315,36 @@ export function FindingsRail({
             No endpoints match current filters.
           </div>
         )}
-        {sortedCards.map((card) => (
-          <CardSection
-            key={card.key}
-            card={card}
-            grouping={grouping}
-            isExpanded={expanded.has(card.key)}
-            isScoped={activeGroupScope?.value === card.key}
-            activeEndpoint={activeEndpoint}
-            unfilteredTotal={unfilteredGroupTotals.get(card.key) ?? card.totalEndpoints}
-            showFilteredCount={railIsFiltered}
-            onHeaderClick={() => handleCardClick(card)}
-            onEndpointClick={handleEndpointClick}
-            registerEndpointRef={registerEndpointRef}
-          />
-        ))}
+        {grouping === "finding" ? (
+          /* Flat list — no card headers */
+          sortedCards.flatMap((card) =>
+            card.endpoints.map((ep) => (
+              <EndpointRow
+                key={ep.endpoint_label}
+                endpoint={ep}
+                isSelected={activeEndpoint === ep.endpoint_label}
+                onClick={() => handleEndpointClick(ep.endpoint_label)}
+                ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
+              />
+            ))
+          )
+        ) : (
+          sortedCards.map((card) => (
+            <CardSection
+              key={card.key}
+              card={card}
+              grouping={grouping}
+              isExpanded={expanded.has(card.key)}
+              isScoped={activeGroupScope?.value === card.key}
+              activeEndpoint={activeEndpoint}
+              unfilteredTotal={unfilteredGroupTotals.get(card.key) ?? card.totalEndpoints}
+              showFilteredCount={railIsFiltered}
+              onHeaderClick={() => handleCardClick(card)}
+              onEndpointClick={handleEndpointClick}
+              registerEndpointRef={registerEndpointRef}
+            />
+          ))
+        )}
       </div>
     </div>
   );
@@ -422,7 +437,7 @@ const PATTERN_ICONS: Record<string, typeof TrendingUp> = {
 
 // ─── Rail Filters ──────────────────────────────────────────
 
-const GROUPING_ALL_LABELS: Record<GroupingMode, string> = {
+const GROUPING_ALL_LABELS: Partial<Record<GroupingMode, string>> = {
   organ: "All organs",
   domain: "All domains",
   pattern: "All patterns",
@@ -454,30 +469,33 @@ function RailFiltersSection({
         placeholder="Search findings…"
       />
 
-      {/* Row 2: Group by + group filter + sort */}
+      {/* Row 2: Group by + group filter + sort by */}
       <div className="flex items-center gap-1.5">
         <FilterSelect
           value={grouping}
           onChange={(e) => onGroupingChange(e.target.value as GroupingMode)}
         >
-          <option value="organ">Organ</option>
-          <option value="domain">Domain</option>
-          <option value="pattern">Pattern</option>
+          <option value="organ">Group by: Organ</option>
+          <option value="domain">Group by: Domain</option>
+          <option value="pattern">Group by: Pattern</option>
+          <option value="finding">Group by: Finding</option>
         </FilterSelect>
-        <FilterMultiSelect
-          options={groupFilterOptions}
-          selected={filters.groupFilter}
-          onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
-          allLabel={GROUPING_ALL_LABELS[grouping]}
-        />
+        {grouping !== "finding" && (
+          <FilterMultiSelect
+            options={groupFilterOptions}
+            selected={filters.groupFilter}
+            onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
+            allLabel={GROUPING_ALL_LABELS[grouping] ?? "All"}
+          />
+        )}
         <FilterSelect
           value={sortMode}
           onChange={(e) => onSortChange(e.target.value as SortMode)}
         >
-          <option value="signal">Signal</option>
-          <option value="pvalue">P-value</option>
-          <option value="effect">Effect size</option>
-          <option value="az">A–Z</option>
+          <option value="signal">Sort by: Signal</option>
+          <option value="pvalue">Sort by: P-value</option>
+          <option value="effect">Sort by: Effect size</option>
+          <option value="az">Sort by: A–Z</option>
         </FilterSelect>
       </div>
 
