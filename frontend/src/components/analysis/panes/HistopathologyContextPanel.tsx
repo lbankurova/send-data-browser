@@ -37,7 +37,7 @@ import { fishersExact2x2 } from "@/lib/statistics";
 // ─── Specimen-scoped insights (purpose-built for context panel) ──────────────
 
 interface InsightBlock {
-  kind: "adverse" | "protective" | "repurposing" | "trend" | "info" | "clinical";
+  kind: "adverse" | "protective" | "decreased" | "trend" | "info" | "clinical";
   finding: string;
   sexes: string;
   detail: string;
@@ -152,14 +152,11 @@ function deriveSpecimenInsights(rules: RuleResult[], specimen: string): InsightB
     } else {
       const ctrlPct = aggs[0].primaryRule.params?.ctrl_pct ?? "";
       const highPct = aggs[0].primaryRule.params?.high_pct ?? "";
-      const hasR19 = allRulesFlat.some((r) => r.rule_id === "R19");
       blocks.push({
-        kind: "protective",
+        kind: "decreased",
         finding: name,
         sexes: [...new Set(aggs.map((a) => a.sex))].sort().join(", "),
-        detail: hasR19
-          ? `${ctrlPct}% \u2192 ${highPct}% \u2014 potential protective effect`
-          : `${ctrlPct}% control \u2192 ${highPct}% high dose`,
+        detail: `${ctrlPct}% control \u2192 ${highPct}% high dose`,
       });
     }
   }
@@ -178,12 +175,12 @@ function formatClinicalClass(cc: string): string {
 }
 
 const INSIGHT_STYLES: Record<InsightBlock["kind"], { border: string; icon: string; label: string }> = {
-  adverse:     { border: "border-l-red-400",    icon: "↑", label: "Adverse" },
-  protective:  { border: "border-l-emerald-400", icon: "↓", label: "Protective" },
-  repurposing: { border: "border-l-purple-400",  icon: "◆", label: "Repurposing" },
-  clinical:    { border: "border-l-orange-400",  icon: "⚑", label: "Clinical" },
-  trend:       { border: "border-l-amber-300",  icon: "→", label: "Trend" },
-  info:        { border: "border-l-gray-300",   icon: "·", label: "Info" },
+  adverse:     { border: "border-l-red-400",    icon: "\u2191", label: "Adverse" },
+  protective:  { border: "border-l-blue-400",   icon: "\u2193", label: "Decreased" },
+  decreased:   { border: "border-l-blue-400",   icon: "\u2193", label: "Decreased" },
+  clinical:    { border: "border-l-orange-400",  icon: "\u2691", label: "Clinical" },
+  trend:       { border: "border-l-amber-300",  icon: "\u2192", label: "Trend" },
+  info:        { border: "border-l-gray-300",   icon: "\u00b7", label: "Info" },
 };
 
 function SpecimenInsights({ rules, specimen }: { rules: RuleResult[]; specimen: string }) {
@@ -196,7 +193,7 @@ function SpecimenInsights({ rules, specimen }: { rules: RuleResult[]; specimen: 
   // Group by kind for section headers
   const adverseBlocks = blocks.filter((b) => b.kind === "adverse");
   const clinicalBlocks = blocks.filter((b) => b.kind === "clinical");
-  const protectiveBlocks = blocks.filter((b) => b.kind === "protective");
+  const protectiveBlocks = blocks.filter((b) => b.kind === "protective" || b.kind === "decreased");
   const infoBlocks = blocks.filter((b) => b.kind === "info");
 
   return (
