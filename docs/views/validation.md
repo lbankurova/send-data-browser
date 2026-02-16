@@ -253,12 +253,12 @@ When `validationData.core_conformance` exists, shown after the source pills (als
 
 Wrapped in a `ViewSection` with `mode="fixed"`, `title="Rule summary (N)"`, and default height of 280px (resizable via drag handle, min 100px, max 500px). The ViewSection is collapsible and responds to the global expand-all / collapse-all buttons.
 
-TanStack React Table, `text-sm`, client-side sorting (triggered by **double-click** on column headers). Column resizing enabled (`enableColumnResizing: true`, `columnResizeMode: "onChange"`). Table width set to `ruleTable.getCenterTotalSize()` with `tableLayout: "fixed"`.
+TanStack React Table, `w-full text-[10px]`, client-side sorting (triggered by **double-click** on column headers). Column resizing enabled (`enableColumnResizing: true`, `columnResizeMode: "onChange"`). Uses content-hugging + absorber pattern: all columns except `description` (the absorber) use `width: 1px; white-space: nowrap` so the browser shrinks them to fit content. The absorber column has no width constraint and absorbs remaining space. Manual column resize overrides with explicit `width` + `maxWidth`.
 
 ### Header Row
-`sticky top-0 z-10`, `border-b bg-muted/50` (matches all other analysis views)
+`sticky top-0 z-10 bg-background`, `border-b bg-muted/30`
 
-Headers: `relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground`. Sorting is triggered by **double-click** on the header (not single click).
+Headers: `relative cursor-pointer select-none px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground`. Sorting is triggered by **double-click** on the header (not single click).
 
 Sort indicators: ` (up arrow)` asc / ` (down arrow)` desc
 
@@ -293,11 +293,11 @@ The severity column uses a left-border badge with colored left border and neutra
 All use the same base classes: `inline-block border-l-2 pl-1.5 py-0.5 text-[10px] font-semibold text-gray-600`.
 
 ### Row Interactions
-- Hover: `hover:bg-accent/50` (Tailwind class, consistent with other views)
-- Selected: `bg-accent` (Tailwind class)
+- Row base: `cursor-pointer border-b transition-colors hover:bg-accent/50`
+- Selected: `bg-accent font-medium`
 - Click: selects rule (passes rule details to context panel via `onSelectionChange`). Click again to deselect.
 - Deselect clears selected rule, selected issue, and record filters.
-- Cells: `px-2 py-1 text-xs`
+- Cells: `px-1.5 py-px`
 
 ---
 
@@ -322,10 +322,10 @@ Only shown when a rule is selected. Uses the shared `<FilterBar>` component:
 
 Wrapped in a `ViewSection` with `mode="flex"` and `title="Affected records (N)"`. The ViewSection is collapsible and responds to the global expand-all / collapse-all buttons.
 
-Only shown when a rule is selected. TanStack React Table, `text-sm`, client-side sorting (triggered by **double-click** on column headers). Column resizing enabled (same pattern as rules table).
+Only shown when a rule is selected. TanStack React Table, `w-full text-[10px]`, client-side sorting (triggered by **double-click** on column headers). Column resizing enabled (same pattern as rules table). Uses content-hugging + absorber pattern with `actual_value` as the absorber column.
 
 ### Header Row
-Same styling as rules table: `sticky top-0 z-10`, `border-b bg-muted/50`, `text-[10px] font-semibold uppercase tracking-wider`. Column resize handles present.
+Same styling as rules table: `sticky top-0 z-10 bg-background`, `border-b bg-muted/30`, `px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wider`. Column resize handles present.
 
 ### Columns
 
@@ -372,10 +372,11 @@ Shared between both status columns: `inline-block rounded-sm border px-1.5 py-0.
 Records are enriched with live annotation data (`fixStatus`, `reviewStatus`, `assignedTo`) from `useAnnotations<ValidationRecordReview>(studyId, "validation-records")`.
 
 ### Row Interactions
-- Same hover/selected styling as rules table (`hover:bg-accent/50`, `bg-accent` when selected)
+- Row base: `cursor-pointer border-b transition-colors hover:bg-accent/50`
+- Selected: `bg-accent font-medium`
 - Click: selects record, updates context panel to "issue" mode (sends full record data via `onSelectionChange`)
 - Issue ID column click also selects the record (with `e.stopPropagation()` to avoid double-fire)
-- Cells: `px-2 py-1 text-xs`
+- Cells: `px-1.5 py-px`
 
 ### Empty State
 "No records match the current filters." -- `px-4 py-6 text-center text-xs text-muted-foreground`
@@ -565,10 +566,10 @@ Located at `panes/ValidationRecordForm.tsx`. A standalone record-level annotatio
 | State | Scope | Managed By |
 |-------|-------|------------|
 | Mode (data-quality / study-design / rule-catalog) | Local + URL | `useState<ValidationMode>`, synced to `?mode=` search param |
-| Rule sorting | Local | `useState<SortingState>` |
-| Record sorting | Local | `useState<SortingState>` |
-| Rule column sizing | Local | `useState<ColumnSizingState>` |
-| Record column sizing | Local | `useState<ColumnSizingState>` |
+| Rule sorting | Session-persisted | `useSessionState<SortingState>("pcc.validation.ruleSorting", [])` |
+| Record sorting | Session-persisted | `useSessionState<SortingState>("pcc.validation.recordSorting", [])` |
+| Rule column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.validation.ruleColumnSizing", {})` |
+| Record column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.validation.recordColumnSizing", {})` |
 | Selected rule | Local | `useState<ValidationRuleResult \| null>` |
 | Selected issue ID | Local | `useState<string \| null>` |
 | Severity filter | Local | `useState<"" \| "Error" \| "Warning" \| "Info">("")` -- filters rules table, toggled by severity pills |
