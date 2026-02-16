@@ -3,16 +3,20 @@ import { getDoseGroupColor } from "@/lib/severity-colors";
 
 interface DoseLabelProps {
   level: number;
+  /** Short display label (e.g., "20 mg/kg" or "Control") */
   label: string;
+  /** Full group name shown as tooltip (e.g., "Group 3, 20 mg/kg PCDRUG") */
+  tooltip?: string;
   className?: string;
 }
 
-/** Renders a dose label with left border color-coded by dose level. */
-export function DoseLabel({ level, label, className }: DoseLabelProps) {
+/** Renders a dose label with left border color-coded by dose level and optional tooltip. */
+export function DoseLabel({ level, label, tooltip, className }: DoseLabelProps) {
   return (
     <span
       className={cn("border-l-2 pl-1.5 font-mono text-[11px]", className)}
       style={{ borderLeftColor: getDoseGroupColor(level) }}
+      title={tooltip}
     >
       {label}
     </span>
