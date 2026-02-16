@@ -5,7 +5,7 @@
  * Mounts on: Adverse Effects view (Stage 1), Dose-Response view (Stage 5).
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect, forwardRef } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -25,6 +25,7 @@ import {
   groupEndpoints,
   filterEndpoints,
   sortEndpoints,
+  buildEndpointToGroupIndex,
   isFiltered,
   getDomainFullLabel,
   getPatternLabel,
@@ -120,6 +121,19 @@ export function FindingsRail({
     return totals;
   }, [endpointsWithSignal, grouping]);
 
+  // Reverse index: endpoint_label → group key
+  const endpointToGroup = useMemo(
+    () => buildEndpointToGroupIndex(endpointsWithSignal, grouping),
+    [endpointsWithSignal, grouping],
+  );
+
+  // Ref map for scrolling endpoint rows into view
+  const endpointRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const registerEndpointRef = useCallback((label: string, el: HTMLElement | null) => {
+    if (el) endpointRefs.current.set(label, el);
+    else endpointRefs.current.delete(label);
+  }, []);
+
   // ── Auto-expand top card on initial load / grouping change ─
   const prevGroupingRef = useRef(grouping);
   useEffect(() => {
@@ -128,6 +142,25 @@ export function FindingsRail({
       prevGroupingRef.current = grouping;
     }
   }, [sortedCards, grouping]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Auto-expand parent card + scroll when activeEndpoint changes externally ─
+  useEffect(() => {
+    if (!activeEndpoint) return;
+    const parentGroup = endpointToGroup.get(activeEndpoint);
+    if (!parentGroup) return;
+
+    // Expand parent card if collapsed
+    setExpanded((prev) => {
+      if (prev.has(parentGroup)) return prev;
+      return new Set(prev).add(parentGroup);
+    });
+
+    // Scroll endpoint into view (defer to next frame so expansion renders)
+    requestAnimationFrame(() => {
+      const el = endpointRefs.current.get(activeEndpoint);
+      el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+  }, [activeEndpoint, endpointToGroup]);
 
   // ── Handlers ───────────────────────────────────────────
   const handleGroupingChange = useCallback((mode: GroupingMode) => {
@@ -255,6 +288,7 @@ export function FindingsRail({
             showFilteredCount={railIsFiltered}
             onHeaderClick={() => handleCardClick(card)}
             onEndpointClick={handleEndpointClick}
+            registerEndpointRef={registerEndpointRef}
           />
         ))}
       </div>
@@ -455,6 +489,7 @@ function CardSection({
   showFilteredCount,
   onHeaderClick,
   onEndpointClick,
+  registerEndpointRef,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -465,6 +500,7 @@ function CardSection({
   showFilteredCount: boolean;
   onHeaderClick: () => void;
   onEndpointClick: (label: string) => void;
+  registerEndpointRef: (label: string, el: HTMLElement | null) => void;
 }) {
   return (
     <div>
@@ -485,6 +521,7 @@ function CardSection({
               endpoint={ep}
               isSelected={activeEndpoint === ep.endpoint_label}
               onClick={() => onEndpointClick(ep.endpoint_label)}
+              ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
             />
           ))}
         </div>
@@ -570,15 +607,11 @@ function CardLabel({ grouping, value }: { grouping: GroupingMode; value: string 
 
 // ─── Endpoint Row ──────────────────────────────────────────
 
-function EndpointRow({
-  endpoint,
-  isSelected,
-  onClick,
-}: {
+const EndpointRow = forwardRef<HTMLDivElement, {
   endpoint: EndpointWithSignal;
   isSelected: boolean;
   onClick: () => void;
-}) {
+}>(function EndpointRow({ endpoint, isSelected, onClick }, ref) {
   const dirColor = getDirectionColor(endpoint.direction);
   const dirSymbol = endpoint.direction === "up" ? "▲" : endpoint.direction === "down" ? "▼" : "—";
 
@@ -590,7 +623,7 @@ function EndpointRow({
         : "bg-gray-400";
 
   return (
-    <div>
+    <div ref={ref}>
       {/* Line 1: Identity + Signals */}
       <button
         className={cn(
@@ -623,4 +656,4 @@ function EndpointRow({
       </div>
     </div>
   );
-}
+});

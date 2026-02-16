@@ -54,6 +54,8 @@ export interface UnifiedFinding {
   trend_p: number | null;
   trend_stat: number | null;
   avg_severity?: number | null;
+  organ_system?: string | null;
+  endpoint_label?: string | null;
   group_stats: GroupStat[];
   pairwise: PairwiseResult[];
 }
