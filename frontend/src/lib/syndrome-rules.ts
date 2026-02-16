@@ -353,6 +353,13 @@ const STRAIN_SUPPRESSIONS: StrainSuppression[] = [
     confidenceAdjustment: -0.2,
     note: "Renal mineralization/tubular changes are common spontaneous findings in SD rats",
   },
+  {
+    syndromeId: "kidney_mineral_deposition",
+    strains: ["SPRAGUE-DAWLEY", "SD"],
+    sex: null,
+    confidenceAdjustment: -0.2,
+    note: "Kidney mineral deposition is a common spontaneous finding in SD rats, esp. females",
+  },
 ];
 
 // ── Detection algorithm ──────────────────────────────────────

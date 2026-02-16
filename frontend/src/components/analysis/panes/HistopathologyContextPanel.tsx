@@ -1275,12 +1275,14 @@ function FindingDetailPane({
         r.rule_id === "R04" || r.rule_id === "R12" || r.rule_id === "R13" ||
         (r.rule_id === "R10" && r.severity === "warning"),
     );
+    const findingLat = subjData?.subjects ? aggregateFindingLaterality(subjData.subjects, selection.finding) : null;
     const findingPattern = classifyFindingPattern(
       lesionData.filter((r) => r.specimen === selection.specimen),
       selection.finding,
       trendData?.find((t: { finding: string; specimen: string }) => t.finding === selection.finding && t.specimen === selection.specimen)?.ca_trend_p ?? null,
       null,
       false,
+      findingLat,
     );
     const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
     const trend = trendData?.find(
