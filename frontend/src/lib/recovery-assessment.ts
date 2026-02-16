@@ -8,7 +8,7 @@
 
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import type { FindingNatureInfo } from "./finding-nature";
-import { reversibilityLabel } from "./finding-nature";
+import { classifyFindingNature, reversibilityLabel } from "./finding-nature";
 
 // ─── Constants ───────────────────────────────────────────
 
@@ -25,6 +25,7 @@ export type RecoveryVerdict =
   | "reversing"
   | "persistent"
   | "progressing"
+  | "recovery_too_short" // v4: recovery period shorter than expected reversibility
   | "anomaly"
   | "insufficient_n"
   | "not_examined"     // v3: tissue not examined in recovery arm
@@ -110,6 +111,8 @@ export function computeVerdict(
   main: ArmStats,
   recovery: ArmStats,
   thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
+  recoveryPeriodDays?: number | null,
+  findingNature?: FindingNatureInfo | null,
 ): RecoveryVerdict {
   // v3 Guard 0: tissue not examined in recovery arm
   if (recovery.examined === 0) return "not_examined";
@@ -135,27 +138,51 @@ export function computeVerdict(
     ? recovery.avgSeverity / main.avgSeverity
     : 1;
 
-  // Progressing: incidence or severity increased
-  if (incidenceRatio > thresholds.progressingIncidence && recovery.affected > main.affected) return "progressing";
-  if (main.avgSeverity > 0 && sevRatio > thresholds.progressingSeverity) return "progressing";
+  // Determine base verdict from ratios
+  let verdict: RecoveryVerdict;
 
-  // Reversed: both incidence and severity substantially decreased
-  if (incidenceRatio <= thresholds.reversedIncidence && sevRatio <= thresholds.reversedSeverity) return "reversed";
+  if (incidenceRatio > thresholds.progressingIncidence && recovery.affected > main.affected) {
+    verdict = "progressing";
+  } else if (main.avgSeverity > 0 && sevRatio > thresholds.progressingSeverity) {
+    verdict = "progressing";
+  } else if (incidenceRatio <= thresholds.reversedIncidence && sevRatio <= thresholds.reversedSeverity) {
+    verdict = "reversed";
+  } else if (incidenceRatio <= thresholds.reversingIncidence || sevRatio <= thresholds.reversingSeverity) {
+    verdict = "reversing";
+  } else {
+    verdict = "persistent";
+  }
 
-  // Reversing: clear decrease in at least one metric
-  if (incidenceRatio <= thresholds.reversingIncidence || sevRatio <= thresholds.reversingSeverity) return "reversing";
+  // v4: Duration awareness — check if recovery period is shorter than expected reversibility
+  if (
+    recoveryPeriodDays != null &&
+    findingNature?.typical_recovery_weeks != null &&
+    findingNature.expected_reversibility !== "none" &&
+    (verdict === "persistent" || verdict === "progressing")
+  ) {
+    const recoveryWeeks = recoveryPeriodDays / 7;
+    if (recoveryWeeks < findingNature.typical_recovery_weeks) {
+      // Partial improvement despite short window → positive signal
+      if (recovery.incidence < main.incidence) {
+        verdict = "reversing";
+      } else {
+        // Can't distinguish persistent from insufficient time
+        verdict = "recovery_too_short";
+      }
+    }
+  }
 
-  // Otherwise persistent
-  return "persistent";
+  return verdict;
 }
 
-// v3: Priority order — not_examined and low_power inserted
+// v4: Priority order — recovery_too_short inserted between persistent and reversing
 const VERDICT_PRIORITY: RecoveryVerdict[] = [
   "anomaly",
   "not_examined",
   "low_power",
   "progressing",
   "persistent",
+  "recovery_too_short",
   "reversing",
   "reversed",
   "insufficient_n",
@@ -181,6 +208,7 @@ const VERDICT_ARROWS: Record<RecoveryVerdict, string> = {
   reversing: "\u2198",      // ↘
   persistent: "\u2192",     // →
   progressing: "\u2191",    // ↑
+  recovery_too_short: "\u23F1", // ⏱
   anomaly: "\u26A0",        // ⚠
   not_examined: "\u2205",   // ∅
   low_power: "~",
@@ -197,6 +225,7 @@ export function verdictLabel(verdict: RecoveryVerdict): string {
   const display = verdict === "insufficient_n" ? "insufficient N"
     : verdict === "not_examined" ? "not examined"
     : verdict === "low_power" ? "low power"
+    : verdict === "recovery_too_short" ? "recovery too short"
     : verdict;
   const arrow = VERDICT_ARROWS[verdict];
   return arrow ? `${arrow} ${display}` : display;
@@ -252,6 +281,21 @@ export function buildRecoveryTooltip(
       lines.push(`  ${a.doseGroupLabel}: ~ low power (main ${mainPct}, expected \u2248${expected} affected in ${a.recovery.examined} examined)`);
       continue;
     }
+    if (a.verdict === "recovery_too_short") {
+      const mainPct = `${Math.round(a.main.incidence * 100)}%`;
+      const recPct = `${Math.round(a.recovery.incidence * 100)}%`;
+      lines.push(`  ${a.doseGroupLabel}: ${mainPct} \u2192 ${recPct} \u2014 \u23F1 recovery too short`);
+      if (findingNature?.typical_recovery_weeks != null && recoveryDays != null) {
+        const recLabel = recoveryDays >= 7
+          ? `${Math.round(recoveryDays / 7)} weeks`
+          : `${recoveryDays} days`;
+        const low = Math.max(1, findingNature.typical_recovery_weeks - 2);
+        const high = findingNature.typical_recovery_weeks + 2;
+        lines.push(`    Recovery period (${recLabel}) is shorter than expected reversibility (${low}\u2013${high} weeks).`);
+        lines.push("    Persistence does not confirm irreversibility.");
+      }
+      continue;
+    }
     const mainFrac = a.main.examined < a.main.n
       ? `${Math.round(a.main.incidence * 100)}% [${a.main.examined} examined]`
       : `${Math.round(a.main.incidence * 100)}%`;
@@ -283,6 +327,7 @@ export function deriveRecoveryAssessments(
   findingNames: string[],
   subjects: SubjectHistopathEntry[],
   thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
+  recoveryPeriodDays?: number | null,
 ): RecoveryAssessment[] {
   // Split subjects into main and recovery arms
   const mainSubjects = subjects.filter((s) => !s.is_recovery);
@@ -337,8 +382,9 @@ export function deriveRecoveryAssessments(
         }
       }
 
-      // All guards handled inside computeVerdict (v3)
-      const verdict = computeVerdict(mainStats, recStats, thresholds);
+      // All guards handled inside computeVerdict (v3); duration awareness in v4
+      const nature = classifyFindingNature(finding);
+      const verdict = computeVerdict(mainStats, recStats, thresholds, recoveryPeriodDays, nature);
 
       assessments.push({
         doseLevel: dl,
@@ -498,8 +544,13 @@ export function specimenRecoveryLabel(
 
   // Filter out informational verdicts for standard logic
   const substantive = verdicts.filter(
-    (v) => v !== "insufficient_n" && v !== "not_examined" && v !== "low_power",
+    (v) => v !== "insufficient_n" && v !== "not_examined" && v !== "low_power" && v !== "recovery_too_short",
   );
+  // If all substantive verdicts are recovery_too_short, label as such
+  const allTooShort = verdicts.every(
+    (v) => v === "recovery_too_short" || v === "insufficient_n" || v === "not_examined" || v === "low_power",
+  ) && verdicts.some((v) => v === "recovery_too_short");
+  if (allTooShort) return "assessment limited";
   if (substantive.length === 0) return null;
 
   const unique = new Set(substantive);

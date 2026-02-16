@@ -86,7 +86,7 @@ export function useOrganRecovery(
         recoveryDaysBySpecimen.set(specimens[i], data.recovery_days);
       }
 
-      const assessments = deriveRecoveryAssessments(data.findings, data.subjects);
+      const assessments = deriveRecoveryAssessments(data.findings, data.subjects, undefined, data.recovery_days);
       bySpecimen.set(specimens[i], assessments);
 
       for (const a of assessments) {

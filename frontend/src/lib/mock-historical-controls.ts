@@ -1,14 +1,58 @@
 /**
- * Mock historical control data (HCD) — stubbed for prototype.
- * ~30 entries covering common findings in 10 organs.
- * Realistic ranges derived from published background data for Sprague-Dawley rats.
+ * Historical control data (HCD) — context-aware lookup with Charles River seed data.
  *
- * In production, this would be replaced by a backend query against a real HCD database
- * (e.g., Charles River, Envigo, or facility-specific background data).
+ * v2: Context-aware matching (IMP-02)
+ * - Strain, sex, duration, route-aware 4-tier matching
+ * - Charles River Crl:CD(SD) published reference ranges (34 control groups, 4-26 weeks)
+ * - Legacy mock entries as general fallback
+ *
+ * In production, replaced by a backend query against a real HCD database.
  */
+
+import type { StudyContext } from "@/types/study-context";
 
 // ─── Types ────────────────────────────────────────────────
 
+export type DurationBucket = "short" | "subchronic" | "chronic" | "carcinogenicity";
+
+export interface HCDEntry {
+  finding: string;           // case-insensitive match key
+  specimen: string;          // UPPERCASE per SEND convention, or "GENERAL" for fallback
+  strain: string;            // "SPRAGUE-DAWLEY", "*" for any
+  species: string;           // "RAT", "MOUSE"
+  sex: "M" | "F" | "BOTH";
+  durationBucket: DurationBucket | "any";
+  route: "oral" | "parenteral" | "any";
+  meanIncidencePct: number;  // percentage (e.g., 15.0 = 15%)
+  rangeLowPct: number;
+  rangeHighPct: number;
+  nStudies: number;
+  isMock: boolean;
+  notes: string | null;
+  source: string;
+}
+
+export interface HistoricalControlQuery {
+  finding: string;
+  specimen: string;
+  sex: "M" | "F";
+  context: StudyContext;
+}
+
+export interface HistoricalControlResult {
+  meanIncidence: number;       // as fraction (0.15 = 15%)
+  range: [number, number];     // [low, high] as fractions
+  nStudies: number;
+  classification: "ABOVE" | "WITHIN" | "BELOW" | "NO_DATA";
+  contextLabel: string;        // e.g., "Sprague-Dawley, oral gavage, 13-week, male"
+  isMock: boolean;
+  strainSpecific: boolean;     // true if matched on strain, false if species fallback
+  notes: string | null;
+  /** For backward compat — the raw entry that matched */
+  entry: HCDEntry;
+}
+
+// Backward-compat type (used by existing call sites)
 export interface HistoricalControlData {
   finding: string;
   organ: string;
@@ -29,126 +73,341 @@ export interface HistoricalControlData {
   last_updated: string;
 }
 
-// ─── Mock data ────────────────────────────────────────────
+// ─── Duration bucket ──────────────────────────────────────
 
-/** Shared defaults for all mock entries. */
-const D = {
-  strain: "SD" as const,
-  species: "Sprague-Dawley rat" as const,
-  sex: "combined" as const,
-  source: "mock" as const,
-  last_updated: "2025-01-01",
+export function getDurationBucket(durationWeeks: number | null): DurationBucket | null {
+  if (durationWeeks == null) return null;
+  if (durationWeeks <= 4) return "short";
+  if (durationWeeks <= 26) return "subchronic";
+  if (durationWeeks <= 52) return "chronic";
+  return "carcinogenicity";
+}
+
+function routeCategory(route: string): "oral" | "parenteral" | "any" {
+  const r = route.toUpperCase();
+  if (r.includes("ORAL") || r.includes("GAVAGE") || r.includes("DIETARY") || r.includes("DIET")) return "oral";
+  if (r.includes("INJECT") || r.includes("SUBCUTANEOUS") || r.includes("INTRAMUSCULAR") || r.includes("INTRAVENOUS")) return "parenteral";
+  return "any";
+}
+
+// ─── Charles River Crl:CD(SD) seed data ───────────────────
+// Source: Charles River Laboratories published HCD, Crl:CD(SD) rats,
+// 34 control groups, ages 4-26 weeks. isMock: false.
+
+const CR = {
+  strain: "SPRAGUE-DAWLEY",
+  species: "RAT",
+  durationBucket: "subchronic" as const,
+  route: "any" as const,
+  nStudies: 34,
+  isMock: false,
+  source: "Charles River Crl:CD(SD) Background Data, 4-26 week control groups",
 };
 
-/** Helper: derive p5 and severity from incidence data. */
-function hcd(
-  finding: string,
-  organ: string,
-  mean_incidence: number,
-  min_incidence: number,
-  max_incidence: number,
-  p95_incidence: number,
-  sd_incidence: number,
-  n_studies: number,
-  severity_mean = 1.5,
-  severity_max = 3,
-): HistoricalControlData {
+const HCD_DATABASE: HCDEntry[] = [
+  // ─── Male Crl:CD(SD) — from spec tables ────────────────
+  { ...CR, sex: "M", specimen: "KIDNEY", finding: "basophilia",
+    meanIncidencePct: 34.2, rangeLowPct: 8.33, rangeHighPct: 60.0,
+    notes: "Tubular basophilia; wide range — grade and criteria vary" },
+  { ...CR, sex: "M", specimen: "KIDNEY", finding: "dilatation",
+    meanIncidencePct: 19.5, rangeLowPct: 9.09, rangeHighPct: 30.0,
+    notes: "Renal pelvis dilatation; common incidental" },
+  { ...CR, sex: "M", specimen: "HEART", finding: "cardiomyopathy",
+    meanIncidencePct: 24.5, rangeLowPct: 9.09, rangeHighPct: 40.0,
+    notes: "Spontaneous focal cardiomyopathy; progressive with age" },
+  { ...CR, sex: "M", specimen: "PITUITARY", finding: "basophil hypertrophy",
+    meanIncidencePct: 75.0, rangeLowPct: 50.0, rangeHighPct: 100.0,
+    notes: "Extremely common; near-universal in some studies" },
+  { ...CR, sex: "M", specimen: "PITUITARY", finding: "basophil vacuolation",
+    meanIncidencePct: 41.7, rangeLowPct: 8.33, rangeHighPct: 75.0,
+    notes: "Wide range across studies" },
+  { ...CR, sex: "M", specimen: "PITUITARY", finding: "cyst",
+    meanIncidencePct: 10.0, rangeLowPct: 10.0, rangeHighPct: 10.0,
+    notes: "Narrow range (few studies with data)" },
+  { ...CR, sex: "M", specimen: "MESENTERIC LYMPH NODE", finding: "infiltrate",
+    meanIncidencePct: 34.5, rangeLowPct: 9.09, rangeHighPct: 60.0,
+    notes: "Lymphocytic/plasmacytic infiltrate; common reactive finding" },
+  { ...CR, sex: "M", specimen: "LUNG", finding: "neutrophilic perivascular infiltrate",
+    meanIncidencePct: 24.2, rangeLowPct: 8.33, rangeHighPct: 40.0,
+    notes: "Background inflammatory" },
+  { ...CR, sex: "M", specimen: "LUNG", finding: "perivascular hemorrhage",
+    meanIncidencePct: 58.3, rangeLowPct: 16.67, rangeHighPct: 100.0,
+    notes: "Very wide range; may be agonal/procedure artifact" },
+  { ...CR, sex: "M", specimen: "SPLEEN", finding: "extramedullary hematopoiesis",
+    meanIncidencePct: 22.5, rangeLowPct: 5.0, rangeHighPct: 40.0,
+    notes: "Very common background finding" },
+  { ...CR, sex: "M", specimen: "TESTIS", finding: "atrophy",
+    meanIncidencePct: 10.0, rangeLowPct: 10.0, rangeHighPct: 10.0,
+    notes: "Low background; seminiferous tubule atrophy" },
+  { ...CR, sex: "M", specimen: "TESTIS", finding: "decreased spermatogenesis",
+    meanIncidencePct: 10.0, rangeLowPct: 10.0, rangeHighPct: 10.0,
+    notes: "Low background" },
+  { ...CR, sex: "M", specimen: "TESTIS", finding: "degeneration",
+    meanIncidencePct: 10.0, rangeLowPct: 10.0, rangeHighPct: 10.0,
+    notes: "Low background; seminiferous tubule degeneration" },
+  { ...CR, sex: "M", specimen: "PROSTATE", finding: "chronic inflammation",
+    meanIncidencePct: 24.5, rangeLowPct: 9.09, rangeHighPct: 40.0,
+    notes: "Common incidental; multifocal, minimal" },
+  { ...CR, sex: "M", specimen: "PROSTATE", finding: "mononuclear infiltrate",
+    meanIncidencePct: 18.3, rangeLowPct: 6.67, rangeHighPct: 30.0,
+    notes: "Common incidental" },
+
+  // ─── Female Crl:CD(SD) — from spec tables ──────────────
+  { ...CR, sex: "F", specimen: "LIVER", finding: "mononuclear infiltrate",
+    meanIncidencePct: 54.2, rangeLowPct: 8.33, rangeHighPct: 100.0,
+    notes: "Extremely wide range; very common" },
+  { ...CR, sex: "F", specimen: "LIVER", finding: "hepatocellular vacuolation",
+    meanIncidencePct: 19.2, rangeLowPct: 8.33, rangeHighPct: 30.0,
+    notes: "Common; usually glycogen/lipid" },
+  { ...CR, sex: "F", specimen: "KIDNEY", finding: "basophilia",
+    meanIncidencePct: 34.2, rangeLowPct: 8.33, rangeHighPct: 60.0,
+    notes: "Tubular basophilia; same as males" },
+  { ...CR, sex: "F", specimen: "KIDNEY", finding: "dilatation",
+    meanIncidencePct: 19.5, rangeLowPct: 9.09, rangeHighPct: 30.0,
+    notes: "Renal pelvis dilatation; same as males" },
+  { ...CR, sex: "F", specimen: "THYROID", finding: "cyst",
+    meanIncidencePct: 8.33, rangeLowPct: 8.33, rangeHighPct: 8.33,
+    notes: "Narrow range" },
+  { ...CR, sex: "F", specimen: "UTERUS", finding: "dilatation",
+    meanIncidencePct: 54.5, rangeLowPct: 9.09, rangeHighPct: 100.0,
+    notes: "Extremely common; estrous-cycle-dependent" },
+  { ...CR, sex: "F", specimen: "UTERUS", finding: "cyst",
+    meanIncidencePct: 10.0, rangeLowPct: 10.0, rangeHighPct: 10.0,
+    notes: "Narrow range" },
+  { ...CR, sex: "F", specimen: "OVARY", finding: "cyst",
+    meanIncidencePct: 24.5, rangeLowPct: 9.09, rangeHighPct: 40.0,
+    notes: "Follicular/luteal origin" },
+  { ...CR, sex: "F", specimen: "HARDERIAN GLAND", finding: "infiltrate lymphocytic",
+    meanIncidencePct: 10.0, rangeLowPct: 10.0, rangeHighPct: 10.0,
+    notes: "Incidental" },
+
+  // ─── Legacy mock entries (general fallback) ─────────────
+  // Converted from original mock data. sex: "BOTH", route: "any", duration: "any"
+  ...buildLegacyEntries(),
+];
+
+function buildLegacyEntries(): HCDEntry[] {
+  const L = {
+    strain: "SPRAGUE-DAWLEY",
+    species: "RAT",
+    sex: "BOTH" as const,
+    durationBucket: "any" as const,
+    route: "any" as const,
+    isMock: true,
+    source: "Mock prototype data",
+  };
+
+  function legacy(finding: string, specimen: string, meanPct: number, lowPct: number, highPct: number, n: number, notes: string | null = null): HCDEntry {
+    return { ...L, finding, specimen, meanIncidencePct: meanPct, rangeLowPct: lowPct, rangeHighPct: highPct, nStudies: n, notes };
+  }
+
+  return [
+    legacy("hepatocellular hypertrophy", "LIVER", 8, 2, 18, 24),
+    legacy("hepatocellular vacuolation", "LIVER", 12, 4, 28, 22),
+    legacy("hepatocellular necrosis", "LIVER", 2, 0, 6, 24),
+    legacy("bile duct hyperplasia", "LIVER", 4, 0, 10, 20),
+    legacy("hepatocellular adenoma", "LIVER", 1, 0, 4, 18),
+    legacy("tubular degeneration", "KIDNEY", 6, 0, 16, 22),
+    legacy("tubular basophilia", "KIDNEY", 15, 6, 30, 22),
+    legacy("chronic progressive nephropathy", "KIDNEY", 35, 15, 60, 24),
+    legacy("mineralization", "KIDNEY", 10, 2, 22, 20),
+    legacy("alveolar macrophage infiltrate", "LUNG", 18, 6, 35, 20),
+    legacy("perivascular inflammation", "LUNG", 10, 2, 22, 18),
+    legacy("cardiomyopathy", "HEART", 20, 8, 40, 22),
+    legacy("myocardial degeneration", "HEART", 5, 0, 12, 18),
+    legacy("cortical hypertrophy", "ADRENAL", 14, 4, 28, 20),
+    legacy("cortical vacuolation", "ADRENAL", 8, 2, 18, 18),
+    legacy("follicular cell hypertrophy", "THYROID", 6, 0, 16, 20),
+    legacy("follicular cell hyperplasia", "THYROID", 4, 0, 12, 18),
+    legacy("tubular atrophy", "TESTIS", 3, 0, 8, 16),
+    legacy("spermatogenic degeneration", "TESTIS", 5, 0, 14, 16),
+    legacy("cyst", "OVARY", 10, 2, 22, 14),
+    legacy("extramedullary hematopoiesis", "SPLEEN", 25, 10, 45, 22),
+    legacy("lymphoid hyperplasia", "SPLEEN", 8, 2, 18, 20),
+    legacy("lymphoid atrophy", "SPLEEN", 4, 0, 10, 18),
+    legacy("squamous cell hyperplasia", "STOMACH", 6, 0, 16, 16),
+    legacy("erosion", "STOMACH", 3, 0, 8, 16),
+    legacy("inflammation", "STOMACH", 8, 2, 18, 16),
+    legacy("pigmentation", "GENERAL", 12, 4, 25, 20),
+    legacy("inflammation", "GENERAL", 15, 6, 30, 24),
+    legacy("fibrosis", "GENERAL", 4, 0, 10, 20),
+    legacy("necrosis", "GENERAL", 3, 0, 8, 20),
+  ];
+}
+
+// ─── Context-aware lookup ─────────────────────────────────
+
+/**
+ * Context-aware HCD query with 4-tier fallback matching.
+ * Returns the best match for the given finding/specimen/sex in the study context.
+ */
+export function queryHistoricalControl(
+  query: HistoricalControlQuery,
+): HistoricalControlResult | null {
+  const findingLower = query.finding.toLowerCase();
+  const specimenUpper = query.specimen.toUpperCase();
+  const studyStrain = query.context.strain.toUpperCase();
+  const studyRoute = routeCategory(query.context.route);
+  const studyDuration = getDurationBucket(query.context.dosingDurationWeeks);
+
+  // Filter entries that match the finding (substring) and specimen
+  const candidates = HCD_DATABASE.filter((e) => {
+    const specMatch = e.specimen === "GENERAL"
+      ? !HCD_DATABASE.some((o) => o.specimen === specimenUpper && findingLower.includes(o.finding.toLowerCase()))
+      : specimenUpper.includes(e.specimen.toUpperCase());
+    return findingLower.includes(e.finding.toLowerCase()) && specMatch;
+  });
+
+  if (candidates.length === 0) return null;
+
+  // Sex filter: prefer exact sex match, accept BOTH as fallback
+  const sexFiltered = candidates.filter((e) => e.sex === query.sex || e.sex === "BOTH");
+  const pool = sexFiltered.length > 0 ? sexFiltered : candidates;
+
+  // 4-tier matching
+  let match: HCDEntry | null = null;
+  let strainSpecific = false;
+
+  // Tier 1: strain + species + route + sex + duration
+  match = pool.find((e) =>
+    e.strain === studyStrain &&
+    (e.route === studyRoute || e.route === "any") &&
+    (e.durationBucket === studyDuration || e.durationBucket === "any") &&
+    (e.sex === query.sex || e.sex === "BOTH"),
+  ) ?? null;
+  if (match) strainSpecific = true;
+
+  // Tier 2: strain + species + sex + duration (drop route)
+  if (!match) {
+    match = pool.find((e) =>
+      e.strain === studyStrain &&
+      (e.durationBucket === studyDuration || e.durationBucket === "any") &&
+      (e.sex === query.sex || e.sex === "BOTH"),
+    ) ?? null;
+    if (match) strainSpecific = true;
+  }
+
+  // Tier 3: species + sex + duration (drop strain)
+  if (!match) {
+    match = pool.find((e) =>
+      (e.durationBucket === studyDuration || e.durationBucket === "any") &&
+      (e.sex === query.sex || e.sex === "BOTH"),
+    ) ?? null;
+  }
+
+  // Tier 4: species + sex (drop duration)
+  if (!match) {
+    match = pool.find((e) =>
+      e.sex === query.sex || e.sex === "BOTH",
+    ) ?? null;
+  }
+
+  // Final fallback: any match
+  if (!match) match = pool[0] ?? null;
+  if (!match) return null;
+
+  const meanInc = match.meanIncidencePct / 100;
+  const rangeLow = match.rangeLowPct / 100;
+  const rangeHigh = match.rangeHighPct / 100;
+
+  // Build context label
+  const strainLabel = strainSpecific ? query.context.strain : query.context.species;
+  const sexLabel = query.sex === "M" ? "male" : "female";
+  const durationLabel = query.context.dosingDurationWeeks != null
+    ? `${Math.round(query.context.dosingDurationWeeks)}-wk`
+    : "";
+  const routeLabel = query.context.route.toLowerCase().replace("oral gavage", "oral gavage");
+  const mockSuffix = match.isMock ? " (mock HCD)" : "";
+  const contextLabel = [strainLabel, routeLabel, durationLabel, sexLabel]
+    .filter(Boolean).join(", ") + mockSuffix;
+
   return {
-    finding, organ, ...D,
-    mean_incidence, min_incidence, max_incidence, p95_incidence, sd_incidence, n_studies,
-    p5_incidence: Math.max(0, min_incidence + (max_incidence - min_incidence) * 0.05),
-    n_animals: n_studies * 20,
-    severity_mean, severity_max,
+    meanIncidence: meanInc,
+    range: [rangeLow, rangeHigh],
+    nStudies: match.nStudies,
+    classification: "NO_DATA", // will be classified by caller
+    contextLabel,
+    isMock: match.isMock,
+    strainSpecific,
+    notes: match.notes,
+    entry: match,
   };
 }
 
-const MOCK_HCD: HistoricalControlData[] = [
-  // Liver
-  hcd("hepatocellular hypertrophy", "liver", 0.08, 0.02, 0.18, 0.16, 0.04, 24, 1.2, 2),
-  hcd("hepatocellular vacuolation", "liver", 0.12, 0.04, 0.28, 0.24, 0.06, 22, 1.3, 2),
-  hcd("hepatocellular necrosis", "liver", 0.02, 0.00, 0.06, 0.05, 0.02, 24, 2.0, 4),
-  hcd("bile duct hyperplasia", "liver", 0.04, 0.00, 0.10, 0.08, 0.03, 20, 1.5, 3),
-  hcd("hepatocellular adenoma", "liver", 0.01, 0.00, 0.04, 0.03, 0.01, 18, 0, 5),
+/**
+ * Classify a study's control group incidence against HCD result.
+ */
+export function classifyControlVsHCD(
+  controlIncidence: number,
+  result: HistoricalControlResult,
+): "ABOVE" | "WITHIN" | "BELOW" {
+  if (controlIncidence > result.range[1]) return "ABOVE";
+  if (controlIncidence < result.range[0]) return "BELOW";
+  return "WITHIN";
+}
 
-  // Kidney
-  hcd("tubular degeneration", "kidney", 0.06, 0.00, 0.16, 0.14, 0.04, 22, 1.8, 3),
-  hcd("tubular basophilia", "kidney", 0.15, 0.06, 0.30, 0.26, 0.06, 22, 1.2, 2),
-  hcd("chronic progressive nephropathy", "kidney", 0.35, 0.15, 0.60, 0.55, 0.12, 24, 1.5, 4),
-  hcd("mineralization", "kidney", 0.10, 0.02, 0.22, 0.20, 0.05, 20, 1.0, 2),
+// ─── Backward-compatible API ──────────────────────────────
+// Existing call sites use getHistoricalControl(finding, organ) and classifyVsHCD.
 
-  // Lung
-  hcd("alveolar macrophage infiltrate", "lung", 0.18, 0.06, 0.35, 0.32, 0.08, 20, 1.2, 2),
-  hcd("perivascular inflammation", "lung", 0.10, 0.02, 0.22, 0.20, 0.05, 18, 1.3, 2),
-
-  // Heart
-  hcd("cardiomyopathy", "heart", 0.20, 0.08, 0.40, 0.36, 0.08, 22, 1.4, 3),
-  hcd("myocardial degeneration", "heart", 0.05, 0.00, 0.12, 0.10, 0.03, 18, 2.0, 4),
-
-  // Adrenal
-  hcd("cortical hypertrophy", "adrenal", 0.14, 0.04, 0.28, 0.25, 0.06, 20, 1.2, 2),
-  hcd("cortical vacuolation", "adrenal", 0.08, 0.02, 0.18, 0.16, 0.04, 18, 1.1, 2),
-
-  // Thyroid
-  hcd("follicular cell hypertrophy", "thyroid", 0.06, 0.00, 0.16, 0.14, 0.04, 20, 1.2, 2),
-  hcd("follicular cell hyperplasia", "thyroid", 0.04, 0.00, 0.12, 0.10, 0.03, 18, 1.3, 2),
-
-  // Testis
-  hcd("tubular atrophy", "testis", 0.03, 0.00, 0.08, 0.07, 0.02, 16, 2.0, 4),
-  hcd("spermatogenic degeneration", "testis", 0.05, 0.00, 0.14, 0.12, 0.04, 16, 1.8, 3),
-
-  // Ovary
-  hcd("cyst", "ovary", 0.10, 0.02, 0.22, 0.20, 0.05, 14, 0, 0),
-
-  // Spleen
-  hcd("extramedullary hematopoiesis", "spleen", 0.25, 0.10, 0.45, 0.42, 0.10, 22, 1.5, 3),
-  hcd("lymphoid hyperplasia", "spleen", 0.08, 0.02, 0.18, 0.16, 0.04, 20, 1.2, 2),
-  hcd("lymphoid atrophy", "spleen", 0.04, 0.00, 0.10, 0.08, 0.03, 18, 1.5, 3),
-
-  // Stomach
-  hcd("squamous cell hyperplasia", "stomach", 0.06, 0.00, 0.16, 0.14, 0.04, 16, 1.3, 2),
-  hcd("erosion", "stomach", 0.03, 0.00, 0.08, 0.07, 0.02, 16, 2.0, 3),
-  hcd("inflammation", "stomach", 0.08, 0.02, 0.18, 0.16, 0.04, 16, 1.2, 2),
-
-  // General / multi-organ
-  hcd("pigmentation", "general", 0.12, 0.04, 0.25, 0.22, 0.05, 20, 1.0, 2),
-  hcd("inflammation", "general", 0.15, 0.06, 0.30, 0.28, 0.07, 24, 1.3, 3),
-  hcd("fibrosis", "general", 0.04, 0.00, 0.10, 0.08, 0.03, 20, 1.5, 3),
-  hcd("necrosis", "general", 0.03, 0.00, 0.08, 0.07, 0.02, 20, 2.0, 4),
-];
-
-// ─── Lookup ───────────────────────────────────────────────
+export type HCDStatus = "above_range" | "at_upper" | "within_range" | "below_range" | "no_data";
 
 /**
- * Look up historical control data for a finding + organ combination.
- * Case-insensitive substring match on finding name and organ.
- * Falls back to finding-only match (organ = "general") if no organ-specific match.
+ * Legacy lookup: case-insensitive substring match on finding + organ.
+ * Falls back to "general" entries if no organ-specific match.
  */
 export function getHistoricalControl(
   finding: string,
   organ: string,
 ): HistoricalControlData | null {
   const findingLower = finding.toLowerCase();
-  const organLower = organ.toLowerCase();
+  const organLower = organ.toLowerCase().replace(/_/g, " ");
 
-  // First try organ-specific match
-  const organMatch = MOCK_HCD.find(
-    (h) =>
-      h.organ !== "general" &&
-      findingLower.includes(h.finding) &&
-      organLower.includes(h.organ),
-  );
-  if (organMatch) return organMatch;
+  // Search all entries, prefer organ-specific over GENERAL
+  let match: HCDEntry | null = null;
 
-  // Fallback: finding-only match against general entries
-  const generalMatch = MOCK_HCD.find(
-    (h) => h.organ === "general" && findingLower.includes(h.finding),
-  );
-  return generalMatch ?? null;
+  for (const e of HCD_DATABASE) {
+    if (!findingLower.includes(e.finding.toLowerCase())) continue;
+    const entryOrgan = e.specimen.toLowerCase().replace(/_/g, " ");
+    if (entryOrgan !== "general" && organLower.includes(entryOrgan)) {
+      match = e;
+      break;
+    }
+  }
+
+  if (!match) {
+    match = HCD_DATABASE.find(
+      (e) => e.specimen === "GENERAL" && findingLower.includes(e.finding.toLowerCase()),
+    ) ?? null;
+  }
+
+  if (!match) return null;
+
+  // Convert to legacy format
+  const mean = match.meanIncidencePct / 100;
+  const min = match.rangeLowPct / 100;
+  const max = match.rangeHighPct / 100;
+  const sd = (max - min) / 4; // approximate SD from range
+
+  return {
+    finding: match.finding,
+    organ: match.specimen.toLowerCase(),
+    strain: "SD",
+    species: "Sprague-Dawley rat",
+    sex: match.sex === "BOTH" ? "combined" : match.sex,
+    mean_incidence: mean,
+    min_incidence: min,
+    max_incidence: max,
+    p5_incidence: Math.max(0, min + (max - min) * 0.05),
+    p95_incidence: min + (max - min) * 0.95,
+    sd_incidence: sd,
+    n_studies: match.nStudies,
+    n_animals: match.nStudies * 20,
+    severity_mean: 1.5,
+    severity_max: 3,
+    source: match.isMock ? "mock" : "published",
+    last_updated: "2026-02-16",
+  };
 }
-
-// ─── Status classification ────────────────────────────────
-
-export type HCDStatus = "above_range" | "at_upper" | "within_range" | "below_range" | "no_data";
 
 export function classifyVsHCD(
   controlIncidence: number,

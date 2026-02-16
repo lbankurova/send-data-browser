@@ -61,8 +61,9 @@ import type { RecoveryClassification } from "@/lib/recovery-classification";
 import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
 import type { FindingNatureInfo } from "@/lib/finding-nature";
 import { fishersExact2x2 } from "@/lib/statistics";
-import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS, HCD_STATUS_SORT } from "@/lib/mock-historical-controls";
-import type { HistoricalControlData, HCDStatus } from "@/lib/mock-historical-controls";
+import { getHistoricalControl, classifyVsHCD, queryHistoricalControl, classifyControlVsHCD, HCD_STATUS_LABELS, HCD_STATUS_SORT } from "@/lib/mock-historical-controls";
+import type { HistoricalControlData, HistoricalControlResult, HCDStatus } from "@/lib/mock-historical-controls";
+import { useStudyContext } from "@/hooks/useStudyContext";
 import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality } from "@/lib/laterality";
 import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 
@@ -758,7 +759,7 @@ function OverviewTab({
   const recoveryAssessments = useMemo(() => {
     if (!specimenHasRecovery || !subjData?.subjects) return null;
     const findingNames = findingSummaries.map((f) => f.finding);
-    return deriveRecoveryAssessments(findingNames, subjData.subjects);
+    return deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days);
   }, [specimenHasRecovery, subjData, findingSummaries]);
 
   // Recovery chart anomaly summary for header icon (§4.4)
@@ -1464,6 +1465,9 @@ function OverviewTab({
                 // §4.2: insufficient_n → "† (N<3)" in muted/50
                 if (v === "insufficient_n")
                   return <span className="text-[9px] text-muted-foreground/50" title={tip}>{"\u2020"} (N&lt;3)</span>;
+                // v4: recovery_too_short → "⏱ too short" in blue informational
+                if (v === "recovery_too_short")
+                  return <span className="text-[9px] text-blue-500/70" title={tip}>{"\u23F1"} too short</span>;
                 const arrow = verdictArrow(v);
                 // §4.2: persistent, progressing, anomaly get font-medium emphasis
                 const emphasis = v === "persistent" || v === "progressing" || v === "anomaly";
@@ -3043,11 +3047,15 @@ function PeerComparisonToolContent({
   specimenName,
   specimenData,
   specimen,
+  studyId,
 }: {
   specimenName: string;
   specimenData?: LesionSeverityRow[];
   specimen?: string;
+  studyId?: string;
 }) {
+  const { data: studyCtx } = useStudyContext(studyId);
+
   // Compute control group incidence per finding
   const peerRows = useMemo(() => {
     if (!specimenData || !specimen) return [];
@@ -3077,21 +3085,52 @@ function PeerComparisonToolContent({
       }
     }
 
-    // Look up HCD for each finding
-    const organName = specimen.toLowerCase().replace(/_/g, " ");
+    // Determine predominant sex for context-aware HCD lookup
+    const sexCounts = new Map<string, number>();
+    for (const r of specimenData) {
+      if (r.dose_label.toLowerCase().includes("recovery")) continue;
+      sexCounts.set(r.sex, (sexCounts.get(r.sex) ?? 0) + r.n);
+    }
+    const predominantSex: "M" | "F" = (sexCounts.get("F") ?? 0) > (sexCounts.get("M") ?? 0) ? "F" : "M";
+
+    // Look up HCD for each finding — context-aware when StudyContext available
     const rows: Array<{
       finding: string;
       controlIncidence: number;
       hcd: HistoricalControlData | null;
+      hcdResult: HistoricalControlResult | null;
       status: HCDStatus;
+      contextLabel: string | null;
     }> = [];
 
     for (const finding of findings) {
       const ctrl = controlByFinding.get(finding);
       const controlInc = ctrl && ctrl.n > 0 ? ctrl.affected / ctrl.n : 0;
-      const hcd = getHistoricalControl(finding, organName);
-      const status: HCDStatus = hcd ? classifyVsHCD(controlInc, hcd) : "no_data";
-      rows.push({ finding, controlIncidence: controlInc, hcd, status });
+
+      if (studyCtx) {
+        // Context-aware lookup (IMP-02)
+        const result = queryHistoricalControl({
+          finding, specimen, sex: predominantSex, context: studyCtx,
+        });
+        if (result) {
+          const cls = classifyControlVsHCD(controlInc, result);
+          const statusMap: Record<string, HCDStatus> = {
+            ABOVE: "above_range", WITHIN: "within_range", BELOW: "below_range",
+          };
+          rows.push({
+            finding, controlIncidence: controlInc, hcd: null,
+            hcdResult: result, status: statusMap[cls] ?? "no_data",
+            contextLabel: result.contextLabel,
+          });
+        } else {
+          rows.push({ finding, controlIncidence: controlInc, hcd: null, hcdResult: null, status: "no_data", contextLabel: null });
+        }
+      } else {
+        // Legacy lookup (no StudyContext)
+        const hcd = getHistoricalControl(finding, specimen.toLowerCase().replace(/_/g, " "));
+        const status: HCDStatus = hcd ? classifyVsHCD(controlInc, hcd) : "no_data";
+        rows.push({ finding, controlIncidence: controlInc, hcd, hcdResult: null, status, contextLabel: null });
+      }
     }
 
     // Sort: Above range first, then At upper, then others
@@ -3102,7 +3141,7 @@ function PeerComparisonToolContent({
     });
 
     return rows;
-  }, [specimenData, specimen]);
+  }, [specimenData, specimen, studyCtx]);
 
   if (peerRows.length === 0) {
     return (
@@ -3131,53 +3170,70 @@ function PeerComparisonToolContent({
           </tr>
         </thead>
         <tbody>
-          {peerRows.map(({ finding, controlIncidence, hcd, status }) => (
-            <tr key={finding} className="border-b border-dashed">
-              <td className="max-w-[120px] truncate py-1 text-[11px] font-medium" title={finding}>
-                {finding}
-              </td>
-              <td className="py-1 text-right font-mono text-muted-foreground">
-                {Math.round(controlIncidence * 100)}%
-              </td>
-              <td className="py-1 text-right text-muted-foreground">
-                {hcd ? (
-                  <span title={`n=${hcd.n_studies} studies, mean=${Math.round(hcd.mean_incidence * 100)}%`}>
-                    <span className="font-mono">{Math.round(hcd.min_incidence * 100)}{"\u2013"}{Math.round(hcd.max_incidence * 100)}%</span>
-                    <br />
-                    <span className="text-[9px] text-muted-foreground/60">mean {Math.round(hcd.mean_incidence * 100)}%, n={hcd.n_studies}</span>
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground/40">{"\u2014"}</span>
-                )}
-              </td>
-              <td className="py-1 text-right">
-                {status === "no_data" ? (
-                  <span className="text-muted-foreground/40">No data</span>
-                ) : (
-                  <span className={cn(
-                    "text-[9px]",
-                    status === "above_range"
-                      ? "font-medium text-foreground"
-                      : status === "at_upper"
-                      ? "text-muted-foreground"
-                      : "text-muted-foreground/60",
-                  )}>
-                    {status === "above_range" && "\u25B2 "}
-                    {status === "at_upper" && "\u26A0 "}
-                    {HCD_STATUS_LABELS[status]}
-                  </span>
-                )}
-              </td>
-            </tr>
-          ))}
+          {peerRows.map((row) => {
+            const { finding, controlIncidence, hcd, hcdResult, status, contextLabel } = row;
+            const meanPct = hcdResult ? Math.round(hcdResult.meanIncidence * 100) : hcd ? Math.round(hcd.mean_incidence * 100) : null;
+            const rangeLow = hcdResult ? Math.round(hcdResult.range[0] * 100) : hcd ? Math.round(hcd.min_incidence * 100) : null;
+            const rangeHigh = hcdResult ? Math.round(hcdResult.range[1] * 100) : hcd ? Math.round(hcd.max_incidence * 100) : null;
+            const nStudies = hcdResult?.nStudies ?? hcd?.n_studies ?? null;
+            const hasData = hcdResult != null || hcd != null;
+            return (
+              <tr key={finding} className="border-b border-dashed">
+                <td className="max-w-[120px] truncate py-1 text-[11px] font-medium" title={finding}>
+                  {finding}
+                </td>
+                <td className="py-1 text-right font-mono text-muted-foreground">
+                  {Math.round(controlIncidence * 100)}%
+                </td>
+                <td className="py-1 text-right text-muted-foreground">
+                  {hasData ? (
+                    <span title={`n=${nStudies} studies, mean=${meanPct}%${contextLabel ? `\n${contextLabel}` : ""}`}>
+                      <span className="font-mono">{rangeLow}{"\u2013"}{rangeHigh}%</span>
+                      <br />
+                      <span className="text-[9px] text-muted-foreground/60">mean {meanPct}%, n={nStudies}</span>
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground/40">{"\u2014"}</span>
+                  )}
+                </td>
+                <td className="py-1 text-right">
+                  {status === "no_data" ? (
+                    <span className="text-muted-foreground/40">No data</span>
+                  ) : (
+                    <span className={cn(
+                      "text-[9px]",
+                      status === "above_range"
+                        ? "font-medium text-foreground"
+                        : status === "at_upper"
+                        ? "text-muted-foreground"
+                        : "text-muted-foreground/60",
+                    )}>
+                      {status === "above_range" && "\u25B2 "}
+                      {status === "at_upper" && "\u26A0 "}
+                      {HCD_STATUS_LABELS[status]}
+                    </span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
-      {/* Mock badge */}
-      <div className="flex items-center gap-2">
-        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">mock</span>
-        <span className="text-[9px] text-muted-foreground/50">Simulated historical control data (SD rat, 14-24 studies)</span>
-      </div>
+      {/* Source badge */}
+      {peerRows.some(r => r.hcdResult && !r.hcdResult.isMock) ? (
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700">published</span>
+          <span className="text-[9px] text-muted-foreground/50">
+            {peerRows.find(r => r.hcdResult && !r.hcdResult.isMock)?.hcdResult?.contextLabel ?? "Charles River reference data"}
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">mock</span>
+          <span className="text-[9px] text-muted-foreground/50">Simulated historical control data (SD rat, 14-24 studies)</span>
+        </div>
+      )}
 
       <HypProductionNote>
         Production version will query facility-specific historical control database with strain, age, and laboratory matching.
@@ -3221,6 +3277,7 @@ function HistopathHypothesesTab({
   onFindingClick,
   specimenData,
   specimen,
+  studyId,
 }: {
   specimenName: string;
   findingCount: number;
@@ -3231,6 +3288,7 @@ function HistopathHypothesesTab({
   onFindingClick: (finding: string) => void;
   specimenData?: LesionSeverityRow[];
   specimen?: string;
+  studyId?: string;
 }) {
   const [intent, setIntent] = useState<SpecimenToolIntent>("severity");
 
@@ -3442,6 +3500,7 @@ function HistopathHypothesesTab({
             specimenName={specimenName}
             specimenData={specimenData}
             specimen={specimen}
+            studyId={studyId}
           />
         )}
         {intent === "doseTrend" && (
@@ -3677,7 +3736,7 @@ export function HistopathologyView() {
     if (!subjData?.subjects?.some((s) => s.is_recovery)) return null;
     const findingNames = findingSummaries.map((f) => f.finding);
     if (findingNames.length === 0) return null;
-    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects);
+    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days);
     return specimenRecoveryLabel(assessments);
   }, [subjData, findingSummaries]);
 
@@ -3691,7 +3750,7 @@ export function HistopathologyView() {
     if (!specimenHasRecovery || !subjData?.subjects) return null;
     const findingNames = findingSummaries.map((f) => f.finding);
     if (findingNames.length === 0) return null;
-    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects);
+    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days);
 
     // Build per-finding clinical catalog lookup
     const findingClinicalMap = new Map<string, { clinicalClass: string; catalogId: string }>();
@@ -3747,7 +3806,7 @@ export function HistopathologyView() {
         findingNature,
         historicalControlIncidence: null,
         crossDomainCorroboration: null,
-        recoveryPeriodDays: null,
+        recoveryPeriodDays: subjData?.recovery_days ?? null,
       });
 
       return { finding, classification, findingNature };
@@ -3964,6 +4023,7 @@ export function HistopathologyView() {
               onFindingClick={handleFindingClick}
               specimenData={specimenData}
               specimen={selectedSpecimen ?? undefined}
+              studyId={studyId}
             />
           )}
           {activeTab === "compare" && studyId && (
