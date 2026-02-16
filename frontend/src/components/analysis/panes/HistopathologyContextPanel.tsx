@@ -33,6 +33,8 @@ import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mo
 import { getFindingDoseConsistency } from "@/components/analysis/HistopathologyView";
 import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { fishersExact2x2 } from "@/lib/statistics";
+import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
+import type { SignalSummaryRow } from "@/types/analysis-views";
 
 // ─── Specimen-scoped insights (purpose-built for context panel) ──────────────
 
@@ -41,9 +43,10 @@ interface InsightBlock {
   finding: string;
   sexes: string;
   detail: string;
+  correlates?: string;
 }
 
-function deriveSpecimenInsights(rules: RuleResult[], specimen: string): InsightBlock[] {
+function deriveSpecimenInsights(rules: RuleResult[], specimen: string, signalData?: SignalSummaryRow[]): InsightBlock[] {
   const blocks: InsightBlock[] = [];
   const specLower = specimen.toLowerCase();
 
@@ -152,11 +155,32 @@ function deriveSpecimenInsights(rules: RuleResult[], specimen: string): InsightB
     } else {
       const ctrlPct = aggs[0].primaryRule.params?.ctrl_pct ?? "";
       const highPct = aggs[0].primaryRule.params?.high_pct ?? "";
+      // Cross-domain correlates from signal data
+      let correlates: string | undefined;
+      if (signalData) {
+        const organSystem = specimenToOrganSystem(specimen);
+        const organSignals = signalData.filter(
+          (s) => s.organ_system === organSystem && s.domain !== "MI" && s.direction != null && s.direction !== "none",
+        );
+        // Deduplicate by endpoint_label
+        const seen = new Set<string>();
+        const corr: string[] = [];
+        for (const s of organSignals) {
+          if (seen.has(s.endpoint_label)) continue;
+          seen.add(s.endpoint_label);
+          const arrow = s.direction === "down" ? "\u2193" : "\u2191";
+          corr.push(`${s.endpoint_label} ${arrow}`);
+        }
+        if (corr.length > 0) {
+          correlates = `Correlated: ${corr.slice(0, 5).join(", ")}`;
+        }
+      }
       blocks.push({
         kind: "decreased",
         finding: name,
         sexes: [...new Set(aggs.map((a) => a.sex))].sort().join(", "),
         detail: `${ctrlPct}% control \u2192 ${highPct}% high dose`,
+        correlates,
       });
     }
   }
@@ -183,8 +207,8 @@ const INSIGHT_STYLES: Record<InsightBlock["kind"], { border: string; icon: strin
   info:        { border: "border-l-gray-300",   icon: "\u00b7", label: "Info" },
 };
 
-function SpecimenInsights({ rules, specimen }: { rules: RuleResult[]; specimen: string }) {
-  const blocks = useMemo(() => deriveSpecimenInsights(rules, specimen), [rules, specimen]);
+function SpecimenInsights({ rules, specimen, signalData }: { rules: RuleResult[]; specimen: string; signalData?: SignalSummaryRow[] }) {
+  const blocks = useMemo(() => deriveSpecimenInsights(rules, specimen, signalData), [rules, specimen, signalData]);
 
   if (blocks.length === 0) {
     return <p className="text-[11px] text-muted-foreground">No insights for this specimen.</p>;
@@ -237,12 +261,23 @@ function InsightSection({ label, blocks }: { label: string; blocks: InsightBlock
               <div className="text-[10px] leading-snug text-muted-foreground">
                 {b.detail}
               </div>
+              {b.correlates && (
+                <div className="text-[9px] leading-snug text-muted-foreground/60 italic">
+                  {b.correlates}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
     </div>
   );
+}
+
+/** Wrapper that fetches signal data for cross-domain correlates in insight blocks */
+function SpecimenInsightsWithSignals({ rules, specimen, studyId }: { rules: RuleResult[]; specimen: string; studyId?: string }) {
+  const { data: signalData } = useStudySignalSummary(studyId);
+  return <SpecimenInsights rules={rules} specimen={specimen} signalData={signalData} />;
 }
 
 // ─── Recovery insight block (interpretive layer — Insights pane only) ─────────
@@ -560,7 +595,7 @@ function SpecimenOverviewPane({
       {/* Insights */}
       {specimenRules.length > 0 && (
         <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <SpecimenInsights rules={specimenRules} specimen={specimen} />
+          <SpecimenInsightsWithSignals rules={specimenRules} specimen={specimen} studyId={studyId} />
         </CollapsiblePane>
       )}
 
@@ -1248,7 +1283,7 @@ function FindingDetailPane({
 
       {/* Insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <SpecimenInsights rules={findingRules} specimen={selection.specimen} />
+        <SpecimenInsightsWithSignals rules={findingRules} specimen={selection.specimen} studyId={studyId} />
         {showRecoveryInsight && recoveryClassification && (
           <div className="mt-2.5">
             <RecoveryInsightBlock classification={recoveryClassification} />
