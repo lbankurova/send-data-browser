@@ -297,15 +297,13 @@ export function FindingsRail({
         />
       )}
 
-      {/* Zone 3: Grouping toggle */}
-      <GroupingToggle active={grouping} onChange={handleGroupingChange} />
-
-      {/* Zone 4: Rail filters */}
+      {/* Zone 3+4: Rail filters (grouping dropdown merged in) */}
       <RailFiltersSection
         filters={railFilters}
         sortMode={sortMode}
         grouping={grouping}
         groupFilterOptions={groupFilterOptions}
+        onGroupingChange={handleGroupingChange}
         onFiltersChange={setRailFilters}
         onSortChange={setSortMode}
       />
@@ -422,43 +420,6 @@ const PATTERN_ICONS: Record<string, typeof TrendingUp> = {
   flat: Minus,
 };
 
-const GROUPING_OPTIONS: { value: GroupingMode; label: string }[] = [
-  { value: "organ", label: "Organ" },
-  { value: "domain", label: "Domain" },
-  { value: "pattern", label: "Pattern" },
-];
-
-function GroupingToggle({
-  active,
-  onChange,
-}: {
-  active: GroupingMode;
-  onChange: (mode: GroupingMode) => void;
-}) {
-  return (
-    <div className="shrink-0 border-b px-3 py-2" role="radiogroup" aria-label="Group by">
-      <div className="inline-flex rounded-md border bg-muted/30 p-0.5">
-        {GROUPING_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            role="radio"
-            aria-checked={active === opt.value}
-            className={cn(
-              "rounded-sm px-2 py-0.5 text-[10px] font-medium cursor-pointer",
-              active === opt.value
-                ? "bg-background font-semibold text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            onClick={() => onChange(opt.value)}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Rail Filters ──────────────────────────────────────────
 
 const GROUPING_ALL_LABELS: Record<GroupingMode, string> = {
@@ -472,6 +433,7 @@ function RailFiltersSection({
   sortMode,
   grouping,
   groupFilterOptions,
+  onGroupingChange,
   onFiltersChange,
   onSortChange,
 }: {
@@ -479,18 +441,34 @@ function RailFiltersSection({
   sortMode: SortMode;
   grouping: GroupingMode;
   groupFilterOptions: { key: string; label: string }[];
+  onGroupingChange: (mode: GroupingMode) => void;
   onFiltersChange: (f: RailFilters) => void;
   onSortChange: (s: SortMode) => void;
 }) {
   return (
     <div className="shrink-0 space-y-1.5 border-b px-3 py-1.5">
-      {/* Row 1: Search + Sort */}
-      <div className="flex items-center gap-2">
-        <FilterSearch
-          value={filters.search}
-          onChange={(v) => onFiltersChange({ ...filters, search: v })}
-          placeholder="Search findings…"
-          className="flex-1"
+      {/* Row 1: Search */}
+      <FilterSearch
+        value={filters.search}
+        onChange={(v) => onFiltersChange({ ...filters, search: v })}
+        placeholder="Search findings…"
+      />
+
+      {/* Row 2: Group by + group filter + sort */}
+      <div className="flex items-center gap-1.5">
+        <FilterSelect
+          value={grouping}
+          onChange={(e) => onGroupingChange(e.target.value as GroupingMode)}
+        >
+          <option value="organ">Organ</option>
+          <option value="domain">Domain</option>
+          <option value="pattern">Pattern</option>
+        </FilterSelect>
+        <FilterMultiSelect
+          options={groupFilterOptions}
+          selected={filters.groupFilter}
+          onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
+          allLabel={GROUPING_ALL_LABELS[grouping]}
         />
         <FilterSelect
           value={sortMode}
@@ -503,14 +481,8 @@ function RailFiltersSection({
         </FilterSelect>
       </div>
 
-      {/* Row 2: Group filter + quick toggles */}
-      <div className="flex items-center gap-2">
-        <FilterMultiSelect
-          options={groupFilterOptions}
-          selected={filters.groupFilter}
-          onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
-          allLabel={GROUPING_ALL_LABELS[grouping]}
-        />
+      {/* Row 3: Quick toggles */}
+      <div className="flex items-center gap-3">
         <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
           <input
             type="checkbox"
