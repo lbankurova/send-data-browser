@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSubjectProfile } from "@/hooks/useSubjectProfile";
 import { cn } from "@/lib/utils";
-import { getDoseGroupColor, getSexColor } from "@/lib/severity-colors";
+import { getDoseGroupColor, getSexColor, formatDoseShortLabel } from "@/lib/severity-colors";
 import type { SubjectProfile, SubjectMeasurement, SubjectObservation, SubjectFinding } from "@/types/timecourse";
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -377,14 +377,12 @@ function SubjectProfileContent({
           </span>
           <span>
             <span className="text-muted-foreground">Dose: </span>
-            {(() => {
-              const idx = profile.dose_label.indexOf(",");
-              if (idx === -1) return <span className="font-mono font-medium" style={{ color: getDoseGroupColor(profile.dose_level) }}>{profile.dose_label}</span>;
-              return <>
-                <span className="font-mono font-medium" style={{ color: getDoseGroupColor(profile.dose_level) }}>{profile.dose_label.slice(0, idx)}</span>
-                <span className="font-mono">,{profile.dose_label.slice(idx + 1)}</span>
-              </>;
-            })()}
+            <span
+              className="border-l-2 pl-1.5 font-mono font-medium"
+              style={{ borderLeftColor: getDoseGroupColor(profile.dose_level) }}
+            >
+              {formatDoseShortLabel(profile.dose_label)}
+            </span>
           </span>
           {profile.disposition && (
             <span>

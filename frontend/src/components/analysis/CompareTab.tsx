@@ -20,7 +20,7 @@ import { buildBWComparisonOption } from "@/components/analysis/charts/comparison
 import type { BWChartMode } from "@/components/analysis/charts/comparison-charts";
 import type { SubjectHistopathEntry, ComparisonSubjectProfile } from "@/types/timecourse";
 import { FilterSelect } from "@/components/ui/FilterBar";
-import { getDoseGroupColor } from "@/lib/severity-colors";
+import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
 import { ORGAN_RELEVANT_TESTS } from "@/lib/organ-test-mapping";
 
 // ─── Grouping types ──────────────────────────────────────────
@@ -80,7 +80,7 @@ function buildGroups(
     const isRec = recoverySet.has(s.usubjid);
     const key = `${s.dose_level}-${isRec ? "R" : "M"}`;
     if (!map.has(key)) {
-      map.set(key, { doseLevel: s.dose_level, doseLabel: s.dose_label, isRecovery: isRec, subjects: [] });
+      map.set(key, { doseLevel: s.dose_level, doseLabel: formatDoseShortLabel(s.dose_label), isRecovery: isRec, subjects: [] });
     }
     map.get(key)!.subjects.push({ ...s, isRecovery: isRec });
   }

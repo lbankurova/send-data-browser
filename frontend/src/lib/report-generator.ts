@@ -4,6 +4,7 @@
  */
 
 import { fetchStudyMetadata } from "@/lib/api";
+import { formatDoseShortLabel } from "@/lib/severity-colors";
 import {
   fetchStudySignalSummary,
   fetchTargetOrganSummary,
@@ -102,7 +103,7 @@ function buildDesignSection(
   const doseMap = new Map<number, string>();
   for (const row of signals) {
     if (!doseMap.has(row.dose_level)) {
-      doseMap.set(row.dose_level, row.dose_label);
+      doseMap.set(row.dose_level, formatDoseShortLabel(row.dose_label));
     }
   }
   const doses = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
@@ -235,7 +236,7 @@ function buildOrganSection(
             .slice(0, 20)
             .map(
               (e) =>
-                `<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:3px 8px 3px 0">${escapeHtml(e.endpoint_label)}</td><td style="padding:3px 8px">${escapeHtml(e.sex)}</td><td style="padding:3px 8px">${escapeHtml(e.dose_label)}</td><td style="padding:3px 8px;text-align:right;font-family:monospace">${e.p_value != null ? e.p_value.toFixed(4) : "—"}</td><td style="padding:3px 8px;text-align:center">${severityBadge(e.severity)}</td></tr>`
+                `<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:3px 8px 3px 0">${escapeHtml(e.endpoint_label)}</td><td style="padding:3px 8px">${escapeHtml(e.sex)}</td><td style="padding:3px 8px">${escapeHtml(formatDoseShortLabel(e.dose_label))}</td><td style="padding:3px 8px;text-align:right;font-family:monospace">${e.p_value != null ? e.p_value.toFixed(4) : "—"}</td><td style="padding:3px 8px;text-align:center">${severityBadge(e.severity)}</td></tr>`
             )
             .join("")}
           ${organEffects.length > 20 ? `<tr><td colspan="5" style="padding:4px 0;font-size:10px;color:#6b7280">...and ${organEffects.length - 20} more</td></tr>` : ""}
@@ -292,7 +293,7 @@ function buildAppendicesSection(
       ${topSignals
         .map(
           (s) =>
-            `<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:2px 6px">${escapeHtml(s.endpoint_label)}</td><td style="padding:2px 6px">${escapeHtml(s.organ_system)}</td><td style="padding:2px 6px">${escapeHtml(s.sex)}</td><td style="padding:2px 6px">${escapeHtml(s.dose_label)}</td><td style="padding:2px 6px;text-align:right;font-family:monospace">${s.signal_score.toFixed(3)}</td><td style="padding:2px 6px;text-align:right;font-family:monospace">${s.p_value != null ? s.p_value.toFixed(4) : "—"}</td><td style="padding:2px 6px;text-align:center">${severityBadge(s.severity)}</td></tr>`
+            `<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:2px 6px">${escapeHtml(s.endpoint_label)}</td><td style="padding:2px 6px">${escapeHtml(s.organ_system)}</td><td style="padding:2px 6px">${escapeHtml(s.sex)}</td><td style="padding:2px 6px">${escapeHtml(formatDoseShortLabel(s.dose_label))}</td><td style="padding:2px 6px;text-align:right;font-family:monospace">${s.signal_score.toFixed(3)}</td><td style="padding:2px 6px;text-align:right;font-family:monospace">${s.p_value != null ? s.p_value.toFixed(4) : "—"}</td><td style="padding:2px 6px;text-align:center">${severityBadge(s.severity)}</td></tr>`
         )
         .join("")}
     </table>
@@ -311,7 +312,7 @@ function buildAppendicesSection(
       ${topAdverse
         .map(
           (a) =>
-            `<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:2px 6px">${escapeHtml(a.endpoint_label)}</td><td style="padding:2px 6px">${escapeHtml(a.organ_system)}</td><td style="padding:2px 6px">${escapeHtml(a.sex)}</td><td style="padding:2px 6px">${escapeHtml(a.dose_label)}</td><td style="padding:2px 6px;text-align:center">${escapeHtml(a.direction ?? "—")}</td><td style="padding:2px 6px;text-align:right;font-family:monospace">${a.p_value != null ? a.p_value.toFixed(4) : "—"}</td><td style="padding:2px 6px;text-align:center">${severityBadge(a.severity)}</td></tr>`
+            `<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:2px 6px">${escapeHtml(a.endpoint_label)}</td><td style="padding:2px 6px">${escapeHtml(a.organ_system)}</td><td style="padding:2px 6px">${escapeHtml(a.sex)}</td><td style="padding:2px 6px">${escapeHtml(formatDoseShortLabel(a.dose_label))}</td><td style="padding:2px 6px;text-align:center">${escapeHtml(a.direction ?? "—")}</td><td style="padding:2px 6px;text-align:right;font-family:monospace">${a.p_value != null ? a.p_value.toFixed(4) : "—"}</td><td style="padding:2px 6px;text-align:center">${severityBadge(a.severity)}</td></tr>`
         )
         .join("")}
     </table>
