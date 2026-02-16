@@ -22,7 +22,13 @@ import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterSelect, FilterMultiSelect, FilterShowingLine } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
-import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, getDoseConsistencyWeight, titleCase, formatDoseShortLabel } from "@/lib/severity-colors";
+import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, titleCase, formatDoseShortLabel } from "@/lib/severity-colors";
+import { classifySpecimenPattern, classifyFindingPattern, formatPatternLabel, patternWeight, patternToLegacyConsistency } from "@/lib/pattern-classification";
+import type { PatternClassification } from "@/lib/pattern-classification";
+import { detectSyndromes } from "@/lib/syndrome-rules";
+import type { SyndromeMatch } from "@/lib/syndrome-rules";
+import { SparklineGlyph } from "@/components/ui/SparklineGlyph";
+import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { FindingsSelectionZone } from "@/components/analysis/FindingsSelectionZone";
@@ -37,7 +43,7 @@ import { ChartModeToggle } from "@/components/ui/ChartModeToggle";
 import type { ChartDisplayMode } from "@/components/ui/ChartModeToggle";
 import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { CompareTab } from "@/components/analysis/CompareTab";
-import type { LesionSeverityRow, RuleResult, FindingDoseTrend } from "@/types/analysis-views";
+import type { LesionSeverityRow, RuleResult, FindingDoseTrend, SignalSummaryRow } from "@/types/analysis-views";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import type { PathologyReview } from "@/types/annotations";
 import {
@@ -87,14 +93,13 @@ export interface SpecimenSummary {
   /** Highest incidence (0–1) from any single (finding × dose × sex) row */
   maxIncidence: number;
   domains: string[];
-  doseConsistency: "Weak" | "Moderate" | "Strong" | "NonMonotonic";
-  doseDirection: "increasing" | "decreasing" | "mixed" | "flat";
+  pattern: PatternClassification;
   signalScore: number;
   sexSkew: "M>F" | "F>M" | "M=F" | null;
   hasRecovery: boolean;
   hasSentinel: boolean;
   highestClinicalClass: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent" | null;
-  signalScoreBreakdown: { adverse: number; severity: number; incidence: number; dose: number; clinicalFloor: number; sentinelBoost: number };
+  signalScoreBreakdown: { adverse: number; severity: number; incidence: number; pattern: number; syndromeBoost: number; clinicalFloor: number; sentinelBoost: number };
 }
 
 export interface FindingSummary {
@@ -140,7 +145,13 @@ const findingColHelper = createColumnHelper<FindingTableRow>();
 
 // ─── Helpers ───────────────────────────────────────────────
 
-export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?: RuleResult[]): SpecimenSummary[] {
+export function deriveSpecimenSummaries(
+  data: LesionSeverityRow[],
+  ruleResults?: RuleResult[],
+  trendData?: FindingDoseTrend[] | null,
+  syndromeMatches?: SyndromeMatch[],
+  signalData?: SignalSummaryRow[] | null,
+): SpecimenSummary[] {
   const map = new Map<string, {
     findings: Set<string>;
     adverseFindings: Set<string>;
@@ -227,11 +238,26 @@ export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?:
   const summaries: SpecimenSummary[] = [];
   for (const [specimen, entry] of map) {
     const specimenRows = data.filter((r) => r.specimen === specimen);
-    const heuristicFull = getDoseConsistencyFull(specimenRows);
-    const heuristic = heuristicFull.strength;
-    const doseDirection = heuristicFull.direction;
-    const doseConsistency = hasDoseRuleFor(specimen) ? "Strong" as const : heuristic;
-    const doseW = doseConsistency === "Strong" ? 2 : (doseConsistency === "Moderate" || doseConsistency === "NonMonotonic") ? 1 : 0;
+
+    // Pattern classification (replaces getDoseConsistencyFull)
+    const specimenPattern = classifySpecimenPattern(
+      specimenRows,
+      trendData ?? null,
+      syndromeMatches ?? [],
+      signalData ?? null,
+    );
+
+    // If specimen has R01/R04 rule signals, boost confidence to at least MODERATE
+    if (hasDoseRuleFor(specimen) && specimenPattern.confidence === "LOW") {
+      specimenPattern.confidence = "MODERATE";
+      specimenPattern.confidenceFactors.push("rule engine (R01/R04)");
+    }
+
+    const { pw, syndromeBoost: synBoost } = patternWeight(
+      specimenPattern.pattern,
+      specimenPattern.confidence,
+      specimenPattern.syndrome,
+    );
 
     // Clinical-aware signal score
     const clin = clinicalBySpecimen.get(specimen.toLowerCase());
@@ -246,7 +272,7 @@ export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?:
 
     // Modified score formula for purely decreasing specimens
     let signalScore: number;
-    if (doseDirection === "decreasing") {
+    if (specimenPattern.pattern === "MONOTONIC_DOWN") {
       // Compute actual control - highDose magnitude across all findings
       const doseLevels = [...new Set(specimenRows.map((r) => r.dose_level))].sort((a, b) => a - b);
       const ctrlLevel = doseLevels[0];
@@ -256,9 +282,9 @@ export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?:
       const ctrlInc = ctrlRows.length > 0 ? Math.max(...ctrlRows.map((r) => r.incidence)) : 0;
       const highInc = highRows.length > 0 ? Math.max(...highRows.map((r) => r.incidence)) : 0;
       const decreaseMagnitude = Math.max(0, ctrlInc - highInc);
-      signalScore = (severityComponent * 0.5) + (decreaseMagnitude * 3) + doseW;
+      signalScore = (severityComponent * 0.5) + (decreaseMagnitude * 3) + pw + synBoost;
     } else {
-      signalScore = adverseComponent + severityComponent + incidenceComponent + doseW + clinicalFloor + sentinelBoost;
+      signalScore = adverseComponent + severityComponent + incidenceComponent + pw + synBoost + clinicalFloor + sentinelBoost;
     }
 
     // Sex skew: compare max incidence per sex
@@ -279,8 +305,7 @@ export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?:
       maxSeverity: entry.maxSev,
       maxIncidence: entry.maxIncidence,
       domains: [...entry.domains].sort(),
-      doseConsistency,
-      doseDirection,
+      pattern: specimenPattern,
       signalScore,
       sexSkew,
       hasRecovery: entry.hasRecovery,
@@ -290,7 +315,8 @@ export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?:
         adverse: adverseComponent,
         severity: severityComponent,
         incidence: incidenceComponent,
-        dose: doseW,
+        pattern: pw,
+        syndromeBoost: synBoost,
         clinicalFloor,
         sentinelBoost,
       },
@@ -351,167 +377,12 @@ export function deriveSexLabel(rows: LesionSeverityRow[]): string {
   return "Both sexes";
 }
 
-export function getDoseConsistency(rows: LesionSeverityRow[]): "Weak" | "Moderate" | "Strong" | "NonMonotonic" {
-  // Group by finding, then check dose-incidence monotonicity
-  const byFinding = new Map<string, Map<number, { affected: number; n: number }>>();
-  for (const r of rows) {
-    let findingMap = byFinding.get(r.finding);
-    if (!findingMap) {
-      findingMap = new Map();
-      byFinding.set(r.finding, findingMap);
-    }
-    const existing = findingMap.get(r.dose_level);
-    if (existing) {
-      existing.affected += r.affected;
-      existing.n += r.n;
-    } else {
-      findingMap.set(r.dose_level, { affected: r.affected, n: r.n });
-    }
-  }
-
-  let monotonic = 0;
-  let hasNonMonotonic = false;
-  const doseGroupsAffected = new Set<number>();
-  for (const [finding] of byFinding) {
-    const consistency = getFindingDoseConsistency(rows, finding);
-    if (consistency === "NonMonotonic") hasNonMonotonic = true;
-    const doseMap = byFinding.get(finding)!;
-    const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
-    const incidences = sorted.map(([, v]) => (v.n > 0 ? v.affected / v.n : 0));
-    let isMonotonic = true;
-    for (let i = 1; i < incidences.length; i++) {
-      if (incidences[i] < incidences[i - 1] - 0.001) {
-        isMonotonic = false;
-        break;
-      }
-    }
-    if (isMonotonic) monotonic++;
-    for (const [dl, v] of sorted) {
-      if (v.affected > 0) doseGroupsAffected.add(dl);
-    }
-  }
-
-  const totalFindings = byFinding.size;
-  if (totalFindings === 0) return "Weak";
-
-  const monotonePct = monotonic / totalFindings;
-  if (monotonePct > 0.5 && doseGroupsAffected.size >= 3) return "Strong";
-  if (monotonePct > 0 || doseGroupsAffected.size >= 2) return "Moderate";
-  // If any finding is NonMonotonic and specimen doesn't qualify for Strong/Moderate
-  if (hasNonMonotonic) return "NonMonotonic";
-  return "Weak";
-}
-
-// ─── Direction-aware dose consistency ─────────────────────
-
-export interface DoseConsistencyResult {
-  strength: "Weak" | "Moderate" | "Strong" | "NonMonotonic";
-  direction: "increasing" | "decreasing" | "mixed" | "flat";
-}
-
-/** Per-finding dose consistency with direction detection. */
-export function getFindingDoseConsistencyFull(rows: LesionSeverityRow[], finding: string): DoseConsistencyResult {
-  const strength = getFindingDoseConsistency(rows, finding);
-  const findingRows = rows.filter((r) => r.finding === finding);
-  const doseMap = new Map<number, { affected: number; n: number }>();
-  for (const r of findingRows) {
-    const existing = doseMap.get(r.dose_level);
-    if (existing) { existing.affected += r.affected; existing.n += r.n; }
-    else doseMap.set(r.dose_level, { affected: r.affected, n: r.n });
-  }
-  const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
-  if (sorted.length < 2) return { strength, direction: "flat" };
-
-  const incidences = sorted.map(([, v]) => (v.n > 0 ? v.affected / v.n : 0));
-  const first = incidences[0];
-  const last = incidences[incidences.length - 1];
-
-  let direction: DoseConsistencyResult["direction"];
-  if (Math.abs(last - first) < 0.05) {
-    direction = "flat";
-  } else if (last < first) {
-    // Verify slope is negative (simple linear regression sign)
-    let sumSlope = 0;
-    for (let i = 1; i < incidences.length; i++) sumSlope += incidences[i] - incidences[i - 1];
-    direction = sumSlope < 0 ? "decreasing" : "flat";
-  } else {
-    let sumSlope = 0;
-    for (let i = 1; i < incidences.length; i++) sumSlope += incidences[i] - incidences[i - 1];
-    direction = sumSlope > 0 ? "increasing" : "flat";
-  }
-
-  return { strength, direction };
-}
-
-/** Specimen-level dose consistency with direction. */
-export function getDoseConsistencyFull(rows: LesionSeverityRow[]): DoseConsistencyResult {
-  const strength = getDoseConsistency(rows);
-  // Aggregate direction across all findings
-  const byFinding = new Map<string, string>();
-  const allFindings = [...new Set(rows.map((r) => r.finding))];
-  for (const finding of allFindings) {
-    byFinding.set(finding, getFindingDoseConsistencyFull(rows, finding).direction);
-  }
-  const dirs = [...byFinding.values()];
-  const hasInc = dirs.some((d) => d === "increasing");
-  const hasDec = dirs.some((d) => d === "decreasing");
-
-  let direction: DoseConsistencyResult["direction"];
-  if (hasInc && hasDec) direction = "mixed";
-  else if (hasDec) direction = "decreasing";
-  else if (hasInc) direction = "increasing";
-  else direction = "flat";
-
-  return { strength, direction };
-}
-
-/** Per-finding dose consistency: filters rows to one finding, groups by dose_level, checks monotonicity. */
-export function getFindingDoseConsistency(rows: LesionSeverityRow[], finding: string): "Weak" | "Moderate" | "Strong" | "NonMonotonic" {
-  const findingRows = rows.filter((r) => r.finding === finding);
-  const doseMap = new Map<number, { affected: number; n: number }>();
-  for (const r of findingRows) {
-    const existing = doseMap.get(r.dose_level);
-    if (existing) {
-      existing.affected += r.affected;
-      existing.n += r.n;
-    } else {
-      doseMap.set(r.dose_level, { affected: r.affected, n: r.n });
-    }
-  }
-  const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
-  if (sorted.length < 2) return "Weak";
-
-  const incidences = sorted.map(([, v]) => (v.n > 0 ? v.affected / v.n : 0));
-  let isMonotonic = true;
-  for (let i = 1; i < incidences.length; i++) {
-    if (incidences[i] < incidences[i - 1] - 0.001) {
-      isMonotonic = false;
-      break;
-    }
-  }
-
-  const doseGroupsAffected = sorted.filter(([, v]) => v.affected > 0).length;
-  if (isMonotonic && doseGroupsAffected >= 3) return "Strong";
-  if (isMonotonic || doseGroupsAffected >= 2) return "Moderate";
-
-  // NonMonotonic detection: NOT monotonic, ≥3 dose groups with incidence > 0,
-  // peak incidence ≥ 20%, and at least one group below peak with incidence ≥ 10%
-  if (!isMonotonic && doseGroupsAffected >= 3) {
-    const peak = Math.max(...incidences);
-    if (peak >= 0.2) {
-      const peakIdx = incidences.indexOf(peak);
-      const hasMidDoseAboveThreshold = incidences.some((inc, i) => i !== peakIdx && inc >= 0.1);
-      if (hasMidDoseAboveThreshold) return "NonMonotonic";
-    }
-  }
-
-  return "Weak";
-}
+// Old getDoseConsistency* functions deleted — replaced by pattern-classification.ts
 
 export function deriveSpecimenConclusion(
   summary: SpecimenSummary,
   specimenData: LesionSeverityRow[],
-  specimenRules: RuleResult[],
+  _specimenRules: RuleResult[],
 ): string {
   const maxIncidencePct = (summary.maxIncidence * 100).toFixed(0);
 
@@ -528,29 +399,8 @@ export function deriveSpecimenConclusion(
   // Sex
   const sexDesc = deriveSexLabel(specimenData).toLowerCase();
 
-  // Dose relationship: heuristic + rule engine upgrade (R01/R04 = authoritative dose signal)
-  const hasDoseRule = specimenRules.some((r) => r.rule_id === "R01" || r.rule_id === "R04");
-  const consistencyFull = getDoseConsistencyFull(specimenData);
-  const consistency = hasDoseRule ? "Strong" as const : consistencyFull.strength;
-  const direction = consistencyFull.direction;
-  let doseDesc: string;
-  if (direction === "decreasing") {
-    if (consistency === "Strong") {
-      doseDesc = "with dose-related decrease, strong trend (\u25BC\u25BC\u25BC)";
-    } else if (consistency === "Moderate") {
-      doseDesc = "with dose-related decrease, moderate trend (\u25BC\u25BC)";
-    } else {
-      doseDesc = "with dose-related decrease, weak trend (\u25BC)";
-    }
-  } else if (consistency === "Strong") {
-    doseDesc = "with dose-related increase, strong trend (\u25B2\u25B2\u25B2)";
-  } else if (consistency === "Moderate") {
-    doseDesc = "with dose-related increase, moderate trend (\u25B2\u25B2)";
-  } else if (consistency === "NonMonotonic") {
-    doseDesc = "non-monotonic dose-response pattern (\u25B2\u25BC)";
-  } else {
-    doseDesc = "without clear dose-related increase, weak trend (\u25B2)";
-  }
+  // Dose relationship: from pattern classification
+  const doseDesc = formatPatternLabel(summary.pattern);
 
   return `${incidenceDesc} (${maxIncidencePct}%), ${sevDesc}, ${sexDesc}, ${doseDesc}.`;
 }
@@ -710,12 +560,13 @@ function OverviewTab({
 
   // Per-finding dose consistency (with direction)
   const findingConsistency = useMemo(() => {
-    const map = new Map<string, DoseConsistencyResult>();
+    const map = new Map<string, PatternClassification>();
     for (const fs of findingSummaries) {
-      map.set(fs.finding, getFindingDoseConsistencyFull(specimenData, fs.finding));
+      const trendP = trendsByFinding.get(fs.finding)?.ca_trend_p ?? null;
+      map.set(fs.finding, classifyFindingPattern(specimenData, fs.finding, trendP, null, false));
     }
     return map;
-  }, [findingSummaries, specimenData]);
+  }, [findingSummaries, specimenData, trendsByFinding]);
 
   // Per-finding cross-organ coherence (R16)
   const findingRelatedOrgans = useMemo(() => {
@@ -968,7 +819,7 @@ function OverviewTab({
 
     // Determine direction for selected finding (or specimen aggregate)
     const selectedFindingFull = selection?.finding ? findingConsistency.get(selection.finding) : undefined;
-    const chartDirection = selectedFindingFull?.direction;
+    const chartDirection = selectedFindingFull?.pattern === "MONOTONIC_DOWN" ? "decreasing" as const : selectedFindingFull?.pattern === "MONOTONIC_UP" ? "increasing" as const : undefined;
 
     return { chartOption: buildDoseIncidenceBarOption(groups, stableSexKeys, incidenceMode, recoveryIncidenceGroups, chartDirection), hasDoseChartData: true };
   }, [filteredData, selection?.finding, stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping, incidenceMode, recoveryIncidenceGroups, findingConsistency]);
@@ -1269,15 +1120,14 @@ function OverviewTab({
   const tableData = useMemo<FindingTableRow[]>(
     () =>
       findingSummaries.map((fs) => {
-        const cFull = findingConsistency.get(fs.finding) ?? { strength: "Weak" as const, direction: "flat" as const };
-        const c = cFull.strength;
-        const doseDirection = cFull.direction;
+        const pc = findingConsistency.get(fs.finding);
+        const patternType = pc?.pattern ?? "NO_PATTERN";
         const trend = trendsByFinding.get(fs.finding);
         let isDoseDriven: boolean;
         let isNonMonotonic = false;
         switch (doseDepThreshold) {
           case "strong":
-            isDoseDriven = c === "Strong";
+            isDoseDriven = ["MONOTONIC_UP", "MONOTONIC_DOWN", "THRESHOLD"].includes(patternType);
             break;
           case "ca_trend":
             isDoseDriven = trend?.ca_trend_p != null && trend.ca_trend_p < 0.05;
@@ -1291,10 +1141,16 @@ function OverviewTab({
             break;
           }
           default: // "moderate"
-            isDoseDriven = c !== "Weak";
+            isDoseDriven = !["NO_PATTERN", "CONTROL_ONLY"].includes(patternType);
             break;
         }
-        if (c === "NonMonotonic") isNonMonotonic = true;
+        if (patternType === "NON_MONOTONIC") isNonMonotonic = true;
+        // Derive direction from pattern
+        const doseDirection: "increasing" | "decreasing" | "mixed" | "flat" =
+          patternType === "MONOTONIC_DOWN" ? "decreasing"
+          : ["MONOTONIC_UP", "THRESHOLD"].includes(patternType) ? "increasing"
+          : patternType === "NON_MONOTONIC" ? "mixed"
+          : "flat";
         const clin = findingClinical.get(fs.finding);
         const recAssessment = recoveryAssessments?.find((a) => a.finding === fs.finding);
         // Compute control and high-dose incidence for this finding
@@ -1989,7 +1845,9 @@ function OverviewTab({
       {/* ── Dose charts ─────────────────────────────────────── */}
       <SectionHeader
         height={heights.doseCharts}
-        title={selection?.finding ? `Dose charts: ${selection.finding}` : "Dose charts (specimen aggregate)"}
+        title={selection?.finding
+          ? `Dose charts: ${selection.finding}`
+          : "Dose charts (specimen aggregate)"}
         selectionZone={<DoseChartsSelectionZone findings={filteredTableData} selectedRow={selectedRow} heatmapData={heatmapData} recoveryHeatmapData={recoveryHeatmapData} specimenHasRecovery={specimenHasRecovery} />}
         onDoubleClick={() => handleDoubleClick("doseCharts")}
         onStripClick={restoreDefaults}
@@ -3743,11 +3601,28 @@ export function HistopathologyView() {
   // Lab correlation for summary strip
   const labCorrelation = useSpecimenLabCorrelation(studyId, selectedSpecimen);
 
+  // Signal data for syndrome detection + organ weight confidence
+  const { data: signalData } = useStudySignalSummary(studyId);
+
+  // Syndrome detection (runs once per study, cached via useMemo)
+  const syndromeMatches = useMemo(() => {
+    if (!lesionData) return [];
+    const organMap = new Map<string, LesionSeverityRow[]>();
+    for (const r of lesionData) {
+      if (!r.specimen) continue;
+      const key = r.specimen.toUpperCase();
+      const arr = organMap.get(key) ?? [];
+      arr.push(r);
+      organMap.set(key, arr);
+    }
+    return detectSyndromes(organMap, signalData ?? null);
+  }, [lesionData, signalData]);
+
   // Derived: specimen summaries
   const specimenSummaries = useMemo(() => {
     if (!lesionData) return [];
-    return deriveSpecimenSummaries(lesionData, ruleResults);
-  }, [lesionData, ruleResults]);
+    return deriveSpecimenSummaries(lesionData, ruleResults, trendData, syndromeMatches, signalData);
+  }, [lesionData, ruleResults, trendData, syndromeMatches, signalData]);
 
   // Auto-select top specimen on load (spec §5.2)
   const autoSelectDone = useRef(false);
@@ -3845,10 +3720,11 @@ export function HistopathologyView() {
           r.rule_id === "R04" || r.rule_id === "R12" || r.rule_id === "R13" ||
           (r.rule_id === "R10" && r.severity === "warning"),
       );
-      const doseConsistency = getFindingDoseConsistency(specimenData, finding);
       const trend = trendData?.find(
         (t) => t.finding === finding && t.specimen === selectedSpecimen,
       );
+      const findingPattern = classifyFindingPattern(specimenData, finding, trend?.ca_trend_p ?? null, null, false);
+      const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
       const findingNature = classifyFindingNature(finding);
 
       const signalClass: "adverse" | "warning" | "normal" = isAdverse
@@ -3984,9 +3860,9 @@ export function HistopathologyView() {
             <div className="mt-1 flex items-center gap-4 text-[10px] text-muted-foreground">
               <span>Peak incidence: <span className="font-mono font-medium">{Math.round(selectedSummary.maxIncidence * 100)}%</span></span>
               <span>Max sev: <span className="font-mono font-medium">{selectedSummary.maxSeverity.toFixed(1)}</span></span>
-              <span>Dose trend: <span className={getDoseConsistencyWeight(selectedSummary.doseConsistency)}>{selectedSummary.doseConsistency}</span>
-                {selectedSummary.doseDirection === "decreasing" && <span className="ml-0.5 text-blue-600/70">{"\u2193"}</span>}
-                {selectedSummary.doseDirection === "increasing" && <span className="ml-0.5">{"\u2191"}</span>}
+              <span className="inline-flex items-center gap-1">
+                <SparklineGlyph values={selectedSummary.pattern.sparkline} pattern={selectedSummary.pattern.pattern} />
+                <span className="font-medium">{formatPatternLabel(selectedSummary.pattern)}</span>
               </span>
               <span>Findings: <span className="font-mono font-medium">{selectedSummary.findingCount}</span>
                 {selectedSummary.warningCount > 0 && <> ({selectedSummary.adverseCount}adv/{selectedSummary.warningCount}warn)</>}
@@ -4014,6 +3890,24 @@ export function HistopathologyView() {
                 </span>
               )}
             </div>
+            {/* Syndrome line */}
+            {selectedSummary.pattern.syndrome && (
+              <div className="mt-0.5 truncate text-[10px] text-muted-foreground/70" title={`${selectedSummary.pattern.syndrome.syndrome.syndrome_name}: ${selectedSummary.pattern.syndrome.requiredFinding}${selectedSummary.pattern.syndrome.supportingFindings.length > 0 ? ` + ${selectedSummary.pattern.syndrome.supportingFindings.join(", ")}` : ""}`}>
+                {"\uD83D\uDD17"} {selectedSummary.pattern.syndrome.syndrome.syndrome_name}: {selectedSummary.pattern.syndrome.requiredFinding}
+                {selectedSummary.pattern.syndrome.supportingFindings.length > 0 && ` + ${selectedSummary.pattern.syndrome.supportingFindings.join(", ")}`}
+              </div>
+            )}
+            {/* Pattern alerts */}
+            {selectedSummary.pattern.alerts.length > 0 && (
+              <div className="mt-0.5 text-[10px] text-muted-foreground/70">
+                {selectedSummary.pattern.alerts.map((a, i) => (
+                  <span key={a.id}>
+                    {i > 0 && " \u00B7 "}
+                    {a.priority === "HIGH" || a.priority === "MEDIUM" ? "\u26A0" : "\u24D8"} {a.text}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Tab bar */}
@@ -4135,8 +4029,8 @@ export function HistopathologyView() {
                         {s.adverseCount} adverse
                       </span>
                     )}
-                    <span className={cn("shrink-0 text-[10px]", getDoseConsistencyWeight(s.doseConsistency))}>
-                      {s.doseConsistency}
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                      {formatPatternLabel(s.pattern)}
                     </span>
                   </button>
                 ))}

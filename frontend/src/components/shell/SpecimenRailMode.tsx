@@ -10,9 +10,14 @@ import { DomainLabel } from "@/components/ui/DomainLabel";
 import { FilterSelect, FilterShowingLine } from "@/components/ui/FilterBar";
 import {
   getNeutralHeatColor as getNeutralHeatColor01,
-  getDoseConsistencyWeight,
   titleCase,
 } from "@/lib/severity-colors";
+import { formatPatternLabel } from "@/lib/pattern-classification";
+import { detectSyndromes } from "@/lib/syndrome-rules";
+import { SparklineGlyph } from "@/components/ui/SparklineGlyph";
+import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
+import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
+import type { LesionSeverityRow } from "@/types/analysis-views";
 import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
 import {
   deriveSpecimenSummaries,
@@ -51,7 +56,7 @@ function SpecimenRailItem({
   const incPct = Math.round(summary.maxIncidence * 100);
   const bd = summary.signalScoreBreakdown;
   const scoreTooltip = sortBy === "signal"
-    ? `Signal score: ${summary.signalScore.toFixed(1)}\n  Adverse findings (${summary.adverseCount} × 3): ${bd.adverse}\n  Max severity: ${bd.severity.toFixed(1)}\n  Peak incidence (${incPct}% × 5): ${bd.incidence.toFixed(1)}\n  Dose consistency (${summary.doseConsistency}): ${bd.dose}\n  Clinical class (${summary.highestClinicalClass ?? "none"}): ${bd.clinicalFloor}\n  Sentinel boost: ${bd.sentinelBoost}`
+    ? `Signal score: ${summary.signalScore.toFixed(1)}\n  Adverse findings (${summary.adverseCount} × 3): ${bd.adverse}\n  Max severity: ${bd.severity.toFixed(1)}\n  Peak incidence (${incPct}% × 5): ${bd.incidence.toFixed(1)}\n  Pattern weight: ${bd.pattern.toFixed(1)}\n  Syndrome boost: ${bd.syndromeBoost.toFixed(1)}\n  Clinical class (${summary.highestClinicalClass ?? "none"}): ${bd.clinicalFloor}\n  Sentinel boost: ${bd.sentinelBoost}`
     : undefined;
   return (
     <button
@@ -107,41 +112,8 @@ function SpecimenRailItem({
             {"\u00B7"}
           </span>
         )}
-        <span
-          className={cn(
-            "w-5 shrink-0 text-right text-[9px]",
-            getDoseConsistencyWeight(summary.doseConsistency),
-            summary.doseDirection === "decreasing"
-              ? summary.doseConsistency === "Strong"
-                ? "text-blue-600/70"
-                : summary.doseConsistency === "Moderate"
-                  ? "text-blue-600/50"
-                  : "text-blue-600/30"
-              : summary.doseConsistency === "Strong"
-                ? "text-muted-foreground"
-                : summary.doseConsistency === "Moderate"
-                  ? "text-muted-foreground/60"
-                  : summary.doseConsistency === "NonMonotonic"
-                    ? "text-muted-foreground/50"
-                    : "text-muted-foreground/30",
-          )}
-          title={`Dose trend: ${summary.doseConsistency} ${summary.doseDirection}`}
-        >
-          {summary.doseDirection === "decreasing"
-            ? summary.doseConsistency === "Strong"
-              ? "\u25BC\u25BC\u25BC"
-              : summary.doseConsistency === "Moderate"
-                ? "\u25BC\u25BC"
-                : "\u25BC"
-            : summary.doseDirection === "mixed"
-              ? "\u25B2\u25BC"
-              : summary.doseConsistency === "Strong"
-                ? "\u25B2\u25B2\u25B2"
-                : summary.doseConsistency === "Moderate"
-                  ? "\u25B2\u25B2"
-                  : summary.doseConsistency === "NonMonotonic"
-                    ? "\u25B2\u25BC"
-                    : "\u25B2"}
+        <span className="shrink-0" title={formatPatternLabel(summary.pattern)}>
+          <SparklineGlyph values={summary.pattern.sparkline} pattern={summary.pattern.pattern} />
         </span>
         <span
           className="ml-2 w-7 shrink-0 rounded-sm text-center font-mono text-[9px]"
@@ -184,8 +156,11 @@ function SpecimenRailItem({
         )}
       </div>
 
-      {/* Line 2: organ system + domains */}
+      {/* Line 2: pattern label + organ system + domains */}
       <div className="mt-0.5 flex items-center gap-2">
+        <span className="truncate text-[10px] text-muted-foreground">
+          {formatPatternLabel(summary.pattern)}
+        </span>
         <span className="text-[10px] text-muted-foreground/60">
           {titleCase(specimenToOrganSystem(summary.specimen))}
         </span>
@@ -193,6 +168,12 @@ function SpecimenRailItem({
           <DomainLabel key={d} domain={d} />
         ))}
       </div>
+      {/* Line 3: syndrome badge (when detected) */}
+      {summary.pattern.syndrome && (
+        <div className="mt-0.5 truncate text-[10px] text-muted-foreground/70">
+          {"\uD83D\uDD17"} {summary.pattern.syndrome.syndrome.syndrome_name}
+        </div>
+      )}
     </button>
   );
 }
@@ -229,8 +210,26 @@ export function SpecimenRailMode() {
   // Specimen-specific filters (local to specimen rail, not global)
   const [sortBy, setSortBy] = useState<SpecimenSort>("signal");
   const [doseTrendFilter, setDoseTrendFilter] = useState<
-    "any" | "moderate" | "strong"
+    "any" | "dose-dependent" | "non-background" | "syndrome"
   >("any");
+
+  // Trend + signal data for pattern classification
+  const { data: trendData } = useFindingDoseTrends(studyId);
+  const { data: signalData } = useStudySignalSummary(studyId);
+
+  // Syndrome detection
+  const syndromeMatches = useMemo(() => {
+    if (!lesionData) return [];
+    const organMap = new Map<string, LesionSeverityRow[]>();
+    for (const r of lesionData) {
+      if (!r.specimen) continue;
+      const key = r.specimen.toUpperCase();
+      const arr = organMap.get(key) ?? [];
+      arr.push(r);
+      organMap.set(key, arr);
+    }
+    return detectSyndromes(organMap, signalData ?? null);
+  }, [lesionData, signalData]);
 
   // Pathology reviews — already typed from hook
   const pathReviews = annotationsData && Object.keys(annotationsData).length > 0
@@ -240,8 +239,8 @@ export function SpecimenRailMode() {
   // Build specimen summaries
   const specimens = useMemo(() => {
     if (!lesionData) return [];
-    return deriveSpecimenSummaries(lesionData, ruleResults);
-  }, [lesionData, ruleResults]);
+    return deriveSpecimenSummaries(lesionData, ruleResults, trendData, syndromeMatches, signalData);
+  }, [lesionData, ruleResults, trendData, syndromeMatches, signalData]);
 
   // Build finding names by specimen for review status
   const findingNamesBySpecimen = useMemo(() => {
@@ -292,13 +291,17 @@ export function SpecimenRailMode() {
     if (filters.minSeverity > 0) {
       list = list.filter((s) => s.maxSeverity >= filters.minSeverity);
     }
-    if (doseTrendFilter === "moderate") {
+    if (doseTrendFilter === "dose-dependent") {
       list = list.filter(
         (s) =>
-          s.doseConsistency === "Moderate" || s.doseConsistency === "Strong" || s.doseConsistency === "NonMonotonic",
+          ["MONOTONIC_UP", "MONOTONIC_DOWN", "THRESHOLD"].includes(s.pattern.pattern),
       );
-    } else if (doseTrendFilter === "strong") {
-      list = list.filter((s) => s.doseConsistency === "Strong");
+    } else if (doseTrendFilter === "non-background") {
+      list = list.filter(
+        (s) => !["CONTROL_ONLY", "NO_PATTERN"].includes(s.pattern.pattern),
+      );
+    } else if (doseTrendFilter === "syndrome") {
+      list = list.filter((s) => s.pattern.syndrome !== null);
     }
 
     // Sort
@@ -371,8 +374,9 @@ export function SpecimenRailMode() {
             if (filters.minSeverity > 0) parts.push(`Severity ${filters.minSeverity}+`);
             if (filters.adverseOnly) parts.push("Adverse only");
             if (filters.significantOnly) parts.push("Significant only");
-            if (doseTrendFilter === "moderate") parts.push("Moderate+ trend");
-            else if (doseTrendFilter === "strong") parts.push("Strong trend");
+            if (doseTrendFilter === "dose-dependent") parts.push("Dose-dependent");
+            else if (doseTrendFilter === "non-background") parts.push("Non-background");
+            else if (doseTrendFilter === "syndrome") parts.push("Has syndrome");
             parts.push(`${filtered.length}/${specimens.length}`);
             return parts;
           })()}
@@ -395,14 +399,15 @@ export function SpecimenRailMode() {
             value={doseTrendFilter}
             onChange={(e) =>
               setDoseTrendFilter(
-                e.target.value as "any" | "moderate" | "strong",
+                e.target.value as "any" | "dose-dependent" | "non-background" | "syndrome",
               )
             }
-            title="Dose trend filter"
+            title="Pattern filter"
           >
-            <option value="any">Trend: all</option>
-            <option value="moderate">Moderate+</option>
-            <option value="strong">Strong only</option>
+            <option value="any">Pattern: all</option>
+            <option value="dose-dependent">Dose-dependent</option>
+            <option value="non-background">Non-background</option>
+            <option value="syndrome">Has syndrome</option>
           </FilterSelect>
         </div>
       </div>
