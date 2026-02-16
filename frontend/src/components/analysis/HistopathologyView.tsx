@@ -2607,7 +2607,7 @@ function SubjectHeatmap({
       const key = `${subj.is_recovery ? "R" : ""}${subj.dose_level}`;
       if (key !== currentKey) {
         currentKey = key;
-        const label = subj.is_recovery ? `${subj.dose_label} (Recovery)` : subj.dose_label;
+        const label = subj.is_recovery ? `${formatDoseShortLabel(subj.dose_label)} (Recovery)` : formatDoseShortLabel(subj.dose_label);
         groups.push({ doseLevel: subj.dose_level, doseLabel: label, isRecovery: subj.is_recovery, subjects: [] });
       }
       groups[groups.length - 1].subjects.push(subj);
@@ -2686,7 +2686,7 @@ function SubjectHeatmap({
     const infos: string[] = [];
     for (const id of comparisonSubjects) {
       const s = allVisibleSubjects.find((sub) => sub.usubjid === id);
-      if (s) infos.push(`${shortId(id)} (${s.sex}, ${s.dose_label})`);
+      if (s) infos.push(`${shortId(id)} (${s.sex}, ${formatDoseShortLabel(s.dose_label)})`);
       else infos.push(shortId(id));
     }
     return infos;
