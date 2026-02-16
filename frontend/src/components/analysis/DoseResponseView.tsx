@@ -866,22 +866,9 @@ function ChartOverviewContent({
     [],
   );
 
-  if (!chartData || !selectedEndpoint) {
-    return (
-      <div className="flex items-center justify-center p-12 text-xs text-muted-foreground">
-        Select an endpoint to view chart and overview.
-      </div>
-    );
-  }
-
-  const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
-  const hasEffect = chartData.sexes.some((s) =>
-    chartData.mergedPoints.some((p) => p[`effect_${s}`] != null)
-  );
-
   // Auto-detect incidence scale mode: compact when max < 30%
   const maxIncidence = useMemo(() => {
-    if (chartData.dataType !== "categorical") return 1;
+    if (!chartData || chartData.dataType !== "categorical") return 1;
     return Math.max(
       0,
       ...chartData.mergedPoints.flatMap((pt) =>
@@ -896,6 +883,19 @@ function ChartOverviewContent({
   useEffect(() => {
     setIncidenceScale(maxIncidence < 0.3 ? "compact" : "scaled");
   }, [maxIncidence]);
+
+  if (!chartData || !selectedEndpoint) {
+    return (
+      <div className="flex items-center justify-center p-12 text-xs text-muted-foreground">
+        Select an endpoint to view chart and overview.
+      </div>
+    );
+  }
+
+  const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
+  const hasEffect = chartData.sexes.some((s) =>
+    chartData.mergedPoints.some((p) => p[`effect_${s}`] != null)
+  );
 
   // Find NOAEL dose label for reference line
   const noaelLabel = noaelDoseLevel != null
