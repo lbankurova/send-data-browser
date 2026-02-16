@@ -122,8 +122,8 @@ export function buildDoseGroupData(
         dose_label: r.dose_label,
         n_affected: r.affected,
         n_examined: r.n,
-        total_severity: (r.avg_severity ?? 0) * r.affected,
-        severity_count: r.avg_severity != null ? r.affected : 0,
+        total_severity: r.severity_status === "graded" ? r.avg_severity! * r.affected : 0,
+        severity_count: r.severity_status === "graded" ? r.affected : 0,
       });
     }
   }

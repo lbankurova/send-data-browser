@@ -215,6 +215,8 @@ export interface FindingDoseTrend {
 
 // --- Histopathology (View 4) ---
 
+export type SeverityStatus = "absent" | "present_ungraded" | "graded";
+
 export interface LesionSeverityRow {
   endpoint_label: string;
   specimen: string;
@@ -227,5 +229,19 @@ export interface LesionSeverityRow {
   affected: number;
   incidence: number;
   avg_severity: number | null;
+  severity_status: SeverityStatus;
   severity: "adverse" | "warning" | "normal";
+}
+
+/**
+ * Derive severity state from row data.
+ * Use this as a fallback if severity_status isn't available from the backend.
+ */
+export function getSeverityState(
+  affected: number,
+  avgSeverity: number | null
+): SeverityStatus {
+  if (affected === 0) return "absent";
+  if (avgSeverity == null) return "present_ungraded";
+  return "graded";
 }

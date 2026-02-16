@@ -212,6 +212,14 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
             continue
 
         for gs in finding.get("group_stats", []):
+            affected = gs.get("affected", 0)
+            avg_sev = gs.get("avg_severity")
+            if affected == 0:
+                sev_status = "absent"
+            elif avg_sev is None:
+                sev_status = "present_ungraded"
+            else:
+                sev_status = "graded"
             rows.append({
                 "endpoint_label": finding.get("endpoint_label", ""),
                 "specimen": finding.get("specimen", ""),
@@ -221,9 +229,10 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
                 "dose_label": dose_label_map.get(gs["dose_level"], ""),
                 "sex": finding.get("sex", ""),
                 "n": gs.get("n", 0),
-                "affected": gs.get("affected", 0),
+                "affected": affected,
                 "incidence": gs.get("incidence", 0),
-                "avg_severity": gs.get("avg_severity"),
+                "avg_severity": avg_sev,
+                "severity_status": sev_status,
                 "severity": finding.get("severity", "normal"),
             })
 

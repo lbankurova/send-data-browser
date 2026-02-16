@@ -48,6 +48,14 @@ class StudyMetadata(BaseModel):
     study_director: str | None = None
     glp: str | None = None
     send_version: str | None = None
+    recovery_sacrifice: str | None = None    # RECSAC — e.g., "P14D"
+    terminal_sacrifice: str | None = None    # TRMSAC — e.g., "P13W"
+    ct_version: str | None = None            # SNDCTVER — e.g., "SEND Terminology 2017-03-31"
+    diet: str | None = None                  # DIET — e.g., "STANDARD"
+    age_text: str | None = None              # AGETXT — e.g., "6-7"
+    age_unit: str | None = None              # AGEU — e.g., "WEEKS"
+    sex_population: str | None = None        # SEXPOP — e.g., "BOTH"
+    supplier: str | None = None              # SPLRNAM — e.g., "Rat Labs"
     domain_count: int = 0
     domains: list[str] = []
     dose_groups: list[DoseGroupSchema] | None = None
