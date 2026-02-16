@@ -88,7 +88,7 @@ export function formatPValue(p: number | null | undefined): string {
   if (p == null) return "—";
   if (p < 0.0001) return "<0.0001";
   if (p < 0.001) return p.toFixed(4);
-  if (p < 0.01) return p.toFixed(3);
+  if (p < 0.10) return p.toFixed(3);
   return p.toFixed(2);
 }
 

@@ -10,6 +10,17 @@
 import type { RuleResult } from "@/types/analysis-views";
 
 // ---------------------------------------------------------------------------
+// Rule ID registry — mirrors backend/generator/scores_and_rules.py RULES
+// ---------------------------------------------------------------------------
+
+export const VALID_RULE_IDS = [
+  "R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10",
+  "R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18", "R19",
+] as const;
+
+export type AnalysisRuleId = (typeof VALID_RULE_IDS)[number];
+
+// ---------------------------------------------------------------------------
 // FindingKey — identity-based grouping
 // ---------------------------------------------------------------------------
 
@@ -98,10 +109,16 @@ export interface AggregatedFinding {
  * Priority: adverse > protective > trend > info.
  * Returns one AggregatedFinding per unique FindingKey.
  */
+const validRuleIdSet = new Set<string>(VALID_RULE_IDS);
+
 export function aggregateByFinding(rules: RuleResult[]): AggregatedFinding[] {
   const map = new Map<string, RuleResult[]>();
 
   for (const r of rules) {
+    if (!validRuleIdSet.has(r.rule_id)) {
+      console.warn(`[finding-aggregation] Unknown rule ID "${r.rule_id}" — skipping`);
+      continue;
+    }
     const key = buildFindingKey(r);
     if (!key) continue;
     const list = map.get(key);
