@@ -687,3 +687,40 @@ Reversibility is a key input to NOAEL determination but is currently absent from
 - [ ] Dose charts show recovery bars per `recovery-dose-charts-spec.md` (main first, then recovery below separator)
 - [ ] Rail items still show main-arm-only stats
 - [ ] Findings table existing columns unchanged
+
+---
+
+## 12. Implementation Overrides (2026-02-16)
+
+Deviations from the spec that were reviewed and accepted. Future passes should treat these as intentional.
+
+### Overrides
+
+| # | Spec text | Override | Rationale |
+|---|-----------|----------|-----------|
+| O1 | §4.2: anomaly shows `? anomaly` with `?` arrow | Uses `⚠ anomaly` with `⚠` (U+26A0) arrow | `⚠` is universally understood as a warning symbol; `?` doesn't convey urgency. Aligns with dose chart and heatmap suppression markers. |
+| O2 | §3.4 Option A (compute from lesionData) vs Option B (eager load useHistopathSubjects) | **Option B** chosen — `useHistopathSubjects` loads eagerly when `specimenHasRecovery` | Subject-level data needed for sex breakdowns, severity trajectories, and compare actions. React Query 5-min cache means shared with subject matrix at no extra cost. |
+| O3 | §3.2: `RecoveryDoseAssessment.recovery.subjectIds: string[]` | Changed to `subjectDetails: { id, severity, mainArmSeverity, mainArmAvgSeverity }[]` | Richer subject data needed for E-3 severity trajectories (recovery-pane-enhancements-spec). Field name `id` not `subjectId` to match codebase convention. |
+| O4 | §4.2: `insufficient_n` shows `— (N<3)` | Shows `† (N<3)` using `†` (U+2020 dagger) arrow | `†` is the standard statistical footnote marker; clearer than em dash which is also used for `not_observed`/`no_data`. |
+
+### Amendments by other specs
+
+This spec was amended by subsequent specs. These changes are reflected in the implementation:
+
+| Amending spec | Changes |
+|---------------|---------|
+| `recovery-guards-spec.md` (v3) | Adds `not_examined` and `low_power` verdicts, changes `insufficient_n` guard to use `examined` count, adds `examined` field to arm stats, changes incidence denominator to `affected/examined` |
+| `recovery-pane-enhancements-spec.md` | Extends Recovery pane with inline deltas, severity trajectories, compare links, collapsible lists, guard verdict containers |
+| `recovery-classification-spec.md` | Adds interpretive layer consuming this spec's mechanical verdicts |
+| `recovery-dose-charts-spec.md` | Adds recovery bars to dose charts using this spec's data model |
+
+### Enhancements beyond spec
+
+| # | Addition | Where | Why |
+|---|----------|-------|-----|
+| E1 | Finding nature info in tooltip | `buildRecoveryTooltip()` | Labels proliferative/adaptive/degenerative nature when available, helping pathologist interpret verdicts |
+| E2 | Recovery period from subject data | `subjData.recovery_days` | Uses pre-computed recovery period from API rather than deriving from DM/TA domains (spec §8 Option C fallback not needed) |
+
+### Decision: data source
+
+Spec §3.4 offered Option A (extend lesionData) vs Option B (eager load useHistopathSubjects). **Option B** was chosen. `useHistopathSubjects` provides the richest data (per-subject, per-finding, with examination status) and React Query caching means no penalty when the subject matrix also uses it.
