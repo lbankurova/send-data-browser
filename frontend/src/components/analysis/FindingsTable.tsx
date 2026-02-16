@@ -5,7 +5,6 @@ import {
   formatEffectSize,
   getDirectionSymbol,
   getDirectionColor,
-  getDoseGroupColor,
   formatDoseShortLabel,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
@@ -98,15 +97,14 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                     (g) => g.dose_level === dg.dose_level
                   );
                   if (!gs) return (
-                    <td key={dg.dose_level} className="border-l-2 px-2 py-1 text-right" style={{ borderLeftColor: getDoseGroupColor(dg.dose_level) }}>—</td>
+                    <td key={dg.dose_level} className="px-2 py-1 text-right">—</td>
                   );
 
                   if (f.data_type === "continuous") {
                     return (
                       <td
                         key={dg.dose_level}
-                        className="border-l-2 px-2 py-1 text-right font-mono"
-                        style={{ borderLeftColor: getDoseGroupColor(dg.dose_level) }}
+                        className="px-2 py-1 text-right font-mono"
                       >
                         {gs.mean != null ? gs.mean.toFixed(2) : "—"}
                       </td>
@@ -116,8 +114,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                   return (
                     <td
                       key={dg.dose_level}
-                      className="border-l-2 px-2 py-1 text-right font-mono"
-                      style={{ borderLeftColor: getDoseGroupColor(dg.dose_level) }}
+                      className="px-2 py-1 text-right font-mono"
                     >
                       {gs.affected != null && gs.n
                         ? `${gs.affected}/${gs.n}`
