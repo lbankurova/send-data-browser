@@ -15,7 +15,7 @@ SEND Data Browser — a web app for exploring pre-clinical regulatory study data
 - `docs/systems/navigation-and-layout.md` — three-panel layout, routing, selection contexts, cross-view links
 - `docs/systems/annotations.md` — ToxFinding, PathologyReview, validation annotations, storage
 
-**View specs:** `docs/views/*.md` — one per view (8 files: landing, study summary, dose-response, target organs, histopathology, NOAEL, adverse effects, validation)
+**View specs:** `docs/views/*.md` — one per view (7 files: landing, study summary, dose-response, histopathology, NOAEL, adverse effects, validation)
 
 **Portability:** `docs/portability/` — frozen reference for Datagrok migration. Not maintained per-commit; refresh on demand when porting begins.
 
@@ -145,7 +145,7 @@ Present before moving on, so they can prioritize or dismiss items.
 - **State**: TanStack React Query (5 min stale), React Context for selections
 - **Tables**: TanStack React Table (client-side sorting in analysis views, server-side pagination in domain views)
 - **Layout**: Three-panel Datagrok-style (Left: `BrowsingTree`, Center: route-dependent, Right: `ContextPanel`)
-- **Routes**: React Router 7 in `App.tsx` — 9 routes (landing, study summary, domain browser, adverse effects, dose-response, target organs, histopathology, NOAEL decision, validation). All done.
+- **Routes**: React Router 7 in `App.tsx` — 8 routes (landing, study summary, domain browser, adverse effects, dose-response, histopathology, NOAEL decision, validation). Target organs route redirects to parent. All done.
 - **Views**: 5 analysis views use two-panel master-detail layout (rail + evidence panel with tabs). See `docs/views/*.md` for each.
 
 > Full routes table and module inventory: `docs/reference/claude-md-archive.md`
@@ -220,7 +220,7 @@ All color functions implemented in `lib/severity-colors.ts` (p-value, signal sco
 
 ## Implementation Status
 
-**All 5 build steps complete.** 8 analysis views (Study Summary, Adverse Effects, Dose-Response, Target Organs, Histopathology, NOAEL Decision, Validation, plus HTML Report). Real validation engine (18 YAML rules, 15 check types). All FEAT-01 through FEAT-09 incoming features implemented. See system specs (`docs/systems/*.md`) and view specs (`docs/views/*.md`) for current architecture. Detailed implementation notes archived in `docs/reference/claude-md-archive.md`.
+**All 5 build steps complete.** 7 analysis views (Study Summary, Adverse Effects, Dose-Response, Histopathology, NOAEL Decision, Validation, plus HTML Report). Real validation engine (18 YAML rules, 15 check types). All FEAT-01 through FEAT-09 incoming features implemented. See system specs (`docs/systems/*.md`) and view specs (`docs/views/*.md`) for current architecture. Detailed implementation notes archived in `docs/reference/claude-md-archive.md`.
 
 **Data nullability note:** `lesion_severity_summary.json`: `avg_severity` is null for 550/728 rows — always null-guard with `?? 0`.
 
@@ -235,7 +235,7 @@ Full migration guide with file paths and line numbers: `docs/reference/demo-stub
 | Statistical analysis pipeline (generator/) | **Real** | Computes actual statistics from XPT data |
 | Signal scoring & rule engine | **Real** | Rules R01-R17 derive from actual data patterns |
 | HTML report generator (frontend) | **Real** | Fetches live data, builds complete standalone report |
-| All 8 analysis views (UI) | **Real** | Fully interactive, data-driven UI components |
+| All 7 analysis views (UI) | **Real** | Fully interactive, data-driven UI components |
 | Context panels & insights synthesis | **Real** | Rule synthesis, organ grouping, tier classification |
 | ToxFinding / PathologyReview forms | **Real** | Functional forms, persist via API (storage is file-based) |
 | Annotation API contract | **Real** | GET/PUT endpoints, 4 schema types — only storage backend needs changing |
