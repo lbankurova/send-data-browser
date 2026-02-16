@@ -110,7 +110,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
       col.accessor("direction", {
         header: "Dir",
         cell: (info) => (
-          <span className={cn("text-sm", getDirectionColor(info.getValue()))}>
+          <span className={getDirectionColor(info.getValue())}>
             {getDirectionSymbol(info.getValue())}
           </span>
         ),
@@ -125,7 +125,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
         header: "Severity",
         cell: (info) => (
           <span
-            className="inline-block border-l-2 pl-1.5 py-0.5 text-[10px] font-semibold text-gray-600"
+            className="inline-block border-l-2 pl-1.5 py-0.5 font-semibold text-gray-600"
             style={{ borderLeftColor: getSeverityDotColor(info.getValue()) }}
           >
             {info.getValue()}
@@ -159,14 +159,14 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
 
   return (
     <div className="h-full overflow-auto">
-      <table className="w-full text-xs">
+      <table className="w-full text-[10px]">
         <thead className="sticky top-0 z-10 bg-background">
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id} className="border-b bg-muted/30">
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={colStyle(header.id)}
                   onDoubleClick={header.column.getToggleSortingHandler()}
                 >
@@ -193,7 +193,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                 key={row.id}
                 className={cn(
                   "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                  isSelected && "bg-accent"
+                  isSelected && "bg-accent font-medium"
                 )}
                 data-selected={isSelected || undefined}
                 onClick={() => selectFinding(isSelected ? null : row.original)}
@@ -205,7 +205,7 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
                     <td
                       key={cell.id}
                       className={cn(
-                        "px-2 py-1",
+                        "px-1.5 py-px",
                         isAbsorber && !columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
                       )}
                       style={style}

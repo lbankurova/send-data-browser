@@ -469,6 +469,22 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     columnResizeMode: "onChange",
   });
 
+  // Absorber pattern helpers
+  const RULE_ABSORBER = "description";
+  const RECORD_ABSORBER = "actual_value";
+  function ruleColStyle(colId: string) {
+    const manualWidth = ruleColumnSizing[colId];
+    if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
+    if (colId === RULE_ABSORBER) return undefined;
+    return { width: 1, whiteSpace: "nowrap" as const };
+  }
+  function recordColStyle(colId: string) {
+    const manualWidth = recordColumnSizing[colId];
+    if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
+    if (colId === RECORD_ABSORBER) return undefined;
+    return { width: 1, whiteSpace: "nowrap" as const };
+  }
+
   // Derived values for effect dependency tracking
   const vsFixFilter = viewSelection?.recordFixStatusFilter;
   const vsReviewFilter = viewSelection?.recordReviewStatusFilter;
@@ -727,15 +743,15 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
             collapseGen={collapseGen}
           >
           <div className="h-full overflow-auto">
-            <table className="text-sm" style={{ width: ruleTable.getCenterTotalSize(), tableLayout: "fixed" }}>
+            <table className="w-full text-[10px]">
               <thead className="sticky top-0 z-10 bg-background">
                 {ruleTable.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="border-b bg-muted/50">
+                  <tr key={headerGroup.id} className="border-b bg-muted/30">
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-                        style={{ width: header.getSize() }}
+                        className="relative cursor-pointer select-none px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                        style={ruleColStyle(header.id)}
                         onDoubleClick={header.column.getToggleSortingHandler()}
                       >
                         <span className="flex items-center gap-1">
@@ -763,12 +779,19 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                       key={row.id}
                       className={cn(
                         "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                        isSelected && "bg-accent"
+                        isSelected && "bg-accent font-medium"
                       )}
                       onClick={() => handleRuleClick(row.original)}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-2 py-1 text-xs" style={{ width: cell.column.getSize() }}>
+                        <td
+                          key={cell.id}
+                          className={cn(
+                            "px-1.5 py-px",
+                            cell.column.id === RULE_ABSORBER && !ruleColumnSizing[RULE_ABSORBER] && "overflow-hidden text-ellipsis whitespace-nowrap",
+                          )}
+                          style={ruleColStyle(cell.column.id)}
+                        >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -838,15 +861,15 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
               collapseGen={collapseGen}
             >
             <div className="h-full overflow-auto">
-              <table className="text-sm" style={{ width: recordTable.getCenterTotalSize(), tableLayout: "fixed" }}>
+              <table className="w-full text-[10px]">
                 <thead className="sticky top-0 z-10 bg-background">
                   {recordTable.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id} className="border-b bg-muted/50">
+                    <tr key={headerGroup.id} className="border-b bg-muted/30">
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className="relative cursor-pointer select-none border-b px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-                          style={{ width: header.getSize() }}
+                          className="relative cursor-pointer select-none px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                          style={recordColStyle(header.id)}
                           onDoubleClick={header.column.getToggleSortingHandler()}
                         >
                           <span className="flex items-center gap-1">
@@ -874,7 +897,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                         key={row.id}
                         className={cn(
                           "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                          isSelected && "bg-accent"
+                          isSelected && "bg-accent font-medium"
                         )}
                         onClick={() => {
                           const rec = row.original;
@@ -898,7 +921,14 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
                         }}
                       >
                         {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="px-2 py-1 text-xs" style={{ width: cell.column.getSize() }}>
+                          <td
+                            key={cell.id}
+                            className={cn(
+                              "px-1.5 py-px",
+                              cell.column.id === RECORD_ABSORBER && !recordColumnSizing[RECORD_ABSORBER] && "overflow-hidden text-ellipsis whitespace-nowrap",
+                            )}
+                            style={recordColStyle(cell.column.id)}
+                          >
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </td>
                         ))}

@@ -338,6 +338,14 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
     columnResizeMode: "onChange",
   });
 
+  const ABSORBER_ID = "endpoint_label";
+  function colStyle(colId: string) {
+    const manualWidth = columnSizing[colId];
+    if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
+    if (colId === ABSORBER_ID) return undefined;
+    return { width: 1, whiteSpace: "nowrap" as const };
+  }
+
   const handleRowClick = (row: SignalSummaryRow) => {
     const isSame = selection?.endpoint_label === row.endpoint_label && selection?.dose_level === row.dose_level && selection?.sex === row.sex;
     if (isSame) { onSelect(null); return; }
@@ -372,12 +380,12 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
-        <table className="text-xs" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
+        <table className="w-full text-[10px]">
           <thead className="sticky top-0 z-10 bg-background">
             {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="border-b bg-muted/50">
+              <tr key={hg.id} className="border-b bg-muted/30">
                 {hg.headers.map((header) => (
-                  <th key={header.id} className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50" style={{ width: header.getSize() }} onDoubleClick={header.column.getToggleSortingHandler()}>
+                  <th key={header.id} className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50" style={colStyle(header.id)} onDoubleClick={header.column.getToggleSortingHandler()}>
                     {flexRender(header.column.columnDef.header, header.getContext())}
                     {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                     <div onMouseDown={header.getResizeHandler()} onTouchStart={header.getResizeHandler()} className={cn("absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none", header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30")} />
@@ -391,9 +399,9 @@ function SignalsMetricsTab({ signalData, selection, onSelect }: {
               const orig = row.original;
               const isSelected = selection?.endpoint_label === orig.endpoint_label && selection?.dose_level === orig.dose_level && selection?.sex === orig.sex;
               return (
-                <tr key={row.id} className={cn("cursor-pointer border-b transition-colors hover:bg-accent/50", isSelected && "bg-accent")} onClick={() => handleRowClick(orig)}>
+                <tr key={row.id} className={cn("cursor-pointer border-b transition-colors hover:bg-accent/50", isSelected && "bg-accent font-medium")} onClick={() => handleRowClick(orig)}>
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-2 py-1" style={{ width: cell.column.getSize() }}>
+                    <td key={cell.id} className={cn("px-1.5 py-px", cell.column.id === ABSORBER_ID && !columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap")} style={colStyle(cell.column.id)}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

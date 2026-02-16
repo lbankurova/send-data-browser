@@ -2,11 +2,12 @@ import { useState, useMemo } from "react";
 import {
   flexRender,
   getCoreRowModel,
+  getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type VisibilityState,
 } from "@tanstack/react-table";
-import type { ColumnSizingState } from "@tanstack/react-table";
+import type { ColumnSizingState, SortingState } from "@tanstack/react-table";
 import { Columns3, Search, Eye, EyeOff } from "lucide-react";
 import {
   Popover,
@@ -20,11 +21,13 @@ import type { ColumnInfo } from "@/types";
 interface DataTableProps {
   columns: ColumnInfo[];
   rows: Record<string, string | null>[];
+  totalRows?: number;
 }
 
-export function DataTable({ columns, rows }: DataTableProps) {
+export function DataTable({ columns, rows, totalRows }: DataTableProps) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
 
   const tableColumns: ColumnDef<Record<string, string | null>>[] = columns.map(
@@ -32,9 +35,9 @@ export function DataTable({ columns, rows }: DataTableProps) {
       accessorKey: col.name,
       header: () => (
         <div>
-          <div className="font-semibold">{col.name}</div>
+          <div>{col.name}</div>
           {col.label && (
-            <div className="text-xs font-normal text-muted-foreground">
+            <div className="text-[9px] font-normal normal-case tracking-normal text-muted-foreground/70">
               {col.label}
             </div>
           )}
@@ -54,10 +57,12 @@ export function DataTable({ columns, rows }: DataTableProps) {
   const table = useReactTable({
     data: rows,
     columns: tableColumns,
-    state: { columnVisibility, columnSizing },
+    state: { columnVisibility, columnSizing, sorting },
     onColumnVisibilityChange: setColumnVisibility,
     onColumnSizingChange: setColumnSizing,
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     enableColumnResizing: true,
     columnResizeMode: "onChange",
   });
@@ -77,12 +82,11 @@ export function DataTable({ columns, rows }: DataTableProps) {
   }, [table, columns, search]);
 
   return (
-    <div className="rounded-md border">
-      <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-1.5">
+    <div className="flex h-full flex-col rounded-md border">
+      <div className="flex shrink-0 items-center justify-between border-b bg-muted/30 px-3 py-1.5">
         <span className="text-xs text-muted-foreground">
-          {hasHidden
-            ? `${visibleCount} of ${totalCount} columns`
-            : `${totalCount} columns`}
+          {totalRows != null ? `${rows.length} of ${totalRows} rows` : `${rows.length} rows`}
+          {hasHidden && ` · ${visibleCount} of ${totalCount} columns`}
         </span>
         <Popover>
           <PopoverTrigger asChild>
@@ -179,21 +183,23 @@ export function DataTable({ columns, rows }: DataTableProps) {
           </PopoverContent>
         </Popover>
       </div>
-      <div className="relative w-full overflow-x-auto">
-        <table className="text-sm" style={{ width: table.getCenterTotalSize(), tableLayout: "fixed" }}>
+      <div className="min-h-0 flex-1 overflow-auto">
+        <table className="w-full text-[10px]">
           <thead className="sticky top-0 z-10 bg-background">
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b">
+              <tr key={headerGroup.id} className="border-b bg-muted/30">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="relative h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground"
+                    className="relative cursor-pointer px-1.5 py-1 text-left align-middle font-semibold uppercase tracking-wider whitespace-nowrap text-muted-foreground hover:bg-accent/50"
                     style={{ width: header.getSize() }}
+                    onDoubleClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(
                       header.column.columnDef.header,
                       header.getContext()
                     )}
+                    {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                     <div
                       onMouseDown={header.getResizeHandler()}
                       onTouchStart={header.getResizeHandler()}
@@ -210,9 +216,9 @@ export function DataTable({ columns, rows }: DataTableProps) {
           <tbody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
+                <tr key={row.id} className="border-b transition-colors hover:bg-accent/50">
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="p-2 align-middle whitespace-nowrap" style={{ width: cell.column.getSize() }}>
+                    <td key={cell.id} className="px-1.5 py-px align-middle whitespace-nowrap" style={{ width: cell.column.getSize() }}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

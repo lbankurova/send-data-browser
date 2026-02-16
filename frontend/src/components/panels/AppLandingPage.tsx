@@ -563,21 +563,21 @@ export function AppLandingPage() {
           </div>
         ) : allStudies.length > 0 || scenarioStudies.length > 0 ? (
           <div className="max-h-[60vh] overflow-auto rounded-md border bg-card">
-            <table className="w-full text-xs">
+            <table className="w-full text-[10px]">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/30">
                   <th className="w-8 px-1.5 py-1"></th>
-                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
-                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
-                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
-                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</th>
-                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subj</th>
-                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dur</th>
-                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
-                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
-                  <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">End</th>
-                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">NOAEL</th>
-                  <th className="pl-4 pr-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
+                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
+                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
+                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</th>
+                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subj</th>
+                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dur</th>
+                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
+                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">End</th>
+                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">NOAEL</th>
+                  <th className="pl-4 pr-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -588,13 +588,13 @@ export function AppLandingPage() {
                       key={study.study_id}
                       className={cn(
                         "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
-                        isSelected && "bg-accent"
+                        isSelected && "bg-accent font-medium"
                       )}
                       onClick={() => handleClick(study)}
                       onDoubleClick={() => handleDoubleClick(study)}
                       onContextMenu={(e) => handleContextMenu(e, study)}
                     >
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-1.5 py-px text-center">
                         <button
                           className="rounded p-0.5 hover:bg-accent"
                           onClick={(e) => handleActionsClick(e, study)}
@@ -603,16 +603,16 @@ export function AppLandingPage() {
                           <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
                       </td>
-                      <td className="px-2 py-0.5 font-medium text-primary">{study.study_id}</td>
-                      <td className="px-2 py-0.5 text-muted-foreground text-[11px]">
+                      <td className="px-1.5 py-px font-medium text-primary">{study.study_id}</td>
+                      <td className="px-1.5 py-px text-muted-foreground">
                         {study.protocol && study.protocol !== "NOT AVAILABLE"
                           ? study.protocol
                           : "—"}
                       </td>
-                      <td className="px-2 py-0.5 text-muted-foreground text-[11px]">
+                      <td className="px-1.5 py-px text-muted-foreground">
                         {study.species ?? "—"}
                       </td>
-                      <td className="px-2 py-0.5 text-[11px]">
+                      <td className="px-1.5 py-px">
                         {study.pipeline_stage ? (
                           <span style={{ color: getPipelineStageColor(study.pipeline_stage) }}>
                             {study.pipeline_stage.charAt(0).toUpperCase() + study.pipeline_stage.slice(1).replace(/_/g, ' ')}
@@ -621,25 +621,25 @@ export function AppLandingPage() {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="px-2 py-0.5 text-right tabular-nums text-muted-foreground text-[11px]">
+                      <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">
                         {study.subjects ?? "—"}
                       </td>
-                      <td className="px-2 py-0.5 text-muted-foreground text-[11px]">
+                      <td className="px-1.5 py-px text-muted-foreground">
                         {study.duration_weeks ? `${study.duration_weeks}w` : "—"}
                       </td>
-                      <td className="px-2 py-0.5 text-muted-foreground text-[11px]">
+                      <td className="px-1.5 py-px text-muted-foreground">
                         {study.study_type ?? "—"}
                       </td>
-                      <td className="px-2 py-0.5 tabular-nums text-muted-foreground text-[11px]">
+                      <td className="px-1.5 py-px tabular-nums text-muted-foreground">
                         {study.start_date ?? "—"}
                       </td>
-                      <td className="px-2 py-0.5 tabular-nums text-muted-foreground text-[11px]">
+                      <td className="px-1.5 py-px tabular-nums text-muted-foreground">
                         {study.end_date ?? "—"}
                       </td>
-                      <td className="px-2 py-0.5 text-right tabular-nums text-[11px]">
+                      <td className="px-1.5 py-px text-right tabular-nums">
                         {study.noael_value ?? "—"}
                       </td>
-                      <td className="relative pl-4 pr-2 py-0.5 text-[11px] text-muted-foreground">
+                      <td className="relative pl-4 pr-1.5 py-px text-muted-foreground">
                         {study.status === "Complete" && (
                           <span
                             className="absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full"
@@ -665,25 +665,25 @@ export function AppLandingPage() {
                           key={study.study_id}
                           className={cn(
                             "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
-                            isSelected && "bg-accent"
+                            isSelected && "bg-accent font-medium"
                           )}
                           onClick={() => handleClick(study)}
                           onDoubleClick={() => handleDoubleClick(study)}
                           onContextMenu={(e) => handleContextMenu(e, study)}
                         >
-                          <td className="px-2 py-1 text-center">
+                          <td className="px-1.5 py-px text-center">
                             <Wrench className="mx-auto h-3.5 w-3.5 text-muted-foreground/60" />
                           </td>
-                          <td className="px-3 py-1 font-medium text-muted-foreground">{study.name}</td>
-                          <td className="px-3 py-1 text-muted-foreground/60">{study.study_type ?? "—"}</td>
-                          <td className="px-3 py-1 text-muted-foreground/60">—</td>
-                          <td className="px-3 py-1 text-right tabular-nums text-muted-foreground/60">
+                          <td className="px-1.5 py-px font-medium text-muted-foreground">{study.name}</td>
+                          <td className="px-1.5 py-px text-muted-foreground/60">{study.study_type ?? "—"}</td>
+                          <td className="px-1.5 py-px text-muted-foreground/60">—</td>
+                          <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground/60">
                             {study.subjects ?? "—"}
                           </td>
-                          <td className="px-3 py-1 text-muted-foreground/60">—</td>
-                          <td className="px-3 py-1 text-muted-foreground/60">—</td>
-                          <td className="px-3 py-1 text-xs text-muted-foreground/60">Scenario</td>
-                          <td className="px-3 py-1">
+                          <td className="px-1.5 py-px text-muted-foreground/60">—</td>
+                          <td className="px-1.5 py-px text-muted-foreground/60">—</td>
+                          <td className="px-1.5 py-px text-muted-foreground/60">Scenario</td>
+                          <td className="px-1.5 py-px">
                             <div
                               className="flex items-center justify-center"
                               title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}

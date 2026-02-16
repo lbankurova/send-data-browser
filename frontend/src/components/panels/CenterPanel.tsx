@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDomainData } from "@/hooks/useDomainData";
 import { DataTable } from "@/components/data-table/DataTable";
-import { DataTablePagination } from "@/components/data-table/DataTablePagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DOMAIN_DESCRIPTIONS } from "@/lib/send-categories";
 
@@ -11,14 +9,12 @@ export function CenterPanel() {
     studyId: string;
     domainName: string;
   }>();
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
 
   const { data, isLoading, error } = useDomainData(
     studyId!,
     domainName!,
-    page,
-    pageSize
+    1,
+    10000
   );
 
   if (error) {
@@ -30,8 +26,8 @@ export function CenterPanel() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-4">
+    <div className="flex h-full flex-col">
+      <div className="shrink-0 px-6 pt-6 pb-4">
         <h1 className="text-2xl font-bold">
           {domainName!.toUpperCase()}
           <span className="ml-2 text-lg font-normal text-muted-foreground">
@@ -42,29 +38,16 @@ export function CenterPanel() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">
+        <div className="space-y-2 px-6">
           <Skeleton className="h-10 w-full" />
           {Array.from({ length: 10 }).map((_, i) => (
             <Skeleton key={i} className="h-8 w-full" />
           ))}
         </div>
       ) : data ? (
-        <>
-          <div className="overflow-x-auto">
-            <DataTable columns={data.columns} rows={data.rows} />
-          </div>
-          <DataTablePagination
-            page={data.page}
-            pageSize={data.page_size}
-            totalPages={data.total_pages}
-            totalRows={data.total_rows}
-            onPageChange={(p) => setPage(p)}
-            onPageSizeChange={(s) => {
-              setPageSize(s);
-              setPage(1);
-            }}
-          />
-        </>
+        <div className="min-h-0 flex-1 px-6 pb-6">
+          <DataTable columns={data.columns} rows={data.rows} totalRows={data.total_rows} />
+        </div>
       ) : null}
     </div>
   );
