@@ -44,7 +44,7 @@ The Study Summary View itself is split into three tabs with a shared tab bar:
 - **Tabs:** "Study details" (first), "Signals" (second), and "Cross-study insights" (third)
 - **Active indicator:** `h-0.5 bg-primary` underline at bottom of active tab
 - **Tab text:** `text-xs font-medium`. Active = `text-foreground`. Inactive = `text-muted-foreground`. Sentence case for tab labels.
-- **Generate Report button:** Right-aligned in tab bar. Border, `text-xs`, icon `FileText` (3.5x3.5) + "Generate report" label (sentence case). Opens HTML report in new tab.
+- **Generate Report button:** Right-aligned in tab bar via `ViewTabBar`'s `right` prop. Classes: `inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent/50`. Icon `FileText` (h-3.5 w-3.5) + "Generate report" label (sentence case). Opens HTML report in new tab via `generateStudyReport(studyId)`.
 
 ---
 
@@ -85,13 +85,13 @@ Each section has:
 #### Treatment arms ({count})
 Conditional — only renders if `meta.dose_groups` is non-empty.
 
-Table in `max-h-60 overflow-auto rounded-md border`, `text-xs` (scrollable if tall):
-- Sticky header: `sticky top-0 z-10 bg-background`, `border-b bg-muted/30`, all `<th>` use `px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
-- Body rows: `border-b last:border-b-0`, all `<td>` use `px-2 py-1`
+Table in `max-h-60 overflow-auto rounded-md border`, `w-full text-[10px]` (scrollable if tall):
+- Sticky header: `sticky top-0 z-10 bg-background`, `border-b bg-muted/30`, all `<th>` use `px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
+- Body rows: `border-b last:border-b-0 border-l-2` with left border color from `getDoseGroupColor(dg.dose_level)` via inline `style`. All `<td>` use `px-1.5 py-px`.
 
 | Column | Align | Cell rendering |
 |--------|-------|----------------|
-| Arm code | left | `font-mono text-xs` |
+| Arm code | left | `font-mono` |
 | Label | left | plain |
 | Dose | right | `tabular-nums text-muted-foreground` — "{value} {unit}" or em dash |
 | M | right | `tabular-nums text-muted-foreground` |
@@ -166,16 +166,33 @@ Shows study-level statements, modifiers, and caveats from `panelData`. Only rend
 
 **Component:** `ProtectiveSignalsBar` (inline in `StudySummaryView.tsx`)
 
-Shows below the Study Statements Bar, above the Evidence Panel. Only renders when R18 (protective findings) or R19 (repurposing candidates) rules are present in the ruleResults.
+Shows below the Study Statements Bar, above the Evidence Panel. Only renders when R18/R19 rules produce protective findings (via `aggregateProtectiveFindings()`).
 
-Container: `shrink-0 border-b px-4 py-2`. Header: "PROTECTIVE SIGNALS" label + count summary.
+Container: `shrink-0 border-b px-4 py-2`.
 
-Aggregates protective findings via `aggregateProtectiveFindings()`:
-- Groups by finding name across R18/R19 rules, collecting specimens, sexes, control/high-dose percentages
-- **Repurposing candidates** (R19): `border-l-2 border-l-purple-400`, "repurposing" label in `text-purple-600`, incidence text shows "potential therapeutic target"
-- **Protective-only findings** (R18): `border-l-2 border-l-emerald-400`, compact layout with incidence percentages (`font-mono`), capped at 5 items with "+N more" overflow
-- Sorted: repurposing candidates first, then by control incidence descending
-- Clickable navigation: each finding name is a `<button>` that navigates to the histopathology view with `{ state: { specimen, finding } }`
+**Header:** `mb-1.5 flex items-center gap-2`:
+- Label: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` — "Protective signals"
+- Count summary: `text-[10px] text-muted-foreground` — "{N} finding(s) with decreased incidence · {N} pharmacological · {N} treatment-related" (latter part only if classifiedCount > 0)
+
+**Classification:** Uses `classifyProtectiveSignal()` from `lib/protective-signal.ts` — three-tier categorization:
+
+| Classification | Border color | Badge style | Sorting priority |
+|---------------|-------------|-------------|-----------------|
+| pharmacological | `border-l-blue-400` | `bg-blue-100 text-blue-700 text-[9px] font-medium` | First |
+| treatment-decrease | `border-l-slate-400` | `bg-slate-100 text-slate-600 text-[9px] font-medium` | Second |
+| background | `border-l-gray-300` | (no badge) | Third |
+
+**Aggregation:** Groups by finding name across R18/R19 rules, collecting specimens, sexes, control/high-dose percentages. Classification inputs derived from rule params (control incidence, high-dose incidence, dose consistency, cross-domain correlate count).
+
+**Pharmacological items:** `py-1 pl-2.5`. Finding name as `text-[11px] font-semibold hover:underline` button. Sex in `text-[10px] font-medium text-muted-foreground`. Classification badge. Below: incidence text "{ctrl}% control → {high}% high dose in {specimens}". Cross-domain correlates line (if any): "Correlated: {endpoint direction}, ..." in `text-[10px] text-muted-foreground/70`.
+
+**Treatment-decrease items:** `py-0.5 pl-2.5`. Finding name as `text-[11px] font-medium hover:underline`. Sex in `text-[10px] text-muted-foreground`. Classification badge. Right-aligned incidence: `ml-auto font-mono text-[10px] text-muted-foreground` — "{ctrl}% → {high}%". Specimens below in `text-[9px] text-muted-foreground/70`. Cross-domain correlates line if any.
+
+**Background items:** Under "Other decreased findings" sub-header (`text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50`). Compact layout: `py-0.5 pl-2.5`, finding name + sex + right-aligned incidence. Capped at 5 items with "+N more" overflow.
+
+**Sorted:** Pharmacological first, then treatment-decrease, then background. Within each group, sorted by control incidence descending.
+
+**Clickable navigation:** Each finding name is a `<button>` that navigates to the histopathology view with `{ state: { specimen, finding } }` (uses first specimen). Also calls `navigateTo({ specimen })` to update `StudySelectionContext`.
 
 ### Organ Selection (shell-level rail)
 
@@ -202,8 +219,9 @@ The selected organ flows from `StudySelectionContext` (`studySelection.organSyst
 **Component:** `SignalsEvidencePanel` (from `SignalsPanel.tsx`)
 
 #### Organ Header (compact, 2-line format)
-- Line 1: Organ name `text-sm font-semibold` + "TARGET" badge (if applicable)
-- Line 2: Metrics in `text-[11px] text-muted-foreground tabular-nums`: `{n_domains} domains · {n_significant}/{n_endpoints} sig ({pct}%) · {n_treatment_related} TR · Max {max_signal} · Evidence {evidence_score} · |d| {maxAbsEffectSize} · trend p {minTrendP}`. Evidence score is wrapped in `EvidenceScorePopover` for breakdown details.
+Container: `shrink-0 border-b px-4 py-2.5`.
+- Line 1: `flex items-center gap-2` — organ name `text-sm font-semibold` + titleCase() + "TARGET" badge (`text-[10px] font-semibold uppercase text-red-600`, if applicable)
+- Line 2: `mt-0.5 flex flex-wrap gap-x-1.5 text-[11px] text-muted-foreground tabular-nums`: `{n_domains} domains · {n_significant}/{n_endpoints} sig ({pct}%) · {n_treatment_related} TR · Max {max_signal} · Evidence {evidence_score} · |d| {maxAbsEffectSize} · trend p {minTrendP}`. Evidence score is wrapped in `EvidenceScorePopover` for breakdown details. Effect size bold if ≥0.8, trend p bold if <0.01.
 - No conclusion sentence — all relevant information is conveyed by the metrics line
 
 #### Tab Bar
@@ -219,14 +237,14 @@ Scrollable content (`overflow-y-auto px-4 py-3`):
 2. **Modifiers** — Items filtered to this organ (`s.organSystem === key || s.clickOrgan === key`), rendered as plain `<div>` elements. Organ names are plain text (not clickable).
 3. **Review flags** — Items with warning icon in `flex items-start gap-2 text-xs leading-relaxed text-foreground/80`, amber warning icon left-aligned. Organ names are plain text (not clickable).
 4. **Domain breakdown** — Table with columns: Domain (colored text `text-[9px] font-semibold` with `getDomainBadgeColor`), Endpoints, Significant (font-semibold if >0), TR (font-semibold if >0). Sorted by significant count desc.
-5. **Top findings** — Up to 8 findings sorted by `|effect_size|` desc. Each row (`hover:bg-accent/30`, clickable → navigates to dose-response view) shows:
+5. **Top findings** — Up to 8 findings filtered to `effect_size > 0`, sorted by `|effect_size|` desc. Each row (`flex cursor-pointer items-center gap-2 border-b border-border/30 px-2 py-1.5 text-[11px] hover:bg-accent/30`, `data-evidence-row` attribute, clickable → navigates to dose-response view) shows:
    - Endpoint name (`min-w-[120px] truncate font-medium`)
-   - Direction arrow (`text-muted-foreground/50`)
+   - Direction arrow (`text-sm text-muted-foreground/50`)
    - Effect size (font-mono, font-semibold if |d| ≥ 0.8, `ev` class for data-evidence styling)
    - P-value (font-mono, font-semibold if < 0.001, font-medium if < 0.01, `ev` class for data-evidence styling)
    - Trend p-value (font-mono text-muted-foreground, font-semibold if < 0.01, prefixed with "t:")
-   - D-R pattern badge (if not none/flat): `rounded-full bg-muted px-1.5 py-0.5 text-[9px]`
-   - Severity badge (`rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium`)
+   - D-R pattern badge (if not none/flat): `rounded-full bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground` — shows first segment before underscore (e.g., "monotonic" from "monotonic_increasing")
+   - Severity label: `text-[9px] font-medium` with color from `getSeverityDotColor(severity)` via inline `style` (colored text, no border/badge)
    - TR flag (if treatment-related)
    - Sex + dose label (right-aligned, muted)
 
@@ -239,33 +257,37 @@ Note: Cross-view navigation links are available in the context panel's "Related 
 
 #### Metrics Tab (`SignalsMetricsTab`)
 
-Full sortable data table of all signals for the selected organ. TanStack React Table with client-side sorting and column resizing.
+Full sortable data table of all signals for the selected organ. TanStack React Table with client-side sorting, column resizing, and content-hugging + absorber pattern.
 
-**Filter bar** (`border-b bg-muted/30 px-4 py-2`):
-- Sex dropdown: All sexes / Male / Female
-- Severity dropdown: All severities / Adverse / Warning / Normal
-- Significant only checkbox
-- Row count: `ml-auto text-[10px] text-muted-foreground`
+**Filter bar:** Uses shared `FilterBar` component (with `flex-wrap`):
+- Sex dropdown: `FilterSelect` — All sexes / Male / Female
+- Severity dropdown: `FilterSelect` — All severities / Adverse / Warning / Normal
+- Significant only checkbox: `flex items-center gap-1.5 text-xs`
+- Row count: `FilterBarCount` — "{N} rows"
+
+**Table styling:** `w-full text-[10px]`. Header: `sticky top-0 z-10 bg-background`, `<tr>` with `border-b bg-muted/30`. Header cells: `relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`. Body cells: `px-1.5 py-px`. Sort on double-click, sort indicators `↑`/`↓`. Column resize handles: same pattern as other TanStack tables.
+
+**Content-hugging + absorber:** All columns except `endpoint_label` (the absorber) use `width: 1px; white-space: nowrap`. The absorber uses `width: 100%`. Manual resize overrides with explicit width + maxWidth.
 
 **Columns** (12 total):
 
 | Column | Header | Size | Cell Rendering |
 |--------|--------|------|----------------|
-| endpoint_label | Endpoint | 160px | `truncate font-medium` |
-| domain | Domain | 55px | `text-[9px] font-semibold` with `getDomainBadgeColor().text` |
-| dose_label | Dose | 90px | First segment before comma, truncated |
+| endpoint_label | Endpoint | 160px (absorber) | `truncate font-medium` |
+| domain | Domain | 55px | `DomainLabel` component |
+| dose_label | Dose | 90px | `formatDoseShortLabel()`, truncated |
 | sex | Sex | 40px | Plain text |
-| signal_score | Score | 60px | `font-mono` 2 decimals |
+| signal_score | Score | 60px | `font-mono` 2 decimals, wrapped in `SignalScorePopover` |
 | direction | Dir | 35px | `text-muted-foreground` direction symbol |
 | p_value | p-value | 65px | `font-mono`, font-semibold if < 0.01 |
 | trend_p | Trend p | 65px | `font-mono`, font-semibold if < 0.01 |
 | effect_size | \|d\| | 55px | `font-mono`, font-semibold if \|d\| ≥ 0.8 |
-| severity | Severity | 70px | `rounded-sm border border-border px-1 py-0.5 text-[9px] font-medium` |
-| treatment_related | TR | 35px | Y (font-semibold) / N (muted) |
+| severity | Severity | 70px | `rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium` |
+| treatment_related | TR | 35px | Y (`font-semibold text-foreground`) / N (`text-muted-foreground/50`) |
 | dose_response_pattern | Pattern | 90px | Underscores replaced with spaces, em dash if none/flat |
 
-**Default sort:** signal_score descending.
-**Row interactions:** Same as other tables — `hover:bg-accent/50`, `bg-accent` on selection. Click toggles selection and updates context panel.
+**Default sort:** signal_score descending (session-persisted).
+**Row interactions:** Same as other tables — `cursor-pointer border-b transition-colors hover:bg-accent/50`, `bg-accent font-medium` on selection. Click toggles selection and updates context panel. Empty state: "No rows match the current filters."
 
 ### OrganGroupedHeatmap (shared component)
 
@@ -436,15 +458,16 @@ Note: There is a duplicate "View histopathology" link — one with the organ nam
 
 | State | Scope | Managed By |
 |-------|-------|-----------|
-| Active tab | Local | `useState<Tab>` — "details" \| "signals" \| "insights", initialized from `?tab=` query parameter or defaults to "details" |
+| Active tab | Session-persisted | `useSessionState<Tab>("pcc.studySummary.tab", initialTab)` — "details" \| "signals" \| "insights", initialized from `?tab=` query parameter or defaults to "details" |
 | Selected organ | Shared via context | `StudySelectionContext` (`studySelection.organSystem`) — set by shell-level organ rail |
 | Local signal selection | Local | `useState<SignalSelection \| null>` — endpoint-level selection within the evidence panel, not forwarded to context panel |
-| Evidence panel tab | Local (SignalsEvidencePanel) | `useState<"overview" \| "matrix" \| "metrics" \| "rules">` — defaults to "overview" |
+| Evidence panel tab | Session-persisted | `useSessionState<EvidenceTab>("pcc.signals.tab", "overview")` — "overview" \| "matrix" \| "metrics" \| "rules" |
 | Show all insights | Local (CrossStudyInsightsTab) | `useState<boolean>` — toggles visibility of priority 2-3 insights |
 | Rail width | Shell | Managed by shell-level `OrganRailMode` (not embedded in this view) |
 | Rail search | Shell (SignalsOrganRail) | `useState<string>` |
 | Metrics tab filters | Local (SignalsMetricsTab) | `useState<{ sex, severity, significant_only }>` |
-| Metrics tab sorting | Local (SignalsMetricsTab) | `useState<SortingState>` — default `signal_score` desc |
+| Metrics tab sorting | Session-persisted | `useSessionState<SortingState>("pcc.signals.sorting", [{ id: "signal_score", desc: true }])` |
+| Metrics tab column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.signals.columnSizing", {})` |
 | Signal data | Server | `useStudySignalSummary` hook (React Query, 5min stale) |
 | Target organs | Server | `useTargetOrganSummary` hook |
 | NOAEL data | Server | `useNoaelSummary` hook |
