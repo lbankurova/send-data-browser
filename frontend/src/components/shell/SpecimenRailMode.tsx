@@ -204,7 +204,7 @@ export function SpecimenRailMode() {
   const { data: lesionData } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: annotationsData } = useAnnotations<PathologyReview>(studyId, "pathology_review");
-  const { data: _studyCtx } = useStudyContext(studyId);
+  const { data: studyCtx } = useStudyContext(studyId);
 
   const { containerRef: listRef, onKeyDown: handleListKeyDown } =
     useRailKeyboard(clearSelection);
@@ -230,8 +230,8 @@ export function SpecimenRailMode() {
       arr.push(r);
       organMap.set(key, arr);
     }
-    return detectSyndromes(organMap, signalData ?? null);
-  }, [lesionData, signalData]);
+    return detectSyndromes(organMap, signalData ?? null, studyCtx);
+  }, [lesionData, signalData, studyCtx]);
 
   // Pathology reviews — already typed from hook
   const pathReviews = annotationsData && Object.keys(annotationsData).length > 0

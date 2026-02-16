@@ -490,6 +490,7 @@ function SpecimenOverviewPane({
   // Hooks for pattern classification
   const { data: trendDataSpec } = useFindingDoseTrends(studyId);
   const { data: signalDataSpec } = useStudySignalSummary(studyId);
+  const { data: studyCtxSpec } = useStudyContext(studyId);
   const syndromeMatchesSpec = useMemo(() => {
     if (!lesionData.length) return [];
     const organMap = new Map<string, LesionSeverityRow[]>();
@@ -500,8 +501,8 @@ function SpecimenOverviewPane({
       arr.push(r);
       organMap.set(key, arr);
     }
-    return detectSyndromes(organMap, signalDataSpec ?? null);
-  }, [lesionData, signalDataSpec]);
+    return detectSyndromes(organMap, signalDataSpec ?? null, studyCtxSpec);
+  }, [lesionData, signalDataSpec, studyCtxSpec]);
 
   // Derive specimen summary
   const summary = useMemo(() => {
@@ -1240,6 +1241,7 @@ function FindingDetailPane({
   // Hooks for pattern & syndrome (finding-level)
   const { data: trendData } = useFindingDoseTrends(studyId);
   const { data: signalDataFinding } = useStudySignalSummary(studyId);
+  const { data: studyCtx } = useStudyContext(studyId);
   const findingSyndromeMatch = useMemo(() => {
     if (!lesionData.length) return null;
     const organMap = new Map<string, LesionSeverityRow[]>();
@@ -1250,12 +1252,12 @@ function FindingDetailPane({
       arr.push(r);
       organMap.set(key, arr);
     }
-    const matches = detectSyndromes(organMap, signalDataFinding ?? null);
+    const matches = detectSyndromes(organMap, signalDataFinding ?? null, studyCtx);
     // Find syndrome relevant to current specimen
     return matches.find(
       (m) => m.organ.toUpperCase() === selection.specimen.toUpperCase(),
     ) ?? null;
-  }, [lesionData, signalDataFinding, selection.specimen]);
+  }, [lesionData, signalDataFinding, selection.specimen, studyCtx]);
 
   // Recovery classification (interpretive layer)
   const recoveryClassification = useMemo(() => {
@@ -1334,7 +1336,6 @@ function FindingDetailPane({
   );
 
   // Historical control lookup for this finding — context-aware when StudyContext available
-  const { data: studyCtx } = useStudyContext(studyId);
   const historicalContext = useMemo(() => {
     // Compute control group incidence from lesion data
     const controlRows = lesionData.filter(
