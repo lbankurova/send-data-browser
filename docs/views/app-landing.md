@@ -162,7 +162,7 @@ Container: `px-8 py-6`
 ### Table
 `max-h-[60vh] overflow-auto rounded-md border bg-card`
 
-Plain HTML table, `w-full text-xs`
+Plain HTML table, `w-full text-[10px]`
 
 **Header:** `<thead>` with `sticky top-0 z-10 bg-background`
 
@@ -183,33 +183,34 @@ Plain HTML table, `w-full text-xs`
 | noael_value | NOAEL | Right | auto |
 | status | Status | Left | auto |
 
-Header cells: `px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
+Header cells: `px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
 (Actions column header: `w-8 px-1.5 py-1`, no text)
+(Status column header: `pl-4 pr-1.5 py-1` instead of standard padding)
 
 ### Cell Rendering
 
 | Column | Rendering |
 |--------|-----------|
-| Actions | `MoreVertical` icon button (`h-3.5 w-3.5 text-muted-foreground`), opens context menu |
-| Study | `px-2 py-0.5 font-medium text-primary` -- study_id |
-| Protocol | `px-2 py-0.5 text-muted-foreground text-[11px]`, em dash if "NOT AVAILABLE" or null |
-| Species | `px-2 py-0.5 text-muted-foreground text-[11px]`, em dash if null |
-| Stage | `px-2 py-0.5 text-[11px]`, colored via `getPipelineStageColor()` with first letter capitalized and underscores replaced with spaces; em dash if no pipeline_stage |
-| Subj | `px-2 py-0.5 text-right tabular-nums text-muted-foreground text-[11px]`, em dash if null |
-| Dur | `px-2 py-0.5 text-muted-foreground text-[11px]`, formatted as `{N}w` (e.g. "4w"); em dash if null |
-| Type | `px-2 py-0.5 text-muted-foreground text-[11px]`, em dash if null |
-| Start | `px-2 py-0.5 tabular-nums text-muted-foreground text-[11px]`, em dash if null |
-| End | `px-2 py-0.5 tabular-nums text-muted-foreground text-[11px]`, em dash if null |
-| NOAEL | `px-2 py-0.5 text-right tabular-nums text-[11px]`, shows `noael_value` (e.g. "10 mg/kg" or "10 mg/kg (d)" for derived); em dash if null |
-| Status | `relative pl-4 pr-2 py-0.5 text-[11px] text-muted-foreground`, with green dot only for "Complete" status (see below) |
+| Actions | `px-1.5 py-px text-center`, `MoreVertical` icon button (`h-3.5 w-3.5 text-muted-foreground`), opens context menu |
+| Study | `px-1.5 py-px font-medium text-primary` -- study_id |
+| Protocol | `px-1.5 py-px text-muted-foreground`, em dash if "NOT AVAILABLE" or null |
+| Species | `px-1.5 py-px text-muted-foreground`, em dash if null |
+| Stage | `px-1.5 py-px`, colored via `getPipelineStageColor()` with first letter capitalized and underscores replaced with spaces; em dash if no pipeline_stage |
+| Subj | `px-1.5 py-px text-right tabular-nums text-muted-foreground`, em dash if null |
+| Dur | `px-1.5 py-px text-muted-foreground`, formatted as `{N}w` (e.g. "4w"); em dash if null |
+| Type | `px-1.5 py-px text-muted-foreground`, em dash if null |
+| Start | `px-1.5 py-px tabular-nums text-muted-foreground`, em dash if null |
+| End | `px-1.5 py-px tabular-nums text-muted-foreground`, em dash if null |
+| NOAEL | `px-1.5 py-px text-right tabular-nums`, shows `noael_value` (e.g. "10 mg/kg" or "10 mg/kg (d)" for derived); em dash if null |
+| Status | `relative pl-4 pr-1.5 py-px text-muted-foreground`, with green dot only for "Complete" status (see below) |
 
 ### Status Dot
 - **"Complete":** `absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full` with `background: #16a34a`
 - **All other statuses:** no dot rendered (nothing, not a transparent dot)
 
 ### Row Interactions
-- Hover: `hover:bg-accent/50`
-- Selected: `bg-accent`
+- Row base: `cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50`
+- Selected: `bg-accent font-medium`
 - Single click: selects study (250ms delayed to differentiate from double-click)
 - Double-click: navigates to `/studies/{studyId}` for all studies
 - Right-click: opens context menu at cursor position
@@ -227,15 +228,15 @@ Header cells: `px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text
 **Study merging:** Real studies from `useStudies()` are mapped to `DisplayStudy` with portfolio-specific fields (`pipeline_stage`, `noael_value`) set to undefined. The `duration_weeks` is calculated from `start_date`/`end_date` if both are available. Portfolio studies from `useStudyPortfolio()` are mapped with full metadata including `pipeline_stage`, `duration_weeks`, `noael_value` (resolved via `noael()` accessor with derived "(d)" suffix), and `validation` status computed from error/warning counts. Both arrays are concatenated into `allStudiesUnfiltered`, then filtered by `projectFilter` to produce `allStudies`.
 
 ### Scenario Studies Section
-When design mode is active, scenario studies appear below a dashed separator (`border-t border-dashed`). Separator row uses `colSpan={9}`. Each scenario row renders 9 `<td>` elements (fewer than the 12-column header):
-1. `Wrench` icon (`mx-auto h-3.5 w-3.5 text-muted-foreground/60`)
+When design mode is active, scenario studies appear below a dashed separator (`border-t border-dashed`). Separator row uses `colSpan={9}`. Each scenario row renders 9 `<td>` elements (fewer than the 12-column header). All cells use `px-1.5 py-px`:
+1. `Wrench` icon (`mx-auto h-3.5 w-3.5 text-muted-foreground/60`), `text-center`
 2. Study name in `font-medium text-muted-foreground`
 3. study_type in `text-muted-foreground/60`, em dash if null
 4. em dash in `text-muted-foreground/60`
 5. Subjects in `text-right tabular-nums text-muted-foreground/60`, em dash if null
 6. em dash in `text-muted-foreground/60`
 7. em dash in `text-muted-foreground/60`
-8. "Scenario" label in `text-xs text-muted-foreground/60`
+8. "Scenario" label in `text-muted-foreground/60`
 9. Validation icon from `VAL_DISPLAY` lookup
 
 ### Design Mode Toggle
