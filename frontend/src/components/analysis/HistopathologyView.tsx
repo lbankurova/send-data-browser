@@ -3668,6 +3668,7 @@ export function HistopathologyView() {
 
   // Signal data for syndrome detection + organ weight confidence
   const { data: signalData } = useStudySignalSummary(studyId);
+  const { data: studyCtxMain } = useStudyContext(studyId);
 
   // Syndrome detection (runs once per study, cached via useMemo)
   const syndromeMatches = useMemo(() => {
@@ -3680,8 +3681,8 @@ export function HistopathologyView() {
       arr.push(r);
       organMap.set(key, arr);
     }
-    return detectSyndromes(organMap, signalData ?? null);
-  }, [lesionData, signalData]);
+    return detectSyndromes(organMap, signalData ?? null, studyCtxMain);
+  }, [lesionData, signalData, studyCtxMain]);
 
   // Derived: specimen summaries
   const specimenSummaries = useMemo(() => {
