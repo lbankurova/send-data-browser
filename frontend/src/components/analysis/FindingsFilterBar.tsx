@@ -4,6 +4,8 @@ import type { AdverseEffectsFilters } from "@/types/analysis";
 interface FindingsFilterBarProps {
   filters: AdverseEffectsFilters;
   onFiltersChange: (filters: AdverseEffectsFilters) => void;
+  /** Hide domain dropdown when Domain grouping is active in the rail. */
+  hideDomain?: boolean;
 }
 
 const DOMAINS = ["LB", "BW", "OM", "MI", "MA", "CL"];
@@ -12,22 +14,25 @@ const SEVERITIES = ["adverse", "warning", "normal"];
 export function FindingsFilterBar({
   filters,
   onFiltersChange,
+  hideDomain = false,
 }: FindingsFilterBarProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <FilterSelect
-        value={filters.domain ?? ""}
-        onChange={(e) =>
-          onFiltersChange({ ...filters, domain: e.target.value || null })
-        }
-      >
-        <option value="">All domains</option>
-        {DOMAINS.map((d) => (
-          <option key={d} value={d}>
-            {d}
-          </option>
-        ))}
-      </FilterSelect>
+      {!hideDomain && (
+        <FilterSelect
+          value={filters.domain ?? ""}
+          onChange={(e) =>
+            onFiltersChange({ ...filters, domain: e.target.value || null })
+          }
+        >
+          <option value="">All domains</option>
+          {DOMAINS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </FilterSelect>
+      )}
 
       <FilterSelect
         value={filters.sex ?? ""}

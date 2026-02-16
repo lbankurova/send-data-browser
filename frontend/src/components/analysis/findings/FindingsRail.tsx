@@ -55,6 +55,8 @@ interface FindingsRailProps {
   onGroupScopeChange?: (scope: { type: GroupingMode; value: string } | null) => void;
   /** Callback when an endpoint row is clicked (for table filtering + context panel). */
   onEndpointSelect?: (endpointLabel: string | null) => void;
+  /** Callback when the grouping mode changes (for filter bar coordination). */
+  onGroupingChange?: (mode: GroupingMode) => void;
 }
 
 // ─── Component ─────────────────────────────────────────────
@@ -65,6 +67,7 @@ export function FindingsRail({
   activeEndpoint = null,
   onGroupScopeChange,
   onEndpointSelect,
+  onGroupingChange,
 }: FindingsRailProps) {
   const { data: rawData, isLoading, error } = useAdverseEffectSummary(studyId);
 
@@ -168,7 +171,8 @@ export function FindingsRail({
     setExpanded(new Set());
     onGroupScopeChange?.(null);
     onEndpointSelect?.(null);
-  }, [onGroupScopeChange, onEndpointSelect]);
+    onGroupingChange?.(mode);
+  }, [onGroupScopeChange, onEndpointSelect, onGroupingChange]);
 
   const handleCardClick = useCallback((card: GroupCard) => {
     const isExpanded = expanded.has(card.key);
