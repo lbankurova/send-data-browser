@@ -339,7 +339,7 @@ Pathologist-oriented exploratory tools, matching the Hypotheses tab pattern from
 ### Finding-aware context (D-3)
 
 The tab accepts `selectedFinding` from the parent's `selection?.finding`. When a finding is selected:
-- **Auto-switch intent:** `useEffect` switches intent to "treatment" (most relevant tool for a specific finding).
+- **Auto-switch intent:** `useEffect` switches intent with priority logic: if the finding has a non-UNCLASSIFIABLE recovery classification, switches to "recovery"; otherwise falls back to "treatment".
 - **Contextual placeholders:** Each tool placeholder enriches its display text:
   - `SeverityDistributionPlaceholder`: context line appends `"· Focus: {finding}"`
   - `TreatmentRelatedPlaceholder`: description changes to `"Assess whether "{finding}" is treatment-related..."`
@@ -362,10 +362,25 @@ Right-click on pills opens context menu for pin/unpin from favorites.
 | Treatment-related assessment | `Microscope` | Yes | Classify findings as treatment-related, incidental, or spontaneous |
 | Peer comparison | `Users` | No (production) | Compare against historical control incidence data |
 | Dose-severity trend | `TrendingUp` | Yes | Severity and incidence changes across dose groups |
+| Recovery assessment | `Undo2` | Conditional | Classify recovery patterns across all findings in specimen |
+
+The **Recovery assessment** tool is available only when the specimen has recovery data (`specimenHasRecovery`). It is not a default favorite — accessible via the "+" dropdown.
 
 Default favorites: Severity distribution, Treatment-related assessment.
 
 Each tool renders a `HypViewerPlaceholder` (DG viewer type label), descriptive text, and a `HypConfigLine` settings block in a `rounded-md border bg-card p-3` card. Unavailable tools show a `HypProductionNote` explaining the dependency.
+
+### Recovery Assessment Tool Content
+
+Rendered when `intent === "recovery"`. Shows specimen-level and per-finding recovery classifications from the interpretive layer (`lib/recovery-classification.ts`).
+
+**Specimen-level summary:** Left-bordered block (color from `CLASSIFICATION_BORDER[type]`) with classification label + confidence. Below: summary sentence "N of M findings show incomplete or delayed recovery."
+
+**Findings table:** Sorted by `CLASSIFICATION_PRIORITY` (most concerning first). Columns: Finding, Classification, Confidence. Rows are clickable — fire `onFindingClick` to select the finding.
+
+**Missing inputs:** Deduplicated list of `inputsMissing` across all classifications, shown at bottom when present.
+
+**Footer:** `HypConfigLine`: "Classification method: Rule-based (5 categories)". `HypProductionNote`: disabled toggle for "Include historical controls".
 
 ---
 
@@ -505,6 +520,67 @@ Lines are indented with 2 spaces. `formatDoseGroupLabel()` converts "Group 2,2 m
 - **Group heatmap:** Recovery columns next to main columns
 - **Specimen summary strip:** `specimenRecoveryOverall` metric (hidden when "reversed")
 - **Context panel (finding-level):** Recovery pane with per-dose-group comparison details
+- **Context panel (Insights pane):** Recovery classification block via interpretive layer
+- **Hypotheses tab:** Recovery assessment tool with specimen-wide classification summary
+
+### Recovery Classification (Interpretive Layer)
+
+Pure logic in `lib/recovery-classification.ts`. Consumes mechanical verdicts from `recovery-assessment.ts` and produces pathologist-meaningful categories. Surfaces ONLY on interpretive surfaces (Insights pane, Hypotheses tab) — never on Evidence surfaces (findings table, dose charts, heatmaps).
+
+**Architecture:** DATA LAYER (`recovery-assessment.ts` — mechanical verdicts like "reversed", "persistent") → INTERPRETIVE LAYER (`recovery-classification.ts` — classifications like "Expected reversibility"). The data layer has ZERO modifications; the interpretive layer is purely additive.
+
+#### Classification Types
+
+| Type | Meaning |
+|------|---------|
+| `EXPECTED_REVERSIBILITY` | Finding reversed/reversing, adverse or dose-consistent — expected toxicology pattern |
+| `INCOMPLETE_RECOVERY` | Main effect >10% and persistent/progressing, or marginal reversing (ratio >0.60) |
+| `DELAYED_ONSET_POSSIBLE` | Main ≤10%, recovery ≥20%, ≥2 affected — finding emerged in recovery period |
+| `INCIDENTAL_RECOVERY_SIGNAL` | Not adverse, weak dose-response, reversed/reversing/not_observed — background noise |
+| `PATTERN_ANOMALY` | Recovery > main×1.5 at any dose, weak dose-response, not adverse — unusual pattern |
+| `UNCLASSIFIABLE` | Guard short-circuit (not_examined, insufficient_n, low_power, anomaly, no_data) or no match |
+
+#### Precedence Chain (safety-conservative)
+
+0. Guard short-circuit → `UNCLASSIFIABLE`
+1. `PATTERN_ANOMALY`
+2. `DELAYED_ONSET_POSSIBLE`
+3. `INCOMPLETE_RECOVERY`
+4. `EXPECTED_REVERSIBILITY`
+5. `INCIDENTAL_RECOVERY_SIGNAL`
+6. Fallback → `UNCLASSIFIABLE`
+
+#### Confidence Model
+
+Gated tiers with caps evaluated first:
+- Weak dose-response (non-incidental) → Moderate max
+- Examined < 5 subjects → Low max
+- Normal signal, no clinical class → Moderate max
+- `inputsMissing.length > 0` → Moderate max
+
+Base score (0–7): sample size (+0/+1/+2), effect size (+0/+1/+2), severity change (+0/+1), dose-response (+0/+1), p-value (+0/+1). Score ≥5 → High, ≥3 → Moderate, else Low. Cap always wins.
+
+#### Context Panel — RecoveryInsightBlock
+
+Rendered inside the Insights CollapsiblePane in `FindingDetailPane`, after `<SpecimenInsights>`. Visibility gate (`showRecoveryInsight`): shown when classification exists AND (not UNCLASSIFIABLE, OR UNCLASSIFIABLE with `not_examined`/`low_power` verdict).
+
+- Section header: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` — "Recovery assessment"
+- Left-bordered block: `border-l-2 pl-2 py-1` with color from `CLASSIFICATION_BORDER[type]`
+- Line 1: classification label + confidence badge (`text-[11px] font-medium`)
+- Line 2: rationale (`text-[10px] text-muted-foreground`)
+- Evidence summary: `inputsUsed` joined by ` · ` with `border-l` treatment
+- Qualifiers: italic, each on own line
+- Recommended action: `font-medium text-foreground/70`
+
+#### Specimen-Level Summary
+
+`classifySpecimenRecovery(classifications[])` — worst classification by `CLASSIFICATION_PRIORITY`, minimum confidence across all findings. Used in the Hypotheses tab Recovery Assessment tool.
+
+#### Display Constants
+
+- `CLASSIFICATION_LABELS`: human-readable labels for each type
+- `CLASSIFICATION_BORDER`: left-border colors for each type (amber for anomaly/delayed, rose for incomplete, emerald for expected, slate for incidental, gray for unclassifiable)
+- `CLASSIFICATION_PRIORITY`: sort order (PATTERN_ANOMALY=0 most concerning → UNCLASSIFIABLE=5 least)
 
 ---
 
@@ -548,6 +624,15 @@ Splits subjects into main and recovery arms, identifies shared dose levels, comp
 ### `specimenRecoveryLabel(assessments): string | null`
 Returns specimen-level recovery summary: "reversed" if all reversed, "partial" if mixed, otherwise worst verdict. Returns null if no meaningful verdicts.
 
+### `classifyRecovery(assessment, context): RecoveryClassification`
+From `lib/recovery-classification.ts`. Applies 6-step precedence chain to produce a pathologist-meaningful classification from a mechanical `RecoveryAssessment` and `RecoveryContext`. Returns classification type, confidence, rationale, qualifiers, recommended action, inputs used, and inputs missing.
+
+### `computeConfidence(classification, assessment, context, inputsMissing): ConfidenceLevel`
+From `lib/recovery-classification.ts`. Gated tier model — evaluates caps first (weak dose-response, small N, normal signal, missing inputs), then base score from 5 factors. Cap always overrides base score.
+
+### `classifySpecimenRecovery(classifications): RecoveryClassification | undefined`
+From `lib/recovery-classification.ts`. Aggregates per-finding classifications to specimen level: worst by `CLASSIFICATION_PRIORITY`, minimum confidence.
+
 ---
 
 ## Context Panel (Right Sidebar — 280px)
@@ -582,7 +667,7 @@ Header: sticky, finding name (`text-sm font-semibold`) + `CollapseAllButtons`, s
 **Header metrics line** (`mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground`): Four inline metrics computed from finding rows — Peak incidence (`{pct}%`), Max sev (`{n.n}`), Dose (`{Weak|Moderate|Strong}`), Sex (`{M|F|M/F}`). Makes the panel presentation-ready without scrolling.
 
 Panes in order (follows design system priority: insights > stats > related > annotation > navigation):
-1. **Insights** (default open) — `SpecimenInsights` with finding-scoped rules. Includes clinical catalog annotations when present.
+1. **Insights** (default open) — `SpecimenInsights` with finding-scoped rules. Includes clinical catalog annotations when present. When recovery data exists, a **Recovery assessment** block (`RecoveryInsightBlock`) appears after `SpecimenInsights` — see §Recovery Classification below.
 2. **Dose detail** (default open) — all dose-level rows for finding + specimen, sorted by dose_level then sex. Table columns: Dose (`<DoseLabel>`), Sex, Incid. (right-aligned font-mono), mini dose ramp bar (color from `getDoseGroupColor(dose_level)`), Avg sev (right-aligned font-mono), Sev (colored text: adverse red, warning amber, normal green). The mini dose ramp is a `h-1.5 rounded-full` horizontal bar (track `bg-gray-100`, fill colored by dose group) showing relative incidence percentage per row.
 3. **Sex comparison** (conditional, default open) — only shown when finding has data from both sexes. Per-sex row: affected/total + max severity badge with `getNeutralHeatColor()`.
 4. **Recovery** (conditional, default open) — only shown when `specimenHasRecovery` and finding has non-trivial recovery verdicts. Uses `RecoveryPaneContent` rendering per-dose `RecoveryDoseBlock` components. Each block shows: dose group label + recovery period, main arm incidence (with mini bar), recovery arm incidence (with mini bar), avg severity for both, verdict assessment, and clickable recovery subject links with severity values. Special cases: `insufficient_n` verdict skips the comparison and shows "Recovery arm has only N subject(s). Minimum 3 required for meaningful comparison." `anomaly` verdict adds a bordered warning block (`border-border/50 bg-muted/20`) with explanation text about delayed onset or data quality issues.
@@ -627,6 +712,8 @@ Panes in order (follows design system priority: insights > stats > related > ann
 | Recovery assessments | Derived | `useMemo` — from `deriveRecoveryAssessments()` using subject data |
 | Recovery heatmap data | Derived | `useMemo` — group heatmap cells for recovery dose levels |
 | Specimen recovery overall | Derived | `useMemo` — `specimenRecoveryLabel()` for summary strip |
+| All recovery classifications | Derived | `useMemo` — `classifyRecovery()` per finding, builds `RecoveryContext` from rules, dose trends, dose consistency. Array of `{ finding, classification }` |
+| Specimen recovery classification | Derived | `useMemo` — `classifySpecimenRecovery()` aggregating all per-finding classifications to specimen level |
 | Lesion data | Server | `useLesionSeveritySummary` hook (React Query, 5min stale) |
 | Finding dose trends | Server | `useFindingDoseTrends` hook (statistical trend data) |
 | Subject data | Server | `useHistopathSubjects` hook (always fetched — shared cache across parent + OverviewTab + context panel) |
@@ -662,12 +749,15 @@ useHistopathSubjects(studyId, specimen) ──> subjData (subject-level, always 
                         findingClinical (clinical catalog lookup)
                         deriveRecoveryAssessments() (from subjData)
                         specimenRecoveryLabel() (for summary strip)
+                        classifyRecovery() per finding (interpretive layer)
+                        classifySpecimenRecovery() (specimen summary)
                            /          |           \
                   OverviewTab    HypothesesTab   CompareTab
                   (findings +    (selectedFinding (useSubjectComparison
-                   dose charts + auto-focus)       from temporal API)
-                   severity matrix +
-                   recovery integration)
+                   dose charts + auto-focus,       from temporal API)
+                   severity matrix + recovery
+                   recovery         classifications
+                   integration)     per finding)
                         \         |          /
                     HistopathSelection (shared)
                                 |
@@ -676,6 +766,8 @@ useHistopathSubjects(studyId, specimen) ──> subjData (subject-level, always 
                  Ins  Dose  Sex  Rec  Corr  Path  Nav  Tox
                 (+ clinical catalog annotations)
                 (+ recovery assessment per finding)
+                (+ recovery classification in Insights pane
+                   via classifyRecovery() + useFindingDoseTrends())
 ```
 
 ---
