@@ -199,11 +199,11 @@ export function sortEndpoints(
 
 const DOMAIN_FULL_LABELS: Record<string, string> = {
   LB: "Laboratory",
-  BW: "Body Weight",
-  OM: "Organ Measurement",
+  BW: "Body weight",
+  OM: "Organ measurement",
   MI: "Microscopic",
   MA: "Macroscopic",
-  CL: "Clinical Observation",
+  CL: "Clinical observation",
 };
 
 export function getDomainFullLabel(domain: string): string {
@@ -213,10 +213,10 @@ export function getDomainFullLabel(domain: string): string {
 // ─── Pattern labels ────────────────────────────────────────
 
 const PATTERN_LABELS: Record<string, string> = {
-  monotonic_increase: "Monotonic Increase",
-  monotonic_decrease: "Monotonic Decrease",
+  monotonic_increase: "Monotonic increase",
+  monotonic_decrease: "Monotonic decrease",
   threshold: "Threshold",
-  non_monotonic: "Non-Monotonic",
+  non_monotonic: "Non-monotonic",
   flat: "Flat",
 };
 

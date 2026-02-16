@@ -38,7 +38,7 @@ import type {
   EndpointWithSignal,
   SignalSummaryStats,
 } from "@/lib/findings-rail-engine";
-import { formatPValue, titleCase, getDomainBadgeColor, getDirectionColor } from "@/lib/severity-colors";
+import { formatPValue, titleCase, getDomainBadgeColor } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
@@ -303,6 +303,9 @@ export function FindingsRail({
         sortMode={sortMode}
         grouping={grouping}
         groupFilterOptions={groupFilterOptions}
+        filteredCount={filteredEndpoints.length}
+        totalCount={endpointsWithSignal.length}
+        isFiltered={railIsFiltered}
         onGroupingChange={handleGroupingChange}
         onFiltersChange={setRailFilters}
         onSortChange={setSortMode}
@@ -448,6 +451,9 @@ function RailFiltersSection({
   sortMode,
   grouping,
   groupFilterOptions,
+  filteredCount,
+  totalCount,
+  isFiltered: hasActiveFilters,
   onGroupingChange,
   onFiltersChange,
   onSortChange,
@@ -456,12 +462,15 @@ function RailFiltersSection({
   sortMode: SortMode;
   grouping: GroupingMode;
   groupFilterOptions: { key: string; label: string }[];
+  filteredCount: number;
+  totalCount: number;
+  isFiltered: boolean;
   onGroupingChange: (mode: GroupingMode) => void;
   onFiltersChange: (f: RailFilters) => void;
   onSortChange: (s: SortMode) => void;
 }) {
   return (
-    <div className="shrink-0 space-y-1.5 border-b px-3 py-1.5">
+    <div className="shrink-0 space-y-1.5 border-b bg-muted/30 px-4 py-2">
       {/* Row 1: Search */}
       <FilterSearch
         value={filters.search}
@@ -499,7 +508,7 @@ function RailFiltersSection({
         </FilterSelect>
       </div>
 
-      {/* Row 3: Quick toggles */}
+      {/* Row 3: Quick toggles + count */}
       <div className="flex items-center gap-3">
         <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
           <input
@@ -519,6 +528,9 @@ function RailFiltersSection({
           />
           Sig only
         </label>
+        <span className="ml-auto text-[10px] text-muted-foreground">
+          {hasActiveFilters ? `${filteredCount}/${totalCount}` : totalCount}
+        </span>
       </div>
     </div>
   );
@@ -633,7 +645,7 @@ function CardLabel({ grouping, value }: { grouping: GroupingMode; value: string 
         <span className={cn("text-[9px] font-semibold shrink-0", color.text)}>
           {domainCode}
         </span>
-        <span className="truncate">{getDomainFullLabel(domainCode)}</span>
+        <span className="truncate" title={getDomainFullLabel(domainCode)}>{getDomainFullLabel(domainCode)}</span>
       </span>
     );
   }
@@ -643,13 +655,13 @@ function CardLabel({ grouping, value }: { grouping: GroupingMode; value: string 
     return (
       <span className="flex min-w-0 items-center gap-1.5 truncate font-semibold">
         <PatternIcon className="h-3 w-3 shrink-0 text-muted-foreground" />
-        <span className="truncate">{getPatternLabel(value)}</span>
+        <span className="truncate" title={getPatternLabel(value)}>{getPatternLabel(value)}</span>
       </span>
     );
   }
 
   // Organ (default)
-  return <span className="min-w-0 truncate font-semibold">{titleCase(value)}</span>;
+  return <span className="min-w-0 truncate font-semibold" title={titleCase(value)}>{titleCase(value)}</span>;
 }
 
 // ─── Endpoint Row ──────────────────────────────────────────
@@ -659,7 +671,6 @@ const EndpointRow = forwardRef<HTMLDivElement, {
   isSelected: boolean;
   onClick: () => void;
 }>(function EndpointRow({ endpoint, isSelected, onClick }, ref) {
-  const dirColor = getDirectionColor(endpoint.direction);
   const dirSymbol = endpoint.direction === "up" ? "▲" : endpoint.direction === "down" ? "▼" : "—";
 
   const sevColor =
@@ -680,7 +691,7 @@ const EndpointRow = forwardRef<HTMLDivElement, {
         onClick={onClick}
         aria-selected={isSelected}
       >
-        <span className={cn("shrink-0 text-[10px]", dirColor)}>{dirSymbol}</span>
+        <span className="shrink-0 text-[10px] text-muted-foreground">{dirSymbol}</span>
         <PatternGlyph pattern={endpoint.pattern} className="shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate text-left text-xs" title={endpoint.endpoint_label}>
           {endpoint.endpoint_label}
