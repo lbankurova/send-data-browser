@@ -5,7 +5,9 @@ import { organName } from "@/lib/signals-panel-engine";
 import {
   getNeutralHeatColor,
   getSignificanceStars,
+  formatDoseShortLabel,
 } from "@/lib/severity-colors";
+import { DoseHeader } from "@/components/ui/DoseLabel";
 import type {
   SignalSummaryRow,
   SignalSelection,
@@ -207,7 +209,7 @@ export function OrganGroupedHeatmap({
     }
     return doseLevels.map((dl) => ({
       level: dl,
-      label: dlMap.get(dl) ?? `Dose ${dl}`,
+      label: formatDoseShortLabel(dlMap.get(dl) ?? `Dose ${dl}`),
     }));
   }, [data]);
 
@@ -271,7 +273,7 @@ export function OrganGroupedHeatmap({
             key={dl.level}
             className="px-1 py-1.5 text-center text-[10px] font-semibold text-muted-foreground"
           >
-            {dl.label}
+            <DoseHeader level={dl.level} label={dl.label} />
           </div>
         ))}
       </div>

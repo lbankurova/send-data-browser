@@ -6,6 +6,7 @@
  */
 import type { EChartsOption } from "echarts";
 import type { CustomSeriesRenderItemAPI, CustomSeriesRenderItemParams } from "echarts";
+import { formatDoseShortLabel } from "@/lib/severity-colors";
 
 // ─── Shared constants ────────────────────────────────────────
 
@@ -491,7 +492,7 @@ export function buildCLTimecourseBarOption(
 
   const series: EChartsOption["series"] = doseLevels.map(([dl, doseLabel]) => ({
     type: "bar" as const,
-    name: doseLabel.split(",")[0],
+    name: formatDoseShortLabel(doseLabel),
     data: points.map((pt) => {
       const count = pt[`dose_${dl}`] as number | null;
       return count ?? 0;
@@ -533,7 +534,7 @@ export function buildCLTimecourseBarOption(
           if (!pt) continue;
 
           // Find the matching dose level for this series
-          const dlEntry = doseLevels.find(([, label]) => label.split(",")[0] === item.seriesName);
+          const dlEntry = doseLevels.find(([, label]) => formatDoseShortLabel(label) === item.seriesName);
           const dl = dlEntry?.[0];
           const count = item.value ?? 0;
           const total = dl != null ? (pt[`dose_${dl}_total`] as number | undefined) : undefined;
@@ -624,7 +625,7 @@ export function buildTimecourseLineOption(
     const color = doseGroupColorFn(dl);
     const firstPt = points.find((p) => p[`dose_${dl}_label`] != null);
     const doseLabel = firstPt
-      ? String(firstPt[`dose_${dl}_label`] ?? `Dose ${dl}`)
+      ? formatDoseShortLabel(String(firstPt[`dose_${dl}_label`] ?? `Dose ${dl}`))
       : `Dose ${dl}`;
 
     // Mean line
