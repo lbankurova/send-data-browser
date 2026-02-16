@@ -1416,18 +1416,18 @@ function FindingDetailPane({
                 <button
                   key={m.specimen}
                   type="button"
-                  className="flex w-full items-center justify-between text-left text-[11px] transition-colors hover:bg-muted/40"
+                  className="w-full text-left text-[11px] transition-colors hover:bg-muted/40"
                   onClick={() => {
                     const organ = specimenToOrganSystem(m.specimen);
-                    navigateTo({ organSystem: organ, specimen: m.specimen });
+                    navigateTo({ organSystem: organ, specimen: m.specimen, endpoint: selection.finding });
                   }}
+                  title={`Navigate to ${m.specimen}`}
                 >
-                  <span className="truncate text-primary/70 hover:underline" title={`${m.specimen}: ${selection.finding}`}>
+                  <span className="text-primary/70 hover:underline">
                     {m.specimen.length > 20 ? m.specimen.slice(0, 20) + "\u2026" : m.specimen}
                   </span>
-                  <span className="shrink-0 text-[9px] text-muted-foreground">
-                    {Math.round(m.incidence * 100)}% inc, max sev {m.maxSev.toFixed(1)}
-                  </span>
+                  <span className="text-muted-foreground">: {selection.finding}</span>
+                  <span className="text-[9px] text-muted-foreground"> {"\u00B7"} {Math.round(m.incidence * 100)}% incidence, max sev {m.maxSev.toFixed(1)}</span>
                 </button>
               ))}
             </div>

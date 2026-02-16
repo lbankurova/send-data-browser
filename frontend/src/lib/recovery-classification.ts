@@ -172,7 +172,7 @@ export function classifyRecovery(
     return {
       classification: "UNCLASSIFIABLE",
       confidence: "High",
-      rationale: "Neoplastic findings are not expected to reverse.",
+      rationale: "Neoplastic findings are not expected to reverse. Recovery assessment is not applicable.",
       qualifiers: [],
       inputsUsed: ["mechanical_verdict", "finding_nature"],
       inputsMissing: [],
@@ -297,7 +297,7 @@ export function classifyRecovery(
     // Finding nature qualifiers for INCOMPLETE_RECOVERY
     if (context.findingNature?.nature === "adaptive") {
       qualifiers.push(
-        "Adaptive finding unexpectedly persistent \u2014 may indicate ongoing pharmacological activity.",
+        "Adaptive finding unexpectedly persistent \u2014 may indicate ongoing pharmacological activity or irreversible transition.",
       );
     }
     if (context.findingNature?.nature === "degenerative" && context.findingNature.expected_reversibility === "none") {

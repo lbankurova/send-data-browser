@@ -1477,9 +1477,9 @@ function OverviewTab({
             if (!results || results.length === 0) {
               return <span className="text-muted-foreground/40">{"\u2013"}</span>;
             }
-            const tipLines = results.map(
-              (r) => `${doseGroupLabels.get(r.doseLevel) ?? `D${r.doseLevel}`}: p = ${r.p.toFixed(4)}`,
-            );
+            const tipLines = ["Fisher\u2019s exact test vs control:", ...results.map(
+              (r) => `  ${r.doseLabel}: p = ${r.p.toFixed(3)}${r.p < 0.01 ? " **" : r.p < 0.05 ? " *" : ""}`,
+            )];
             return (
               <span className="font-mono text-[9px]" title={tipLines.join("\n")}>
                 {results.map((r) => {
@@ -1589,7 +1589,7 @@ function OverviewTab({
         : []),
       findingColHelper.accessor("relatedOrgans", {
         header: () => (
-          <span title="Cross-organ coherence (R16): findings observed in multiple organ systems may indicate a systemic effect. Click organ names to navigate.">
+          <span title={"Cross-organ coherence (Rule R16):\nFindings with the same standardized name appearing in other specimens within this study. Matching is case-insensitive on the finding term.\n\nThis indicates anatomical spread, not necessarily biological relatedness. Use clinical judgment to assess whether cross-organ presence reflects systemic toxicity."}>
             Also in <span className="text-muted-foreground/40">{"\u24D8"}</span>
           </span>
         ),
@@ -3131,7 +3131,7 @@ function PeerComparisonToolContent({
         <tbody>
           {peerRows.map(({ finding, controlIncidence, hcd, status }) => (
             <tr key={finding} className="border-b border-dashed">
-              <td className="max-w-[120px] truncate py-1 font-medium" title={finding}>
+              <td className="max-w-[120px] truncate py-1 text-[11px] font-medium" title={finding}>
                 {finding}
               </td>
               <td className="py-1 text-right font-mono text-muted-foreground">
@@ -3154,11 +3154,14 @@ function PeerComparisonToolContent({
                 ) : (
                   <span className={cn(
                     "text-[9px]",
-                    status === "above_range" || status === "at_upper"
-                      ? "font-medium text-foreground/70"
-                      : "text-muted-foreground",
+                    status === "above_range"
+                      ? "font-medium text-foreground"
+                      : status === "at_upper"
+                      ? "text-muted-foreground"
+                      : "text-muted-foreground/60",
                   )}>
-                    {(status === "above_range" || status === "at_upper") && "\u26A0 "}
+                    {status === "above_range" && "\u25B2 "}
+                    {status === "at_upper" && "\u26A0 "}
                     {HCD_STATUS_LABELS[status]}
                   </span>
                 )}
@@ -3535,7 +3538,7 @@ function RecoveryAssessmentToolContent({
                   {finding}
                 </td>
                 <td className="py-1 text-muted-foreground" title={findingNature ? reversibilityLabel(findingNature) : undefined}>
-                  {findingNature?.nature ?? "\u2014"}
+                  {findingNature ? titleCase(findingNature.nature) : "\u2014"}
                 </td>
                 <td className={cn("py-1", isProliferative ? "text-muted-foreground/40" : "text-muted-foreground")}>
                   {isProliferative ? "not applicable" : CLASSIFICATION_LABELS[classification.classification]}
@@ -3734,10 +3737,14 @@ export function HistopathologyView() {
   }, [allRecoveryClassifications]);
 
   // Reset finding selection and comparison when specimen changes (from shell rail)
+  // If endpoint is set (from cross-organ navigation), auto-select that finding
   useEffect(() => {
-    setSelection(selectedSpecimen ? { specimen: selectedSpecimen } : null);
+    const autoFinding = studySelection.endpoint ?? undefined;
+    setSelection(selectedSpecimen ? { specimen: selectedSpecimen, finding: autoFinding } : null);
     setComparisonSubjects(new Set());
-  }, [selectedSpecimen]);
+    // Clear the endpoint hint after consuming it
+    if (autoFinding) navigateTo({ endpoint: undefined });
+  }, [selectedSpecimen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-switch away from Compare tab when selection drops below 2
   useEffect(() => {
