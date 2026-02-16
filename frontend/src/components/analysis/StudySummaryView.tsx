@@ -19,11 +19,12 @@ import {
 } from "./SignalsPanel";
 import { ConfidencePopover } from "./ScoreBreakdown";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
-import type { SignalSelection, ProvenanceMessage, NoaelSummaryRow, RuleResult } from "@/types/analysis-views";
+import type { SignalSelection, SignalSummaryRow, ProvenanceMessage, NoaelSummaryRow, RuleResult } from "@/types/analysis-views";
 import type { StudyMetadata } from "@/types";
 import type { Insight } from "@/hooks/useInsights";
 import { classifyProtectiveSignal, getProtectiveBadgeStyle } from "@/lib/protective-signal";
 import type { ProtectiveClassification } from "@/lib/protective-signal";
+import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 
 type Tab = "details" | "signals" | "insights";
 
@@ -183,7 +184,7 @@ export function StudySummaryView() {
           />
 
           {/* Protective signals — study-wide R18/R19 aggregation */}
-          <ProtectiveSignalsBar rules={ruleResults ?? []} studyId={studyId!} />
+          <ProtectiveSignalsBar rules={ruleResults ?? []} studyId={studyId!} signalData={signalData} />
 
           {/* Evidence panel — full width (rail is in shell) */}
           <div className="flex-1 overflow-hidden">
@@ -377,13 +378,42 @@ function aggregateProtectiveFindings(rules: RuleResult[]): ProtectiveFinding[] {
 function ProtectiveSignalsBar({
   rules,
   studyId,
+  signalData,
 }: {
   rules: RuleResult[];
   studyId: string;
+  signalData?: SignalSummaryRow[];
 }) {
   const navigate = useNavigate();
   const { navigateTo } = useStudySelection();
   const findings = useMemo(() => aggregateProtectiveFindings(rules), [rules]);
+
+  // Cross-domain correlates: for each protective finding's organ system,
+  // find other signals in the same organ system with direction info
+  const correlatesByFinding = useMemo(() => {
+    const map = new Map<string, { label: string; direction: string }[]>();
+    if (!signalData || findings.length === 0) return map;
+    for (const f of findings) {
+      if (f.classification === "background") continue;
+      // Determine organ system from first specimen
+      const spec = f.specimens[0];
+      if (!spec) continue;
+      const organ = specimenToOrganSystem(spec).toLowerCase();
+      // Find other endpoints in the same organ system (not the finding itself)
+      const correlates: { label: string; direction: string }[] = [];
+      const seen = new Set<string>();
+      for (const row of signalData) {
+        if (row.organ_system.toLowerCase() !== organ) continue;
+        if (row.endpoint_label.toLowerCase() === f.finding.toLowerCase()) continue;
+        if (seen.has(row.endpoint_label)) continue;
+        seen.add(row.endpoint_label);
+        const dir = row.direction === "down" ? "\u2193" : row.direction === "up" ? "\u2191" : "";
+        if (dir) correlates.push({ label: row.endpoint_label, direction: dir });
+      }
+      if (correlates.length > 0) map.set(f.finding, correlates.slice(0, 5));
+    }
+    return map;
+  }, [findings, signalData]);
 
   if (findings.length === 0) return null;
 
@@ -422,11 +452,18 @@ function ProtectiveSignalsBar({
                 {f.finding}
               </button>
               <span className="text-[10px] font-medium text-muted-foreground">{f.sexes}</span>
-              <span className={cn("rounded px-1 py-0.5", getProtectiveBadgeStyle("pharmacological"))}>pharmacological</span>
+              <span className={cn("rounded px-1.5 py-0.5", getProtectiveBadgeStyle("pharmacological"))}>pharmacological</span>
             </div>
             <div className="text-[10px] leading-snug text-muted-foreground">
               {f.ctrlPct}% control {"\u2192"} {f.highPct}% high dose in {f.specimens.join(", ")}
             </div>
+            {correlatesByFinding.get(f.finding) && (
+              <div className="mt-0.5 text-[10px] text-muted-foreground/70">
+                Correlated: {correlatesByFinding.get(f.finding)!.map((c, i) => (
+                  <span key={c.label}>{i > 0 && ", "}{c.label} {c.direction}</span>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         {/* Treatment-decrease */}
@@ -446,13 +483,20 @@ function ProtectiveSignalsBar({
                 {f.finding}
               </button>
               <span className="text-[10px] text-muted-foreground">{f.sexes}</span>
-              <span className={cn("rounded px-1 py-0.5", getProtectiveBadgeStyle("treatment-decrease"))}>treatment decrease</span>
+              <span className={cn("rounded px-1.5 py-0.5", getProtectiveBadgeStyle("treatment-decrease"))}>treatment decrease</span>
               <span className="ml-auto font-mono text-[10px] text-muted-foreground">
                 {f.ctrlPct}% {"\u2192"} {f.highPct}%
               </span>
             </div>
             {f.specimens.length > 0 && (
               <div className="text-[9px] text-muted-foreground/70">{f.specimens.join(", ")}</div>
+            )}
+            {correlatesByFinding.get(f.finding) && (
+              <div className="text-[10px] text-muted-foreground/70">
+                Correlated: {correlatesByFinding.get(f.finding)!.map((c, i) => (
+                  <span key={c.label}>{i > 0 && ", "}{c.label} {c.direction}</span>
+                ))}
+              </div>
             )}
           </div>
         ))}

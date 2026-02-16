@@ -151,10 +151,10 @@ export const RULE_CATALOG: RuleDef[] = [
     thresholdRefs: [],
   },
   {
-    id: "R19", name: "Potential protective effect", scope: "endpoint", severity: "info",
+    id: "R19", name: "Decreased incidence, high baseline", scope: "endpoint", severity: "info",
     condition: "potential_protective_effect",
     conditionHuman: 'R18 conditions AND ctrl_incidence >= 50% AND (monotonic_decrease OR threshold OR large_drop >= 40pp)',
-    template: "{finding} in {specimen}: high baseline incidence suggests potential protective or therapeutic effect.",
+    template: "{finding} in {specimen}: high baseline incidence ({ctrl_pct}%) with dose-related decrease to {high_pct}% at high dose.",
     thresholdRefs: [],
   },
 ];

@@ -112,6 +112,8 @@ export interface FindingTableRow extends FindingSummary {
   isDoseDriven: boolean;
   isNonMonotonic: boolean;
   doseDirection: "increasing" | "decreasing" | "mixed" | "flat";
+  controlIncidence: number;
+  highDoseIncidence: number;
   relatedOrgans: string[] | undefined;
   relatedOrgansWithIncidence: RelatedOrganInfo[] | undefined;
   trendData?: FindingDoseTrend;
@@ -240,7 +242,15 @@ export function deriveSpecimenSummaries(data: LesionSeverityRow[], ruleResults?:
     // Modified score formula for purely decreasing specimens
     let signalScore: number;
     if (doseDirection === "decreasing") {
-      const decreaseMagnitude = entry.maxIncidence; // control incidence proxy
+      // Compute actual control - highDose magnitude across all findings
+      const doseLevels = [...new Set(specimenRows.map((r) => r.dose_level))].sort((a, b) => a - b);
+      const ctrlLevel = doseLevels[0];
+      const highLevel = doseLevels[doseLevels.length - 1];
+      const ctrlRows = specimenRows.filter((r) => r.dose_level === ctrlLevel);
+      const highRows = specimenRows.filter((r) => r.dose_level === highLevel);
+      const ctrlInc = ctrlRows.length > 0 ? Math.max(...ctrlRows.map((r) => r.incidence)) : 0;
+      const highInc = highRows.length > 0 ? Math.max(...highRows.map((r) => r.incidence)) : 0;
+      const decreaseMagnitude = Math.max(0, ctrlInc - highInc);
       signalScore = (severityComponent * 0.5) + (decreaseMagnitude * 3) + doseW;
     } else {
       signalScore = adverseComponent + severityComponent + incidenceComponent + doseW + clinicalFloor + sentinelBoost;
@@ -1277,11 +1287,25 @@ function OverviewTab({
         if (c === "NonMonotonic") isNonMonotonic = true;
         const clin = findingClinical.get(fs.finding);
         const recAssessment = recoveryAssessments?.find((a) => a.finding === fs.finding);
+        // Compute control and high-dose incidence for this finding
+        const findingRows = specimenData.filter((r) => r.finding === fs.finding && !r.dose_label.toLowerCase().includes("recovery"));
+        const doseMap = new Map<number, { affected: number; n: number }>();
+        for (const r of findingRows) {
+          const ex = doseMap.get(r.dose_level);
+          if (ex) { ex.affected += r.affected; ex.n += r.n; }
+          else doseMap.set(r.dose_level, { affected: r.affected, n: r.n });
+        }
+        const sortedDoses = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
+        const ctrlEntry = sortedDoses.length > 0 ? sortedDoses[0][1] : null;
+        const highEntry = sortedDoses.length > 1 ? sortedDoses[sortedDoses.length - 1][1] : null;
+        const controlIncidence = ctrlEntry && ctrlEntry.n > 0 ? ctrlEntry.affected / ctrlEntry.n : 0;
+        const highDoseIncidence = highEntry && highEntry.n > 0 ? highEntry.affected / highEntry.n : 0;
         // Override severity to "decreased" for decreasing findings (warning → decreased; adverse stays adverse)
         const effectiveSeverity: FindingTableRow["severity"] =
           doseDirection === "decreasing" && fs.severity === "warning" ? "decreased" : fs.severity;
         return {
           ...fs, severity: effectiveSeverity, isDoseDriven, isNonMonotonic, doseDirection,
+          controlIncidence, highDoseIncidence,
           relatedOrgans: findingRelatedOrgans.get(fs.finding),
           relatedOrgansWithIncidence: findingRelatedOrgansWithIncidence.get(fs.finding),
           trendData: trend,
@@ -1434,11 +1458,12 @@ function OverviewTab({
             );
           }
           if (sev === "decreased") {
-            const ctrlPct = Math.round((row.maxIncidence ?? 0) * 100);
+            const ctrlPct = Math.round(row.controlIncidence * 100);
+            const hiPct = Math.round(row.highDoseIncidence * 100);
             return (
               <span
                 className={signal.decreased}
-                title={`Finding decreases with dose (control ${ctrlPct}%). Classified as decreased at specimen level.`}
+                title={`Finding decreases with dose (control ${ctrlPct}% \u2192 high dose ${hiPct}%). Classified as decreased at study level.`}
               >
                 decreased
               </span>
