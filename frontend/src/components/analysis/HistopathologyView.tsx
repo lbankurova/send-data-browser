@@ -49,6 +49,11 @@ import {
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 import { classifyRecovery, classifySpecimenRecovery, CLASSIFICATION_LABELS, CLASSIFICATION_PRIORITY, CLASSIFICATION_BORDER } from "@/lib/recovery-classification";
 import type { RecoveryClassification } from "@/lib/recovery-classification";
+import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
+import type { FindingNatureInfo } from "@/lib/finding-nature";
+import { fishersExact2x2 } from "@/lib/statistics";
+import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS, HCD_STATUS_SORT } from "@/lib/mock-historical-controls";
+import type { HistoricalControlData, HCDStatus } from "@/lib/mock-historical-controls";
 
 // ─── Neutral heat color (§6.1 evidence tier) ─────────────
 export function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
@@ -96,10 +101,17 @@ export interface FindingSummary {
   severity: "adverse" | "warning" | "normal";
 }
 
+export interface RelatedOrganInfo {
+  organ: string;
+  specimen: string;
+  incidence: number;
+}
+
 export interface FindingTableRow extends FindingSummary {
   isDoseDriven: boolean;
   isNonMonotonic: boolean;
   relatedOrgans: string[] | undefined;
+  relatedOrgansWithIncidence: RelatedOrganInfo[] | undefined;
   trendData?: FindingDoseTrend;
   clinicalClass?: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent";
   catalogId?: string;
@@ -499,6 +511,8 @@ function OverviewTab({
   comparisonSubjects,
   onComparisonChange,
   onCompareClick,
+  allLesionData,
+  onSpecimenNavigate,
 }: {
   specimenData: LesionSeverityRow[];
   findingSummaries: FindingSummary[];
@@ -515,6 +529,8 @@ function OverviewTab({
   comparisonSubjects: Set<string>;
   onComparisonChange: (subjects: Set<string>) => void;
   onCompareClick: () => void;
+  allLesionData?: LesionSeverityRow[];
+  onSpecimenNavigate?: (specimen: string) => void;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [findingColSizing, setFindingColSizing] = useState<ColumnSizingState>({});
@@ -523,7 +539,7 @@ function OverviewTab({
   const [affectedOnly, setAffectedOnly] = useState(true);
   const [subjectSort, setSubjectSort] = useState<"dose" | "severity">("dose");
   const [doseGroupFilter, setDoseGroupFilter] = useState<ReadonlySet<string> | null>(null);
-  const [doseDepThreshold, setDoseDepThreshold] = useState<"moderate" | "strong" | "ca_trend" | "severity_trend">("moderate");
+  const [doseDepThreshold, setDoseDepThreshold] = useState<"moderate" | "strong" | "ca_trend" | "severity_trend" | "fisher_pairwise">("moderate");
   const [doseDepMenu, setDoseDepMenu] = useState<{ x: number; y: number } | null>(null);
   const [hideZeroSeverity, setHideZeroSeverity] = useState(false);
   const [severityGradedOnly, setSeverityGradedOnly] = useState(false);
@@ -621,6 +637,44 @@ function OverviewTab({
     }
     return map;
   }, [allRuleResults, specimen, findingSummaries]);
+
+  // Per-finding cross-organ coherence with incidence data (R16 + lesion data)
+  const findingRelatedOrgansWithIncidence = useMemo(() => {
+    const map = new Map<string, RelatedOrganInfo[]>();
+    if (!allLesionData || findingRelatedOrgans.size === 0) return map;
+    for (const [finding, organs] of findingRelatedOrgans) {
+      const findingLower = finding.toLowerCase();
+      const infos: RelatedOrganInfo[] = [];
+      for (const organ of organs) {
+        // Find specimens belonging to this organ system
+        const organLower = organ.toLowerCase();
+        const organRows = allLesionData.filter(
+          (r) =>
+            r.finding.toLowerCase() === findingLower &&
+            r.specimen !== specimen &&
+            specimenToOrganSystem(r.specimen).toLowerCase() === organLower,
+        );
+        if (organRows.length === 0) {
+          infos.push({ organ, specimen: organ, incidence: 0 });
+          continue;
+        }
+        // Find the specimen with max incidence for this finding
+        const bySpec = new Map<string, number>();
+        for (const r of organRows) {
+          const prev = bySpec.get(r.specimen) ?? 0;
+          if (r.incidence > prev) bySpec.set(r.specimen, r.incidence);
+        }
+        let bestSpec = organRows[0].specimen;
+        let bestInc = 0;
+        for (const [sp, inc] of bySpec) {
+          if (inc > bestInc) { bestInc = inc; bestSpec = sp; }
+        }
+        infos.push({ organ, specimen: bestSpec, incidence: bestInc });
+      }
+      if (infos.length > 0) map.set(finding, infos);
+    }
+    return map;
+  }, [findingRelatedOrgans, allLesionData, specimen]);
 
   // Per-finding clinical catalog lookup
   const findingClinical = useMemo(() => {
@@ -1058,6 +1112,49 @@ function OverviewTab({
     return { doseLevels, doseLabels, cells };
   }, [specimenHasRecovery, subjData, heatmapData]);
 
+  // Pairwise Fisher's exact tests (each dose group vs control)
+  interface PairwiseFisherResult { doseLabel: string; doseLevel: number; p: number }
+  const pairwiseFisherResults = useMemo(() => {
+    const map = new Map<string, PairwiseFisherResult[]>();
+    if (!specimenData.length || !findingSummaries.length) return map;
+
+    // Aggregate affected/total by finding × dose_level (combine sexes)
+    const byFindingDose = new Map<string, Map<number, { affected: number; n: number; label: string }>>();
+    for (const r of specimenData) {
+      if (r.dose_label.toLowerCase().includes("recovery")) continue;
+      let doseMap = byFindingDose.get(r.finding);
+      if (!doseMap) { doseMap = new Map(); byFindingDose.set(r.finding, doseMap); }
+      const existing = doseMap.get(r.dose_level);
+      if (existing) { existing.affected += r.affected; existing.n += r.n; }
+      else doseMap.set(r.dose_level, { affected: r.affected, n: r.n, label: r.dose_label });
+    }
+
+    for (const [finding, doseMap] of byFindingDose) {
+      // Control = dose_level 0 (or lowest)
+      const doseLevels = [...doseMap.keys()].sort((a, b) => a - b);
+      if (doseLevels.length < 2) continue;
+      const controlDose = doseLevels[0];
+      const ctrl = doseMap.get(controlDose)!;
+      const results: PairwiseFisherResult[] = [];
+      for (const dl of doseLevels) {
+        if (dl === controlDose) continue;
+        const grp = doseMap.get(dl)!;
+        const p = fishersExact2x2(grp.affected, grp.n - grp.affected, ctrl.affected, ctrl.n - ctrl.affected);
+        results.push({ doseLabel: grp.label, doseLevel: dl, p });
+      }
+      if (results.length > 0) map.set(finding, results);
+    }
+    return map;
+  }, [specimenData, findingSummaries]);
+
+  // Dose group labels for Fisher's compact display (G1, G2, G3...)
+  const doseGroupLabels = useMemo(() => {
+    const levels = [...new Set(specimenData.filter(r => !r.dose_label.toLowerCase().includes("recovery")).map(r => r.dose_level))].sort((a, b) => a - b);
+    const labelMap = new Map<number, string>();
+    levels.forEach((dl, i) => labelMap.set(dl, `G${i + 1}`));
+    return labelMap;
+  }, [specimenData]);
+
   // Combined table data
   const tableData = useMemo<FindingTableRow[]>(
     () =>
@@ -1076,6 +1173,11 @@ function OverviewTab({
           case "severity_trend":
             isDoseDriven = trend?.severity_trend_p != null && trend.severity_trend_p < 0.05;
             break;
+          case "fisher_pairwise": {
+            const fisherResults = pairwiseFisherResults.get(fs.finding);
+            isDoseDriven = fisherResults?.some((r) => r.p < 0.05) ?? false;
+            break;
+          }
           default: // "moderate"
             isDoseDriven = c !== "Weak";
             break;
@@ -1086,13 +1188,14 @@ function OverviewTab({
         return {
           ...fs, isDoseDriven, isNonMonotonic,
           relatedOrgans: findingRelatedOrgans.get(fs.finding),
+          relatedOrgansWithIncidence: findingRelatedOrgansWithIncidence.get(fs.finding),
           trendData: trend,
           clinicalClass: clin?.clinicalClass as FindingTableRow["clinicalClass"],
           catalogId: clin?.catalogId,
           recoveryVerdict: recAssessment?.overall,
         };
       }),
-    [findingSummaries, findingConsistency, findingRelatedOrgans, findingClinical, doseDepThreshold, trendsByFinding, recoveryAssessments]
+    [findingSummaries, findingConsistency, findingRelatedOrgans, findingRelatedOrgansWithIncidence, findingClinical, doseDepThreshold, trendsByFinding, recoveryAssessments, pairwiseFisherResults]
   );
 
   // Mortality masking: for NonMonotonic findings, check if high-dose mortality may mask findings
@@ -1238,10 +1341,11 @@ function OverviewTab({
       findingColHelper.accessor("isDoseDriven", {
         header: () => {
           const labels: Record<typeof doseDepThreshold, { label: string; tooltip: string }> = {
-            moderate: { label: "Dose-dep.", tooltip: "Monotonic incidence OR 2+ dose groups affected. Click to change method." },
-            strong: { label: "Dose-dep. (strict)", tooltip: "Monotonic incidence + 3+ dose groups affected. Click to change method." },
-            ca_trend: { label: "CA trend", tooltip: "Cochran-Armitage trend test p < 0.05. Click to change method." },
-            severity_trend: { label: "Sev. trend", tooltip: "Spearman severity-dose correlation p < 0.05 (MI only). Click to change method." },
+            moderate: { label: "Dose-dep.", tooltip: "Heuristic: monotonic incidence increase across \u22652 dose groups. Click to change method." },
+            strong: { label: "Dose-dep. (strict)", tooltip: "Heuristic: monotonic incidence increase across \u22653 dose groups. Click to change method." },
+            ca_trend: { label: "CA trend", tooltip: "Cochran-Armitage exact permutation test for trend, p < 0.05. Click to change method." },
+            severity_trend: { label: "J-T trend", tooltip: "Jonckheere-Terpstra ordered alternatives on severity grades, p < 0.05. Click to change method." },
+            fisher_pairwise: { label: "Fisher vs ctrl", tooltip: "Fisher\u2019s exact test: each dose group vs control, p < 0.05. Click to change method." },
           };
           const { label, tooltip } = labels[doseDepThreshold];
           return (
@@ -1250,13 +1354,33 @@ function OverviewTab({
             </span>
           );
         },
-        size: 80,
-        minSize: 55,
-        maxSize: 120,
+        size: doseDepThreshold === "fisher_pairwise" ? 100 : 80,
+        minSize: doseDepThreshold === "fisher_pairwise" ? 80 : 55,
+        maxSize: 140,
         cell: (info) => {
-          const isStatistical = doseDepThreshold === "ca_trend" || doseDepThreshold === "severity_trend";
+          // Fisher's pairwise: show per-group indicators
+          if (doseDepThreshold === "fisher_pairwise") {
+            const results = pairwiseFisherResults.get(info.row.original.finding);
+            if (!results || results.length === 0) {
+              return <span className="text-muted-foreground/40">{"\u2013"}</span>;
+            }
+            const tipLines = results.map(
+              (r) => `${doseGroupLabels.get(r.doseLevel) ?? `D${r.doseLevel}`}: p = ${r.p.toFixed(4)}`,
+            );
+            return (
+              <span className="font-mono text-[9px]" title={tipLines.join("\n")}>
+                {results.map((r) => {
+                  const label = doseGroupLabels.get(r.doseLevel) ?? `D${r.doseLevel}`;
+                  if (r.p < 0.01) return <span key={r.doseLevel} className="text-muted-foreground">{label}:✓✓ </span>;
+                  if (r.p < 0.05) return <span key={r.doseLevel} className="text-muted-foreground">{label}:✓ </span>;
+                  return <span key={r.doseLevel} className="text-muted-foreground/40">{label}:{"\u2013"} </span>;
+                })}
+              </span>
+            );
+          }
+          const isTrendStatistical = doseDepThreshold === "ca_trend" || doseDepThreshold === "severity_trend";
           const trend = info.row.original.trendData;
-          if (isStatistical) {
+          if (isTrendStatistical) {
             const pVal = doseDepThreshold === "ca_trend" ? trend?.ca_trend_p : trend?.severity_trend_p;
             if (info.getValue()) {
               return (
@@ -1316,7 +1440,8 @@ function OverviewTab({
                 const recAssessment = recoveryAssessments?.find(
                   (a) => a.finding === info.row.original.finding,
                 );
-                const tip = buildRecoveryTooltip(recAssessment, subjData?.recovery_days);
+                const nature = classifyFindingNature(info.row.original.finding);
+                const tip = buildRecoveryTooltip(recAssessment, subjData?.recovery_days, nature.nature !== "other" ? nature : null);
                 // v3: not_examined → "∅ not examined" in font-medium
                 if (v === "not_examined")
                   return <span className="text-[9px] font-medium text-foreground/70" title={tip}>{"\u2205"} not examined</span>;
@@ -1350,26 +1475,44 @@ function OverviewTab({
           ]
         : []),
       findingColHelper.accessor("relatedOrgans", {
-        header: "Also in",
-        size: 120,
-        minSize: 40,
+        header: () => (
+          <span title="Cross-organ coherence (R16): findings observed in multiple organ systems may indicate a systemic effect. Click organ names to navigate.">
+            Also in <span className="text-muted-foreground/40">{"\u24D8"}</span>
+          </span>
+        ),
+        size: 140,
+        minSize: 50,
         maxSize: 300,
         cell: (info) => {
-          const organs = info.getValue();
-          if (!organs) return null;
-          const text = organs.join(", ");
+          const organsWithInc = info.row.original.relatedOrgansWithIncidence;
+          if (!organsWithInc || organsWithInc.length === 0) return null;
           return (
-            <span
-              className="block truncate text-[9px] text-muted-foreground"
-              title={`Cross-organ coherence (R16): also observed in ${text}`}
-            >
-              {text}
+            <span className="flex flex-wrap gap-x-1 text-[9px]">
+              {organsWithInc.map((o, i) => (
+                <span key={o.organ}>
+                  <button
+                    type="button"
+                    className="text-primary/70 hover:underline"
+                    title={`Navigate to ${o.specimen}: ${info.row.original.finding}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSpecimenNavigate?.(o.specimen);
+                    }}
+                  >
+                    {o.organ}
+                  </button>
+                  <span className="text-muted-foreground/60">
+                    {" "}({Math.round(o.incidence * 100)}%)
+                  </span>
+                  {i < organsWithInc.length - 1 && <span className="text-muted-foreground/30">, </span>}
+                </span>
+              ))}
             </span>
           );
         },
       }),
     ],
-    [doseDepThreshold, specimenHasRecovery, recoveryAssessments, subjData?.recovery_days, mortalityMaskFindings]
+    [doseDepThreshold, specimenHasRecovery, recoveryAssessments, subjData?.recovery_days, mortalityMaskFindings, pairwiseFisherResults, doseGroupLabels]
   );
 
   const filteredTableData = useMemo(
@@ -1572,8 +1715,8 @@ function OverviewTab({
               Heuristic
             </div>
             {([
-              { value: "moderate" as const, label: "Moderate+", desc: "Monotonic OR 2+ groups" },
-              { value: "strong" as const, label: "Strong only", desc: "Monotonic AND 3+ groups" },
+              { value: "moderate" as const, label: "Heuristic: Moderate+", desc: "Monotonic increase across \u22652 dose groups" },
+              { value: "strong" as const, label: "Heuristic: Strong only", desc: "Monotonic increase across \u22653 dose groups" },
             ]).map((opt) => (
               <button
                 key={opt.value}
@@ -1591,11 +1734,32 @@ function OverviewTab({
             ))}
             <div className="my-0.5 border-t border-border/40" />
             <div className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-              Statistical
+              Statistical (trend)
             </div>
             {([
-              { value: "ca_trend" as const, label: "CA trend", desc: "Incidence trend p < 0.05" },
-              { value: "severity_trend" as const, label: "Sev. trend", desc: "Severity × dose (MI only)" },
+              { value: "ca_trend" as const, label: "Cochran-Armitage trend", desc: "Exact permutation test, p < 0.05" },
+              { value: "severity_trend" as const, label: "Jonckheere-Terpstra trend", desc: "Ordered alternatives on severity, p < 0.05" },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={cn(
+                  "flex w-full items-baseline gap-1.5 px-2 py-1 text-left hover:bg-accent/50",
+                  doseDepThreshold === opt.value && "bg-accent/30",
+                )}
+                onClick={() => { setDoseDepThreshold(opt.value); setDoseDepMenu(null); }}
+              >
+                <span className="w-3 shrink-0 text-[10px] text-muted-foreground">{doseDepThreshold === opt.value ? "✓" : ""}</span>
+                <span className="text-[11px] font-medium">{opt.label}</span>
+                <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+              </button>
+            ))}
+            <div className="my-0.5 border-t border-border/40" />
+            <div className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+              Statistical (pairwise)
+            </div>
+            {([
+              { value: "fisher_pairwise" as const, label: "Fisher\u2019s exact vs control", desc: "Each group vs control, p < 0.05" },
             ]).map((opt) => (
               <button
                 key={opt.value}
@@ -1612,6 +1776,12 @@ function OverviewTab({
               </button>
             ))}
           </div>
+        )}
+        {/* Multiple testing footnote for statistical methods */}
+        {(doseDepThreshold === "ca_trend" || doseDepThreshold === "severity_trend" || doseDepThreshold === "fisher_pairwise") && (
+          <p className="px-1 py-0.5 text-[9px] italic text-muted-foreground/50">
+            Statistical tests are unadjusted for multiplicity. Significance should be interpreted in context of dose-response pattern and biological plausibility.
+          </p>
         )}
       </div>
       </div>
@@ -2660,7 +2830,7 @@ interface SpecimenTool {
 const SPECIMEN_TOOLS: SpecimenTool[] = [
   { value: "severity", label: "Severity distribution", icon: BarChart3, available: true, description: "Severity grade distribution across dose groups for this specimen" },
   { value: "treatment", label: "Treatment-related assessment", icon: Microscope, available: true, description: "Evaluate whether findings are treatment-related or incidental" },
-  { value: "peer", label: "Peer comparison", icon: Users, available: false, description: "Compare against historical control incidence data" },
+  { value: "peer", label: "Peer comparison", icon: Users, available: true, description: "Compare against historical control incidence data (mock)" },
   { value: "doseTrend", label: "Dose-severity trend", icon: TrendingUp, available: true, description: "Severity and incidence changes across dose groups" },
   { value: "recovery", label: "Recovery assessment", icon: Undo2, available: false, description: "Classify recovery patterns across all findings in specimen" },
 ];
@@ -2754,26 +2924,145 @@ function TreatmentRelatedPlaceholder({ specimenName, selectedFinding }: { specim
   );
 }
 
-function PeerComparisonPlaceholder({ specimenName }: { specimenName: string }) {
+function PeerComparisonToolContent({
+  specimenName,
+  specimenData,
+  specimen,
+}: {
+  specimenName: string;
+  specimenData?: LesionSeverityRow[];
+  specimen?: string;
+}) {
+  // Compute control group incidence per finding
+  const peerRows = useMemo(() => {
+    if (!specimenData || !specimen) return [];
+
+    // Get unique findings
+    const findings = [...new Set(specimenData.filter(r => !r.dose_label.toLowerCase().includes("recovery")).map(r => r.finding))];
+
+    // Aggregate control group incidence per finding
+    const controlByFinding = new Map<string, { affected: number; n: number }>();
+    for (const r of specimenData) {
+      if (r.dose_label.toLowerCase().includes("recovery")) continue;
+      if (r.dose_level !== 0) continue; // Control group only
+      const existing = controlByFinding.get(r.finding);
+      if (existing) { existing.affected += r.affected; existing.n += r.n; }
+      else controlByFinding.set(r.finding, { affected: r.affected, n: r.n });
+    }
+
+    // If no dose_level 0 (no labeled control), try lowest dose
+    if (controlByFinding.size === 0) {
+      const minDose = Math.min(...specimenData.filter(r => !r.dose_label.toLowerCase().includes("recovery")).map(r => r.dose_level));
+      for (const r of specimenData) {
+        if (r.dose_label.toLowerCase().includes("recovery")) continue;
+        if (r.dose_level !== minDose) continue;
+        const existing = controlByFinding.get(r.finding);
+        if (existing) { existing.affected += r.affected; existing.n += r.n; }
+        else controlByFinding.set(r.finding, { affected: r.affected, n: r.n });
+      }
+    }
+
+    // Look up HCD for each finding
+    const organName = specimen.toLowerCase().replace(/_/g, " ");
+    const rows: Array<{
+      finding: string;
+      controlIncidence: number;
+      hcd: HistoricalControlData | null;
+      status: HCDStatus;
+    }> = [];
+
+    for (const finding of findings) {
+      const ctrl = controlByFinding.get(finding);
+      const controlInc = ctrl && ctrl.n > 0 ? ctrl.affected / ctrl.n : 0;
+      const hcd = getHistoricalControl(finding, organName);
+      const status: HCDStatus = hcd ? classifyVsHCD(controlInc, hcd) : "no_data";
+      rows.push({ finding, controlIncidence: controlInc, hcd, status });
+    }
+
+    // Sort: Above range first, then At upper, then others
+    rows.sort((a, b) => {
+      const sd = HCD_STATUS_SORT[a.status] - HCD_STATUS_SORT[b.status];
+      if (sd !== 0) return sd;
+      return b.controlIncidence - a.controlIncidence;
+    });
+
+    return rows;
+  }, [specimenData, specimen]);
+
+  if (peerRows.length === 0) {
+    return (
+      <div className="flex h-28 items-center justify-center rounded-md border bg-muted/30">
+        <p className="text-[11px] text-muted-foreground/50">No findings data for peer comparison.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      <HypViewerPlaceholder icon={Users} viewerType="DG Comparative Grid" context={`${specimenName} vs. HCD`} />
+      <HypViewerPlaceholder icon={Users} viewerType="Peer Comparison" context={`${specimenName} vs. HCD`} />
       <p className="text-xs text-muted-foreground">
-        Compare this specimen&apos;s finding incidences against historical control data (HCD)
-        from the same strain and laboratory. Findings with incidence exceeding the HCD range
-        are flagged as potentially treatment-related.
+        Control group incidence compared against historical control data (HCD) for the same strain.
+        Findings with incidence above the HCD range may indicate treatment-related effects rather than spontaneous background.
       </p>
-      <div className="rounded-md border bg-card p-3">
-        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
-        <HypConfigLine items={[
-          ["Rows", "findings"],
-          ["Study incidence", "current study (%)"],
-          ["HCD range", "min\u2013max (%) from historical data"],
-          ["Flag", "exceeds HCD range"],
-        ]} />
+
+      {/* Peer comparison table */}
+      <table className="w-full text-[10px]">
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Finding</th>
+            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Study ctrl</th>
+            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">HCD range</th>
+            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {peerRows.map(({ finding, controlIncidence, hcd, status }) => (
+            <tr key={finding} className="border-b border-dashed">
+              <td className="max-w-[120px] truncate py-1 font-medium" title={finding}>
+                {finding}
+              </td>
+              <td className="py-1 text-right font-mono text-muted-foreground">
+                {Math.round(controlIncidence * 100)}%
+              </td>
+              <td className="py-1 text-right text-muted-foreground">
+                {hcd ? (
+                  <span title={`n=${hcd.n_studies} studies, mean=${Math.round(hcd.mean_incidence * 100)}%`}>
+                    <span className="font-mono">{Math.round(hcd.min_incidence * 100)}{"\u2013"}{Math.round(hcd.max_incidence * 100)}%</span>
+                    <br />
+                    <span className="text-[9px] text-muted-foreground/60">mean {Math.round(hcd.mean_incidence * 100)}%, n={hcd.n_studies}</span>
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground/40">{"\u2014"}</span>
+                )}
+              </td>
+              <td className="py-1 text-right">
+                {status === "no_data" ? (
+                  <span className="text-muted-foreground/40">No data</span>
+                ) : (
+                  <span className={cn(
+                    "text-[9px]",
+                    status === "above_range" || status === "at_upper"
+                      ? "font-medium text-foreground/70"
+                      : "text-muted-foreground",
+                  )}>
+                    {(status === "above_range" || status === "at_upper") && "\u26A0 "}
+                    {HCD_STATUS_LABELS[status]}
+                  </span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Mock badge */}
+      <div className="flex items-center gap-2">
+        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">mock</span>
+        <span className="text-[9px] text-muted-foreground/50">Simulated historical control data (SD rat, 14-24 studies)</span>
       </div>
+
       <HypProductionNote>
-        Requires historical control database integration. Available in production.
+        Production version will query facility-specific historical control database with strain, age, and laboratory matching.
       </HypProductionNote>
     </div>
   );
@@ -2812,14 +3101,18 @@ function HistopathHypothesesTab({
   recoveryClassifications,
   specimenRecoveryClassification,
   onFindingClick,
+  specimenData,
+  specimen,
 }: {
   specimenName: string;
   findingCount: number;
   selectedFinding?: string | null;
   specimenHasRecovery: boolean;
-  recoveryClassifications: Array<{ finding: string; classification: RecoveryClassification }> | null;
+  recoveryClassifications: Array<{ finding: string; classification: RecoveryClassification; findingNature?: FindingNatureInfo }> | null;
   specimenRecoveryClassification: RecoveryClassification | undefined;
   onFindingClick: (finding: string) => void;
+  specimenData?: LesionSeverityRow[];
+  specimen?: string;
 }) {
   const [intent, setIntent] = useState<SpecimenToolIntent>("severity");
 
@@ -3027,7 +3320,11 @@ function HistopathHypothesesTab({
           <TreatmentRelatedPlaceholder specimenName={specimenName} selectedFinding={selectedFinding} />
         )}
         {intent === "peer" && (
-          <PeerComparisonPlaceholder specimenName={specimenName} />
+          <PeerComparisonToolContent
+            specimenName={specimenName}
+            specimenData={specimenData}
+            specimen={specimen}
+          />
         )}
         {intent === "doseTrend" && (
           <DoseSeverityTrendPlaceholder specimenName={specimenName} selectedFinding={selectedFinding} />
@@ -3054,7 +3351,7 @@ function RecoveryAssessmentToolContent({
   onFindingClick,
 }: {
   specimenName: string;
-  recoveryClassifications: Array<{ finding: string; classification: RecoveryClassification }> | null;
+  recoveryClassifications: Array<{ finding: string; classification: RecoveryClassification; findingNature?: FindingNatureInfo }> | null;
   specimenRecoveryClassification: RecoveryClassification | undefined;
   onFindingClick: (finding: string) => void;
 }) {
@@ -3107,28 +3404,35 @@ function RecoveryAssessmentToolContent({
         <thead>
           <tr className="border-b text-muted-foreground">
             <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Finding</th>
+            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Nature</th>
             <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Classification</th>
             <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Confidence</th>
           </tr>
         </thead>
         <tbody>
-          {sorted.map(({ finding, classification }) => (
-            <tr
-              key={finding}
-              className="cursor-pointer border-b border-dashed transition-colors hover:bg-muted/40"
-              onClick={() => onFindingClick(finding)}
-            >
-              <td className="max-w-[120px] truncate py-1 font-medium" title={finding}>
-                {finding}
-              </td>
-              <td className="py-1 text-muted-foreground">
-                {CLASSIFICATION_LABELS[classification.classification]}
-              </td>
-              <td className="py-1 text-right text-muted-foreground">
-                {classification.confidence}
-              </td>
-            </tr>
-          ))}
+          {sorted.map(({ finding, classification, findingNature }) => {
+            const isProliferative = findingNature?.nature === "proliferative";
+            return (
+              <tr
+                key={finding}
+                className="cursor-pointer border-b border-dashed transition-colors hover:bg-muted/40"
+                onClick={() => onFindingClick(finding)}
+              >
+                <td className="max-w-[120px] truncate py-1 font-medium" title={finding}>
+                  {finding}
+                </td>
+                <td className="py-1 text-muted-foreground" title={findingNature ? reversibilityLabel(findingNature) : undefined}>
+                  {findingNature?.nature ?? "\u2014"}
+                </td>
+                <td className={cn("py-1", isProliferative ? "text-muted-foreground/40" : "text-muted-foreground")}>
+                  {isProliferative ? "not applicable" : CLASSIFICATION_LABELS[classification.classification]}
+                </td>
+                <td className={cn("py-1 text-right", isProliferative ? "text-muted-foreground/40" : "text-muted-foreground")}>
+                  {isProliferative ? "\u2014" : classification.confidence}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
@@ -3287,6 +3591,7 @@ export function HistopathologyView() {
       const trend = trendData?.find(
         (t) => t.finding === finding && t.specimen === selectedSpecimen,
       );
+      const findingNature = classifyFindingNature(finding);
 
       const signalClass: "adverse" | "warning" | "normal" = isAdverse
         ? "adverse"
@@ -3300,12 +3605,13 @@ export function HistopathologyView() {
         doseResponsePValue: trend?.ca_trend_p ?? null,
         clinicalClass: clinical?.clinicalClass ?? null,
         signalClass,
+        findingNature,
         historicalControlIncidence: null,
         crossDomainCorroboration: null,
         recoveryPeriodDays: null,
       });
 
-      return { finding, classification };
+      return { finding, classification, findingNature };
     });
   }, [specimenHasRecovery, subjData, findingSummaries, ruleResults, specimenData, trendData, selectedSpecimen]);
 
@@ -3460,6 +3766,11 @@ export function HistopathologyView() {
               comparisonSubjects={comparisonSubjects}
               onComparisonChange={setComparisonSubjects}
               onCompareClick={() => setActiveTab("compare")}
+              allLesionData={lesionData}
+              onSpecimenNavigate={(spec) => {
+                const organ = specimenToOrganSystem(spec);
+                navigateTo({ organSystem: organ, specimen: spec });
+              }}
             />
           </div>
           {activeTab === "hypotheses" && (
@@ -3471,6 +3782,8 @@ export function HistopathologyView() {
               recoveryClassifications={allRecoveryClassifications}
               specimenRecoveryClassification={specimenRecoveryClassification}
               onFindingClick={handleFindingClick}
+              specimenData={specimenData}
+              specimen={selectedSpecimen ?? undefined}
             />
           )}
           {activeTab === "compare" && studyId && (

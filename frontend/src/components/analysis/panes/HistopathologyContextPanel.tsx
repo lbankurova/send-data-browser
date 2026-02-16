@@ -28,6 +28,8 @@ import type { RecoveryAssessment, RecoveryDoseAssessment } from "@/lib/recovery-
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import { classifyRecovery, CLASSIFICATION_LABELS, CLASSIFICATION_BORDER } from "@/lib/recovery-classification";
 import type { RecoveryClassification } from "@/lib/recovery-classification";
+import { classifyFindingNature } from "@/lib/finding-nature";
+import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
 import { getFindingDoseConsistency } from "@/components/analysis/HistopathologyView";
 import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { fishersExact2x2 } from "@/lib/statistics";
@@ -1034,12 +1036,15 @@ function FindingDetailPane({
         ? "warning"
         : "normal";
 
+    const findingNature = classifyFindingNature(selection.finding);
+
     return classifyRecovery(findingRecovery, {
       isAdverse,
       doseConsistency,
       doseResponsePValue: trend?.ca_trend_p ?? null,
       clinicalClass,
       signalClass,
+      findingNature,
       historicalControlIncidence: null,
       crossDomainCorroboration: null,
       recoveryPeriodDays: null,
@@ -1065,6 +1070,31 @@ function FindingDetailPane({
     (subjectIds: string[]) => setPendingCompare(subjectIds),
     [setPendingCompare],
   );
+
+  // Historical control lookup for this finding
+  const historicalContext = useMemo(() => {
+    const organName = selection.specimen.toLowerCase().replace(/_/g, " ");
+    const hcd = getHistoricalControl(selection.finding, organName);
+    if (!hcd) return null;
+
+    // Compute control group incidence from lesion data
+    const controlRows = lesionData.filter(
+      (r) =>
+        r.finding === selection.finding &&
+        r.specimen === selection.specimen &&
+        r.dose_level === 0 &&
+        !r.dose_label.toLowerCase().includes("recovery"),
+    );
+    let affected = 0;
+    let n = 0;
+    for (const r of controlRows) {
+      affected += r.affected;
+      n += r.n;
+    }
+    const controlInc = n > 0 ? affected / n : 0;
+    const status = classifyVsHCD(controlInc, hcd);
+    return { hcd, controlInc, status };
+  }, [lesionData, selection]);
 
   // Dose-level detail for selected finding
   const findingRows = useMemo(() => {
@@ -1124,6 +1154,28 @@ function FindingDetailPane({
     return [...unique.entries()]
       .sort((a, b) => b[1].maxSev - a[1].maxSev)
       .slice(0, 10);
+  }, [lesionData, selection]);
+
+  // Cross-organ matches: same finding in other specimens (R16)
+  const crossOrganMatches = useMemo(() => {
+    const findingLower = selection.finding.toLowerCase();
+    const otherRows = lesionData.filter(
+      (r) => r.finding.toLowerCase() === findingLower && r.specimen !== selection.specimen,
+    );
+    const bySpec = new Map<string, { incidence: number; maxSev: number }>();
+    for (const r of otherRows) {
+      const existing = bySpec.get(r.specimen);
+      if (existing) {
+        if (r.incidence > existing.incidence) existing.incidence = r.incidence;
+        if ((r.avg_severity ?? 0) > existing.maxSev) existing.maxSev = r.avg_severity ?? 0;
+      } else {
+        bySpec.set(r.specimen, { incidence: r.incidence, maxSev: r.avg_severity ?? 0 });
+      }
+    }
+    return [...bySpec.entries()]
+      .map(([specimen, stats]) => ({ specimen, incidence: stats.incidence, maxSev: stats.maxSev }))
+      .sort((a, b) => b.incidence - a.incidence)
+      .slice(0, 8);
   }, [lesionData, selection]);
 
   // Sex summary
@@ -1203,6 +1255,20 @@ function FindingDetailPane({
         {showRecoveryInsight && recoveryClassification && (
           <div className="mt-2.5">
             <RecoveryInsightBlock classification={recoveryClassification} />
+          </div>
+        )}
+        {historicalContext && (
+          <div className="mt-2.5 border-l-2 border-l-gray-300/40 py-0.5 pl-2">
+            <div className="text-[10px] leading-snug text-muted-foreground">
+              {(historicalContext.status === "above_range" || historicalContext.status === "at_upper") && (
+                <span className="mr-1">{"\u26A0"}</span>
+              )}
+              Historical context <span className="text-amber-600">(mock)</span>: Control incidence {Math.round(historicalContext.controlInc * 100)}% is{" "}
+              <span className="font-medium">{HCD_STATUS_LABELS[historicalContext.status].toLowerCase()}</span>
+              {" "}({Math.round(historicalContext.hcd.min_incidence * 100)}{"\u2013"}{Math.round(historicalContext.hcd.max_incidence * 100)}%,
+              mean {Math.round(historicalContext.hcd.mean_incidence * 100)}%,
+              n={historicalContext.hcd.n_studies} studies)
+            </div>
           </div>
         )}
       </CollapsiblePane>
@@ -1322,6 +1388,7 @@ function FindingDetailPane({
 
       {/* Correlating evidence */}
       <CollapsiblePane title="Correlating evidence" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        {/* In this specimen */}
         {correlating.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No other findings in this specimen.</p>
         ) : (
@@ -1339,6 +1406,34 @@ function FindingDetailPane({
                 </span>
               </div>
             ))}
+          </div>
+        )}
+        {/* In other specimens (same finding) — R16 cross-organ */}
+        {crossOrganMatches.length > 0 && (
+          <div className="mt-2">
+            <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              In other specimens (same finding)
+            </div>
+            <div className="space-y-0.5">
+              {crossOrganMatches.map((m) => (
+                <button
+                  key={m.specimen}
+                  type="button"
+                  className="flex w-full items-center justify-between text-left text-[11px] transition-colors hover:bg-muted/40"
+                  onClick={() => {
+                    const organ = specimenToOrganSystem(m.specimen);
+                    navigateTo({ organSystem: organ, specimen: m.specimen });
+                  }}
+                >
+                  <span className="truncate text-primary/70 hover:underline" title={`${m.specimen}: ${selection.finding}`}>
+                    {m.specimen.length > 20 ? m.specimen.slice(0, 20) + "\u2026" : m.specimen}
+                  </span>
+                  <span className="shrink-0 text-[9px] text-muted-foreground">
+                    {Math.round(m.incidence * 100)}% inc, max sev {m.maxSev.toFixed(1)}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </CollapsiblePane>
