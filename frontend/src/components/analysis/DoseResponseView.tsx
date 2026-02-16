@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useSessionState } from "@/hooks/useSessionState";
 import { useParams, useLocation } from "react-router-dom";
 import { Loader2, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect, Pin, Plus, Search, Scale, Edit2, HelpCircle } from "lucide-react";
 import {
@@ -258,7 +259,7 @@ export function DoseResponseView() {
   // State — selectedEndpoint is local for evidence panel display,
   // but also synced to/from StudySelectionContext
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"evidence" | "hypotheses" | "metrics">("evidence");
+  const [activeTab, setActiveTab] = useSessionState<"evidence" | "hypotheses" | "metrics">("pcc.doseResponse.tab", "evidence");
   const [selection, setSelection] = useState<DoseResponseSelection | null>(null);
   const { expandGen: sectionExpandGen, collapseGen: sectionCollapseGen, expandAll: sectionExpandAll, collapseAll: sectionCollapseAll } = useCollapseAll();
 
@@ -280,8 +281,8 @@ export function DoseResponseView() {
     organ_system: string | null;
   }>({ sex: null, data_type: null, organ_system: null });
   const [sigOnly, setSigOnly] = useState(false);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [sorting, setSorting] = useSessionState<SortingState>("pcc.doseResponse.sorting", []);
+  const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.doseResponse.columnSizing", {});
 
   // ── Derived data ──────────────────────────────────────
 

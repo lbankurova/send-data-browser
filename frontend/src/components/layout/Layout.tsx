@@ -22,13 +22,23 @@ const LEFT_MAX = 500;
 const RIGHT_MIN = 200;
 const RIGHT_MAX = 600;
 
+function readSession(key: string | undefined): number | undefined {
+  if (!key) return undefined;
+  try {
+    const v = sessionStorage.getItem(key);
+    if (v !== null) return JSON.parse(v) as number;
+  } catch { /* ignore */ }
+  return undefined;
+}
+
 function useResize(
   initial: number,
   min: number,
   max: number,
   direction: "left" | "right",
+  storageKey?: string,
 ) {
-  const [width, setWidth] = useState(initial);
+  const [width, setWidth] = useState(() => readSession(storageKey) ?? initial);
   const dragging = useRef(false);
   const startX = useRef(0);
   const startW = useRef(0);
@@ -66,6 +76,10 @@ function useResize(
     [width, min, max, direction],
   );
 
+  if (storageKey) {
+    try { sessionStorage.setItem(storageKey, JSON.stringify(width)); } catch { /* ignore */ }
+  }
+
   return { width, onPointerDown };
 }
 
@@ -84,8 +98,8 @@ function ResizeHandle({
 }
 
 export function Layout() {
-  const left = useResize(LEFT_DEFAULT, LEFT_MIN, LEFT_MAX, "left");
-  const right = useResize(RIGHT_DEFAULT, RIGHT_MIN, RIGHT_MAX, "right");
+  const left = useResize(LEFT_DEFAULT, LEFT_MIN, LEFT_MAX, "left", "pcc.layout.leftWidth");
+  const right = useResize(RIGHT_DEFAULT, RIGHT_MIN, RIGHT_MAX, "right", "pcc.layout.rightWidth");
   const location = useLocation();
   const studyId = useMemo(() => {
     const match = matchPath("/studies/:studyId/*", location.pathname);

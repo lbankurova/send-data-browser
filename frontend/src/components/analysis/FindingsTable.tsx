@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -19,6 +19,7 @@ import {
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
+import { useSessionState } from "@/hooks/useSessionState";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
 const col = createColumnHelper<UnifiedFinding>();
@@ -33,8 +34,8 @@ interface FindingsTableProps {
 
 export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
   const { selectedFindingId, selectFinding } = useFindingSelection();
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [sorting, setSorting] = useSessionState<SortingState>("pcc.adverseEffects.sorting", []);
+  const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.adverseEffects.columnSizing", {});
 
   const columns = useMemo(
     () => [

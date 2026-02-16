@@ -1,5 +1,19 @@
 import { useState, useRef, useCallback } from "react";
 
+function readSession(key: string | undefined): number | undefined {
+  if (!key) return undefined;
+  try {
+    const v = sessionStorage.getItem(key);
+    if (v !== null) return JSON.parse(v) as number;
+  } catch { /* ignore */ }
+  return undefined;
+}
+
+function writeSession(key: string | undefined, value: number) {
+  if (!key) return;
+  try { sessionStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
+}
+
 /**
  * Hook for resizable panels. Returns current width and a pointer-down handler
  * to attach to a resize handle element.
@@ -8,14 +22,16 @@ import { useState, useRef, useCallback } from "react";
  * @param min - minimum width
  * @param max - maximum width
  * @param direction - "left" means dragging right increases width
+ * @param storageKey - optional sessionStorage key to persist width across view switches
  */
 export function useResizePanel(
   initial: number,
   min: number,
   max: number,
   direction: "left" | "right" = "left",
+  storageKey?: string,
 ) {
-  const [width, setWidth] = useState(initial);
+  const [width, setWidth] = useState(() => readSession(storageKey) ?? initial);
   const dragging = useRef(false);
   const startX = useRef(0);
   const startW = useRef(0);
@@ -53,6 +69,8 @@ export function useResizePanel(
     [width, min, max, direction],
   );
 
+  if (storageKey) writeSession(storageKey, width);
+
   return { width, onPointerDown };
 }
 
@@ -60,8 +78,13 @@ export function useResizePanel(
  * Vertical variant — returns current height and a pointer-down handler.
  * Dragging down increases height.
  */
-export function useResizePanelY(initial: number, min: number, max: number) {
-  const [height, setHeight] = useState(initial);
+export function useResizePanelY(
+  initial: number,
+  min: number,
+  max: number,
+  storageKey?: string,
+) {
+  const [height, setHeight] = useState(() => readSession(storageKey) ?? initial);
   const dragging = useRef(false);
   const startY = useRef(0);
   const startH = useRef(0);
@@ -94,6 +117,8 @@ export function useResizePanelY(initial: number, min: number, max: number) {
     },
     [height, min, max],
   );
+
+  if (storageKey) writeSession(storageKey, height);
 
   return { height, onPointerDown };
 }

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useSessionState } from "@/hooks/useSessionState";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,9 +41,9 @@ export function StudySummaryView() {
   const { data: meta } = useStudyMetadata(studyId!);
   const { data: provenanceData } = useProvenanceMessages(studyId);
 
-  // Initialize tab from URL query parameter if present
+  // Initialize tab from URL query parameter if present, then persist via session
   const initialTab = (searchParams.get("tab") as Tab) || "details";
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const [tab, setTab] = useSessionState<Tab>("pcc.studySummary.tab", initialTab);
 
   // Local signal selection (for endpoint-level detail in evidence panel)
   const [localSignalSel, setLocalSignalSel] = useState<SignalSelection | null>(null);

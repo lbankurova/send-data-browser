@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useSessionState } from "@/hooks/useSessionState";
 import { useSearchParams } from "react-router-dom";
 import {
   useReactTable,
@@ -220,10 +221,10 @@ interface Props {
 
 export function ValidationView({ studyId, onSelectionChange, viewSelection }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [ruleSorting, setRuleSorting] = useState<SortingState>([]);
-  const [recordSorting, setRecordSorting] = useState<SortingState>([]);
-  const [ruleColumnSizing, setRuleColumnSizing] = useState<ColumnSizingState>({});
-  const [recordColumnSizing, setRecordColumnSizing] = useState<ColumnSizingState>({});
+  const [ruleSorting, setRuleSorting] = useSessionState<SortingState>("pcc.validation.ruleSorting", []);
+  const [recordSorting, setRecordSorting] = useSessionState<SortingState>("pcc.validation.recordSorting", []);
+  const [ruleColumnSizing, setRuleColumnSizing] = useSessionState<ColumnSizingState>("pcc.validation.ruleColumnSizing", {});
+  const [recordColumnSizing, setRecordColumnSizing] = useSessionState<ColumnSizingState>("pcc.validation.recordColumnSizing", {});
   const [selectedRule, setSelectedRule] = useState<ValidationRuleResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>({ fixStatus: "", reviewStatus: "", subjectId: "" });

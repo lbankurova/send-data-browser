@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useSessionState } from "@/hooks/useSessionState";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Loader2, Pencil } from "lucide-react";
 import {
@@ -695,8 +696,8 @@ function AdversityMatrixTab({
   collapseGen?: number;
   recovery?: OrganRecoveryResult;
 }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [sorting, setSorting] = useSessionState<SortingState>("pcc.noael.sorting", []);
+  const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.noael.columnSizing", {});
   const containerRef = useRef<HTMLDivElement>(null);
   const sections = useAutoFitSections(containerRef, "noael-matrix", [
     { id: "matrix", min: 80, max: 500, defaultHeight: 250 },
@@ -1080,7 +1081,7 @@ export function NoaelDecisionView() {
 
   // Read organ from StudySelectionContext
   const selectedOrgan = studySelection.organSystem ?? null;
-  const [activeTab, setActiveTab] = useState<EvidenceTab>("overview");
+  const [activeTab, setActiveTab] = useSessionState<EvidenceTab>("pcc.noael.tab", "overview");
   const [selection, setSelection] = useState<NoaelSelection | null>(null);
   const { filters: globalFilters, setFilters: setGlobalFilters } = useGlobalFilters();
   const sexFilter = globalFilters.sex;
