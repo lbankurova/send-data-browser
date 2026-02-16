@@ -1,5 +1,7 @@
 # Collapsible Sections with Summary Strips — Implementation Spec
 
+> **SUPERSEDED (2026-02-16).** This spec was replaced by `adaptive-sections-spec.md`, which uses a continuous proportional rebalance model instead of the binary collapse/expand model described here. The adaptive spec preserves the core ideas (summary strips, selection-aware headers, double-click maximize) but sections shrink proportionally rather than snapping between two states. Do not implement from this spec — use `adaptive-sections-spec.md` instead.
+
 **Scope:** Histopathology view, Evidence tab (`OverviewTab`), all three sections (findings table, dose charts, severity matrix).
 **Goal:** Let the pathologist maximize any section's vertical space by collapsing the other two to compact ~28px summary strips that preserve context and reflect the current selection.
 

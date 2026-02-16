@@ -662,3 +662,31 @@ function Dot() {
 - [ ] Subject click in matrix → context panel still works
 - [ ] Escape to clear finding selection still works
 - [ ] Section content renders correctly at compressed (non-strip) heights
+
+---
+
+## 14. Implementation Overrides (2026-02-16)
+
+Deviations from the spec that were reviewed and accepted. Future passes should treat these as intentional.
+
+| # | Spec text | Override | Rationale |
+|---|-----------|----------|-----------|
+| O1 | §2: doseCharts default 170px, minUseful 100px | Default 220px, minUseful 140px | Recovery bars need more vertical room; 170px clips when recovery groups are present |
+| O2 | §4.4: `→` (U+2192) arrow separator between dose values | `›` (U+203A) single angle quote | More compact at 10px font size; `→` is visually heavy at this scale |
+| O3 | §4.4: `—` (em dash) for zero severity | `"0"` literal | Em dash blends visually with the `›` arrow separators, making the sequence harder to parse |
+| O4 | §5: Chevron "toggles" in normal (non-strip) header | Chevron onClick calls `restoreDefaults` in all states | True collapse-on-click would be disruptive; restoring defaults is a safe neutral action |
+
+### Enhancements beyond spec
+
+| # | Addition | Where | Why |
+|---|----------|-------|-----|
+| E1 | Dynamic typography (`incTypo`/`sevTypo`) — font-weight and color vary by magnitude | `DoseChartsSelectionZone.tsx` | Flat `text-foreground/70` gives all values equal weight; magnitude-based emphasis surfaces important values |
+| E2 | Recovery verdict in findings header (`▸ FINDING … ↗ partial recovery`) | `FindingsSelectionZone.tsx:42-43` | Recovery is a first-class data dimension; omitting it from the strip loses information |
+| E3 | Recovery dose sequences in dose charts header (`\| R: 20%›10%›5%`) | `DoseChartsSelectionZone.tsx` | Same rationale — recovery data belongs in the compressed view |
+| E4 | Fallback rendering without subject data in matrix zone | `MatrixSelectionZone.tsx:116-163` | Uses heatmap cell counts when subject-level data hasn't loaded yet |
+| E5 | Max severity annotation in matrix digest | `MatrixSelectionZone.tsx:215-217` | Surfaces outlier severity that the average alone would hide |
+| E6 | Dose direction indicator (↑/↓) alongside "Incid:" label | `DoseChartsSelectionZone.tsx:61` | Trend direction is the most important dose-response signal; worth showing in the header |
+
+### Decision: hook approach
+
+Spec §7.3 offered two options. **Option B** (new `useSectionLayout` hook) was chosen over Option A (extend `useAutoFitSections`). `useAutoFitSections` remains unchanged and is still used by other views (NOAEL, Dose-Response, Validation).
