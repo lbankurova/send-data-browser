@@ -48,6 +48,8 @@ def get_adverse_effects(
     sex: str | None = Query(None, description="Filter by sex (M/F)"),
     severity: str | None = Query(None, description="Filter by severity (adverse/warning/normal)"),
     search: str | None = Query(None, description="Text search across finding names"),
+    organ_system: str | None = Query(None, description="Filter by organ system (e.g., hepatic, renal)"),
+    endpoint_label: str | None = Query(None, description="Filter by endpoint label (exact match)"),
 ):
     study = _get_study(study_id)
     data = compute_adverse_effects(study)
@@ -61,6 +63,11 @@ def get_adverse_effects(
         findings = [f for f in findings if f["sex"].upper() == sex.upper()]
     if severity:
         findings = [f for f in findings if f.get("severity") == severity.lower()]
+    if organ_system:
+        organ_lower = organ_system.lower()
+        findings = [f for f in findings if f.get("organ_system", "").lower() == organ_lower]
+    if endpoint_label:
+        findings = [f for f in findings if f.get("endpoint_label") == endpoint_label]
     if search:
         search_lower = search.lower()
         findings = [f for f in findings if (
