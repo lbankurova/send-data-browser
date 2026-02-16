@@ -182,7 +182,7 @@ export function deriveSpecimenSummaries(
       map.set(row.specimen, entry);
     }
     entry.findings.add(row.finding);
-    if ((row.avg_severity ?? 0) > entry.maxSev) entry.maxSev = row.avg_severity ?? 0;
+    if (row.severity_status === "graded" && row.avg_severity! > entry.maxSev) entry.maxSev = row.avg_severity!;
     if (row.incidence > entry.maxIncidence) entry.maxIncidence = row.incidence;
     entry.domains.add(row.domain);
 
@@ -343,7 +343,7 @@ export function deriveFindingSummaries(rows: LesionSeverityRow[]): FindingSummar
       entry = { maxSev: 0, maxIncidence: 0, totalAffected: 0, totalN: 0, severity: "normal" };
       map.set(row.finding, entry);
     }
-    if ((row.avg_severity ?? 0) > entry.maxSev) entry.maxSev = row.avg_severity ?? 0;
+    if (row.severity_status === "graded" && row.avg_severity! > entry.maxSev) entry.maxSev = row.avg_severity!;
     if ((row.incidence ?? 0) > entry.maxIncidence) entry.maxIncidence = row.incidence ?? 0;
     entry.totalAffected += row.affected;
     entry.totalN += row.n;
@@ -651,7 +651,9 @@ function OverviewTab({
   const filteredData = useMemo(() => {
     return specimenData.filter((row) => {
       if (sexFilter && row.sex !== sexFilter) return false;
-      if ((row.avg_severity ?? 0) < minSeverity) return false;
+      // Include present_ungraded rows (don't filter them out with severity threshold)
+      if (row.severity_status === "graded" && row.avg_severity! < minSeverity) return false;
+      if (row.severity_status === "absent" && minSeverity > 0) return false;
       return true;
     });
   }, [specimenData, sexFilter, minSeverity]);
@@ -879,15 +881,15 @@ function OverviewTab({
     const rows = selection?.finding
       ? filteredData.filter((r) => r.finding === selection.finding)
       : filteredData;
-    // Only include rows with non-null avg_severity for aggregation
-    const sevRows = rows.filter((r) => (r.avg_severity ?? 0) > 0);
+    // Only include graded rows for severity aggregation
+    const sevRows = rows.filter((r) => r.severity_status === "graded");
 
     const doseMap = new Map<number, Map<string, { totalSeverity: number; count: number }>>();
     for (const r of sevRows) {
       let bySex = doseMap.get(r.dose_level);
       if (!bySex) { bySex = new Map(); doseMap.set(r.dose_level, bySex); }
       const sexEntry = bySex.get(r.sex);
-      const sev = r.avg_severity ?? 0;
+      const sev = r.avg_severity!;
       if (sexEntry) { sexEntry.totalSeverity += sev; sexEntry.count += 1; }
       else { bySex.set(r.sex, { totalSeverity: sev, count: 1 }); }
     }
@@ -932,13 +934,13 @@ function OverviewTab({
     // Build finding metadata: max severity and whether any row has severity data
     const findingMeta = new Map<string, { maxSev: number; hasSeverityData: boolean }>();
     for (const r of matrixBaseData) {
-      const sev = r.avg_severity ?? 0;
+      const sev = r.severity_status === "graded" ? r.avg_severity! : 0;
       const existing = findingMeta.get(r.finding);
       if (!existing) {
-        findingMeta.set(r.finding, { maxSev: sev, hasSeverityData: sev > 0 });
+        findingMeta.set(r.finding, { maxSev: sev, hasSeverityData: r.severity_status === "graded" });
       } else {
         if (sev > existing.maxSev) existing.maxSev = sev;
-        if (sev > 0) existing.hasSeverityData = true;
+        if (r.severity_status === "graded") existing.hasSeverityData = true;
       }
     }
 
@@ -966,11 +968,11 @@ function OverviewTab({
         existing.affected += r.affected;
         existing.n += r.n;
         existing.incidence = existing.n > 0 ? existing.affected / existing.n : 0;
-        existing.avg_severity = Math.max(existing.avg_severity, r.avg_severity ?? 0);
+        if (r.severity_status === "graded") existing.avg_severity = Math.max(existing.avg_severity, r.avg_severity!);
       } else {
         cells.set(key, {
           incidence: r.incidence,
-          avg_severity: r.avg_severity ?? 0,
+          avg_severity: r.severity_status === "graded" ? r.avg_severity! : 0,
           affected: r.affected,
           n: r.n,
           max_severity: 0,
@@ -2140,7 +2142,7 @@ function OverviewTab({
                           );
                         }
                         // Examined, no findings — dashed border with 0/N
-                        if (cell.affected === 0 && (cell.avg_severity ?? 0) === 0) {
+                        if (cell.affected === 0) {
                           return (
                             <div key={dl} className="flex h-6 w-20 shrink-0 items-center justify-center">
                               <div
@@ -2165,13 +2167,14 @@ function OverviewTab({
                             </div>
                           );
                         }
+                        const sevVal = cell.avg_severity ?? 0;
                         const cellColors = heatmapView === "incidence"
                           ? getNeutralHeatColor01(cell.incidence)
-                          : getNeutralHeatColor(cell.avg_severity ?? 0);
+                          : getNeutralHeatColor(sevVal);
                         const cellLabel = heatmapView === "incidence"
                           ? `${(cell.incidence * 100).toFixed(0)}%`
-                          : (cell.avg_severity ?? 0) > 0 ? cell.avg_severity.toFixed(1) : `${cell.affected}/${cell.n}`;
-                        const hasMaxSevOutlier = cell.max_severity >= 3 && (cell.max_severity - (cell.avg_severity ?? 0)) >= 2;
+                          : sevVal > 0 ? cell.avg_severity!.toFixed(1) : `${cell.affected}/${cell.n}`;
+                        const hasMaxSevOutlier = cell.max_severity >= 3 && (cell.max_severity - sevVal) >= 2;
                         const incPct = (cell.incidence * 100).toFixed(0);
                         const extendedTooltip = `${finding} — ${heatmapData.doseLabels.get(dl) ?? `Dose ${dl}`}\nAvg severity: ${cell.avg_severity != null ? cell.avg_severity.toFixed(1) : "N/A"}\nMax severity: ${cell.max_severity}\nAffected: ${cell.affected}/${cell.n} (${incPct}%)`;
                         return (
@@ -2286,12 +2289,13 @@ function OverviewTab({
                           }
 
                           // Normal heat-colored cell
+                          const rSevVal = rCell.avg_severity ?? 0;
                           const rColors = heatmapView === "incidence"
                             ? getNeutralHeatColor01(rCell.incidence)
-                            : getNeutralHeatColor(rCell.avg_severity ?? 0);
+                            : getNeutralHeatColor(rSevVal);
                           const rLabel = heatmapView === "incidence"
                             ? `${(rCell.incidence * 100).toFixed(0)}%`
-                            : (rCell.avg_severity ?? 0) > 0 ? rCell.avg_severity.toFixed(1) : `${rCell.affected}/${rCell.n}`;
+                            : rSevVal > 0 ? rCell.avg_severity!.toFixed(1) : `${rCell.affected}/${rCell.n}`;
                           return (
                             <div
                               key={`R${dl}`}
