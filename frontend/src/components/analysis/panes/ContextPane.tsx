@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { formatEffectSize, getEffectSizeColor } from "@/lib/severity-colors";
+import { DomainLabel } from "@/components/ui/DomainLabel";
 import type { FindingContext } from "@/types/analysis";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -39,9 +40,7 @@ export function ContextPane({ effectSize, selectedFindingId }: Props) {
               <span className="w-5 shrink-0 text-right text-[10px] text-muted-foreground">
                 #{i + 1}
               </span>
-              <span className="rounded bg-muted px-1 py-0.5 text-[9px] font-medium">
-                {e.domain}
-              </span>
+              <DomainLabel domain={e.domain} />
               <span className="flex-1 truncate">{e.finding}</span>
               <span
                 className={cn(
