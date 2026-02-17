@@ -1,10 +1,11 @@
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
-import type { OrganCoherence } from "@/lib/derive-summaries";
+import type { EndpointSummary, OrganCoherence } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 
 export interface FindingsAnalytics {
+  endpoints: EndpointSummary[];
   syndromes: CrossDomainSyndrome[];
   organCoherence: Map<string, OrganCoherence>;
   labMatches: LabClinicalMatch[];
@@ -14,6 +15,7 @@ export interface FindingsAnalytics {
 }
 
 const defaultValue: FindingsAnalytics = {
+  endpoints: [],
   syndromes: [],
   organCoherence: new Map(),
   labMatches: [],

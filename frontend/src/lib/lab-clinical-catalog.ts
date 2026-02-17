@@ -908,3 +908,55 @@ export function getThresholdNumericValue(
   if (!t) return null;
   return { value: t.value, comparison: t.comparison };
 }
+
+/** Explain WHY a specific rule didn't fire, checking actual conditions against study data.
+ *  Returns a short human-readable reason, or null for rules without custom logic. */
+export function explainRuleNotTriggered(
+  ruleId: string,
+  endpoints: EndpointSummary[],
+  organCoherence?: Map<string, OrganCoherence>,
+  syndromes?: CrossDomainSyndrome[],
+): string | null {
+  const ctx = buildContext(endpoints, organCoherence, syndromes);
+  const altUp = hasUp(ctx, "ALT");
+  const astUp = hasUp(ctx, "AST");
+  const tbiliUp = hasUp(ctx, "TBILI");
+  const alpUp = hasUp(ctx, "ALP");
+
+  if (ruleId === "L03") {
+    if (!altUp) return "ALT not elevated";
+    if (!tbiliUp) return "Bilirubin not elevated";
+    if (!shareSex(ctx, "ALT", "TBILI")) return "ALT and bilirubin affected in different sexes";
+  } else if (ruleId === "L07") {
+    if (!altUp && !astUp) return "ALT/AST not elevated";
+    if (!tbiliUp) return "Bilirubin not elevated";
+    if (alpUp) return "ALP elevated \u2014 cholestatic component present, not pure hepatocellular";
+    const altOrAst = altUp ? "ALT" : "AST";
+    if (!shareSex(ctx, altOrAst, "TBILI")) return `${altOrAst} and bilirubin affected in different sexes`;
+  } else if (ruleId === "L08") {
+    if (!altUp && !astUp) return "ALT/AST not elevated";
+    if (!tbiliUp) return "Bilirubin not elevated";
+    const altOrAst = altUp ? "ALT" : "AST";
+    if (!shareSex(ctx, altOrAst, "TBILI")) return `${altOrAst} and bilirubin affected in different sexes`;
+  }
+
+  // Fallback: all explicit conditions pass but the rule is still "not triggered".
+  // This happens when the rule was deduplicated by a higher-severity rule with the
+  // same matched endpoints (e.g., L08 S3 superseded by L03 S4).
+  const rule = LAB_RULES.find((r) => r.id === ruleId);
+  if (rule?.evaluate(ctx)) {
+    const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
+    const superseder = LAB_RULES.find(
+      (r) => r.id !== ruleId
+        && r.category !== "governance"
+        && (sevOrder[r.severity] ?? 0) > (sevOrder[rule.severity] ?? 0)
+        && r.evaluate(ctx)
+        && r.parameters.some((p) => rule.parameters.some((rp) => rp.canonical === p.canonical)),
+    );
+    if (superseder) {
+      return `Conditions met \u2014 subsumed by ${superseder.id} (${SEVERITY_LABELS[superseder.severity]}, ${superseder.severity})`;
+    }
+  }
+
+  return null;
+}
