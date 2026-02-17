@@ -150,6 +150,13 @@ Present before moving on, so they can prioritize or dismiss items.
 
 > Full routes table and module inventory: `docs/reference/claude-md-archive.md`
 
+### Dual Syndrome Engines (not duplicated)
+Two files both detect "syndromes" but at different abstraction levels — do not merge:
+- **`syndrome-rules.ts`** (543 lines, 14 rules) — **Histopathology-specific.** Input: `Map<organ, LesionSeverityRow[]>`. Matches morphological finding text (necrosis, hypertrophy, etc.) via substring/token overlap. Consumed by: HistopathologyView, HistopathologyContextPanel, SpecimenRailMode.
+- **`cross-domain-syndromes.ts`** (972 lines, 9 rules XS01–XS09) — **Cross-domain.** Input: `EndpointSummary[]` spanning LB/BW/MI/MA/OM/CL. Matches via structured term dictionaries (test codes, canonical labels, specimen+finding pairs) with compound required logic. Consumed by: FindingsView, FindingsRail, scatter chart, context panels, lab-clinical-catalog, FindingsAnalyticsContext.
+
+Zero consumer overlap. Full investigation: `docs/incoming/arch-overhaul/lib-audit-results.md`.
+
 ## Design Decisions
 
 - **No breadcrumb navigation in context panel panes.** Use `< >` icon buttons at the top of the context panel for back/forward navigation between pane modes. This mirrors Datagrok's native context panel behavior. If breadcrumbs are added later, update this section and the implementation accordingly.
