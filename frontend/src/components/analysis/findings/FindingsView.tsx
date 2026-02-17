@@ -194,6 +194,7 @@ export function FindingsView() {
         specimen: f.specimen,
         finding: f.finding,
         max_incidence: maxInc,
+        max_fold_change: f.max_fold_change ?? null,
       };
     });
     const summaries = deriveEndpointSummaries(rows);

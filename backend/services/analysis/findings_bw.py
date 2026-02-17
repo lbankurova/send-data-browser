@@ -133,6 +133,10 @@ def compute_bw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
                 if max_d is None or abs(pw["cohens_d"]) > abs(max_d):
                     max_d = pw["cohens_d"]
 
+        # Override direction with max_d sign
+        if max_d is not None and abs(max_d) > 0.01:
+            direction = "up" if max_d > 0 else "down"
+
         min_p = None
         for pw in pairwise:
             if pw["p_value_adj"] is not None:

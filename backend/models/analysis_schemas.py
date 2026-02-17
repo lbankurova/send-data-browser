@@ -64,6 +64,7 @@ class UnifiedFinding(BaseModel):
     avg_severity: float | None = None
     organ_system: str | None = None
     endpoint_label: str | None = None
+    max_fold_change: float | None = None
     group_stats: list[GroupStat] = []
     pairwise: list[PairwiseResult] = []
 

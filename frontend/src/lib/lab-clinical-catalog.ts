@@ -497,7 +497,7 @@ const LAB_RULES: LabRule[] = [
 
 // ─── Evaluator ─────────────────────────────────────────────
 
-function buildContext(
+export function buildContext(
   endpoints: EndpointSummary[],
   organCoherence?: Map<string, OrganCoherence>,
   syndromes?: CrossDomainSyndrome[],
