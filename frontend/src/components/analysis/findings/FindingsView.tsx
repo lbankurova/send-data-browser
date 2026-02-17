@@ -220,13 +220,13 @@ export function FindingsView() {
               </>
             )}
             {!selectedPointData && hasMeta && (
-              <span className="text-muted-foreground/50"> ({scatterEndpoints.length})</span>
+              <span className="text-muted-foreground/50"> ({tableFindings.length})</span>
             )}
           </span>
         )}
       </span>
     );
-  }, [scopeLabel, filterLabels, selectedPointData, scatterEndpoints.length]);
+  }, [scopeLabel, filterLabels, selectedPointData, tableFindings.length]);
 
   // Header right: info tooltip icon
   const headerRight = useMemo(() => (
