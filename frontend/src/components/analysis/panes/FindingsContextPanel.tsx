@@ -166,12 +166,16 @@ export function FindingsContextPanel() {
         />
       </CollapsiblePane>
 
-      <CollapsiblePane title="Correlations" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <CorrelationsPane
-          data={context.correlations}
-          organSystem={selectedFinding.organ_system}
-        />
-      </CollapsiblePane>
+      {/* Hide correlations pane when based on group means — useless rho=1.0 with n=4 */}
+      {context.correlations.related.length > 0
+        && context.correlations.related.some((c) => c.basis !== "group_means" && (c.n ?? 0) >= 10) && (
+        <CollapsiblePane title="Correlations" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <CorrelationsPane
+            data={context.correlations}
+            organSystem={selectedFinding.organ_system}
+          />
+        </CollapsiblePane>
+      )}
 
       <CollapsiblePane title="Context" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <ContextPane
