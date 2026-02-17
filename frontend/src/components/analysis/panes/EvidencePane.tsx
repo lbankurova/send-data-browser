@@ -239,7 +239,7 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
 
         {foldChange != null && canonical && (
           <div className="mt-1.5 text-xs text-foreground/80">
-            {canonical} {foldChange.toFixed(1)}{"\u00d7"} concurrent control
+            {canonical} <span className="font-mono">{foldChange.toFixed(1)}{"\u00d7"}</span> vs control
           </div>
         )}
 
