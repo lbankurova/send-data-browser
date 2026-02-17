@@ -45,10 +45,12 @@ interface EChartsWrapperProps {
   onMouseOver?: (params: any) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onMouseOut?: (params: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onDoubleClick?: (params: any) => void;
 }
 
 export const EChartsWrapper = forwardRef<EChartsInstance | null, EChartsWrapperProps>(
-  function EChartsWrapper({ option, style, className, onInit, onClick, onMouseOver, onMouseOut }, ref) {
+  function EChartsWrapper({ option, style, className, onInit, onClick, onMouseOver, onMouseOut, onDoubleClick }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<EChartsInstance | null>(null);
 
@@ -102,6 +104,14 @@ export const EChartsWrapper = forwardRef<EChartsInstance | null, EChartsWrapperP
       chart.on("mouseout", onMouseOut);
       return () => { chart.off("mouseout", onMouseOut); };
     }, [onMouseOut]);
+
+    // DoubleClick handler
+    useEffect(() => {
+      const chart = chartRef.current;
+      if (!chart || !onDoubleClick) return;
+      chart.on("dblclick", onDoubleClick);
+      return () => { chart.off("dblclick", onDoubleClick); };
+    }, [onDoubleClick]);
 
     return <div ref={containerRef} style={style} className={className} />;
   }

@@ -5,7 +5,7 @@ import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PolymorphicRail } from "./PolymorphicRail";
 import { FindingsRail } from "@/components/analysis/findings/FindingsRail";
 import type { RailVisibleState } from "@/components/analysis/findings/FindingsRail";
-import { getFindingsRailCallback, setFindingsClearScopeCallback } from "@/components/analysis/findings/FindingsView";
+import { getFindingsRailCallback, setFindingsClearScopeCallback, setFindingsExcludedCallback } from "@/components/analysis/findings/FindingsView";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
@@ -55,6 +55,13 @@ export function ShellRailPanel() {
       setActiveEndpoint(null);
     });
     return () => setFindingsClearScopeCallback(null);
+  }, []);
+
+  // Excluded endpoints — synced from view via reverse callback
+  const [excludedEndpoints, setExcludedEndpoints] = useState<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    setFindingsExcludedCallback((excluded) => setExcludedEndpoints(excluded));
+    return () => setFindingsExcludedCallback(null);
   }, []);
 
   // ── View-aware handlers ──
@@ -145,6 +152,7 @@ export function ShellRailPanel() {
             onEndpointSelect={handleEndpointSelect}
             onGroupingChange={handleGroupingChange}
             onVisibleEndpointsChange={handleVisibleEndpointsChange}
+            excludedEndpoints={excludedEndpoints}
           />
         ) : (
           <PolymorphicRail />
