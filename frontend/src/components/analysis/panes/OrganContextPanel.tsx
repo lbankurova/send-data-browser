@@ -433,6 +433,7 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
                 syndromeId={id}
                 detected={detected ?? null}
                 organEndpoints={organEndpoints}
+                onSyndromeClick={(sid) => selectGroup("syndrome", sid)}
               />
             ))}
           </div>
@@ -477,10 +478,12 @@ function RelatedSyndromeRow({
   syndromeId,
   detected,
   organEndpoints,
+  onSyndromeClick,
 }: {
   syndromeId: string;
   detected: CrossDomainSyndrome | null;
   organEndpoints: EndpointSummary[];
+  onSyndromeClick: (id: string) => void;
 }) {
   const name = detected?.name ?? SYNDROME_NAMES[syndromeId] ?? syndromeId;
 
@@ -494,9 +497,12 @@ function RelatedSyndromeRow({
     return (
       <div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-foreground">
+          <button
+            className="text-xs font-medium text-foreground hover:underline"
+            onClick={() => onSyndromeClick(syndromeId)}
+          >
             {name} ({syndromeId})
-          </span>
+          </button>
           <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
             {detected.confidence}
           </span>
@@ -516,9 +522,12 @@ function RelatedSyndromeRow({
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">
+        <button
+          className="text-xs text-muted-foreground hover:underline"
+          onClick={() => onSyndromeClick(syndromeId)}
+        >
           {name} ({syndromeId})
-        </span>
+        </button>
         <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
           not detected
         </span>

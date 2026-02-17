@@ -14,6 +14,7 @@ import { DoseDetailPane } from "./DoseDetailPane";
 import { CorrelationsPane } from "./CorrelationsPane";
 import { ContextPane } from "./ContextPane";
 import { OrganContextPanel } from "./OrganContextPanel";
+import { SyndromeContextPanel } from "./SyndromeContextPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function FindingsContextPanel() {
@@ -82,6 +83,9 @@ export function FindingsContextPanel() {
     // Check for group selection (Priority 2)
     if (selectedGroupType === "organ" && selectedGroupKey) {
       return <OrganContextPanel organKey={selectedGroupKey} />;
+    }
+    if (selectedGroupType === "syndrome" && selectedGroupKey) {
+      return <SyndromeContextPanel syndromeId={selectedGroupKey} />;
     }
 
     // Priority 3: empty state
