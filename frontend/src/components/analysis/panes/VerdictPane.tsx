@@ -282,7 +282,7 @@ export function VerdictPane({
 
       {/* Line 4 — Key numbers */}
       {(effectSize != null || trendP != null || pctChange != null) && (
-        <div className="mt-2 flex gap-x-4">
+        <div className="mt-2 flex gap-x-4 text-[10px]">
           {/* Effect size cell */}
           {effectSize != null && (
             <div className="flex flex-col">

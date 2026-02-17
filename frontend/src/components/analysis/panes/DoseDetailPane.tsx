@@ -45,7 +45,10 @@ export function DoseDetailPane({ statistics, doseResponse }: Props) {
                   <th className="py-1 text-right font-medium">Inc%</th>
                 </>
               )}
-              <th className="py-1 text-right font-medium">p-adj</th>
+              <th className="py-1 text-right font-medium">
+                p-adj
+                <div className="text-[9px] font-normal text-muted-foreground">{isContinuous ? "Dunnett\u2019s" : "Fisher\u2019s exact"}</div>
+              </th>
             </tr>
           </thead>
           <tbody>
