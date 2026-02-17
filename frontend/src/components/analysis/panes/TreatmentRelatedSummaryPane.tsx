@@ -15,6 +15,8 @@ interface Props {
   noael?: { dose_value: number | null; dose_unit: string | null } | null;
   doseResponse?: FindingContext["dose_response"];
   statistics?: FindingContext["statistics"];
+  /** Aggregate sexes per endpoint, from shared selection context. */
+  endpointSexes?: Map<string, string[]>;
   /** When true, show "Not evaluated" verdict instead of computed verdict */
   notEvaluated?: boolean;
 }
@@ -264,6 +266,7 @@ export function TreatmentRelatedSummaryPane({
   noael,
   doseResponse,
   statistics,
+  endpointSexes,
   notEvaluated,
 }: Props) {
   const verdict = notEvaluated
@@ -285,13 +288,20 @@ export function TreatmentRelatedSummaryPane({
     kvPairs.push({ key: "NOAEL", value: noaelStr });
   }
 
-  if (finding?.sex) {
-    // Derive affected sexes label considering all finding rows for this endpoint
-    const sex = finding.sex;
+  if (finding) {
+    // Use endpoint-level aggregate sexes from shared selection context (not the single row's sex)
+    const endpointLabel = finding.endpoint_label ?? finding.finding;
+    const aggSexes = endpointSexes?.get(endpointLabel);
     let sexLabel: string;
-    if (sex === "M") sexLabel = "Males only";
-    else if (sex === "F") sexLabel = "Females only";
-    else sexLabel = "Both";
+    if (aggSexes && aggSexes.length >= 2) {
+      sexLabel = "Both";
+    } else if (aggSexes && aggSexes.length === 1) {
+      sexLabel = aggSexes[0] === "M" ? "Males only" : aggSexes[0] === "F" ? "Females only" : "Both";
+    } else {
+      // Fallback to single finding's sex
+      const sex = finding.sex;
+      sexLabel = sex === "M" ? "Males only" : sex === "F" ? "Females only" : "Both";
+    }
     kvPairs.push({ key: "Affected sexes", value: sexLabel });
   }
 

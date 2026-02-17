@@ -6,12 +6,17 @@ interface FindingSelectionState {
   selectedFindingId: string | null;
   selectedFinding: UnifiedFinding | null;
   selectFinding: (finding: UnifiedFinding | null) => void;
+  /** Aggregate sexes per endpoint_label, set by FindingsView. */
+  endpointSexes: Map<string, string[]>;
+  setEndpointSexes: (map: Map<string, string[]>) => void;
 }
 
 const FindingSelectionContext = createContext<FindingSelectionState>({
   selectedFindingId: null,
   selectedFinding: null,
   selectFinding: () => {},
+  endpointSexes: new Map(),
+  setEndpointSexes: () => {},
 });
 
 export function FindingSelectionProvider({
@@ -21,10 +26,18 @@ export function FindingSelectionProvider({
 }) {
   const [selectedFinding, setSelectedFinding] =
     useState<UnifiedFinding | null>(null);
+  const [endpointSexes, setEndpointSexes] = useState<Map<string, string[]>>(
+    () => new Map(),
+  );
 
   const selectFinding = useCallback((finding: UnifiedFinding | null) => {
     setSelectedFinding(finding);
   }, []);
+
+  const stableSetEndpointSexes = useCallback(
+    (map: Map<string, string[]>) => setEndpointSexes(map),
+    [],
+  );
 
   return (
     <FindingSelectionContext.Provider
@@ -32,6 +45,8 @@ export function FindingSelectionProvider({
         selectedFindingId: selectedFinding?.id ?? null,
         selectedFinding,
         selectFinding,
+        endpointSexes,
+        setEndpointSexes: stableSetEndpointSexes,
       }}
     >
       {children}

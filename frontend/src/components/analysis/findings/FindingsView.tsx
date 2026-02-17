@@ -20,6 +20,22 @@ import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 import { getDomainFullLabel, getPatternLabel, withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import type { GroupingMode, SignalBoosts } from "@/lib/findings-rail-engine";
 import { titleCase } from "@/lib/severity-colors";
+import type { UnifiedFinding } from "@/types/analysis";
+
+/** Pick the most-significant finding row: min p-value (primary), max |effect size| (secondary). */
+function pickBestFinding(findings: UnifiedFinding[]): UnifiedFinding {
+  return findings.reduce((best, f) => {
+    const bestP = best.min_p_adj ?? Infinity;
+    const fP = f.min_p_adj ?? Infinity;
+    if (fP < bestP) return f;
+    if (fP === bestP) {
+      const bestE = Math.abs(best.max_effect_size ?? 0);
+      const fE = Math.abs(f.max_effect_size ?? 0);
+      if (fE > bestE) return f;
+    }
+    return best;
+  });
+}
 
 /** Context bridge so ShellRailPanel can pass rail callbacks to the AE view. */
 export interface AERailState {
@@ -55,7 +71,7 @@ const SCATTER_SECTIONS = [{ id: "scatter", min: 80, max: 220, defaultHeight: 140
 export function FindingsView() {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectStudy } = useSelection();
-  const { selectFinding } = useFindingSelection();
+  const { selectFinding, setEndpointSexes } = useFindingSelection();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scatterSection] = useAutoFitSections(containerRef, "findings", SCATTER_SECTIONS);
 
@@ -125,7 +141,7 @@ export function FindingsView() {
   // Auto-select first finding when rail endpoint filter is applied and data arrives
   useEffect(() => {
     if (filters.endpoint_label && data?.findings?.length) {
-      selectFinding(data.findings[0]);
+      selectFinding(pickBestFinding(data.findings));
     } else if (!filters.endpoint_label) {
       selectFinding(null);
     }
@@ -217,13 +233,28 @@ export function FindingsView() {
     return map;
   }, [endpointSummaries, boostMap]);
 
+  // Endpoint → aggregate sexes map (from endpointSummaries which already merge rows)
+  const endpointSexes = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const ep of endpointSummaries) {
+      map.set(ep.endpoint_label, ep.sexes);
+    }
+    return map;
+  }, [endpointSummaries]);
+
+  // Sync endpoint sexes to shared selection context (reaches context panel)
+  useEffect(() => {
+    setEndpointSexes(endpointSexes);
+  }, [endpointSexes, setEndpointSexes]);
+
   // Analytics context value for context panel consumption
   const analyticsValue = useMemo(() => ({
     syndromes,
     organCoherence,
     labMatches,
     signalScores: signalScoreMap,
-  }), [syndromes, organCoherence, labMatches, signalScoreMap]);
+    endpointSexes,
+  }), [syndromes, organCoherence, labMatches, signalScoreMap, endpointSexes]);
 
   if (error) {
     return (

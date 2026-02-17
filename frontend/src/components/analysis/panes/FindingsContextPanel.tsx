@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
-  const { selectedFindingId, selectedFinding } = useFindingSelection();
+  const { selectedFindingId, selectedFinding, endpointSexes } = useFindingSelection();
   const analytics = useFindingsAnalytics();
   const { data: context, isLoading } = useFindingContext(
     studyId,
@@ -28,8 +28,42 @@ export function FindingsContextPanel() {
   const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-finding");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
-  // Derive NOAEL for the selected finding's sex
+  // Derive finding-level NOAEL from statistics rows (highest dose where p > 0.05
+  // for all doses at and below it). Falls back to study-level NOAEL if stats unavailable.
   const noael = (() => {
+    // Try finding-level first from context statistics
+    if (context?.statistics?.rows && context.statistics.rows.length >= 2) {
+      const rows = context.statistics.rows; // sorted by dose_level ascending
+      // Find the LOAEL: lowest dose with p_value_adj < 0.05
+      let loaelIndex = -1;
+      for (let i = 1; i < rows.length; i++) { // skip control (index 0)
+        const p = rows[i].p_value_adj ?? rows[i].p_value;
+        if (p != null && p < 0.05) {
+          loaelIndex = i;
+          break;
+        }
+      }
+      if (loaelIndex > 1) {
+        // NOAEL = dose just below LOAEL
+        const noaelRow = rows[loaelIndex - 1];
+        return {
+          dose_value: noaelRow.dose_value,
+          dose_unit: noaelRow.dose_unit ?? context.statistics.unit ?? "mg/kg",
+        };
+      }
+      if (loaelIndex === 1) {
+        // All treatment doses significant — NOAEL below lowest tested dose
+        return { dose_value: null, dose_unit: "mg/kg" };
+      }
+      // No significant doses — NOAEL is highest dose
+      const highest = rows[rows.length - 1];
+      return {
+        dose_value: highest.dose_value,
+        dose_unit: highest.dose_unit ?? context.statistics.unit ?? "mg/kg",
+      };
+    }
+
+    // Fallback: study-level NOAEL
     if (!noaelRows?.length) return null;
     const sex = selectedFinding?.sex;
     const row = noaelRows.find((r) =>
@@ -84,6 +118,7 @@ export function FindingsContextPanel() {
           noael={noael}
           doseResponse={context.dose_response}
           statistics={context.statistics}
+          endpointSexes={endpointSexes}
           notEvaluated={
             toxAnnotations && selectedFinding
               ? toxAnnotations[selectedFinding.endpoint_label ?? selectedFinding.finding]?.treatmentRelated === "Not Evaluated"

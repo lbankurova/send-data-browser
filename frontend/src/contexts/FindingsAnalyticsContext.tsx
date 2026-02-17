@@ -9,6 +9,8 @@ export interface FindingsAnalytics {
   organCoherence: Map<string, OrganCoherence>;
   labMatches: LabClinicalMatch[];
   signalScores: Map<string, number>;
+  /** Aggregate sexes per endpoint_label (e.g., ["M","F"] for endpoints with both). */
+  endpointSexes: Map<string, string[]>;
 }
 
 const defaultValue: FindingsAnalytics = {
@@ -16,6 +18,7 @@ const defaultValue: FindingsAnalytics = {
   organCoherence: new Map(),
   labMatches: [],
   signalScores: new Map(),
+  endpointSexes: new Map(),
 };
 
 const FindingsAnalyticsContext = createContext<FindingsAnalytics>(defaultValue);
