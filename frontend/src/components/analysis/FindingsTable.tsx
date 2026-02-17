@@ -7,6 +7,7 @@ import {
   createColumnHelper,
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
+import { EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   getSeverityDotColor,
@@ -32,9 +33,11 @@ interface FindingsTableProps {
   findings: UnifiedFinding[];
   doseGroups: DoseGroup[];
   signalScores?: Map<string, number>;
+  excludedEndpoints?: Set<string>;
+  onToggleExclude?: (label: string) => void;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude }: FindingsTableProps) {
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
@@ -50,17 +53,31 @@ export function FindingsTable({ findings, doseGroups, signalScores }: FindingsTa
         header: "Finding",
         cell: (info) => {
           const f = info.row.original;
+          const epLabel = f.endpoint_label ?? f.finding;
+          const isExcluded = excludedEndpoints?.has(epLabel);
           const full = f.specimen ? `${f.specimen}: ${f.finding}` : f.finding;
           return (
-            <div className="overflow-hidden text-ellipsis whitespace-nowrap" title={full}>
-              {f.specimen ? (
-                <>
-                  <span className="text-muted-foreground">{f.specimen}: </span>
-                  {f.finding}
-                </>
-              ) : (
-                f.finding
+            <div className="flex items-center gap-1 overflow-hidden">
+              {isExcluded && (
+                <button
+                  type="button"
+                  className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
+                  title="Restore to scatter plot"
+                  onClick={(e) => { e.stopPropagation(); onToggleExclude?.(epLabel); }}
+                >
+                  <EyeOff className="h-3 w-3" />
+                </button>
               )}
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap" title={full}>
+                {f.specimen ? (
+                  <>
+                    <span className="text-muted-foreground">{f.specimen}: </span>
+                    {f.finding}
+                  </>
+                ) : (
+                  f.finding
+                )}
+              </span>
             </div>
           );
         },
@@ -160,7 +177,7 @@ export function FindingsTable({ findings, doseGroups, signalScores }: FindingsTa
         },
       }),
     ],
-    [doseGroups, signalScores]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude]
   );
 
   const table = useReactTable({
