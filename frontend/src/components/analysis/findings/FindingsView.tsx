@@ -4,6 +4,7 @@ import { Info } from "lucide-react";
 import { useFindings } from "@/hooks/useFindings";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
@@ -325,6 +326,18 @@ export function FindingsView() {
   return (
     <FindingsAnalyticsProvider value={analyticsValue}>
     <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
+      {/* Header */}
+      <FilterBar>
+        <span className="text-xs font-semibold">Findings</span>
+        {data && (
+          <span className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
+            <span>{data.summary.total_adverse} adverse</span>
+            <span>{data.summary.total_warning} warning</span>
+            <span>{data.summary.total_normal} normal</span>
+          </span>
+        )}
+      </FilterBar>
+
       {/* Quadrant scatter */}
       {data && endpointSummaries.length > 0 && (
         <ViewSection
