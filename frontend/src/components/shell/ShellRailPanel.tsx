@@ -108,6 +108,11 @@ export function ShellRailPanel() {
     }
   }, [isFindingsRoute]);
 
+  // Rail restore: excluded endpoint icon clicked → forward to view
+  const handleRestoreEndpoint = useCallback((label: string) => {
+    getFindingsRailCallback()?.({ restoreEndpoint: label });
+  }, []);
+
   // ── Bidirectional sync: table/context → rail highlight ──
 
   const { selectedFinding } = useFindingSelection();
@@ -153,6 +158,7 @@ export function ShellRailPanel() {
             onGroupingChange={handleGroupingChange}
             onVisibleEndpointsChange={handleVisibleEndpointsChange}
             excludedEndpoints={excludedEndpoints}
+            onRestoreEndpoint={handleRestoreEndpoint}
           />
         ) : (
           <PolymorphicRail />
