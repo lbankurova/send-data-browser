@@ -225,14 +225,19 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       const abs = Math.abs(row.effect_size);
       if (entry.maxEffect === null || abs > Math.abs(entry.maxEffect)) {
         entry.maxEffect = row.effect_size;
-        // Direction and pattern follow the strongest pairwise effect — prevents
-        // opposite-sex rows from overwriting (e.g., NEUT ↓ in M, ↑ in F)
+        // Direction, pattern, and fold change follow the strongest pairwise effect
+        // — prevents opposite-sex rows from mixing (e.g., NEUT ↓ in M, ↑ in F
+        // would otherwise combine M's direction with F's fold change)
         if (row.direction === "up" || row.direction === "down") {
           entry.direction = row.direction;
         }
         // H1: pattern follows the strongest signal row
         if (row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
           entry.pattern = row.dose_response_pattern;
+        }
+        // Fold change follows the same row that sets direction
+        if (row.max_fold_change != null) {
+          entry.maxFoldChange = row.max_fold_change;
         }
       }
     } else if (entry.direction === null && (row.direction === "up" || row.direction === "down")) {
@@ -242,10 +247,6 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     // Track max incidence across treated dose groups
     if (row.max_incidence != null && (entry.maxIncidence === null || row.max_incidence > entry.maxIncidence)) {
       entry.maxIncidence = row.max_incidence;
-    }
-    // Track max fold change across dose groups
-    if (row.max_fold_change != null && (entry.maxFoldChange === null || row.max_fold_change > entry.maxFoldChange)) {
-      entry.maxFoldChange = row.max_fold_change;
     }
     // Fallback: accept any non-flat pattern if strongest-signal row didn't provide one
     if ((entry.pattern === "flat" || entry.pattern === "insufficient_data") &&
