@@ -1,18 +1,24 @@
-import { useMemo, useCallback, useRef } from "react";
+import { useMemo, useCallback, useRef, useEffect } from "react";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
 import {
   prepareQuadrantPoints,
   buildFindingsQuadrantOption,
 } from "@/components/analysis/charts/findings-charts";
-import { formatPValue, formatEffectSize } from "@/lib/severity-colors";
 import type { EndpointSummary, OrganCoherence } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
+
+export interface ScatterSelectedPoint {
+  label: string;
+  effectSize: number;
+  rawP: number;
+}
 
 interface FindingsQuadrantScatterProps {
   endpoints: EndpointSummary[];
   selectedEndpoint: string | null;
   onSelect: (label: string) => void;
+  onSelectedPointChange?: (pt: ScatterSelectedPoint | null) => void;
   organCoherence?: Map<string, OrganCoherence>;
   syndromes?: CrossDomainSyndrome[];
   labMatches?: LabClinicalMatch[];
@@ -23,6 +29,7 @@ export function FindingsQuadrantScatter({
   endpoints,
   selectedEndpoint,
   onSelect,
+  onSelectedPointChange,
   organCoherence,
   syndromes,
   labMatches,
@@ -106,10 +113,22 @@ export function FindingsQuadrantScatter({
     );
   }
 
-  // Selection summary for header
+  // Selection summary — notify parent for section header
   const selectedPt = selectedEndpoint
     ? points.find((p) => p.endpoint_label === selectedEndpoint)
     : null;
+
+  useEffect(() => {
+    if (selectedPt) {
+      onSelectedPointChange?.({
+        label: selectedPt.endpoint_label,
+        effectSize: selectedPt.x,
+        rawP: selectedPt.rawP,
+      });
+    } else {
+      onSelectedPointChange?.(null);
+    }
+  }, [selectedPt?.endpoint_label, selectedPt?.x, selectedPt?.rawP, onSelectedPointChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Legend entries — only show what's present in data
   const legendEntries = useMemo(() => {
@@ -127,7 +146,7 @@ export function FindingsQuadrantScatter({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header: legend left, selection summary right */}
+      {/* Header: legend left, endpoint count right */}
       <div className="flex items-center justify-between px-2 py-0.5">
         <div className="flex items-center gap-2">
           {legendEntries.map((e, i) => (
@@ -136,18 +155,9 @@ export function FindingsQuadrantScatter({
             </span>
           ))}
         </div>
-        {selectedPt ? (
-          <span className="text-[10px]">
-            <span className="font-medium">{"\u2605"} {selectedPt.endpoint_label}</span>
-            <span className="ml-1.5 font-mono text-muted-foreground">
-              |d|={formatEffectSize(selectedPt.x)} p={formatPValue(selectedPt.rawP)}
-            </span>
-          </span>
-        ) : (
-          <span className="text-[10px] text-muted-foreground">
-            {points.length} endpoints plotted
-          </span>
-        )}
+        <span className="text-[10px] text-muted-foreground">
+          {points.length} endpoints
+        </span>
       </div>
       {/* Chart */}
       <EChartsWrapper

@@ -4,10 +4,11 @@
  */
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
+import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 
 // ─── Types ─────────────────────────────────────────────────
 
-export type GroupingMode = "organ" | "domain" | "pattern" | "finding";
+export type GroupingMode = "organ" | "domain" | "pattern" | "finding" | "syndrome";
 export type SortMode = "signal" | "pvalue" | "effect" | "az";
 
 export interface EndpointWithSignal extends EndpointSummary {
@@ -144,6 +145,7 @@ function groupKey(ep: EndpointWithSignal, mode: GroupingMode): string {
     case "domain": return ep.domain;
     case "pattern": return ep.pattern;
     case "finding": return "_all";
+    case "syndrome": return "_all"; // syndrome mode uses groupEndpointsBySyndrome()
   }
 }
 
@@ -194,12 +196,111 @@ export function groupEndpoints(
   return cards;
 }
 
+// ─── Syndrome grouping ──────────────────────────────────────
+
+export function groupEndpointsBySyndrome(
+  endpoints: EndpointWithSignal[],
+  syndromes: CrossDomainSyndrome[],
+): GroupCard[] {
+  // Build set of endpoints that belong to at least one syndrome
+  const endpointToSyndromes = new Map<string, string[]>();
+  for (const syn of syndromes) {
+    for (const m of syn.matchedEndpoints) {
+      let list = endpointToSyndromes.get(m.endpoint_label);
+      if (!list) {
+        list = [];
+        endpointToSyndromes.set(m.endpoint_label, list);
+      }
+      list.push(syn.id);
+    }
+  }
+
+  // Index endpoints by label for quick lookup
+  const epByLabel = new Map<string, EndpointWithSignal>();
+  for (const ep of endpoints) epByLabel.set(ep.endpoint_label, ep);
+
+  const cards: GroupCard[] = [];
+
+  // One card per syndrome
+  for (const syn of syndromes) {
+    const synEndpointLabels = new Set(syn.matchedEndpoints.map((m) => m.endpoint_label));
+    const synEndpoints = endpoints.filter((ep) => synEndpointLabels.has(ep.endpoint_label));
+    if (synEndpoints.length === 0) continue;
+
+    let adverseCount = 0;
+    let trCount = 0;
+    let groupSignal = 0;
+    for (const ep of synEndpoints) {
+      if (ep.worstSeverity === "adverse") adverseCount++;
+      if (ep.treatmentRelated) trCount++;
+      groupSignal += ep.signal;
+    }
+    cards.push({
+      key: syn.id,
+      label: syn.name,
+      adverseCount,
+      trCount,
+      totalEndpoints: synEndpoints.length,
+      groupSignal,
+      endpoints: synEndpoints,
+    });
+  }
+
+  // "No Syndrome" catch-all
+  const noSyndromeEndpoints = endpoints.filter((ep) => !endpointToSyndromes.has(ep.endpoint_label));
+  if (noSyndromeEndpoints.length > 0) {
+    let adverseCount = 0;
+    let trCount = 0;
+    let groupSignal = 0;
+    for (const ep of noSyndromeEndpoints) {
+      if (ep.worstSeverity === "adverse") adverseCount++;
+      if (ep.treatmentRelated) trCount++;
+      groupSignal += ep.signal;
+    }
+    cards.push({
+      key: "no_syndrome",
+      label: "No Syndrome",
+      adverseCount,
+      trCount,
+      totalEndpoints: noSyndromeEndpoints.length,
+      groupSignal,
+      endpoints: noSyndromeEndpoints,
+    });
+  }
+
+  // Sort by groupSignal descending, "no_syndrome" always last
+  cards.sort((a, b) => {
+    if (a.key === "no_syndrome") return 1;
+    if (b.key === "no_syndrome") return -1;
+    return b.groupSignal - a.groupSignal || b.adverseCount - a.adverseCount || a.label.localeCompare(b.label);
+  });
+
+  return cards;
+}
+
+/** Build index: endpoint_label → list of syndrome IDs the endpoint belongs to. */
+export function buildMultiSyndromeIndex(syndromes: CrossDomainSyndrome[]): Map<string, string[]> {
+  const index = new Map<string, string[]>();
+  for (const syn of syndromes) {
+    for (const m of syn.matchedEndpoints) {
+      let list = index.get(m.endpoint_label);
+      if (!list) {
+        list = [];
+        index.set(m.endpoint_label, list);
+      }
+      list.push(syn.id);
+    }
+  }
+  return index;
+}
+
 // ─── Rail filters ──────────────────────────────────────────
 
 export interface RailFilters {
   search: string;
   trOnly: boolean;
   sigOnly: boolean;
+  clinicalS2Plus?: boolean;
   /** null = all selected (no filter). Set of group keys to include. */
   groupFilter: ReadonlySet<string> | null;
 }
@@ -208,6 +309,7 @@ export function filterEndpoints(
   endpoints: EndpointWithSignal[],
   filters: RailFilters,
   grouping: GroupingMode,
+  clinicalEndpoints?: Set<string>,
 ): EndpointWithSignal[] {
   let result = endpoints;
   if (filters.search) {
@@ -220,6 +322,9 @@ export function filterEndpoints(
   if (filters.sigOnly) {
     result = result.filter((ep) => ep.minPValue !== null && ep.minPValue < 0.05);
   }
+  if (filters.clinicalS2Plus && clinicalEndpoints) {
+    result = result.filter((ep) => clinicalEndpoints.has(ep.endpoint_label));
+  }
   if (filters.groupFilter !== null && grouping !== "finding") {
     result = result.filter((ep) => filters.groupFilter!.has(groupKey(ep, grouping)));
   }
@@ -227,7 +332,7 @@ export function filterEndpoints(
 }
 
 export function isFiltered(filters: RailFilters): boolean {
-  return filters.search !== "" || filters.trOnly || filters.sigOnly || filters.groupFilter !== null;
+  return filters.search !== "" || filters.trOnly || filters.sigOnly || !!filters.clinicalS2Plus || filters.groupFilter !== null;
 }
 
 // ─── Sort modes ────────────────────────────────────────────

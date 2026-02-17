@@ -4,7 +4,7 @@ import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PolymorphicRail } from "./PolymorphicRail";
 import { FindingsRail } from "@/components/analysis/findings/FindingsRail";
-import { getFindingsRailCallback, setFindingsClearScopeCallback } from "@/components/analysis/findings/FindingsView";
+import { getFindingsRailCallback, setFindingsClearScopeCallback, setFindingsClearClinicalCallback } from "@/components/analysis/findings/FindingsView";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
@@ -56,6 +56,16 @@ export function ShellRailPanel() {
     return () => setFindingsClearScopeCallback(null);
   }, []);
 
+  // Register reverse callback for clearing clinical filter from filter bar chip
+  const [clinicalRailActive, setClinicalRailActive] = useState(false);
+  useEffect(() => {
+    setFindingsClearClinicalCallback(() => {
+      setClinicalRailActive(false);
+      getFindingsRailCallback()?.({ clinicalS2Plus: false });
+    });
+    return () => setFindingsClearClinicalCallback(null);
+  }, []);
+
   // ── View-aware handlers ──
 
   const handleGroupScopeChange = useCallback((scope: { type: GroupingMode; value: string } | null) => {
@@ -94,6 +104,13 @@ export function ShellRailPanel() {
       navigateTo({ organSystem: undefined });
     }
   }, [isFindingsRoute, isDRView, navigateTo]);
+
+  const handleClinicalFilterChange = useCallback((active: boolean) => {
+    setClinicalRailActive(active);
+    if (isFindingsRoute) {
+      getFindingsRailCallback()?.({ clinicalS2Plus: active });
+    }
+  }, [isFindingsRoute]);
 
   // ── Bidirectional sync: table/context → rail highlight ──
 
@@ -139,6 +156,8 @@ export function ShellRailPanel() {
             onGroupScopeChange={handleGroupScopeChange}
             onEndpointSelect={handleEndpointSelect}
             onGroupingChange={handleGroupingChange}
+            clinicalFilterActive={clinicalRailActive}
+            onClinicalFilterChange={handleClinicalFilterChange}
           />
         ) : (
           <PolymorphicRail />
