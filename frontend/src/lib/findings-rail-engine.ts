@@ -302,7 +302,7 @@ export interface RailFilters {
   sigOnly: boolean;
   clinicalS2Plus?: boolean;
   sex: string | null;       // "M" | "F" | null (all)
-  severity: string | null;  // "adverse" | "warning" | "normal" | null (all)
+  severity: ReadonlySet<string> | null;  // subset of {"adverse","warning","normal"} or null (all)
   /** null = all selected (no filter). Set of group keys to include. */
   groupFilter: ReadonlySet<string> | null;
 }
@@ -338,7 +338,7 @@ export function filterEndpoints(
   }
   if (filters.severity) {
     const sev = filters.severity;
-    result = result.filter((ep) => ep.worstSeverity === sev);
+    result = result.filter((ep) => sev.has(ep.worstSeverity));
   }
   if (filters.groupFilter !== null && grouping !== "finding") {
     result = result.filter((ep) => filters.groupFilter!.has(groupKey(ep, grouping)));

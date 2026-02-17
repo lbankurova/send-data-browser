@@ -16,9 +16,11 @@ import {
   Minus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
+import { useFindings } from "@/hooks/useFindings";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { EndpointSummary } from "@/lib/derive-summaries";
+import type { FindingsFilters } from "@/types/analysis";
+import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 import {
   withSignalScores,
   computeSignalSummary,
@@ -48,6 +50,12 @@ import { formatPValue, titleCase, getDomainBadgeColor } from "@/lib/severity-col
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
+
+// Static empty filters — fetch all findings, filter client-side (same as FindingsView)
+const ALL_FINDINGS_FILTERS: FindingsFilters = {
+  domain: null, sex: null, severity: null, search: "",
+  organ_system: null, endpoint_label: null, dose_response_pattern: null,
+};
 
 // ─── Props ─────────────────────────────────────────────────
 
@@ -85,7 +93,8 @@ export function FindingsRail({
   onGroupingChange,
   onVisibleEndpointsChange,
 }: FindingsRailProps) {
-  const { data: rawData, isLoading, error } = useAdverseEffectSummary(studyId);
+  // Same data source as FindingsView — React Query shares the cache
+  const { data: rawData, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FINDINGS_FILTERS);
 
   // ── Local state ────────────────────────────────────────
   const [grouping, setGrouping] = useState<GroupingMode>("organ");
@@ -105,11 +114,26 @@ export function FindingsRail({
     }
   }, [studyId]);
 
-  // ── Derived data ───────────────────────────────────────
-  const endpointSummaries = useMemo<EndpointSummary[]>(
-    () => (rawData ? deriveEndpointSummaries(rawData) : []),
-    [rawData],
-  );
+  // ── Derived data (same pipeline as FindingsView) ──────
+  const endpointSummaries = useMemo<EndpointSummary[]>(() => {
+    if (!rawData?.findings?.length) return [];
+    const rows: AdverseEffectSummaryRow[] = rawData.findings.map((f) => ({
+      endpoint_label: f.endpoint_label ?? f.finding,
+      endpoint_type: f.data_type,
+      domain: f.domain,
+      organ_system: f.organ_system ?? "unknown",
+      dose_level: 0,
+      dose_label: "",
+      sex: f.sex,
+      p_value: f.min_p_adj,
+      effect_size: f.max_effect_size,
+      direction: f.direction,
+      severity: f.severity,
+      treatment_related: f.treatment_related,
+      dose_response_pattern: f.dose_response_pattern ?? "flat",
+    }));
+    return deriveEndpointSummaries(rows);
+  }, [rawData]);
 
   const endpointsWithSignal = useMemo(
     () => withSignalScores(endpointSummaries),
@@ -236,7 +260,10 @@ export function FindingsRail({
     if (railFilters.sigOnly) labels.push("Sig only");
     if (railFilters.clinicalS2Plus) labels.push("Clinical S2+");
     if (railFilters.sex) labels.push(railFilters.sex === "M" ? "Male" : "Female");
-    if (railFilters.severity) labels.push(railFilters.severity.charAt(0).toUpperCase() + railFilters.severity.slice(1));
+    if (railFilters.severity) {
+      const sevLabels = [...railFilters.severity].map((s) => s.charAt(0).toUpperCase() + s.slice(1));
+      labels.push(sevLabels.join(", "));
+    }
     return labels;
   }, [railFilters]);
 
@@ -584,6 +611,12 @@ const PATTERN_ICONS: Record<string, typeof TrendingUp> = {
 
 // ─── Rail Filters ──────────────────────────────────────────
 
+const SEVERITY_OPTIONS = [
+  { key: "adverse", label: "Adverse" },
+  { key: "warning", label: "Warning" },
+  { key: "normal", label: "Normal" },
+];
+
 const GROUPING_ALL_LABELS: Partial<Record<GroupingMode, string>> = {
   organ: "All organs",
   domain: "All domains",
@@ -670,15 +703,12 @@ function RailFiltersSection({
           <option value="M">Male</option>
           <option value="F">Female</option>
         </FilterSelect>
-        <FilterSelect
-          value={filters.severity ?? ""}
-          onChange={(e) => onFiltersChange({ ...filters, severity: e.target.value || null })}
-        >
-          <option value="">All classes</option>
-          <option value="adverse">Adverse</option>
-          <option value="warning">Warning</option>
-          <option value="normal">Normal</option>
-        </FilterSelect>
+        <FilterMultiSelect
+          options={SEVERITY_OPTIONS}
+          selected={filters.severity}
+          onChange={(next) => onFiltersChange({ ...filters, severity: next })}
+          allLabel="All classes"
+        />
         <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
           <input
             type="checkbox"

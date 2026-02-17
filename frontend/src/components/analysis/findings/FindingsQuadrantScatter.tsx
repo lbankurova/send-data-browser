@@ -157,8 +157,15 @@ export function FindingsQuadrantScatter({
             </span>
           ))}
         </div>
-        <span className="text-[10px] text-muted-foreground">
-          {points.length} endpoints
+        <span
+          className="text-[10px] text-muted-foreground"
+          title={points.length < endpoints.length
+            ? `${endpoints.length - points.length} endpoint${endpoints.length - points.length > 1 ? "s" : ""} not plotted (missing effect size or p-value)`
+            : undefined}
+        >
+          {points.length < endpoints.length
+            ? `${points.length}/${endpoints.length} endpoints`
+            : `${points.length} endpoints`}
         </span>
       </div>
       {/* Chart */}
