@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import * as echarts from "echarts/core";
 import { BarChart, LineChart, ScatterChart, HeatmapChart, PieChart, CustomChart } from "echarts/charts";
 import {
@@ -41,43 +41,68 @@ interface EChartsWrapperProps {
   onInit?: (chart: EChartsInstance) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onClick?: (params: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onMouseOver?: (params: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onMouseOut?: (params: any) => void;
 }
 
-export function EChartsWrapper({ option, style, className, onInit, onClick }: EChartsWrapperProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<EChartsInstance | null>(null);
+export const EChartsWrapper = forwardRef<EChartsInstance | null, EChartsWrapperProps>(
+  function EChartsWrapper({ option, style, className, onInit, onClick, onMouseOver, onMouseOut }, ref) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const chartRef = useRef<EChartsInstance | null>(null);
 
-  // Init + dispose
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const chart = echarts.init(containerRef.current);
-    chartRef.current = chart;
-    onInit?.(chart);
+    // Expose chart instance via ref
+    useImperativeHandle(ref, () => chartRef.current!, []);
 
-    const ro = new ResizeObserver(() => chart.resize());
-    ro.observe(containerRef.current);
+    // Init + dispose
+    useEffect(() => {
+      if (!containerRef.current) return;
+      const chart = echarts.init(containerRef.current);
+      chartRef.current = chart;
+      onInit?.(chart);
 
-    return () => {
-      ro.disconnect();
-      chart.dispose();
-      chartRef.current = null;
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      const ro = new ResizeObserver(() => chart.resize());
+      ro.observe(containerRef.current);
 
-  // Update option
-  useEffect(() => {
-    if (chartRef.current) {
-      chartRef.current.setOption(option, { notMerge: true });
-    }
-  }, [option]);
+      return () => {
+        ro.disconnect();
+        chart.dispose();
+        chartRef.current = null;
+      };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Click handler
-  useEffect(() => {
-    const chart = chartRef.current;
-    if (!chart || !onClick) return;
-    chart.on("click", onClick);
-    return () => { chart.off("click", onClick); };
-  }, [onClick]);
+    // Update option
+    useEffect(() => {
+      if (chartRef.current) {
+        chartRef.current.setOption(option, { notMerge: true });
+      }
+    }, [option]);
 
-  return <div ref={containerRef} style={style} className={className} />;
-}
+    // Click handler
+    useEffect(() => {
+      const chart = chartRef.current;
+      if (!chart || !onClick) return;
+      chart.on("click", onClick);
+      return () => { chart.off("click", onClick); };
+    }, [onClick]);
+
+    // MouseOver handler
+    useEffect(() => {
+      const chart = chartRef.current;
+      if (!chart || !onMouseOver) return;
+      chart.on("mouseover", onMouseOver);
+      return () => { chart.off("mouseover", onMouseOver); };
+    }, [onMouseOver]);
+
+    // MouseOut handler
+    useEffect(() => {
+      const chart = chartRef.current;
+      if (!chart || !onMouseOut) return;
+      chart.on("mouseout", onMouseOut);
+      return () => { chart.off("mouseout", onMouseOut); };
+    }, [onMouseOut]);
+
+    return <div ref={containerRef} style={style} className={className} />;
+  }
+);
