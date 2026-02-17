@@ -25,7 +25,7 @@ import { getSyndromeTermReport, getSyndromeDefinition } from "@/lib/cross-domain
 import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
-import type { FindingsFilters } from "@/types/analysis";
+import type { FindingsFilters, UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -327,6 +327,8 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
             labMatches={analytics.labMatches}
             syndromeId={syndromeId}
             allEndpoints={allEndpoints}
+            rawFindings={rawData?.findings}
+            doseGroups={rawData?.dose_groups}
           />
         ) : (
           <p className="text-xs text-muted-foreground">No evidence data available.</p>
@@ -374,12 +376,16 @@ function EvidenceSummaryContent({
   labMatches,
   syndromeId,
   allEndpoints,
+  rawFindings,
+  doseGroups,
 }: {
   report: NonNullable<ReturnType<typeof getSyndromeTermReport>>;
   confidence: "HIGH" | "MODERATE" | "LOW";
   labMatches: LabClinicalMatch[];
   syndromeId: string;
   allEndpoints: EndpointSummary[];
+  rawFindings?: UnifiedFinding[];
+  doseGroups?: DoseGroup[];
 }) {
   const isHepatic = syndromeId === "XS01" || syndromeId === "XS02";
   return (
@@ -422,7 +428,12 @@ function EvidenceSummaryContent({
 
       {/* Hy's Law assessment — XS01 and XS02 only */}
       {isHepatic && (
-        <HysLawAssessment labMatches={labMatches} allEndpoints={allEndpoints} />
+        <HysLawAssessment
+          labMatches={labMatches}
+          allEndpoints={allEndpoints}
+          rawFindings={rawFindings}
+          doseGroups={doseGroups}
+        />
       )}
 
       {/* Domain coverage */}
@@ -444,43 +455,112 @@ function EvidenceSummaryContent({
 function HysLawAssessment({
   labMatches,
   allEndpoints,
+  rawFindings,
+  doseGroups,
 }: {
   labMatches: LabClinicalMatch[];
   allEndpoints: EndpointSummary[];
+  rawFindings?: UnifiedFinding[];
+  doseGroups?: DoseGroup[];
 }) {
   // Hy's Law rules: L03 (concurrent ALT+Bilirubin), L07 (classic), L08 (animal pattern)
   const HYS_RULES = ["L03", "L07", "L08"] as const;
 
+  // Build dose label map for dose context
+  const doseLabelMap = new Map<number, string>();
+  if (doseGroups) {
+    for (const dg of doseGroups) {
+      if (dg.dose_value != null && dg.dose_unit) {
+        doseLabelMap.set(dg.dose_level, `${dg.dose_value} ${dg.dose_unit}`);
+      }
+    }
+  }
+
+  // Find the lowest significant dose for an endpoint (by test codes)
+  function findSignificantDose(testCodes: string[]): string | null {
+    if (!rawFindings) return null;
+    const codes = testCodes.map((c) => c.toUpperCase());
+    const epFindings = rawFindings.filter(
+      (f) => f.domain === "LB" && codes.includes(f.test_code?.toUpperCase() ?? ""),
+    );
+    for (const f of epFindings) {
+      const pairwise = f.pairwise ?? [];
+      const sorted = [...pairwise].filter((p) => p.dose_level > 0).sort((a, b) => a.dose_level - b.dose_level);
+      for (const pw of sorted) {
+        const p = pw.p_value_adj ?? pw.p_value;
+        if (p != null && p < 0.05) {
+          return doseLabelMap.get(pw.dose_level) ?? `dose level ${pw.dose_level}`;
+        }
+      }
+    }
+    return null;
+  }
+
+  // Get endpoint severity for dose context annotation
+  function getEndpointSeverity(testCodes: string[]): string | null {
+    const codes = testCodes.map((c) => c.toUpperCase());
+    const ep = allEndpoints.find(
+      (e) => e.domain === "LB" && codes.includes(e.testCode?.toUpperCase() ?? ""),
+    );
+    return ep?.worstSeverity ?? null;
+  }
+
+  // Build dose context string for an endpoint: "ALT ↑ present at 200 mg/kg (adverse)"
+  function doseContext(name: string, testCodes: string[], direction: "up" | "down"): string {
+    const arrow = direction === "up" ? " \u2191" : " \u2193";
+    const dose = findSignificantDose(testCodes);
+    const sev = getEndpointSeverity(testCodes);
+    const parts = [`${name}${arrow} present`];
+    if (dose) parts[0] += ` at ${dose}`;
+    if (sev) parts[0] += ` (${sev})`;
+    return parts[0];
+  }
+
   // Check which endpoints are present/elevated
-  const altUp = allEndpoints.some(
-    (ep) => ep.domain === "LB" && ["ALT", "ALAT"].includes(ep.testCode?.toUpperCase() ?? "") && ep.direction === "up",
+  const altEp = allEndpoints.find(
+    (ep) => ep.domain === "LB" && ["ALT", "ALAT"].includes(ep.testCode?.toUpperCase() ?? ""),
   );
-  const astUp = allEndpoints.some(
-    (ep) => ep.domain === "LB" && ["AST", "ASAT"].includes(ep.testCode?.toUpperCase() ?? "") && ep.direction === "up",
+  const astEp = allEndpoints.find(
+    (ep) => ep.domain === "LB" && ["AST", "ASAT"].includes(ep.testCode?.toUpperCase() ?? ""),
   );
-  const biliUp = allEndpoints.some(
-    (ep) => ep.domain === "LB" && ["BILI", "TBILI"].includes(ep.testCode?.toUpperCase() ?? "") && ep.direction === "up",
-  );
-  const biliPresent = allEndpoints.some(
+  const biliEp = allEndpoints.find(
     (ep) => ep.domain === "LB" && ["BILI", "TBILI"].includes(ep.testCode?.toUpperCase() ?? ""),
   );
   const alpUp = allEndpoints.some(
     (ep) => ep.domain === "LB" && ["ALP", "ALKP"].includes(ep.testCode?.toUpperCase() ?? "") && ep.direction === "up",
   );
 
+  const altUp = altEp?.direction === "up";
+  const astUp = astEp?.direction === "up";
+  const biliUp = biliEp?.direction === "up";
+  const biliPresent = !!biliEp;
+
+  // APPROACHING detection: one Hy's Law condition met, other is borderline
+  // Bilirubin approaching = present + effect size > 0.8 (approaching significance)
+  // or p-value between 0.05 and 0.1
+  const biliApproaching = biliPresent && !biliUp && (
+    (biliEp.maxEffectSize != null && Math.abs(biliEp.maxEffectSize) > 0.8) ||
+    (biliEp.minPValue != null && biliEp.minPValue < 0.1)
+  );
+
   const ruleStatuses = HYS_RULES.map((ruleId) => {
     const matched = labMatches.find((m) => m.ruleId === ruleId);
 
     if (matched) {
+      // TRIGGERED — show with dose context
+      const explanationParts: string[] = [];
+      if (altUp) explanationParts.push(doseContext("ALT", ["ALT", "ALAT"], "up"));
+      else if (astUp) explanationParts.push(doseContext("AST", ["AST", "ASAT"], "up"));
+      if (biliUp) explanationParts.push(doseContext("Bilirubin", ["BILI", "TBILI"], "up"));
       return {
         ruleId,
         status: "TRIGGERED" as const,
         label: getRuleName(ruleId),
-        explanation: `${matched.matchedEndpoints.join(", ")} elevated concurrently`,
+        explanation: explanationParts.length > 0 ? explanationParts.join("; ") : `${matched.matchedEndpoints.join(", ")} elevated concurrently`,
       };
     }
 
-    // Not triggered — explain why
+    // Not triggered — explain why, with dose context
     if (ruleId === "L03") {
       if (!altUp && !astUp) {
         return { ruleId, status: "NOT TRIGGERED" as const, label: "Concurrent ALT + bilirubin", explanation: "ALT/AST not elevated" };
@@ -488,8 +568,17 @@ function HysLawAssessment({
       if (!biliPresent) {
         return { ruleId, status: "NOT EVALUATED" as const, label: "Concurrent ALT + bilirubin", explanation: "Bilirubin not measured in study" };
       }
+      // APPROACHING: ALT/AST elevated but bilirubin borderline
+      if (biliApproaching) {
+        const transaminase = altUp ? doseContext("ALT", ["ALT", "ALAT"], "up") : doseContext("AST", ["AST", "ASAT"], "up");
+        const biliDetail = biliEp.minPValue != null
+          ? `Bilirubin borderline (p=${formatPValue(biliEp.minPValue)}, |d|=${formatEffectSize(Math.abs(biliEp.maxEffectSize ?? 0))})`
+          : "Bilirubin approaching threshold";
+        return { ruleId, status: "APPROACHING" as const, label: "Concurrent ALT + bilirubin", explanation: `${transaminase}; ${biliDetail}` };
+      }
       if (!biliUp) {
-        return { ruleId, status: "NOT TRIGGERED" as const, label: "Concurrent ALT + bilirubin", explanation: `${altUp ? "ALT" : "AST"} \u2191 present, but bilirubin within normal range` };
+        const transaminase = altUp ? doseContext("ALT", ["ALT", "ALAT"], "up") : doseContext("AST", ["AST", "ASAT"], "up");
+        return { ruleId, status: "NOT TRIGGERED" as const, label: "Concurrent ALT + bilirubin", explanation: `${transaminase}, but bilirubin within normal range` };
       }
       return { ruleId, status: "NOT TRIGGERED" as const, label: "Concurrent ALT + bilirubin", explanation: "Concurrent elevation conditions not met" };
     }
@@ -509,8 +598,17 @@ function HysLawAssessment({
     if (!biliPresent) {
       return { ruleId, status: "NOT EVALUATED" as const, label: "Modified Hy's Law (animal)", explanation: "Bilirubin not available" };
     }
+    // APPROACHING for L08: same logic as L03
+    if (biliApproaching) {
+      const transaminase = altUp ? doseContext("ALT", ["ALT", "ALAT"], "up") : doseContext("AST", ["AST", "ASAT"], "up");
+      const biliDetail = biliEp.minPValue != null
+        ? `Bilirubin borderline (p=${formatPValue(biliEp.minPValue)}, |d|=${formatEffectSize(Math.abs(biliEp.maxEffectSize ?? 0))})`
+        : "Bilirubin approaching threshold";
+      return { ruleId, status: "APPROACHING" as const, label: "Modified Hy's Law (animal)", explanation: `${transaminase}; ${biliDetail}` };
+    }
     if (!biliUp) {
-      return { ruleId, status: "NOT TRIGGERED" as const, label: "Modified Hy's Law (animal)", explanation: "Bilirubin not elevated" };
+      const transaminase = altUp ? doseContext("ALT", ["ALT", "ALAT"], "up") : doseContext("AST", ["AST", "ASAT"], "up");
+      return { ruleId, status: "NOT TRIGGERED" as const, label: "Modified Hy's Law (animal)", explanation: `${transaminase}, but bilirubin not elevated` };
     }
     return { ruleId, status: "NOT TRIGGERED" as const, label: "Modified Hy's Law (animal)", explanation: "Conditions not fully met" };
   });
