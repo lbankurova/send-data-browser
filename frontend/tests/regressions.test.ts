@@ -48,4 +48,11 @@ describe("regression guards", () => {
     expect(ep?.maxFoldChange).toBeGreaterThan(1.0);
     expect(ep?.maxFoldChange).toBeLessThan(2.0);
   });
+
+  // L19 Neutrophil decrease: NEUT fold change and direction must be from same sex
+  // M NEUT has direction=down with fc=1.51, F NEUT has direction=up with fc=2.07
+  // L19 requires hasDown AND foldAbove(2) — must not mix M's down with F's 2.07×
+  test("L19 does not fire (NEUT fold/direction sex mismatch)", () => {
+    expect(firedRules.has("L19")).toBe(false);
+  });
 });
