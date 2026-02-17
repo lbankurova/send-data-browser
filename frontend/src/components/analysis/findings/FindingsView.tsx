@@ -10,13 +10,15 @@ import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
-import { deriveEndpointSummaries } from "@/lib/derive-summaries";
-// Phase 3: import { deriveOrganCoherence } from "@/lib/derive-summaries";
-// Phase 3: import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
+import { deriveEndpointSummaries, deriveOrganCoherence } from "@/lib/derive-summaries";
+import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
+import { evaluateLabRules } from "@/lib/lab-clinical-catalog";
+import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
+import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import type { FindingsFilters } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 import { getDomainFullLabel, getPatternLabel, withSignalScores } from "@/lib/findings-rail-engine";
-import type { GroupingMode } from "@/lib/findings-rail-engine";
+import type { GroupingMode, SignalBoosts } from "@/lib/findings-rail-engine";
 import { titleCase } from "@/lib/severity-colors";
 
 /** Context bridge so ShellRailPanel can pass rail callbacks to the AE view. */
@@ -165,17 +167,61 @@ export function FindingsView() {
     return deriveEndpointSummaries(rows);
   }, [data]);
 
-  // Phase 3 hooks: uncomment when consuming in UI
-  // const organCoherence = useMemo(() => deriveOrganCoherence(endpointSummaries), [endpointSummaries]);
-  // const syndromes = useMemo(() => detectCrossDomainSyndromes(endpointSummaries), [endpointSummaries]);
+  // Phase 3: organ coherence, cross-domain syndromes, lab clinical rules
+  const organCoherence = useMemo(() => deriveOrganCoherence(endpointSummaries), [endpointSummaries]);
+  const syndromes = useMemo(() => detectCrossDomainSyndromes(endpointSummaries), [endpointSummaries]);
+  const labMatches = useMemo(
+    () => evaluateLabRules(endpointSummaries, organCoherence, syndromes),
+    [endpointSummaries, organCoherence, syndromes],
+  );
+
+  // Build signal boosts from analytics layers
+  const boostMap = useMemo(() => {
+    const map = new Map<string, SignalBoosts>();
+
+    // Index syndrome endpoints
+    const syndromeEndpoints = new Set<string>();
+    for (const syn of syndromes) {
+      for (const m of syn.matchedEndpoints) syndromeEndpoints.add(m.endpoint_label);
+    }
+
+    // Index lab clinical floors by endpoint
+    const clinicalFloors = new Map<string, number>();
+    for (const match of labMatches) {
+      const floor = getClinicalFloor(match.severity);
+      for (const ep of match.matchedEndpoints) {
+        const existing = clinicalFloors.get(ep) ?? 0;
+        if (floor > existing) clinicalFloors.set(ep, floor);
+      }
+    }
+
+    for (const ep of endpointSummaries) {
+      const coh = organCoherence.get(ep.organ_system);
+      const cohBoost = coh ? (coh.domainCount >= 3 ? 2 : coh.domainCount >= 2 ? 1 : 0) : 0;
+      const synBoost = syndromeEndpoints.has(ep.endpoint_label) ? 3 : 0;
+      const floor = clinicalFloors.get(ep.endpoint_label) ?? 0;
+      if (cohBoost > 0 || synBoost > 0 || floor > 0) {
+        map.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor });
+      }
+    }
+    return map;
+  }, [endpointSummaries, organCoherence, syndromes, labMatches]);
 
   // Signal score map for tier encoding on severity column
   const signalScoreMap = useMemo(() => {
-    const scored = withSignalScores(endpointSummaries);
+    const scored = withSignalScores(endpointSummaries, boostMap);
     const map = new Map<string, number>();
     for (const ep of scored) map.set(ep.endpoint_label, ep.signal);
     return map;
-  }, [endpointSummaries]);
+  }, [endpointSummaries, boostMap]);
+
+  // Analytics context value for context panel consumption
+  const analyticsValue = useMemo(() => ({
+    syndromes,
+    organCoherence,
+    labMatches,
+    signalScores: signalScoreMap,
+  }), [syndromes, organCoherence, labMatches, signalScoreMap]);
 
   if (error) {
     return (
@@ -186,6 +232,7 @@ export function FindingsView() {
   }
 
   return (
+    <FindingsAnalyticsProvider value={analyticsValue}>
     <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
       {/* Filter bar — aligned with other views */}
       <FilterBar>
@@ -225,6 +272,10 @@ export function FindingsView() {
             endpoints={endpointSummaries}
             selectedEndpoint={filters.endpoint_label}
             onSelect={handleEndpointSelect}
+            organCoherence={organCoherence}
+            syndromes={syndromes}
+            labMatches={labMatches}
+            scopeFilter={filters.organ_system ?? filters.domain ?? filters.dose_response_pattern ?? undefined}
           />
         </ViewSection>
       )}
@@ -247,5 +298,6 @@ export function FindingsView() {
       ) : null}
       </div>
     </div>
+    </FindingsAnalyticsProvider>
   );
 }

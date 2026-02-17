@@ -216,6 +216,17 @@ export function titleCase(s: string | null | undefined): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// ── Effect Magnitude Labels (Cohen's d thresholds) ───────────────────────
+
+export function getEffectMagnitudeLabel(d: number): string {
+  const abs = Math.abs(d);
+  if (abs < 0.2) return "trivial";
+  if (abs < 0.5) return "small";
+  if (abs < 0.8) return "medium";
+  if (abs < 1.2) return "large";
+  return "very large";
+}
+
 // ── Organ System Colors ───────────────────────────────────────────────────
 
 /** Deterministic hue for organ system names (pastel-ish, well-spaced). */

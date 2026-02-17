@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
+import { useFindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import { useFindingContext } from "@/hooks/useFindingContext";
+import { useEffectiveNoael } from "@/hooks/useEffectiveNoael";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
@@ -15,11 +17,24 @@ export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
   const { selectedFindingId, selectedFinding } = useFindingSelection();
+  const analytics = useFindingsAnalytics();
   const { data: context, isLoading } = useFindingContext(
     studyId,
     selectedFindingId
   );
+  const { data: noaelRows } = useEffectiveNoael(studyId);
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
+  // Derive NOAEL for the selected finding's sex
+  const noael = (() => {
+    if (!noaelRows?.length) return null;
+    const sex = selectedFinding?.sex;
+    const row = noaelRows.find((r) =>
+      sex === "M" ? r.sex === "M" : sex === "F" ? r.sex === "F" : true
+    );
+    if (!row) return null;
+    return { dose_value: row.noael_dose_value, dose_unit: row.noael_dose_unit ?? "mg/kg" };
+  })();
 
   if (!selectedFindingId || !selectedFinding) {
     return (
@@ -59,7 +74,14 @@ export function FindingsContextPanel() {
       </div>
 
       <CollapsiblePane title="Treatment summary" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <TreatmentRelatedSummaryPane data={context.treatment_summary} />
+        <TreatmentRelatedSummaryPane
+          data={context.treatment_summary}
+          finding={selectedFinding}
+          analytics={analytics}
+          noael={noael}
+          doseResponse={context.dose_response}
+          statistics={context.statistics}
+        />
       </CollapsiblePane>
 
       <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>

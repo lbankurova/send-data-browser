@@ -33,6 +33,12 @@ export interface SignalSummaryStats {
 
 // ─── Signal score ──────────────────────────────────────────
 
+export interface SignalBoosts {
+  syndromeBoost: number;    // 3 if in syndrome, 0 otherwise
+  coherenceBoost: number;   // 2 for 3+ domains, 1 for 2, 0 otherwise
+  clinicalFloor: number;    // S4=15, S3=8, S2=4, S1=0
+}
+
 const PATTERN_WEIGHTS: Record<string, number> = {
   monotonic_increase: 2,
   monotonic_decrease: 2,
@@ -41,17 +47,27 @@ const PATTERN_WEIGHTS: Record<string, number> = {
   flat: 0,
 };
 
-export function computeEndpointSignal(ep: EndpointSummary): number {
+export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts): number {
   const severityWeight = ep.worstSeverity === "adverse" ? 3 : 1;
   const pValueWeight = ep.minPValue !== null ? Math.max(0, -Math.log10(ep.minPValue)) : 0;
   const effectWeight = ep.maxEffectSize !== null ? Math.min(Math.abs(ep.maxEffectSize), 5) : 0;
   const trBoost = ep.treatmentRelated ? 2 : 0;
   const patternWeight = PATTERN_WEIGHTS[ep.pattern] ?? 0;
-  return severityWeight + pValueWeight + effectWeight + trBoost + patternWeight;
+  const base = severityWeight + pValueWeight + effectWeight + trBoost + patternWeight;
+  const synBoost = boosts?.syndromeBoost ?? 0;
+  const cohBoost = boosts?.coherenceBoost ?? 0;
+  const floor = boosts?.clinicalFloor ?? 0;
+  return Math.max(base + synBoost + cohBoost, floor);
 }
 
-export function withSignalScores(endpoints: EndpointSummary[]): EndpointWithSignal[] {
-  return endpoints.map((ep) => ({ ...ep, signal: computeEndpointSignal(ep) }));
+export function withSignalScores(
+  endpoints: EndpointSummary[],
+  boostMap?: Map<string, SignalBoosts>,
+): EndpointWithSignal[] {
+  return endpoints.map((ep) => ({
+    ...ep,
+    signal: computeEndpointSignal(ep, boostMap?.get(ep.endpoint_label)),
+  }));
 }
 
 export function getSignalTier(signal: number): 1 | 2 | 3 {
