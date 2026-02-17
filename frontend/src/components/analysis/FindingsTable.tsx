@@ -20,6 +20,7 @@ import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useSessionState } from "@/hooks/useSessionState";
+import { getSignalTier } from "@/lib/findings-rail-engine";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
 const col = createColumnHelper<UnifiedFinding>();
@@ -30,9 +31,10 @@ const ABSORBER_ID = "finding";
 interface FindingsTableProps {
   findings: UnifiedFinding[];
   doseGroups: DoseGroup[];
+  signalScores?: Map<string, number>;
 }
 
-export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores }: FindingsTableProps) {
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
@@ -130,17 +132,35 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
       }),
       col.accessor("severity", {
         header: "Severity",
-        cell: (info) => (
-          <span
-            className="inline-block border-l-2 pl-1.5 py-0.5 font-semibold text-gray-600"
-            style={{ borderLeftColor: getSeverityDotColor(info.getValue()) }}
-          >
-            {info.getValue()}
-          </span>
-        ),
+        cell: (info) => {
+          const severity = info.getValue();
+          const f = info.row.original;
+          const label = f.endpoint_label ?? f.finding;
+          const signal = signalScores?.get(label) ?? 0;
+          const tier = getSignalTier(signal);
+          const isNormal = severity === "normal";
+
+          const borderClass = isNormal
+            ? "border-l"
+            : tier === 3 ? "border-l-4" : tier === 2 ? "border-l-2" : "border-l";
+          const fontClass = isNormal
+            ? "text-muted-foreground"
+            : tier === 3 ? "font-semibold text-gray-600"
+            : tier === 2 ? "font-medium text-gray-600"
+            : "text-gray-600";
+
+          return (
+            <span
+              className={`inline-block ${borderClass} pl-1.5 py-0.5 ${fontClass}`}
+              style={{ borderLeftColor: getSeverityDotColor(severity) }}
+            >
+              {severity}
+            </span>
+          );
+        },
       }),
     ],
-    [doseGroups]
+    [doseGroups, signalScores]
   );
 
   const table = useReactTable({

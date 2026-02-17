@@ -11,9 +11,11 @@ import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
+// Phase 3: import { deriveOrganCoherence } from "@/lib/derive-summaries";
+// Phase 3: import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import type { FindingsFilters } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
-import { getDomainFullLabel, getPatternLabel } from "@/lib/findings-rail-engine";
+import { getDomainFullLabel, getPatternLabel, withSignalScores } from "@/lib/findings-rail-engine";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import { titleCase } from "@/lib/severity-colors";
 
@@ -163,6 +165,18 @@ export function FindingsView() {
     return deriveEndpointSummaries(rows);
   }, [data]);
 
+  // Phase 3 hooks: uncomment when consuming in UI
+  // const organCoherence = useMemo(() => deriveOrganCoherence(endpointSummaries), [endpointSummaries]);
+  // const syndromes = useMemo(() => detectCrossDomainSyndromes(endpointSummaries), [endpointSummaries]);
+
+  // Signal score map for tier encoding on severity column
+  const signalScoreMap = useMemo(() => {
+    const scored = withSignalScores(endpointSummaries);
+    const map = new Map<string, number>();
+    for (const ep of scored) map.set(ep.endpoint_label, ep.signal);
+    return map;
+  }, [endpointSummaries]);
+
   if (error) {
     return (
       <div className="p-6 text-destructive">
@@ -228,6 +242,7 @@ export function FindingsView() {
         <FindingsTable
           findings={data.findings}
           doseGroups={data.dose_groups}
+          signalScores={signalScoreMap}
         />
       ) : null}
       </div>

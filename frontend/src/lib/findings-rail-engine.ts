@@ -54,6 +54,12 @@ export function withSignalScores(endpoints: EndpointSummary[]): EndpointWithSign
   return endpoints.map((ep) => ({ ...ep, signal: computeEndpointSignal(ep) }));
 }
 
+export function getSignalTier(signal: number): 1 | 2 | 3 {
+  if (signal >= 8) return 3;
+  if (signal >= 4) return 2;
+  return 1;
+}
+
 // ─── Signal summary (always full dataset, unfiltered) ──────
 
 export function computeSignalSummary(endpoints: EndpointSummary[]): SignalSummaryStats {
