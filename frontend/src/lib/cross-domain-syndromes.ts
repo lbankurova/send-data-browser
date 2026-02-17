@@ -58,6 +58,8 @@ export interface EndpointMatch {
   role: "required" | "supporting";
   direction: string;
   severity: string;
+  /** Sex this match came from. null = aggregate. */
+  sex?: string | null;
 }
 
 export interface CrossDomainSyndrome {
@@ -68,6 +70,8 @@ export interface CrossDomainSyndrome {
   domainsCovered: string[];
   confidence: "HIGH" | "MODERATE" | "LOW";
   supportScore: number;
+  /** Which sexes this syndrome was detected in. Empty = aggregate (both). */
+  sexes: string[];
 }
 
 // ─── Normalization & parsing helpers ───────────────────────
@@ -651,10 +655,87 @@ function assignConfidence(
   return "LOW";
 }
 
+// ─── Per-sex projection ──────────────────────────────────
+
+/** Check if an endpoint has sex-divergent directions. */
+function hasSexDivergence(ep: EndpointSummary): boolean {
+  if (!ep.bySex || ep.bySex.size < 2) return false;
+  const dirs = new Set([...ep.bySex.values()].map(s => s.direction));
+  return dirs.has("up") && dirs.has("down");
+}
+
+/** Create a sex-specific view of an endpoint. Only overrides for divergent endpoints. */
+function projectToSex(ep: EndpointSummary, sex: string): EndpointSummary {
+  const sexData = ep.bySex?.get(sex);
+  if (!sexData) return ep; // no data for this sex — use aggregate
+
+  // Only override for divergent endpoints; non-divergent use aggregate (stronger signal)
+  if (!hasSexDivergence(ep)) return ep;
+
+  return {
+    ...ep,
+    direction: sexData.direction,
+    maxEffectSize: sexData.maxEffectSize,
+    maxFoldChange: sexData.maxFoldChange,
+    minPValue: sexData.minPValue,
+    pattern: sexData.pattern,
+    worstSeverity: sexData.worstSeverity,
+    treatmentRelated: sexData.treatmentRelated,
+    sexes: [sex],
+  };
+}
+
+/** Merge endpoint match lists from multiple syndrome results. */
+function mergeEndpoints(groups: EndpointMatch[][]): EndpointMatch[] {
+  const seen = new Set<string>();
+  const result: EndpointMatch[] = [];
+  for (const group of groups) {
+    for (const m of group) {
+      const key = `${m.endpoint_label}::${m.role}::${m.sex ?? ""}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(m);
+      }
+    }
+  }
+  return result;
+}
+
+/** Deduplicate syndromes that fired for multiple sexes. */
+function deduplicateSyndromes(syndromes: CrossDomainSyndrome[]): CrossDomainSyndrome[] {
+  const byId = new Map<string, CrossDomainSyndrome[]>();
+  for (const s of syndromes) {
+    if (!byId.has(s.id)) byId.set(s.id, []);
+    byId.get(s.id)!.push(s);
+  }
+
+  const results: CrossDomainSyndrome[] = [];
+  for (const [, group] of byId) {
+    if (group.length === 1) {
+      results.push(group[0]);
+      continue;
+    }
+    // Same syndrome fired for multiple sexes — merge
+    const merged: CrossDomainSyndrome = {
+      ...group[0],
+      matchedEndpoints: mergeEndpoints(group.map(g => g.matchedEndpoints)),
+      domainsCovered: [...new Set(group.flatMap(g => g.domainsCovered))].sort(),
+      confidence: group.some(g => g.confidence === "HIGH") ? "HIGH"
+        : group.some(g => g.confidence === "MODERATE") ? "MODERATE" : "LOW",
+      supportScore: Math.max(...group.map(g => g.supportScore)),
+      sexes: group.flatMap(g => g.sexes).filter((s, i, a) => a.indexOf(s) === i).sort(),
+    };
+    results.push(merged);
+  }
+  return results;
+}
+
 // ─── Main detection function ──────────────────────────────
 
-export function detectCrossDomainSyndromes(
+/** Detect syndromes from a set of endpoints, tagging with sex if provided. */
+function detectFromEndpoints(
   endpoints: EndpointSummary[],
+  sex: string | null,
 ): CrossDomainSyndrome[] {
   const results: CrossDomainSyndrome[] = [];
 
@@ -663,16 +744,13 @@ export function detectCrossDomainSyndromes(
     const matchedRequiredTags = new Set<string>();
     let supportCount = 0;
 
-    // Separate required and supporting terms
     const requiredTerms = syndrome.terms.filter((t) => t.role === "required");
     const supportingTerms = syndrome.terms.filter((t) => t.role === "supporting");
 
-    // Collect all required tags for "all" logic validation
     const allRequiredTags = new Set(
       requiredTerms.map((t) => t.tag).filter((t): t is string => t !== undefined)
     );
 
-    // Match required terms — only adverse/warning endpoints
     const adverseWarning = endpoints.filter(
       (ep) => ep.worstSeverity === "adverse" || ep.worstSeverity === "warning"
     );
@@ -680,7 +758,6 @@ export function detectCrossDomainSyndromes(
       for (const ep of adverseWarning) {
         if (matchEndpoint(ep, term)) {
           if (term.tag) matchedRequiredTags.add(term.tag);
-          // Avoid duplicating an endpoint already in the match list
           const alreadyMatched = matchedEndpoints.some(
             (m) => m.endpoint_label === ep.endpoint_label && m.role === "required"
           );
@@ -691,33 +768,29 @@ export function detectCrossDomainSyndromes(
               role: "required",
               direction: ep.direction ?? "none",
               severity: ep.worstSeverity,
+              sex,
             });
           }
-          break; // one match per term is enough
+          break;
         }
       }
     }
 
-    // Evaluate required logic
     let requiredMet = false;
     if (syndrome.requiredLogic.type === "all") {
-      // ALL: every required tag must be matched
       requiredMet = allRequiredTags.size > 0 &&
         [...allRequiredTags].every((tag) => matchedRequiredTags.has(tag));
     } else {
       requiredMet = evaluateRequiredLogic(syndrome.requiredLogic, matchedRequiredTags);
     }
 
-    // Match supporting terms — apply supporting gate
     for (const term of supportingTerms) {
       for (const ep of endpoints) {
         if (matchEndpoint(ep, term) && passesSupportingGate(ep)) {
-          // Avoid duplicating an endpoint already matched as required
           const alreadyRequired = matchedEndpoints.some(
             (m) => m.endpoint_label === ep.endpoint_label && m.role === "required"
           );
           if (!alreadyRequired) {
-            // Avoid duplicating an endpoint already matched as supporting
             const alreadySupporting = matchedEndpoints.some(
               (m) => m.endpoint_label === ep.endpoint_label && m.role === "supporting"
             );
@@ -729,15 +802,15 @@ export function detectCrossDomainSyndromes(
                 role: "supporting",
                 direction: ep.direction ?? "none",
                 severity: ep.worstSeverity,
+                sex,
               });
             }
           }
-          break; // one match per term
+          break;
         }
       }
     }
 
-    // Check if syndrome fires
     const domainsCovered = [...new Set(matchedEndpoints.map((m) => m.domain))].sort();
     const meetsMinDomains = domainsCovered.length >= syndrome.minDomains;
 
@@ -750,11 +823,40 @@ export function detectCrossDomainSyndromes(
         domainsCovered,
         confidence: assignConfidence(requiredMet, supportCount, domainsCovered.length),
         supportScore: supportCount,
+        sexes: sex ? [sex] : [],
       });
     }
   }
 
   return results;
+}
+
+export function detectCrossDomainSyndromes(
+  endpoints: EndpointSummary[],
+): CrossDomainSyndrome[] {
+  // Check if any endpoint has sex-divergent directions
+  const hasDivergent = endpoints.some(ep => hasSexDivergence(ep));
+
+  if (!hasDivergent) {
+    return detectFromEndpoints(endpoints, null);
+  }
+
+  // Collect unique sexes from divergent endpoints
+  const allSexes = new Set<string>();
+  for (const ep of endpoints) {
+    if (hasSexDivergence(ep) && ep.bySex) {
+      for (const sex of ep.bySex.keys()) allSexes.add(sex);
+    }
+  }
+
+  // Run detection per sex with projected endpoints
+  const allResults: CrossDomainSyndrome[] = [];
+  for (const sex of [...allSexes].sort()) {
+    const sexEndpoints = endpoints.map(ep => projectToSex(ep, sex));
+    allResults.push(...detectFromEndpoints(sexEndpoints, sex));
+  }
+
+  return deduplicateSyndromes(allResults);
 }
 
 // ─── Near-miss analysis (for Organ Context Panel) ─────────

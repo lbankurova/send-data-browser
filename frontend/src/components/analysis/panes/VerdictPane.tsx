@@ -225,12 +225,16 @@ export function VerdictPane({
     sexLabel = sex === "M" ? "Males only" : sex === "F" ? "Females only" : "Both sexes";
   }
 
+  // Per-sex NOAEL breakdown (from endpoint summary)
+  const epSummary = analytics?.endpoints.find(e => e.endpoint_label === endpointLabel);
+  const noaelBySex = epSummary?.noaelBySex;
+  const hasSexNoaelDiff = noaelBySex && noaelBySex.size >= 2;
+
   // NOAEL string
   const noaelStr = noael
     ? noael.dose_value != null
-      ? `NOAEL ${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}`
+      ? `NOAEL ${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}${hasSexNoaelDiff ? " (combined)" : ""}`
       : (() => {
-          // All treatment doses significant — show "NOAEL < lowest dose"
           const lowestDose = statistics?.rows?.[1]; // index 0 = control
           if (lowestDose?.dose_value != null) {
             return `NOAEL < ${lowestDose.dose_value} ${noael.dose_unit ?? "mg/kg"} (all tested doses significant)`;
@@ -326,6 +330,19 @@ export function VerdictPane({
               {item}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Line 4b -- Per-sex NOAEL breakdown (when sexes differ) */}
+      {noaelBySex && noaelBySex.size >= 2 && (
+        <div className="mt-0.5 flex flex-wrap gap-x-3 text-[10px] text-muted-foreground">
+          {[...noaelBySex.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([sex, n]) => {
+            const symbol = sex === "M" ? "\u2642" : "\u2640";
+            const doseStr = n.doseValue != null
+              ? `${n.doseValue} ${n.doseUnit ?? "mg/kg"}`
+              : n.tier === "below-lowest" ? "< lowest dose" : "n/a";
+            return <span key={sex}>{symbol} {sex}: NOAEL {doseStr}</span>;
+          })}
         </div>
       )}
 

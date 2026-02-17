@@ -290,6 +290,11 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
         </div>
         <p className="text-[10px] text-muted-foreground">
           {syndromeId} · {endpointCount} endpoint{endpointCount !== 1 ? "s" : ""} · {domainCount} domain{domainCount !== 1 ? "s" : ""}
+          {detected?.sexes && detected.sexes.length > 0 && (
+            <> · Detected in: {detected.sexes.length === 1
+              ? `${detected.sexes[0] === "M" ? "\u2642" : "\u2640"} ${detected.sexes[0]} only`
+              : detected.sexes.map(s => `${s === "M" ? "\u2642" : "\u2640"} ${s}`).join(", ")}</>
+          )}
         </p>
       </div>
 
