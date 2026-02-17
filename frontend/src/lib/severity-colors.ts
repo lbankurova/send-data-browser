@@ -215,3 +215,18 @@ export function titleCase(s: string | null | undefined): string {
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+// ── Organ System Colors ───────────────────────────────────────────────────
+
+/** Deterministic hue for organ system names (pastel-ish, well-spaced). */
+const ORGAN_COLORS: Record<string, string> = {};
+export function getOrganColor(organ: string): string {
+  if (ORGAN_COLORS[organ]) return ORGAN_COLORS[organ];
+  // Golden-angle hue spacing seeded by organ string hash
+  let h = 0;
+  for (let i = 0; i < organ.length; i++) h = (h * 31 + organ.charCodeAt(i)) | 0;
+  const hue = ((h % 360) + 360) % 360;
+  const color = `hsl(${hue}, 55%, 50%)`;
+  ORGAN_COLORS[organ] = color;
+  return color;
+}

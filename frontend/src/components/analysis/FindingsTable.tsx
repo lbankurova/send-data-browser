@@ -34,8 +34,8 @@ interface FindingsTableProps {
 
 export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
   const { selectedFindingId, selectFinding } = useFindingSelection();
-  const [sorting, setSorting] = useSessionState<SortingState>("pcc.adverseEffects.sorting", []);
-  const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.adverseEffects.columnSizing", {});
+  const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
+  const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
 
   const columns = useMemo(
     () => [
@@ -70,15 +70,21 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
           <span className="text-muted-foreground">{info.getValue() ?? "\u2014"}</span>
         ),
       }),
-      ...doseGroups.map((dg) =>
-        col.display({
+      ...doseGroups.map((dg, idx) => {
+        // Short labels: control → "C", non-zero → numeric only
+        const shortLabel = dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label));
+        const fullLabel = dg.dose_value != null && dg.dose_unit
+          ? `${dg.dose_value} ${dg.dose_unit}` : dg.label;
+        // Extract unit from first dose group that has one
+        const unit = idx === 0 ? (doseGroups.find((d) => d.dose_unit)?.dose_unit ?? undefined) : undefined;
+        return col.display({
           id: `dose_${dg.dose_level}`,
           header: () => (
             <DoseHeader
               level={dg.dose_level}
-              label={dg.dose_value != null
-                ? `${dg.dose_value}${dg.dose_unit ? ` ${dg.dose_unit}` : ""}`
-                : formatDoseShortLabel(dg.label)}
+              label={shortLabel}
+              tooltip={fullLabel}
+              unitLabel={unit}
             />
           ),
           cell: (info) => {
@@ -94,8 +100,8 @@ export function FindingsTable({ findings, doseGroups }: FindingsTableProps) {
               </span>
             );
           },
-        })
-      ),
+        });
+      }),
       col.accessor("min_p_adj", {
         header: "P-value",
         cell: (info) => (

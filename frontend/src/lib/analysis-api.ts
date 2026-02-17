@@ -1,6 +1,6 @@
 import type {
-  AdverseEffectsResponse,
-  AdverseEffectsFilters,
+  FindingsResponse,
+  FindingsFilters,
   FindingContext,
   AnalysisSummary,
 } from "@/types/analysis";
@@ -15,12 +15,12 @@ async function fetchJson<T>(path: string): Promise<T> {
   return res.json();
 }
 
-export function fetchAdverseEffects(
+export function fetchFindings(
   studyId: string,
   page: number,
   pageSize: number,
-  filters: AdverseEffectsFilters
-): Promise<AdverseEffectsResponse> {
+  filters: FindingsFilters
+): Promise<FindingsResponse> {
   const params = new URLSearchParams({
     page: String(page),
     page_size: String(pageSize),

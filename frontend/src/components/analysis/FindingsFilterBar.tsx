@@ -1,9 +1,9 @@
 import { FilterSelect } from "@/components/ui/FilterBar";
-import type { AdverseEffectsFilters } from "@/types/analysis";
+import type { FindingsFilters } from "@/types/analysis";
 
 interface FindingsFilterBarProps {
-  filters: AdverseEffectsFilters;
-  onFiltersChange: (filters: AdverseEffectsFilters) => void;
+  filters: FindingsFilters;
+  onFiltersChange: (filters: FindingsFilters) => void;
   /** Hide domain dropdown when Domain grouping is active in the rail. */
   hideDomain?: boolean;
   /** Label for the active rail scope chip (e.g., "Hepatic", "LB — Laboratory"). */

@@ -81,7 +81,7 @@ export interface Insight {
   level: "info" | "warning" | "critical";
 }
 
-export interface AdverseEffectsResponse {
+export interface FindingsResponse {
   study_id: string;
   dose_groups: DoseGroup[];
   findings: UnifiedFinding[];
@@ -172,7 +172,7 @@ export interface FindingContext {
   };
 }
 
-export interface AdverseEffectsFilters {
+export interface FindingsFilters {
   domain: string | null;
   sex: string | null;
   severity: string | null;

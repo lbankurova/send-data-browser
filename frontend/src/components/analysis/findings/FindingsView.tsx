@@ -1,13 +1,18 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { useAdverseEffects } from "@/hooks/useAdverseEffects";
+import { useFindings } from "@/hooks/useFindings";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { FindingsFilterBar } from "../FindingsFilterBar";
 import { FindingsTable } from "../FindingsTable";
+import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import { FilterBar, FilterBarCount } from "@/components/ui/FilterBar";
+import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { AdverseEffectsFilters } from "@/types/analysis";
+import { useAutoFitSections } from "@/hooks/useAutoFitSections";
+import { deriveEndpointSummaries } from "@/lib/derive-summaries";
+import type { FindingsFilters } from "@/types/analysis";
+import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 import { getDomainFullLabel, getPatternLabel } from "@/lib/findings-rail-engine";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import { titleCase } from "@/lib/severity-colors";
@@ -22,31 +27,35 @@ export interface AERailState {
 }
 
 // Singleton event bus — rail and view are siblings, not parent-child.
-// ShellRailPanel renders FindingsRail, Layout renders AdverseEffectsView via Outlet.
+// ShellRailPanel renders FindingsRail, Layout renders FindingsView via Outlet.
 // We use a simple callback registry so the rail can communicate scope changes.
-let _aeRailCallback: ((state: Partial<Pick<AERailState, "activeGroupScope" | "activeEndpoint" | "activeGrouping">>) => void) | null = null;
-/** Reverse channel: AE view → ShellRailPanel (for clearing rail scope from filter bar chip). */
-let _aeClearScopeCallback: (() => void) | null = null;
+let _findingsRailCallback: ((state: Partial<Pick<AERailState, "activeGroupScope" | "activeEndpoint" | "activeGrouping">>) => void) | null = null;
+/** Reverse channel: Findings view → ShellRailPanel (for clearing rail scope from filter bar chip). */
+let _findingsClearScopeCallback: (() => void) | null = null;
 
-export function setAERailCallback(cb: typeof _aeRailCallback) {
-  _aeRailCallback = cb;
+export function setFindingsRailCallback(cb: typeof _findingsRailCallback) {
+  _findingsRailCallback = cb;
 }
-export function getAERailCallback() {
-  return _aeRailCallback;
+export function getFindingsRailCallback() {
+  return _findingsRailCallback;
 }
-export function setAEClearScopeCallback(cb: typeof _aeClearScopeCallback) {
-  _aeClearScopeCallback = cb;
+export function setFindingsClearScopeCallback(cb: typeof _findingsClearScopeCallback) {
+  _findingsClearScopeCallback = cb;
 }
-export function getAEClearScopeCallback() {
-  return _aeClearScopeCallback;
+export function getFindingsClearScopeCallback() {
+  return _findingsClearScopeCallback;
 }
 
-export function AdverseEffectsView() {
+const SCATTER_SECTIONS = [{ id: "scatter", min: 80, max: 220, defaultHeight: 140 }];
+
+export function FindingsView() {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectStudy } = useSelection();
   const { selectFinding } = useFindingSelection();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scatterSection] = useAutoFitSections(containerRef, "findings", SCATTER_SECTIONS);
 
-  const [filters, setFilters] = useState<AdverseEffectsFilters>({
+  const [filters, setFilters] = useState<FindingsFilters>({
     domain: null,
     sex: null,
     severity: null,
@@ -94,15 +103,15 @@ export function AdverseEffectsView() {
 
   // Register callback so FindingsRail (in ShellRailPanel) can communicate
   useEffect(() => {
-    setAERailCallback((state) => {
+    setFindingsRailCallback((state) => {
       if (state.activeGroupScope !== undefined) handleGroupScopeChange(state.activeGroupScope);
       if (state.activeEndpoint !== undefined) handleEndpointSelect(state.activeEndpoint);
       if (state.activeGrouping !== undefined) setActiveGrouping(state.activeGrouping);
     });
-    return () => setAERailCallback(null);
+    return () => setFindingsRailCallback(null);
   }, [handleGroupScopeChange, handleEndpointSelect]);
 
-  const { data, isLoading, error } = useAdverseEffects(
+  const { data, isLoading, error } = useFindings(
     studyId,
     1,
     10000,
@@ -129,8 +138,30 @@ export function AdverseEffectsView() {
 
   const clearScope = useCallback(() => {
     handleGroupScopeChange(null);
-    _aeClearScopeCallback?.();
+    _findingsClearScopeCallback?.();
   }, [handleGroupScopeChange]);
+
+  // Derive endpoint summaries for scatter plot from UnifiedFinding[]
+  const endpointSummaries = useMemo(() => {
+    if (!data?.findings?.length) return [];
+    // Map UnifiedFinding → AdverseEffectSummaryRow shape for deriveEndpointSummaries
+    const rows: AdverseEffectSummaryRow[] = data.findings.map((f) => ({
+      endpoint_label: f.endpoint_label ?? f.finding,
+      endpoint_type: f.data_type,
+      domain: f.domain,
+      organ_system: f.organ_system ?? "unknown",
+      dose_level: 0,
+      dose_label: "",
+      sex: f.sex,
+      p_value: f.min_p_adj,
+      effect_size: f.max_effect_size,
+      direction: f.direction,
+      severity: f.severity,
+      treatment_related: f.treatment_related,
+      dose_response_pattern: f.dose_response_pattern ?? "flat",
+    }));
+    return deriveEndpointSummaries(rows);
+  }, [data]);
 
   if (error) {
     return (
@@ -141,7 +172,7 @@ export function AdverseEffectsView() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
       {/* Filter bar — aligned with other views */}
       <FilterBar>
         <FindingsFilterBar
@@ -166,6 +197,23 @@ export function AdverseEffectsView() {
           </>
         )}
       </FilterBar>
+
+      {/* Quadrant scatter — fixed height between filter bar and table */}
+      {data && endpointSummaries.length > 0 && (
+        <ViewSection
+          title="Findings"
+          mode="fixed"
+          height={scatterSection.height}
+          onResizePointerDown={scatterSection.onPointerDown}
+          contentRef={scatterSection.contentRef}
+        >
+          <FindingsQuadrantScatter
+            endpoints={endpointSummaries}
+            selectedEndpoint={filters.endpoint_label}
+            onSelect={handleEndpointSelect}
+          />
+        </ViewSection>
+      )}
 
       {/* Table */}
       <div className="flex-1 overflow-hidden">
