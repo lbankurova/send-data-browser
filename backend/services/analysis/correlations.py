@@ -69,6 +69,8 @@ def compute_correlations(findings: list[dict], max_pairs: int = 50) -> list[dict
                         "sex": key[1],
                         "rho": round(result["rho"], 4),
                         "p_value": round(result["p_value"], 6) if result["p_value"] is not None else None,
+                        "n": min_len,
+                        "basis": "group_means",
                     })
 
     # Sort by absolute rho descending, take top N

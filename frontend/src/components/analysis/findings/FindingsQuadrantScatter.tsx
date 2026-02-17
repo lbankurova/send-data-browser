@@ -12,6 +12,7 @@ export interface ScatterSelectedPoint {
   label: string;
   effectSize: number;
   rawP: number;
+  domain: string;
 }
 
 interface FindingsQuadrantScatterProps {
@@ -140,6 +141,7 @@ export function FindingsQuadrantScatter({
         label: selectedPt.endpoint_label,
         effectSize: selectedPt.x,
         rawP: selectedPt.rawP,
+        domain: selectedPt.domain,
       });
     } else {
       onSelectedPointChange?.(null);
