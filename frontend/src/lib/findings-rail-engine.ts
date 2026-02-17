@@ -301,9 +301,16 @@ export interface RailFilters {
   trOnly: boolean;
   sigOnly: boolean;
   clinicalS2Plus?: boolean;
+  sex: string | null;       // "M" | "F" | null (all)
+  severity: string | null;  // "adverse" | "warning" | "normal" | null (all)
   /** null = all selected (no filter). Set of group keys to include. */
   groupFilter: ReadonlySet<string> | null;
 }
+
+export const EMPTY_RAIL_FILTERS: RailFilters = {
+  search: "", trOnly: false, sigOnly: false, clinicalS2Plus: false,
+  sex: null, severity: null, groupFilter: null,
+};
 
 export function filterEndpoints(
   endpoints: EndpointWithSignal[],
@@ -325,6 +332,14 @@ export function filterEndpoints(
   if (filters.clinicalS2Plus && clinicalEndpoints) {
     result = result.filter((ep) => clinicalEndpoints.has(ep.endpoint_label));
   }
+  if (filters.sex) {
+    const sex = filters.sex;
+    result = result.filter((ep) => ep.sexes.includes(sex));
+  }
+  if (filters.severity) {
+    const sev = filters.severity;
+    result = result.filter((ep) => ep.worstSeverity === sev);
+  }
   if (filters.groupFilter !== null && grouping !== "finding") {
     result = result.filter((ep) => filters.groupFilter!.has(groupKey(ep, grouping)));
   }
@@ -332,7 +347,7 @@ export function filterEndpoints(
 }
 
 export function isFiltered(filters: RailFilters): boolean {
-  return filters.search !== "" || filters.trOnly || filters.sigOnly || !!filters.clinicalS2Plus || filters.groupFilter !== null;
+  return filters.search !== "" || filters.trOnly || filters.sigOnly || !!filters.clinicalS2Plus || !!filters.sex || !!filters.severity || filters.groupFilter !== null;
 }
 
 // ─── Sort modes ────────────────────────────────────────────
