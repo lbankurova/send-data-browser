@@ -393,14 +393,26 @@ function EvidenceSummaryContent({
   doseGroups?: DoseGroup[];
 }) {
   const isHepatic = syndromeId === "XS01" || syndromeId === "XS02";
+
+  // Cap confidence based on opposite (counter-evidence) count
+  const cappedConfidence: "HIGH" | "MODERATE" | "LOW" =
+    report.oppositeCount >= 2 ? "LOW"
+    : report.oppositeCount >= 1 && confidence === "HIGH" ? "MODERATE"
+    : confidence;
+
   return (
     <div>
       {/* Confidence badge */}
       <div className="mb-2 flex items-center gap-2">
         <span className="text-xs text-muted-foreground">Confidence:</span>
         <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
-          {confidence}
+          {cappedConfidence}
         </span>
+        {report.oppositeCount > 0 && (
+          <span className="text-[9px] text-amber-600">
+            ({report.oppositeCount} argue{report.oppositeCount === 1 ? "s" : ""} against)
+          </span>
+        )}
       </div>
 
       {/* Required findings */}
@@ -694,28 +706,42 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
     );
   }
 
-  if (entry.status === "absent") {
+  if (entry.status === "opposite") {
+    const dirArrow = entry.foundDirection === "up" ? "\u2191" : entry.foundDirection === "down" ? "\u2193" : "";
     return (
-      <div className="flex items-center gap-1.5 text-xs text-red-500/60">
-        <span className="shrink-0">{"\u2717"}</span>
+      <div className="flex items-center gap-1.5 text-xs text-amber-600">
+        <span className="shrink-0">{"\u2298"}</span>
         <span className="min-w-0 flex-1 truncate">{entry.label}</span>
         <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
           {entry.domain}
         </span>
-        <span className="shrink-0 text-[9px] italic text-muted-foreground">(not found)</span>
+        <span className="shrink-0 text-[9px] italic">found {dirArrow} (argues against)</span>
       </div>
     );
   }
 
-  // not_available
+  if (entry.status === "not_significant") {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="shrink-0">{"\u2014"}</span>
+        <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+        <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
+          {entry.domain}
+        </span>
+        <span className="shrink-0 text-[9px] italic text-muted-foreground">present, not significant</span>
+      </div>
+    );
+  }
+
+  // not_measured
   return (
     <div className="flex items-center gap-1.5 text-xs text-muted-foreground/40">
-      <span className="shrink-0">{"\u2014"}</span>
+      <span className="shrink-0">{"\u2717"}</span>
       <span className="min-w-0 flex-1 truncate">{entry.label}</span>
       <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
         {entry.domain}
       </span>
-      <span className="shrink-0 text-[9px] italic text-muted-foreground">(not available)</span>
+      <span className="shrink-0 text-[9px] italic text-muted-foreground">not measured</span>
     </div>
   );
 }

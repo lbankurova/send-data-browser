@@ -7,7 +7,7 @@
 import { describe, test, expect } from "vitest";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import { computeEndpointNoaelMap } from "@/lib/derive-summaries";
-import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
+import { detectCrossDomainSyndromes, getSyndromeTermReport } from "@/lib/cross-domain-syndromes";
 import { classifyFindingPatternWithSex } from "@/lib/pattern-classification";
 import { computeEndpointSignal } from "@/lib/findings-rail-engine";
 import { resolveCanonical } from "@/lib/lab-clinical-catalog";
@@ -278,5 +278,66 @@ describe("signal score per-sex pattern weight", () => {
 
     // Same patterns — no difference
     expect(scoreWith).toBe(scoreWithout);
+  });
+});
+
+// ── Term match status (bug fix: opposite vs not_measured) ────
+
+describe("term match status", () => {
+  // XS04 = Myelosuppression: requires NEUT↓ or PLAT↓ or (RBC↓ AND HGB↓)
+  // Supporting: bone marrow hypocellularity (MI), RETIC↓ (LB), spleen atrophy (MI), spleen weight↓ (OM)
+  const report = getSyndromeTermReport("XS04", endpoints)!;
+
+  test("report is non-null for XS04", () => {
+    expect(report).not.toBeNull();
+  });
+
+  test("RETIC ↑ (present, significant, wrong direction) is 'opposite', not 'not_measured'", () => {
+    // Reticulocytes are present in the data with direction UP, p=0.003213 (F sex)
+    // XS04 expects RETIC↓ — this is active counter-evidence
+    const reticEntry = report.supportingEntries.find(e => e.label.startsWith("RETIC"));
+    expect(reticEntry).toBeDefined();
+    expect(reticEntry!.status).toBe("opposite");
+    expect(reticEntry!.foundDirection).toBe("up");
+  });
+
+  test("Bone marrow hypocellularity (not in data) is 'not_measured'", () => {
+    // No bone marrow hypocellularity findings exist in PointCross
+    const bmEntry = report.supportingEntries.find(e => e.label.toLowerCase().includes("bone marrow"));
+    expect(bmEntry).toBeDefined();
+    expect(bmEntry!.status).toBe("not_measured");
+  });
+
+  test("report.oppositeCount counts opposite entries across required + supporting", () => {
+    expect(typeof report.oppositeCount).toBe("number");
+    expect(report.oppositeCount).toBeGreaterThanOrEqual(1); // at least RETIC
+  });
+
+  test("NEUT ↓ required term should be 'matched' (M sex has NEUT down, adverse)", () => {
+    const neutEntry = report.requiredEntries.find(e => e.label.startsWith("NEUT"));
+    expect(neutEntry).toBeDefined();
+    // NEUT M is down/adverse → should match XS04 NEUT↓ required
+    expect(neutEntry!.status).toBe("matched");
+  });
+
+  test("PLAT with p=0.15 shows 'not_significant'", () => {
+    const mockEndpoints: EndpointSummary[] = [{
+      endpoint_label: "Platelets",
+      organ_system: "hematologic",
+      domain: "LB",
+      worstSeverity: "normal",
+      treatmentRelated: false,
+      pattern: "flat",
+      minPValue: 0.15,
+      maxEffectSize: 0.3,
+      direction: "down",
+      sexes: [],
+      maxFoldChange: null,
+      testCode: "PLAT",
+    }];
+    const r = getSyndromeTermReport("XS04", mockEndpoints)!;
+    const platEntry = r.requiredEntries.find(e => e.label.startsWith("PLAT"));
+    expect(platEntry).toBeDefined();
+    expect(platEntry!.status).toBe("not_significant");
   });
 });

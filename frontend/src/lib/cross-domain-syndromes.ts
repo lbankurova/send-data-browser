@@ -169,6 +169,67 @@ function matchEndpoint(ep: EndpointSummary, term: SyndromeTermMatch): boolean {
   return false;
 }
 
+/**
+ * Identity-only matching: checks domain + test codes / canonical labels /
+ * specimen+finding / organ weight — but skips the direction check.
+ * Used for two-pass term evaluation (find the endpoint first, classify status second).
+ */
+function matchEndpointIdentity(ep: EndpointSummary, term: SyndromeTermMatch): boolean {
+  // 1. Domain must match
+  if (ep.domain.toUpperCase() !== term.domain) return false;
+
+  // NO direction check — identity only
+
+  // 2. Match by test code (LB domain, highest priority)
+  if (term.testCodes) {
+    const epTestCode = ep.testCode?.toUpperCase();
+    if (epTestCode && term.testCodes.includes(epTestCode)) return true;
+  }
+
+  // 3. Match by canonical label (exact after normalization)
+  if (term.canonicalLabels) {
+    const normalized = normalizeLabel(ep.endpoint_label);
+    if (term.canonicalLabels.some((cl) => normalized === cl)) return true;
+  }
+
+  // 4. Match by specimen + finding (MI/MA domain)
+  if (term.specimenTerms) {
+    let specimen = ep.specimen;
+    let finding = ep.finding;
+    if (!specimen || !finding) {
+      const parsed = parseSpecimenFinding(ep.endpoint_label);
+      if (parsed) {
+        specimen = specimen ?? parsed.specimen;
+        finding = finding ?? parsed.finding;
+      }
+    }
+    if (specimen && finding) {
+      const normSpecimen = normalizeLabel(specimen);
+      const normFinding = normalizeLabel(finding);
+      const specimenMatch = term.specimenTerms.specimen.length === 0 ||
+        term.specimenTerms.specimen.some((s) => containsWord(normSpecimen, s));
+      const findingMatch = term.specimenTerms.finding.some((f) => containsWord(normFinding, f));
+      if (specimenMatch && findingMatch) return true;
+    }
+  }
+
+  // 5. Match by organ weight specimen (OM domain)
+  if (term.organWeightTerms) {
+    let specimen = ep.specimen;
+    if (!specimen) {
+      const parsed = parseSpecimenFinding(ep.endpoint_label);
+      specimen = parsed?.specimen ?? ep.endpoint_label;
+    }
+    const normSpecimen = normalizeLabel(specimen);
+    if (term.organWeightTerms.specimen.length === 0 ||
+        term.organWeightTerms.specimen.some((s) => containsWord(normSpecimen, s))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 /** Supporting finding gate: must show SOME evidence of being real. */
 function passesSupportingGate(ep: EndpointSummary): boolean {
   return (
@@ -917,10 +978,14 @@ export interface TermReportEntry {
   domain: string;       // "LB", "MI", "OM"
   role: "required" | "supporting";
   tag?: string;
-  status: "matched" | "absent" | "not_available";
-  matchedEndpoint?: string;  // endpoint_label if matched
+  status: "matched" | "opposite" | "not_significant" | "not_measured";
+  matchedEndpoint?: string;  // endpoint_label if matched or found
   pValue?: number | null;
   severity?: string;
+  /** Direction of the found endpoint (for opposite status display) */
+  foundDirection?: "up" | "down" | "none" | null;
+  /** Sex tag when syndrome detected for one sex only (e.g. "M" or "F") */
+  sex?: string | null;
 }
 
 export interface SyndromeTermReport {
@@ -932,6 +997,8 @@ export interface SyndromeTermReport {
   supportingTotal: number;
   domainsCovered: string[];
   missingDomains: string[];   // domains with terms but no matches
+  /** Count of "opposite" entries across required + supporting (active counter-evidence) */
+  oppositeCount: number;
 }
 
 /**
@@ -945,9 +1012,6 @@ export function getSyndromeTermReport(
   const def = SYNDROME_DEFINITIONS.find((s) => s.id === syndromeId);
   if (!def) return null;
 
-  // Domains present in the study data
-  const studyDomains = new Set(endpoints.map((ep) => ep.domain.toUpperCase()));
-
   const requiredEntries: TermReportEntry[] = [];
   const supportingEntries: TermReportEntry[] = [];
 
@@ -958,11 +1022,11 @@ export function getSyndromeTermReport(
       domain: term.domain,
       role: term.role,
       tag: term.tag,
-      status: "not_available",
+      status: "not_measured",
     };
 
-    // Try to find a matching endpoint
-    let matched = false;
+    // Pass 1: Full match (identity + direction + severity gate)
+    let fullMatch = false;
     for (const ep of endpoints) {
       if (matchEndpoint(ep, term)) {
         // For required terms, only match adverse/warning
@@ -974,15 +1038,39 @@ export function getSyndromeTermReport(
         entry.matchedEndpoint = ep.endpoint_label;
         entry.pValue = ep.minPValue;
         entry.severity = ep.worstSeverity;
-        matched = true;
+        entry.foundDirection = ep.direction;
+        fullMatch = true;
         break;
       }
     }
 
-    if (!matched) {
-      // Domain is in the study but no match → "absent"
-      // Domain not in the study at all → "not_available"
-      entry.status = studyDomains.has(term.domain) ? "absent" : "not_available";
+    // Pass 2: Identity-only match (if Pass 1 failed) — classify WHY it didn't match
+    if (!fullMatch) {
+      let identityMatch: EndpointSummary | null = null;
+      for (const ep of endpoints) {
+        if (matchEndpointIdentity(ep, term)) {
+          identityMatch = ep;
+          break;
+        }
+      }
+
+      if (!identityMatch) {
+        // No identity match at all → not measured
+        entry.status = "not_measured";
+      } else {
+        // Identity matched — check significance
+        const isSignificant = identityMatch.minPValue != null && identityMatch.minPValue < 0.05;
+        if (!isSignificant) {
+          entry.status = "not_significant";
+        } else {
+          // Significant but wrong direction (or failed severity gate) → opposite
+          entry.status = "opposite";
+        }
+        entry.matchedEndpoint = identityMatch.endpoint_label;
+        entry.pValue = identityMatch.minPValue;
+        entry.severity = identityMatch.worstSeverity;
+        entry.foundDirection = identityMatch.direction;
+      }
     }
 
     if (term.role === "required") {
@@ -1008,6 +1096,9 @@ export function getSyndromeTermReport(
     .filter((d) => !domainsCovered.includes(d))
     .sort();
 
+  const oppositeCount = [...requiredEntries, ...supportingEntries]
+    .filter((e) => e.status === "opposite").length;
+
   return {
     requiredEntries,
     supportingEntries,
@@ -1017,6 +1108,7 @@ export function getSyndromeTermReport(
     supportingTotal: supportingEntries.length,
     domainsCovered,
     missingDomains,
+    oppositeCount,
   };
 }
 
