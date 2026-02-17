@@ -1,18 +1,26 @@
 import { cn } from "@/lib/utils";
-import { formatPValue, getPValueColor } from "@/lib/severity-colors";
+import { formatPValue, getPValueColor, titleCase } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import type { FindingContext } from "@/types/analysis";
 import { InsightBlock } from "./InsightBlock";
 
 interface Props {
   data: FindingContext["correlations"];
+  organSystem?: string | null;
 }
 
-export function CorrelationsPane({ data }: Props) {
+export function CorrelationsPane({ data, organSystem }: Props) {
   if (data.related.length === 0) {
+    const organSuffix = organSystem ? ` in ${titleCase(organSystem)}` : "";
     return (
       <div className="space-y-3">
-        <InsightBlock insights={data.insights} />
+        {data.insights.length > 0 ? (
+          <InsightBlock insights={data.insights} />
+        ) : (
+          <div className="text-xs text-muted-foreground">
+            No correlated findings{organSuffix}
+          </div>
+        )}
       </div>
     );
   }

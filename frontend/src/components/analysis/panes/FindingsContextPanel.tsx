@@ -8,11 +8,11 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import type { ToxFinding } from "@/types/annotations";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
-import { TreatmentRelatedSummaryPane } from "./TreatmentRelatedSummaryPane";
-import { StatisticsPane } from "./StatisticsPane";
-import { DoseResponsePane } from "./DoseResponsePane";
+import { VerdictPane } from "./VerdictPane";
+import { EvidencePane } from "./EvidencePane";
+import { DoseDetailPane } from "./DoseDetailPane";
 import { CorrelationsPane } from "./CorrelationsPane";
-import { EffectSizePane } from "./EffectSizePane";
+import { ContextPane } from "./ContextPane";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function FindingsContextPanel() {
@@ -97,8 +97,13 @@ export function FindingsContextPanel() {
 
   if (!context) return null;
 
+  const notEvaluated = toxAnnotations && selectedFinding
+    ? toxAnnotations[selectedFinding.endpoint_label ?? selectedFinding.finding]?.treatmentRelated === "Not Evaluated"
+    : false;
+
   return (
     <div>
+      {/* Sticky header */}
       <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">{selectedFinding.finding}</h3>
@@ -110,37 +115,54 @@ export function FindingsContextPanel() {
         </p>
       </div>
 
-      <CollapsiblePane title="Treatment summary" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <TreatmentRelatedSummaryPane
-          data={context.treatment_summary}
+      {/* Verdict — always visible, not in CollapsiblePane */}
+      <div className="border-b px-4 py-3">
+        <VerdictPane
           finding={selectedFinding}
           analytics={analytics}
           noael={noael}
           doseResponse={context.dose_response}
           statistics={context.statistics}
+          treatmentSummary={context.treatment_summary}
           endpointSexes={endpointSexes}
-          notEvaluated={
-            toxAnnotations && selectedFinding
-              ? toxAnnotations[selectedFinding.endpoint_label ?? selectedFinding.finding]?.treatmentRelated === "Not Evaluated"
-              : false
-          }
+          notEvaluated={notEvaluated}
+        />
+      </div>
+
+      <CollapsiblePane title="Evidence" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <EvidencePane
+          finding={selectedFinding}
+          analytics={analytics}
+          statistics={context.statistics}
+          effectSize={context.effect_size}
         />
       </CollapsiblePane>
 
-      <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <StatisticsPane data={context.statistics} />
-      </CollapsiblePane>
-
-      <CollapsiblePane title="Dose response" expandAll={expandGen} collapseAll={collapseGen}>
-        <DoseResponsePane data={context.dose_response} />
+      <CollapsiblePane
+        title="Dose detail"
+        defaultOpen
+        expandAll={expandGen}
+        collapseAll={collapseGen}
+        headerRight={context.statistics.unit ? <span className="text-[10px] text-muted-foreground">Unit: {context.statistics.unit}</span> : undefined}
+      >
+        <DoseDetailPane
+          statistics={context.statistics}
+          doseResponse={context.dose_response}
+        />
       </CollapsiblePane>
 
       <CollapsiblePane title="Correlations" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <CorrelationsPane data={context.correlations} />
+        <CorrelationsPane
+          data={context.correlations}
+          organSystem={selectedFinding.organ_system}
+        />
       </CollapsiblePane>
 
-      <CollapsiblePane title="Effect size" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <EffectSizePane data={context.effect_size} />
+      <CollapsiblePane title="Context" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <ContextPane
+          effectSize={context.effect_size}
+          selectedFindingId={selectedFindingId}
+        />
       </CollapsiblePane>
 
       {/* Related views */}
