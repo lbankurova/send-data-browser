@@ -7,7 +7,7 @@ import type { EndpointSummary, OrganCoherence, NoaelTier } from "@/lib/derive-su
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { resolveCanonical } from "@/lib/lab-clinical-catalog";
-import { getOrganColor } from "@/lib/severity-colors";
+
 
 /** Hex domain color for use in tooltip HTML (not Tailwind classes). */
 function getDomainHexColor(domain: string): string {
@@ -166,11 +166,9 @@ export function buildFindingsQuadrantOption(
     let opacity = isSelected ? 1 : isClinical ? 0.75 : (pt.coherenceSize || isAdverse) ? 0.65 : 0.5;
     if (isOutOfScope) opacity = 0.15;
 
-    // Dot color: selected → organ color, low NOAEL → warm rose, clinical → dark gray, default → gray
+    // Dot color: low NOAEL → warm rose, clinical → dark gray, default → gray
     let dotColor: string;
-    if (isSelected) {
-      dotColor = getOrganColor(pt.organ_system);
-    } else if (isLowNoael) {
+    if (isLowNoael) {
       dotColor = pt.noaelTier === "below-lowest"
         ? "rgba(248,113,113,0.6)"
         : "rgba(248,113,113,0.4)";
