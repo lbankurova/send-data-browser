@@ -271,13 +271,16 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
             const reason = analytics
               ? explainRuleNotTriggered(r.id, analytics.endpoints, analytics.organCoherence, analytics.syndromes)
               : null;
+            const subsumed = reason?.startsWith("Conditions met");
             return (
               <div key={r.id} className="text-[10px] text-muted-foreground">
                 <span className="font-mono">{r.id}</span> {r.name}:{" "}
                 {approaching
                   ? <span className="font-medium text-amber-600">APPROACHING</span>
-                  : <span className="font-medium text-green-600">NOT triggered</span>}
-                {reason && (
+                  : subsumed
+                    ? <span className="text-muted-foreground/60">SUBSUMED</span>
+                    : <span className="font-medium text-green-600">NOT triggered</span>}
+                {reason && !subsumed && (
                   <div className="ml-3 text-[9px]">
                     {reason}
                   </div>
