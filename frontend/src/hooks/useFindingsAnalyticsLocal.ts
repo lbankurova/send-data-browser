@@ -114,6 +114,7 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
   }, [endpointSummaries]);
 
   return useMemo(() => ({
+    endpoints: endpointSummaries,
     syndromes,
     organCoherence,
     labMatches,

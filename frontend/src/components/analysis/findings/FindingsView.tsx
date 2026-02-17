@@ -369,12 +369,13 @@ export function FindingsView() {
 
   // Analytics context value for context panel consumption
   const analyticsValue = useMemo(() => ({
+    endpoints: endpointSummaries,
     syndromes,
     organCoherence,
     labMatches,
     signalScores: signalScoreMap,
     endpointSexes,
-  }), [syndromes, organCoherence, labMatches, signalScoreMap, endpointSexes]);
+  }), [endpointSummaries, syndromes, organCoherence, labMatches, signalScoreMap, endpointSexes]);
 
   if (error) {
     return (
