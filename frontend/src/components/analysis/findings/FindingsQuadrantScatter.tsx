@@ -161,6 +161,9 @@ export function FindingsQuadrantScatter({
     // Diamond = clinical S3/S4, darker gray
     if (points.some((p) => p.clinicalSeverity === "S3" || p.clinicalSeverity === "S4"))
       entries.push({ symbol: "\u25C6", label: "clinical S3+", color: "#6B7280" });
+    // Warm rose dot = low NOAEL (below-lowest or at-lowest)
+    if (points.some((p) => p.noaelTier === "below-lowest" || p.noaelTier === "at-lowest"))
+      entries.push({ symbol: "\u25CF", label: "low NOAEL", color: "rgba(248,113,113,0.7)" });
     return entries;
   }, [points]);
 

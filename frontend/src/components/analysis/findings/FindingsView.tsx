@@ -12,7 +12,7 @@ import type { RailVisibleState } from "./FindingsRail";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
-import { deriveEndpointSummaries, deriveOrganCoherence } from "@/lib/derive-summaries";
+import { deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules } from "@/lib/lab-clinical-catalog";
 import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
@@ -196,7 +196,20 @@ export function FindingsView() {
         max_incidence: maxInc,
       };
     });
-    return deriveEndpointSummaries(rows);
+    const summaries = deriveEndpointSummaries(rows);
+    // Enrich with per-endpoint NOAEL tiers
+    if (data.dose_groups) {
+      const noaelMap = computeEndpointNoaelMap(data.findings, data.dose_groups);
+      for (const ep of summaries) {
+        const noael = noaelMap.get(ep.endpoint_label);
+        if (noael) {
+          ep.noaelTier = noael.tier;
+          ep.noaelDoseValue = noael.doseValue;
+          ep.noaelDoseUnit = noael.doseUnit;
+        }
+      }
+    }
+    return summaries;
   }, [data]);
 
   // Phase 3: organ coherence, cross-domain syndromes, lab clinical rules
@@ -290,6 +303,10 @@ export function FindingsView() {
             <p className="mt-1.5 font-medium">Reference lines:</p>
             <p><span className="text-muted-foreground">&mdash;</span> Vertical at |d| = 0.8 (large effect)</p>
             <p><span className="text-muted-foreground">&mdash;</span> Horizontal at p = 0.05 (significance)</p>
+            <p className="mt-1.5 font-medium">Dot color:</p>
+            <p><span className="text-muted-foreground">&bull;</span> Gray = effect at higher doses only</p>
+            <p><span style={{ color: "rgba(248,113,113,0.8)" }}>&bull;</span> Warm = NOAEL below lowest tested dose</p>
+            <p className="pl-3 text-muted-foreground">(effect present at all doses)</p>
             <p className="mt-1.5 italic text-muted-foreground">
               Upper-right quadrant = investigate first. Dots show the strongest result across all timepoints and sexes for each endpoint.
             </p>
