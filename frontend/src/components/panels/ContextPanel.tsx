@@ -11,7 +11,7 @@ import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
-import { AdverseEffectsContextPanel } from "@/components/analysis/panes/AdverseEffectsContextPanel";
+import { FindingsContextPanel } from "@/components/analysis/panes/FindingsContextPanel";
 import { StudySummaryContextPanel } from "@/components/analysis/panes/StudySummaryContextPanel";
 import { NoaelContextPanel } from "@/components/analysis/panes/NoaelContextPanel";
 import { DoseResponseContextPanel } from "@/components/analysis/panes/DoseResponseContextPanel";
@@ -436,7 +436,7 @@ export function ContextPanel() {
 
   // Route detection
   const isLandingPageRoute = location.pathname === "/";
-  const isAdverseEffectsRoute = /\/studies\/[^/]+\/(analyses\/)?adverse-effects/.test(
+  const isFindingsRoute = /\/studies\/[^/]+\/(findings|(analyses\/)?adverse-effects)/.test(
     location.pathname
   );
   const isStudySummaryRoute =
@@ -460,8 +460,8 @@ export function ContextPanel() {
     }
   }
 
-  if (isAdverseEffectsRoute) {
-    return <AdverseEffectsContextPanel />;
+  if (isFindingsRoute) {
+    return <FindingsContextPanel />;
   }
 
   if (isNoaelRoute && activeStudyId) {

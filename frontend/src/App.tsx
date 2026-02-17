@@ -7,7 +7,7 @@ import { CenterPanel } from "@/components/panels/CenterPanel";
 import { PlaceholderAnalysisView } from "@/components/analysis/PlaceholderAnalysisView";
 import { StudySummaryViewWrapper } from "@/components/analysis/StudySummaryViewWrapper";
 
-const AdverseEffectsViewWrapper = lazy(() => import("@/components/analysis/findings/AdverseEffectsViewWrapper").then(m => ({ default: m.AdverseEffectsViewWrapper })));
+const FindingsViewWrapper = lazy(() => import("@/components/analysis/findings/FindingsViewWrapper").then(m => ({ default: m.FindingsViewWrapper })));
 
 // Lazy-loaded analysis views (code-split into separate chunks)
 const DoseResponseViewWrapper = lazy(() => import("@/components/analysis/DoseResponseViewWrapper").then(m => ({ default: m.DoseResponseViewWrapper })));
@@ -39,13 +39,17 @@ const router = createBrowserRouter([
         element: <CenterPanel />,
       },
       {
-        path: "/studies/:studyId/adverse-effects",
-        element: <LazyRoute><AdverseEffectsViewWrapper /></LazyRoute>,
+        path: "/studies/:studyId/findings",
+        element: <LazyRoute><FindingsViewWrapper /></LazyRoute>,
       },
-      // Legacy route redirect
+      // Legacy route redirects
+      {
+        path: "/studies/:studyId/adverse-effects",
+        element: <Navigate to="../findings" replace />,
+      },
       {
         path: "/studies/:studyId/analyses/adverse-effects",
-        element: <LazyRoute><AdverseEffectsViewWrapper /></LazyRoute>,
+        element: <Navigate to="../../findings" replace />,
       },
       // Analysis views
       {

@@ -26,18 +26,25 @@ export function DoseLabel({ level, label, tooltip, className }: DoseLabelProps) 
 interface DoseHeaderProps {
   level: number;
   label: string;
+  /** Full dose label shown as tooltip (e.g., "200 mg/kg") */
+  tooltip?: string;
+  /** Small unit annotation rendered below the underline (e.g., "mg/kg") — only on first dose column */
+  unitLabel?: string;
   className?: string;
 }
 
 /** Dose column header with colored underline indicator. */
-export function DoseHeader({ level, label, className }: DoseHeaderProps) {
+export function DoseHeader({ level, label, tooltip, unitLabel, className }: DoseHeaderProps) {
   return (
-    <div className={cn("flex flex-col items-center gap-0.5", className)}>
+    <div className={cn("flex flex-col items-center gap-0.5", className)} title={tooltip}>
       <span>{label}</span>
       <span
         className="h-0.5 w-full rounded-full"
         style={{ backgroundColor: getDoseGroupColor(level) }}
       />
+      {unitLabel && (
+        <span className="text-[9px] leading-none text-muted-foreground/50">{unitLabel}</span>
+      )}
     </div>
   );
 }
