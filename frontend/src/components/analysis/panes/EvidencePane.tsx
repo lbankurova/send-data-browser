@@ -13,6 +13,7 @@ import {
   getRelatedRules,
   isLiverParameter,
   getThresholdNumericValue,
+  explainRuleNotTriggered,
 } from "@/lib/lab-clinical-catalog";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -165,7 +166,7 @@ function buildClinicalSection(
   return { match, canonical, isLabEndpoint, relatedRules, firedRuleIds };
 }
 
-function ClinicalSignificanceSection({ section }: { section: ClinicalSection }) {
+function ClinicalSignificanceSection({ section, analytics }: { section: ClinicalSection; analytics?: FindingsAnalytics }) {
   const { match, canonical, isLabEndpoint, relatedRules, firedRuleIds } = section;
 
   if (!isLabEndpoint) return null;
@@ -267,25 +268,18 @@ function ClinicalSignificanceSection({ section }: { section: ClinicalSection }) 
           </div>
           {hysLawRules.map((r) => {
             const approaching = approachingSet.has(r.id);
+            const reason = analytics
+              ? explainRuleNotTriggered(r.id, analytics.endpoints, analytics.organCoherence, analytics.syndromes)
+              : null;
             return (
               <div key={r.id} className="text-[10px] text-muted-foreground">
                 <span className="font-mono">{r.id}</span> {r.name}:{" "}
                 {approaching
                   ? <span className="font-medium text-amber-600">APPROACHING</span>
                   : <span className="font-medium text-green-600">NOT triggered</span>}
-                {r.id === "L03" && (
+                {reason && (
                   <div className="ml-3 text-[9px]">
-                    Concurrent ALT + bilirubin elevation required
-                  </div>
-                )}
-                {r.id === "L07" && (
-                  <div className="ml-3 text-[9px]">
-                    Classic Hy{"\u2019"}s Law pattern not met (ALT + bilirubin {"\u2191"} without ALP {"\u2191"})
-                  </div>
-                )}
-                {r.id === "L08" && (
-                  <div className="ml-3 text-[9px]">
-                    Nonclinical Hy{"\u2019"}s Law-like pattern not met
+                    {reason}
                   </div>
                 )}
               </div>
@@ -342,7 +336,7 @@ export function EvidencePane({ finding, analytics, statistics, effectSize }: Pro
         </div>
       )}
 
-      <ClinicalSignificanceSection section={clinicalSection} />
+      <ClinicalSignificanceSection section={clinicalSection} analytics={analytics} />
     </div>
   );
 }
