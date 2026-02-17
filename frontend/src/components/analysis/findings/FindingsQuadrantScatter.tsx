@@ -122,14 +122,6 @@ export function FindingsQuadrantScatter({
     [syndromeMembers],
   );
 
-  if (points.length === 0) {
-    return (
-      <div className="flex h-20 items-center justify-center text-xs text-muted-foreground">
-        No endpoints with both effect size and p-value
-      </div>
-    );
-  }
-
   // Selection summary — notify parent for section header
   const selectedPt = selectedEndpoint
     ? points.find((p) => p.endpoint_label === selectedEndpoint)
@@ -166,6 +158,14 @@ export function FindingsQuadrantScatter({
       entries.push({ symbol: "\u25CF", label: "low NOAEL", color: "rgba(248,113,113,0.7)" });
     return entries;
   }, [points]);
+
+  if (points.length === 0) {
+    return (
+      <div className="flex h-20 items-center justify-center text-xs text-muted-foreground">
+        No endpoints with both effect size and p-value
+      </div>
+    );
+  }
 
   // Count label: "53/60 endpoints" when some are unplottable, "60 endpoints" otherwise
   const gap = totalEndpoints - points.length;
