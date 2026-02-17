@@ -802,6 +802,158 @@ export function getSyndromeNearMissInfo(
   return { wouldRequire, matched, missing };
 }
 
+// ─── Term report for Evidence Summary pane ────────────────
+
+export interface TermReportEntry {
+  label: string;        // "ALT ↑", "Bone marrow hypocellularity"
+  domain: string;       // "LB", "MI", "OM"
+  role: "required" | "supporting";
+  tag?: string;
+  status: "matched" | "absent" | "not_available";
+  matchedEndpoint?: string;  // endpoint_label if matched
+  pValue?: number | null;
+  severity?: string;
+}
+
+export interface SyndromeTermReport {
+  requiredEntries: TermReportEntry[];
+  supportingEntries: TermReportEntry[];
+  requiredMetCount: number;
+  requiredTotal: number;
+  supportingMetCount: number;
+  supportingTotal: number;
+  domainsCovered: string[];
+  missingDomains: string[];   // domains with terms but no matches
+}
+
+/**
+ * Build a structured evidence report for the Evidence Summary pane.
+ * For each term in the syndrome definition, checks whether any endpoint matches.
+ */
+export function getSyndromeTermReport(
+  syndromeId: string,
+  endpoints: EndpointSummary[],
+): SyndromeTermReport | null {
+  const def = SYNDROME_DEFINITIONS.find((s) => s.id === syndromeId);
+  if (!def) return null;
+
+  // Domains present in the study data
+  const studyDomains = new Set(endpoints.map((ep) => ep.domain.toUpperCase()));
+
+  const requiredEntries: TermReportEntry[] = [];
+  const supportingEntries: TermReportEntry[] = [];
+
+  for (const term of def.terms) {
+    const label = getTermDisplayLabel(term);
+    const entry: TermReportEntry = {
+      label,
+      domain: term.domain,
+      role: term.role,
+      tag: term.tag,
+      status: "not_available",
+    };
+
+    // Try to find a matching endpoint
+    let matched = false;
+    for (const ep of endpoints) {
+      if (matchEndpoint(ep, term)) {
+        // For required terms, only match adverse/warning
+        if (term.role === "required" && ep.worstSeverity !== "adverse" && ep.worstSeverity !== "warning") continue;
+        // For supporting terms, apply supporting gate
+        if (term.role === "supporting" && !passesSupportingGate(ep)) continue;
+
+        entry.status = "matched";
+        entry.matchedEndpoint = ep.endpoint_label;
+        entry.pValue = ep.minPValue;
+        entry.severity = ep.worstSeverity;
+        matched = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      // Domain is in the study but no match → "absent"
+      // Domain not in the study at all → "not_available"
+      entry.status = studyDomains.has(term.domain) ? "absent" : "not_available";
+    }
+
+    if (term.role === "required") {
+      requiredEntries.push(entry);
+    } else {
+      supportingEntries.push(entry);
+    }
+  }
+
+  const requiredMetCount = requiredEntries.filter((e) => e.status === "matched").length;
+  const supportingMetCount = supportingEntries.filter((e) => e.status === "matched").length;
+
+  // Domains covered = domains with at least one match
+  const domainsCovered = [...new Set(
+    [...requiredEntries, ...supportingEntries]
+      .filter((e) => e.status === "matched")
+      .map((e) => e.domain),
+  )].sort();
+
+  // Missing domains = domains with terms defined but NO matches
+  const allTermDomains = [...new Set(def.terms.map((t) => t.domain))];
+  const missingDomains = allTermDomains
+    .filter((d) => !domainsCovered.includes(d))
+    .sort();
+
+  return {
+    requiredEntries,
+    supportingEntries,
+    requiredMetCount,
+    requiredTotal: requiredEntries.length,
+    supportingMetCount,
+    supportingTotal: supportingEntries.length,
+    domainsCovered,
+    missingDomains,
+  };
+}
+
+/**
+ * Derive a human-readable display label from a SyndromeTermMatch.
+ * Priority: testCodes → canonicalLabels → specimenTerms → organWeightTerms.
+ * Direction appended as arrow: ↑ for "up", ↓ for "down", omitted for "any".
+ */
+export function getTermDisplayLabel(term: SyndromeTermMatch): string {
+  const dirArrow = term.direction === "up" ? " ↑" : term.direction === "down" ? " ↓" : "";
+
+  if (term.testCodes && term.testCodes.length > 0) {
+    return term.testCodes[0] + dirArrow;
+  }
+  if (term.canonicalLabels && term.canonicalLabels.length > 0) {
+    // Title case the first canonical label
+    const label = term.canonicalLabels[0]
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+    return label + dirArrow;
+  }
+  if (term.specimenTerms) {
+    const specimen = term.specimenTerms.specimen.length > 0
+      ? term.specimenTerms.specimen[0].charAt(0).toUpperCase() + term.specimenTerms.specimen[0].slice(1)
+      : "Any";
+    const finding = term.specimenTerms.finding[0] ?? "finding";
+    return `${specimen} ${finding}${dirArrow}`;
+  }
+  if (term.organWeightTerms) {
+    const specimen = term.organWeightTerms.specimen.length > 0
+      ? term.organWeightTerms.specimen[0].charAt(0).toUpperCase() + term.organWeightTerms.specimen[0].slice(1)
+      : "Organ";
+    return `${specimen} weight${dirArrow}`;
+  }
+  return "Unknown term" + dirArrow;
+}
+
+// ─── Syndrome definition lookup ───────────────────────────
+
+/** Get a syndrome definition by ID (for external consumers). */
+export function getSyndromeDefinition(syndromeId: string): SyndromeDefinition | undefined {
+  return SYNDROME_DEFINITIONS.find((s) => s.id === syndromeId);
+}
+
 /** Format required logic as human-readable text. */
 function formatRequiredLogic(logic: RequiredLogic, allTags: string[]): string {
   switch (logic.type) {
