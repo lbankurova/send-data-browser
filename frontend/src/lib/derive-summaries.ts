@@ -4,8 +4,18 @@
  */
 
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
+import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
 // ─── Public types ──────────────────────────────────────────
+
+/** NOAEL tier relative to the dose range. Only "below-lowest" and "at-lowest" get color tint. */
+export type NoaelTier = "below-lowest" | "at-lowest" | "mid" | "high" | "none";
+
+export interface EndpointNoael {
+  tier: NoaelTier;
+  doseValue: number | null;
+  doseUnit: string | null;
+}
 
 export interface OrganSummary {
   organ_system: string;
@@ -36,6 +46,12 @@ export interface EndpointSummary {
   finding?: string | null;
   /** Maximum incidence across treated dose groups (0-1) */
   maxIncidence?: number | null;
+  /** NOAEL tier relative to the dose range */
+  noaelTier?: NoaelTier;
+  /** NOAEL dose value (null when tier is "below-lowest" or "none") */
+  noaelDoseValue?: number | null;
+  /** NOAEL dose unit */
+  noaelDoseUnit?: string | null;
 }
 
 export interface OrganCoherence {
@@ -235,5 +251,89 @@ export function deriveOrganCoherence(endpoints: EndpointSummary[]): Map<string, 
             : "single domain",
     });
   }
+  return result;
+}
+
+// ─── Endpoint NOAEL computation ─────────────────────────────
+
+/**
+ * Compute per-endpoint NOAEL tier from pairwise comparison results.
+ * For each endpoint, finds LOAEL (lowest dose where p_value_adj < 0.05),
+ * then NOAEL = one level below. Aggregates across sexes (worst = lowest NOAEL).
+ */
+export function computeEndpointNoaelMap(
+  findings: UnifiedFinding[],
+  doseGroups: DoseGroup[],
+): Map<string, EndpointNoael> {
+  // Build sorted treated dose levels with their values/units
+  const treated = doseGroups
+    .filter((g) => g.dose_level > 0)
+    .sort((a, b) => a.dose_level - b.dose_level);
+  if (treated.length === 0) return new Map();
+
+  const doseLevels = treated.map((g) => g.dose_level);
+  const doseInfo = new Map(treated.map((g) => [g.dose_level, { value: g.dose_value, unit: g.dose_unit }]));
+
+  // Group findings by endpoint label
+  const byEndpoint = new Map<string, UnifiedFinding[]>();
+  for (const f of findings) {
+    const label = f.endpoint_label ?? f.finding;
+    let list = byEndpoint.get(label);
+    if (!list) {
+      list = [];
+      byEndpoint.set(label, list);
+    }
+    list.push(f);
+  }
+
+  const result = new Map<string, EndpointNoael>();
+
+  for (const [label, epFindings] of byEndpoint) {
+    // Find LOAEL across all sexes: lowest dose_level with p_value_adj < 0.05
+    let loaelLevel: number | null = null;
+
+    for (const f of epFindings) {
+      for (const pw of f.pairwise) {
+        if (pw.p_value_adj != null && pw.p_value_adj < 0.05 && pw.dose_level > 0) {
+          if (loaelLevel === null || pw.dose_level < loaelLevel) {
+            loaelLevel = pw.dose_level;
+          }
+        }
+      }
+    }
+
+    if (loaelLevel === null) {
+      // No significant pairwise → NOAEL not derivable from this data
+      result.set(label, { tier: "none", doseValue: null, doseUnit: null });
+      continue;
+    }
+
+    // NOAEL = one level below LOAEL in dose sequence
+    const loaelIdx = doseLevels.indexOf(loaelLevel);
+    if (loaelIdx <= 0) {
+      // LOAEL is lowest dose → NOAEL is below the lowest tested dose
+      const lowestInfo = doseInfo.get(doseLevels[0]);
+      result.set(label, {
+        tier: "below-lowest",
+        doseValue: lowestInfo?.value ?? null,
+        doseUnit: lowestInfo?.unit ?? null,
+      });
+    } else {
+      const noaelLevel = doseLevels[loaelIdx - 1];
+      const info = doseInfo.get(noaelLevel);
+      // Tier based on position: at-lowest if NOAEL = first dose, mid/high otherwise
+      const tier: NoaelTier = loaelIdx === 1
+        ? "at-lowest"
+        : loaelIdx === 2
+          ? "mid"
+          : "high";
+      result.set(label, {
+        tier,
+        doseValue: info?.value ?? null,
+        doseUnit: info?.unit ?? null,
+      });
+    }
+  }
+
   return result;
 }
