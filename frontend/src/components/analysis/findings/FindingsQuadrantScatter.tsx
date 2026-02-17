@@ -130,17 +130,19 @@ export function FindingsQuadrantScatter({
     }
   }, [selectedPt?.endpoint_label, selectedPt?.x, selectedPt?.rawP, onSelectedPointChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Legend entries — only show what's present in data
+  // Legend entries — only show visually distinct categories present in data
+  // At rest: all dots are gray. Differences are size + shape only.
   const legendEntries = useMemo(() => {
-    const entries: { symbol: string; label: string }[] = [];
+    const entries: { symbol: string; label: string; color?: string }[] = [];
+    // Small dot = warning/normal (size 5)
+    if (points.some((p) => p.worstSeverity !== "adverse" && !(p.clinicalSeverity === "S3" || p.clinicalSeverity === "S4")))
+      entries.push({ symbol: "\u2022", label: "warning/normal" });
+    // Larger dot = adverse (size 6)
     if (points.some((p) => p.worstSeverity === "adverse"))
       entries.push({ symbol: "\u25CF", label: "adverse" });
+    // Diamond = clinical S3/S4, darker gray
     if (points.some((p) => p.clinicalSeverity === "S3" || p.clinicalSeverity === "S4"))
-      entries.push({ symbol: "\u25C6", label: "clinical" });
-    if (points.some((p) => p.coherenceSize != null))
-      entries.push({ symbol: "\u25CF", label: "coherent" });
-    if (points.some((p) => p.syndromeId != null))
-      entries.push({ symbol: "\u25CB", label: "syndrome" });
+      entries.push({ symbol: "\u25C6", label: "clinical S3+", color: "#6B7280" });
     return entries;
   }, [points]);
 
@@ -150,8 +152,8 @@ export function FindingsQuadrantScatter({
       <div className="flex items-center justify-between px-2 py-0.5">
         <div className="flex items-center gap-2">
           {legendEntries.map((e, i) => (
-            <span key={i} className="text-[8px] text-muted-foreground">
-              <span className="mr-0.5">{e.symbol}</span>{e.label}
+            <span key={i} className="flex items-center gap-0.5 text-[8px] text-muted-foreground">
+              <span style={{ color: e.color ?? "#9CA3AF" }}>{e.symbol}</span>{e.label}
             </span>
           ))}
         </div>
