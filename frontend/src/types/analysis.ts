@@ -56,6 +56,7 @@ export interface UnifiedFinding {
   avg_severity?: number | null;
   organ_system?: string | null;
   endpoint_label?: string | null;
+  max_fold_change?: number | null;
   group_stats: GroupStat[];
   pairwise: PairwiseResult[];
 }
