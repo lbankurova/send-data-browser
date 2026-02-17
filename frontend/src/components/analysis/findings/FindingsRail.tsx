@@ -23,6 +23,8 @@ import {
   withSignalScores,
   computeSignalSummary,
   groupEndpoints,
+  groupEndpointsBySyndrome,
+  buildMultiSyndromeIndex,
   filterEndpoints,
   sortEndpoints,
   buildEndpointToGroupIndex,
@@ -38,6 +40,9 @@ import type {
   EndpointWithSignal,
   SignalSummaryStats,
 } from "@/lib/findings-rail-engine";
+import { deriveOrganCoherence } from "@/lib/derive-summaries";
+import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
+import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { formatPValue, titleCase, getDomainBadgeColor } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,6 +62,10 @@ interface FindingsRailProps {
   onEndpointSelect?: (endpointLabel: string | null) => void;
   /** Callback when the grouping mode changes (for filter bar coordination). */
   onGroupingChange?: (mode: GroupingMode) => void;
+  /** Clinical S2+ filter state — controlled externally for reverse channel. */
+  clinicalFilterActive?: boolean;
+  /** Callback when clinical filter checkbox changes. */
+  onClinicalFilterChange?: (active: boolean) => void;
 }
 
 // ─── Component ─────────────────────────────────────────────
@@ -68,6 +77,8 @@ export function FindingsRail({
   onGroupScopeChange,
   onEndpointSelect,
   onGroupingChange,
+  clinicalFilterActive = false,
+  onClinicalFilterChange,
 }: FindingsRailProps) {
   const { data: rawData, isLoading, error } = useAdverseEffectSummary(studyId);
 
@@ -78,9 +89,18 @@ export function FindingsRail({
     search: "",
     trOnly: false,
     sigOnly: false,
+    clinicalS2Plus: false,
     groupFilter: null,
   });
   const [sortMode, setSortMode] = useState<SortMode>("signal");
+
+  // Sync external clinical filter state into rail filters
+  useEffect(() => {
+    setRailFilters((prev) => {
+      if (prev.clinicalS2Plus === clinicalFilterActive) return prev;
+      return { ...prev, clinicalS2Plus: clinicalFilterActive };
+    });
+  }, [clinicalFilterActive]);
 
   // Reset local state on study change
   const prevStudyRef = useRef(studyId);
@@ -89,7 +109,7 @@ export function FindingsRail({
       prevStudyRef.current = studyId;
       setGrouping("organ");
       setExpanded(new Set());
-      setRailFilters({ search: "", trOnly: false, sigOnly: false, groupFilter: null });
+      setRailFilters({ search: "", trOnly: false, sigOnly: false, clinicalS2Plus: false, groupFilter: null });
       setSortMode("signal");
     }
   }, [studyId]);
@@ -105,8 +125,48 @@ export function FindingsRail({
     [endpointSummaries],
   );
 
+  // Syndrome detection (Layer B) — needed for syndrome grouping mode
+  const syndromes = useMemo(
+    () => detectCrossDomainSyndromes(endpointSummaries),
+    [endpointSummaries],
+  );
+
+  // Multi-syndrome index: endpoint_label → list of syndrome IDs
+  const multiSyndromeIndex = useMemo(
+    () => buildMultiSyndromeIndex(syndromes),
+    [syndromes],
+  );
+
+  // Clinical severity data (Layer D) — needed for Clinical S2+ filter
+  const organCoherence = useMemo(() => deriveOrganCoherence(endpointSummaries), [endpointSummaries]);
+  const labMatches = useMemo(
+    () => evaluateLabRules(endpointSummaries, organCoherence, syndromes),
+    [endpointSummaries, organCoherence, syndromes],
+  );
+
+  // Clinical S2+ endpoints: endpoints with clinical severity >= S2
+  const clinicalEndpoints = useMemo(() => {
+    const set = new Set<string>();
+    for (const match of labMatches) {
+      const floor = getClinicalFloor(match.severity);
+      if (floor >= 4) { // S2=4, S3=8, S4=15
+        for (const ep of match.matchedEndpoints) set.add(ep);
+      }
+    }
+    return set;
+  }, [labMatches]);
+
   // Dynamic group filter options — derived from unique values in the current grouping dimension
   const groupFilterOptions = useMemo(() => {
+    if (grouping === "syndrome") {
+      // Syndrome mode: options are syndrome names + "No Syndrome"
+      const opts: { key: string; label: string }[] = syndromes.map((s) => ({
+        key: s.id,
+        label: s.name,
+      }));
+      opts.push({ key: "no_syndrome", label: "No Syndrome" });
+      return opts;
+    }
     const seen = new Map<string, number>();
     for (const ep of endpointsWithSignal) {
       const key =
@@ -124,7 +184,7 @@ export function FindingsRail({
         : grouping === "domain" ? getDomainFullLabel(key)
         : getPatternLabel(key),
     }));
-  }, [endpointsWithSignal, grouping]);
+  }, [endpointsWithSignal, grouping, syndromes]);
 
   // Signal summary — always full dataset, unfiltered
   const signalSummary = useMemo<SignalSummaryStats>(
@@ -134,13 +194,15 @@ export function FindingsRail({
 
   // Apply rail filters → then group → then sort within each card
   const filteredEndpoints = useMemo(
-    () => filterEndpoints(endpointsWithSignal, railFilters, grouping),
-    [endpointsWithSignal, railFilters, grouping],
+    () => filterEndpoints(endpointsWithSignal, railFilters, grouping, clinicalEndpoints),
+    [endpointsWithSignal, railFilters, grouping, clinicalEndpoints],
   );
 
   const cards = useMemo(
-    () => groupEndpoints(filteredEndpoints, grouping),
-    [filteredEndpoints, grouping],
+    () => grouping === "syndrome"
+      ? groupEndpointsBySyndrome(filteredEndpoints, syndromes)
+      : groupEndpoints(filteredEndpoints, grouping),
+    [filteredEndpoints, grouping, syndromes],
   );
 
   // Sort endpoints within each card
@@ -152,17 +214,33 @@ export function FindingsRail({
   // Total endpoints per group (unfiltered) for filtered count display
   const unfilteredGroupTotals = useMemo(() => {
     const totals = new Map<string, number>();
-    for (const card of groupEndpoints(endpointsWithSignal, grouping)) {
+    const unfilteredCards = grouping === "syndrome"
+      ? groupEndpointsBySyndrome(endpointsWithSignal, syndromes)
+      : groupEndpoints(endpointsWithSignal, grouping);
+    for (const card of unfilteredCards) {
       totals.set(card.key, card.totalEndpoints);
     }
     return totals;
-  }, [endpointsWithSignal, grouping]);
+  }, [endpointsWithSignal, grouping, syndromes]);
 
   // Reverse index: endpoint_label → group key
-  const endpointToGroup = useMemo(
-    () => buildEndpointToGroupIndex(endpointsWithSignal, grouping),
-    [endpointsWithSignal, grouping],
-  );
+  const endpointToGroup = useMemo(() => {
+    if (grouping === "syndrome") {
+      // For syndrome mode, map endpoint → first syndrome ID it belongs to
+      const index = new Map<string, string>();
+      for (const syn of syndromes) {
+        for (const m of syn.matchedEndpoints) {
+          if (!index.has(m.endpoint_label)) index.set(m.endpoint_label, syn.id);
+        }
+      }
+      // Anything not in a syndrome → "no_syndrome"
+      for (const ep of endpointsWithSignal) {
+        if (!index.has(ep.endpoint_label)) index.set(ep.endpoint_label, "no_syndrome");
+      }
+      return index;
+    }
+    return buildEndpointToGroupIndex(endpointsWithSignal, grouping);
+  }, [endpointsWithSignal, grouping, syndromes]);
 
   // Ref map for scrolling endpoint rows into view
   const endpointRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -294,6 +372,13 @@ export function FindingsRail({
           grouping={grouping}
           endpointCount={unfilteredGroupTotals.get(activeGroupScope.value) ?? 0}
           onClear={() => onGroupScopeChange?.(null)}
+          syndromeName={
+            grouping === "syndrome"
+              ? (activeGroupScope.value === "no_syndrome"
+                ? "No Syndrome"
+                : syndromes.find((s) => s.id === activeGroupScope.value)?.name)
+              : undefined
+          }
         />
       )}
 
@@ -306,8 +391,17 @@ export function FindingsRail({
         filteredCount={filteredEndpoints.length}
         totalCount={endpointsWithSignal.length}
         isFiltered={railIsFiltered}
+        hasSyndromes={syndromes.length > 0}
+        hasClinicalEndpoints={clinicalEndpoints.size > 0}
+        clinicalS2Plus={railFilters.clinicalS2Plus ?? false}
         onGroupingChange={handleGroupingChange}
-        onFiltersChange={setRailFilters}
+        onFiltersChange={(f) => {
+          // Intercept clinical filter changes to notify parent
+          if (f.clinicalS2Plus !== railFilters.clinicalS2Plus) {
+            onClinicalFilterChange?.(!!f.clinicalS2Plus);
+          }
+          setRailFilters(f);
+        }}
         onSortChange={setSortMode}
       />
 
@@ -345,6 +439,8 @@ export function FindingsRail({
               onHeaderClick={() => handleCardClick(card)}
               onEndpointClick={handleEndpointClick}
               registerEndpointRef={registerEndpointRef}
+              multiSyndromeIndex={grouping === "syndrome" ? multiSyndromeIndex : undefined}
+              currentSyndromeId={grouping === "syndrome" ? card.key : undefined}
             />
           ))
         )}
@@ -400,15 +496,18 @@ function ScopeIndicator({
   grouping,
   endpointCount,
   onClear,
+  syndromeName,
 }: {
   scope: { type: GroupingMode; value: string };
   grouping: GroupingMode;
   endpointCount: number;
   onClear: () => void;
+  syndromeName?: string;
 }) {
   let label: string;
   if (grouping === "organ") label = titleCase(scope.value);
   else if (grouping === "domain") label = getDomainFullLabel(scope.value);
+  else if (grouping === "syndrome") label = syndromeName ?? scope.value;
   else label = getPatternLabel(scope.value);
 
   return (
@@ -444,6 +543,7 @@ const GROUPING_ALL_LABELS: Partial<Record<GroupingMode, string>> = {
   organ: "All organs",
   domain: "All domains",
   pattern: "All patterns",
+  syndrome: "All syndromes",
 };
 
 function RailFiltersSection({
@@ -454,6 +554,9 @@ function RailFiltersSection({
   filteredCount,
   totalCount,
   isFiltered: hasActiveFilters,
+  hasSyndromes,
+  hasClinicalEndpoints,
+  clinicalS2Plus,
   onGroupingChange,
   onFiltersChange,
   onSortChange,
@@ -465,6 +568,9 @@ function RailFiltersSection({
   filteredCount: number;
   totalCount: number;
   isFiltered: boolean;
+  hasSyndromes: boolean;
+  hasClinicalEndpoints: boolean;
+  clinicalS2Plus: boolean;
   onGroupingChange: (mode: GroupingMode) => void;
   onFiltersChange: (f: RailFilters) => void;
   onSortChange: (s: SortMode) => void;
@@ -488,6 +594,7 @@ function RailFiltersSection({
           <option value="domain">Group: Domain</option>
           <option value="pattern">Group: Pattern</option>
           <option value="finding">Group: Finding</option>
+          {hasSyndromes && <option value="syndrome">Group: Syndrome</option>}
         </FilterSelect>
         {grouping !== "finding" && (
           <FilterMultiSelect
@@ -528,6 +635,17 @@ function RailFiltersSection({
           />
           Sig only
         </label>
+        {hasClinicalEndpoints && (
+          <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={clinicalS2Plus}
+              onChange={(e) => onFiltersChange({ ...filters, clinicalS2Plus: e.target.checked })}
+              className="h-3 w-3 rounded border-gray-300"
+            />
+            Clinical S2+
+          </label>
+        )}
         <span className="ml-auto text-[10px] text-muted-foreground">
           {hasActiveFilters ? `${filteredCount}/${totalCount}` : totalCount}
         </span>
@@ -549,6 +667,8 @@ function CardSection({
   onHeaderClick,
   onEndpointClick,
   registerEndpointRef,
+  multiSyndromeIndex,
+  currentSyndromeId,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -560,6 +680,8 @@ function CardSection({
   onHeaderClick: () => void;
   onEndpointClick: (label: string) => void;
   registerEndpointRef: (label: string, el: HTMLElement | null) => void;
+  multiSyndromeIndex?: Map<string, string[]>;
+  currentSyndromeId?: string;
 }) {
   return (
     <div>
@@ -574,15 +696,22 @@ function CardSection({
       />
       {isExpanded && (
         <div>
-          {card.endpoints.map((ep) => (
-            <EndpointRow
-              key={ep.endpoint_label}
-              endpoint={ep}
-              isSelected={activeEndpoint === ep.endpoint_label}
-              onClick={() => onEndpointClick(ep.endpoint_label)}
-              ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
-            />
-          ))}
+          {card.endpoints.map((ep) => {
+            // In syndrome mode, show other syndrome IDs this endpoint belongs to
+            const otherSyndromes = (grouping === "syndrome" && multiSyndromeIndex && currentSyndromeId)
+              ? (multiSyndromeIndex.get(ep.endpoint_label) ?? []).filter((id) => id !== currentSyndromeId)
+              : undefined;
+            return (
+              <EndpointRow
+                key={ep.endpoint_label}
+                endpoint={ep}
+                isSelected={activeEndpoint === ep.endpoint_label}
+                onClick={() => onEndpointClick(ep.endpoint_label)}
+                ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
+                otherSyndromes={otherSyndromes}
+              />
+            );
+          })}
         </div>
       )}
     </div>
@@ -622,7 +751,7 @@ function CardHeader({
       aria-expanded={isExpanded}
     >
       <Chevron className="h-3 w-3 shrink-0 text-muted-foreground" />
-      <CardLabel grouping={grouping} value={card.key} />
+      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} />
       <span className="ml-auto font-mono text-[10px] text-muted-foreground">
         {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
       </span>
@@ -636,7 +765,7 @@ function CardHeader({
 
 // ─── Card Label Variants ───────────────────────────────────
 
-function CardLabel({ grouping, value }: { grouping: GroupingMode; value: string }) {
+function CardLabel({ grouping, value, syndromeLabel }: { grouping: GroupingMode; value: string; syndromeLabel?: string }) {
   if (grouping === "domain") {
     const domainCode = value.toUpperCase();
     const color = getDomainBadgeColor(domainCode);
@@ -660,6 +789,17 @@ function CardLabel({ grouping, value }: { grouping: GroupingMode; value: string 
     );
   }
 
+  if (grouping === "syndrome") {
+    const isNoSyndrome = value === "no_syndrome";
+    const label = syndromeLabel ?? value;
+    return (
+      <span className={cn("flex min-w-0 items-center gap-1.5 truncate font-semibold", isNoSyndrome && "text-muted-foreground/70")}>
+        {!isNoSyndrome && <span className="shrink-0">{"\uD83D\uDD17"}</span>}
+        <span className="truncate" title={label}>{label}</span>
+      </span>
+    );
+  }
+
   // Organ (default)
   return <span className="min-w-0 truncate font-semibold" title={titleCase(value)}>{titleCase(value)}</span>;
 }
@@ -670,7 +810,8 @@ const EndpointRow = forwardRef<HTMLDivElement, {
   endpoint: EndpointWithSignal;
   isSelected: boolean;
   onClick: () => void;
-}>(function EndpointRow({ endpoint, isSelected, onClick }, ref) {
+  otherSyndromes?: string[];
+}>(function EndpointRow({ endpoint, isSelected, onClick, otherSyndromes }, ref) {
   const dirSymbol = endpoint.direction === "up" ? "▲" : endpoint.direction === "down" ? "▼" : "—";
 
   const sevColor =
@@ -699,6 +840,11 @@ const EndpointRow = forwardRef<HTMLDivElement, {
         <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", sevColor)} />
         {endpoint.treatmentRelated && (
           <span className="shrink-0 text-[9px] font-medium text-muted-foreground">TR</span>
+        )}
+        {otherSyndromes && otherSyndromes.length > 0 && (
+          <span className="shrink-0 text-[8px] text-muted-foreground/50">
+            {otherSyndromes.map((id) => `+${id}`).join(" ")}
+          </span>
         )}
       </button>
 
