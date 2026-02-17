@@ -37,6 +37,7 @@ export interface SignalBoosts {
   syndromeBoost: number;    // 3 if in syndrome, 0 otherwise
   coherenceBoost: number;   // 2 for 3+ domains, 1 for 2, 0 otherwise
   clinicalFloor: number;    // S4=15, S3=8, S2=4, S1=0
+  confidenceMultiplier: number; // HIGH=1.0, MODERATE=0.7, LOW=0.4
 }
 
 const PATTERN_WEIGHTS: Record<string, number> = {
@@ -52,12 +53,57 @@ export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts
   const pValueWeight = ep.minPValue !== null ? Math.max(0, -Math.log10(ep.minPValue)) : 0;
   const effectWeight = ep.maxEffectSize !== null ? Math.min(Math.abs(ep.maxEffectSize), 5) : 0;
   const trBoost = ep.treatmentRelated ? 2 : 0;
-  const patternWeight = PATTERN_WEIGHTS[ep.pattern] ?? 0;
+  const rawPatternWeight = PATTERN_WEIGHTS[ep.pattern] ?? 0;
+  const confMult = boosts?.confidenceMultiplier ?? 1;
+  const patternWeight = rawPatternWeight * confMult;
   const base = severityWeight + pValueWeight + effectWeight + trBoost + patternWeight;
   const synBoost = boosts?.syndromeBoost ?? 0;
   const cohBoost = boosts?.coherenceBoost ?? 0;
   const floor = boosts?.clinicalFloor ?? 0;
   return Math.max(base + synBoost + cohBoost, floor);
+}
+
+// ─── Endpoint confidence classification ──────────────────────
+
+export type EndpointConfidence = "HIGH" | "MODERATE" | "LOW";
+
+const CONFIDENCE_MULTIPLIERS: Record<EndpointConfidence, number> = {
+  HIGH: 1.0,
+  MODERATE: 0.7,
+  LOW: 0.4,
+};
+
+/** Classify endpoint confidence from summary-level data.
+ *  Mirrors the histopath computeConfidence logic adapted for Findings endpoints. */
+export function classifyEndpointConfidence(ep: EndpointSummary): EndpointConfidence {
+  let level = 0; // 0=LOW, 1=MODERATE, 2=HIGH
+  const p = ep.minPValue;
+  const effect = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : 0;
+  const pattern = ep.pattern;
+
+  // Strong p-value + clear pattern + meaningful effect → HIGH
+  if (p !== null && p < 0.01 && effect >= 0.8 &&
+      (pattern === "monotonic_increase" || pattern === "monotonic_decrease" || pattern === "threshold")) {
+    level = 2;
+  }
+  // Moderate: significant p or decent effect with pattern
+  else if (
+    (p !== null && p < 0.05) ||
+    (effect >= 0.5 && pattern !== "flat") ||
+    (ep.treatmentRelated && pattern !== "flat")
+  ) {
+    level = 1;
+  }
+
+  // Modifiers
+  if (ep.treatmentRelated && level < 2) level++;
+  if (ep.sexes.length >= 2 && level < 2) level++;
+
+  return (["LOW", "MODERATE", "HIGH"] as const)[level];
+}
+
+export function getConfidenceMultiplier(conf: EndpointConfidence): number {
+  return CONFIDENCE_MULTIPLIERS[conf];
 }
 
 export function withSignalScores(

@@ -3,7 +3,9 @@ import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useFindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import { useFindingContext } from "@/hooks/useFindingContext";
 import { useEffectiveNoael } from "@/hooks/useEffectiveNoael";
+import { useAnnotations } from "@/hooks/useAnnotations";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import type { ToxFinding } from "@/types/annotations";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
 import { TreatmentRelatedSummaryPane } from "./TreatmentRelatedSummaryPane";
@@ -23,6 +25,7 @@ export function FindingsContextPanel() {
     selectedFindingId
   );
   const { data: noaelRows } = useEffectiveNoael(studyId);
+  const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-finding");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // Derive NOAEL for the selected finding's sex
@@ -81,6 +84,11 @@ export function FindingsContextPanel() {
           noael={noael}
           doseResponse={context.dose_response}
           statistics={context.statistics}
+          notEvaluated={
+            toxAnnotations && selectedFinding
+              ? toxAnnotations[selectedFinding.endpoint_label ?? selectedFinding.finding]?.treatmentRelated === "Not Evaluated"
+              : false
+          }
         />
       </CollapsiblePane>
 

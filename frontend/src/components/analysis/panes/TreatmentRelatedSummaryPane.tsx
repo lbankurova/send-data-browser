@@ -1,8 +1,10 @@
 import type { FindingContext, UnifiedFinding } from "@/types/analysis";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import { titleCase, formatPValue, getEffectMagnitudeLabel } from "@/lib/severity-colors";
-import { getPatternLabel } from "@/lib/findings-rail-engine";
+import { getPatternLabel, classifyEndpointConfidence } from "@/lib/findings-rail-engine";
+import type { EndpointConfidence } from "@/lib/findings-rail-engine";
 import { resolveCanonical } from "@/lib/lab-clinical-catalog";
+import type { EndpointSummary } from "@/lib/derive-summaries";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -13,6 +15,8 @@ interface Props {
   noael?: { dose_value: number | null; dose_unit: string | null } | null;
   doseResponse?: FindingContext["dose_response"];
   statistics?: FindingContext["statistics"];
+  /** When true, show "Not evaluated" verdict instead of computed verdict */
+  notEvaluated?: boolean;
 }
 
 // ─── Verdict logic ─────────────────────────────────────────
@@ -25,35 +29,78 @@ interface Verdict {
   severityClass: string;
 }
 
-function computeVerdict(data: Props["data"]): Verdict {
+/** Determine effective severity accounting for clinical override from Layer D. */
+function effectiveSeverity(
+  statSev: string,
+  analytics: FindingsAnalytics | undefined,
+  finding: UnifiedFinding | null | undefined,
+): { sev: string; clinicalOverride: string | null } {
+  if (!analytics?.labMatches.length || !finding) return { sev: statSev, clinicalOverride: null };
+  const endpointLabel = finding.endpoint_label ?? finding.finding;
+  const canonical = resolveCanonical(endpointLabel);
+  if (!canonical) return { sev: statSev, clinicalOverride: null };
+
+  const sevOrder: Record<string, number> = { adverse: 3, warning: 2, normal: 1 };
+  const clinicalToStat: Record<string, string> = { S4: "adverse", S3: "adverse", S2: "warning", S1: "normal" };
+  let worst = statSev;
+  let overrideRule: string | null = null;
+
+  for (const match of analytics.labMatches) {
+    if (!match.matchedEndpoints.some((e) => resolveCanonical(e) === canonical)) continue;
+    const mapped = clinicalToStat[match.severity] ?? "normal";
+    if ((sevOrder[mapped] ?? 0) > (sevOrder[worst] ?? 0)) {
+      worst = mapped;
+      overrideRule = match.ruleName;
+    }
+  }
+
+  return { sev: worst, clinicalOverride: worst !== statSev ? overrideRule : null };
+}
+
+function computeVerdict(
+  data: Props["data"],
+  analytics?: FindingsAnalytics,
+  finding?: UnifiedFinding | null,
+): Verdict {
   const tr = data.treatment_related;
-  const sev = data.severity;
+  const { sev, clinicalOverride } = effectiveSeverity(data.severity, analytics, finding);
 
   if (tr && sev === "adverse") {
+    const suffix = clinicalOverride ? ` (${clinicalOverride})` : "";
     return {
       icon: "\u26D4",
-      label: "Treatment-related adverse effect",
+      label: "Treatment-related",
       labelClass: "text-sm font-semibold text-foreground",
-      severityLine: "Adverse — potential target organ toxicity",
+      severityLine: `Adverse${suffix}`,
       severityClass: "text-xs font-medium text-foreground",
     };
   }
   if (tr && sev === "warning") {
     return {
       icon: "\u26A0",
-      label: "Treatment-related warning",
+      label: "Treatment-related",
       labelClass: "text-sm font-semibold text-foreground",
-      severityLine: "Warning — statistically significant, monitor closely",
+      severityLine: "Warning",
       severityClass: "text-xs font-medium text-muted-foreground",
     };
   }
   if (tr) {
     return {
       icon: "\u26A0",
-      label: "Treatment-related finding",
+      label: "Treatment-related",
       labelClass: "text-sm font-medium text-foreground",
-      severityLine: "Normal variation within expected range",
+      severityLine: "Normal",
       severityClass: "text-xs text-muted-foreground",
+    };
+  }
+  // Not treatment-related but clinical override may still apply
+  if (clinicalOverride && sev === "adverse") {
+    return {
+      icon: "\u26D4",
+      label: `Clinical: ${clinicalOverride}`,
+      labelClass: "text-sm font-semibold text-foreground",
+      severityLine: `Adverse (clinical override, not statistically treatment-related)`,
+      severityClass: "text-xs font-medium text-foreground",
     };
   }
   return {
@@ -63,6 +110,45 @@ function computeVerdict(data: Props["data"]): Verdict {
     severityLine: "No treatment-related signal detected",
     severityClass: "text-xs text-muted-foreground",
   };
+}
+
+// ─── Tier 1: Confidence classification ─────────────────────
+
+function buildConfidenceLabel(
+  finding: UnifiedFinding | null | undefined,
+  analytics: FindingsAnalytics | undefined,
+): { confidence: EndpointConfidence; factors: string[] } | null {
+  if (!finding || !analytics) return null;
+  const endpointLabel = finding.endpoint_label ?? finding.finding;
+
+  // Build a minimal EndpointSummary from the finding + analytics signal scores
+  const ep: EndpointSummary = {
+    endpoint_label: endpointLabel,
+    organ_system: finding.organ_system ?? "unknown",
+    domain: finding.domain,
+    worstSeverity: (finding.severity === "adverse" ? "adverse" : finding.severity === "warning" ? "warning" : "normal") as "adverse" | "warning" | "normal",
+    treatmentRelated: finding.treatment_related,
+    pattern: finding.dose_response_pattern ?? "flat",
+    minPValue: finding.min_p_adj,
+    maxEffectSize: finding.max_effect_size,
+    direction: finding.direction as "up" | "down" | "none" | null ?? null,
+    sexes: finding.sex === "M" ? ["M"] : finding.sex === "F" ? ["F"] : ["M", "F"],
+  };
+
+  const conf = classifyEndpointConfidence(ep);
+  const factors: string[] = [];
+
+  // Build human-readable factor list
+  if (ep.minPValue !== null && ep.minPValue < 0.01) factors.push(`p < 0.01`);
+  else if (ep.minPValue !== null && ep.minPValue < 0.05) factors.push(`p < 0.05`);
+  if (ep.maxEffectSize != null && Math.abs(ep.maxEffectSize) >= 0.8) factors.push("large effect");
+  else if (ep.maxEffectSize != null && Math.abs(ep.maxEffectSize) >= 0.5) factors.push("moderate effect");
+  if (ep.pattern === "monotonic_increase" || ep.pattern === "monotonic_decrease") factors.push("monotonic");
+  else if (ep.pattern === "threshold") factors.push("threshold pattern");
+  if (ep.treatmentRelated) factors.push("treatment-related");
+  if (ep.sexes.length >= 2) factors.push("both sexes");
+
+  return { confidence: conf, factors };
 }
 
 // ─── Evidence bullet generation ────────────────────────────
@@ -76,14 +162,25 @@ function buildEvidenceBullets(
 ): string[] {
   const bullets: string[] = [];
 
-  // Tier 2: Clinical lab matches
+  // Tier 1: Confidence classification
+  const confResult = buildConfidenceLabel(finding, analytics);
+  if (confResult) {
+    const factorStr = confResult.factors.length > 0 ? ` (${confResult.factors.join(", ")})` : "";
+    bullets.push(`${confResult.confidence} confidence${factorStr}`);
+  }
+
+  // Tier 2: Clinical lab matches (with fold change details)
   if (analytics?.labMatches.length) {
     const endpointLabel = finding?.endpoint_label ?? finding?.finding;
     if (endpointLabel) {
       const canonical = resolveCanonical(endpointLabel);
       for (const match of analytics.labMatches) {
         if (canonical && match.matchedEndpoints.some((e) => resolveCanonical(e) === canonical)) {
-          bullets.push(`${match.severityLabel}: ${match.ruleName}`);
+          const fcDetails = Object.entries(match.foldChanges)
+            .map(([k, v]) => `${k} ${v.toFixed(1)}x`)
+            .join(", ");
+          const fcSuffix = fcDetails ? ` \u2014 ${fcDetails}` : "";
+          bullets.push(`${match.severityLabel}: ${match.ruleName}${fcSuffix}`);
         }
       }
     }
@@ -167,9 +264,12 @@ export function TreatmentRelatedSummaryPane({
   noael,
   doseResponse,
   statistics,
+  notEvaluated,
 }: Props) {
-  const verdict = computeVerdict(data);
-  const bullets = buildEvidenceBullets(data, finding, analytics, doseResponse, statistics);
+  const verdict = notEvaluated
+    ? { icon: "\u2014", label: "Not evaluated", labelClass: "text-sm font-medium text-muted-foreground", severityLine: "Expert review pending", severityClass: "text-xs text-muted-foreground" }
+    : computeVerdict(data, analytics, finding);
+  const bullets = notEvaluated ? [] : buildEvidenceBullets(data, finding, analytics, doseResponse, statistics);
 
   // Key-value pairs
   const kvPairs: { key: string; value: string }[] = [];
@@ -186,7 +286,13 @@ export function TreatmentRelatedSummaryPane({
   }
 
   if (finding?.sex) {
-    kvPairs.push({ key: "Affected sexes", value: finding.sex === "M" ? "Males" : finding.sex === "F" ? "Females" : "Both sexes" });
+    // Derive affected sexes label considering all finding rows for this endpoint
+    const sex = finding.sex;
+    let sexLabel: string;
+    if (sex === "M") sexLabel = "Males only";
+    else if (sex === "F") sexLabel = "Females only";
+    else sexLabel = "Both";
+    kvPairs.push({ key: "Affected sexes", value: sexLabel });
   }
 
   if (doseResponse?.pattern && doseResponse.pattern !== "flat" && doseResponse.pattern !== "insufficient_data") {
@@ -208,6 +314,11 @@ export function TreatmentRelatedSummaryPane({
     if (matched) {
       kvPairs.push({ key: "Syndrome", value: matched.name });
     }
+  }
+
+  const confResult = buildConfidenceLabel(finding, analytics);
+  if (confResult) {
+    kvPairs.push({ key: "Confidence", value: confResult.confidence });
   }
 
   return (
