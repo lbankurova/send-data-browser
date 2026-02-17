@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
-import { useFindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
+import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
+import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import { useFindingContext } from "@/hooks/useFindingContext";
 import { useEffectiveNoael } from "@/hooks/useEffectiveNoael";
 import { useAnnotations } from "@/hooks/useAnnotations";
@@ -21,7 +22,7 @@ export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
   const { selectedFindingId, selectedFinding, endpointSexes, selectedGroupType, selectedGroupKey } = useFindingSelection();
-  const analytics = useFindingsAnalytics();
+  const analytics = useFindingsAnalyticsLocal(studyId);
   const { data: context, isLoading } = useFindingContext(
     studyId,
     selectedFindingId
@@ -81,11 +82,12 @@ export function FindingsContextPanel() {
 
   if (!selectedFindingId || !selectedFinding) {
     // Check for group selection (Priority 2)
+    // Wrap in provider so child panels can access analytics via useFindingsAnalytics()
     if (selectedGroupType === "organ" && selectedGroupKey) {
-      return <OrganContextPanel organKey={selectedGroupKey} />;
+      return <FindingsAnalyticsProvider value={analytics}><OrganContextPanel organKey={selectedGroupKey} /></FindingsAnalyticsProvider>;
     }
     if (selectedGroupType === "syndrome" && selectedGroupKey) {
-      return <SyndromeContextPanel syndromeId={selectedGroupKey} />;
+      return <FindingsAnalyticsProvider value={analytics}><SyndromeContextPanel syndromeId={selectedGroupKey} /></FindingsAnalyticsProvider>;
     }
 
     // Priority 3: empty state

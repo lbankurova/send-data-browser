@@ -122,7 +122,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_ALBGLOB_F",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0319, d=-1.29).",
     "evidence_refs": [
       "LB: Albumin/Globulin (F)"
@@ -151,7 +151,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_ALBGLOB_F",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0028, d=-1.77).",
     "evidence_refs": [
       "LB: Albumin/Globulin (F)"
@@ -180,7 +180,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_ALBGLOB_F",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Albumin/Globulin classified as adverse in F (p=0.0028).",
     "evidence_refs": [
       "LB: Albumin/Globulin (F)"
@@ -209,7 +209,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_ALBGLOB_F",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Albumin/Globulin: threshold pattern in F.",
     "evidence_refs": [
       "LB: Albumin/Globulin (F)"
@@ -238,7 +238,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_ALBGLOB_F",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Albumin/Globulin: Cohen's d = -1.77 at high dose in F.",
     "evidence_refs": [
       "LB: Albumin/Globulin (F)"
@@ -269,7 +269,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_ALBGLOB_M",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0446, d=1.24).",
     "evidence_refs": [
       "LB: Albumin/Globulin (M)"
@@ -298,7 +298,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_ALBGLOB_M",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Albumin/Globulin classified as adverse in M (p=0.0446).",
     "evidence_refs": [
       "LB: Albumin/Globulin (M)"
@@ -327,7 +327,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_ALBGLOB_M",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Albumin/Globulin: inconsistent dose-response in M.",
     "evidence_refs": [
       "LB: Albumin/Globulin (M)"
@@ -356,7 +356,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_ALBGLOB_M",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Albumin/Globulin: Cohen's d = 1.24 at high dose in M.",
     "evidence_refs": [
       "LB: Albumin/Globulin (M)"
@@ -830,7 +830,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_APTT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Activated Partial Thromboplastin Time: threshold pattern in F.",
     "evidence_refs": [
       "LB: Activated Partial Thromboplastin Time (F)"
@@ -859,7 +859,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_APTT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Activated Partial Thromboplastin Time: Cohen's d = 0.64 at high dose.",
     "evidence_refs": [
       "LB: Activated Partial Thromboplastin Time (F)"
@@ -888,7 +888,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_APTT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Activated Partial Thromboplastin Time: threshold pattern in M.",
     "evidence_refs": [
       "LB: Activated Partial Thromboplastin Time (M)"
@@ -917,7 +917,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_APTT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Activated Partial Thromboplastin Time: Cohen's d = -0.59 at high dose.",
     "evidence_refs": [
       "LB: Activated Partial Thromboplastin Time (M)"
@@ -1240,7 +1240,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_BASO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0009, d=2.17).",
     "evidence_refs": [
       "LB: Basophils (F)"
@@ -1269,7 +1269,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_BASO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0000, d=3.71).",
     "evidence_refs": [
       "LB: Basophils (F)"
@@ -1298,7 +1298,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_BASO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Basophils classified as adverse in F (p=0.0000).",
     "evidence_refs": [
       "LB: Basophils (F)"
@@ -1327,7 +1327,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_BASO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Basophils: threshold pattern in F.",
     "evidence_refs": [
       "LB: Basophils (F)"
@@ -1356,7 +1356,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_BASO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Basophils: Cohen's d = 3.71 at high dose in F.",
     "evidence_refs": [
       "LB: Basophils (F)"
@@ -1387,7 +1387,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_BASO_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Basophils classified as adverse in M (p=0.0611).",
     "evidence_refs": [
       "LB: Basophils (M)"
@@ -1416,7 +1416,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_BASO_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Basophils: Cohen's d = -1.23 at high dose in M.",
     "evidence_refs": [
       "LB: Basophils (M)"
@@ -1447,7 +1447,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_BILI_M",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Bilirubin: Cohen's d = -0.51 at high dose.",
     "evidence_refs": [
       "LB: Bilirubin (M)"
@@ -2066,7 +2066,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_EOS_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Eosinophils classified as adverse in F (p=0.0925).",
     "evidence_refs": [
       "LB: Eosinophils (F)"
@@ -2095,7 +2095,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_EOS_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Eosinophils: threshold pattern in F.",
     "evidence_refs": [
       "LB: Eosinophils (F)"
@@ -2124,7 +2124,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_EOS_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Eosinophils: Cohen's d = 1.05 at high dose in F.",
     "evidence_refs": [
       "LB: Eosinophils (F)"
@@ -2155,7 +2155,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_EOS_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Eosinophils: threshold pattern in M.",
     "evidence_refs": [
       "LB: Eosinophils (M)"
@@ -2184,7 +2184,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_EOS_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Eosinophils: Cohen's d = -0.70 at high dose.",
     "evidence_refs": [
       "LB: Eosinophils (M)"
@@ -2213,7 +2213,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_FIBRINO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Fibrinogen classified as adverse in F (p=0.1762).",
     "evidence_refs": [
       "LB: Fibrinogen (F)"
@@ -2242,7 +2242,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_FIBRINO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Fibrinogen: threshold pattern in F.",
     "evidence_refs": [
       "LB: Fibrinogen (F)"
@@ -2271,7 +2271,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_FIBRINO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Fibrinogen: Cohen's d = 0.90 at high dose.",
     "evidence_refs": [
       "LB: Fibrinogen (F)"
@@ -2300,7 +2300,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_FIBRINO_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0047, d=-1.72).",
     "evidence_refs": [
       "LB: Fibrinogen (M)"
@@ -2329,7 +2329,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_FIBRINO_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Fibrinogen classified as adverse in M (p=0.0047).",
     "evidence_refs": [
       "LB: Fibrinogen (M)"
@@ -2358,7 +2358,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_FIBRINO_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Fibrinogen: Cohen's d = -1.72 at high dose in M.",
     "evidence_refs": [
       "LB: Fibrinogen (M)"
@@ -2389,7 +2389,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_GLOBUL_F",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Globulin: inconsistent dose-response in F.",
     "evidence_refs": [
       "LB: Globulin (F)"
@@ -2418,7 +2418,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_GLOBUL_F",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Globulin: Cohen's d = 0.70 at high dose.",
     "evidence_refs": [
       "LB: Globulin (F)"
@@ -2447,7 +2447,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_GLOBUL_M",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Globulin: inconsistent dose-response in M.",
     "evidence_refs": [
       "LB: Globulin (M)"
@@ -2476,7 +2476,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_GLOBUL_M",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Globulin: Cohen's d = -0.99 at high dose.",
     "evidence_refs": [
       "LB: Globulin (M)"
@@ -3273,7 +3273,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_KETONES_F",
-    "organ_system": "general",
+    "organ_system": "metabolic",
     "output_text": "Ketones: inconsistent dose-response in F.",
     "evidence_refs": [
       "LB: Ketones (F)"
@@ -3302,7 +3302,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_KETONES_F",
-    "organ_system": "general",
+    "organ_system": "metabolic",
     "output_text": "Ketones: Cohen's d = 1.70 at high dose in F.",
     "evidence_refs": [
       "LB: Ketones (F)"
@@ -3333,7 +3333,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_KETONES_M",
-    "organ_system": "general",
+    "organ_system": "metabolic",
     "output_text": "Ketones: threshold pattern in M.",
     "evidence_refs": [
       "LB: Ketones (M)"
@@ -3362,7 +3362,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_KETONES_M",
-    "organ_system": "general",
+    "organ_system": "metabolic",
     "output_text": "Ketones: Cohen's d = -0.51 at high dose.",
     "evidence_refs": [
       "LB: Ketones (M)"
@@ -3391,7 +3391,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LGUNSCE_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Large Unstained Cells: Cohen's d = 0.78 at high dose.",
     "evidence_refs": [
       "LB: Large Unstained Cells (F)"
@@ -3420,7 +3420,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LGUNSCE_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0321, d=-1.46).",
     "evidence_refs": [
       "LB: Large Unstained Cells (M)"
@@ -3449,7 +3449,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_LGUNSCE_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Large Unstained Cells classified as adverse in M (p=0.0321).",
     "evidence_refs": [
       "LB: Large Unstained Cells (M)"
@@ -3478,7 +3478,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LGUNSCE_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Large Unstained Cells: threshold pattern in M.",
     "evidence_refs": [
       "LB: Large Unstained Cells (M)"
@@ -3507,7 +3507,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LGUNSCE_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Large Unstained Cells: Cohen's d = -1.46 at high dose in M.",
     "evidence_refs": [
       "LB: Large Unstained Cells (M)"
@@ -3538,7 +3538,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LYM_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0285, d=1.36).",
     "evidence_refs": [
       "LB: Lymphocytes (F)"
@@ -3567,7 +3567,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LYM_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0268, d=1.41).",
     "evidence_refs": [
       "LB: Lymphocytes (F)"
@@ -3596,7 +3596,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_LYM_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Lymphocytes classified as adverse in F (p=0.0268).",
     "evidence_refs": [
       "LB: Lymphocytes (F)"
@@ -3625,7 +3625,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LYM_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Lymphocytes: threshold pattern in F.",
     "evidence_refs": [
       "LB: Lymphocytes (F)"
@@ -3654,7 +3654,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LYM_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Lymphocytes: Cohen's d = 1.41 at high dose in F.",
     "evidence_refs": [
       "LB: Lymphocytes (F)"
@@ -3685,7 +3685,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LYM_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0323, d=-1.38).",
     "evidence_refs": [
       "LB: Lymphocytes (M)"
@@ -3714,7 +3714,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_LYM_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Lymphocytes classified as adverse in M (p=0.0323).",
     "evidence_refs": [
       "LB: Lymphocytes (M)"
@@ -3743,7 +3743,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LYM_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Lymphocytes: threshold pattern in M.",
     "evidence_refs": [
       "LB: Lymphocytes (M)"
@@ -3772,7 +3772,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_LYM_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Lymphocytes: Cohen's d = -1.38 at high dose in M.",
     "evidence_refs": [
       "LB: Lymphocytes (M)"
@@ -4273,7 +4273,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_MONO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0248, d=1.33).",
     "evidence_refs": [
       "LB: Monocytes (F)"
@@ -4302,7 +4302,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_MONO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Monocytes classified as adverse in F (p=0.0248).",
     "evidence_refs": [
       "LB: Monocytes (F)"
@@ -4331,7 +4331,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_MONO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Monocytes: threshold pattern in F.",
     "evidence_refs": [
       "LB: Monocytes (F)"
@@ -4360,7 +4360,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_MONO_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Monocytes: Cohen's d = 1.33 at high dose in F.",
     "evidence_refs": [
       "LB: Monocytes (F)"
@@ -4391,7 +4391,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_MONO_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Monocytes: threshold pattern in M.",
     "evidence_refs": [
       "LB: Monocytes (M)"
@@ -4420,7 +4420,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_MONO_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Monocytes: Cohen's d = -0.95 at high dose.",
     "evidence_refs": [
       "LB: Monocytes (M)"
@@ -4449,7 +4449,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_NEUT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0461, d=1.20).",
     "evidence_refs": [
       "LB: Neutrophils (F)"
@@ -4478,7 +4478,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_NEUT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0013, d=2.04).",
     "evidence_refs": [
       "LB: Neutrophils (F)"
@@ -4507,7 +4507,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_NEUT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Neutrophils classified as adverse in F (p=0.0013).",
     "evidence_refs": [
       "LB: Neutrophils (F)"
@@ -4536,7 +4536,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_NEUT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Neutrophils: threshold pattern in F.",
     "evidence_refs": [
       "LB: Neutrophils (F)"
@@ -4565,7 +4565,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_NEUT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Neutrophils: Cohen's d = 2.04 at high dose in F.",
     "evidence_refs": [
       "LB: Neutrophils (F)"
@@ -4596,7 +4596,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_NEUT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 2,2 mg/kg PCDRUG (p=0.0003, d=-2.45).",
     "evidence_refs": [
       "LB: Neutrophils (M)"
@@ -4625,7 +4625,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_NEUT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0003, d=-2.34).",
     "evidence_refs": [
       "LB: Neutrophils (M)"
@@ -4654,7 +4654,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_NEUT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0081, d=-1.76).",
     "evidence_refs": [
       "LB: Neutrophils (M)"
@@ -4683,7 +4683,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_NEUT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Neutrophils classified as adverse in M (p=0.0003).",
     "evidence_refs": [
       "LB: Neutrophils (M)"
@@ -4712,7 +4712,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_NEUT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Neutrophils: threshold pattern in M.",
     "evidence_refs": [
       "LB: Neutrophils (M)"
@@ -4741,7 +4741,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_NEUT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Neutrophils: Cohen's d = -2.45 at high dose in M.",
     "evidence_refs": [
       "LB: Neutrophils (M)"
@@ -4772,7 +4772,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PH_F",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "pH: threshold pattern in F.",
     "evidence_refs": [
       "LB: pH (F)"
@@ -4801,7 +4801,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PH_F",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "pH: Cohen's d = -1.03 at high dose in F.",
     "evidence_refs": [
       "LB: pH (F)"
@@ -4832,7 +4832,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_PH_M",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "pH classified as adverse in M (p=0.1081).",
     "evidence_refs": [
       "LB: pH (M)"
@@ -4861,7 +4861,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PH_M",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "pH: threshold pattern in M.",
     "evidence_refs": [
       "LB: pH (M)"
@@ -4890,7 +4890,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PH_M",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "pH: Cohen's d = 1.12 at high dose in M.",
     "evidence_refs": [
       "LB: pH (M)"
@@ -5128,7 +5128,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_PLAT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Platelets classified as adverse in F (p=0.0913).",
     "evidence_refs": [
       "LB: Platelets (F)"
@@ -5157,7 +5157,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PLAT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Platelets: inconsistent dose-response in F.",
     "evidence_refs": [
       "LB: Platelets (F)"
@@ -5186,7 +5186,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PLAT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Platelets: Cohen's d = 1.06 at high dose in F.",
     "evidence_refs": [
       "LB: Platelets (F)"
@@ -5217,7 +5217,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PLAT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Platelets: Cohen's d = 0.57 at high dose.",
     "evidence_refs": [
       "LB: Platelets (M)"
@@ -5246,7 +5246,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PROT_F",
-    "organ_system": "general",
+    "organ_system": "hepatic",
     "output_text": "Protein: threshold pattern in F.",
     "evidence_refs": [
       "LB: Protein (F)"
@@ -5275,7 +5275,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 2,2 mg/kg PCDRUG (p=0.0000, d=-2.94).",
     "evidence_refs": [
       "LB: Prothrombin Time (F)"
@@ -5304,7 +5304,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0003, d=2.82).",
     "evidence_refs": [
       "LB: Prothrombin Time (F)"
@@ -5333,7 +5333,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_PT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Prothrombin Time classified as adverse in F (p=0.0000).",
     "evidence_refs": [
       "LB: Prothrombin Time (F)"
@@ -5362,7 +5362,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PT_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Prothrombin Time: Cohen's d = -2.94 at high dose in F.",
     "evidence_refs": [
       "LB: Prothrombin Time (F)"
@@ -5393,7 +5393,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Prothrombin Time: threshold pattern in M.",
     "evidence_refs": [
       "LB: Prothrombin Time (M)"
@@ -5422,7 +5422,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_PT_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Prothrombin Time: Cohen's d = 0.57 at high dose.",
     "evidence_refs": [
       "LB: Prothrombin Time (M)"
@@ -5600,7 +5600,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_RDW_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0182, d=1.49).",
     "evidence_refs": [
       "LB: Erythrocytes Distribution Width (F)"
@@ -5629,7 +5629,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_RDW_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Erythrocytes Distribution Width classified as adverse in F (p=0.0182).",
     "evidence_refs": [
       "LB: Erythrocytes Distribution Width (F)"
@@ -5658,7 +5658,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_RDW_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Erythrocytes Distribution Width: inconsistent dose-response in F.",
     "evidence_refs": [
       "LB: Erythrocytes Distribution Width (F)"
@@ -5687,7 +5687,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_RDW_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Erythrocytes Distribution Width: Cohen's d = 1.49 at high dose in F.",
     "evidence_refs": [
       "LB: Erythrocytes Distribution Width (F)"
@@ -5718,7 +5718,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_RDW_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Erythrocytes Distribution Width: inconsistent dose-response in M.",
     "evidence_refs": [
       "LB: Erythrocytes Distribution Width (M)"
@@ -5747,7 +5747,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_RDW_M",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Erythrocytes Distribution Width: Cohen's d = 0.81 at high dose.",
     "evidence_refs": [
       "LB: Erythrocytes Distribution Width (M)"
@@ -5776,7 +5776,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_RETI_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 2,2 mg/kg PCDRUG (p=0.0032, d=1.76).",
     "evidence_refs": [
       "LB: Reticulocytes (F)"
@@ -5805,7 +5805,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_RETI_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0241, d=1.39).",
     "evidence_refs": [
       "LB: Reticulocytes (F)"
@@ -5834,7 +5834,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_RETI_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Reticulocytes classified as adverse in F (p=0.0032).",
     "evidence_refs": [
       "LB: Reticulocytes (F)"
@@ -5863,7 +5863,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_RETI_F",
-    "organ_system": "general",
+    "organ_system": "hematologic",
     "output_text": "Reticulocytes: Cohen's d = 1.76 at high dose in F.",
     "evidence_refs": [
       "LB: Reticulocytes (F)"
@@ -5894,7 +5894,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_SODIUM_F",
-    "organ_system": "general",
+    "organ_system": "electrolyte",
     "output_text": "Sodium: inconsistent dose-response in F.",
     "evidence_refs": [
       "LB: Sodium (F)"
@@ -5923,7 +5923,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_SODIUM_F",
-    "organ_system": "general",
+    "organ_system": "electrolyte",
     "output_text": "Sodium: Cohen's d = -0.95 at high dose.",
     "evidence_refs": [
       "LB: Sodium (F)"
@@ -5952,7 +5952,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_SODIUM_M",
-    "organ_system": "general",
+    "organ_system": "electrolyte",
     "output_text": "Significant pairwise difference at Group 3,20 mg/kg PCDRUG (p=0.0153, d=-1.47).",
     "evidence_refs": [
       "LB: Sodium (M)"
@@ -5981,7 +5981,7 @@
     "scope": "endpoint",
     "severity": "warning",
     "context_key": "LB_SODIUM_M",
-    "organ_system": "general",
+    "organ_system": "electrolyte",
     "output_text": "Sodium classified as adverse in M (p=0.0153).",
     "evidence_refs": [
       "LB: Sodium (M)"
@@ -6010,7 +6010,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_SODIUM_M",
-    "organ_system": "general",
+    "organ_system": "electrolyte",
     "output_text": "Sodium: Cohen's d = -1.47 at high dose in M.",
     "evidence_refs": [
       "LB: Sodium (M)"
@@ -6041,7 +6041,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_SPGRAV_M",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "Specific Gravity: threshold pattern in M.",
     "evidence_refs": [
       "LB: Specific Gravity (M)"
@@ -6248,7 +6248,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_UREAN_F",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "Urea Nitrogen: inconsistent dose-response in F.",
     "evidence_refs": [
       "LB: Urea Nitrogen (F)"
@@ -6277,7 +6277,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_UREAN_F",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "Urea Nitrogen: Cohen's d = 0.74 at high dose.",
     "evidence_refs": [
       "LB: Urea Nitrogen (F)"
@@ -6306,7 +6306,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_UREAN_M",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "Urea Nitrogen: inconsistent dose-response in M.",
     "evidence_refs": [
       "LB: Urea Nitrogen (M)"
@@ -6335,7 +6335,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_UREAN_M",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "Urea Nitrogen: Cohen's d = -0.78 at high dose.",
     "evidence_refs": [
       "LB: Urea Nitrogen (M)"
@@ -6364,7 +6364,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_VOLUME_F",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "Volume: Cohen's d = 0.73 at high dose.",
     "evidence_refs": [
       "LB: Volume (F)"
@@ -6393,7 +6393,7 @@
     "scope": "endpoint",
     "severity": "info",
     "context_key": "LB_VOLUME_M",
-    "organ_system": "general",
+    "organ_system": "renal",
     "output_text": "Volume: Cohen's d = -0.59 at high dose.",
     "evidence_refs": [
       "LB: Volume (M)"
@@ -23459,7 +23459,7 @@
     "severity": "warning",
     "context_key": "organ_general",
     "organ_system": "general",
-    "output_text": "Convergent evidence from 8 domains (BW, CL, DS, FW, LB, MA, MI, OM).",
+    "output_text": "Convergent evidence from 7 domains (BW, CL, DS, FW, MA, MI, OM).",
     "evidence_refs": [],
     "params": {
       "organ_system": "general"
@@ -23471,18 +23471,17 @@
     "severity": "info",
     "context_key": "organ_general",
     "organ_system": "general",
-    "output_text": "104 endpoints across BW, CL, DS, FW, LB, MA, MI, OM.",
+    "output_text": "60 endpoints across BW, CL, DS, FW, MA, MI, OM.",
     "evidence_refs": [],
     "params": {
       "organ_system": "general",
-      "n_endpoints": 104,
-      "n_domains": 8,
+      "n_endpoints": 60,
+      "n_domains": 7,
       "domains": [
         "BW",
         "CL",
         "DS",
         "FW",
-        "LB",
         "MA",
         "MI",
         "OM"
@@ -23495,16 +23494,16 @@
     "severity": "info",
     "context_key": "organ_general",
     "organ_system": "general",
-    "output_text": "ALOPECIA, Activated Partial Thromboplastin Time, Albumin/Globulin, BEDDING WET, BODY CAVITY, CRANIAL \u2014 CONTENTS, DARK RED show convergent pattern.",
+    "output_text": "ALOPECIA, BEDDING WET, BODY CAVITY, CRANIAL \u2014 CONTENTS, DARK RED, Body Weight, CRUST show convergent pattern.",
     "evidence_refs": [],
     "params": {
       "organ_system": "general",
       "endpoint_labels": [
         "ALOPECIA",
-        "Activated Partial Thromboplastin Time",
-        "Albumin/Globulin",
         "BEDDING WET",
-        "BODY CAVITY, CRANIAL \u2014 CONTENTS, DARK RED"
+        "BODY CAVITY, CRANIAL \u2014 CONTENTS, DARK RED",
+        "Body Weight",
+        "CRUST"
       ]
     }
   },
@@ -23585,6 +23584,57 @@
     "rule_id": "R08",
     "scope": "organ",
     "severity": "warning",
+    "context_key": "organ_hematologic",
+    "organ_system": "hematologic",
+    "output_text": "Convergent evidence from 4 domains (LB, MA, MI, OM).",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "hematologic"
+    }
+  },
+  {
+    "rule_id": "R09",
+    "scope": "organ",
+    "severity": "info",
+    "context_key": "organ_hematologic",
+    "organ_system": "hematologic",
+    "output_text": "65 endpoints across LB, MA, MI, OM.",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "hematologic",
+      "n_endpoints": 65,
+      "n_domains": 4,
+      "domains": [
+        "LB",
+        "MA",
+        "MI",
+        "OM"
+      ]
+    }
+  },
+  {
+    "rule_id": "R16",
+    "scope": "organ",
+    "severity": "info",
+    "context_key": "organ_hematologic",
+    "organ_system": "hematologic",
+    "output_text": "Activated Partial Thromboplastin Time, BONE MARROW, FEMUR \u2014 FAT VACUOLES, BONE MARROW, FEMUR \u2014 FIBROSIS, BONE MARROW, FEMUR \u2014 HYPERPLASIA, BONE MARROW, STERNUM \u2014 HYPERPLASIA show convergent pattern.",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "hematologic",
+      "endpoint_labels": [
+        "Activated Partial Thromboplastin Time",
+        "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
+        "BONE MARROW, FEMUR \u2014 FIBROSIS",
+        "BONE MARROW, FEMUR \u2014 HYPERPLASIA",
+        "BONE MARROW, STERNUM \u2014 HYPERPLASIA"
+      ]
+    }
+  },
+  {
+    "rule_id": "R08",
+    "scope": "organ",
+    "severity": "warning",
     "context_key": "organ_renal",
     "organ_system": "renal",
     "output_text": "Convergent evidence from 4 domains (LB, MA, MI, OM).",
@@ -23599,11 +23649,11 @@
     "severity": "info",
     "context_key": "organ_renal",
     "organ_system": "renal",
-    "output_text": "24 endpoints across LB, MA, MI, OM.",
+    "output_text": "32 endpoints across LB, MA, MI, OM.",
     "evidence_refs": [],
     "params": {
       "organ_system": "renal",
-      "n_endpoints": 24,
+      "n_endpoints": 32,
       "n_domains": 4,
       "domains": [
         "LB",
@@ -23650,11 +23700,11 @@
     "severity": "info",
     "context_key": "organ_hepatic",
     "organ_system": "hepatic",
-    "output_text": "29 endpoints across LB, MA, MI, OM.",
+    "output_text": "37 endpoints across LB, MA, MI, OM.",
     "evidence_refs": [],
     "params": {
       "organ_system": "hepatic",
-      "n_endpoints": 29,
+      "n_endpoints": 37,
       "n_domains": 4,
       "domains": [
         "LB",
@@ -23670,67 +23720,16 @@
     "severity": "info",
     "context_key": "organ_hepatic",
     "organ_system": "hepatic",
-    "output_text": "Alanine Aminotransferase, Albumin, Alkaline Phosphatase, Aspartate Aminotransferase, Gamma Glutamyl Transferase show convergent pattern.",
+    "output_text": "Alanine Aminotransferase, Albumin, Albumin/Globulin, Alkaline Phosphatase, Aspartate Aminotransferase show convergent pattern.",
     "evidence_refs": [],
     "params": {
       "organ_system": "hepatic",
       "endpoint_labels": [
         "Alanine Aminotransferase",
         "Albumin",
+        "Albumin/Globulin",
         "Alkaline Phosphatase",
-        "Aspartate Aminotransferase",
-        "Gamma Glutamyl Transferase"
-      ]
-    }
-  },
-  {
-    "rule_id": "R08",
-    "scope": "organ",
-    "severity": "warning",
-    "context_key": "organ_hematologic",
-    "organ_system": "hematologic",
-    "output_text": "Convergent evidence from 4 domains (LB, MA, MI, OM).",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "hematologic"
-    }
-  },
-  {
-    "rule_id": "R09",
-    "scope": "organ",
-    "severity": "info",
-    "context_key": "organ_hematologic",
-    "organ_system": "hematologic",
-    "output_text": "41 endpoints across LB, MA, MI, OM.",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "hematologic",
-      "n_endpoints": 41,
-      "n_domains": 4,
-      "domains": [
-        "LB",
-        "MA",
-        "MI",
-        "OM"
-      ]
-    }
-  },
-  {
-    "rule_id": "R16",
-    "scope": "organ",
-    "severity": "info",
-    "context_key": "organ_hematologic",
-    "organ_system": "hematologic",
-    "output_text": "BONE MARROW, FEMUR \u2014 FAT VACUOLES, BONE MARROW, FEMUR \u2014 FIBROSIS, BONE MARROW, FEMUR \u2014 HYPERPLASIA, BONE MARROW, STERNUM \u2014 HYPERPLASIA, Ery. Mean Corpuscular HGB Concentration show convergent pattern.",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "hematologic",
-      "endpoint_labels": [
-        "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
-        "BONE MARROW, FEMUR \u2014 FIBROSIS",
-        "BONE MARROW, FEMUR \u2014 HYPERPLASIA",
-        "BONE MARROW, STERNUM \u2014 HYPERPLASIA",
-        "Ery. Mean Corpuscular HGB Concentration"
+        "Aspartate Aminotransferase"
       ]
     }
   },
@@ -23772,35 +23771,6 @@
     }
   },
   {
-    "rule_id": "R08",
-    "scope": "organ",
-    "severity": "warning",
-    "context_key": "organ_metabolic",
-    "organ_system": "metabolic",
-    "output_text": "Convergent evidence from 1 domains (LB).",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "metabolic"
-    }
-  },
-  {
-    "rule_id": "R16",
-    "scope": "organ",
-    "severity": "info",
-    "context_key": "organ_metabolic",
-    "organ_system": "metabolic",
-    "output_text": "Cholesterol, Glucose, Triglycerides show convergent pattern.",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "metabolic",
-      "endpoint_labels": [
-        "Cholesterol",
-        "Glucose",
-        "Triglycerides"
-      ]
-    }
-  },
-  {
     "rule_id": "R16",
     "scope": "organ",
     "severity": "info",
@@ -23828,6 +23798,36 @@
       "organ_system": "endocrine",
       "endpoint_labels": [
         "PANCREAS \u2014 INFLAMMATION"
+      ]
+    }
+  },
+  {
+    "rule_id": "R08",
+    "scope": "organ",
+    "severity": "warning",
+    "context_key": "organ_metabolic",
+    "organ_system": "metabolic",
+    "output_text": "Convergent evidence from 1 domains (LB).",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "metabolic"
+    }
+  },
+  {
+    "rule_id": "R16",
+    "scope": "organ",
+    "severity": "info",
+    "context_key": "organ_metabolic",
+    "organ_system": "metabolic",
+    "output_text": "Cholesterol, Glucose, Ketones, Triglycerides show convergent pattern.",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "metabolic",
+      "endpoint_labels": [
+        "Cholesterol",
+        "Glucose",
+        "Ketones",
+        "Triglycerides"
       ]
     }
   },
@@ -23875,14 +23875,15 @@
     "severity": "info",
     "context_key": "organ_electrolyte",
     "organ_system": "electrolyte",
-    "output_text": "Calcium, Chloride, Potassium show convergent pattern.",
+    "output_text": "Calcium, Chloride, Potassium, Sodium show convergent pattern.",
     "evidence_refs": [],
     "params": {
       "organ_system": "electrolyte",
       "endpoint_labels": [
         "Calcium",
         "Chloride",
-        "Potassium"
+        "Potassium",
+        "Sodium"
       ]
     }
   },

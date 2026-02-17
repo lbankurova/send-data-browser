@@ -145,14 +145,14 @@ function buildClinicalSection(
   analytics: FindingsAnalytics | undefined,
 ): ClinicalSection {
   const endpointLabel = finding.endpoint_label ?? finding.finding;
-  const canonical = resolveCanonical(endpointLabel);
+  const canonical = resolveCanonical(endpointLabel, finding.test_code);
   const isLabEndpoint = finding.domain === "LB";
 
   if (!canonical || !analytics?.labMatches.length) {
     return { match: null, canonical, isLabEndpoint, relatedRules: [], firedRuleIds: new Set() };
   }
 
-  const match = findClinicalMatchForEndpoint(endpointLabel, analytics.labMatches);
+  const match = findClinicalMatchForEndpoint(endpointLabel, analytics.labMatches, finding.test_code);
   const relatedRules = getRelatedRules(canonical);
 
   const firedRuleIds = new Set<string>();

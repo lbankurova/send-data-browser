@@ -263,6 +263,9 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
                 "severity": finding.get("severity"),
                 "treatment_related": finding.get("treatment_related", False),
                 "dose_response_pattern": finding.get("dose_response_pattern", ""),
+                "test_code": finding.get("test_code"),
+                "specimen": finding.get("specimen"),
+                "finding": finding.get("finding"),
             })
 
     return rows
