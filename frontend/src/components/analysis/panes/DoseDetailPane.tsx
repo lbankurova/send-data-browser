@@ -140,7 +140,11 @@ export function DoseDetailPane({ statistics, doseResponse }: Props) {
       <div className="flex items-center gap-2 text-xs">
         <span className="text-muted-foreground">Trend:</span>
         <span className={cn("font-mono", getPValueColor(doseResponse.trend_p))}>
-          p={formatPValue(doseResponse.trend_p)}
+          {doseResponse.trend_p != null
+            ? (formatPValue(doseResponse.trend_p).startsWith("<")
+              ? `p${formatPValue(doseResponse.trend_p)}`
+              : `p=${formatPValue(doseResponse.trend_p)}`)
+            : "p=\u2014"}
         </span>
         <span className="text-[9px] text-muted-foreground">&middot; {trendTestName}</span>
       </div>
