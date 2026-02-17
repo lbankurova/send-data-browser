@@ -64,11 +64,20 @@ export function ShellRailPanel() {
     return () => setFindingsExcludedCallback(null);
   }, []);
 
+  // FindingSelectionContext for group selection + bidirectional sync
+  const { selectedFinding, selectGroup } = useFindingSelection();
+
   // ── View-aware handlers ──
 
   const handleGroupScopeChange = useCallback((scope: { type: GroupingMode; value: string } | null) => {
     setGroupScope(scope);
     setActiveEndpoint(null);
+    // Update group selection in context for context panel routing
+    if (scope && (scope.type === "organ" || scope.type === "syndrome")) {
+      selectGroup(scope.type, scope.value);
+    } else {
+      selectGroup(null, null);
+    }
     if (isFindingsRoute) {
       // Scope change → rail's useEffect will send new visibleEndpointLabels.
       // We just need to forward endpoint deselection.
@@ -80,7 +89,7 @@ export function ShellRailPanel() {
         navigateTo({ organSystem: undefined });
       }
     }
-  }, [isFindingsRoute, isDRView, navigateTo]);
+  }, [isFindingsRoute, isDRView, navigateTo, selectGroup]);
 
   const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
     setActiveEndpoint(endpointLabel);
@@ -114,8 +123,6 @@ export function ShellRailPanel() {
   }, []);
 
   // ── Bidirectional sync: table/context → rail highlight ──
-
-  const { selectedFinding } = useFindingSelection();
   const prevEndpointRef = useRef(activeEndpoint);
   useEffect(() => {
     prevEndpointRef.current = activeEndpoint;

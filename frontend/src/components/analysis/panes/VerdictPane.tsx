@@ -1,9 +1,16 @@
 import type { FindingContext, UnifiedFinding } from "@/types/analysis";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
+import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { formatPValue, getEffectMagnitudeLabel } from "@/lib/severity-colors";
 import { getPatternLabel, classifyEndpointConfidence } from "@/lib/findings-rail-engine";
 import type { EndpointConfidence } from "@/lib/findings-rail-engine";
-import { resolveCanonical } from "@/lib/lab-clinical-catalog";
+import {
+  resolveCanonical,
+  findClinicalMatchForEndpoint,
+  getClinicalTierTextClass,
+  getRuleSourceShortLabel,
+  describeThreshold,
+} from "@/lib/lab-clinical-catalog";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -141,7 +148,6 @@ function buildPatternSentence(
   const direction = doseResponse.direction === "up" ? "increase" : doseResponse.direction === "down" ? "decrease" : null;
 
   if (doseResponse.pattern === "threshold") {
-    // Find onset dose: lowest dose where p < 0.05
     let onsetDose: string | null = null;
     if (statistics?.rows) {
       for (let i = 1; i < statistics.rows.length; i++) {
@@ -188,18 +194,19 @@ export function VerdictPane({
   endpointSexes,
   notEvaluated,
 }: Props) {
-  // Verdict
   const verdict = notEvaluated
     ? { icon: "\u2014", label: "Not evaluated", labelClass: "text-sm font-medium text-muted-foreground", severityWord: "" }
     : computeVerdict(treatmentSummary, analytics, finding);
 
-  // Pattern sentence
   const patternSentence = notEvaluated ? null : buildPatternSentence(doseResponse, statistics);
-
-  // Confidence
   const confidence = notEvaluated ? null : buildConfidenceLabel(finding, analytics);
 
-  // Sex label (endpoint-level aggregate)
+  // Clinical match for this endpoint (Layer D)
+  const clinicalMatch: LabClinicalMatch | null = (!notEvaluated && analytics?.labMatches.length)
+    ? findClinicalMatchForEndpoint(finding.endpoint_label ?? finding.finding, analytics.labMatches)
+    : null;
+
+  // Sex label
   const endpointLabel = finding.endpoint_label ?? finding.finding;
   const aggSexes = endpointSexes?.get(endpointLabel);
   let sexLabel: string;
@@ -228,10 +235,23 @@ export function VerdictPane({
   const trendP = doseResponse?.trend_p ?? statistics?.trend_p ?? null;
   const trendTestName = isContinuous ? "Jonckheere-Terpstra" : "Cochran-Armitage";
 
-  // % change: ((highestMean - controlMean) / |controlMean| * 100)
+  // Fold-change or % change cell
   let pctChange: string | null = null;
   let pctDoseLabel: string | null = null;
-  if (statistics?.rows && statistics.rows.length >= 2) {
+  let foldChangeDisplay: string | null = null;
+  let foldChangeContext: string | null = null;
+
+  if (clinicalMatch) {
+    const canonical = resolveCanonical(endpointLabel);
+    const fc = canonical ? clinicalMatch.foldChanges[canonical] : null;
+    if (fc != null) {
+      foldChangeDisplay = `${fc.toFixed(1)}\u00d7`;
+      const threshDesc = canonical ? describeThreshold(clinicalMatch.ruleId, canonical) : null;
+      foldChangeContext = threshDesc ? `(${clinicalMatch.ruleId}: ${threshDesc})` : null;
+    }
+  }
+
+  if (!foldChangeDisplay && statistics?.rows && statistics.rows.length >= 2) {
     const control = statistics.rows[0];
     const highest = statistics.rows[statistics.rows.length - 1];
     if (control.mean != null && highest.mean != null && control.mean !== 0) {
@@ -243,15 +263,21 @@ export function VerdictPane({
     }
   }
 
-  // Metadata items for Line 3
+  // Metadata items
   const metaItems: string[] = [];
   if (confidence) metaItems.push(`${confidence} confidence`);
   metaItems.push(sexLabel);
   if (noaelStr) metaItems.push(noaelStr);
 
+  // Clinical verdict line
+  const clinicalLineText = clinicalMatch
+    ? `${clinicalMatch.severity} ${clinicalMatch.severityLabel} \u00b7 Rule ${clinicalMatch.ruleId} \u00b7 ${getRuleSourceShortLabel(clinicalMatch.source)}`
+    : null;
+  const clinicalLineClass = clinicalMatch ? getClinicalTierTextClass(clinicalMatch.severity) : "";
+
   return (
     <div>
-      {/* Line 1 — Verdict badge */}
+      {/* Line 1 -- Verdict badge */}
       <div className="flex items-center gap-2">
         <span className="text-[14px]">{verdict.icon}</span>
         <span className={verdict.labelClass}>{verdict.label}</span>
@@ -263,12 +289,19 @@ export function VerdictPane({
         )}
       </div>
 
-      {/* Line 2 — Pattern sentence */}
+      {/* Line 2 -- Clinical tier + rule (only when a clinical rule matched) */}
+      {clinicalLineText && (
+        <div className={`mt-0.5 text-[10px] font-medium ${clinicalLineClass}`}>
+          {clinicalLineText}
+        </div>
+      )}
+
+      {/* Line 3 -- Pattern sentence */}
       {patternSentence && (
         <div className="mt-1.5 text-xs text-foreground/80">{patternSentence}</div>
       )}
 
-      {/* Line 3 — Key metadata */}
+      {/* Line 4 -- Key metadata */}
       {metaItems.length > 0 && (
         <div className="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-muted-foreground">
           {metaItems.map((item, i) => (
@@ -280,10 +313,9 @@ export function VerdictPane({
         </div>
       )}
 
-      {/* Line 4 — Key numbers */}
-      {(effectSize != null || trendP != null || pctChange != null) && (
+      {/* Line 5 -- Key numbers */}
+      {(effectSize != null || trendP != null || pctChange != null || foldChangeDisplay != null) && (
         <div className="mt-2 flex gap-x-4 text-[10px]">
-          {/* Effect size cell */}
           {effectSize != null && (
             <div className="flex flex-col">
               <span className="text-sm font-semibold font-mono">|d| = {Math.abs(effectSize).toFixed(2)}</span>
@@ -292,7 +324,6 @@ export function VerdictPane({
             </div>
           )}
 
-          {/* P-value cell */}
           {trendP != null && (
             <div className="flex flex-col">
               <span className="text-sm font-semibold font-mono">p {formatPValue(trendP) === "<0.0001" ? "< 0.0001" : `= ${formatPValue(trendP)}`}</span>
@@ -301,14 +332,19 @@ export function VerdictPane({
             </div>
           )}
 
-          {/* % change cell */}
-          {pctChange != null && (
+          {foldChangeDisplay != null ? (
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold font-mono">{foldChangeDisplay}</span>
+              <span className="text-[9px] text-muted-foreground">vs control</span>
+              {foldChangeContext && <span className="text-[9px] text-muted-foreground">{foldChangeContext}</span>}
+            </div>
+          ) : pctChange != null ? (
             <div className="flex flex-col">
               <span className="text-sm font-semibold font-mono">{pctChange}</span>
               <span className="text-[9px] text-muted-foreground">vs control</span>
               {pctDoseLabel && <span className="text-[9px] text-muted-foreground">{pctDoseLabel}</span>}
             </div>
-          )}
+          ) : null}
         </div>
       )}
     </div>

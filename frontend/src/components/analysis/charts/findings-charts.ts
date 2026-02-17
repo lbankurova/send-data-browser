@@ -37,6 +37,9 @@ export interface QuadrantPoint {
   syndromeId?: string;          // syndrome ID if endpoint is matched
   syndromeName?: string;        // for tooltip line
   clinicalSeverity?: string;    // "S3" | "S4" → diamond shape
+  clinicalRuleId?: string;      // e.g. "L02"
+  clinicalSeverityLabel?: string; // e.g. "Adverse"
+  clinicalFoldChange?: number;  // e.g. 4.2
 }
 
 export function prepareQuadrantPoints(
@@ -55,8 +58,13 @@ export function prepareQuadrantPoints(
     }
   }
 
-  // Index lab match endpoint labels -> worst severity
-  const clinicalIndex = new Map<string, string>();
+  // Index lab match endpoint labels -> worst severity + rule metadata
+  const clinicalIndex = new Map<string, {
+    severity: string;
+    ruleId: string;
+    severityLabel: string;
+    foldChange: number | undefined;
+  }>();
   if (labMatches) {
     const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
     for (const match of labMatches) {
@@ -65,8 +73,15 @@ export function prepareQuadrantPoints(
           const canonical = resolveCanonical(epLabel);
           if (canonical) {
             const existing = clinicalIndex.get(epLabel.toLowerCase());
-            if (!existing || sevOrder[match.severity] > sevOrder[existing]) {
-              clinicalIndex.set(epLabel.toLowerCase(), match.severity);
+            if (!existing || sevOrder[match.severity] > sevOrder[existing.severity]) {
+              // Get fold change for this specific endpoint's canonical
+              const fc = match.foldChanges[canonical];
+              clinicalIndex.set(epLabel.toLowerCase(), {
+                severity: match.severity,
+                ruleId: match.ruleId,
+                severityLabel: match.severityLabel,
+                foldChange: fc,
+              });
             }
           }
         }
@@ -95,7 +110,10 @@ export function prepareQuadrantPoints(
         coherenceSize: coh && coh.domainCount >= 3 ? 7 : undefined,
         syndromeId: syn?.id,
         syndromeName: syn?.name,
-        clinicalSeverity: clinical,
+        clinicalSeverity: clinical?.severity,
+        clinicalRuleId: clinical?.ruleId,
+        clinicalSeverityLabel: clinical?.severityLabel,
+        clinicalFoldChange: clinical?.foldChange,
       };
     });
 }
@@ -205,6 +223,12 @@ export function buildFindingsQuadrantOption(
           `</div>`,
           `<div style="font-size:9px;color:#9CA3AF;margin-top:2px">${sevLabel} \u00b7 ${trLabel}</div>`,
         ];
+        if (meta.clinicalSeverity && meta.clinicalRuleId) {
+          lines.push(`<div style="font-size:10px;margin-top:3px;font-weight:500">${meta.clinicalSeverity} ${meta.clinicalSeverityLabel ?? ""} \u00b7 Rule ${meta.clinicalRuleId}</div>`);
+          if (meta.clinicalFoldChange != null) {
+            lines.push(`<div style="font-size:9px;color:#6B7280">${meta.clinicalFoldChange.toFixed(1)}\u00d7 concurrent control</div>`);
+          }
+        }
         if (meta.syndromeName) {
           lines.push(`<div style="font-size:9px;margin-top:2px">\uD83D\uDD17 ${meta.syndromeName} syndrome</div>`);
         }

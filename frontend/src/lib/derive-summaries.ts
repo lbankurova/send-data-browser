@@ -28,6 +28,14 @@ export interface EndpointSummary {
   direction: "up" | "down" | "none" | null;
   sexes: string[];
   pattern: string;
+  /** SEND test code (e.g., LBTESTCD) — used for structured syndrome matching */
+  testCode?: string;
+  /** Specimen name for MI/MA/OM domains */
+  specimen?: string | null;
+  /** Finding name for MI/MA domains (separate from specimen) */
+  finding?: string | null;
+  /** Maximum incidence across treated dose groups (0-1) */
+  maxIncidence?: number | null;
 }
 
 export interface OrganCoherence {
@@ -110,6 +118,10 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     direction: "up" | "down" | "none" | null;
     sexes: Set<string>;
     pattern: string;
+    testCode?: string;
+    specimen?: string | null;
+    finding?: string | null;
+    maxIncidence: number | null;
   }>();
 
   for (const row of rows) {
@@ -125,6 +137,10 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         direction: null,
         sexes: new Set(),
         pattern: row.dose_response_pattern,
+        testCode: row.test_code,
+        specimen: row.specimen,
+        finding: row.finding,
+        maxIncidence: null,
       };
       map.set(row.endpoint_label, entry);
     }
@@ -138,6 +154,10 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     }
     if (row.p_value != null && (entry.minP === null || row.p_value < entry.minP)) entry.minP = row.p_value;
     if (row.direction === "up" || row.direction === "down") entry.direction = row.direction;
+    // Track max incidence across treated dose groups
+    if (row.max_incidence != null && (entry.maxIncidence === null || row.max_incidence > entry.maxIncidence)) {
+      entry.maxIncidence = row.max_incidence;
+    }
     // Prefer non-flat pattern
     if (row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
       entry.pattern = row.dose_response_pattern;
@@ -157,6 +177,10 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       direction: entry.direction,
       sexes: [...entry.sexes].sort(),
       pattern: entry.pattern,
+      testCode: entry.testCode,
+      specimen: entry.specimen,
+      finding: entry.finding,
+      maxIncidence: entry.maxIncidence,
     });
   }
 

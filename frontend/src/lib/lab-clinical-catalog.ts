@@ -665,3 +665,194 @@ export function evaluateLabRules(
     (a, b) => sevOrder[b.severity] - sevOrder[a.severity]
   );
 }
+
+// ─── Clinical Tier UI Utilities ─────────────────────────────
+
+/** Tailwind classes for clinical severity badge (background + text + border). */
+export function getClinicalTierBadgeClasses(tier: string): string {
+  switch (tier) {
+    case "S1": return "bg-blue-50 text-blue-700 border-blue-200";
+    case "S2": return "bg-yellow-50 text-yellow-700 border-yellow-200";
+    case "S3": return "bg-amber-50 text-amber-700 border-amber-200";
+    case "S4": return "bg-red-50 text-red-700 border-red-200";
+    default:   return "bg-gray-50 text-gray-700 border-gray-200";
+  }
+}
+
+/** Tailwind text color class for clinical severity tier. */
+export function getClinicalTierTextClass(tier: string): string {
+  switch (tier) {
+    case "S1": return "text-blue-700";
+    case "S2": return "text-yellow-700";
+    case "S3": return "text-amber-700";
+    case "S4": return "text-red-700";
+    default:   return "text-gray-700";
+  }
+}
+
+/** Tailwind border class for clinical rule citation card left border. */
+export function getClinicalTierCardBorderClass(tier: string): string {
+  switch (tier) {
+    case "S1": return "border-l-2 border-blue-400";
+    case "S2": return "border-l-2 border-yellow-400";
+    case "S3": return "border-l-2 border-amber-500";
+    case "S4": return "border-l-2 border-red-500";
+    default:   return "border-l-2 border-gray-400";
+  }
+}
+
+/** Tailwind background tint for rule citation card. */
+export function getClinicalTierCardBgClass(tier: string): string {
+  switch (tier) {
+    case "S1": return "bg-blue-50/50";
+    case "S2": return "bg-yellow-50/50";
+    case "S3": return "bg-amber-50/50";
+    case "S4": return "bg-red-50/50";
+    default:   return "bg-gray-50/50";
+  }
+}
+
+/** Short source label for display in compact spaces (verdict line, etc.). */
+export function getRuleSourceShortLabel(source: string): string {
+  const lower = source.toLowerCase();
+  if (lower.includes("ema") || lower.includes("dili")) return "EMA DILI";
+  if (lower.includes("fda") && lower.includes("hy")) return "FDA Hy's Law";
+  if (lower.includes("fda")) return "FDA Guidance";
+  if (lower.includes("stp") || lower.includes("estp")) return "STP/ESTP";
+  if (lower.includes("renal")) return "Renal toxicology";
+  if (lower.includes("hematology")) return "Hematology";
+  if (lower.includes("coagulation")) return "Coagulation";
+  if (lower.includes("clinical chemistry")) return "Clinical chemistry";
+  if (lower.includes("urinalysis")) return "Urinalysis";
+  if (lower.includes("r-ratio")) return "R-ratio";
+  if (lower.includes("nonclinical")) return "Nonclinical";
+  if (lower.includes("internal")) return "Internal";
+  return source;
+}
+
+/** Get the severity label for a tier. */
+export function getClinicalSeverityLabel(tier: string): string {
+  return SEVERITY_LABELS[tier] ?? "Unknown";
+}
+
+/** Look up a clinical match for a specific endpoint label from labMatches array.
+ *  Returns the highest-severity match for this endpoint. */
+export function findClinicalMatchForEndpoint(
+  endpointLabel: string,
+  labMatches: LabClinicalMatch[],
+): LabClinicalMatch | null {
+  const canonical = resolveCanonical(endpointLabel);
+  if (!canonical) return null;
+
+  const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
+  let best: LabClinicalMatch | null = null;
+
+  for (const match of labMatches) {
+    if (!match.matchedEndpoints.some((e) => resolveCanonical(e) === canonical)) continue;
+    if (!best || (sevOrder[match.severity] ?? 0) > (sevOrder[best.severity] ?? 0)) {
+      best = match;
+    }
+  }
+
+  return best;
+}
+
+/** Get the rule definition for a given rule ID.
+ *  Exposes threshold and other metadata for display. */
+export function getRuleDefinition(ruleId: string): {
+  id: string;
+  name: string;
+  category: string;
+  severity: string;
+  source: string;
+  parameters: { canonical: string; direction: string; role: string }[];
+  thresholds?: Record<string, LabRuleThreshold>;
+} | null {
+  const rule = LAB_RULES.find((r) => r.id === ruleId);
+  if (!rule) return null;
+  return {
+    id: rule.id,
+    name: rule.name,
+    category: rule.category,
+    severity: rule.severity,
+    source: rule.source,
+    parameters: rule.parameters,
+    thresholds: rule.thresholds,
+  };
+}
+
+/** Describe a rule's threshold for a given canonical parameter in human-readable form.
+ *  E.g., ">5× control → S3" */
+export function describeThreshold(ruleId: string, canonical: string): string | null {
+  const rule = LAB_RULES.find((r) => r.id === ruleId);
+  if (!rule?.thresholds?.[canonical]) return null;
+  const t = rule.thresholds[canonical];
+  const op = t.comparison === "gte" ? "\u2265" : "\u2264";
+  const sevLabel = SEVERITY_LABELS[rule.severity] ?? rule.severity;
+  return `${op}${t.value}\u00d7 control \u2192 ${rule.severity} ${sevLabel}`;
+}
+
+/** Find the next higher threshold for a parameter across all rules.
+ *  Returns null if already at S4 or no higher threshold exists. */
+export function findNextThreshold(currentRuleId: string, canonical: string): {
+  ruleId: string;
+  severity: string;
+  severityLabel: string;
+  threshold: string;
+} | null {
+  const currentRule = LAB_RULES.find((r) => r.id === currentRuleId);
+  if (!currentRule) return null;
+
+  const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
+  const currentSevOrder = sevOrder[currentRule.severity] ?? 0;
+
+  let bestNext: { ruleId: string; severity: string; severityLabel: string; threshold: string; sevOrd: number } | null = null;
+
+  for (const rule of LAB_RULES) {
+    if (rule.category === "governance") continue;
+    if ((sevOrder[rule.severity] ?? 0) <= currentSevOrder) continue;
+    // Must involve the same canonical parameter
+    if (!rule.parameters.some((p) => p.canonical === canonical)) continue;
+    const t = rule.thresholds?.[canonical];
+    if (!t) continue;
+
+    const sevOrd = sevOrder[rule.severity] ?? 0;
+    if (!bestNext || sevOrd < bestNext.sevOrd) {
+      const op = t.comparison === "gte" ? ">" : "<";
+      bestNext = {
+        ruleId: rule.id,
+        severity: rule.severity,
+        severityLabel: SEVERITY_LABELS[rule.severity] ?? rule.severity,
+        threshold: `${op}${t.value}\u00d7 control`,
+        sevOrd,
+      };
+    }
+  }
+
+  return bestNext ? { ruleId: bestNext.ruleId, severity: bestNext.severity, severityLabel: bestNext.severityLabel, threshold: bestNext.threshold } : null;
+}
+
+/** Get all rules relevant to a canonical parameter (for "related rules" / "evaluated" display). */
+export function getRelatedRules(canonical: string): {
+  id: string;
+  name: string;
+  severity: string;
+  severityLabel: string;
+  category: string;
+}[] {
+  return LAB_RULES
+    .filter((r) => r.category !== "governance" && r.parameters.some((p) => p.canonical === canonical))
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      severity: r.severity,
+      severityLabel: SEVERITY_LABELS[r.severity] ?? r.severity,
+      category: r.category,
+    }));
+}
+
+/** Check if a canonical parameter is a liver-related parameter. */
+export function isLiverParameter(canonical: string): boolean {
+  const liverParams = new Set(["ALT", "AST", "ALP", "GGT", "SDH", "GDH", "5NT", "TBILI"]);
+  return liverParams.has(canonical);
+}
