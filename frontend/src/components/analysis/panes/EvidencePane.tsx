@@ -184,9 +184,13 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
         <div className="text-xs text-muted-foreground">
           No clinical thresholds reached
         </div>
-        {evaluated.length > 0 && (
-          <div className="text-[10px] text-muted-foreground">
-            Evaluated: {evaluated.map((r) => `${r.id} (${r.name})`).join(", ")} {"\u2014"} Grade 0
+        {evaluated.length > 0 && canonical && (
+          <div className="text-[10px] text-muted-foreground space-y-0.5">
+            {evaluated.map((r) => {
+              const t = getThresholdNumericValue(r.id, canonical);
+              const thresholdText = t ? ` \u2014 threshold \u2265${t.value}\u00d7` : "";
+              return <div key={r.id}>{r.id} {r.name}{thresholdText}</div>;
+            })}
           </div>
         )}
       </div>
