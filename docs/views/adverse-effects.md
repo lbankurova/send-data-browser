@@ -302,3 +302,9 @@ All links use `react-router-dom` `navigate()` for client-side navigation.
 | Loading | Skeleton rows: 1 `h-10 w-full` header + 10 `h-8 w-full` body rows, in `space-y-2 p-4` |
 | Error | `p-6 text-destructive` -- "Failed to load analysis: {message}" |
 | Empty | "No findings match the current filters." (`p-4 text-center text-xs text-muted-foreground`) |
+
+---
+
+## TODOs
+
+- [ ] **Scatter dot selection color is unintuitive.** On click, the selected dot changes from gray to `getOrganColor(organ_system)` — a hash-based HSL hue. Since all dots are gray at rest, you only ever see one colored dot at a time, so the organ-system encoding provides no visual grouping benefit. Consider: (a) using a fixed accent color (e.g., `primary`) for the selected dot, since the organ is already shown in the context panel header; (b) lighting up all dots of the same organ system on selection so the color grouping is visible; or (c) keeping organ color but making it always-on at rest (conflicts with current "gray at rest" design). Filed from: Alkaline Phosphatase selection shows blue (`hsl(232,55%,50%)` = hepatic) with no context for why blue. See `findings-charts.ts:143` and `severity-colors.ts:234`.
