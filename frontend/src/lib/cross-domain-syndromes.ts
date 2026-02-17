@@ -79,6 +79,12 @@ function normalizeLabel(label: string): string {
     .replace(/\s+/g, " ");
 }
 
+/** Check if `term` appears as a whole word/phrase within `text` (both pre-normalized). */
+function containsWord(text: string, term: string): boolean {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|\\s)${escaped}(?:\\s|$)`).test(` ${text} `);
+}
+
 /**
  * Parse "SPECIMEN — FINDING" or "SPECIMEN, LOCATION — FINDING" from endpoint_label.
  * Returns null if the label doesn't match the specimen:finding format.
@@ -134,8 +140,8 @@ function matchEndpoint(ep: EndpointSummary, term: SyndromeTermMatch): boolean {
       const normFinding = normalizeLabel(finding);
       // Empty specimen array = match any specimen
       const specimenMatch = term.specimenTerms.specimen.length === 0 ||
-        term.specimenTerms.specimen.some((s) => normSpecimen.includes(s));
-      const findingMatch = term.specimenTerms.finding.some((f) => normFinding.includes(f));
+        term.specimenTerms.specimen.some((s) => containsWord(normSpecimen, s));
+      const findingMatch = term.specimenTerms.finding.some((f) => containsWord(normFinding, f));
       if (specimenMatch && findingMatch) return true;
     }
   }
@@ -151,7 +157,7 @@ function matchEndpoint(ep: EndpointSummary, term: SyndromeTermMatch): boolean {
     const normSpecimen = normalizeLabel(specimen);
     // Empty specimen array = match any organ weight
     if (term.organWeightTerms.specimen.length === 0 ||
-        term.organWeightTerms.specimen.some((s) => normSpecimen.includes(s))) {
+        term.organWeightTerms.specimen.some((s) => containsWord(normSpecimen, s))) {
       return true;
     }
   }
@@ -382,7 +388,7 @@ const XS05_TERMS: SyndromeTermMatch[] = [
 const XS06_TERMS: SyndromeTermMatch[] = [
   // === REQUIRED ===
   {
-    testCodes: ["PHOS", "PL"],
+    testCodes: ["PL", "PLIPID", "PHOSLPD"],
     canonicalLabels: ["phospholipids"],
     domain: "LB", direction: "up", role: "required", tag: "PHOS",
   },
