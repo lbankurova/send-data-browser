@@ -31,6 +31,7 @@ import {
   isFiltered,
   getDomainFullLabel,
   getPatternLabel,
+  EMPTY_RAIL_FILTERS,
 } from "@/lib/findings-rail-engine";
 import type {
   GroupingMode,
@@ -50,6 +51,13 @@ import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/F
 
 // ─── Props ─────────────────────────────────────────────────
 
+/** Payload sent from rail to view — the rail is the single source of truth for filtering. */
+export interface RailVisibleState {
+  labels: string[];
+  scopeLabel: string | null;
+  filterLabels: string[];
+}
+
 interface FindingsRailProps {
   studyId: string;
   /** Active group scope — set by rail click, consumed by parent view. */
@@ -60,12 +68,10 @@ interface FindingsRailProps {
   onGroupScopeChange?: (scope: { type: GroupingMode; value: string } | null) => void;
   /** Callback when an endpoint row is clicked (for table filtering + context panel). */
   onEndpointSelect?: (endpointLabel: string | null) => void;
-  /** Callback when the grouping mode changes (for filter bar coordination). */
+  /** Callback when the grouping mode changes (for context). */
   onGroupingChange?: (mode: GroupingMode) => void;
-  /** Clinical S2+ filter state — controlled externally for reverse channel. */
-  clinicalFilterActive?: boolean;
-  /** Callback when clinical filter checkbox changes. */
-  onClinicalFilterChange?: (active: boolean) => void;
+  /** Callback with the rail's fully-filtered visible endpoint set + display metadata. */
+  onVisibleEndpointsChange?: (state: RailVisibleState) => void;
 }
 
 // ─── Component ─────────────────────────────────────────────
@@ -77,30 +83,15 @@ export function FindingsRail({
   onGroupScopeChange,
   onEndpointSelect,
   onGroupingChange,
-  clinicalFilterActive = false,
-  onClinicalFilterChange,
+  onVisibleEndpointsChange,
 }: FindingsRailProps) {
   const { data: rawData, isLoading, error } = useAdverseEffectSummary(studyId);
 
   // ── Local state ────────────────────────────────────────
   const [grouping, setGrouping] = useState<GroupingMode>("organ");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [railFilters, setRailFilters] = useState<RailFilters>({
-    search: "",
-    trOnly: false,
-    sigOnly: false,
-    clinicalS2Plus: false,
-    groupFilter: null,
-  });
+  const [railFilters, setRailFilters] = useState<RailFilters>(EMPTY_RAIL_FILTERS);
   const [sortMode, setSortMode] = useState<SortMode>("signal");
-
-  // Sync external clinical filter state into rail filters
-  useEffect(() => {
-    setRailFilters((prev) => {
-      if (prev.clinicalS2Plus === clinicalFilterActive) return prev;
-      return { ...prev, clinicalS2Plus: clinicalFilterActive };
-    });
-  }, [clinicalFilterActive]);
 
   // Reset local state on study change
   const prevStudyRef = useRef(studyId);
@@ -109,7 +100,7 @@ export function FindingsRail({
       prevStudyRef.current = studyId;
       setGrouping("organ");
       setExpanded(new Set());
-      setRailFilters({ search: "", trOnly: false, sigOnly: false, clinicalS2Plus: false, groupFilter: null });
+      setRailFilters(EMPTY_RAIL_FILTERS);
       setSortMode("signal");
     }
   }, [studyId]);
@@ -197,6 +188,66 @@ export function FindingsRail({
     () => filterEndpoints(endpointsWithSignal, railFilters, grouping, clinicalEndpoints),
     [endpointsWithSignal, railFilters, grouping, clinicalEndpoints],
   );
+
+  // ── Visible endpoint set (filters + scope) → sent to view ──
+
+  const visibleEndpointLabels = useMemo(() => {
+    let eps = filteredEndpoints;
+    if (activeGroupScope) {
+      if (activeGroupScope.type === "organ") {
+        eps = eps.filter((ep) => ep.organ_system === activeGroupScope.value);
+      } else if (activeGroupScope.type === "domain") {
+        eps = eps.filter((ep) => ep.domain === activeGroupScope.value);
+      } else if (activeGroupScope.type === "pattern") {
+        eps = eps.filter((ep) => (ep as EndpointWithSignal & { pattern: string }).pattern === activeGroupScope.value);
+      } else if (activeGroupScope.type === "syndrome") {
+        const syn = syndromes.find((s) => s.id === activeGroupScope.value);
+        if (syn) {
+          const labels = new Set(syn.matchedEndpoints.map((m) => m.endpoint_label));
+          eps = eps.filter((ep) => labels.has(ep.endpoint_label));
+        } else if (activeGroupScope.value === "no_syndrome") {
+          const inSyn = new Set<string>();
+          for (const s of syndromes) for (const m of s.matchedEndpoints) inSyn.add(m.endpoint_label);
+          eps = eps.filter((ep) => !inSyn.has(ep.endpoint_label));
+        }
+      } else if (activeGroupScope.type === "finding") {
+        eps = eps.filter((ep) => ep.endpoint_label === activeGroupScope.value);
+      }
+    }
+    return eps.map((ep) => ep.endpoint_label);
+  }, [filteredEndpoints, activeGroupScope, syndromes]);
+
+  const railScopeLabel = useMemo(() => {
+    if (!activeGroupScope) return null;
+    if (activeGroupScope.type === "organ") return titleCase(activeGroupScope.value);
+    if (activeGroupScope.type === "domain") return getDomainFullLabel(activeGroupScope.value);
+    if (activeGroupScope.type === "pattern") return getPatternLabel(activeGroupScope.value);
+    if (activeGroupScope.type === "syndrome") {
+      const syn = syndromes.find((s) => s.id === activeGroupScope.value);
+      return syn?.name ?? (activeGroupScope.value === "no_syndrome" ? "No Syndrome" : null);
+    }
+    if (activeGroupScope.type === "finding") return activeGroupScope.value;
+    return null;
+  }, [activeGroupScope, syndromes]);
+
+  const railFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+    if (railFilters.trOnly) labels.push("TR only");
+    if (railFilters.sigOnly) labels.push("Sig only");
+    if (railFilters.clinicalS2Plus) labels.push("Clinical S2+");
+    if (railFilters.sex) labels.push(railFilters.sex === "M" ? "Male" : "Female");
+    if (railFilters.severity) labels.push(railFilters.severity.charAt(0).toUpperCase() + railFilters.severity.slice(1));
+    return labels;
+  }, [railFilters]);
+
+  // Send visible state to view whenever it changes
+  useEffect(() => {
+    onVisibleEndpointsChange?.({
+      labels: visibleEndpointLabels,
+      scopeLabel: railScopeLabel,
+      filterLabels: railFilterLabels,
+    });
+  }, [visibleEndpointLabels, railScopeLabel, railFilterLabels, onVisibleEndpointsChange]);
 
   const cards = useMemo(
     () => grouping === "syndrome"
@@ -395,13 +446,7 @@ export function FindingsRail({
         hasClinicalEndpoints={clinicalEndpoints.size > 0}
         clinicalS2Plus={railFilters.clinicalS2Plus ?? false}
         onGroupingChange={handleGroupingChange}
-        onFiltersChange={(f) => {
-          // Intercept clinical filter changes to notify parent
-          if (f.clinicalS2Plus !== railFilters.clinicalS2Plus) {
-            onClinicalFilterChange?.(!!f.clinicalS2Plus);
-          }
-          setRailFilters(f);
-        }}
+        onFiltersChange={setRailFilters}
         onSortChange={setSortMode}
       />
 
@@ -615,8 +660,25 @@ function RailFiltersSection({
         </FilterSelect>
       </div>
 
-      {/* Row 3: Quick toggles + count */}
-      <div className="flex items-center gap-3">
+      {/* Row 3: Sex + Severity + Quick toggles */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <FilterSelect
+          value={filters.sex ?? ""}
+          onChange={(e) => onFiltersChange({ ...filters, sex: e.target.value || null })}
+        >
+          <option value="">All sexes</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </FilterSelect>
+        <FilterSelect
+          value={filters.severity ?? ""}
+          onChange={(e) => onFiltersChange({ ...filters, severity: e.target.value || null })}
+        >
+          <option value="">All classes</option>
+          <option value="adverse">Adverse</option>
+          <option value="warning">Warning</option>
+          <option value="normal">Normal</option>
+        </FilterSelect>
         <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
           <input
             type="checkbox"
@@ -624,7 +686,7 @@ function RailFiltersSection({
             onChange={(e) => onFiltersChange({ ...filters, trOnly: e.target.checked })}
             className="h-3 w-3 rounded border-gray-300"
           />
-          TR only
+          TR
         </label>
         <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
           <input
@@ -633,7 +695,7 @@ function RailFiltersSection({
             onChange={(e) => onFiltersChange({ ...filters, sigOnly: e.target.checked })}
             className="h-3 w-3 rounded border-gray-300"
           />
-          Sig only
+          Sig
         </label>
         {hasClinicalEndpoints && (
           <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
@@ -643,7 +705,7 @@ function RailFiltersSection({
               onChange={(e) => onFiltersChange({ ...filters, clinicalS2Plus: e.target.checked })}
               className="h-3 w-3 rounded border-gray-300"
             />
-            Clinical S2+
+            S2+
           </label>
         )}
         <span className="ml-auto text-[10px] text-muted-foreground">

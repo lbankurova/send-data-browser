@@ -4,7 +4,8 @@ import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PolymorphicRail } from "./PolymorphicRail";
 import { FindingsRail } from "@/components/analysis/findings/FindingsRail";
-import { getFindingsRailCallback, setFindingsClearScopeCallback, setFindingsClearClinicalCallback } from "@/components/analysis/findings/FindingsView";
+import type { RailVisibleState } from "@/components/analysis/findings/FindingsRail";
+import { getFindingsRailCallback, setFindingsClearScopeCallback } from "@/components/analysis/findings/FindingsView";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
@@ -43,11 +44,11 @@ export function ShellRailPanel() {
       prevStudyRef.current = studyId;
       setGroupScope(null);
       setActiveEndpoint(null);
-      getFindingsRailCallback()?.({ activeGroupScope: null, activeEndpoint: null, activeGrouping: "organ" });
+      getFindingsRailCallback()?.({ activeEndpoint: null, activeGrouping: "organ" });
     }
   }, [studyId]);
 
-  // Register reverse callback so Findings filter bar chip can clear rail scope
+  // Register reverse callback so view can clear rail scope
   useEffect(() => {
     setFindingsClearScopeCallback(() => {
       setGroupScope(null);
@@ -56,32 +57,21 @@ export function ShellRailPanel() {
     return () => setFindingsClearScopeCallback(null);
   }, []);
 
-  // Register reverse callback for clearing clinical filter from filter bar chip
-  const [clinicalRailActive, setClinicalRailActive] = useState(false);
-  useEffect(() => {
-    setFindingsClearClinicalCallback(() => {
-      setClinicalRailActive(false);
-      getFindingsRailCallback()?.({ clinicalS2Plus: false });
-    });
-    return () => setFindingsClearClinicalCallback(null);
-  }, []);
-
   // ── View-aware handlers ──
 
   const handleGroupScopeChange = useCallback((scope: { type: GroupingMode; value: string } | null) => {
     setGroupScope(scope);
     setActiveEndpoint(null);
     if (isFindingsRoute) {
-      getFindingsRailCallback()?.({ activeGroupScope: scope, activeEndpoint: null });
+      // Scope change → rail's useEffect will send new visibleEndpointLabels.
+      // We just need to forward endpoint deselection.
+      getFindingsRailCallback()?.({ activeEndpoint: null });
     } else if (isDRView) {
-      // Organ grouping → set organSystem, cascade clears endpoint, D-R auto-selects
       if (scope && scope.type === "organ") {
         navigateTo({ organSystem: scope.value });
       } else if (!scope) {
-        // Cleared scope → clear organSystem
         navigateTo({ organSystem: undefined });
       }
-      // Domain/pattern grouping: visual-only, no StudySelectionContext update
     }
   }, [isFindingsRoute, isDRView, navigateTo]);
 
@@ -100,21 +90,19 @@ export function ShellRailPanel() {
     if (isFindingsRoute) {
       getFindingsRailCallback()?.({ activeGrouping: mode });
     } else if (isDRView) {
-      // Switching grouping mode clears organ scope
       navigateTo({ organSystem: undefined });
     }
   }, [isFindingsRoute, isDRView, navigateTo]);
 
-  const handleClinicalFilterChange = useCallback((active: boolean) => {
-    setClinicalRailActive(active);
+  // Rail sends fully-filtered visible endpoint set → forward to view
+  const handleVisibleEndpointsChange = useCallback((state: RailVisibleState) => {
     if (isFindingsRoute) {
-      getFindingsRailCallback()?.({ clinicalS2Plus: active });
+      getFindingsRailCallback()?.({ visibleEndpoints: state });
     }
   }, [isFindingsRoute]);
 
   // ── Bidirectional sync: table/context → rail highlight ──
 
-  // Findings sync: FindingSelectionContext
   const { selectedFinding } = useFindingSelection();
   const prevEndpointRef = useRef(activeEndpoint);
   useEffect(() => {
@@ -156,8 +144,7 @@ export function ShellRailPanel() {
             onGroupScopeChange={handleGroupScopeChange}
             onEndpointSelect={handleEndpointSelect}
             onGroupingChange={handleGroupingChange}
-            clinicalFilterActive={clinicalRailActive}
-            onClinicalFilterChange={handleClinicalFilterChange}
+            onVisibleEndpointsChange={handleVisibleEndpointsChange}
           />
         ) : (
           <PolymorphicRail />
