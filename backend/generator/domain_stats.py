@@ -19,6 +19,7 @@ from services.analysis.findings_cl import compute_cl_findings
 from services.analysis.findings_ds import compute_ds_findings
 from services.analysis.classification import (
     classify_severity, classify_dose_response, determine_treatment_related,
+    compute_max_fold_change,
 )
 from generator.organ_map import get_organ_system, get_organ_name
 
@@ -133,6 +134,11 @@ def compute_all_findings(study: StudyInfo) -> tuple[list[dict], dict]:
         finding["pattern_confidence"] = dr_result.get("confidence")
         finding["onset_dose_level"] = dr_result.get("onset_dose_level")
         finding["treatment_related"] = determine_treatment_related(finding)
+
+        # Fold change (continuous endpoints only)
+        finding["max_fold_change"] = compute_max_fold_change(
+            finding.get("group_stats", [])
+        ) if finding.get("data_type") == "continuous" else None
 
         # Add organ system
         finding["organ_system"] = get_organ_system(

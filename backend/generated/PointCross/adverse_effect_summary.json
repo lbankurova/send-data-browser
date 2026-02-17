@@ -15,7 +15,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "ALB",
     "specimen": null,
-    "finding": "Albumin"
+    "finding": "Albumin",
+    "max_fold_change": 1.22
   },
   {
     "endpoint_label": "Albumin",
@@ -33,7 +34,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "ALB",
     "specimen": null,
-    "finding": "Albumin"
+    "finding": "Albumin",
+    "max_fold_change": 1.22
   },
   {
     "endpoint_label": "Albumin",
@@ -51,7 +53,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "ALB",
     "specimen": null,
-    "finding": "Albumin"
+    "finding": "Albumin",
+    "max_fold_change": 1.22
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -69,7 +72,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "ALBGLOB",
     "specimen": null,
-    "finding": "Albumin/Globulin"
+    "finding": "Albumin/Globulin",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -87,7 +91,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "ALBGLOB",
     "specimen": null,
-    "finding": "Albumin/Globulin"
+    "finding": "Albumin/Globulin",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -105,7 +110,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "ALBGLOB",
     "specimen": null,
-    "finding": "Albumin/Globulin"
+    "finding": "Albumin/Globulin",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -123,7 +129,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "ALBGLOB",
     "specimen": null,
-    "finding": "Albumin/Globulin"
+    "finding": "Albumin/Globulin",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -141,7 +148,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "ALBGLOB",
     "specimen": null,
-    "finding": "Albumin/Globulin"
+    "finding": "Albumin/Globulin",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -159,7 +167,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "ALBGLOB",
     "specimen": null,
-    "finding": "Albumin/Globulin"
+    "finding": "Albumin/Globulin",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -177,7 +186,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "ALP",
     "specimen": null,
-    "finding": "Alkaline Phosphatase"
+    "finding": "Alkaline Phosphatase",
+    "max_fold_change": 1.52
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -195,7 +205,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "ALP",
     "specimen": null,
-    "finding": "Alkaline Phosphatase"
+    "finding": "Alkaline Phosphatase",
+    "max_fold_change": 1.52
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -213,7 +224,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "ALP",
     "specimen": null,
-    "finding": "Alkaline Phosphatase"
+    "finding": "Alkaline Phosphatase",
+    "max_fold_change": 1.52
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -231,7 +243,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "ALP",
     "specimen": null,
-    "finding": "Alkaline Phosphatase"
+    "finding": "Alkaline Phosphatase",
+    "max_fold_change": 1.28
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -249,7 +262,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "ALP",
     "specimen": null,
-    "finding": "Alkaline Phosphatase"
+    "finding": "Alkaline Phosphatase",
+    "max_fold_change": 1.28
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -267,7 +281,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "ALP",
     "specimen": null,
-    "finding": "Alkaline Phosphatase"
+    "finding": "Alkaline Phosphatase",
+    "max_fold_change": 1.28
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -285,7 +300,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "ALT",
     "specimen": null,
-    "finding": "Alanine Aminotransferase"
+    "finding": "Alanine Aminotransferase",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -303,7 +319,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "ALT",
     "specimen": null,
-    "finding": "Alanine Aminotransferase"
+    "finding": "Alanine Aminotransferase",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -321,7 +338,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "ALT",
     "specimen": null,
-    "finding": "Alanine Aminotransferase"
+    "finding": "Alanine Aminotransferase",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -339,7 +357,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "ALT",
     "specimen": null,
-    "finding": "Alanine Aminotransferase"
+    "finding": "Alanine Aminotransferase",
+    "max_fold_change": 1.34
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -357,7 +376,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "ALT",
     "specimen": null,
-    "finding": "Alanine Aminotransferase"
+    "finding": "Alanine Aminotransferase",
+    "max_fold_change": 1.34
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -375,7 +395,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "ALT",
     "specimen": null,
-    "finding": "Alanine Aminotransferase"
+    "finding": "Alanine Aminotransferase",
+    "max_fold_change": 1.34
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -393,7 +414,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "AST",
     "specimen": null,
-    "finding": "Aspartate Aminotransferase"
+    "finding": "Aspartate Aminotransferase",
+    "max_fold_change": 1.56
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -411,7 +433,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "AST",
     "specimen": null,
-    "finding": "Aspartate Aminotransferase"
+    "finding": "Aspartate Aminotransferase",
+    "max_fold_change": 1.56
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -429,7 +452,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "AST",
     "specimen": null,
-    "finding": "Aspartate Aminotransferase"
+    "finding": "Aspartate Aminotransferase",
+    "max_fold_change": 1.56
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -447,7 +471,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "AST",
     "specimen": null,
-    "finding": "Aspartate Aminotransferase"
+    "finding": "Aspartate Aminotransferase",
+    "max_fold_change": 1.41
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -465,7 +490,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "AST",
     "specimen": null,
-    "finding": "Aspartate Aminotransferase"
+    "finding": "Aspartate Aminotransferase",
+    "max_fold_change": 1.41
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -483,7 +509,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "AST",
     "specimen": null,
-    "finding": "Aspartate Aminotransferase"
+    "finding": "Aspartate Aminotransferase",
+    "max_fold_change": 1.41
   },
   {
     "endpoint_label": "Basophils",
@@ -501,7 +528,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "BASO",
     "specimen": null,
-    "finding": "Basophils"
+    "finding": "Basophils",
+    "max_fold_change": 5.0
   },
   {
     "endpoint_label": "Basophils",
@@ -519,7 +547,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "BASO",
     "specimen": null,
-    "finding": "Basophils"
+    "finding": "Basophils",
+    "max_fold_change": 5.0
   },
   {
     "endpoint_label": "Basophils",
@@ -537,7 +566,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "BASO",
     "specimen": null,
-    "finding": "Basophils"
+    "finding": "Basophils",
+    "max_fold_change": 5.0
   },
   {
     "endpoint_label": "Basophils",
@@ -555,7 +585,8 @@
     "dose_response_pattern": "flat",
     "test_code": "BASO",
     "specimen": null,
-    "finding": "Basophils"
+    "finding": "Basophils",
+    "max_fold_change": 2.15
   },
   {
     "endpoint_label": "Basophils",
@@ -573,7 +604,8 @@
     "dose_response_pattern": "flat",
     "test_code": "BASO",
     "specimen": null,
-    "finding": "Basophils"
+    "finding": "Basophils",
+    "max_fold_change": 2.15
   },
   {
     "endpoint_label": "Basophils",
@@ -591,7 +623,8 @@
     "dose_response_pattern": "flat",
     "test_code": "BASO",
     "specimen": null,
-    "finding": "Basophils"
+    "finding": "Basophils",
+    "max_fold_change": 2.15
   },
   {
     "endpoint_label": "Calcium",
@@ -609,7 +642,8 @@
     "dose_response_pattern": "flat",
     "test_code": "CA",
     "specimen": null,
-    "finding": "Calcium"
+    "finding": "Calcium",
+    "max_fold_change": 1.03
   },
   {
     "endpoint_label": "Calcium",
@@ -627,7 +661,8 @@
     "dose_response_pattern": "flat",
     "test_code": "CA",
     "specimen": null,
-    "finding": "Calcium"
+    "finding": "Calcium",
+    "max_fold_change": 1.03
   },
   {
     "endpoint_label": "Calcium",
@@ -645,7 +680,8 @@
     "dose_response_pattern": "flat",
     "test_code": "CA",
     "specimen": null,
-    "finding": "Calcium"
+    "finding": "Calcium",
+    "max_fold_change": 1.03
   },
   {
     "endpoint_label": "Cholesterol",
@@ -663,7 +699,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "CHOL",
     "specimen": null,
-    "finding": "Cholesterol"
+    "finding": "Cholesterol",
+    "max_fold_change": 1.47
   },
   {
     "endpoint_label": "Cholesterol",
@@ -681,7 +718,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "CHOL",
     "specimen": null,
-    "finding": "Cholesterol"
+    "finding": "Cholesterol",
+    "max_fold_change": 1.47
   },
   {
     "endpoint_label": "Cholesterol",
@@ -699,7 +737,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "CHOL",
     "specimen": null,
-    "finding": "Cholesterol"
+    "finding": "Cholesterol",
+    "max_fold_change": 1.47
   },
   {
     "endpoint_label": "Cholesterol",
@@ -717,7 +756,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "CHOL",
     "specimen": null,
-    "finding": "Cholesterol"
+    "finding": "Cholesterol",
+    "max_fold_change": 1.39
   },
   {
     "endpoint_label": "Cholesterol",
@@ -735,7 +775,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "CHOL",
     "specimen": null,
-    "finding": "Cholesterol"
+    "finding": "Cholesterol",
+    "max_fold_change": 1.39
   },
   {
     "endpoint_label": "Cholesterol",
@@ -753,7 +794,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "CHOL",
     "specimen": null,
-    "finding": "Cholesterol"
+    "finding": "Cholesterol",
+    "max_fold_change": 1.39
   },
   {
     "endpoint_label": "Creatinine",
@@ -771,7 +813,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "CREAT",
     "specimen": null,
-    "finding": "Creatinine"
+    "finding": "Creatinine",
+    "max_fold_change": 1.17
   },
   {
     "endpoint_label": "Creatinine",
@@ -789,7 +832,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "CREAT",
     "specimen": null,
-    "finding": "Creatinine"
+    "finding": "Creatinine",
+    "max_fold_change": 1.17
   },
   {
     "endpoint_label": "Creatinine",
@@ -807,7 +851,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "CREAT",
     "specimen": null,
-    "finding": "Creatinine"
+    "finding": "Creatinine",
+    "max_fold_change": 1.17
   },
   {
     "endpoint_label": "Creatinine",
@@ -825,7 +870,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "CREAT",
     "specimen": null,
-    "finding": "Creatinine"
+    "finding": "Creatinine",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Creatinine",
@@ -843,7 +889,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "CREAT",
     "specimen": null,
-    "finding": "Creatinine"
+    "finding": "Creatinine",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Creatinine",
@@ -861,7 +908,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "CREAT",
     "specimen": null,
-    "finding": "Creatinine"
+    "finding": "Creatinine",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Eosinophils",
@@ -879,7 +927,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "EOS",
     "specimen": null,
-    "finding": "Eosinophils"
+    "finding": "Eosinophils",
+    "max_fold_change": 1.56
   },
   {
     "endpoint_label": "Eosinophils",
@@ -897,7 +946,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "EOS",
     "specimen": null,
-    "finding": "Eosinophils"
+    "finding": "Eosinophils",
+    "max_fold_change": 1.56
   },
   {
     "endpoint_label": "Eosinophils",
@@ -915,7 +965,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "EOS",
     "specimen": null,
-    "finding": "Eosinophils"
+    "finding": "Eosinophils",
+    "max_fold_change": 1.56
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -933,7 +984,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "FIBRINO",
     "specimen": null,
-    "finding": "Fibrinogen"
+    "finding": "Fibrinogen",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -951,7 +1003,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "FIBRINO",
     "specimen": null,
-    "finding": "Fibrinogen"
+    "finding": "Fibrinogen",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -969,7 +1022,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "FIBRINO",
     "specimen": null,
-    "finding": "Fibrinogen"
+    "finding": "Fibrinogen",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -987,7 +1041,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "FIBRINO",
     "specimen": null,
-    "finding": "Fibrinogen"
+    "finding": "Fibrinogen",
+    "max_fold_change": 1.09
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -1005,7 +1060,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "FIBRINO",
     "specimen": null,
-    "finding": "Fibrinogen"
+    "finding": "Fibrinogen",
+    "max_fold_change": 1.09
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -1023,7 +1079,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "FIBRINO",
     "specimen": null,
-    "finding": "Fibrinogen"
+    "finding": "Fibrinogen",
+    "max_fold_change": 1.09
   },
   {
     "endpoint_label": "Glucose",
@@ -1041,7 +1098,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLUC",
     "specimen": null,
-    "finding": "Glucose"
+    "finding": "Glucose",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Glucose",
@@ -1059,7 +1117,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLUC",
     "specimen": null,
-    "finding": "Glucose"
+    "finding": "Glucose",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Glucose",
@@ -1077,7 +1136,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLUC",
     "specimen": null,
-    "finding": "Glucose"
+    "finding": "Glucose",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Hematocrit",
@@ -1095,7 +1155,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HCT",
     "specimen": null,
-    "finding": "Hematocrit"
+    "finding": "Hematocrit",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "Hematocrit",
@@ -1113,7 +1174,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HCT",
     "specimen": null,
-    "finding": "Hematocrit"
+    "finding": "Hematocrit",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "Hematocrit",
@@ -1131,7 +1193,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HCT",
     "specimen": null,
-    "finding": "Hematocrit"
+    "finding": "Hematocrit",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "Hematocrit",
@@ -1149,7 +1212,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HCT",
     "specimen": null,
-    "finding": "Hematocrit"
+    "finding": "Hematocrit",
+    "max_fold_change": 1.05
   },
   {
     "endpoint_label": "Hematocrit",
@@ -1167,7 +1231,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HCT",
     "specimen": null,
-    "finding": "Hematocrit"
+    "finding": "Hematocrit",
+    "max_fold_change": 1.05
   },
   {
     "endpoint_label": "Hematocrit",
@@ -1185,7 +1250,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HCT",
     "specimen": null,
-    "finding": "Hematocrit"
+    "finding": "Hematocrit",
+    "max_fold_change": 1.05
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -1203,7 +1269,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HGB",
     "specimen": null,
-    "finding": "Hemoglobin"
+    "finding": "Hemoglobin",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -1221,7 +1288,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HGB",
     "specimen": null,
-    "finding": "Hemoglobin"
+    "finding": "Hemoglobin",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -1239,7 +1307,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HGB",
     "specimen": null,
-    "finding": "Hemoglobin"
+    "finding": "Hemoglobin",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -1257,7 +1326,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HGB",
     "specimen": null,
-    "finding": "Hemoglobin"
+    "finding": "Hemoglobin",
+    "max_fold_change": 1.04
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -1275,7 +1345,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HGB",
     "specimen": null,
-    "finding": "Hemoglobin"
+    "finding": "Hemoglobin",
+    "max_fold_change": 1.04
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -1293,7 +1364,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "HGB",
     "specimen": null,
-    "finding": "Hemoglobin"
+    "finding": "Hemoglobin",
+    "max_fold_change": 1.04
   },
   {
     "endpoint_label": "Potassium",
@@ -1311,7 +1383,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "K",
     "specimen": null,
-    "finding": "Potassium"
+    "finding": "Potassium",
+    "max_fold_change": 1.11
   },
   {
     "endpoint_label": "Potassium",
@@ -1329,7 +1402,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "K",
     "specimen": null,
-    "finding": "Potassium"
+    "finding": "Potassium",
+    "max_fold_change": 1.11
   },
   {
     "endpoint_label": "Potassium",
@@ -1347,7 +1421,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "K",
     "specimen": null,
-    "finding": "Potassium"
+    "finding": "Potassium",
+    "max_fold_change": 1.11
   },
   {
     "endpoint_label": "Potassium",
@@ -1365,7 +1440,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "K",
     "specimen": null,
-    "finding": "Potassium"
+    "finding": "Potassium",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Potassium",
@@ -1383,7 +1459,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "K",
     "specimen": null,
-    "finding": "Potassium"
+    "finding": "Potassium",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Potassium",
@@ -1401,7 +1478,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "K",
     "specimen": null,
-    "finding": "Potassium"
+    "finding": "Potassium",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Ketones",
@@ -1419,7 +1497,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "KETONES",
     "specimen": null,
-    "finding": "Ketones"
+    "finding": "Ketones",
+    "max_fold_change": 5.33
   },
   {
     "endpoint_label": "Ketones",
@@ -1437,7 +1516,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "KETONES",
     "specimen": null,
-    "finding": "Ketones"
+    "finding": "Ketones",
+    "max_fold_change": 5.33
   },
   {
     "endpoint_label": "Ketones",
@@ -1455,7 +1535,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "KETONES",
     "specimen": null,
-    "finding": "Ketones"
+    "finding": "Ketones",
+    "max_fold_change": 5.33
   },
   {
     "endpoint_label": "Large Unstained Cells",
@@ -1473,7 +1554,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "LGUNSCE",
     "specimen": null,
-    "finding": "Large Unstained Cells"
+    "finding": "Large Unstained Cells",
+    "max_fold_change": 1.9
   },
   {
     "endpoint_label": "Large Unstained Cells",
@@ -1491,7 +1573,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "LGUNSCE",
     "specimen": null,
-    "finding": "Large Unstained Cells"
+    "finding": "Large Unstained Cells",
+    "max_fold_change": 1.9
   },
   {
     "endpoint_label": "Large Unstained Cells",
@@ -1509,7 +1592,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "LGUNSCE",
     "specimen": null,
-    "finding": "Large Unstained Cells"
+    "finding": "Large Unstained Cells",
+    "max_fold_change": 1.9
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1527,7 +1611,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LYM",
     "specimen": null,
-    "finding": "Lymphocytes"
+    "finding": "Lymphocytes",
+    "max_fold_change": 1.71
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1545,7 +1630,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LYM",
     "specimen": null,
-    "finding": "Lymphocytes"
+    "finding": "Lymphocytes",
+    "max_fold_change": 1.71
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1563,7 +1649,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LYM",
     "specimen": null,
-    "finding": "Lymphocytes"
+    "finding": "Lymphocytes",
+    "max_fold_change": 1.71
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1581,7 +1668,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "LYM",
     "specimen": null,
-    "finding": "Lymphocytes"
+    "finding": "Lymphocytes",
+    "max_fold_change": 1.53
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1599,7 +1687,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "LYM",
     "specimen": null,
-    "finding": "Lymphocytes"
+    "finding": "Lymphocytes",
+    "max_fold_change": 1.53
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1617,7 +1706,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "LYM",
     "specimen": null,
-    "finding": "Lymphocytes"
+    "finding": "Lymphocytes",
+    "max_fold_change": 1.53
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Hemoglobin",
@@ -1635,7 +1725,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "MCH",
     "specimen": null,
-    "finding": "Ery. Mean Corpuscular Hemoglobin"
+    "finding": "Ery. Mean Corpuscular Hemoglobin",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Hemoglobin",
@@ -1653,7 +1744,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "MCH",
     "specimen": null,
-    "finding": "Ery. Mean Corpuscular Hemoglobin"
+    "finding": "Ery. Mean Corpuscular Hemoglobin",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Hemoglobin",
@@ -1671,7 +1763,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "MCH",
     "specimen": null,
-    "finding": "Ery. Mean Corpuscular Hemoglobin"
+    "finding": "Ery. Mean Corpuscular Hemoglobin",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -1689,7 +1782,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "MCV",
     "specimen": null,
-    "finding": "Ery. Mean Corpuscular Volume"
+    "finding": "Ery. Mean Corpuscular Volume",
+    "max_fold_change": 1.06
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -1707,7 +1801,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "MCV",
     "specimen": null,
-    "finding": "Ery. Mean Corpuscular Volume"
+    "finding": "Ery. Mean Corpuscular Volume",
+    "max_fold_change": 1.06
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -1725,7 +1820,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "MCV",
     "specimen": null,
-    "finding": "Ery. Mean Corpuscular Volume"
+    "finding": "Ery. Mean Corpuscular Volume",
+    "max_fold_change": 1.06
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -1743,7 +1839,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "MCV",
     "specimen": null,
-    "finding": "Ery. Mean Corpuscular Volume"
+    "finding": "Ery. Mean Corpuscular Volume",
+    "max_fold_change": 1.03
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -1761,7 +1858,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "MCV",
     "specimen": null,
-    "finding": "Ery. Mean Corpuscular Volume"
+    "finding": "Ery. Mean Corpuscular Volume",
+    "max_fold_change": 1.03
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -1779,7 +1877,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "MCV",
     "specimen": null,
-    "finding": "Ery. Mean Corpuscular Volume"
+    "finding": "Ery. Mean Corpuscular Volume",
+    "max_fold_change": 1.03
   },
   {
     "endpoint_label": "Monocytes",
@@ -1797,7 +1896,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "MONO",
     "specimen": null,
-    "finding": "Monocytes"
+    "finding": "Monocytes",
+    "max_fold_change": 1.67
   },
   {
     "endpoint_label": "Monocytes",
@@ -1815,7 +1915,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "MONO",
     "specimen": null,
-    "finding": "Monocytes"
+    "finding": "Monocytes",
+    "max_fold_change": 1.67
   },
   {
     "endpoint_label": "Monocytes",
@@ -1833,7 +1934,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "MONO",
     "specimen": null,
-    "finding": "Monocytes"
+    "finding": "Monocytes",
+    "max_fold_change": 1.67
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1851,7 +1953,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "NEUT",
     "specimen": null,
-    "finding": "Neutrophils"
+    "finding": "Neutrophils",
+    "max_fold_change": 2.07
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1869,7 +1972,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "NEUT",
     "specimen": null,
-    "finding": "Neutrophils"
+    "finding": "Neutrophils",
+    "max_fold_change": 2.07
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1887,7 +1991,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "NEUT",
     "specimen": null,
-    "finding": "Neutrophils"
+    "finding": "Neutrophils",
+    "max_fold_change": 2.07
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1905,7 +2010,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "NEUT",
     "specimen": null,
-    "finding": "Neutrophils"
+    "finding": "Neutrophils",
+    "max_fold_change": 1.51
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1923,7 +2029,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "NEUT",
     "specimen": null,
-    "finding": "Neutrophils"
+    "finding": "Neutrophils",
+    "max_fold_change": 1.51
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1941,7 +2048,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "NEUT",
     "specimen": null,
-    "finding": "Neutrophils"
+    "finding": "Neutrophils",
+    "max_fold_change": 1.51
   },
   {
     "endpoint_label": "pH",
@@ -1959,7 +2067,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "PH",
     "specimen": null,
-    "finding": "pH"
+    "finding": "pH",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "pH",
@@ -1977,7 +2086,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "PH",
     "specimen": null,
-    "finding": "pH"
+    "finding": "pH",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "pH",
@@ -1995,7 +2105,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "PH",
     "specimen": null,
-    "finding": "pH"
+    "finding": "pH",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "pH",
@@ -2013,7 +2124,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "PH",
     "specimen": null,
-    "finding": "pH"
+    "finding": "pH",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "pH",
@@ -2031,7 +2143,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "PH",
     "specimen": null,
-    "finding": "pH"
+    "finding": "pH",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "pH",
@@ -2049,7 +2162,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "PH",
     "specimen": null,
-    "finding": "pH"
+    "finding": "pH",
+    "max_fold_change": 1.1
   },
   {
     "endpoint_label": "Phosphate",
@@ -2067,7 +2181,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "PHOS",
     "specimen": null,
-    "finding": "Phosphate"
+    "finding": "Phosphate",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "Phosphate",
@@ -2085,7 +2200,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "PHOS",
     "specimen": null,
-    "finding": "Phosphate"
+    "finding": "Phosphate",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "Phosphate",
@@ -2103,7 +2219,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "PHOS",
     "specimen": null,
-    "finding": "Phosphate"
+    "finding": "Phosphate",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "Phosphate",
@@ -2121,7 +2238,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "PHOS",
     "specimen": null,
-    "finding": "Phosphate"
+    "finding": "Phosphate",
+    "max_fold_change": 1.18
   },
   {
     "endpoint_label": "Phosphate",
@@ -2139,7 +2257,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "PHOS",
     "specimen": null,
-    "finding": "Phosphate"
+    "finding": "Phosphate",
+    "max_fold_change": 1.18
   },
   {
     "endpoint_label": "Phosphate",
@@ -2157,7 +2276,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "PHOS",
     "specimen": null,
-    "finding": "Phosphate"
+    "finding": "Phosphate",
+    "max_fold_change": 1.18
   },
   {
     "endpoint_label": "Platelets",
@@ -2175,7 +2295,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PLAT",
     "specimen": null,
-    "finding": "Platelets"
+    "finding": "Platelets",
+    "max_fold_change": 1.13
   },
   {
     "endpoint_label": "Platelets",
@@ -2193,7 +2314,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PLAT",
     "specimen": null,
-    "finding": "Platelets"
+    "finding": "Platelets",
+    "max_fold_change": 1.13
   },
   {
     "endpoint_label": "Platelets",
@@ -2211,7 +2333,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PLAT",
     "specimen": null,
-    "finding": "Platelets"
+    "finding": "Platelets",
+    "max_fold_change": 1.13
   },
   {
     "endpoint_label": "Prothrombin Time",
@@ -2229,7 +2352,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PT",
     "specimen": null,
-    "finding": "Prothrombin Time"
+    "finding": "Prothrombin Time",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "Prothrombin Time",
@@ -2247,7 +2371,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PT",
     "specimen": null,
-    "finding": "Prothrombin Time"
+    "finding": "Prothrombin Time",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "Prothrombin Time",
@@ -2265,7 +2390,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PT",
     "specimen": null,
-    "finding": "Prothrombin Time"
+    "finding": "Prothrombin Time",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -2283,7 +2409,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "RBC",
     "specimen": null,
-    "finding": "Erythrocytes"
+    "finding": "Erythrocytes",
+    "max_fold_change": 1.04
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -2301,7 +2428,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "RBC",
     "specimen": null,
-    "finding": "Erythrocytes"
+    "finding": "Erythrocytes",
+    "max_fold_change": 1.04
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -2319,7 +2447,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "RBC",
     "specimen": null,
-    "finding": "Erythrocytes"
+    "finding": "Erythrocytes",
+    "max_fold_change": 1.04
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -2337,7 +2466,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "RBC",
     "specimen": null,
-    "finding": "Erythrocytes"
+    "finding": "Erythrocytes",
+    "max_fold_change": 1.04
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -2355,7 +2485,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "RBC",
     "specimen": null,
-    "finding": "Erythrocytes"
+    "finding": "Erythrocytes",
+    "max_fold_change": 1.04
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -2373,7 +2504,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "RBC",
     "specimen": null,
-    "finding": "Erythrocytes"
+    "finding": "Erythrocytes",
+    "max_fold_change": 1.04
   },
   {
     "endpoint_label": "Erythrocytes Distribution Width",
@@ -2391,7 +2523,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "RDW",
     "specimen": null,
-    "finding": "Erythrocytes Distribution Width"
+    "finding": "Erythrocytes Distribution Width",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "Erythrocytes Distribution Width",
@@ -2409,7 +2542,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "RDW",
     "specimen": null,
-    "finding": "Erythrocytes Distribution Width"
+    "finding": "Erythrocytes Distribution Width",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "Erythrocytes Distribution Width",
@@ -2427,7 +2561,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "RDW",
     "specimen": null,
-    "finding": "Erythrocytes Distribution Width"
+    "finding": "Erythrocytes Distribution Width",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "Reticulocytes",
@@ -2445,7 +2580,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "RETI",
     "specimen": null,
-    "finding": "Reticulocytes"
+    "finding": "Reticulocytes",
+    "max_fold_change": 1.44
   },
   {
     "endpoint_label": "Reticulocytes",
@@ -2463,7 +2599,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "RETI",
     "specimen": null,
-    "finding": "Reticulocytes"
+    "finding": "Reticulocytes",
+    "max_fold_change": 1.44
   },
   {
     "endpoint_label": "Reticulocytes",
@@ -2481,7 +2618,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "RETI",
     "specimen": null,
-    "finding": "Reticulocytes"
+    "finding": "Reticulocytes",
+    "max_fold_change": 1.44
   },
   {
     "endpoint_label": "Sodium",
@@ -2499,7 +2637,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "SODIUM",
     "specimen": null,
-    "finding": "Sodium"
+    "finding": "Sodium",
+    "max_fold_change": 1.02
   },
   {
     "endpoint_label": "Sodium",
@@ -2517,7 +2656,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "SODIUM",
     "specimen": null,
-    "finding": "Sodium"
+    "finding": "Sodium",
+    "max_fold_change": 1.02
   },
   {
     "endpoint_label": "Sodium",
@@ -2535,7 +2675,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "SODIUM",
     "specimen": null,
-    "finding": "Sodium"
+    "finding": "Sodium",
+    "max_fold_change": 1.02
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2553,7 +2694,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "TRIG",
     "specimen": null,
-    "finding": "Triglycerides"
+    "finding": "Triglycerides",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2571,7 +2713,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "TRIG",
     "specimen": null,
-    "finding": "Triglycerides"
+    "finding": "Triglycerides",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2589,7 +2732,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "TRIG",
     "specimen": null,
-    "finding": "Triglycerides"
+    "finding": "Triglycerides",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2607,7 +2751,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "TRIG",
     "specimen": null,
-    "finding": "Triglycerides"
+    "finding": "Triglycerides",
+    "max_fold_change": 1.38
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2625,7 +2770,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "TRIG",
     "specimen": null,
-    "finding": "Triglycerides"
+    "finding": "Triglycerides",
+    "max_fold_change": 1.38
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2643,7 +2789,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "TRIG",
     "specimen": null,
-    "finding": "Triglycerides"
+    "finding": "Triglycerides",
+    "max_fold_change": 1.38
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2661,7 +2808,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WBC",
     "specimen": null,
-    "finding": "Leukocytes"
+    "finding": "Leukocytes",
+    "max_fold_change": 1.78
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2679,7 +2827,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WBC",
     "specimen": null,
-    "finding": "Leukocytes"
+    "finding": "Leukocytes",
+    "max_fold_change": 1.78
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2697,7 +2846,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WBC",
     "specimen": null,
-    "finding": "Leukocytes"
+    "finding": "Leukocytes",
+    "max_fold_change": 1.78
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2715,7 +2865,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WBC",
     "specimen": null,
-    "finding": "Leukocytes"
+    "finding": "Leukocytes",
+    "max_fold_change": 1.69
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2733,7 +2884,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WBC",
     "specimen": null,
-    "finding": "Leukocytes"
+    "finding": "Leukocytes",
+    "max_fold_change": 1.69
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2751,7 +2903,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WBC",
     "specimen": null,
-    "finding": "Leukocytes"
+    "finding": "Leukocytes",
+    "max_fold_change": 1.69
   },
   {
     "endpoint_label": "Body Weight",
@@ -2769,7 +2922,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.14
   },
   {
     "endpoint_label": "Body Weight",
@@ -2787,7 +2941,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.14
   },
   {
     "endpoint_label": "Body Weight",
@@ -2805,7 +2960,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.14
   },
   {
     "endpoint_label": "Body Weight",
@@ -2823,7 +2979,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.14
   },
   {
     "endpoint_label": "Body Weight",
@@ -2841,7 +2998,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.14
   },
   {
     "endpoint_label": "Body Weight",
@@ -2859,7 +3017,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.14
   },
   {
     "endpoint_label": "Body Weight",
@@ -2877,7 +3036,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Body Weight",
@@ -2895,7 +3055,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Body Weight",
@@ -2913,7 +3074,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Body Weight",
@@ -2931,7 +3093,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "Body Weight",
@@ -2949,7 +3112,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "Body Weight",
@@ -2967,7 +3131,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "Body Weight",
@@ -2985,7 +3150,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Body Weight",
@@ -3003,7 +3169,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Body Weight",
@@ -3021,7 +3188,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Body Weight",
@@ -3039,7 +3207,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3057,7 +3226,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3075,7 +3245,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3093,7 +3264,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Body Weight",
@@ -3111,7 +3283,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Body Weight",
@@ -3129,7 +3302,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.25
   },
   {
     "endpoint_label": "Body Weight",
@@ -3147,7 +3321,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3165,7 +3340,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3183,7 +3359,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3201,7 +3378,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.3
   },
   {
     "endpoint_label": "Body Weight",
@@ -3219,7 +3397,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.3
   },
   {
     "endpoint_label": "Body Weight",
@@ -3237,7 +3416,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.3
   },
   {
     "endpoint_label": "Body Weight",
@@ -3255,7 +3435,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.19
   },
   {
     "endpoint_label": "Body Weight",
@@ -3273,7 +3454,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.19
   },
   {
     "endpoint_label": "Body Weight",
@@ -3291,7 +3473,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.19
   },
   {
     "endpoint_label": "Body Weight",
@@ -3309,7 +3492,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Body Weight",
@@ -3327,7 +3511,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Body Weight",
@@ -3345,7 +3530,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Body Weight",
@@ -3363,7 +3549,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.28
   },
   {
     "endpoint_label": "Body Weight",
@@ -3381,7 +3568,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.28
   },
   {
     "endpoint_label": "Body Weight",
@@ -3399,7 +3587,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.28
   },
   {
     "endpoint_label": "Body Weight",
@@ -3417,7 +3606,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Body Weight",
@@ -3435,7 +3625,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Body Weight",
@@ -3453,7 +3644,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.27
   },
   {
     "endpoint_label": "Body Weight",
@@ -3471,7 +3663,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.19
   },
   {
     "endpoint_label": "Body Weight",
@@ -3489,7 +3682,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.19
   },
   {
     "endpoint_label": "Body Weight",
@@ -3507,7 +3701,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.19
   },
   {
     "endpoint_label": "Body Weight",
@@ -3525,7 +3720,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.28
   },
   {
     "endpoint_label": "Body Weight",
@@ -3543,7 +3739,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.28
   },
   {
     "endpoint_label": "Body Weight",
@@ -3561,7 +3758,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.28
   },
   {
     "endpoint_label": "Body Weight",
@@ -3579,7 +3777,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Body Weight",
@@ -3597,7 +3796,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Body Weight",
@@ -3615,7 +3815,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Body Weight",
@@ -3633,7 +3834,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3651,7 +3853,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3669,7 +3872,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3687,7 +3891,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.17
   },
   {
     "endpoint_label": "Body Weight",
@@ -3705,7 +3910,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.17
   },
   {
     "endpoint_label": "Body Weight",
@@ -3723,7 +3929,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.17
   },
   {
     "endpoint_label": "Body Weight",
@@ -3741,7 +3948,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.19
   },
   {
     "endpoint_label": "Body Weight",
@@ -3759,7 +3967,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.19
   },
   {
     "endpoint_label": "Body Weight",
@@ -3777,7 +3986,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.19
   },
   {
     "endpoint_label": "Body Weight",
@@ -3795,7 +4005,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Body Weight",
@@ -3813,7 +4024,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Body Weight",
@@ -3831,7 +4043,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.07
   },
   {
     "endpoint_label": "Body Weight",
@@ -3849,7 +4062,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.2
   },
   {
     "endpoint_label": "Body Weight",
@@ -3867,7 +4081,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.2
   },
   {
     "endpoint_label": "Body Weight",
@@ -3885,7 +4100,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.2
   },
   {
     "endpoint_label": "Body Weight",
@@ -3903,7 +4119,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Body Weight",
@@ -3921,7 +4138,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Body Weight",
@@ -3939,7 +4157,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Body Weight",
@@ -3957,7 +4176,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3975,7 +4195,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -3993,7 +4214,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -4011,7 +4233,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Body Weight",
@@ -4029,7 +4252,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Body Weight",
@@ -4047,7 +4271,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.21
   },
   {
     "endpoint_label": "Body Weight",
@@ -4065,7 +4290,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -4083,7 +4309,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -4101,7 +4328,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.23
   },
   {
     "endpoint_label": "Body Weight",
@@ -4119,7 +4347,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "Body Weight",
@@ -4137,7 +4366,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "Body Weight",
@@ -4155,7 +4385,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BW",
     "specimen": null,
-    "finding": "Body Weight"
+    "finding": "Body Weight",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -4173,7 +4404,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "BRAIN",
-    "finding": "BRAIN (WEIGHT)"
+    "finding": "BRAIN (WEIGHT)",
+    "max_fold_change": 1.44
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -4191,7 +4423,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "BRAIN",
-    "finding": "BRAIN (WEIGHT)"
+    "finding": "BRAIN (WEIGHT)",
+    "max_fold_change": 1.44
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -4209,7 +4442,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "BRAIN",
-    "finding": "BRAIN (WEIGHT)"
+    "finding": "BRAIN (WEIGHT)",
+    "max_fold_change": 1.44
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -4227,7 +4461,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "BRAIN",
-    "finding": "BRAIN (WEIGHT)"
+    "finding": "BRAIN (WEIGHT)",
+    "max_fold_change": 1.09
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -4245,7 +4480,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "BRAIN",
-    "finding": "BRAIN (WEIGHT)"
+    "finding": "BRAIN (WEIGHT)",
+    "max_fold_change": 1.09
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -4263,7 +4499,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "BRAIN",
-    "finding": "BRAIN (WEIGHT)"
+    "finding": "BRAIN (WEIGHT)",
+    "max_fold_change": 1.09
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -4281,7 +4518,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
-    "finding": "GLAND, ADRENAL (WEIGHT)"
+    "finding": "GLAND, ADRENAL (WEIGHT)",
+    "max_fold_change": 1.42
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -4299,7 +4537,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
-    "finding": "GLAND, ADRENAL (WEIGHT)"
+    "finding": "GLAND, ADRENAL (WEIGHT)",
+    "max_fold_change": 1.42
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -4317,7 +4556,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
-    "finding": "GLAND, ADRENAL (WEIGHT)"
+    "finding": "GLAND, ADRENAL (WEIGHT)",
+    "max_fold_change": 1.42
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -4335,7 +4575,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
-    "finding": "GLAND, ADRENAL (WEIGHT)"
+    "finding": "GLAND, ADRENAL (WEIGHT)",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -4353,7 +4594,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
-    "finding": "GLAND, ADRENAL (WEIGHT)"
+    "finding": "GLAND, ADRENAL (WEIGHT)",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -4371,7 +4613,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
-    "finding": "GLAND, ADRENAL (WEIGHT)"
+    "finding": "GLAND, ADRENAL (WEIGHT)",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -4389,7 +4632,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "GLAND, PITUITARY",
-    "finding": "GLAND, PITUITARY (WEIGHT)"
+    "finding": "GLAND, PITUITARY (WEIGHT)",
+    "max_fold_change": 1.39
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -4407,7 +4651,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "GLAND, PITUITARY",
-    "finding": "GLAND, PITUITARY (WEIGHT)"
+    "finding": "GLAND, PITUITARY (WEIGHT)",
+    "max_fold_change": 1.39
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -4425,7 +4670,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "GLAND, PITUITARY",
-    "finding": "GLAND, PITUITARY (WEIGHT)"
+    "finding": "GLAND, PITUITARY (WEIGHT)",
+    "max_fold_change": 1.39
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -4443,7 +4689,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "GLAND, PITUITARY",
-    "finding": "GLAND, PITUITARY (WEIGHT)"
+    "finding": "GLAND, PITUITARY (WEIGHT)",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -4461,7 +4708,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "GLAND, PITUITARY",
-    "finding": "GLAND, PITUITARY (WEIGHT)"
+    "finding": "GLAND, PITUITARY (WEIGHT)",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -4479,7 +4727,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "GLAND, PITUITARY",
-    "finding": "GLAND, PITUITARY (WEIGHT)"
+    "finding": "GLAND, PITUITARY (WEIGHT)",
+    "max_fold_change": 1.24
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -4497,7 +4746,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
-    "finding": "GLAND, THYROID (WEIGHT)"
+    "finding": "GLAND, THYROID (WEIGHT)",
+    "max_fold_change": 1.58
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -4515,7 +4765,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
-    "finding": "GLAND, THYROID (WEIGHT)"
+    "finding": "GLAND, THYROID (WEIGHT)",
+    "max_fold_change": 1.58
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -4533,7 +4784,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
-    "finding": "GLAND, THYROID (WEIGHT)"
+    "finding": "GLAND, THYROID (WEIGHT)",
+    "max_fold_change": 1.58
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -4551,7 +4803,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
-    "finding": "GLAND, THYROID (WEIGHT)"
+    "finding": "GLAND, THYROID (WEIGHT)",
+    "max_fold_change": 1.26
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -4569,7 +4822,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
-    "finding": "GLAND, THYROID (WEIGHT)"
+    "finding": "GLAND, THYROID (WEIGHT)",
+    "max_fold_change": 1.26
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -4587,7 +4841,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
-    "finding": "GLAND, THYROID (WEIGHT)"
+    "finding": "GLAND, THYROID (WEIGHT)",
+    "max_fold_change": 1.26
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -4605,7 +4860,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "HEART",
-    "finding": "HEART (WEIGHT)"
+    "finding": "HEART (WEIGHT)",
+    "max_fold_change": 1.49
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -4623,7 +4879,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "HEART",
-    "finding": "HEART (WEIGHT)"
+    "finding": "HEART (WEIGHT)",
+    "max_fold_change": 1.49
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -4641,7 +4898,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "HEART",
-    "finding": "HEART (WEIGHT)"
+    "finding": "HEART (WEIGHT)",
+    "max_fold_change": 1.49
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -4659,7 +4917,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "HEART",
-    "finding": "HEART (WEIGHT)"
+    "finding": "HEART (WEIGHT)",
+    "max_fold_change": 1.48
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -4677,7 +4936,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "HEART",
-    "finding": "HEART (WEIGHT)"
+    "finding": "HEART (WEIGHT)",
+    "max_fold_change": 1.48
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -4695,7 +4955,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "HEART",
-    "finding": "HEART (WEIGHT)"
+    "finding": "HEART (WEIGHT)",
+    "max_fold_change": 1.48
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -4713,7 +4974,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "KIDNEY",
-    "finding": "KIDNEY (WEIGHT)"
+    "finding": "KIDNEY (WEIGHT)",
+    "max_fold_change": 1.53
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -4731,7 +4993,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "KIDNEY",
-    "finding": "KIDNEY (WEIGHT)"
+    "finding": "KIDNEY (WEIGHT)",
+    "max_fold_change": 1.53
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -4749,7 +5012,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "KIDNEY",
-    "finding": "KIDNEY (WEIGHT)"
+    "finding": "KIDNEY (WEIGHT)",
+    "max_fold_change": 1.53
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -4767,7 +5031,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "KIDNEY",
-    "finding": "KIDNEY (WEIGHT)"
+    "finding": "KIDNEY (WEIGHT)",
+    "max_fold_change": 1.5
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -4785,7 +5050,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "KIDNEY",
-    "finding": "KIDNEY (WEIGHT)"
+    "finding": "KIDNEY (WEIGHT)",
+    "max_fold_change": 1.5
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -4803,7 +5069,8 @@
     "dose_response_pattern": "threshold_decrease",
     "test_code": "WEIGHT",
     "specimen": "KIDNEY",
-    "finding": "KIDNEY (WEIGHT)"
+    "finding": "KIDNEY (WEIGHT)",
+    "max_fold_change": 1.5
   },
   {
     "endpoint_label": "LIVER \u2014 LIVER (WEIGHT)",
@@ -4821,7 +5088,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "LIVER",
-    "finding": "LIVER (WEIGHT)"
+    "finding": "LIVER (WEIGHT)",
+    "max_fold_change": 1.9
   },
   {
     "endpoint_label": "LIVER \u2014 LIVER (WEIGHT)",
@@ -4839,7 +5107,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "LIVER",
-    "finding": "LIVER (WEIGHT)"
+    "finding": "LIVER (WEIGHT)",
+    "max_fold_change": 1.9
   },
   {
     "endpoint_label": "LIVER \u2014 LIVER (WEIGHT)",
@@ -4857,7 +5126,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "LIVER",
-    "finding": "LIVER (WEIGHT)"
+    "finding": "LIVER (WEIGHT)",
+    "max_fold_change": 1.9
   },
   {
     "endpoint_label": "OVARY \u2014 OVARY (WEIGHT)",
@@ -4875,7 +5145,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "OVARY",
-    "finding": "OVARY (WEIGHT)"
+    "finding": "OVARY (WEIGHT)",
+    "max_fold_change": 1.38
   },
   {
     "endpoint_label": "OVARY \u2014 OVARY (WEIGHT)",
@@ -4893,7 +5164,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "OVARY",
-    "finding": "OVARY (WEIGHT)"
+    "finding": "OVARY (WEIGHT)",
+    "max_fold_change": 1.38
   },
   {
     "endpoint_label": "OVARY \u2014 OVARY (WEIGHT)",
@@ -4911,7 +5183,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "OVARY",
-    "finding": "OVARY (WEIGHT)"
+    "finding": "OVARY (WEIGHT)",
+    "max_fold_change": 1.38
   },
   {
     "endpoint_label": "SPLEEN \u2014 SPLEEN (WEIGHT)",
@@ -4929,7 +5202,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "SPLEEN",
-    "finding": "SPLEEN (WEIGHT)"
+    "finding": "SPLEEN (WEIGHT)",
+    "max_fold_change": 1.43
   },
   {
     "endpoint_label": "SPLEEN \u2014 SPLEEN (WEIGHT)",
@@ -4947,7 +5221,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "SPLEEN",
-    "finding": "SPLEEN (WEIGHT)"
+    "finding": "SPLEEN (WEIGHT)",
+    "max_fold_change": 1.43
   },
   {
     "endpoint_label": "SPLEEN \u2014 SPLEEN (WEIGHT)",
@@ -4965,7 +5240,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "SPLEEN",
-    "finding": "SPLEEN (WEIGHT)"
+    "finding": "SPLEEN (WEIGHT)",
+    "max_fold_change": 1.43
   },
   {
     "endpoint_label": "TESTIS \u2014 TESTIS (WEIGHT)",
@@ -4983,7 +5259,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "TESTIS",
-    "finding": "TESTIS (WEIGHT)"
+    "finding": "TESTIS (WEIGHT)",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "TESTIS \u2014 TESTIS (WEIGHT)",
@@ -5001,7 +5278,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "TESTIS",
-    "finding": "TESTIS (WEIGHT)"
+    "finding": "TESTIS (WEIGHT)",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "TESTIS \u2014 TESTIS (WEIGHT)",
@@ -5019,7 +5297,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "TESTIS",
-    "finding": "TESTIS (WEIGHT)"
+    "finding": "TESTIS (WEIGHT)",
+    "max_fold_change": 1.12
   },
   {
     "endpoint_label": "THYMUS \u2014 THYMUS (WEIGHT)",
@@ -5037,7 +5316,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "THYMUS",
-    "finding": "THYMUS (WEIGHT)"
+    "finding": "THYMUS (WEIGHT)",
+    "max_fold_change": 1.44
   },
   {
     "endpoint_label": "THYMUS \u2014 THYMUS (WEIGHT)",
@@ -5055,7 +5335,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "THYMUS",
-    "finding": "THYMUS (WEIGHT)"
+    "finding": "THYMUS (WEIGHT)",
+    "max_fold_change": 1.44
   },
   {
     "endpoint_label": "THYMUS \u2014 THYMUS (WEIGHT)",
@@ -5073,7 +5354,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "WEIGHT",
     "specimen": "THYMUS",
-    "finding": "THYMUS (WEIGHT)"
+    "finding": "THYMUS (WEIGHT)",
+    "max_fold_change": 1.44
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -5091,7 +5373,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BONE MARROW, FEMUR_FAT VACUOLES",
     "specimen": "BONE MARROW, FEMUR",
-    "finding": "FAT VACUOLES"
+    "finding": "FAT VACUOLES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -5109,7 +5392,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BONE MARROW, FEMUR_FAT VACUOLES",
     "specimen": "BONE MARROW, FEMUR",
-    "finding": "FAT VACUOLES"
+    "finding": "FAT VACUOLES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -5127,7 +5411,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BONE MARROW, FEMUR_FAT VACUOLES",
     "specimen": "BONE MARROW, FEMUR",
-    "finding": "FAT VACUOLES"
+    "finding": "FAT VACUOLES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -5145,7 +5430,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BONE MARROW, FEMUR_FAT VACUOLES",
     "specimen": "BONE MARROW, FEMUR",
-    "finding": "FAT VACUOLES"
+    "finding": "FAT VACUOLES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -5163,7 +5449,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BONE MARROW, FEMUR_FAT VACUOLES",
     "specimen": "BONE MARROW, FEMUR",
-    "finding": "FAT VACUOLES"
+    "finding": "FAT VACUOLES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -5181,7 +5468,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BONE MARROW, FEMUR_FAT VACUOLES",
     "specimen": "BONE MARROW, FEMUR",
-    "finding": "FAT VACUOLES"
+    "finding": "FAT VACUOLES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -5199,7 +5487,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, ADRENAL_VACUOLIZATION",
     "specimen": "GLAND, ADRENAL",
-    "finding": "VACUOLIZATION"
+    "finding": "VACUOLIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -5217,7 +5506,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, ADRENAL_VACUOLIZATION",
     "specimen": "GLAND, ADRENAL",
-    "finding": "VACUOLIZATION"
+    "finding": "VACUOLIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -5235,7 +5525,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, ADRENAL_VACUOLIZATION",
     "specimen": "GLAND, ADRENAL",
-    "finding": "VACUOLIZATION"
+    "finding": "VACUOLIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -5253,7 +5544,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, ADRENAL_VACUOLIZATION",
     "specimen": "GLAND, ADRENAL",
-    "finding": "VACUOLIZATION"
+    "finding": "VACUOLIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -5271,7 +5563,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, ADRENAL_VACUOLIZATION",
     "specimen": "GLAND, ADRENAL",
-    "finding": "VACUOLIZATION"
+    "finding": "VACUOLIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -5289,7 +5582,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, ADRENAL_VACUOLIZATION",
     "specimen": "GLAND, ADRENAL",
-    "finding": "VACUOLIZATION"
+    "finding": "VACUOLIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -5307,7 +5601,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "GLAND, MAMMARY_ATROPHY",
     "specimen": "GLAND, MAMMARY",
-    "finding": "ATROPHY"
+    "finding": "ATROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -5325,7 +5620,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "GLAND, MAMMARY_ATROPHY",
     "specimen": "GLAND, MAMMARY",
-    "finding": "ATROPHY"
+    "finding": "ATROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -5343,7 +5639,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "GLAND, MAMMARY_ATROPHY",
     "specimen": "GLAND, MAMMARY",
-    "finding": "ATROPHY"
+    "finding": "ATROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -5361,7 +5658,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "GLAND, MAMMARY_ATROPHY",
     "specimen": "GLAND, MAMMARY",
-    "finding": "ATROPHY"
+    "finding": "ATROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -5379,7 +5677,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "GLAND, MAMMARY_ATROPHY",
     "specimen": "GLAND, MAMMARY",
-    "finding": "ATROPHY"
+    "finding": "ATROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -5397,7 +5696,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "GLAND, MAMMARY_ATROPHY",
     "specimen": "GLAND, MAMMARY",
-    "finding": "ATROPHY"
+    "finding": "ATROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 HYPERPLASIA",
@@ -5415,7 +5715,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, THYROID_HYPERPLASIA",
     "specimen": "GLAND, THYROID",
-    "finding": "HYPERPLASIA"
+    "finding": "HYPERPLASIA",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 HYPERPLASIA",
@@ -5433,7 +5734,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, THYROID_HYPERPLASIA",
     "specimen": "GLAND, THYROID",
-    "finding": "HYPERPLASIA"
+    "finding": "HYPERPLASIA",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 HYPERPLASIA",
@@ -5451,7 +5753,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, THYROID_HYPERPLASIA",
     "specimen": "GLAND, THYROID",
-    "finding": "HYPERPLASIA"
+    "finding": "HYPERPLASIA",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -5469,7 +5772,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "HEART_INFLAMMATION",
     "specimen": "HEART",
-    "finding": "INFLAMMATION"
+    "finding": "INFLAMMATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -5487,7 +5791,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "HEART_INFLAMMATION",
     "specimen": "HEART",
-    "finding": "INFLAMMATION"
+    "finding": "INFLAMMATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -5505,7 +5810,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "HEART_INFLAMMATION",
     "specimen": "HEART",
-    "finding": "INFLAMMATION"
+    "finding": "INFLAMMATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -5523,7 +5829,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "HEART_INFLAMMATION",
     "specimen": "HEART",
-    "finding": "INFLAMMATION"
+    "finding": "INFLAMMATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -5541,7 +5848,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "HEART_INFLAMMATION",
     "specimen": "HEART",
-    "finding": "INFLAMMATION"
+    "finding": "INFLAMMATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -5559,7 +5867,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "HEART_INFLAMMATION",
     "specimen": "HEART",
-    "finding": "INFLAMMATION"
+    "finding": "INFLAMMATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -5577,7 +5886,8 @@
     "dose_response_pattern": "monotonic_decrease",
     "test_code": "KIDNEY_BASOPHILIC TUBULES",
     "specimen": "KIDNEY",
-    "finding": "BASOPHILIC TUBULES"
+    "finding": "BASOPHILIC TUBULES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -5595,7 +5905,8 @@
     "dose_response_pattern": "monotonic_decrease",
     "test_code": "KIDNEY_BASOPHILIC TUBULES",
     "specimen": "KIDNEY",
-    "finding": "BASOPHILIC TUBULES"
+    "finding": "BASOPHILIC TUBULES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -5613,7 +5924,8 @@
     "dose_response_pattern": "monotonic_decrease",
     "test_code": "KIDNEY_BASOPHILIC TUBULES",
     "specimen": "KIDNEY",
-    "finding": "BASOPHILIC TUBULES"
+    "finding": "BASOPHILIC TUBULES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -5631,7 +5943,8 @@
     "dose_response_pattern": "monotonic_decrease",
     "test_code": "KIDNEY_BASOPHILIC TUBULES",
     "specimen": "KIDNEY",
-    "finding": "BASOPHILIC TUBULES"
+    "finding": "BASOPHILIC TUBULES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -5649,7 +5962,8 @@
     "dose_response_pattern": "monotonic_decrease",
     "test_code": "KIDNEY_BASOPHILIC TUBULES",
     "specimen": "KIDNEY",
-    "finding": "BASOPHILIC TUBULES"
+    "finding": "BASOPHILIC TUBULES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -5667,7 +5981,8 @@
     "dose_response_pattern": "monotonic_decrease",
     "test_code": "KIDNEY_BASOPHILIC TUBULES",
     "specimen": "KIDNEY",
-    "finding": "BASOPHILIC TUBULES"
+    "finding": "BASOPHILIC TUBULES",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -5685,7 +6000,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_HYPERTROPHY",
     "specimen": "LIVER",
-    "finding": "HYPERTROPHY"
+    "finding": "HYPERTROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -5703,7 +6019,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_HYPERTROPHY",
     "specimen": "LIVER",
-    "finding": "HYPERTROPHY"
+    "finding": "HYPERTROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -5721,7 +6038,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_HYPERTROPHY",
     "specimen": "LIVER",
-    "finding": "HYPERTROPHY"
+    "finding": "HYPERTROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -5739,7 +6057,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_HYPERTROPHY",
     "specimen": "LIVER",
-    "finding": "HYPERTROPHY"
+    "finding": "HYPERTROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -5757,7 +6076,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_HYPERTROPHY",
     "specimen": "LIVER",
-    "finding": "HYPERTROPHY"
+    "finding": "HYPERTROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -5775,7 +6095,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_HYPERTROPHY",
     "specimen": "LIVER",
-    "finding": "HYPERTROPHY"
+    "finding": "HYPERTROPHY",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -5793,7 +6114,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PEYER'S PATCH_MINERALIZATION",
     "specimen": "PEYER'S PATCH",
-    "finding": "MINERALIZATION"
+    "finding": "MINERALIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -5811,7 +6133,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PEYER'S PATCH_MINERALIZATION",
     "specimen": "PEYER'S PATCH",
-    "finding": "MINERALIZATION"
+    "finding": "MINERALIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -5829,7 +6152,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PEYER'S PATCH_MINERALIZATION",
     "specimen": "PEYER'S PATCH",
-    "finding": "MINERALIZATION"
+    "finding": "MINERALIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -5847,7 +6171,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PEYER'S PATCH_MINERALIZATION",
     "specimen": "PEYER'S PATCH",
-    "finding": "MINERALIZATION"
+    "finding": "MINERALIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -5865,7 +6190,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PEYER'S PATCH_MINERALIZATION",
     "specimen": "PEYER'S PATCH",
-    "finding": "MINERALIZATION"
+    "finding": "MINERALIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -5883,7 +6209,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "PEYER'S PATCH_MINERALIZATION",
     "specimen": "PEYER'S PATCH",
-    "finding": "MINERALIZATION"
+    "finding": "MINERALIZATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -5901,7 +6228,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "SPLEEN_PIGMENTATION",
     "specimen": "SPLEEN",
-    "finding": "PIGMENTATION"
+    "finding": "PIGMENTATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -5919,7 +6247,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "SPLEEN_PIGMENTATION",
     "specimen": "SPLEEN",
-    "finding": "PIGMENTATION"
+    "finding": "PIGMENTATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -5937,7 +6266,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "SPLEEN_PIGMENTATION",
     "specimen": "SPLEEN",
-    "finding": "PIGMENTATION"
+    "finding": "PIGMENTATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -5955,7 +6285,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "SPLEEN_PIGMENTATION",
     "specimen": "SPLEEN",
-    "finding": "PIGMENTATION"
+    "finding": "PIGMENTATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -5973,7 +6304,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "SPLEEN_PIGMENTATION",
     "specimen": "SPLEEN",
-    "finding": "PIGMENTATION"
+    "finding": "PIGMENTATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -5991,7 +6323,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "SPLEEN_PIGMENTATION",
     "specimen": "SPLEEN",
-    "finding": "PIGMENTATION"
+    "finding": "PIGMENTATION",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 ENLARGED",
@@ -6009,7 +6342,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, ADRENAL_ENLARGED",
     "specimen": "GLAND, ADRENAL",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 ENLARGED",
@@ -6027,7 +6361,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, ADRENAL_ENLARGED",
     "specimen": "GLAND, ADRENAL",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 ENLARGED",
@@ -6045,7 +6380,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, ADRENAL_ENLARGED",
     "specimen": "GLAND, ADRENAL",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 ENLARGED",
@@ -6063,7 +6399,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, THYROID_ENLARGED",
     "specimen": "GLAND, THYROID",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 ENLARGED",
@@ -6081,7 +6418,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, THYROID_ENLARGED",
     "specimen": "GLAND, THYROID",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 ENLARGED",
@@ -6099,7 +6437,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "GLAND, THYROID_ENLARGED",
     "specimen": "GLAND, THYROID",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -6117,7 +6456,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_ENLARGED",
     "specimen": "LIVER",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -6135,7 +6475,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_ENLARGED",
     "specimen": "LIVER",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -6153,7 +6494,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_ENLARGED",
     "specimen": "LIVER",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -6171,7 +6513,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_ENLARGED",
     "specimen": "LIVER",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -6189,7 +6532,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_ENLARGED",
     "specimen": "LIVER",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -6207,7 +6551,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "LIVER_ENLARGED",
     "specimen": "LIVER",
-    "finding": "ENLARGED"
+    "finding": "ENLARGED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "SKIN \u2014 MATTING",
@@ -6225,7 +6570,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "SKIN_MATTING",
     "specimen": "SKIN",
-    "finding": "MATTING"
+    "finding": "MATTING",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "SKIN \u2014 MATTING",
@@ -6243,7 +6589,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "SKIN_MATTING",
     "specimen": "SKIN",
-    "finding": "MATTING"
+    "finding": "MATTING",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "SKIN \u2014 MATTING",
@@ -6261,7 +6608,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "SKIN_MATTING",
     "specimen": "SKIN",
-    "finding": "MATTING"
+    "finding": "MATTING",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "URINARY BLADDER \u2014 CONTENTS, DARK RED",
@@ -6279,7 +6627,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "URINARY BLADDER_CONTENTS, DARK RED",
     "specimen": "URINARY BLADDER",
-    "finding": "CONTENTS, DARK RED"
+    "finding": "CONTENTS, DARK RED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "URINARY BLADDER \u2014 CONTENTS, DARK RED",
@@ -6297,7 +6646,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "URINARY BLADDER_CONTENTS, DARK RED",
     "specimen": "URINARY BLADDER",
-    "finding": "CONTENTS, DARK RED"
+    "finding": "CONTENTS, DARK RED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "URINARY BLADDER \u2014 CONTENTS, DARK RED",
@@ -6315,7 +6665,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "URINARY BLADDER_CONTENTS, DARK RED",
     "specimen": "URINARY BLADDER",
-    "finding": "CONTENTS, DARK RED"
+    "finding": "CONTENTS, DARK RED",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "UTERUS \u2014 CLEAR FLUID",
@@ -6333,7 +6684,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "UTERUS_CLEAR FLUID",
     "specimen": "UTERUS",
-    "finding": "CLEAR FLUID"
+    "finding": "CLEAR FLUID",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "UTERUS \u2014 CLEAR FLUID",
@@ -6351,7 +6703,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "UTERUS_CLEAR FLUID",
     "specimen": "UTERUS",
-    "finding": "CLEAR FLUID"
+    "finding": "CLEAR FLUID",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "UTERUS \u2014 CLEAR FLUID",
@@ -6369,7 +6722,8 @@
     "dose_response_pattern": "threshold_increase",
     "test_code": "UTERUS_CLEAR FLUID",
     "specimen": "UTERUS",
-    "finding": "CLEAR FLUID"
+    "finding": "CLEAR FLUID",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "BEDDING WET",
@@ -6387,7 +6741,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BEDDING WET",
     "specimen": null,
-    "finding": "BEDDING WET"
+    "finding": "BEDDING WET",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "BEDDING WET",
@@ -6405,7 +6760,8 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BEDDING WET",
     "specimen": null,
-    "finding": "BEDDING WET"
+    "finding": "BEDDING WET",
+    "max_fold_change": null
   },
   {
     "endpoint_label": "BEDDING WET",
@@ -6423,6 +6779,7 @@
     "dose_response_pattern": "non_monotonic",
     "test_code": "BEDDING WET",
     "specimen": null,
-    "finding": "BEDDING WET"
+    "finding": "BEDDING WET",
+    "max_fold_change": null
   }
 ]

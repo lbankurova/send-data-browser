@@ -11,7 +11,7 @@ import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 // ─── Types ─────────────────────────────────────────────────
 
 interface RuleContext {
-  foldChanges: Map<string, number>;       // canonical -> max |effectSize| as fold proxy
+  foldChanges: Map<string, number>;       // canonical -> max fold change vs control
   presentCanonicals: Set<string>;         // canonical names resolved in this study
   endpointDirection: Map<string, string>; // canonical -> "up" | "down"
   endpointSeverity: Map<string, string>;  // canonical -> worst severity
@@ -514,12 +514,12 @@ function buildContext(
     if (!canonical) continue;
     presentCanonicals.add(canonical);
 
-    // Atomic update: all fields follow the strongest endpoint (by |effectSize|).
+    // Atomic update: all fields follow the strongest endpoint (by fold change).
     // First endpoint for a canonical always gets through (existing == null).
-    const absEffect = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : 0;
+    const fc = ep.maxFoldChange ?? 0;
     const existing = foldChanges.get(canonical);
-    if (existing == null || absEffect > existing) {
-      foldChanges.set(canonical, absEffect);
+    if (existing == null || fc > existing) {
+      foldChanges.set(canonical, fc);
       if (ep.direction === "up" || ep.direction === "down") {
         endpointDirection.set(canonical, ep.direction);
       }
