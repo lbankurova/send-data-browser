@@ -147,9 +147,14 @@ function buildPatternSentence(
 
   const direction = doseResponse.direction === "up" ? "increase" : doseResponse.direction === "down" ? "decrease" : null;
 
-  if (doseResponse.pattern === "threshold") {
+  if (doseResponse.pattern.startsWith("threshold")) {
     let onsetDose: string | null = null;
-    if (statistics?.rows) {
+    // Prefer backend-computed onset (equivalence-band-based)
+    if (doseResponse.onset_dose_value != null) {
+      onsetDose = `${doseResponse.onset_dose_value} ${doseResponse.onset_dose_unit ?? "mg/kg"}`.trim();
+    }
+    // Fallback: first significant dose from statistics
+    else if (statistics?.rows) {
       for (let i = 1; i < statistics.rows.length; i++) {
         const p = statistics.rows[i].p_value_adj ?? statistics.rows[i].p_value;
         if (p != null && p < 0.05) {

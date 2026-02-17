@@ -44,7 +44,9 @@ export interface SignalBoosts {
 const PATTERN_WEIGHTS: Record<string, number> = {
   monotonic_increase: 2,
   monotonic_decrease: 2,
-  threshold: 1.5,
+  threshold_increase: 1.5,
+  threshold_decrease: 1.5,
+  threshold: 1.5,  // backward compat
   non_monotonic: 0.5,
   flat: 0,
 };
@@ -84,7 +86,8 @@ export function classifyEndpointConfidence(ep: EndpointSummary): EndpointConfide
 
   // Strong p-value + clear pattern + meaningful effect → HIGH
   if (p !== null && p < 0.01 && effect >= 0.8 &&
-      (pattern === "monotonic_increase" || pattern === "monotonic_decrease" || pattern === "threshold")) {
+      (pattern === "monotonic_increase" || pattern === "monotonic_decrease" ||
+       pattern === "threshold_increase" || pattern === "threshold_decrease" || pattern === "threshold")) {
     level = 2;
   }
   // Moderate: significant p or decent effect with pattern
@@ -403,7 +406,9 @@ export function getDomainFullLabel(domain: string): string {
 const PATTERN_LABELS: Record<string, string> = {
   monotonic_increase: "Monotonic increase",
   monotonic_decrease: "Monotonic decrease",
-  threshold: "Threshold",
+  threshold_increase: "Threshold increase",
+  threshold_decrease: "Threshold decrease",
+  threshold: "Threshold",  // backward compat
   non_monotonic: "Non-monotonic",
   flat: "Flat",
 };

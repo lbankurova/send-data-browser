@@ -22,8 +22,14 @@ function pathForPattern(pattern: string): string {
     case "monotonic_decrease":
       // Descending line top-left → bottom-right
       return "M2,2 L22,10";
-    case "threshold":
+    case "threshold_increase":
       // Flat then step-up
+      return "M2,8 L10,8 L12,3 L22,3";
+    case "threshold_decrease":
+      // Flat then step-down
+      return "M2,3 L10,3 L12,8 L22,8";
+    case "threshold":
+      // Backward compat — flat then step-up
       return "M2,8 L10,8 L12,3 L22,3";
     case "non_monotonic":
       // Zigzag

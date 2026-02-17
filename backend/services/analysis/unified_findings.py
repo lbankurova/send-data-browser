@@ -101,10 +101,13 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
 
         # Classify
         finding["severity"] = classify_severity(finding)
-        finding["dose_response_pattern"] = classify_dose_response(
+        dr_result = classify_dose_response(
             finding.get("group_stats", []),
             finding.get("data_type", "continuous"),
         )
+        finding["dose_response_pattern"] = dr_result["pattern"]
+        finding["pattern_confidence"] = dr_result.get("confidence")
+        finding["onset_dose_level"] = dr_result.get("onset_dose_level")
         finding["treatment_related"] = determine_treatment_related(finding)
 
         # Enrich with organ_system and endpoint_label (same logic as generator)

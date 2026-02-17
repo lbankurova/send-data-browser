@@ -12,6 +12,7 @@ import {
   TrendingUp,
   TrendingDown,
   CornerRightUp,
+  CornerRightDown,
   Activity,
   Minus,
   EyeOff,
@@ -645,7 +646,9 @@ function ScopeIndicator({
 const PATTERN_ICONS: Record<string, typeof TrendingUp> = {
   monotonic_increase: TrendingUp,
   monotonic_decrease: TrendingDown,
-  threshold: CornerRightUp,
+  threshold_increase: CornerRightUp,
+  threshold_decrease: CornerRightDown,
+  threshold: CornerRightUp,  // backward compat
   non_monotonic: Activity,
   flat: Minus,
 };
