@@ -52,7 +52,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.7882926512302563e-05,
     "data_type": "continuous"
   },
@@ -71,7 +71,7 @@
     "affected": null,
     "p_value": 0.945112,
     "effect_size": -0.4622,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.7882926512302563e-05,
     "data_type": "continuous"
   },
@@ -90,7 +90,7 @@
     "affected": null,
     "p_value": 0.098571,
     "effect_size": -1.048,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.7882926512302563e-05,
     "data_type": "continuous"
   },
@@ -109,7 +109,7 @@
     "affected": null,
     "p_value": 6.1e-05,
     "effect_size": -2.5768,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.7882926512302563e-05,
     "data_type": "continuous"
   },
@@ -242,7 +242,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.4582392772929625e-05,
     "data_type": "continuous"
   },
@@ -261,7 +261,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.1407,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.4582392772929625e-05,
     "data_type": "continuous"
   },
@@ -280,7 +280,7 @@
     "affected": null,
     "p_value": 0.031852,
     "effect_size": -1.2895,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.4582392772929625e-05,
     "data_type": "continuous"
   },
@@ -299,7 +299,7 @@
     "affected": null,
     "p_value": 0.002835,
     "effect_size": -1.7672,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.4582392772929625e-05,
     "data_type": "continuous"
   },
@@ -508,7 +508,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0011904791923011534,
     "data_type": "continuous"
   },
@@ -527,7 +527,7 @@
     "affected": null,
     "p_value": 0.33851,
     "effect_size": 0.7546,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0011904791923011534,
     "data_type": "continuous"
   },
@@ -546,7 +546,7 @@
     "affected": null,
     "p_value": 0.005812,
     "effect_size": 1.6654,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0011904791923011534,
     "data_type": "continuous"
   },
@@ -565,7 +565,7 @@
     "affected": null,
     "p_value": 0.018468,
     "effect_size": 1.588,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0011904791923011534,
     "data_type": "continuous"
   },
@@ -698,7 +698,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.02533061290331098,
     "data_type": "continuous"
   },
@@ -717,7 +717,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.3986,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.02533061290331098,
     "data_type": "continuous"
   },
@@ -736,7 +736,7 @@
     "affected": null,
     "p_value": 0.760295,
     "effect_size": -0.5444,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.02533061290331098,
     "data_type": "continuous"
   },
@@ -755,7 +755,7 @@
     "affected": null,
     "p_value": 0.114082,
     "effect_size": 1.1395,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.02533061290331098,
     "data_type": "continuous"
   },
@@ -812,7 +812,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.3361224879499296,
     "data_type": "continuous"
   },
@@ -831,7 +831,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.1791,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.3361224879499296,
     "data_type": "continuous"
   },
@@ -850,7 +850,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.1396,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.3361224879499296,
     "data_type": "continuous"
   },
@@ -869,7 +869,7 @@
     "affected": null,
     "p_value": 0.512193,
     "effect_size": 0.6382,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.3361224879499296,
     "data_type": "continuous"
   },
@@ -888,7 +888,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.26725634961358924,
     "data_type": "continuous"
   },
@@ -907,7 +907,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0129,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.26725634961358924,
     "data_type": "continuous"
   },
@@ -926,7 +926,7 @@
     "affected": null,
     "p_value": 0.704923,
     "effect_size": -0.5924,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.26725634961358924,
     "data_type": "continuous"
   },
@@ -945,7 +945,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.3545,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.26725634961358924,
     "data_type": "continuous"
   },
@@ -1002,7 +1002,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 3.362666315313753e-12,
     "data_type": "continuous"
   },
@@ -1021,7 +1021,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.1993,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 3.362666315313753e-12,
     "data_type": "continuous"
   },
@@ -1040,7 +1040,7 @@
     "affected": null,
     "p_value": 1.2e-05,
     "effect_size": 2.9176,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 3.362666315313753e-12,
     "data_type": "continuous"
   },
@@ -1059,7 +1059,7 @@
     "affected": null,
     "p_value": 1e-06,
     "effect_size": 3.9851,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 3.362666315313753e-12,
     "data_type": "continuous"
   },
@@ -1078,7 +1078,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 4.170519331054236e-09,
     "data_type": "continuous"
   },
@@ -1097,7 +1097,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0956,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 4.170519331054236e-09,
     "data_type": "continuous"
   },
@@ -1116,7 +1116,7 @@
     "affected": null,
     "p_value": 0.004106,
     "effect_size": 1.8139,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 4.170519331054236e-09,
     "data_type": "continuous"
   },
@@ -1135,7 +1135,7 @@
     "affected": null,
     "p_value": 0.01528,
     "effect_size": 1.6729,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 4.170519331054236e-09,
     "data_type": "continuous"
   },
@@ -1192,7 +1192,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 1.2861355314617191e-09,
     "data_type": "continuous"
   },
@@ -1211,7 +1211,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.0673,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 1.2861355314617191e-09,
     "data_type": "continuous"
   },
@@ -1230,7 +1230,7 @@
     "affected": null,
     "p_value": 0.000853,
     "effect_size": 2.174,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 1.2861355314617191e-09,
     "data_type": "continuous"
   },
@@ -1249,7 +1249,7 @@
     "affected": null,
     "p_value": 9e-06,
     "effect_size": 3.706,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 1.2861355314617191e-09,
     "data_type": "continuous"
   },
@@ -1762,7 +1762,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.030791526923065943,
     "data_type": "continuous"
   },
@@ -1781,7 +1781,7 @@
     "affected": null,
     "p_value": 0.681008,
     "effect_size": 0.5597,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.030791526923065943,
     "data_type": "continuous"
   },
@@ -1800,7 +1800,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2788,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.030791526923065943,
     "data_type": "continuous"
   },
@@ -1819,7 +1819,7 @@
     "affected": null,
     "p_value": 0.051481,
     "effect_size": -1.1961,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.030791526923065943,
     "data_type": "continuous"
   },
@@ -1838,7 +1838,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.003755117331594093,
     "data_type": "continuous"
   },
@@ -1857,7 +1857,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.0091,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.003755117331594093,
     "data_type": "continuous"
   },
@@ -1876,7 +1876,7 @@
     "affected": null,
     "p_value": 0.686831,
     "effect_size": 0.5617,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.003755117331594093,
     "data_type": "continuous"
   },
@@ -1895,7 +1895,7 @@
     "affected": null,
     "p_value": 0.045879,
     "effect_size": 1.3433,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.003755117331594093,
     "data_type": "continuous"
   },
@@ -2142,7 +2142,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.024915103160707122,
     "data_type": "continuous"
   },
@@ -2161,7 +2161,7 @@
     "affected": null,
     "p_value": 0.326428,
     "effect_size": -0.7623,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.024915103160707122,
     "data_type": "continuous"
   },
@@ -2180,7 +2180,7 @@
     "affected": null,
     "p_value": 0.023357,
     "effect_size": -1.3563,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.024915103160707122,
     "data_type": "continuous"
   },
@@ -2199,7 +2199,7 @@
     "affected": null,
     "p_value": 0.190731,
     "effect_size": -0.8998,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.024915103160707122,
     "data_type": "continuous"
   },
@@ -2218,7 +2218,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.004317640554503162,
     "data_type": "continuous"
   },
@@ -2237,7 +2237,7 @@
     "affected": null,
     "p_value": 0.874745,
     "effect_size": 0.4888,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.004317640554503162,
     "data_type": "continuous"
   },
@@ -2256,7 +2256,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2295,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.004317640554503162,
     "data_type": "continuous"
   },
@@ -2275,7 +2275,7 @@
     "affected": null,
     "p_value": 0.007481,
     "effect_size": 1.7835,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.004317640554503162,
     "data_type": "continuous"
   },
@@ -2332,7 +2332,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.011009358102438737,
     "data_type": "continuous"
   },
@@ -2351,7 +2351,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2619,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.011009358102438737,
     "data_type": "continuous"
   },
@@ -2370,7 +2370,7 @@
     "affected": null,
     "p_value": 0.621693,
     "effect_size": 0.5937,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.011009358102438737,
     "data_type": "continuous"
   },
@@ -2389,7 +2389,7 @@
     "affected": null,
     "p_value": 0.092457,
     "effect_size": 1.0529,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.011009358102438737,
     "data_type": "continuous"
   },
@@ -2408,7 +2408,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.08674579601081267,
     "data_type": "continuous"
   },
@@ -2427,7 +2427,7 @@
     "affected": null,
     "p_value": 0.476468,
     "effect_size": -0.7031,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.08674579601081267,
     "data_type": "continuous"
   },
@@ -2446,7 +2446,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.3587,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.08674579601081267,
     "data_type": "continuous"
   },
@@ -2465,7 +2465,7 @@
     "affected": null,
     "p_value": 0.487535,
     "effect_size": -0.692,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.08674579601081267,
     "data_type": "continuous"
   },
@@ -2522,7 +2522,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.027688084772726287,
     "data_type": "continuous"
   },
@@ -2541,7 +2541,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2742,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.027688084772726287,
     "data_type": "continuous"
   },
@@ -2560,7 +2560,7 @@
     "affected": null,
     "p_value": 0.635287,
     "effect_size": 0.5843,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.027688084772726287,
     "data_type": "continuous"
   },
@@ -2579,7 +2579,7 @@
     "affected": null,
     "p_value": 0.176207,
     "effect_size": 0.9037,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.027688084772726287,
     "data_type": "continuous"
   },
@@ -3130,7 +3130,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.9550728577107035,
     "data_type": "continuous"
   },
@@ -3149,7 +3149,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.361,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.9550728577107035,
     "data_type": "continuous"
   },
@@ -3168,7 +3168,7 @@
     "affected": null,
     "p_value": 0.652478,
     "effect_size": -0.587,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.9550728577107035,
     "data_type": "continuous"
   },
@@ -3187,7 +3187,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.1247,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.9550728577107035,
     "data_type": "continuous"
   },
@@ -3244,7 +3244,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.8245073060079568e-05,
     "data_type": "continuous"
   },
@@ -3263,7 +3263,7 @@
     "affected": null,
     "p_value": 0.615148,
     "effect_size": -0.6021,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.8245073060079568e-05,
     "data_type": "continuous"
   },
@@ -3282,7 +3282,7 @@
     "affected": null,
     "p_value": 0.968811,
     "effect_size": -0.4644,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.8245073060079568e-05,
     "data_type": "continuous"
   },
@@ -3301,7 +3301,7 @@
     "affected": null,
     "p_value": 0.0,
     "effect_size": -4.5971,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.8245073060079568e-05,
     "data_type": "continuous"
   },
@@ -3320,7 +3320,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.001994919768974293,
     "data_type": "continuous"
   },
@@ -3339,7 +3339,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0658,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.001994919768974293,
     "data_type": "continuous"
   },
@@ -3358,7 +3358,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.3435,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.001994919768974293,
     "data_type": "continuous"
   },
@@ -3377,7 +3377,7 @@
     "affected": null,
     "p_value": 0.005113,
     "effect_size": -1.783,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.001994919768974293,
     "data_type": "continuous"
   },
@@ -3434,7 +3434,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.241506884866528e-06,
     "data_type": "continuous"
   },
@@ -3453,7 +3453,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2925,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.241506884866528e-06,
     "data_type": "continuous"
   },
@@ -3472,7 +3472,7 @@
     "affected": null,
     "p_value": 0.755577,
     "effect_size": -0.5305,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.241506884866528e-06,
     "data_type": "continuous"
   },
@@ -3491,7 +3491,7 @@
     "affected": null,
     "p_value": 4.3e-05,
     "effect_size": -2.6426,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.241506884866528e-06,
     "data_type": "continuous"
   },
@@ -3510,7 +3510,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.019601709584515098,
     "data_type": "continuous"
   },
@@ -3529,7 +3529,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.0194,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.019601709584515098,
     "data_type": "continuous"
   },
@@ -3548,7 +3548,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.1999,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.019601709584515098,
     "data_type": "continuous"
   },
@@ -3567,7 +3567,7 @@
     "affected": null,
     "p_value": 0.05591,
     "effect_size": -1.2343,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.019601709584515098,
     "data_type": "continuous"
   },
@@ -3624,7 +3624,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.18780942332207645,
     "data_type": "continuous"
   },
@@ -3643,7 +3643,7 @@
     "affected": null,
     "p_value": 0.113129,
     "effect_size": 1.0193,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.18780942332207645,
     "data_type": "continuous"
   },
@@ -3662,7 +3662,7 @@
     "affected": null,
     "p_value": 0.071067,
     "effect_size": 1.1052,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.18780942332207645,
     "data_type": "continuous"
   },
@@ -3681,7 +3681,7 @@
     "affected": null,
     "p_value": 0.439157,
     "effect_size": 0.6791,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.18780942332207645,
     "data_type": "continuous"
   },
@@ -3852,7 +3852,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.29192894106058853,
     "data_type": "continuous"
   },
@@ -3871,7 +3871,7 @@
     "affected": null,
     "p_value": 0.711835,
     "effect_size": -0.5118,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.29192894106058853,
     "data_type": "continuous"
   },
@@ -3890,7 +3890,7 @@
     "affected": null,
     "p_value": 0.711835,
     "effect_size": -0.4364,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.29192894106058853,
     "data_type": "continuous"
   },
@@ -3909,7 +3909,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.29192894106058853,
     "data_type": "continuous"
   },
@@ -4042,7 +4042,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.01029809392480723,
     "data_type": "continuous"
   },
@@ -4061,7 +4061,7 @@
     "affected": null,
     "p_value": 0.073754,
     "effect_size": -1.2257,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.01029809392480723,
     "data_type": "continuous"
   },
@@ -4080,7 +4080,7 @@
     "affected": null,
     "p_value": 0.208795,
     "effect_size": -0.9367,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.01029809392480723,
     "data_type": "continuous"
   },
@@ -4099,7 +4099,7 @@
     "affected": null,
     "p_value": 0.032056,
     "effect_size": -1.4552,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.01029809392480723,
     "data_type": "continuous"
   },
@@ -4156,7 +4156,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.00018372139517577432,
     "data_type": "continuous"
   },
@@ -4175,7 +4175,7 @@
     "affected": null,
     "p_value": 0.766993,
     "effect_size": 0.5256,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.00018372139517577432,
     "data_type": "continuous"
   },
@@ -4194,7 +4194,7 @@
     "affected": null,
     "p_value": 0.02853,
     "effect_size": 1.3623,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.00018372139517577432,
     "data_type": "continuous"
   },
@@ -4213,7 +4213,7 @@
     "affected": null,
     "p_value": 0.026769,
     "effect_size": 1.41,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.00018372139517577432,
     "data_type": "continuous"
   },
@@ -4232,7 +4232,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.006465409736929213,
     "data_type": "continuous"
   },
@@ -4251,7 +4251,7 @@
     "affected": null,
     "p_value": 0.159826,
     "effect_size": -0.9865,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.006465409736929213,
     "data_type": "continuous"
   },
@@ -4270,7 +4270,7 @@
     "affected": null,
     "p_value": 0.09409,
     "effect_size": -1.1228,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.006465409736929213,
     "data_type": "continuous"
   },
@@ -4289,7 +4289,7 @@
     "affected": null,
     "p_value": 0.032278,
     "effect_size": -1.3754,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.006465409736929213,
     "data_type": "continuous"
   },
@@ -4346,7 +4346,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.568267129496065e-05,
     "data_type": "continuous"
   },
@@ -4365,7 +4365,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.3361,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.568267129496065e-05,
     "data_type": "continuous"
   },
@@ -4384,7 +4384,7 @@
     "affected": null,
     "p_value": 0.11619,
     "effect_size": -1.0083,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.568267129496065e-05,
     "data_type": "continuous"
   },
@@ -4403,7 +4403,7 @@
     "affected": null,
     "p_value": 0.000964,
     "effect_size": -1.9828,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.568267129496065e-05,
     "data_type": "continuous"
   },
@@ -4536,7 +4536,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.11590408507922313,
     "data_type": "continuous"
   },
@@ -4555,7 +4555,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.1121,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.11590408507922313,
     "data_type": "continuous"
   },
@@ -4574,7 +4574,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0293,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.11590408507922313,
     "data_type": "continuous"
   },
@@ -4593,7 +4593,7 @@
     "affected": null,
     "p_value": 0.211736,
     "effect_size": 0.8848,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.11590408507922313,
     "data_type": "continuous"
   },
@@ -4612,7 +4612,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4351770471503177,
     "data_type": "continuous"
   },
@@ -4631,7 +4631,7 @@
     "affected": null,
     "p_value": 0.844394,
     "effect_size": 0.5255,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4351770471503177,
     "data_type": "continuous"
   },
@@ -4650,7 +4650,7 @@
     "affected": null,
     "p_value": 0.754698,
     "effect_size": 0.5504,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4351770471503177,
     "data_type": "continuous"
   },
@@ -4669,7 +4669,7 @@
     "affected": null,
     "p_value": 0.821728,
     "effect_size": 0.5353,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4351770471503177,
     "data_type": "continuous"
   },
@@ -4726,7 +4726,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.591095429826486e-05,
     "data_type": "continuous"
   },
@@ -4745,7 +4745,7 @@
     "affected": null,
     "p_value": 0.833214,
     "effect_size": -0.5007,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.591095429826486e-05,
     "data_type": "continuous"
   },
@@ -4764,7 +4764,7 @@
     "affected": null,
     "p_value": 0.107286,
     "effect_size": -1.017,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.591095429826486e-05,
     "data_type": "continuous"
   },
@@ -4783,7 +4783,7 @@
     "affected": null,
     "p_value": 0.001932,
     "effect_size": -1.8503,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.591095429826486e-05,
     "data_type": "continuous"
   },
@@ -4916,7 +4916,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0006894198570482915,
     "data_type": "continuous"
   },
@@ -4935,7 +4935,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2511,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0006894198570482915,
     "data_type": "continuous"
   },
@@ -4954,7 +4954,7 @@
     "affected": null,
     "p_value": 0.227658,
     "effect_size": 0.8668,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0006894198570482915,
     "data_type": "continuous"
   },
@@ -4973,7 +4973,7 @@
     "affected": null,
     "p_value": 0.024798,
     "effect_size": 1.3319,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0006894198570482915,
     "data_type": "continuous"
   },
@@ -4992,7 +4992,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.05791510085845795,
     "data_type": "continuous"
   },
@@ -5011,7 +5011,7 @@
     "affected": null,
     "p_value": 0.24291,
     "effect_size": -0.8965,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.05791510085845795,
     "data_type": "continuous"
   },
@@ -5030,7 +5030,7 @@
     "affected": null,
     "p_value": 0.171049,
     "effect_size": -0.9497,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.05791510085845795,
     "data_type": "continuous"
   },
@@ -5049,7 +5049,7 @@
     "affected": null,
     "p_value": 0.429151,
     "effect_size": -0.7266,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.05791510085845795,
     "data_type": "continuous"
   },
@@ -5106,7 +5106,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 5.52463474145573e-05,
     "data_type": "continuous"
   },
@@ -5125,7 +5125,7 @@
     "affected": null,
     "p_value": 0.634908,
     "effect_size": 0.5907,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 5.52463474145573e-05,
     "data_type": "continuous"
   },
@@ -5144,7 +5144,7 @@
     "affected": null,
     "p_value": 0.046086,
     "effect_size": 1.2021,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 5.52463474145573e-05,
     "data_type": "continuous"
   },
@@ -5163,7 +5163,7 @@
     "affected": null,
     "p_value": 0.001287,
     "effect_size": 2.0363,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 5.52463474145573e-05,
     "data_type": "continuous"
   },
@@ -5182,7 +5182,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0015352540407750745,
     "data_type": "continuous"
   },
@@ -5201,7 +5201,7 @@
     "affected": null,
     "p_value": 0.000262,
     "effect_size": -2.4523,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0015352540407750745,
     "data_type": "continuous"
   },
@@ -5220,7 +5220,7 @@
     "affected": null,
     "p_value": 0.000276,
     "effect_size": -2.3391,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0015352540407750745,
     "data_type": "continuous"
   },
@@ -5239,7 +5239,7 @@
     "affected": null,
     "p_value": 0.008095,
     "effect_size": -1.7572,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0015352540407750745,
     "data_type": "continuous"
   },
@@ -5277,7 +5277,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.12273757300226787,
     "data_type": "continuous"
   },
@@ -5296,7 +5296,7 @@
     "affected": null,
     "p_value": 0.294232,
     "effect_size": -0.787,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.12273757300226787,
     "data_type": "continuous"
   },
@@ -5315,7 +5315,7 @@
     "affected": null,
     "p_value": 0.980373,
     "effect_size": -0.4509,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.12273757300226787,
     "data_type": "continuous"
   },
@@ -5334,7 +5334,7 @@
     "affected": null,
     "p_value": 0.123457,
     "effect_size": -1.0349,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.12273757300226787,
     "data_type": "continuous"
   },
@@ -5353,7 +5353,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.006279203058606931,
     "data_type": "continuous"
   },
@@ -5372,7 +5372,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2104,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.006279203058606931,
     "data_type": "continuous"
   },
@@ -5391,7 +5391,7 @@
     "affected": null,
     "p_value": 0.149056,
     "effect_size": 0.9559,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.006279203058606931,
     "data_type": "continuous"
   },
@@ -5410,7 +5410,7 @@
     "affected": null,
     "p_value": 0.108065,
     "effect_size": 1.1169,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.006279203058606931,
     "data_type": "continuous"
   },
@@ -5467,7 +5467,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.013246207316877276,
     "data_type": "continuous"
   },
@@ -5486,7 +5486,7 @@
     "affected": null,
     "p_value": 0.415537,
     "effect_size": 0.6963,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.013246207316877276,
     "data_type": "continuous"
   },
@@ -5505,7 +5505,7 @@
     "affected": null,
     "p_value": 0.057694,
     "effect_size": 1.1566,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.013246207316877276,
     "data_type": "continuous"
   },
@@ -5524,7 +5524,7 @@
     "affected": null,
     "p_value": 0.077046,
     "effect_size": 1.0961,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.013246207316877276,
     "data_type": "continuous"
   },
@@ -5543,7 +5543,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0017768900228945618,
     "data_type": "continuous"
   },
@@ -5562,7 +5562,7 @@
     "affected": null,
     "p_value": 0.137108,
     "effect_size": -1.0019,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0017768900228945618,
     "data_type": "continuous"
   },
@@ -5581,7 +5581,7 @@
     "affected": null,
     "p_value": 0.143341,
     "effect_size": -0.9991,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0017768900228945618,
     "data_type": "continuous"
   },
@@ -5600,7 +5600,7 @@
     "affected": null,
     "p_value": 0.002785,
     "effect_size": -1.9366,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0017768900228945618,
     "data_type": "continuous"
   },
@@ -5847,7 +5847,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.48453790242524214,
     "data_type": "continuous"
   },
@@ -5866,7 +5866,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0185,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.48453790242524214,
     "data_type": "continuous"
   },
@@ -5885,7 +5885,7 @@
     "affected": null,
     "p_value": 0.789459,
     "effect_size": 0.4504,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.48453790242524214,
     "data_type": "continuous"
   },
@@ -5904,7 +5904,7 @@
     "affected": null,
     "p_value": 0.800437,
     "effect_size": 0.4165,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.48453790242524214,
     "data_type": "continuous"
   },
@@ -6113,7 +6113,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.28869225973596424,
     "data_type": "continuous"
   },
@@ -6132,7 +6132,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.0436,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.28869225973596424,
     "data_type": "continuous"
   },
@@ -6151,7 +6151,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0113,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.28869225973596424,
     "data_type": "continuous"
   },
@@ -6170,7 +6170,7 @@
     "affected": null,
     "p_value": 0.745464,
     "effect_size": 0.5682,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.28869225973596424,
     "data_type": "continuous"
   },
@@ -6227,7 +6227,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.13859569321723872,
     "data_type": "continuous"
   },
@@ -6246,7 +6246,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.0792,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.13859569321723872,
     "data_type": "continuous"
   },
@@ -6265,7 +6265,7 @@
     "affected": null,
     "p_value": 0.896044,
     "effect_size": 0.487,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.13859569321723872,
     "data_type": "continuous"
   },
@@ -6284,7 +6284,7 @@
     "affected": null,
     "p_value": 0.102861,
     "effect_size": -1.0616,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.13859569321723872,
     "data_type": "continuous"
   },
@@ -7044,7 +7044,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.8146021560403697,
     "data_type": "continuous"
   },
@@ -7063,7 +7063,7 @@
     "affected": null,
     "p_value": 0.865717,
     "effect_size": 0.4921,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.8146021560403697,
     "data_type": "continuous"
   },
@@ -7082,7 +7082,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.17,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.8146021560403697,
     "data_type": "continuous"
   },
@@ -7101,7 +7101,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2458,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.8146021560403697,
     "data_type": "continuous"
   },
@@ -7158,7 +7158,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.045740742868406986,
     "data_type": "continuous"
   },
@@ -7177,7 +7177,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.156,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.045740742868406986,
     "data_type": "continuous"
   },
@@ -7196,7 +7196,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.3191,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.045740742868406986,
     "data_type": "continuous"
   },
@@ -7215,7 +7215,7 @@
     "affected": null,
     "p_value": 0.092478,
     "effect_size": 1.0496,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.045740742868406986,
     "data_type": "continuous"
   },
@@ -7234,7 +7234,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.020438102981298382,
     "data_type": "continuous"
   },
@@ -7253,7 +7253,7 @@
     "affected": null,
     "p_value": 0.525971,
     "effect_size": -0.6606,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.020438102981298382,
     "data_type": "continuous"
   },
@@ -7272,7 +7272,7 @@
     "affected": null,
     "p_value": 0.111236,
     "effect_size": -1.1315,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.020438102981298382,
     "data_type": "continuous"
   },
@@ -7291,7 +7291,7 @@
     "affected": null,
     "p_value": 0.179146,
     "effect_size": -0.9608,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.020438102981298382,
     "data_type": "continuous"
   },
@@ -7709,7 +7709,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 5.371642234299405e-05,
     "data_type": "continuous"
   },
@@ -7728,7 +7728,7 @@
     "affected": null,
     "p_value": 0.589651,
     "effect_size": 0.6094,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 5.371642234299405e-05,
     "data_type": "continuous"
   },
@@ -7747,7 +7747,7 @@
     "affected": null,
     "p_value": 0.006267,
     "effect_size": 1.7062,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 5.371642234299405e-05,
     "data_type": "continuous"
   },
@@ -7766,7 +7766,7 @@
     "affected": null,
     "p_value": 0.007025,
     "effect_size": 1.7403,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 5.371642234299405e-05,
     "data_type": "continuous"
   },
@@ -7785,7 +7785,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00012947766893137654,
     "data_type": "continuous"
   },
@@ -7804,7 +7804,7 @@
     "affected": null,
     "p_value": 0.017719,
     "effect_size": -1.6187,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00012947766893137654,
     "data_type": "continuous"
   },
@@ -7823,7 +7823,7 @@
     "affected": null,
     "p_value": 0.042457,
     "effect_size": -1.3043,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00012947766893137654,
     "data_type": "continuous"
   },
@@ -7842,7 +7842,7 @@
     "affected": null,
     "p_value": 0.003202,
     "effect_size": -2.0831,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00012947766893137654,
     "data_type": "continuous"
   },
@@ -8013,7 +8013,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.363958465985692e-06,
     "data_type": "continuous"
   },
@@ -8032,7 +8032,7 @@
     "affected": null,
     "p_value": 0.991573,
     "effect_size": -0.4473,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.363958465985692e-06,
     "data_type": "continuous"
   },
@@ -8051,7 +8051,7 @@
     "affected": null,
     "p_value": 0.729568,
     "effect_size": -0.541,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.363958465985692e-06,
     "data_type": "continuous"
   },
@@ -8070,7 +8070,7 @@
     "affected": null,
     "p_value": 0.000134,
     "effect_size": -2.7377,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.363958465985692e-06,
     "data_type": "continuous"
   },
@@ -8089,7 +8089,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.7667797544140696e-05,
     "data_type": "continuous"
   },
@@ -8108,7 +8108,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.3643,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.7667797544140696e-05,
     "data_type": "continuous"
   },
@@ -8127,7 +8127,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2566,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.7667797544140696e-05,
     "data_type": "continuous"
   },
@@ -8146,7 +8146,7 @@
     "affected": null,
     "p_value": 1.3e-05,
     "effect_size": -3.31,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.7667797544140696e-05,
     "data_type": "continuous"
   },
@@ -8165,7 +8165,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 7.72001467218212e-08,
     "data_type": "continuous"
   },
@@ -8184,7 +8184,7 @@
     "affected": null,
     "p_value": 0.056432,
     "effect_size": -1.1783,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 7.72001467218212e-08,
     "data_type": "continuous"
   },
@@ -8203,7 +8203,7 @@
     "affected": null,
     "p_value": 0.231058,
     "effect_size": -0.8388,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 7.72001467218212e-08,
     "data_type": "continuous"
   },
@@ -8222,7 +8222,7 @@
     "affected": null,
     "p_value": 0.0,
     "effect_size": -4.7057,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 7.72001467218212e-08,
     "data_type": "continuous"
   },
@@ -8241,7 +8241,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.5834187825961066e-05,
     "data_type": "continuous"
   },
@@ -8260,7 +8260,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.0839,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.5834187825961066e-05,
     "data_type": "continuous"
   },
@@ -8279,7 +8279,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2303,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.5834187825961066e-05,
     "data_type": "continuous"
   },
@@ -8298,7 +8298,7 @@
     "affected": null,
     "p_value": 0.0,
     "effect_size": -8.1478,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.5834187825961066e-05,
     "data_type": "continuous"
   },
@@ -8317,7 +8317,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 4.461212979166197e-05,
     "data_type": "continuous"
   },
@@ -8336,7 +8336,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0925,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 4.461212979166197e-05,
     "data_type": "continuous"
   },
@@ -8355,7 +8355,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.152,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 4.461212979166197e-05,
     "data_type": "continuous"
   },
@@ -8374,7 +8374,7 @@
     "affected": null,
     "p_value": 4e-06,
     "effect_size": -3.2279,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 4.461212979166197e-05,
     "data_type": "continuous"
   },
@@ -8469,7 +8469,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00018248044478217577,
     "data_type": "continuous"
   },
@@ -8488,7 +8488,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2774,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00018248044478217577,
     "data_type": "continuous"
   },
@@ -8507,7 +8507,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.127,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00018248044478217577,
     "data_type": "continuous"
   },
@@ -8526,7 +8526,7 @@
     "affected": null,
     "p_value": 1e-06,
     "effect_size": -3.4215,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00018248044478217577,
     "data_type": "continuous"
   },
@@ -8545,7 +8545,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 8.016543298869907e-07,
     "data_type": "continuous"
   },
@@ -8564,7 +8564,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0896,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 8.016543298869907e-07,
     "data_type": "continuous"
   },
@@ -8583,7 +8583,7 @@
     "affected": null,
     "p_value": 0.323358,
     "effect_size": -0.7592,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 8.016543298869907e-07,
     "data_type": "continuous"
   },
@@ -8602,7 +8602,7 @@
     "affected": null,
     "p_value": 0.0,
     "effect_size": -3.8619,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 8.016543298869907e-07,
     "data_type": "continuous"
   },
@@ -8621,7 +8621,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.001021566003449707,
     "data_type": "continuous"
   },
@@ -8640,7 +8640,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2944,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.001021566003449707,
     "data_type": "continuous"
   },
@@ -8659,7 +8659,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.3314,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.001021566003449707,
     "data_type": "continuous"
   },
@@ -8678,7 +8678,7 @@
     "affected": null,
     "p_value": 3.7e-05,
     "effect_size": -2.6832,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.001021566003449707,
     "data_type": "continuous"
   },
@@ -8697,7 +8697,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0009888641735075723,
     "data_type": "continuous"
   },
@@ -8716,7 +8716,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.3328,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0009888641735075723,
     "data_type": "continuous"
   },
@@ -8735,7 +8735,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2241,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0009888641735075723,
     "data_type": "continuous"
   },
@@ -8754,7 +8754,7 @@
     "affected": null,
     "p_value": 0.000556,
     "effect_size": -2.4813,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0009888641735075723,
     "data_type": "continuous"
   },
@@ -8773,7 +8773,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.626250856613892e-06,
     "data_type": "continuous"
   },
@@ -8792,7 +8792,7 @@
     "affected": null,
     "p_value": 0.221906,
     "effect_size": -0.849,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.626250856613892e-06,
     "data_type": "continuous"
   },
@@ -8811,7 +8811,7 @@
     "affected": null,
     "p_value": 0.139582,
     "effect_size": -0.9616,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.626250856613892e-06,
     "data_type": "continuous"
   },
@@ -8830,7 +8830,7 @@
     "affected": null,
     "p_value": 9.1e-05,
     "effect_size": -2.5859,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 3.626250856613892e-06,
     "data_type": "continuous"
   },
@@ -8849,7 +8849,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.80165822942403e-07,
     "data_type": "continuous"
   },
@@ -8868,7 +8868,7 @@
     "affected": null,
     "p_value": 0.155431,
     "effect_size": -0.9501,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.80165822942403e-07,
     "data_type": "continuous"
   },
@@ -8887,7 +8887,7 @@
     "affected": null,
     "p_value": 0.29169,
     "effect_size": -0.7921,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.80165822942403e-07,
     "data_type": "continuous"
   },
@@ -8906,7 +8906,7 @@
     "affected": null,
     "p_value": 0.0,
     "effect_size": -3.9683,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.80165822942403e-07,
     "data_type": "continuous"
   },
@@ -8925,7 +8925,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0016157666599302502,
     "data_type": "continuous"
   },
@@ -8944,7 +8944,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.1699,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0016157666599302502,
     "data_type": "continuous"
   },
@@ -8963,7 +8963,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.368,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0016157666599302502,
     "data_type": "continuous"
   },
@@ -8982,7 +8982,7 @@
     "affected": null,
     "p_value": 9.5e-05,
     "effect_size": -2.4633,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0016157666599302502,
     "data_type": "continuous"
   },
@@ -9001,7 +9001,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 9.93232052737637e-06,
     "data_type": "continuous"
   },
@@ -9020,7 +9020,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.4061,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 9.93232052737637e-06,
     "data_type": "continuous"
   },
@@ -9039,7 +9039,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2513,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 9.93232052737637e-06,
     "data_type": "continuous"
   },
@@ -9058,7 +9058,7 @@
     "affected": null,
     "p_value": 0.000322,
     "effect_size": -2.6327,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 9.93232052737637e-06,
     "data_type": "continuous"
   },
@@ -9077,7 +9077,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0021167062381650943,
     "data_type": "continuous"
   },
@@ -9096,7 +9096,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.0116,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0021167062381650943,
     "data_type": "continuous"
   },
@@ -9115,7 +9115,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2297,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0021167062381650943,
     "data_type": "continuous"
   },
@@ -9134,7 +9134,7 @@
     "affected": null,
     "p_value": 0.000325,
     "effect_size": -2.2835,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0021167062381650943,
     "data_type": "continuous"
   },
@@ -9153,7 +9153,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.20686093767817e-05,
     "data_type": "continuous"
   },
@@ -9172,7 +9172,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2752,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.20686093767817e-05,
     "data_type": "continuous"
   },
@@ -9191,7 +9191,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0357,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.20686093767817e-05,
     "data_type": "continuous"
   },
@@ -9210,7 +9210,7 @@
     "affected": null,
     "p_value": 8e-06,
     "effect_size": -3.3597,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.20686093767817e-05,
     "data_type": "continuous"
   },
@@ -9305,7 +9305,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.545865901038855e-06,
     "data_type": "continuous"
   },
@@ -9324,7 +9324,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0005,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.545865901038855e-06,
     "data_type": "continuous"
   },
@@ -9343,7 +9343,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.3106,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.545865901038855e-06,
     "data_type": "continuous"
   },
@@ -9362,7 +9362,7 @@
     "affected": null,
     "p_value": 3e-06,
     "effect_size": -3.4838,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.545865901038855e-06,
     "data_type": "continuous"
   },
@@ -9381,7 +9381,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.002363512653330996,
     "data_type": "continuous"
   },
@@ -9400,7 +9400,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.1761,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.002363512653330996,
     "data_type": "continuous"
   },
@@ -9419,7 +9419,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.3288,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.002363512653330996,
     "data_type": "continuous"
   },
@@ -9438,7 +9438,7 @@
     "affected": null,
     "p_value": 0.000693,
     "effect_size": -2.0506,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.002363512653330996,
     "data_type": "continuous"
   },
@@ -9533,7 +9533,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.008295636320294545,
     "data_type": "continuous"
   },
@@ -9552,7 +9552,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2268,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.008295636320294545,
     "data_type": "continuous"
   },
@@ -9571,7 +9571,7 @@
     "affected": null,
     "p_value": 0.766663,
     "effect_size": 0.5257,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.008295636320294545,
     "data_type": "continuous"
   },
@@ -9590,7 +9590,7 @@
     "affected": null,
     "p_value": 0.000358,
     "effect_size": -2.2415,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.008295636320294545,
     "data_type": "continuous"
   },
@@ -9609,7 +9609,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.18808558605598e-06,
     "data_type": "continuous"
   },
@@ -9628,7 +9628,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.1637,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.18808558605598e-06,
     "data_type": "continuous"
   },
@@ -9647,7 +9647,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.3551,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.18808558605598e-06,
     "data_type": "continuous"
   },
@@ -9666,7 +9666,7 @@
     "affected": null,
     "p_value": 1e-06,
     "effect_size": -4.1648,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 5.18808558605598e-06,
     "data_type": "continuous"
   },
@@ -9685,7 +9685,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0016997821187027709,
     "data_type": "continuous"
   },
@@ -9704,7 +9704,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2017,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0016997821187027709,
     "data_type": "continuous"
   },
@@ -9723,7 +9723,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2323,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0016997821187027709,
     "data_type": "continuous"
   },
@@ -9742,7 +9742,7 @@
     "affected": null,
     "p_value": 0.000408,
     "effect_size": -2.1714,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.0016997821187027709,
     "data_type": "continuous"
   },
@@ -9761,7 +9761,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.4918959419138308e-05,
     "data_type": "continuous"
   },
@@ -9780,7 +9780,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2264,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.4918959419138308e-05,
     "data_type": "continuous"
   },
@@ -9799,7 +9799,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.302,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.4918959419138308e-05,
     "data_type": "continuous"
   },
@@ -9818,7 +9818,7 @@
     "affected": null,
     "p_value": 1.6e-05,
     "effect_size": -3.6165,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 1.4918959419138308e-05,
     "data_type": "continuous"
   },
@@ -9856,7 +9856,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00015157736215034507,
     "data_type": "continuous"
   },
@@ -9875,7 +9875,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.2582,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00015157736215034507,
     "data_type": "continuous"
   },
@@ -9894,7 +9894,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.1368,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00015157736215034507,
     "data_type": "continuous"
   },
@@ -9913,7 +9913,7 @@
     "affected": null,
     "p_value": 9e-06,
     "effect_size": -3.096,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00015157736215034507,
     "data_type": "continuous"
   },
@@ -10008,7 +10008,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 2.9101429564719534e-05,
     "data_type": "continuous"
   },
@@ -10027,7 +10027,7 @@
     "affected": null,
     "p_value": 0.412349,
     "effect_size": -0.6952,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 2.9101429564719534e-05,
     "data_type": "continuous"
   },
@@ -10046,7 +10046,7 @@
     "affected": null,
     "p_value": 0.011222,
     "effect_size": 1.7115,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 2.9101429564719534e-05,
     "data_type": "continuous"
   },
@@ -10065,7 +10065,7 @@
     "affected": null,
     "p_value": 0.002713,
     "effect_size": 2.1161,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 2.9101429564719534e-05,
     "data_type": "continuous"
   },
@@ -10084,7 +10084,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.006369547943730658,
     "data_type": "continuous"
   },
@@ -10103,7 +10103,7 @@
     "affected": null,
     "p_value": 0.542185,
     "effect_size": -0.6248,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.006369547943730658,
     "data_type": "continuous"
   },
@@ -10122,7 +10122,7 @@
     "affected": null,
     "p_value": 0.926572,
     "effect_size": -0.4705,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.006369547943730658,
     "data_type": "continuous"
   },
@@ -10141,7 +10141,7 @@
     "affected": null,
     "p_value": 0.013737,
     "effect_size": -1.4809,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.006369547943730658,
     "data_type": "continuous"
   },
@@ -10160,7 +10160,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.000142674629817101,
     "data_type": "continuous"
   },
@@ -10179,7 +10179,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.0026,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.000142674629817101,
     "data_type": "continuous"
   },
@@ -10198,7 +10198,7 @@
     "affected": null,
     "p_value": 0.026193,
     "effect_size": 1.3796,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.000142674629817101,
     "data_type": "continuous"
   },
@@ -10217,7 +10217,7 @@
     "affected": null,
     "p_value": 0.003823,
     "effect_size": 1.758,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.000142674629817101,
     "data_type": "continuous"
   },
@@ -10388,7 +10388,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.000871849717988913,
     "data_type": "continuous"
   },
@@ -10407,7 +10407,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.3021,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.000871849717988913,
     "data_type": "continuous"
   },
@@ -10426,7 +10426,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.317,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.000871849717988913,
     "data_type": "continuous"
   },
@@ -10445,7 +10445,7 @@
     "affected": null,
     "p_value": 0.021947,
     "effect_size": 1.3518,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.000871849717988913,
     "data_type": "continuous"
   },
@@ -10464,7 +10464,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 6.627833752504604e-05,
     "data_type": "continuous"
   },
@@ -10483,7 +10483,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.101,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 6.627833752504604e-05,
     "data_type": "continuous"
   },
@@ -10502,7 +10502,7 @@
     "affected": null,
     "p_value": 0.000892,
     "effect_size": 2.2482,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 6.627833752504604e-05,
     "data_type": "continuous"
   },
@@ -10521,7 +10521,7 @@
     "affected": null,
     "p_value": 0.016579,
     "effect_size": 1.5299,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 6.627833752504604e-05,
     "data_type": "continuous"
   },
@@ -10540,7 +10540,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.03559048750431143,
     "data_type": "continuous"
   },
@@ -10559,7 +10559,7 @@
     "affected": null,
     "p_value": 0.56956,
     "effect_size": -0.625,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.03559048750431143,
     "data_type": "continuous"
   },
@@ -10578,7 +10578,7 @@
     "affected": null,
     "p_value": 0.399236,
     "effect_size": -0.7286,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.03559048750431143,
     "data_type": "continuous"
   },
@@ -10597,7 +10597,7 @@
     "affected": null,
     "p_value": 0.514128,
     "effect_size": -0.6378,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.03559048750431143,
     "data_type": "continuous"
   },
@@ -10616,7 +10616,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0002998664561281346,
     "data_type": "continuous"
   },
@@ -10635,7 +10635,7 @@
     "affected": null,
     "p_value": 0.059244,
     "effect_size": -1.1483,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0002998664561281346,
     "data_type": "continuous"
   },
@@ -10654,7 +10654,7 @@
     "affected": null,
     "p_value": 0.040997,
     "effect_size": 1.3438,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0002998664561281346,
     "data_type": "continuous"
   },
@@ -10673,7 +10673,7 @@
     "affected": null,
     "p_value": 0.021433,
     "effect_size": 1.4805,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0002998664561281346,
     "data_type": "continuous"
   },
@@ -10692,7 +10692,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.234351046846569e-06,
     "data_type": "continuous"
   },
@@ -10711,7 +10711,7 @@
     "affected": null,
     "p_value": 0.216572,
     "effect_size": -0.8782,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.234351046846569e-06,
     "data_type": "continuous"
   },
@@ -10730,7 +10730,7 @@
     "affected": null,
     "p_value": 0.184236,
     "effect_size": -0.8992,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.234351046846569e-06,
     "data_type": "continuous"
   },
@@ -10749,7 +10749,7 @@
     "affected": null,
     "p_value": 2.8e-05,
     "effect_size": -2.7217,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 2.234351046846569e-06,
     "data_type": "continuous"
   },
@@ -10768,7 +10768,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 6.447083508342361e-06,
     "data_type": "continuous"
   },
@@ -10787,7 +10787,7 @@
     "affected": null,
     "p_value": 0.651919,
     "effect_size": -0.5725,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 6.447083508342361e-06,
     "data_type": "continuous"
   },
@@ -10806,7 +10806,7 @@
     "affected": null,
     "p_value": 0.034415,
     "effect_size": 1.3777,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 6.447083508342361e-06,
     "data_type": "continuous"
   },
@@ -10825,7 +10825,7 @@
     "affected": null,
     "p_value": 0.00021,
     "effect_size": 2.7265,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 6.447083508342361e-06,
     "data_type": "continuous"
   },
@@ -10844,7 +10844,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.408905558526742e-05,
     "data_type": "continuous"
   },
@@ -10863,7 +10863,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.4164,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.408905558526742e-05,
     "data_type": "continuous"
   },
@@ -10882,7 +10882,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2857,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.408905558526742e-05,
     "data_type": "continuous"
   },
@@ -10901,7 +10901,7 @@
     "affected": null,
     "p_value": 0.000398,
     "effect_size": -2.222,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 6.408905558526742e-05,
     "data_type": "continuous"
   },
@@ -10920,7 +10920,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 1.459990710998431e-05,
     "data_type": "continuous"
   },
@@ -10939,7 +10939,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": 0.3651,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 1.459990710998431e-05,
     "data_type": "continuous"
   },
@@ -10958,7 +10958,7 @@
     "affected": null,
     "p_value": 0.474016,
     "effect_size": 0.6729,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 1.459990710998431e-05,
     "data_type": "continuous"
   },
@@ -10977,7 +10977,7 @@
     "affected": null,
     "p_value": 0.000997,
     "effect_size": 2.3553,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 1.459990710998431e-05,
     "data_type": "continuous"
   },
@@ -11072,7 +11072,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.003159713564754035,
     "data_type": "continuous"
   },
@@ -11091,7 +11091,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.3398,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.003159713564754035,
     "data_type": "continuous"
   },
@@ -11110,7 +11110,7 @@
     "affected": null,
     "p_value": 0.145771,
     "effect_size": 0.9799,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.003159713564754035,
     "data_type": "continuous"
   },
@@ -11129,7 +11129,7 @@
     "affected": null,
     "p_value": 0.069672,
     "effect_size": 1.1383,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.003159713564754035,
     "data_type": "continuous"
   },
@@ -11148,7 +11148,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.022377442192867684,
     "data_type": "continuous"
   },
@@ -11167,7 +11167,7 @@
     "affected": null,
     "p_value": 0.017967,
     "effect_size": -1.4553,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.022377442192867684,
     "data_type": "continuous"
   },
@@ -11186,7 +11186,7 @@
     "affected": null,
     "p_value": 0.024684,
     "effect_size": 1.4843,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.022377442192867684,
     "data_type": "continuous"
   },
@@ -11205,7 +11205,7 @@
     "affected": null,
     "p_value": 0.130708,
     "effect_size": 1.0372,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.022377442192867684,
     "data_type": "continuous"
   },
@@ -11452,7 +11452,7 @@
     "affected": null,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.12441770627066645,
     "data_type": "continuous"
   },
@@ -11471,7 +11471,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2197,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.12441770627066645,
     "data_type": "continuous"
   },
@@ -11490,7 +11490,7 @@
     "affected": null,
     "p_value": 1.0,
     "effect_size": -0.2206,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.12441770627066645,
     "data_type": "continuous"
   },
@@ -11509,7 +11509,7 @@
     "affected": null,
     "p_value": 0.384246,
     "effect_size": 0.7143,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.12441770627066645,
     "data_type": "continuous"
   },
@@ -11680,7 +11680,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11699,7 +11699,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11718,7 +11718,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11737,7 +11737,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11756,7 +11756,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11775,7 +11775,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11794,7 +11794,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11813,7 +11813,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12288,7 +12288,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12307,7 +12307,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12326,7 +12326,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12345,7 +12345,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12364,7 +12364,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12383,7 +12383,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12402,7 +12402,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12421,7 +12421,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12592,7 +12592,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12611,7 +12611,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12630,7 +12630,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12649,7 +12649,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12668,7 +12668,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12687,7 +12687,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12706,7 +12706,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12725,7 +12725,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12896,7 +12896,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12915,7 +12915,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12934,7 +12934,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12953,7 +12953,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12972,7 +12972,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12991,7 +12991,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -13010,7 +13010,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -13029,7 +13029,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -13048,7 +13048,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -13067,7 +13067,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -13086,7 +13086,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -13105,7 +13105,7 @@
     "affected": 5,
     "p_value": 0.06126482213438734,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -13124,7 +13124,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -13143,7 +13143,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -13162,7 +13162,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -13181,7 +13181,7 @@
     "affected": 5,
     "p_value": 0.06126482213438734,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -13732,7 +13732,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13751,7 +13751,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13770,7 +13770,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13789,7 +13789,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13808,7 +13808,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13827,7 +13827,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13846,7 +13846,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13865,7 +13865,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -15480,7 +15480,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.06583524760876891,
     "data_type": "incidence"
   },
@@ -15499,7 +15499,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.06583524760876891,
     "data_type": "incidence"
   },
@@ -15518,7 +15518,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.06583524760876891,
     "data_type": "incidence"
   },
@@ -15537,7 +15537,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.06583524760876891,
     "data_type": "incidence"
   },
@@ -15556,7 +15556,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -15575,7 +15575,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -15594,7 +15594,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -15613,7 +15613,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -15632,7 +15632,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 2.8060298010945672e-05,
     "data_type": "incidence"
   },
@@ -15651,7 +15651,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 2.8060298010945672e-05,
     "data_type": "incidence"
   },
@@ -15670,7 +15670,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 2.8060298010945672e-05,
     "data_type": "incidence"
   },
@@ -15689,7 +15689,7 @@
     "affected": 9,
     "p_value": 0.0027851540033529535,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 2.8060298010945672e-05,
     "data_type": "incidence"
   },
@@ -15708,7 +15708,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0009207662070622735,
     "data_type": "incidence"
   },
@@ -15727,7 +15727,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0009207662070622735,
     "data_type": "incidence"
   },
@@ -15746,7 +15746,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0009207662070622735,
     "data_type": "incidence"
   },
@@ -15765,7 +15765,7 @@
     "affected": 6,
     "p_value": 0.050790513833992086,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0009207662070622735,
     "data_type": "incidence"
   },
@@ -16240,7 +16240,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16259,7 +16259,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16278,7 +16278,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16297,7 +16297,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16316,7 +16316,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16335,7 +16335,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16354,7 +16354,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16373,7 +16373,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16544,7 +16544,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16563,7 +16563,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16582,7 +16582,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16601,7 +16601,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16620,7 +16620,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16639,7 +16639,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16658,7 +16658,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16677,7 +16677,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17684,7 +17684,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17703,7 +17703,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17722,7 +17722,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17741,7 +17741,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17760,7 +17760,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17779,7 +17779,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17798,7 +17798,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17817,7 +17817,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -19204,7 +19204,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -19223,7 +19223,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -19242,7 +19242,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -19261,7 +19261,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -20724,7 +20724,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -20743,7 +20743,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -20762,7 +20762,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -20781,7 +20781,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21028,7 +21028,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21047,7 +21047,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21066,7 +21066,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21085,7 +21085,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21484,7 +21484,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -21503,7 +21503,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -21522,7 +21522,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -21541,7 +21541,7 @@
     "affected": 5,
     "p_value": 0.06126482213438734,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0027484073720056568,
     "data_type": "incidence"
   },
@@ -21560,7 +21560,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.008001010452240553,
     "data_type": "incidence"
   },
@@ -21579,7 +21579,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.008001010452240553,
     "data_type": "incidence"
   },
@@ -21598,7 +21598,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.008001010452240553,
     "data_type": "incidence"
   },
@@ -21617,7 +21617,7 @@
     "affected": 4,
     "p_value": 0.12450592885375493,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.008001010452240553,
     "data_type": "incidence"
   },
@@ -21636,7 +21636,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21655,7 +21655,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21674,7 +21674,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21693,7 +21693,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22320,7 +22320,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22339,7 +22339,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22358,7 +22358,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22377,7 +22377,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22624,7 +22624,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.022934030391992044,
     "data_type": "incidence"
   },
@@ -22643,7 +22643,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.022934030391992044,
     "data_type": "incidence"
   },
@@ -22662,7 +22662,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.022934030391992044,
     "data_type": "incidence"
   },
@@ -22681,7 +22681,7 @@
     "affected": 3,
     "p_value": 0.25,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.022934030391992044,
     "data_type": "incidence"
   },
@@ -22700,7 +22700,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22719,7 +22719,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22738,7 +22738,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22757,7 +22757,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22852,7 +22852,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22871,7 +22871,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22890,7 +22890,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22909,7 +22909,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23156,7 +23156,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23175,7 +23175,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23194,7 +23194,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23213,7 +23213,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23232,7 +23232,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23251,7 +23251,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23270,7 +23270,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23289,7 +23289,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23308,7 +23308,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23327,7 +23327,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23346,7 +23346,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23365,7 +23365,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -24296,7 +24296,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0014197194383258616,
     "data_type": "incidence"
   },
@@ -24315,7 +24315,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0014197194383258616,
     "data_type": "incidence"
   },
@@ -24334,7 +24334,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0014197194383258616,
     "data_type": "incidence"
   },
@@ -24353,7 +24353,7 @@
     "affected": 6,
     "p_value": 0.050790513833992086,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0014197194383258616,
     "data_type": "incidence"
   },
@@ -24448,7 +24448,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.012291268923231957,
     "data_type": "incidence"
   },
@@ -24467,7 +24467,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.012291268923231957,
     "data_type": "incidence"
   },
@@ -24486,7 +24486,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.012291268923231957,
     "data_type": "incidence"
   },
@@ -24505,7 +24505,7 @@
     "affected": 4,
     "p_value": 0.12450592885375493,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.012291268923231957,
     "data_type": "incidence"
   },
@@ -24676,7 +24676,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -24695,7 +24695,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -24714,7 +24714,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -24733,7 +24733,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },

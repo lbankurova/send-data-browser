@@ -95,29 +95,88 @@ def _classify_from_steps(steps: list[str]) -> str:
         if not has_flat:
             return "monotonic_increase" if d == "up" else "monotonic_decrease"
         else:
-            return "threshold"
+            return "threshold_increase" if d == "up" else "threshold_decrease"
 
     # Mixed directions
     return "non_monotonic"
 
 
-def classify_dose_response(group_stats: list[dict], data_type: str = "continuous") -> str:
+def _compute_confidence(steps: list[str], means: list[float], pooled_sd: float) -> str:
+    """Pattern-specific confidence: how clean is the classification?
+
+    Factors:
+    1. Max effect magnitude (Cohen's d from control)
+    2. Raw step cleanliness (without equivalence band)
+
+    Returns HIGH, MODERATE, or LOW.
+    """
+    control = means[0]
+    treated = means[1:]
+    sd = pooled_sd if pooled_sd > 0 else 1
+
+    # Factor 1: max effect magnitude (Cohen's d)
+    max_d = max(abs(t - control) / sd for t in treated) if treated else 0
+    score = 0
+    if max_d >= 2.0:
+        score += 2
+    elif max_d >= 0.8:
+        score += 1
+
+    # Factor 2: raw step cleanliness (without equivalence band)
+    raw_steps = []
+    for i in range(len(means) - 1):
+        if means[i + 1] > means[i]:
+            raw_steps.append("up")
+        elif means[i + 1] < means[i]:
+            raw_steps.append("down")
+        else:
+            raw_steps.append("flat")
+    raw_non_flat = [s for s in raw_steps if s != "flat"]
+    raw_dirs = set(raw_non_flat)
+    if len(raw_dirs) <= 1:
+        score += 1  # naturally monotonic even without band
+
+    if score >= 3:
+        return "HIGH"
+    if score >= 1:
+        return "MODERATE"
+    return "LOW"
+
+
+def _find_onset_dose_level(steps: list[str]) -> int | None:
+    """Find dose_level of the first non-flat step (onset of effect).
+
+    Steps[0] = control→dose_level 1, Steps[1] = dose_level 1→dose_level 2, etc.
+    Returns the dose_level (1-based group index) where the effect first appears.
+    Returns None if all flat.
+    """
+    for i, s in enumerate(steps):
+        if s != "flat":
+            return i + 1  # dose_level of the target group
+    return None
+
+
+def classify_dose_response(group_stats: list[dict], data_type: str = "continuous") -> dict:
     """Classify dose-response pattern using equivalence-band noise tolerance.
 
     For continuous data, differences within 0.5× pooled SD are treated as
     equivalent ("flat") rather than directional, preventing sampling noise
     from producing false non-monotonic classifications.
 
-    Returns one of: 'monotonic_increase', 'monotonic_decrease',
-    'threshold', 'non_monotonic', 'flat', 'insufficient_data'.
+    Returns dict with:
+      pattern: one of 'monotonic_increase', 'monotonic_decrease',
+               'threshold_increase', 'threshold_decrease',
+               'non_monotonic', 'flat', 'insufficient_data'
+      confidence: 'HIGH', 'MODERATE', 'LOW', or None (categorical)
+      onset_dose_level: int or None (threshold patterns only)
     """
     if not group_stats or len(group_stats) < 2:
-        return "insufficient_data"
+        return {"pattern": "insufficient_data", "confidence": None, "onset_dose_level": None}
 
     if data_type == "continuous":
         means = [g.get("mean") for g in group_stats]
         if any(m is None for m in means) or len(means) < 2:
-            return "insufficient_data"
+            return {"pattern": "insufficient_data", "confidence": None, "onset_dose_level": None}
 
         pooled = max(_pooled_sd(group_stats), _MIN_POOLED_SD)
         band = _EQUIVALENCE_FRACTION * pooled
@@ -127,39 +186,43 @@ def classify_dose_response(group_stats: list[dict], data_type: str = "continuous
         for i in range(len(means) - 1):
             steps.append(_step_direction(means[i], means[i + 1], band))
 
-        return _classify_from_steps(steps)
+        pattern = _classify_from_steps(steps)
+        confidence = _compute_confidence(steps, means, pooled)
+        onset = _find_onset_dose_level(steps) if pattern.startswith("threshold") else None
+
+        return {"pattern": pattern, "confidence": confidence, "onset_dose_level": onset}
     else:
         # Categorical/incidence data: use original consecutive-diff approach
         # (no SD available; 1% control threshold is appropriate for proportions)
         values = [g.get("incidence", g.get("affected", 0)) for g in group_stats]
         if len(values) < 2:
-            return "insufficient_data"
+            return {"pattern": "insufficient_data", "confidence": None, "onset_dose_level": None}
 
         control_val = values[0] if values[0] is not None else 0
         min_threshold = abs(control_val) * 0.01 if abs(control_val) > 1e-10 else 1e-10
 
         diffs = [values[i + 1] - values[i] for i in range(len(values) - 1)]
 
+        pattern = "non_monotonic"
         if all(abs(d) <= min_threshold for d in diffs):
-            return "flat"
-        if all(d > min_threshold for d in diffs):
-            return "monotonic_increase"
-        if all(d < -min_threshold for d in diffs):
-            return "monotonic_decrease"
-
-        # Check for threshold: flat then increase/decrease
-        if len(diffs) >= 2:
+            pattern = "flat"
+        elif all(d > min_threshold for d in diffs):
+            pattern = "monotonic_increase"
+        elif all(d < -min_threshold for d in diffs):
+            pattern = "monotonic_decrease"
+        elif len(diffs) >= 2:
+            # Check for threshold: flat then increase/decrease
             first_nonzero = next(
                 (i for i, d in enumerate(diffs) if abs(d) > min_threshold), None
             )
             if first_nonzero is not None and first_nonzero > 0:
                 remaining = diffs[first_nonzero:]
-                if all(d > min_threshold for d in remaining) or all(
-                    d < -min_threshold for d in remaining
-                ):
-                    return "threshold"
+                if all(d > min_threshold for d in remaining):
+                    pattern = "threshold_increase"
+                elif all(d < -min_threshold for d in remaining):
+                    pattern = "threshold_decrease"
 
-        return "non_monotonic"
+        return {"pattern": pattern, "confidence": None, "onset_dose_level": None}
 
 
 def determine_treatment_related(finding: dict) -> bool:

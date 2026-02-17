@@ -160,11 +160,19 @@ def _build_dose_response(finding: dict, dose_groups: list[dict]) -> dict:
 
         bars.append(bar)
 
+    onset_dose_level = finding.get("onset_dose_level")
+    onset_dg = next(
+        (d for d in dose_groups if d.get("dose_level") == onset_dose_level), {}
+    ) if onset_dose_level else {}
+
     return {
         "pattern": finding.get("dose_response_pattern", "unknown"),
         "direction": finding.get("direction"),
         "bars": bars,
         "trend_p": finding.get("trend_p"),
+        "pattern_confidence": finding.get("pattern_confidence"),
+        "onset_dose_value": onset_dg.get("dose_value") if onset_dose_level else None,
+        "onset_dose_unit": onset_dg.get("dose_unit") if onset_dose_level else None,
     }
 
 
