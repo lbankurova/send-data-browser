@@ -135,6 +135,7 @@ export function buildFindingsQuadrantOption(
       value: [pt.x, pt.y],
       name: pt.endpoint_label,
       _meta: pt,
+      _outOfScope: isOutOfScope,
       symbolSize,
       symbol,
       itemStyle: {
@@ -143,14 +144,16 @@ export function buildFindingsQuadrantOption(
         borderColor: isSelected ? "#1F2937" : isClinical ? "#6B7280" : "transparent",
         borderWidth: isSelected ? 2 : isClinical ? 1 : 0,
       },
-      emphasis: {
-        symbolSize: 8,
-        itemStyle: {
-          opacity: 0.8,
-          borderColor: "#6B7280",
-          borderWidth: 1,
-        },
-      },
+      emphasis: isOutOfScope
+        ? { disabled: true }
+        : {
+            symbolSize: 8,
+            itemStyle: {
+              opacity: 0.8,
+              borderColor: "#6B7280",
+              borderWidth: 1,
+            },
+          },
     };
   });
 
@@ -186,6 +189,7 @@ export function buildFindingsQuadrantOption(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const item = params as any;
         if (!item?.data?._meta) return "";
+        if (item.data._outOfScope) return "";
         const meta = item.data._meta as QuadrantPoint;
         const domainColor = getDomainHexColor(meta.domain);
         const sevLabel = meta.worstSeverity === "adverse" ? "adverse" : meta.worstSeverity === "warning" ? "warning" : "normal";
