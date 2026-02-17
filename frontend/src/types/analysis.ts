@@ -152,6 +152,8 @@ export interface FindingContext {
       domain: string;
       rho: number;
       p_value: number | null;
+      n?: number | null;
+      basis?: string | null;
     }>;
     total_correlations: number;
     insights: Insight[];

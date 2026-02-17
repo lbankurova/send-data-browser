@@ -122,13 +122,22 @@ function computeOrganNoaelDisplay(
       continue;
     }
 
-    // Pick finding with most pairwise data
-    const bestFinding = epFindings.reduce((best, f) => {
-      return (f.pairwise?.length ?? 0) > (best.pairwise?.length ?? 0) ? f : best;
-    });
+    // Aggregate pairwise across ALL findings (both sexes) — take min p-value per dose
+    const doseMinP = new Map<number, number>();
+    let hasPairwise = false;
+    for (const f of epFindings) {
+      for (const pw of f.pairwise ?? []) {
+        if (pw.dose_level <= 0) continue;
+        hasPairwise = true;
+        const p = pw.p_value_adj ?? pw.p_value;
+        if (p != null) {
+          const prev = doseMinP.get(pw.dose_level);
+          if (prev == null || p < prev) doseMinP.set(pw.dose_level, p);
+        }
+      }
+    }
 
-    const pairwise = bestFinding.pairwise ?? [];
-    if (pairwise.length === 0) {
+    if (!hasPairwise) {
       results.push({
         endpoint_label: label,
         noaelLabel: "No stats",
@@ -138,16 +147,15 @@ function computeOrganNoaelDisplay(
       continue;
     }
 
-    // Sort pairwise by dose_level ascending (skip level 0 = control)
-    const sorted = [...pairwise]
-      .filter(pw => pw.dose_level > 0)
-      .sort((a, b) => a.dose_level - b.dose_level);
+    // Sort dose levels ascending
+    const sorted = [...doseMinP.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([dose_level, p]) => ({ dose_level, p }));
 
     // Find LOAEL
     let loaelIdx = -1;
     for (let i = 0; i < sorted.length; i++) {
-      const p = sorted[i].p_value_adj ?? sorted[i].p_value;
-      if (p != null && p < 0.05) {
+      if (sorted[i].p < 0.05) {
         loaelIdx = i;
         break;
       }
@@ -287,17 +295,23 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
     const domainNames = significantDomains.map(d => DOMAIN_DESCRIPTIONS[d.toUpperCase()] ?? d);
     const organName = titleCase(organKey);
 
+    // Domains present in the organ but all findings are normal
+    const normalOnlyDomains = domains.filter(d => !significantDomains.includes(d));
+    const normalSuffix = normalOnlyDomains.length > 0
+      ? ` ${normalOnlyDomains.join(", ")} findings all normal.`
+      : "";
+
     if (significantDomains.length >= 3) {
-      return `${domainNames.join(", ")} all indicate ${organName.toLowerCase()} effects. This cross-domain convergence strengthens the weight of evidence for ${organName.toLowerCase()} as a target organ.`;
+      return `${domainNames.join(", ")} all indicate ${organName.toLowerCase()} effects. This cross-domain convergence strengthens the weight of evidence for ${organName.toLowerCase()} as a target organ.${normalSuffix}`;
     }
     if (significantDomains.length === 2) {
-      return `${domainNames[0]} and ${domainNames[1]} both show ${organName.toLowerCase()} effects, providing convergent evidence.`;
+      return `${domainNames[0]} and ${domainNames[1]} both show ${organName.toLowerCase()} effects, providing convergent evidence.${normalSuffix}`;
     }
     if (significantDomains.length === 1) {
-      return `Evidence limited to ${domainNames[0]} findings only. No corroborating data from other domains.`;
+      return `Evidence limited to ${domainNames[0]} findings only. No corroborating data from other domains.${normalSuffix}`;
     }
     return "No adverse or warning findings in this organ system.";
-  }, [domainBreakdown, organKey]);
+  }, [domainBreakdown, domains, organKey]);
 
   // ── Organ NOAEL pane data ────────────────────────────────
   const noaelData = useMemo(() => {

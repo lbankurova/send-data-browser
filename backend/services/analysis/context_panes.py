@@ -182,6 +182,8 @@ def _build_correlations(finding_id: str, correlations: list[dict]) -> dict:
                 "domain": other_domain,
                 "rho": c["rho"],
                 "p_value": c["p_value"],
+                "n": c.get("n"),
+                "basis": c.get("basis"),
             })
 
     related.sort(key=lambda x: abs(x.get("rho", 0)), reverse=True)

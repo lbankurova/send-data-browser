@@ -223,7 +223,14 @@ export function VerdictPane({
   const noaelStr = noael
     ? noael.dose_value != null
       ? `NOAEL ${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}`
-      : "NOAEL not determined"
+      : (() => {
+          // All treatment doses significant — show "NOAEL < lowest dose"
+          const lowestDose = statistics?.rows?.[1]; // index 0 = control
+          if (lowestDose?.dose_value != null) {
+            return `NOAEL < ${lowestDose.dose_value} ${noael.dose_unit ?? "mg/kg"} (all tested doses significant)`;
+          }
+          return "NOAEL below tested range";
+        })()
     : null;
 
   // Key numbers
