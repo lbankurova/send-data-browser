@@ -35,7 +35,7 @@ def build_finding_context(finding: dict, all_findings: list[dict], correlations:
     dose_response["insights"] = dose_response_insights(finding, dose_groups)
 
     # 4. Correlations pane
-    corr_pane = _build_correlations(finding_id, correlations)
+    corr_pane = _build_correlations(finding_id, finding, correlations)
     corr_pane["insights"] = correlations_insights(finding, corr_pane)
 
     # 5. Effect Size pane
@@ -168,18 +168,49 @@ def _build_dose_response(finding: dict, dose_groups: list[dict]) -> dict:
     }
 
 
-def _build_correlations(finding_id: str, correlations: list[dict]) -> dict:
-    """Correlations pane: related findings."""
+def _build_correlations(finding_id: str, finding: dict, correlations: list[dict]) -> dict:
+    """Correlations pane: related findings.
+
+    Matches by endpoint key (domain_testcode_day) so both M and F findings
+    for the same endpoint see the same correlations.
+    """
+    ep_key = f"{finding.get('domain', '')}_{finding.get('test_code', '')}_{finding.get('day', '')}"
+    sex = finding.get("sex")
+
     related = []
     for c in correlations:
-        if c.get("finding_id_1") == finding_id or c.get("finding_id_2") == finding_id:
-            other_id = c["finding_id_2"] if c["finding_id_1"] == finding_id else c["finding_id_1"]
-            other_name = c["endpoint_2"] if c["finding_id_1"] == finding_id else c["endpoint_1"]
-            other_domain = c["domain_2"] if c["finding_id_1"] == finding_id else c["domain_1"]
+        # Match by endpoint key (new) or finding_id list (new) or legacy finding_id (backward compat)
+        is_side_1 = (
+            c.get("endpoint_key_1") == ep_key
+            or finding_id in c.get("finding_ids_1", [])
+            or c.get("finding_id_1") == finding_id
+        )
+        is_side_2 = (
+            c.get("endpoint_key_2") == ep_key
+            or finding_id in c.get("finding_ids_2", [])
+            or c.get("finding_id_2") == finding_id
+        )
+
+        if is_side_1:
+            # Pick a finding_id from the other side, preferring same sex
+            other_ids = c.get("finding_ids_2", [])
+            other_id = c.get("finding_id_2", other_ids[0] if other_ids else "")
             related.append({
                 "finding_id": other_id,
-                "endpoint": other_name,
-                "domain": other_domain,
+                "endpoint": c["endpoint_2"],
+                "domain": c["domain_2"],
+                "rho": c["rho"],
+                "p_value": c["p_value"],
+                "n": c.get("n"),
+                "basis": c.get("basis"),
+            })
+        elif is_side_2:
+            other_ids = c.get("finding_ids_1", [])
+            other_id = c.get("finding_id_1", other_ids[0] if other_ids else "")
+            related.append({
+                "finding_id": other_id,
+                "endpoint": c["endpoint_1"],
+                "domain": c["domain_1"],
                 "rho": c["rho"],
                 "p_value": c["p_value"],
                 "n": c.get("n"),
