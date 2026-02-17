@@ -75,11 +75,13 @@ export function prepareQuadrantPoints(
   }
 
   return endpoints
-    .filter((ep) => ep.maxEffectSize != null && ep.minPValue != null && ep.minPValue > 0)
+    .filter((ep) => ep.maxEffectSize != null && ep.minPValue != null)
     .map((ep) => {
       const coh = organCoherence?.get(ep.organ_system);
       const syn = syndromeIndex.get(ep.endpoint_label.toLowerCase());
       const clinical = clinicalIndex.get(ep.endpoint_label.toLowerCase());
+      // Clamp p=0 to 1e-300 to avoid -log10(0)=Infinity
+      const safeP = Math.max(ep.minPValue!, 1e-300);
 
       return {
         endpoint_label: ep.endpoint_label,
@@ -88,7 +90,7 @@ export function prepareQuadrantPoints(
         worstSeverity: ep.worstSeverity,
         treatmentRelated: ep.treatmentRelated,
         x: Math.abs(ep.maxEffectSize!),
-        y: -Math.log10(ep.minPValue!),
+        y: -Math.log10(safeP),
         rawP: ep.minPValue!,
         coherenceSize: coh && coh.domainCount >= 3 ? 7 : undefined,
         syndromeId: syn?.id,
@@ -163,7 +165,7 @@ export function buildFindingsQuadrantOption(
       type: "value",
       min: 0,
       max: maxX,
-      axisLabel: { fontSize: 9, color: "#9CA3AF" },
+      axisLabel: { fontSize: 9, color: "#9CA3AF", formatter: (v: number) => v.toFixed(2) },
       splitLine: { lineStyle: { color: "#F3F4F6", type: "dashed" } },
       name: "|d|",
       nameLocation: "end",
@@ -173,7 +175,7 @@ export function buildFindingsQuadrantOption(
       type: "value",
       min: 0,
       max: maxY,
-      axisLabel: { fontSize: 9, color: "#9CA3AF" },
+      axisLabel: { fontSize: 9, color: "#9CA3AF", formatter: (v: number) => v.toFixed(2) },
       splitLine: { lineStyle: { color: "#F3F4F6", type: "dashed" } },
       name: "-log\u2081\u2080(p)",
       nameLocation: "end",
