@@ -119,10 +119,35 @@ const LAB_SYNONYMS: Record<string, string[]> = {
   URINE_SG: ["specific gravity", "urine specific gravity"],
 };
 
-export function resolveCanonical(endpointLabel: string): string | null {
-  const lower = endpointLabel.toLowerCase();
-  for (const [canonical, synonyms] of Object.entries(LAB_SYNONYMS)) {
-    if (synonyms.some((s) => lower.includes(s))) return canonical;
+/** Pre-compiled word-boundary patterns from LAB_SYNONYMS — avoids substring
+ *  false positives (e.g., "anc" in "pancreas" → NEUT, "ast" in "cast" → AST). */
+const LAB_SYNONYM_PATTERNS: [string, RegExp[]][] = Object.entries(LAB_SYNONYMS).map(
+  ([canonical, synonyms]) => [
+    canonical,
+    synonyms.map((s) => {
+      const escaped = s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(?:^|[\\s,;()])${escaped}(?:$|[\\s,;()])`, "i");
+    }),
+  ],
+);
+
+export function resolveCanonical(endpointLabel: string, testCode?: string): string | null {
+  // Priority 1: exact test code match (most reliable, no false positives)
+  if (testCode) {
+    const upper = testCode.toUpperCase();
+    // Direct canonical key match: most LBTESTCD values ARE the canonical
+    if (LAB_SYNONYMS[upper]) return upper;
+    // Check if test code appears in any synonym list
+    for (const [canonical, synonyms] of Object.entries(LAB_SYNONYMS)) {
+      if (synonyms.includes(upper.toLowerCase())) return canonical;
+    }
+  }
+
+  // Priority 2: word-boundary regex on label (fallback for MI/MA/OM or missing testCode)
+  // Pad with spaces so patterns can match at start/end
+  const padded = ` ${endpointLabel.toLowerCase()} `;
+  for (const [canonical, patterns] of LAB_SYNONYM_PATTERNS) {
+    if (patterns.some((re) => re.test(padded))) return canonical;
   }
   return null;
 }
@@ -474,26 +499,29 @@ function buildContext(
   const sexes = new Map<string, string[]>();
 
   for (const ep of endpoints) {
-    const canonical = resolveCanonical(ep.endpoint_label);
+    const canonical = resolveCanonical(ep.endpoint_label, ep.testCode);
     if (!canonical) continue;
     presentCanonicals.add(canonical);
 
+    // Atomic update: all fields follow the strongest endpoint (by |effectSize|).
+    // First endpoint for a canonical always gets through (existing == null).
     const absEffect = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : 0;
-    const existing = foldChanges.get(canonical) ?? 0;
-    if (absEffect > existing) foldChanges.set(canonical, absEffect);
-
-    if (ep.direction === "up" || ep.direction === "down") {
-      endpointDirection.set(canonical, ep.direction);
+    const existing = foldChanges.get(canonical);
+    if (existing == null || absEffect > existing) {
+      foldChanges.set(canonical, absEffect);
+      if (ep.direction === "up" || ep.direction === "down") {
+        endpointDirection.set(canonical, ep.direction);
+      }
+      endpointPattern.set(canonical, ep.pattern);
+      sexes.set(canonical, ep.sexes);
     }
 
+    // Severity always takes worst (independent of effect magnitude)
     const currentSev = endpointSeverity.get(canonical);
     if (!currentSev || ep.worstSeverity === "adverse" ||
         (ep.worstSeverity === "warning" && currentSev !== "adverse")) {
       endpointSeverity.set(canonical, ep.worstSeverity);
     }
-
-    endpointPattern.set(canonical, ep.pattern);
-    sexes.set(canonical, ep.sexes);
   }
 
   // Hepatic coherence
@@ -602,7 +630,7 @@ function getMatchedEndpoints(rule: LabRule, endpoints: EndpointSummary[]): strin
   const matched: string[] = [];
   for (const param of rule.parameters) {
     for (const ep of endpoints) {
-      const canonical = resolveCanonical(ep.endpoint_label);
+      const canonical = resolveCanonical(ep.endpoint_label, ep.testCode);
       if (canonical === param.canonical) {
         matched.push(ep.endpoint_label);
         break;
