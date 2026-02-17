@@ -254,7 +254,13 @@ export function FindingsView() {
                 {sep}
                 <span className="font-mono">|d|={formatEffectSize(selectedPointData.effectSize)}</span>
                 {sep}
-                <span className="font-mono">p={formatPValue(selectedPointData.rawP)}</span>
+                <span className="font-mono">
+                  p={formatPValue(selectedPointData.rawP)}
+                  {" "}
+                  <span className="font-normal text-muted-foreground/60">
+                    ({["LB", "BW", "OM", "FW"].includes(selectedPointData.domain) ? "Welch\u2019s" : "Fisher\u2019s"})
+                  </span>
+                </span>
               </>
             )}
             {!selectedPointData && hasMeta && (
