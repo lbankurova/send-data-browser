@@ -23,6 +23,8 @@ import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import { getSyndromeTermReport, getSyndromeDefinition } from "@/lib/cross-domain-syndromes";
 import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
+import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
+import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import type { FindingsFilters } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 
@@ -322,6 +324,9 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
           <EvidenceSummaryContent
             report={termReport}
             confidence={detected?.confidence ?? "LOW"}
+            labMatches={analytics.labMatches}
+            syndromeId={syndromeId}
+            allEndpoints={allEndpoints}
           />
         ) : (
           <p className="text-xs text-muted-foreground">No evidence data available.</p>
@@ -366,10 +371,17 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
 function EvidenceSummaryContent({
   report,
   confidence,
+  labMatches,
+  syndromeId,
+  allEndpoints,
 }: {
   report: NonNullable<ReturnType<typeof getSyndromeTermReport>>;
   confidence: "HIGH" | "MODERATE" | "LOW";
+  labMatches: LabClinicalMatch[];
+  syndromeId: string;
+  allEndpoints: EndpointSummary[];
 }) {
+  const isHepatic = syndromeId === "XS01" || syndromeId === "XS02";
   return (
     <div>
       {/* Confidence badge */}
@@ -388,7 +400,7 @@ function EvidenceSummaryContent({
         </div>
         <div className="mt-1 space-y-0.5">
           {report.requiredEntries.map((entry, i) => (
-            <TermChecklistRow key={`req-${i}`} entry={entry} />
+            <TermChecklistRow key={`req-${i}`} entry={entry} labMatches={labMatches} />
           ))}
         </div>
       </div>
@@ -402,10 +414,15 @@ function EvidenceSummaryContent({
           </div>
           <div className="mt-1 space-y-0.5">
             {report.supportingEntries.map((entry, i) => (
-              <TermChecklistRow key={`sup-${i}`} entry={entry} />
+              <TermChecklistRow key={`sup-${i}`} entry={entry} labMatches={labMatches} />
             ))}
           </div>
         </div>
+      )}
+
+      {/* Hy's Law assessment — XS01 and XS02 only */}
+      {isHepatic && (
+        <HysLawAssessment labMatches={labMatches} allEndpoints={allEndpoints} />
       )}
 
       {/* Domain coverage */}
@@ -423,8 +440,130 @@ function EvidenceSummaryContent({
   );
 }
 
+/** Hy's Law assessment block — shown for XS01 and XS02 syndromes */
+function HysLawAssessment({
+  labMatches,
+  allEndpoints,
+}: {
+  labMatches: LabClinicalMatch[];
+  allEndpoints: EndpointSummary[];
+}) {
+  // Hy's Law rules: L03 (concurrent ALT+Bilirubin), L07 (classic), L08 (animal pattern)
+  const HYS_RULES = ["L03", "L07", "L08"] as const;
+
+  // Check which endpoints are present/elevated
+  const altUp = allEndpoints.some(
+    (ep) => ep.domain === "LB" && ["ALT", "ALAT"].includes(ep.testCode?.toUpperCase() ?? "") && ep.direction === "up",
+  );
+  const astUp = allEndpoints.some(
+    (ep) => ep.domain === "LB" && ["AST", "ASAT"].includes(ep.testCode?.toUpperCase() ?? "") && ep.direction === "up",
+  );
+  const biliUp = allEndpoints.some(
+    (ep) => ep.domain === "LB" && ["BILI", "TBILI"].includes(ep.testCode?.toUpperCase() ?? "") && ep.direction === "up",
+  );
+  const biliPresent = allEndpoints.some(
+    (ep) => ep.domain === "LB" && ["BILI", "TBILI"].includes(ep.testCode?.toUpperCase() ?? ""),
+  );
+  const alpUp = allEndpoints.some(
+    (ep) => ep.domain === "LB" && ["ALP", "ALKP"].includes(ep.testCode?.toUpperCase() ?? "") && ep.direction === "up",
+  );
+
+  const ruleStatuses = HYS_RULES.map((ruleId) => {
+    const matched = labMatches.find((m) => m.ruleId === ruleId);
+
+    if (matched) {
+      return {
+        ruleId,
+        status: "TRIGGERED" as const,
+        label: getRuleName(ruleId),
+        explanation: `${matched.matchedEndpoints.join(", ")} elevated concurrently`,
+      };
+    }
+
+    // Not triggered — explain why
+    if (ruleId === "L03") {
+      if (!altUp && !astUp) {
+        return { ruleId, status: "NOT TRIGGERED" as const, label: "Concurrent ALT + bilirubin", explanation: "ALT/AST not elevated" };
+      }
+      if (!biliPresent) {
+        return { ruleId, status: "NOT EVALUATED" as const, label: "Concurrent ALT + bilirubin", explanation: "Bilirubin not measured in study" };
+      }
+      if (!biliUp) {
+        return { ruleId, status: "NOT TRIGGERED" as const, label: "Concurrent ALT + bilirubin", explanation: `${altUp ? "ALT" : "AST"} \u2191 present, but bilirubin within normal range` };
+      }
+      return { ruleId, status: "NOT TRIGGERED" as const, label: "Concurrent ALT + bilirubin", explanation: "Concurrent elevation conditions not met" };
+    }
+    if (ruleId === "L07") {
+      if (alpUp) {
+        return { ruleId, status: "NOT TRIGGERED" as const, label: "Classic Hy's Law", explanation: "ALP \u2191 present \u2014 cholestatic component excludes classic pattern" };
+      }
+      if (!altUp && !astUp) {
+        return { ruleId, status: "NOT TRIGGERED" as const, label: "Classic Hy's Law", explanation: "ALT/AST not elevated" };
+      }
+      return { ruleId, status: "NOT EVALUATED" as const, label: "Classic Hy's Law", explanation: "ULN-relative not computed; concurrent control comparison used instead per L26" };
+    }
+    // L08
+    if (!altUp && !astUp) {
+      return { ruleId, status: "NOT TRIGGERED" as const, label: "Modified Hy's Law (animal)", explanation: "ALT/AST not elevated" };
+    }
+    if (!biliPresent) {
+      return { ruleId, status: "NOT EVALUATED" as const, label: "Modified Hy's Law (animal)", explanation: "Bilirubin not available" };
+    }
+    if (!biliUp) {
+      return { ruleId, status: "NOT TRIGGERED" as const, label: "Modified Hy's Law (animal)", explanation: "Bilirubin not elevated" };
+    }
+    return { ruleId, status: "NOT TRIGGERED" as const, label: "Modified Hy's Law (animal)", explanation: "Conditions not fully met" };
+  });
+
+  const statusColorClass = (status: string) => {
+    switch (status) {
+      case "TRIGGERED": return "text-red-600 font-semibold";
+      case "NOT TRIGGERED": return "text-green-600";
+      case "NOT EVALUATED": return "text-muted-foreground";
+      case "APPROACHING": return "text-amber-600";
+      default: return "text-muted-foreground";
+    }
+  };
+
+  return (
+    <div className="mt-3 border-t pt-2">
+      <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Hy&apos;s Law assessment
+      </div>
+      <div className="space-y-1.5">
+        {ruleStatuses.map((rs) => (
+          <div key={rs.ruleId}>
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="font-mono text-muted-foreground">{rs.ruleId}</span>
+              <span className="text-foreground">{rs.label}:</span>
+              <span className={statusColorClass(rs.status)}>{rs.status}</span>
+            </div>
+            <div className="ml-6 text-[10px] text-muted-foreground">
+              {rs.explanation}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getRuleName(ruleId: string): string {
+  switch (ruleId) {
+    case "L03": return "Concurrent ALT + bilirubin";
+    case "L07": return "Classic Hy's Law";
+    case "L08": return "Modified Hy's Law (animal)";
+    default: return ruleId;
+  }
+}
+
 /** Single row in the term checklist */
-function TermChecklistRow({ entry }: { entry: TermReportEntry }) {
+function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMatches: LabClinicalMatch[] }) {
+  // Look up clinical match for matched endpoints
+  const clinicalTag = entry.status === "matched" && entry.matchedEndpoint
+    ? findClinicalMatchForEndpoint(entry.matchedEndpoint, labMatches)
+    : null;
+
   if (entry.status === "matched") {
     return (
       <div className="flex items-center gap-1.5 text-xs">
@@ -440,6 +579,13 @@ function TermChecklistRow({ entry }: { entry: TermReportEntry }) {
         )}
         {entry.severity && (
           <span className="shrink-0 text-[9px] text-muted-foreground">{entry.severity}</span>
+        )}
+        {clinicalTag ? (
+          <span className={`shrink-0 font-mono text-[9px] ${getClinicalTierTextClass(clinicalTag.severity)}`}>
+            {clinicalTag.severity} {clinicalTag.ruleId}
+          </span>
+        ) : (
+          <span className="shrink-0 font-mono text-[9px] text-muted-foreground/40">{"\u2014"}</span>
         )}
       </div>
     );

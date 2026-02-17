@@ -24,6 +24,7 @@ import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import { getSyndromeNearMissInfo } from "@/lib/cross-domain-syndromes";
+import { findClinicalMatchForEndpoint, getClinicalTierTextClass, getClinicalTierCardBorderClass, getClinicalSeverityLabel } from "@/lib/lab-clinical-catalog";
 import type { FindingsFilters, UnifiedFinding } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 
@@ -304,6 +305,30 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
     return computeOrganNoaelDisplay(rawData.findings, organEndpoints, rawData.dose_groups);
   }, [rawData, organEndpoints]);
 
+  // ── Clinical severity per endpoint ──────────────────────
+  const clinicalMap = useMemo(() => {
+    const map = new Map<string, { tier: string; ruleId: string }>();
+    for (const ep of organEndpoints) {
+      const match = findClinicalMatchForEndpoint(ep.endpoint_label, analytics.labMatches);
+      if (match) {
+        map.set(ep.endpoint_label, { tier: match.severity, ruleId: match.ruleId });
+      }
+    }
+    return map;
+  }, [organEndpoints, analytics.labMatches]);
+
+  // Worst clinical across all endpoints in this organ
+  const worstClinical = useMemo(() => {
+    const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
+    let worst: { tier: string; ruleId: string; endpoint: string } | null = null;
+    for (const [label, { tier, ruleId }] of clinicalMap) {
+      if (!worst || (sevOrder[tier] ?? 0) > (sevOrder[worst.tier] ?? 0)) {
+        worst = { tier, ruleId, endpoint: label };
+      }
+    }
+    return worst;
+  }, [clinicalMap]);
+
   // ── Related syndromes ────────────────────────────────────
   const relevantSyndromeIds = useMemo(
     () => ORGAN_SYNDROME_MAP[organKey.toLowerCase()] ?? [],
@@ -400,22 +425,38 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
               NOAEL: {noaelData.organNoael}
             </div>
             {noaelData.drivingEndpoint && (
-              <div className="mb-2 text-[10px] text-muted-foreground">
+              <div className="text-[10px] text-muted-foreground">
                 (driven by {noaelData.drivingEndpoint} — lowest endpoint NOAEL)
               </div>
             )}
+            {worstClinical && (
+              <div className={`mb-2 text-xs font-medium ${getClinicalTierTextClass(worstClinical.tier)}`}>
+                Worst clinical: {worstClinical.tier} {getClinicalSeverityLabel(worstClinical.tier)} ({worstClinical.endpoint}, rule {worstClinical.ruleId})
+              </div>
+            )}
+            {!worstClinical && noaelData.drivingEndpoint && <div className="mb-2" />}
             <div className="space-y-0.5">
-              {noaelData.endpoints.map(ep => (
-                <div
-                  key={ep.endpoint_label}
-                  className={`flex items-center justify-between text-xs ${
-                    ep.isDriving ? "font-medium text-foreground" : "text-muted-foreground"
-                  }`}
-                >
-                  <span className="truncate">{ep.endpoint_label}</span>
-                  <span className="shrink-0 ml-2">{ep.noaelLabel}</span>
-                </div>
-              ))}
+              {noaelData.endpoints.map(ep => {
+                const clinical = clinicalMap.get(ep.endpoint_label);
+                return (
+                  <div
+                    key={ep.endpoint_label}
+                    className={`flex items-center gap-1 text-xs ${
+                      clinical ? `pl-1.5 ${getClinicalTierCardBorderClass(clinical.tier)}` : ""
+                    } ${ep.isDriving ? "font-medium text-foreground" : "text-muted-foreground"}`}
+                  >
+                    <span className="min-w-0 flex-1 truncate">{ep.endpoint_label}</span>
+                    <span className="shrink-0">{ep.noaelLabel}</span>
+                    {clinical ? (
+                      <span className={`shrink-0 font-mono text-[9px] ${getClinicalTierTextClass(clinical.tier)}`}>
+                        {clinical.tier} {clinical.ruleId}
+                      </span>
+                    ) : (
+                      <span className="shrink-0 font-mono text-[9px] text-muted-foreground/40">{"\u2014"}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
