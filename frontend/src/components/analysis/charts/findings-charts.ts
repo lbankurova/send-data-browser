@@ -3,7 +3,7 @@
  */
 
 import type { EChartsOption } from "echarts";
-import type { EndpointSummary, OrganCoherence } from "@/lib/derive-summaries";
+import type { EndpointSummary, OrganCoherence, NoaelTier } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { resolveCanonical } from "@/lib/lab-clinical-catalog";
@@ -40,6 +40,9 @@ export interface QuadrantPoint {
   clinicalRuleId?: string;      // e.g. "L02"
   clinicalSeverityLabel?: string; // e.g. "Adverse"
   clinicalFoldChange?: number;  // e.g. 4.2
+  noaelTier?: NoaelTier;
+  noaelDoseValue?: number | null;
+  noaelDoseUnit?: string | null;
 }
 
 export function prepareQuadrantPoints(
@@ -114,6 +117,9 @@ export function prepareQuadrantPoints(
         clinicalRuleId: clinical?.ruleId,
         clinicalSeverityLabel: clinical?.severityLabel,
         clinicalFoldChange: clinical?.foldChange,
+        noaelTier: ep.noaelTier,
+        noaelDoseValue: ep.noaelDoseValue,
+        noaelDoseUnit: ep.noaelDoseUnit,
       };
     });
 }
@@ -147,9 +153,26 @@ export function buildFindingsQuadrantOption(
     // Symbol shape: clinical S3/S4 get diamond (persists in all states)
     const symbol = isClinical ? "diamond" : "circle";
 
+    // NOAEL tint: warm rose for low-NOAEL dots (below-lowest or at-lowest)
+    const isLowNoael = pt.noaelTier === "below-lowest" || pt.noaelTier === "at-lowest";
+
     // Opacity: clinical 0.75, coherent 0.65, adverse 0.65, default 0.5
     let opacity = isSelected ? 1 : isClinical ? 0.75 : (pt.coherenceSize || isAdverse) ? 0.65 : 0.5;
     if (isOutOfScope) opacity = 0.15;
+
+    // Dot color: selected → organ color, low NOAEL → warm rose, clinical → dark gray, default → gray
+    let dotColor: string;
+    if (isSelected) {
+      dotColor = getOrganColor(pt.organ_system);
+    } else if (isLowNoael) {
+      dotColor = pt.noaelTier === "below-lowest"
+        ? "rgba(248,113,113,0.6)"
+        : "rgba(248,113,113,0.4)";
+    } else if (isClinical) {
+      dotColor = "#6B7280";
+    } else {
+      dotColor = "#9CA3AF";
+    }
 
     return {
       value: [pt.x, pt.y],
@@ -159,7 +182,7 @@ export function buildFindingsQuadrantOption(
       symbolSize,
       symbol,
       itemStyle: {
-        color: isSelected ? getOrganColor(pt.organ_system) : isClinical ? "#6B7280" : "#9CA3AF",
+        color: dotColor,
         opacity,
         borderColor: isSelected ? "#1F2937" : isClinical ? "#6B7280" : "transparent",
         borderWidth: isSelected ? 2 : isClinical ? 1 : 0,
@@ -231,6 +254,16 @@ export function buildFindingsQuadrantOption(
         }
         if (meta.syndromeName) {
           lines.push(`<div style="font-size:9px;margin-top:2px">\uD83D\uDD17 ${meta.syndromeName} syndrome</div>`);
+        }
+        // NOAEL line
+        if (meta.noaelTier === "below-lowest") {
+          const doseLabel = meta.noaelDoseValue != null ? `${meta.noaelDoseValue} ${meta.noaelDoseUnit ?? ""}`.trim() : "lowest dose";
+          lines.push(`<div style="font-size:9px;margin-top:2px;color:#DC2626">NOAEL &lt; ${doseLabel}</div>`);
+        } else if (meta.noaelTier === "at-lowest" || meta.noaelTier === "mid" || meta.noaelTier === "high") {
+          const doseLabel = meta.noaelDoseValue != null ? `${meta.noaelDoseValue} ${meta.noaelDoseUnit ?? ""}`.trim() : "—";
+          lines.push(`<div style="font-size:9px;margin-top:2px${meta.noaelTier === "at-lowest" ? ";color:#DC2626" : ""}">NOAEL ${doseLabel}</div>`);
+        } else {
+          lines.push(`<div style="font-size:9px;margin-top:2px;color:#9CA3AF">NOAEL n/a</div>`);
         }
         return lines.join("");
       },
