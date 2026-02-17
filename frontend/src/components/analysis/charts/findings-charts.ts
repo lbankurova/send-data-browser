@@ -141,7 +141,7 @@ export function buildFindingsQuadrantOption(
       symbolSize,
       symbol,
       itemStyle: {
-        color: isSelected ? getOrganColor(pt.organ_system) : "#9CA3AF",
+        color: isSelected ? getOrganColor(pt.organ_system) : isClinical ? "#6B7280" : "#9CA3AF",
         opacity,
         borderColor: isSelected ? "#1F2937" : isClinical ? "#6B7280" : "transparent",
         borderWidth: isSelected ? 2 : isClinical ? 1 : 0,
