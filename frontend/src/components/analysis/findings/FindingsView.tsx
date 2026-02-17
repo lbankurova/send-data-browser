@@ -45,6 +45,7 @@ interface FindingsCallbackState {
   activeEndpoint?: string | null;
   activeGrouping?: GroupingMode;
   visibleEndpoints?: RailVisibleState;
+  restoreEndpoint?: string;
 }
 
 let _findingsRailCallback: ((state: FindingsCallbackState) => void) | null = null;
@@ -139,6 +140,7 @@ export function FindingsView() {
   useEffect(() => {
     setFindingsRailCallback((state) => {
       if (state.activeEndpoint !== undefined) handleEndpointSelect(state.activeEndpoint);
+      if (state.restoreEndpoint !== undefined) handleRestoreEndpoint(state.restoreEndpoint);
       if (state.visibleEndpoints !== undefined) {
         const ve = state.visibleEndpoints;
         setVisibleLabels(new Set(ve.labels));
@@ -147,7 +149,7 @@ export function FindingsView() {
       }
     });
     return () => setFindingsRailCallback(null);
-  }, [handleEndpointSelect]);
+  }, [handleEndpointSelect, handleRestoreEndpoint]);
 
   // Fetch ALL findings (no API-level filtering — rail handles all filtering client-side)
   const { data, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);

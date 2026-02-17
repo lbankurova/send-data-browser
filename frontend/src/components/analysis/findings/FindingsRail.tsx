@@ -83,6 +83,8 @@ interface FindingsRailProps {
   onVisibleEndpointsChange?: (state: RailVisibleState) => void;
   /** Endpoints excluded from the scatter plot (double-click to hide). */
   excludedEndpoints?: ReadonlySet<string>;
+  /** Callback to restore an excluded endpoint back to the scatter plot. */
+  onRestoreEndpoint?: (label: string) => void;
 }
 
 // ─── Component ─────────────────────────────────────────────
@@ -96,6 +98,7 @@ export function FindingsRail({
   onGroupingChange,
   onVisibleEndpointsChange,
   excludedEndpoints,
+  onRestoreEndpoint,
 }: FindingsRailProps) {
   // Same data source as FindingsView — React Query shares the cache
   const { data: rawData, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FINDINGS_FILTERS);
@@ -498,6 +501,7 @@ export function FindingsRail({
                 isSelected={activeEndpoint === ep.endpoint_label}
                 isExcluded={excludedEndpoints?.has(ep.endpoint_label)}
                 onClick={() => handleEndpointClick(ep.endpoint_label)}
+                onRestore={onRestoreEndpoint}
                 ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
               />
             ))
@@ -519,6 +523,7 @@ export function FindingsRail({
               multiSyndromeIndex={grouping === "syndrome" ? multiSyndromeIndex : undefined}
               currentSyndromeId={grouping === "syndrome" ? card.key : undefined}
               excludedEndpoints={excludedEndpoints}
+              onRestoreEndpoint={onRestoreEndpoint}
             />
           ))
         )}
@@ -768,6 +773,7 @@ function CardSection({
   multiSyndromeIndex,
   currentSyndromeId,
   excludedEndpoints,
+  onRestoreEndpoint,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -782,6 +788,7 @@ function CardSection({
   multiSyndromeIndex?: Map<string, string[]>;
   currentSyndromeId?: string;
   excludedEndpoints?: ReadonlySet<string>;
+  onRestoreEndpoint?: (label: string) => void;
 }) {
   return (
     <div>
@@ -808,6 +815,7 @@ function CardSection({
                 isSelected={activeEndpoint === ep.endpoint_label}
                 isExcluded={excludedEndpoints?.has(ep.endpoint_label)}
                 onClick={() => onEndpointClick(ep.endpoint_label)}
+                onRestore={onRestoreEndpoint}
                 ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
                 otherSyndromes={otherSyndromes}
               />
@@ -912,8 +920,9 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
   isSelected: boolean;
   isExcluded?: boolean;
   onClick: () => void;
+  onRestore?: (label: string) => void;
   otherSyndromes?: string[];
-}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, otherSyndromes }, ref) {
+}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onRestore, otherSyndromes }, ref) {
   const dirSymbol = endpoint.direction === "up" ? "▲" : endpoint.direction === "down" ? "▼" : "—";
 
   const sevColor =
@@ -935,7 +944,17 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
     >
       {/* Line 1: Identity + Signals */}
       <div className="flex w-full items-center gap-1.5 px-3 py-1 pl-6">
-        {isExcluded && <EyeOff className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
+        {isExcluded && (
+          <span
+            role="button"
+            tabIndex={0}
+            className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
+            title="Restore to scatter plot"
+            onClick={(e) => { e.stopPropagation(); onRestore?.(endpoint.endpoint_label); }}
+          >
+            <EyeOff className="h-3 w-3" />
+          </span>
+        )}
         <span className="shrink-0 text-[10px] text-muted-foreground">{dirSymbol}</span>
         <PatternGlyph pattern={endpoint.pattern} className="shrink-0 text-muted-foreground" />
         <span className={cn("min-w-0 flex-1 truncate text-left text-xs", isExcluded && "text-muted-foreground/50")} title={endpoint.endpoint_label}>
