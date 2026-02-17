@@ -56,7 +56,19 @@ export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts
   const pValueWeight = ep.minPValue !== null ? Math.max(0, -Math.log10(ep.minPValue)) : 0;
   const effectWeight = ep.maxEffectSize !== null ? Math.min(Math.abs(ep.maxEffectSize), 5) : 0;
   const trBoost = ep.treatmentRelated ? 2 : 0;
-  const rawPatternWeight = PATTERN_WEIGHTS[ep.pattern] ?? 0;
+
+  // Per-sex pattern: use worst (highest-weight) per-sex pattern when patterns disagree
+  let rawPatternWeight = PATTERN_WEIGHTS[ep.pattern] ?? 0;
+  if (ep.bySex && ep.bySex.size >= 2) {
+    const sexPatterns = [...ep.bySex.values()].map(s => s.pattern);
+    if (new Set(sexPatterns).size > 1) {
+      for (const s of ep.bySex.values()) {
+        const w = PATTERN_WEIGHTS[s.pattern] ?? 0;
+        if (w > rawPatternWeight) rawPatternWeight = w;
+      }
+    }
+  }
+
   const confMult = boosts?.confidenceMultiplier ?? 1;
   const patternWeight = rawPatternWeight * confMult;
   const base = severityWeight + pValueWeight + effectWeight + trBoost + patternWeight;

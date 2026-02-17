@@ -204,9 +204,10 @@ export function FindingsView() {
       for (const ep of summaries) {
         const noael = noaelMap.get(ep.endpoint_label);
         if (noael) {
-          ep.noaelTier = noael.tier;
-          ep.noaelDoseValue = noael.doseValue;
-          ep.noaelDoseUnit = noael.doseUnit;
+          ep.noaelTier = noael.combined.tier;
+          ep.noaelDoseValue = noael.combined.doseValue;
+          ep.noaelDoseUnit = noael.combined.doseUnit;
+          if (noael.sexDiffers) ep.noaelBySex = noael.bySex;
         }
       }
     }
