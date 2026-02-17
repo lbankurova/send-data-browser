@@ -150,10 +150,18 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     if (row.treatment_related) entry.tr = true;
     if (row.effect_size != null) {
       const abs = Math.abs(row.effect_size);
-      if (entry.maxEffect === null || abs > Math.abs(entry.maxEffect)) entry.maxEffect = row.effect_size;
+      if (entry.maxEffect === null || abs > Math.abs(entry.maxEffect)) {
+        entry.maxEffect = row.effect_size;
+        // Direction follows the strongest pairwise effect — prevents
+        // opposite-sex rows from overwriting (e.g., NEUT ↓ in M, ↑ in F)
+        if (row.direction === "up" || row.direction === "down") {
+          entry.direction = row.direction;
+        }
+      }
+    } else if (entry.direction === null && (row.direction === "up" || row.direction === "down")) {
+      entry.direction = row.direction;
     }
     if (row.p_value != null && (entry.minP === null || row.p_value < entry.minP)) entry.minP = row.p_value;
-    if (row.direction === "up" || row.direction === "down") entry.direction = row.direction;
     // Track max incidence across treated dose groups
     if (row.max_incidence != null && (entry.maxIncidence === null || row.max_incidence > entry.maxIncidence)) {
       entry.maxIncidence = row.max_incidence;
