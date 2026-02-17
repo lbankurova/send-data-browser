@@ -63,15 +63,19 @@ def compute_lb_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
         group_stats = []
         control_values = None
         dose_groups_values = []
+        dose_groups_subj = []
 
         for dose_level in sorted(grp["dose_level"].unique()):
-            vals = grp[grp["dose_level"] == dose_level]["value"].dropna().values
+            dose_data = grp[grp["dose_level"] == dose_level].dropna(subset=["value"])
+            vals = dose_data["value"].values
+            subj_vals = dict(zip(dose_data["USUBJID"].values, dose_data["value"].values.astype(float)))
             if len(vals) == 0:
                 group_stats.append({
                     "dose_level": int(dose_level),
                     "n": 0, "mean": None, "sd": None, "median": None,
                 })
                 dose_groups_values.append(np.array([]))
+                dose_groups_subj.append({})
                 continue
 
             # 4-decimal precision: LB values from analytical instruments (chemistry analyzers)
@@ -83,6 +87,7 @@ def compute_lb_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
                 "median": round(float(np.median(vals)), 4),
             })
             dose_groups_values.append(vals)
+            dose_groups_subj.append(subj_vals)
             if dose_level == 0:
                 control_values = vals
 
@@ -157,6 +162,7 @@ def compute_lb_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
             "max_effect_size": max_d,
             "min_p_adj": min_p,
             "raw_values": dose_groups_values,
+            "raw_subject_values": dose_groups_subj,
         })
 
     return findings

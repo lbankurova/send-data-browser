@@ -61,10 +61,13 @@ def compute_bw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
         group_stats = []
         control_values = None
         dose_groups_values = []
+        dose_groups_subj = []
 
         for dose_level in sorted(grp["dose_level"].unique()):
-            vals = grp[grp["dose_level"] == dose_level]["value"].dropna().values
-            pct_vals = grp[grp["dose_level"] == dose_level]["pct_change"].dropna().values
+            dose_data = grp[grp["dose_level"] == dose_level].dropna(subset=["value"])
+            vals = dose_data["value"].values
+            pct_vals = dose_data["pct_change"].dropna().values
+            subj_vals = dict(zip(dose_data["USUBJID"].values, dose_data["value"].values.astype(float)))
 
             if len(vals) == 0:
                 group_stats.append({
@@ -73,6 +76,7 @@ def compute_bw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
                     "mean_pct_change": None,
                 })
                 dose_groups_values.append(np.array([]))
+                dose_groups_subj.append({})
                 continue
 
             # 2-decimal precision: BW from balance measurement (grams)
@@ -85,6 +89,7 @@ def compute_bw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
                 "mean_pct_change": round(float(np.mean(pct_vals)), 2) if len(pct_vals) > 0 else None,
             })
             dose_groups_values.append(vals)
+            dose_groups_subj.append(subj_vals)
             if dose_level == 0:
                 control_values = vals
 
@@ -152,6 +157,7 @@ def compute_bw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
             "max_effect_size": max_d,
             "min_p_adj": min_p,
             "raw_values": dose_groups_values,
+            "raw_subject_values": dose_groups_subj,
         })
 
     return findings
