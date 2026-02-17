@@ -13,14 +13,8 @@ export function CorrelationsPane({ data, organSystem }: Props) {
   if (data.related.length === 0) {
     const organSuffix = organSystem ? ` in ${titleCase(organSystem)}` : "";
     return (
-      <div className="space-y-3">
-        {data.insights.length > 0 ? (
-          <InsightBlock insights={data.insights} />
-        ) : (
-          <div className="text-xs text-muted-foreground">
-            No correlated findings{organSuffix}
-          </div>
-        )}
+      <div className="text-xs text-muted-foreground">
+        No correlated findings{organSuffix}
       </div>
     );
   }
