@@ -1,6 +1,8 @@
 """Pure rule functions for classifying findings severity, dose-response patterns,
 and treatment-relatedness. Designed for later extraction to configurable scripts."""
 
+import math
+
 
 def classify_severity(finding: dict) -> str:
     """Classify a finding as 'adverse', 'warning', or 'normal'.
@@ -50,8 +52,61 @@ def classify_severity(finding: dict) -> str:
         return "normal"
 
 
+# Fraction of pooled SD used as equivalence band (0.5 SD ≈ negligible Cohen's d)
+_EQUIVALENCE_FRACTION = 0.5
+_MIN_POOLED_SD = 0.001
+
+
+def _pooled_sd(group_stats: list[dict]) -> float:
+    """Compute pooled SD across treated groups (exclude control at index 0).
+
+    Uses per-group SDs when available; falls back to SD of group means.
+    """
+    treated = group_stats[1:]  # skip control
+    sds = [g["sd"] for g in treated if g.get("sd") is not None and g["sd"] > 0]
+    if sds:
+        return math.sqrt(sum(s ** 2 for s in sds) / len(sds))
+    # Fallback: SD of treated group means
+    means = [g["mean"] for g in treated if g.get("mean") is not None]
+    if len(means) >= 2:
+        avg = sum(means) / len(means)
+        return math.sqrt(sum((m - avg) ** 2 for m in means) / (len(means) - 1))
+    return 0.0
+
+
+def _step_direction(val_from: float, val_to: float, band: float) -> str:
+    """Classify a single step as 'up', 'down', or 'flat' using equivalence band."""
+    if abs(val_to - val_from) <= band:
+        return "flat"
+    return "up" if val_to > val_from else "down"
+
+
+def _classify_from_steps(steps: list[str]) -> str:
+    """Map a step sequence to a pattern label."""
+    non_flat = [s for s in steps if s != "flat"]
+    directions = set(non_flat)
+
+    if len(non_flat) == 0:
+        return "flat"
+
+    if len(directions) == 1:
+        d = non_flat[0]
+        has_flat = "flat" in steps
+        if not has_flat:
+            return "monotonic_increase" if d == "up" else "monotonic_decrease"
+        else:
+            return "threshold"
+
+    # Mixed directions
+    return "non_monotonic"
+
+
 def classify_dose_response(group_stats: list[dict], data_type: str = "continuous") -> str:
-    """Classify dose-response pattern.
+    """Classify dose-response pattern using equivalence-band noise tolerance.
+
+    For continuous data, differences within 0.5× pooled SD are treated as
+    equivalent ("flat") rather than directional, preventing sampling noise
+    from producing false non-monotonic classifications.
 
     Returns one of: 'monotonic_increase', 'monotonic_decrease',
     'threshold', 'non_monotonic', 'flat', 'insufficient_data'.
@@ -61,39 +116,50 @@ def classify_dose_response(group_stats: list[dict], data_type: str = "continuous
 
     if data_type == "continuous":
         means = [g.get("mean") for g in group_stats]
-        means = [m for m in means if m is not None]
+        if any(m is None for m in means) or len(means) < 2:
+            return "insufficient_data"
+
+        pooled = max(_pooled_sd(group_stats), _MIN_POOLED_SD)
+        band = _EQUIVALENCE_FRACTION * pooled
+
+        # Build step sequence: control → dose1 → dose2 → ...
+        steps = []
+        for i in range(len(means) - 1):
+            steps.append(_step_direction(means[i], means[i + 1], band))
+
+        return _classify_from_steps(steps)
     else:
-        means = [g.get("incidence", g.get("affected", 0)) for g in group_stats]
+        # Categorical/incidence data: use original consecutive-diff approach
+        # (no SD available; 1% control threshold is appropriate for proportions)
+        values = [g.get("incidence", g.get("affected", 0)) for g in group_stats]
+        if len(values) < 2:
+            return "insufficient_data"
 
-    if len(means) < 2:
-        return "insufficient_data"
+        control_val = values[0] if values[0] is not None else 0
+        min_threshold = abs(control_val) * 0.01 if abs(control_val) > 1e-10 else 1e-10
 
-    # Minimum magnitude threshold: 1% of control mean (prevents noise classification)
-    control_mean = means[0] if means[0] is not None else 0
-    min_threshold = abs(control_mean) * 0.01 if abs(control_mean) > 1e-10 else 1e-10
+        diffs = [values[i + 1] - values[i] for i in range(len(values) - 1)]
 
-    diffs = [means[i + 1] - means[i] for i in range(len(means) - 1)]
+        if all(abs(d) <= min_threshold for d in diffs):
+            return "flat"
+        if all(d > min_threshold for d in diffs):
+            return "monotonic_increase"
+        if all(d < -min_threshold for d in diffs):
+            return "monotonic_decrease"
 
-    all_positive = all(d > min_threshold for d in diffs)
-    all_negative = all(d < -min_threshold for d in diffs)
-    all_zero = all(abs(d) <= min_threshold for d in diffs)
+        # Check for threshold: flat then increase/decrease
+        if len(diffs) >= 2:
+            first_nonzero = next(
+                (i for i, d in enumerate(diffs) if abs(d) > min_threshold), None
+            )
+            if first_nonzero is not None and first_nonzero > 0:
+                remaining = diffs[first_nonzero:]
+                if all(d > min_threshold for d in remaining) or all(
+                    d < -min_threshold for d in remaining
+                ):
+                    return "threshold"
 
-    if all_zero:
-        return "flat"
-    if all_positive:
-        return "monotonic_increase"
-    if all_negative:
-        return "monotonic_decrease"
-
-    # Check for threshold: flat then increase/decrease
-    if len(diffs) >= 2:
-        first_nonzero = next((i for i, d in enumerate(diffs) if abs(d) > min_threshold), None)
-        if first_nonzero is not None and first_nonzero > 0:
-            remaining = diffs[first_nonzero:]
-            if all(d > min_threshold for d in remaining) or all(d < -min_threshold for d in remaining):
-                return "threshold"
-
-    return "non_monotonic"
+        return "non_monotonic"
 
 
 def determine_treatment_related(finding: dict) -> bool:

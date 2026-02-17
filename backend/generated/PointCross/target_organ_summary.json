@@ -1,7 +1,7 @@
 [
   {
     "organ_system": "general",
-    "evidence_score": 1.264,
+    "evidence_score": 1.291,
     "n_endpoints": 104,
     "n_domains": 8,
     "domains": [
@@ -14,47 +14,44 @@
       "MI",
       "OM"
     ],
-    "max_signal_score": 1.0,
+    "max_signal_score": 0.94,
     "n_significant": 46,
-    "n_treatment_related": 44,
+    "n_treatment_related": 42,
     "target_organ_flag": true,
     "max_severity": 2.6
   },
   {
     "organ_system": "cardiovascular",
-    "evidence_score": 0.731,
+    "evidence_score": 0.737,
     "n_endpoints": 4,
     "n_domains": 2,
     "domains": [
       "MI",
       "OM"
     ],
-    "max_signal_score": 1.0,
+    "max_signal_score": 0.94,
     "n_significant": 2,
     "n_treatment_related": 2,
     "target_organ_flag": true,
     "max_severity": 2.0
   },
   {
-    "organ_system": "hepatic",
-    "evidence_score": 0.673,
-    "n_endpoints": 29,
-    "n_domains": 4,
+    "organ_system": "neurological",
+    "evidence_score": 0.706,
+    "n_endpoints": 2,
+    "n_domains": 1,
     "domains": [
-      "LB",
-      "MA",
-      "MI",
       "OM"
     ],
-    "max_signal_score": 1.0,
-    "n_significant": 8,
-    "n_treatment_related": 8,
+    "max_signal_score": 0.815,
+    "n_significant": 2,
+    "n_treatment_related": 2,
     "target_organ_flag": true,
-    "max_severity": 3.0
+    "max_severity": null
   },
   {
     "organ_system": "renal",
-    "evidence_score": 0.66,
+    "evidence_score": 0.692,
     "n_endpoints": 24,
     "n_domains": 4,
     "domains": [
@@ -63,15 +60,32 @@
       "MI",
       "OM"
     ],
-    "max_signal_score": 0.863,
+    "max_signal_score": 0.912,
     "n_significant": 7,
     "n_treatment_related": 7,
     "target_organ_flag": true,
     "max_severity": 3.0
   },
   {
+    "organ_system": "hepatic",
+    "evidence_score": 0.654,
+    "n_endpoints": 29,
+    "n_domains": 4,
+    "domains": [
+      "LB",
+      "MA",
+      "MI",
+      "OM"
+    ],
+    "max_signal_score": 0.94,
+    "n_significant": 8,
+    "n_treatment_related": 8,
+    "target_organ_flag": true,
+    "max_severity": 3.0
+  },
+  {
     "organ_system": "hematologic",
-    "evidence_score": 0.64,
+    "evidence_score": 0.651,
     "n_endpoints": 41,
     "n_domains": 4,
     "domains": [
@@ -85,20 +99,6 @@
     "n_treatment_related": 11,
     "target_organ_flag": true,
     "max_severity": 2.5
-  },
-  {
-    "organ_system": "neurological",
-    "evidence_score": 0.626,
-    "n_endpoints": 2,
-    "n_domains": 1,
-    "domains": [
-      "OM"
-    ],
-    "max_signal_score": 0.735,
-    "n_significant": 2,
-    "n_treatment_related": 2,
-    "target_organ_flag": true,
-    "max_severity": null
   },
   {
     "organ_system": "respiratory",
@@ -116,6 +116,20 @@
     "max_severity": 3.0
   },
   {
+    "organ_system": "metabolic",
+    "evidence_score": 0.423,
+    "n_endpoints": 6,
+    "n_domains": 1,
+    "domains": [
+      "LB"
+    ],
+    "max_signal_score": 0.546,
+    "n_significant": 2,
+    "n_treatment_related": 1,
+    "target_organ_flag": true,
+    "max_severity": null
+  },
+  {
     "organ_system": "ocular",
     "evidence_score": 0.408,
     "n_endpoints": 4,
@@ -128,20 +142,6 @@
     "n_treatment_related": 0,
     "target_organ_flag": false,
     "max_severity": 2.0
-  },
-  {
-    "organ_system": "metabolic",
-    "evidence_score": 0.393,
-    "n_endpoints": 6,
-    "n_domains": 1,
-    "domains": [
-      "LB"
-    ],
-    "max_signal_score": 0.546,
-    "n_significant": 2,
-    "n_treatment_related": 2,
-    "target_organ_flag": true,
-    "max_severity": null
   },
   {
     "organ_system": "endocrine",
@@ -159,7 +159,7 @@
   },
   {
     "organ_system": "reproductive",
-    "evidence_score": 0.271,
+    "evidence_score": 0.28,
     "n_endpoints": 13,
     "n_domains": 3,
     "domains": [
@@ -175,13 +175,13 @@
   },
   {
     "organ_system": "electrolyte",
-    "evidence_score": 0.235,
+    "evidence_score": 0.239,
     "n_endpoints": 6,
     "n_domains": 1,
     "domains": [
       "LB"
     ],
-    "max_signal_score": 0.343,
+    "max_signal_score": 0.415,
     "n_significant": 0,
     "n_treatment_related": 0,
     "target_organ_flag": false,

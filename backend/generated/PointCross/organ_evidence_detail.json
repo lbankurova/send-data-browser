@@ -462,7 +462,7 @@
     "effect_size": -0.3517,
     "direction": "down",
     "severity": "adverse",
-    "treatment_related": true
+    "treatment_related": false
   },
   {
     "organ_system": "general",
@@ -477,7 +477,7 @@
     "effect_size": -1.2265,
     "direction": "down",
     "severity": "adverse",
-    "treatment_related": true
+    "treatment_related": false
   },
   {
     "organ_system": "general",
@@ -492,7 +492,7 @@
     "effect_size": -1.036,
     "direction": "down",
     "severity": "adverse",
-    "treatment_related": true
+    "treatment_related": false
   },
   {
     "organ_system": "electrolyte",
@@ -1677,7 +1677,7 @@
     "effect_size": 0.2104,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true
+    "treatment_related": false
   },
   {
     "organ_system": "general",
@@ -1692,7 +1692,7 @@
     "effect_size": 0.9559,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true
+    "treatment_related": false
   },
   {
     "organ_system": "general",
@@ -1707,7 +1707,7 @@
     "effect_size": 1.1169,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true
+    "treatment_related": false
   },
   {
     "organ_system": "renal",
@@ -2127,7 +2127,7 @@
     "effect_size": 0.156,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true
+    "treatment_related": false
   },
   {
     "organ_system": "metabolic",
@@ -2142,7 +2142,7 @@
     "effect_size": 0.3191,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true
+    "treatment_related": false
   },
   {
     "organ_system": "metabolic",
@@ -2157,7 +2157,7 @@
     "effect_size": 1.0496,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true
+    "treatment_related": false
   },
   {
     "organ_system": "metabolic",
