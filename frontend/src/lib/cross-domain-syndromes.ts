@@ -750,3 +750,71 @@ export function detectCrossDomainSyndromes(
 
   return results;
 }
+
+// ─── Near-miss analysis (for Organ Context Panel) ─────────
+
+export interface SyndromeNearMissInfo {
+  /** Human-readable "Would require" text, e.g. "ALP↑ + GGT↑ or 5'NT↑" */
+  wouldRequire: string;
+  /** Tags of required terms that matched (e.g. ["ALP"]) */
+  matched: string[];
+  /** Tags of required terms that did NOT match (e.g. ["GGT", "5NT"]) */
+  missing: string[];
+}
+
+/**
+ * For a syndrome that was NOT detected, analyze which required terms
+ * partially matched against the available endpoints.
+ * Returns null if the syndrome ID is unknown.
+ */
+export function getSyndromeNearMissInfo(
+  syndromeId: string,
+  endpoints: EndpointSummary[],
+): SyndromeNearMissInfo | null {
+  const def = SYNDROME_DEFINITIONS.find((s) => s.id === syndromeId);
+  if (!def) return null;
+
+  const requiredTerms = def.terms.filter((t) => t.role === "required");
+  if (requiredTerms.length === 0) return null;
+
+  // Find which required tags matched against adverse/warning endpoints
+  const adverseWarning = endpoints.filter(
+    (ep) => ep.worstSeverity === "adverse" || ep.worstSeverity === "warning",
+  );
+  const matchedTags = new Set<string>();
+  for (const term of requiredTerms) {
+    for (const ep of adverseWarning) {
+      if (matchEndpoint(ep, term) && term.tag) {
+        matchedTags.add(term.tag);
+        break;
+      }
+    }
+  }
+
+  // Collect all required tags
+  const allTags = [...new Set(requiredTerms.map((t) => t.tag).filter((t): t is string => !!t))];
+  const matched = allTags.filter((t) => matchedTags.has(t));
+  const missing = allTags.filter((t) => !matchedTags.has(t));
+
+  // Build "would require" text from the requiredLogic
+  const wouldRequire = formatRequiredLogic(def.requiredLogic, allTags);
+
+  return { wouldRequire, matched, missing };
+}
+
+/** Format required logic as human-readable text. */
+function formatRequiredLogic(logic: RequiredLogic, allTags: string[]): string {
+  switch (logic.type) {
+    case "any":
+      return allTags.join(" or ");
+    case "all":
+      return allTags.join(" + ");
+    case "compound":
+      // Convert expression to readable: "ALP AND (GGT OR 5NT)" → "ALP + GGT or 5'NT"
+      return logic.expression
+        .replace(/\bAND\b/g, "+")
+        .replace(/\bOR\b/g, "or")
+        .replace(/\bANY\(/g, "any of (")
+        .replace(/,\s*/g, ", ");
+  }
+}

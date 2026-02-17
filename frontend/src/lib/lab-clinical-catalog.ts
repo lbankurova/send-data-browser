@@ -856,3 +856,15 @@ export function isLiverParameter(canonical: string): boolean {
   const liverParams = new Set(["ALT", "AST", "ALP", "GGT", "SDH", "GDH", "5NT", "TBILI"]);
   return liverParams.has(canonical);
 }
+
+/** Get the numeric threshold value for a rule + canonical parameter. */
+export function getThresholdNumericValue(
+  ruleId: string,
+  canonical: string,
+): { value: number; comparison: string } | null {
+  const rule = LAB_RULES.find((r) => r.id === ruleId);
+  if (!rule) return null;
+  const t = rule.thresholds?.[canonical];
+  if (!t) return null;
+  return { value: t.value, comparison: t.comparison };
+}

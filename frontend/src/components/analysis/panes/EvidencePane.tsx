@@ -12,6 +12,7 @@ import {
   findNextThreshold,
   getRelatedRules,
   isLiverParameter,
+  getThresholdNumericValue,
 } from "@/lib/lab-clinical-catalog";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -200,6 +201,18 @@ function ClinicalSignificanceSection({ section }: { section: ClinicalSection }) 
     (r) => !firedRuleIds.has(r.id) && r.category !== "governance"
   );
 
+  // Check which non-fired rules are "approaching" (within 20% of threshold)
+  const approachingSet = new Set<string>();
+  if (foldChange != null && canonical) {
+    for (const r of nonFiredRelated) {
+      const t = getThresholdNumericValue(r.id, canonical);
+      if (t && t.value > 0) {
+        const ratio = foldChange / t.value;
+        if (ratio >= 0.8) approachingSet.add(r.id);
+      }
+    }
+  }
+
   const isLiver = canonical ? isLiverParameter(canonical) : false;
   const hysLawRules = isLiver
     ? nonFiredRelated.filter((r) => r.id === "L03" || r.id === "L07" || r.id === "L08")
@@ -252,31 +265,43 @@ function ClinicalSignificanceSection({ section }: { section: ClinicalSection }) 
           <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Related rules
           </div>
-          {hysLawRules.map((r) => (
-            <div key={r.id} className="text-[10px] text-muted-foreground">
-              <span className="font-mono">{r.id}</span> {r.name}: <span className="font-medium text-green-600">NOT triggered</span>
-              {r.id === "L03" && (
-                <div className="ml-3 text-[9px]">
-                  Concurrent ALT + bilirubin elevation required
-                </div>
-              )}
-              {r.id === "L07" && (
-                <div className="ml-3 text-[9px]">
-                  Classic Hy{"\u2019"}s Law pattern not met (ALT + bilirubin {"\u2191"} without ALP {"\u2191"})
-                </div>
-              )}
-              {r.id === "L08" && (
-                <div className="ml-3 text-[9px]">
-                  Nonclinical Hy{"\u2019"}s Law-like pattern not met
-                </div>
-              )}
-            </div>
-          ))}
-          {otherNonFired.map((r) => (
-            <div key={r.id} className="text-[10px] text-muted-foreground">
-              <span className="font-mono">{r.id}</span> {r.name}: NOT triggered
-            </div>
-          ))}
+          {hysLawRules.map((r) => {
+            const approaching = approachingSet.has(r.id);
+            return (
+              <div key={r.id} className="text-[10px] text-muted-foreground">
+                <span className="font-mono">{r.id}</span> {r.name}:{" "}
+                {approaching
+                  ? <span className="font-medium text-amber-600">APPROACHING</span>
+                  : <span className="font-medium text-green-600">NOT triggered</span>}
+                {r.id === "L03" && (
+                  <div className="ml-3 text-[9px]">
+                    Concurrent ALT + bilirubin elevation required
+                  </div>
+                )}
+                {r.id === "L07" && (
+                  <div className="ml-3 text-[9px]">
+                    Classic Hy{"\u2019"}s Law pattern not met (ALT + bilirubin {"\u2191"} without ALP {"\u2191"})
+                  </div>
+                )}
+                {r.id === "L08" && (
+                  <div className="ml-3 text-[9px]">
+                    Nonclinical Hy{"\u2019"}s Law-like pattern not met
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {otherNonFired.map((r) => {
+            const approaching = approachingSet.has(r.id);
+            return (
+              <div key={r.id} className="text-[10px] text-muted-foreground">
+                <span className="font-mono">{r.id}</span> {r.name}:{" "}
+                {approaching
+                  ? <span className="font-medium text-amber-600">APPROACHING</span>
+                  : <>NOT triggered</>}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

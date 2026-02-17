@@ -23,6 +23,7 @@ import {
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
+import { getSyndromeNearMissInfo } from "@/lib/cross-domain-syndromes";
 import type { FindingsFilters, UnifiedFinding } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 
@@ -509,7 +510,9 @@ function RelatedSyndromeRow({
     );
   }
 
-  // Not detected — show as near-miss
+  // Not detected — show as near-miss with explanation
+  const nearMiss = getSyndromeNearMissInfo(syndromeId, organEndpoints);
+
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -520,6 +523,19 @@ function RelatedSyndromeRow({
           not detected
         </span>
       </div>
+      {nearMiss && (
+        <div className="mt-0.5 space-y-0.5 text-[10px] text-muted-foreground">
+          <div>Would require: {nearMiss.wouldRequire}</div>
+          {nearMiss.matched.length > 0 && nearMiss.missing.length > 0 && (
+            <div>
+              {nearMiss.matched.join(", ")} present but {nearMiss.missing.join(", ")} not found
+            </div>
+          )}
+          {nearMiss.matched.length === 0 && (
+            <div>None of the required terms found</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
