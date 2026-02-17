@@ -211,16 +211,18 @@ def classify_dose_response(group_stats: list[dict], data_type: str = "continuous
         elif all(d < -min_threshold for d in diffs):
             pattern = "monotonic_decrease"
         elif len(diffs) >= 2:
-            # Check for threshold: flat then increase/decrease
-            first_nonzero = next(
-                (i for i, d in enumerate(diffs) if abs(d) > min_threshold), None
-            )
-            if first_nonzero is not None and first_nonzero > 0:
-                remaining = diffs[first_nonzero:]
-                if all(d > min_threshold for d in remaining):
-                    pattern = "threshold_increase"
-                elif all(d < -min_threshold for d in remaining):
-                    pattern = "threshold_decrease"
+            # Check for threshold patterns:
+            # Case 1: flat then change (onset at higher dose)
+            # Case 2: change then flat (plateau after onset)
+            # Case 3: change then flat then same-direction change
+            non_flat = [(i, d) for i, d in enumerate(diffs) if abs(d) > min_threshold]
+            flat_count = sum(1 for d in diffs if abs(d) <= min_threshold)
+
+            if non_flat and flat_count > 0:
+                dirs = set("up" if d > 0 else "down" for _, d in non_flat)
+                if len(dirs) == 1:
+                    d = dirs.pop()
+                    pattern = "threshold_increase" if d == "up" else "threshold_decrease"
 
         return {"pattern": pattern, "confidence": None, "onset_dose_level": None}
 
