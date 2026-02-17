@@ -1,6 +1,7 @@
 import type { FindingContext, UnifiedFinding } from "@/types/analysis";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
+import type { SexEndpointSummary } from "@/lib/derive-summaries";
 import { titleCase, formatPValue } from "@/lib/severity-colors";
 import {
   resolveCanonical,
@@ -14,6 +15,7 @@ import {
   isLiverParameter,
   getThresholdNumericValue,
   explainRuleNotTriggered,
+  sexesDisagree,
 } from "@/lib/lab-clinical-catalog";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -133,12 +135,19 @@ function buildDedupedBullets(
 
 // ─── Clinical Significance Section ────────────────────────────
 
+interface PerSexEntry {
+  sex: string;
+  match: LabClinicalMatch | null;
+  sexData?: SexEndpointSummary;
+}
+
 interface ClinicalSection {
   match: LabClinicalMatch | null;
   canonical: string | null;
   isLabEndpoint: boolean;
   relatedRules: { id: string; name: string; severity: string; severityLabel: string; category: string }[];
   firedRuleIds: Set<string>;
+  perSexMatches?: PerSexEntry[];
 }
 
 function buildClinicalSection(
@@ -163,13 +172,107 @@ function buildClinicalSection(
     }
   }
 
-  return { match, canonical, isLabEndpoint, relatedRules, firedRuleIds };
+  // Build per-sex entries if any matches for this canonical have a non-null sex
+  let perSexMatches: PerSexEntry[] | undefined;
+  const sexSpecificMatches = analytics.labMatches.filter(
+    m => m.sex != null && m.matchedEndpoints.some(e => resolveCanonical(e) === canonical)
+  );
+  if (sexSpecificMatches.length > 0) {
+    // Look up bySex data from endpoint summaries
+    const ep = analytics.endpoints.find(e => resolveCanonical(e.endpoint_label, e.testCode) === canonical);
+    const uniqueSexes = [...new Set(sexSpecificMatches.map(m => m.sex!))].sort();
+
+    // Also include sexes that have bySex data but no match
+    if (ep && sexesDisagree(ep) && ep.bySex) {
+      for (const sex of ep.bySex.keys()) {
+        if (!uniqueSexes.includes(sex)) uniqueSexes.push(sex);
+      }
+      uniqueSexes.sort();
+    }
+
+    perSexMatches = uniqueSexes.map(sex => {
+      const bestMatch = sexSpecificMatches
+        .filter(m => m.sex === sex)
+        .sort((a, b) => {
+          const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
+          return (sevOrder[b.severity] ?? 0) - (sevOrder[a.severity] ?? 0);
+        })[0] ?? null;
+      const sexData = ep?.bySex?.get(sex);
+      return { sex, match: bestMatch, sexData };
+    });
+  }
+
+  return { match, canonical, isLabEndpoint, relatedRules, firedRuleIds, perSexMatches };
+}
+
+function PerSexCard({ entry, canonical }: { entry: PerSexEntry; canonical: string | null }) {
+  const sexSymbol = entry.sex === "M" ? "\u2642" : "\u2640";
+  const { match, sexData } = entry;
+
+  if (match) {
+    const fc = canonical ? match.foldChanges[canonical] : null;
+    const thresholdDesc = canonical ? describeThreshold(match.ruleId, canonical) : null;
+    return (
+      <div className={`rounded p-2 ${getClinicalTierCardBorderClass(match.severity)} ${getClinicalTierCardBgClass(match.severity)}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium">{sexSymbol} {entry.sex}:</span>
+            <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold ${getClinicalTierBadgeClasses(match.severity)}`}>
+              {match.severity} {match.severityLabel}
+            </span>
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground">Rule {match.ruleId}</span>
+        </div>
+        {fc != null && canonical && (
+          <div className="mt-1 text-[10px] text-foreground/80">
+            {canonical} <span className="font-mono">{fc.toFixed(1)}{"\u00d7"}</span> vs control
+            {sexData?.direction && <span className="text-muted-foreground"> ({sexData.direction === "up" ? "\u2191" : "\u2193"})</span>}
+          </div>
+        )}
+        {thresholdDesc && (
+          <div className="mt-0.5 text-[10px] text-muted-foreground">Threshold: {thresholdDesc}</div>
+        )}
+      </div>
+    );
+  }
+
+  // No match for this sex — show fold change and direction from bySex data
+  return (
+    <div className="rounded p-2 border-l-2 border-gray-200 bg-gray-50/50">
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs font-medium">{sexSymbol} {entry.sex}:</span>
+        <span className="text-[10px] text-muted-foreground">No threshold reached</span>
+      </div>
+      {sexData && canonical && (
+        <div className="mt-1 text-[10px] text-muted-foreground">
+          {canonical} <span className="font-mono">{(sexData.maxFoldChange ?? 0).toFixed(1)}{"\u00d7"}</span> vs control
+          {sexData.direction && <span> ({sexData.direction === "up" ? "\u2191" : "\u2193"})</span>}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ClinicalSignificanceSection({ section, analytics }: { section: ClinicalSection; analytics?: FindingsAnalytics }) {
-  const { match, canonical, isLabEndpoint, relatedRules, firedRuleIds } = section;
+  const { match, canonical, isLabEndpoint, relatedRules, firedRuleIds, perSexMatches } = section;
 
   if (!isLabEndpoint) return null;
+
+  // Per-sex display when sexes diverge
+  if (perSexMatches && perSexMatches.length > 0) {
+    return (
+      <div className="mt-3 space-y-2">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Clinical significance (per sex)
+        </div>
+        <div className="space-y-1.5">
+          {perSexMatches.map(entry => (
+            <PerSexCard key={entry.sex} entry={entry} canonical={canonical} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // LB endpoint with no match
   if (!match) {

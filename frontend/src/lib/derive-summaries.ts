@@ -27,6 +27,18 @@ export interface OrganSummary {
   domains: string[];
 }
 
+export interface SexEndpointSummary {
+  sex: string;
+  direction: "up" | "down" | "none" | null;
+  maxEffectSize: number | null;
+  maxFoldChange: number | null;
+  minPValue: number | null;
+  pattern: string;
+  worstSeverity: "adverse" | "warning" | "normal";
+  treatmentRelated: boolean;
+  testCode?: string;
+}
+
 export interface EndpointSummary {
   endpoint_label: string;
   organ_system: string;
@@ -54,6 +66,8 @@ export interface EndpointSummary {
   noaelDoseValue?: number | null;
   /** NOAEL dose unit */
   noaelDoseUnit?: string | null;
+  /** Per-sex breakdowns. Present when endpoint has data for multiple sexes. */
+  bySex?: Map<string, SexEndpointSummary>;
 }
 
 export interface OrganCoherence {
@@ -190,6 +204,18 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     maxFoldChange: number | null;
   }>();
 
+  // Per-sex aggregation: label → sex → accumulator
+  const sexMap = new Map<string, Map<string, {
+    direction: "up" | "down" | "none" | null;
+    maxEffect: number | null;
+    maxFoldChange: number | null;
+    minP: number | null;
+    pattern: string;
+    worstSeverity: "adverse" | "warning" | "normal";
+    tr: boolean;
+    testCode?: string;
+  }>>();
+
   for (const row of rows) {
     let entry = map.get(row.endpoint_label);
     if (!entry) {
@@ -218,6 +244,48 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     if (!entry.finding && row.finding) entry.finding = row.finding;
 
     entry.sexes.add(row.sex);
+
+    // Per-sex accumulation (mirrors main aggregation logic)
+    {
+      let labelSexes = sexMap.get(row.endpoint_label);
+      if (!labelSexes) {
+        labelSexes = new Map();
+        sexMap.set(row.endpoint_label, labelSexes);
+      }
+      let sexEntry = labelSexes.get(row.sex);
+      if (!sexEntry) {
+        sexEntry = {
+          direction: null, maxEffect: null, maxFoldChange: null, minP: null,
+          pattern: row.dose_response_pattern,
+          worstSeverity: row.severity, tr: row.treatment_related,
+          testCode: row.test_code,
+        };
+        labelSexes.set(row.sex, sexEntry);
+      }
+      if (!sexEntry.testCode && row.test_code) sexEntry.testCode = row.test_code;
+      if (row.severity === "adverse") sexEntry.worstSeverity = "adverse";
+      else if (row.severity === "warning" && sexEntry.worstSeverity !== "adverse") sexEntry.worstSeverity = "warning";
+      if (row.treatment_related) sexEntry.tr = true;
+      if (row.effect_size != null) {
+        const abs = Math.abs(row.effect_size);
+        if (sexEntry.maxEffect === null || abs > Math.abs(sexEntry.maxEffect)) {
+          sexEntry.maxEffect = row.effect_size;
+          if (row.direction === "up" || row.direction === "down") sexEntry.direction = row.direction;
+          if (row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
+            sexEntry.pattern = row.dose_response_pattern;
+          }
+          if (row.max_fold_change != null) sexEntry.maxFoldChange = row.max_fold_change;
+        }
+      } else if (sexEntry.direction === null && (row.direction === "up" || row.direction === "down")) {
+        sexEntry.direction = row.direction;
+      }
+      if (row.p_value != null && (sexEntry.minP === null || row.p_value < sexEntry.minP)) sexEntry.minP = row.p_value;
+      if ((sexEntry.pattern === "flat" || sexEntry.pattern === "insufficient_data") &&
+          row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
+        sexEntry.pattern = row.dose_response_pattern;
+      }
+    }
+
     if (row.severity === "adverse") entry.worstSeverity = "adverse";
     else if (row.severity === "warning" && entry.worstSeverity !== "adverse") entry.worstSeverity = "warning";
     if (row.treatment_related) entry.tr = true;
@@ -257,7 +325,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
 
   const summaries: EndpointSummary[] = [];
   for (const [label, entry] of map) {
-    summaries.push({
+    const ep: EndpointSummary = {
       endpoint_label: label,
       organ_system: entry.organ_system,
       domain: entry.domain,
@@ -273,7 +341,29 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       finding: entry.finding,
       maxIncidence: entry.maxIncidence,
       maxFoldChange: entry.maxFoldChange,
-    });
+    };
+
+    // Attach bySex for multi-sex endpoints
+    const labelSexes = sexMap.get(label);
+    if (labelSexes && labelSexes.size >= 2) {
+      const bySex = new Map<string, SexEndpointSummary>();
+      for (const [sex, se] of labelSexes) {
+        bySex.set(sex, {
+          sex,
+          direction: se.direction,
+          maxEffectSize: se.maxEffect,
+          maxFoldChange: se.maxFoldChange,
+          minPValue: se.minP,
+          pattern: se.pattern,
+          worstSeverity: se.worstSeverity,
+          treatmentRelated: se.tr,
+          testCode: se.testCode,
+        });
+      }
+      ep.bySex = bySex;
+    }
+
+    summaries.push(ep);
   }
 
   // Sort: adverse first, then TR, then by max effect

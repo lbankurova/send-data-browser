@@ -31,6 +31,14 @@ describe("evaluateLabRules for PointCross", () => {
     expect(firedRules.has("L07")).toBe(false);
   });
 
+  // ── Per-sex rules that SHOULD fire ──
+
+  test("L28 fires for NEUT increase (F sex)", () => {
+    const l28 = matches.find(m => m.ruleId === "L28");
+    expect(l28).toBeDefined();
+    expect(l28!.sex).toBe("F");
+  });
+
   // ── Severity sanity checks ──
 
   test("no S3/S4 match has fold change < 1.5× for all its parameters", () => {
