@@ -283,8 +283,11 @@ export function VerdictPane({
   if (noaelStr) metaItems.push(noaelStr);
 
   // Clinical verdict line
+  const sexAnnotation = clinicalMatch?.sex
+    ? ` \u00b7 ${clinicalMatch.sex === "M" ? "\u2642" : "\u2640"} ${clinicalMatch.sex}`
+    : "";
   const clinicalLineText = clinicalMatch
-    ? `${clinicalMatch.severity} ${clinicalMatch.severityLabel} \u00b7 Rule ${clinicalMatch.ruleId} \u00b7 ${getRuleSourceShortLabel(clinicalMatch.source)}`
+    ? `${clinicalMatch.severity} ${clinicalMatch.severityLabel} \u00b7 Rule ${clinicalMatch.ruleId}${sexAnnotation} \u00b7 ${getRuleSourceShortLabel(clinicalMatch.source)}`
     : null;
   const clinicalLineClass = clinicalMatch ? getClinicalTierTextClass(clinicalMatch.severity) : "";
 

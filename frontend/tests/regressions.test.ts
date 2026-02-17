@@ -55,4 +55,11 @@ describe("regression guards", () => {
   test("L19 does not fire (NEUT fold/direction sex mismatch)", () => {
     expect(firedRules.has("L19")).toBe(false);
   });
+
+  // L28 Neutrophil increase: should fire for F sex (NEUT up 2.07×)
+  test("L28 fires with sex=F (NEUT increase ≥2×, per-sex evaluation)", () => {
+    const l28 = matches.find(m => m.ruleId === "L28");
+    expect(l28).toBeDefined();
+    expect(l28!.sex).toBe("F");
+  });
 });

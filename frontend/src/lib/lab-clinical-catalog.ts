@@ -19,6 +19,7 @@ interface RuleContext {
   sexes: Map<string, string[]>;           // canonical -> sexes affected
   coherenceDomainCount: number;           // from organCoherence for hepatic
   syndromeMatched: boolean;               // from cross-domain syndromes
+  sexFilter: string | null;               // "M" | "F" | null (aggregate)
 }
 
 interface LabRuleThreshold {
@@ -63,6 +64,7 @@ export interface LabClinicalMatch {
   confidence: "HIGH" | "MODERATE" | "LOW";
   confidenceModifiers: ConfidenceModifier[];
   source: string;
+  sex: string | null;  // "M" | "F" | null (aggregate)
 }
 
 // ─── Constants ─────────────────────────────────────────────
@@ -478,6 +480,36 @@ const LAB_RULES: LabRule[] = [
       hasGradedDecrease(ctx, "URINE_SG", 1.3),
   },
 
+  // Graded rules L28-L31 — additional hematology thresholds
+  {
+    id: "L28", name: "Neutrophil increase", category: "graded",
+    parameters: [{ canonical: "NEUT", direction: "increase", role: "required" }],
+    severity: "S1", speciesApplicability: "both", source: "Hematology",
+    thresholds: { NEUT: { value: 2, comparison: "gte" } }, baselineAware: true,
+    evaluate: (ctx) => hasGradedIncrease(ctx, "NEUT", 2),
+  },
+  {
+    id: "L29", name: "WBC increase", category: "graded",
+    parameters: [{ canonical: "WBC", direction: "increase", role: "required" }],
+    severity: "S1", speciesApplicability: "both", source: "Hematology",
+    thresholds: { WBC: { value: 2, comparison: "gte" } }, baselineAware: true,
+    evaluate: (ctx) => hasGradedIncrease(ctx, "WBC", 2),
+  },
+  {
+    id: "L30", name: "Platelet increase", category: "graded",
+    parameters: [{ canonical: "PLAT", direction: "increase", role: "required" }],
+    severity: "S1", speciesApplicability: "both", source: "Hematology",
+    thresholds: { PLAT: { value: 2, comparison: "gte" } }, baselineAware: true,
+    evaluate: (ctx) => hasGradedIncrease(ctx, "PLAT", 2),
+  },
+  {
+    id: "L31", name: "Reticulocyte decrease", category: "graded",
+    parameters: [{ canonical: "RETIC", direction: "decrease", role: "required" }],
+    severity: "S2", speciesApplicability: "both", source: "Hematology",
+    thresholds: { RETIC: { value: 2, comparison: "gte" } }, baselineAware: true,
+    evaluate: (ctx) => hasGradedDecrease(ctx, "RETIC", 2),
+  },
+
   // Governance rules L26-L27 (post-hoc confidence modifiers, not severity triggers)
   {
     id: "L26", name: "Multi-domain convergence bonus", category: "governance",
@@ -497,10 +529,18 @@ const LAB_RULES: LabRule[] = [
 
 // ─── Evaluator ─────────────────────────────────────────────
 
-export function buildContext(
+/** Check if sexes show opposite directions for an endpoint. */
+export function sexesDisagree(ep: EndpointSummary): boolean {
+  if (!ep.bySex || ep.bySex.size < 2) return false;
+  const dirs = new Set([...ep.bySex.values()].map(s => s.direction));
+  return dirs.has("up") && dirs.has("down");
+}
+
+function buildSingleContext(
   endpoints: EndpointSummary[],
-  organCoherence?: Map<string, OrganCoherence>,
-  syndromes?: CrossDomainSyndrome[],
+  organCoherence: Map<string, OrganCoherence> | undefined,
+  syndromes: CrossDomainSyndrome[] | undefined,
+  sexFilter: string | null,
 ): RuleContext {
   const foldChanges = new Map<string, number>();
   const presentCanonicals = new Set<string>();
@@ -514,17 +554,34 @@ export function buildContext(
     if (!canonical) continue;
     presentCanonicals.add(canonical);
 
+    // Determine which values to use: per-sex override or aggregate
+    let fc: number;
+    let dir: string | null;
+    let pat: string;
+    let epSexes: string[];
+
+    if (sexFilter && sexesDisagree(ep) && ep.bySex?.has(sexFilter)) {
+      const sexData = ep.bySex.get(sexFilter)!;
+      fc = sexData.maxFoldChange ?? 0;
+      dir = sexData.direction;
+      pat = sexData.pattern;
+      epSexes = [sexFilter];
+    } else {
+      fc = ep.maxFoldChange ?? 0;
+      dir = ep.direction;
+      pat = ep.pattern;
+      epSexes = ep.sexes;
+    }
+
     // Atomic update: all fields follow the strongest endpoint (by fold change).
-    // First endpoint for a canonical always gets through (existing == null).
-    const fc = ep.maxFoldChange ?? 0;
     const existing = foldChanges.get(canonical);
     if (existing == null || fc > existing) {
       foldChanges.set(canonical, fc);
-      if (ep.direction === "up" || ep.direction === "down") {
-        endpointDirection.set(canonical, ep.direction);
+      if (dir === "up" || dir === "down") {
+        endpointDirection.set(canonical, dir);
       }
-      endpointPattern.set(canonical, ep.pattern);
-      sexes.set(canonical, ep.sexes);
+      endpointPattern.set(canonical, pat);
+      sexes.set(canonical, epSexes);
     }
 
     // Severity always takes worst (independent of effect magnitude)
@@ -551,7 +608,33 @@ export function buildContext(
     sexes,
     coherenceDomainCount,
     syndromeMatched,
+    sexFilter,
   };
+}
+
+export function buildContext(
+  endpoints: EndpointSummary[],
+  organCoherence?: Map<string, OrganCoherence>,
+  syndromes?: CrossDomainSyndrome[],
+): RuleContext[] {
+  // Check if any endpoint has sex-divergent directions
+  const hasDivergent = endpoints.some(ep => sexesDisagree(ep));
+
+  if (!hasDivergent) {
+    return [buildSingleContext(endpoints, organCoherence, syndromes, null)];
+  }
+
+  // Collect unique sexes from bySex entries of divergent endpoints
+  const allSexes = new Set<string>();
+  for (const ep of endpoints) {
+    if (sexesDisagree(ep) && ep.bySex) {
+      for (const sex of ep.bySex.keys()) allSexes.add(sex);
+    }
+  }
+
+  return [...allSexes].sort().map(sex =>
+    buildSingleContext(endpoints, organCoherence, syndromes, sex)
+  );
 }
 
 /** Additive confidence scoring per spec (-5..+10 scale, base 0).
@@ -665,35 +748,38 @@ export function evaluateLabRules(
   organCoherence?: Map<string, OrganCoherence>,
   syndromes?: CrossDomainSyndrome[],
 ): LabClinicalMatch[] {
-  const ctx = buildContext(endpoints, organCoherence, syndromes);
+  const contexts = buildContext(endpoints, organCoherence, syndromes);
   const matches: LabClinicalMatch[] = [];
 
-  // Evaluate non-governance rules
-  for (const rule of LAB_RULES) {
-    if (rule.category === "governance") continue;
-    if (!rule.evaluate(ctx)) continue;
+  for (const ctx of contexts) {
+    // Evaluate non-governance rules
+    for (const rule of LAB_RULES) {
+      if (rule.category === "governance") continue;
+      if (!rule.evaluate(ctx)) continue;
 
-    const { score, confidence, modifiers } = computeConfidence(rule, ctx);
-    matches.push({
-      ruleId: rule.id,
-      ruleName: rule.name,
-      severity: rule.severity,
-      severityLabel: SEVERITY_LABELS[rule.severity],
-      category: rule.category,
-      matchedEndpoints: getMatchedEndpoints(rule, endpoints),
-      foldChanges: getFoldChangesForRule(rule, ctx),
-      confidenceScore: score,
-      confidence,
-      confidenceModifiers: modifiers,
-      source: rule.source,
-    });
+      const { score, confidence, modifiers } = computeConfidence(rule, ctx);
+      matches.push({
+        ruleId: rule.id,
+        ruleName: rule.name,
+        severity: rule.severity,
+        severityLabel: SEVERITY_LABELS[rule.severity],
+        category: rule.category,
+        matchedEndpoints: getMatchedEndpoints(rule, endpoints),
+        foldChanges: getFoldChangesForRule(rule, ctx),
+        confidenceScore: score,
+        confidence,
+        confidenceModifiers: modifiers,
+        source: rule.source,
+        sex: ctx.sexFilter,
+      });
+    }
   }
 
-  // Deduplicate: if multiple rules match same primary endpoint, keep highest severity
+  // Deduplicate: if multiple rules match same primary endpoint + sex, keep highest severity
   const byEndpoint = new Map<string, LabClinicalMatch>();
   const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
   for (const match of matches) {
-    const key = match.matchedEndpoints.sort().join("|");
+    const key = match.matchedEndpoints.sort().join("|") + "::" + (match.sex ?? "ALL");
     const existing = byEndpoint.get(key);
     if (!existing || sevOrder[match.severity] > sevOrder[existing.severity]) {
       byEndpoint.set(key, match);
@@ -917,7 +1003,9 @@ export function explainRuleNotTriggered(
   organCoherence?: Map<string, OrganCoherence>,
   syndromes?: CrossDomainSyndrome[],
 ): string | null {
-  const ctx = buildContext(endpoints, organCoherence, syndromes);
+  const contexts = buildContext(endpoints, organCoherence, syndromes);
+  // Liver-specific checks use first context (liver endpoints don't diverge by sex in practice)
+  const ctx = contexts[0];
   const altUp = hasUp(ctx, "ALT");
   const astUp = hasUp(ctx, "AST");
   const tbiliUp = hasUp(ctx, "TBILI");
@@ -940,17 +1028,15 @@ export function explainRuleNotTriggered(
     if (!shareSex(ctx, altOrAst, "TBILI")) return `${altOrAst} and bilirubin affected in different sexes`;
   }
 
-  // Fallback: all explicit conditions pass but the rule is still "not triggered".
-  // This happens when the rule was deduplicated by a higher-severity rule with the
-  // same matched endpoints (e.g., L08 S3 superseded by L03 S4).
+  // Fallback: check if rule fires in ANY context (superseding check)
   const rule = LAB_RULES.find((r) => r.id === ruleId);
-  if (rule?.evaluate(ctx)) {
+  if (rule && contexts.some(c => rule.evaluate(c))) {
     const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
     const superseder = LAB_RULES.find(
       (r) => r.id !== ruleId
         && r.category !== "governance"
         && (sevOrder[r.severity] ?? 0) > (sevOrder[rule.severity] ?? 0)
-        && r.evaluate(ctx)
+        && contexts.some(c => r.evaluate(c))
         && r.parameters.some((p) => rule.parameters.some((rp) => rp.canonical === p.canonical)),
     );
     if (superseder) {
