@@ -16,8 +16,11 @@ export interface ScatterSelectedPoint {
 
 interface FindingsQuadrantScatterProps {
   endpoints: EndpointSummary[];
+  /** Total endpoint count before scatter exclusions (for N/M display). */
+  totalEndpoints: number;
   selectedEndpoint: string | null;
   onSelect: (label: string) => void;
+  onExclude?: (label: string) => void;
   onSelectedPointChange?: (pt: ScatterSelectedPoint | null) => void;
   organCoherence?: Map<string, OrganCoherence>;
   syndromes?: CrossDomainSyndrome[];
@@ -27,8 +30,10 @@ interface FindingsQuadrantScatterProps {
 
 export function FindingsQuadrantScatter({
   endpoints,
+  totalEndpoints,
   selectedEndpoint,
   onSelect,
+  onExclude,
   onSelectedPointChange,
   organCoherence,
   syndromes,
@@ -74,6 +79,17 @@ export function FindingsQuadrantScatter({
       }
     },
     [onSelect],
+  );
+
+  const handleDoubleClick = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (params: any) => {
+      const label = params?.data?._meta?.endpoint_label;
+      if (label && onExclude) {
+        onExclude(label);
+      }
+    },
+    [onExclude],
   );
 
   // Syndrome hover linking: highlight all dots in the same syndrome
@@ -146,9 +162,20 @@ export function FindingsQuadrantScatter({
     return entries;
   }, [points]);
 
+  // Count label: "53/60 endpoints" when some are unplottable, "60 endpoints" otherwise
+  const gap = totalEndpoints - points.length;
+  const countLabel = gap > 0
+    ? `${points.length}/${totalEndpoints} endpoints`
+    : `${points.length} endpoints`;
+  const tooltipLines = [
+    "Click to select \u00b7 Double-click to exclude",
+    ...(gap > 0 ? [`${gap} endpoint${gap > 1 ? "s" : ""} not plotted (missing effect size or p-value)`] : []),
+  ];
+  const countTooltip = tooltipLines.join("\n");
+
   return (
     <div className="flex h-full flex-col">
-      {/* Header: legend left, endpoint count right */}
+      {/* Header: legend left, finding count right */}
       <div className="flex items-center justify-between px-2 py-0.5">
         <div className="flex items-center gap-2">
           {legendEntries.map((e, i) => (
@@ -157,21 +184,15 @@ export function FindingsQuadrantScatter({
             </span>
           ))}
         </div>
-        <span
-          className="text-[10px] text-muted-foreground"
-          title={points.length < endpoints.length
-            ? `${endpoints.length - points.length} endpoint${endpoints.length - points.length > 1 ? "s" : ""} not plotted (missing effect size or p-value)`
-            : undefined}
-        >
-          {points.length < endpoints.length
-            ? `${points.length}/${endpoints.length} endpoints`
-            : `${points.length} endpoints`}
+        <span className="text-[10px] text-muted-foreground" title={countTooltip}>
+          {countLabel}
         </span>
       </div>
       {/* Chart */}
       <EChartsWrapper
         option={option}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
         onMouseOver={handleMouseOver}
         onMouseOut={handleMouseOut}
         ref={chartRef}

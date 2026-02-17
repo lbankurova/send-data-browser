@@ -63,6 +63,11 @@ export function getFindingsClearScopeCallback() {
   return _findingsClearScopeCallback;
 }
 
+let _findingsExcludedCallback: ((excluded: ReadonlySet<string>) => void) | null = null;
+export function setFindingsExcludedCallback(cb: typeof _findingsExcludedCallback) {
+  _findingsExcludedCallback = cb;
+}
+
 // Static empty filters — fetch all findings, filter client-side
 const ALL_FILTERS: FindingsFilters = {
   domain: null, sex: null, severity: null, search: "",
@@ -92,6 +97,7 @@ export function FindingsView() {
   const [selectedPointData, setSelectedPointData] = useState<ScatterSelectedPoint | null>(null);
   const [showInfoTooltip, setShowInfoTooltip] = useState(false);
   const infoHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [excludedEndpoints, setExcludedEndpoints] = useState<Set<string>>(new Set());
 
   const handleSelectedPointChange = useCallback((pt: ScatterSelectedPoint | null) => {
     setSelectedPointData(pt);
@@ -105,6 +111,19 @@ export function FindingsView() {
   const handleInfoMouseLeave = useCallback(() => {
     infoHideTimerRef.current = setTimeout(() => setShowInfoTooltip(false), 150);
   }, []);
+
+  const handleExcludeEndpoint = useCallback((label: string) => {
+    setExcludedEndpoints((prev) => { const next = new Set(prev); next.add(label); return next; });
+  }, []);
+
+  const handleRestoreEndpoint = useCallback((label: string) => {
+    setExcludedEndpoints((prev) => { const next = new Set(prev); next.delete(label); return next; });
+  }, []);
+
+  // Sync excluded endpoints to rail via reverse callback
+  useEffect(() => {
+    _findingsExcludedCallback?.(excludedEndpoints);
+  }, [excludedEndpoints]);
 
   // Sync study selection
   useEffect(() => {
@@ -174,11 +193,16 @@ export function FindingsView() {
     [endpointSummaries, organCoherence, syndromes],
   );
 
-  // Scatter endpoints — filtered by rail's visible set
-  const scatterEndpoints = useMemo(() => {
+  // Scatter endpoints — filtered by rail's visible set, then by user exclusions
+  const railFilteredEndpoints = useMemo(() => {
     if (!visibleLabels) return endpointSummaries;
     return endpointSummaries.filter((ep) => visibleLabels.has(ep.endpoint_label));
   }, [endpointSummaries, visibleLabels]);
+
+  const scatterEndpoints = useMemo(() => {
+    if (excludedEndpoints.size === 0) return railFilteredEndpoints;
+    return railFilteredEndpoints.filter((ep) => !excludedEndpoints.has(ep.endpoint_label));
+  }, [railFilteredEndpoints, excludedEndpoints]);
 
   // Table findings — filtered by rail's visible set
   const tableFindings = useMemo(() => {
@@ -350,8 +374,10 @@ export function FindingsView() {
         >
           <FindingsQuadrantScatter
             endpoints={scatterEndpoints}
+            totalEndpoints={railFilteredEndpoints.length}
             selectedEndpoint={activeEndpoint}
             onSelect={handleEndpointSelect}
+            onExclude={handleExcludeEndpoint}
             onSelectedPointChange={handleSelectedPointChange}
             organCoherence={organCoherence}
             syndromes={syndromes}
@@ -374,6 +400,8 @@ export function FindingsView() {
           findings={tableFindings}
           doseGroups={data.dose_groups}
           signalScores={signalScoreMap}
+          excludedEndpoints={excludedEndpoints}
+          onToggleExclude={handleRestoreEndpoint}
         />
       ) : null}
       </div>

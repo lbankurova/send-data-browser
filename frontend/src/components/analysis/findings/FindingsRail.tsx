@@ -14,6 +14,7 @@ import {
   CornerRightUp,
   Activity,
   Minus,
+  EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFindings } from "@/hooks/useFindings";
@@ -80,6 +81,8 @@ interface FindingsRailProps {
   onGroupingChange?: (mode: GroupingMode) => void;
   /** Callback with the rail's fully-filtered visible endpoint set + display metadata. */
   onVisibleEndpointsChange?: (state: RailVisibleState) => void;
+  /** Endpoints excluded from the scatter plot (double-click to hide). */
+  excludedEndpoints?: ReadonlySet<string>;
 }
 
 // ─── Component ─────────────────────────────────────────────
@@ -92,6 +95,7 @@ export function FindingsRail({
   onEndpointSelect,
   onGroupingChange,
   onVisibleEndpointsChange,
+  excludedEndpoints,
 }: FindingsRailProps) {
   // Same data source as FindingsView — React Query shares the cache
   const { data: rawData, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FINDINGS_FILTERS);
@@ -492,6 +496,7 @@ export function FindingsRail({
                 key={ep.endpoint_label}
                 endpoint={ep}
                 isSelected={activeEndpoint === ep.endpoint_label}
+                isExcluded={excludedEndpoints?.has(ep.endpoint_label)}
                 onClick={() => handleEndpointClick(ep.endpoint_label)}
                 ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
               />
@@ -513,6 +518,7 @@ export function FindingsRail({
               registerEndpointRef={registerEndpointRef}
               multiSyndromeIndex={grouping === "syndrome" ? multiSyndromeIndex : undefined}
               currentSyndromeId={grouping === "syndrome" ? card.key : undefined}
+              excludedEndpoints={excludedEndpoints}
             />
           ))
         )}
@@ -761,6 +767,7 @@ function CardSection({
   registerEndpointRef,
   multiSyndromeIndex,
   currentSyndromeId,
+  excludedEndpoints,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -774,6 +781,7 @@ function CardSection({
   registerEndpointRef: (label: string, el: HTMLElement | null) => void;
   multiSyndromeIndex?: Map<string, string[]>;
   currentSyndromeId?: string;
+  excludedEndpoints?: ReadonlySet<string>;
 }) {
   return (
     <div>
@@ -798,6 +806,7 @@ function CardSection({
                 key={ep.endpoint_label}
                 endpoint={ep}
                 isSelected={activeEndpoint === ep.endpoint_label}
+                isExcluded={excludedEndpoints?.has(ep.endpoint_label)}
                 onClick={() => onEndpointClick(ep.endpoint_label)}
                 ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
                 otherSyndromes={otherSyndromes}
@@ -901,9 +910,10 @@ function CardLabel({ grouping, value, syndromeLabel }: { grouping: GroupingMode;
 const EndpointRow = forwardRef<HTMLDivElement, {
   endpoint: EndpointWithSignal;
   isSelected: boolean;
+  isExcluded?: boolean;
   onClick: () => void;
   otherSyndromes?: string[];
-}>(function EndpointRow({ endpoint, isSelected, onClick, otherSyndromes }, ref) {
+}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, otherSyndromes }, ref) {
   const dirSymbol = endpoint.direction === "up" ? "▲" : endpoint.direction === "down" ? "▼" : "—";
 
   const sevColor =
@@ -924,9 +934,10 @@ const EndpointRow = forwardRef<HTMLDivElement, {
         onClick={onClick}
         aria-selected={isSelected}
       >
+        {isExcluded && <EyeOff className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
         <span className="shrink-0 text-[10px] text-muted-foreground">{dirSymbol}</span>
         <PatternGlyph pattern={endpoint.pattern} className="shrink-0 text-muted-foreground" />
-        <span className="min-w-0 flex-1 truncate text-left text-xs" title={endpoint.endpoint_label}>
+        <span className={cn("min-w-0 flex-1 truncate text-left text-xs", isExcluded && "text-muted-foreground/50")} title={endpoint.endpoint_label}>
           {endpoint.endpoint_label}
         </span>
         <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", sevColor)} />
