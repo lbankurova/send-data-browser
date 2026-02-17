@@ -13,12 +13,13 @@ import { EvidencePane } from "./EvidencePane";
 import { DoseDetailPane } from "./DoseDetailPane";
 import { CorrelationsPane } from "./CorrelationsPane";
 import { ContextPane } from "./ContextPane";
+import { OrganContextPanel } from "./OrganContextPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
-  const { selectedFindingId, selectedFinding, endpointSexes } = useFindingSelection();
+  const { selectedFindingId, selectedFinding, endpointSexes, selectedGroupType, selectedGroupKey } = useFindingSelection();
   const analytics = useFindingsAnalytics();
   const { data: context, isLoading } = useFindingContext(
     studyId,
@@ -73,7 +74,17 @@ export function FindingsContextPanel() {
     return { dose_value: row.noael_dose_value, dose_unit: row.noael_dose_unit ?? "mg/kg" };
   })();
 
+  // Priority 1: Endpoint selected → endpoint-level panel
+  // Priority 2: Group selected → group-level panel
+  // Priority 3: Nothing → empty state
+
   if (!selectedFindingId || !selectedFinding) {
+    // Check for group selection (Priority 2)
+    if (selectedGroupType === "organ" && selectedGroupKey) {
+      return <OrganContextPanel organKey={selectedGroupKey} />;
+    }
+
+    // Priority 3: empty state
     return (
       <div className="p-4">
         <h3 className="mb-2 text-sm font-semibold">Findings</h3>

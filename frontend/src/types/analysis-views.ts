@@ -152,6 +152,14 @@ export interface AdverseEffectSummaryRow {
   severity: "adverse" | "warning" | "normal";
   treatment_related: boolean;
   dose_response_pattern: string;
+  /** SEND test code (e.g., LBTESTCD) — used for structured syndrome matching */
+  test_code?: string;
+  /** Specimen name for MI/MA/OM domains */
+  specimen?: string | null;
+  /** Finding name for MI/MA domains (separate from specimen) */
+  finding?: string | null;
+  /** Maximum incidence across treated dose groups (0-1) */
+  max_incidence?: number | null;
 }
 
 // --- Dose-Response (View 2) ---
