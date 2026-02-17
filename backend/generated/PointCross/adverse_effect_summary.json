@@ -12,7 +12,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Albumin",
@@ -27,7 +27,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Albumin",
@@ -42,7 +42,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -57,7 +57,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -72,7 +72,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -87,7 +87,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -192,7 +192,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -207,7 +207,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -222,7 +222,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -282,7 +282,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -297,7 +297,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -312,7 +312,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -327,7 +327,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -342,7 +342,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -357,7 +357,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -417,7 +417,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Basophils",
@@ -432,7 +432,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Basophils",
@@ -447,7 +447,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Basophils",
@@ -461,8 +461,8 @@
     "effect_size": -0.3517,
     "direction": "down",
     "severity": "adverse",
-    "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "treatment_related": false,
+    "dose_response_pattern": "flat"
   },
   {
     "endpoint_label": "Basophils",
@@ -476,8 +476,8 @@
     "effect_size": -1.2265,
     "direction": "down",
     "severity": "adverse",
-    "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "treatment_related": false,
+    "dose_response_pattern": "flat"
   },
   {
     "endpoint_label": "Basophils",
@@ -491,8 +491,8 @@
     "effect_size": -1.036,
     "direction": "down",
     "severity": "adverse",
-    "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "treatment_related": false,
+    "dose_response_pattern": "flat"
   },
   {
     "endpoint_label": "Calcium",
@@ -507,7 +507,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "flat"
   },
   {
     "endpoint_label": "Calcium",
@@ -522,7 +522,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "flat"
   },
   {
     "endpoint_label": "Calcium",
@@ -537,7 +537,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "flat"
   },
   {
     "endpoint_label": "Cholesterol",
@@ -552,7 +552,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Cholesterol",
@@ -567,7 +567,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Cholesterol",
@@ -582,7 +582,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Cholesterol",
@@ -642,7 +642,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Creatinine",
@@ -657,7 +657,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Creatinine",
@@ -672,7 +672,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Creatinine",
@@ -687,7 +687,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Creatinine",
@@ -702,7 +702,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Creatinine",
@@ -717,7 +717,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Eosinophils",
@@ -732,7 +732,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Eosinophils",
@@ -747,7 +747,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Eosinophils",
@@ -762,7 +762,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -777,7 +777,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -792,7 +792,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -807,7 +807,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -912,7 +912,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Hematocrit",
@@ -927,7 +927,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Hematocrit",
@@ -942,7 +942,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Hematocrit",
@@ -1092,7 +1092,7 @@
     "direction": "up",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Potassium",
@@ -1107,7 +1107,7 @@
     "direction": "up",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Potassium",
@@ -1122,7 +1122,7 @@
     "direction": "up",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Potassium",
@@ -1227,7 +1227,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Large Unstained Cells",
@@ -1242,7 +1242,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Large Unstained Cells",
@@ -1257,7 +1257,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1272,7 +1272,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1287,7 +1287,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1302,7 +1302,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1317,7 +1317,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1332,7 +1332,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -1347,7 +1347,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Hemoglobin",
@@ -1362,7 +1362,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Hemoglobin",
@@ -1377,7 +1377,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Hemoglobin",
@@ -1392,7 +1392,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -1407,7 +1407,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -1422,7 +1422,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -1437,7 +1437,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -1497,7 +1497,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Monocytes",
@@ -1512,7 +1512,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Monocytes",
@@ -1527,7 +1527,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1542,7 +1542,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1557,7 +1557,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1572,7 +1572,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1587,7 +1587,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1602,7 +1602,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Neutrophils",
@@ -1617,7 +1617,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "pH",
@@ -1632,7 +1632,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "pH",
@@ -1647,7 +1647,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "pH",
@@ -1662,7 +1662,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "pH",
@@ -1676,8 +1676,8 @@
     "effect_size": 0.2104,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "treatment_related": false,
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "pH",
@@ -1691,8 +1691,8 @@
     "effect_size": 0.9559,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "treatment_related": false,
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "pH",
@@ -1706,8 +1706,8 @@
     "effect_size": 1.1169,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "treatment_related": false,
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Phosphate",
@@ -1722,7 +1722,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Phosphate",
@@ -1737,7 +1737,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Phosphate",
@@ -1752,7 +1752,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Phosphate",
@@ -1767,7 +1767,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Phosphate",
@@ -1782,7 +1782,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Phosphate",
@@ -1797,7 +1797,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Platelets",
@@ -1902,7 +1902,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -1917,7 +1917,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -1932,7 +1932,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -2082,7 +2082,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "flat"
+    "dose_response_pattern": "non_monotonic"
   },
   {
     "endpoint_label": "Sodium",
@@ -2097,7 +2097,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "flat"
+    "dose_response_pattern": "non_monotonic"
   },
   {
     "endpoint_label": "Sodium",
@@ -2112,7 +2112,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "flat"
+    "dose_response_pattern": "non_monotonic"
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2126,8 +2126,8 @@
     "effect_size": 0.156,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "treatment_related": false,
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2141,8 +2141,8 @@
     "effect_size": 0.3191,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "treatment_related": false,
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2156,8 +2156,8 @@
     "effect_size": 1.0496,
     "direction": "up",
     "severity": "adverse",
-    "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "treatment_related": false,
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2172,7 +2172,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2187,7 +2187,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Triglycerides",
@@ -2202,7 +2202,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2217,7 +2217,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2232,7 +2232,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2247,7 +2247,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2262,7 +2262,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2277,7 +2277,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Leukocytes",
@@ -2292,7 +2292,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2307,7 +2307,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2322,7 +2322,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2337,7 +2337,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2352,7 +2352,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2367,7 +2367,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2382,7 +2382,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2397,7 +2397,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2412,7 +2412,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2427,7 +2427,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2577,7 +2577,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2592,7 +2592,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2607,7 +2607,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2667,7 +2667,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2682,7 +2682,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2697,7 +2697,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2712,7 +2712,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2727,7 +2727,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2742,7 +2742,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2757,7 +2757,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2772,7 +2772,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2787,7 +2787,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2802,7 +2802,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2817,7 +2817,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2832,7 +2832,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2847,7 +2847,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2862,7 +2862,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2877,7 +2877,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2892,7 +2892,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2907,7 +2907,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2922,7 +2922,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2937,7 +2937,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2952,7 +2952,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2967,7 +2967,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2982,7 +2982,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -2997,7 +2997,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3012,7 +3012,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3117,7 +3117,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3132,7 +3132,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3147,7 +3147,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3207,7 +3207,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3222,7 +3222,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3237,7 +3237,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3297,7 +3297,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3312,7 +3312,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3327,7 +3327,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3342,7 +3342,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3357,7 +3357,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3372,7 +3372,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3387,7 +3387,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3402,7 +3402,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3417,7 +3417,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "Body Weight",
@@ -3477,7 +3477,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -3492,7 +3492,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -3507,7 +3507,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -3522,7 +3522,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -3537,7 +3537,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -3552,7 +3552,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -3567,7 +3567,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -3582,7 +3582,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -3597,7 +3597,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -3702,7 +3702,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -3717,7 +3717,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -3732,7 +3732,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -3747,7 +3747,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -3762,7 +3762,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -3777,7 +3777,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -3792,7 +3792,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -3807,7 +3807,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -3822,7 +3822,7 @@
     "direction": "down",
     "severity": "warning",
     "treatment_related": false,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -3837,7 +3837,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -3852,7 +3852,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -3867,7 +3867,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -3882,7 +3882,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -3897,7 +3897,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -3912,7 +3912,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_decrease"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -3927,7 +3927,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -3942,7 +3942,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -3957,7 +3957,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -3972,7 +3972,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -3987,7 +3987,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -4002,7 +4002,7 @@
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "LIVER \u2014 LIVER (WEIGHT)",
@@ -4017,7 +4017,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "LIVER \u2014 LIVER (WEIGHT)",
@@ -4032,7 +4032,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "LIVER \u2014 LIVER (WEIGHT)",
@@ -4047,7 +4047,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "monotonic_increase"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "OVARY \u2014 OVARY (WEIGHT)",
@@ -4062,7 +4062,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "OVARY \u2014 OVARY (WEIGHT)",
@@ -4077,7 +4077,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "OVARY \u2014 OVARY (WEIGHT)",
@@ -4092,7 +4092,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "SPLEEN \u2014 SPLEEN (WEIGHT)",
@@ -4107,7 +4107,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "SPLEEN \u2014 SPLEEN (WEIGHT)",
@@ -4122,7 +4122,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "SPLEEN \u2014 SPLEEN (WEIGHT)",
@@ -4137,7 +4137,7 @@
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true,
-    "dose_response_pattern": "non_monotonic"
+    "dose_response_pattern": "threshold"
   },
   {
     "endpoint_label": "TESTIS \u2014 TESTIS (WEIGHT)",
