@@ -907,7 +907,7 @@ function CardLabel({ grouping, value, syndromeLabel }: { grouping: GroupingMode;
 
 // ─── Endpoint Row ──────────────────────────────────────────
 
-const EndpointRow = forwardRef<HTMLDivElement, {
+const EndpointRow = forwardRef<HTMLButtonElement, {
   endpoint: EndpointWithSignal;
   isSelected: boolean;
   isExcluded?: boolean;
@@ -924,16 +924,17 @@ const EndpointRow = forwardRef<HTMLDivElement, {
         : "bg-gray-400";
 
   return (
-    <div ref={ref}>
+    <button
+      ref={ref}
+      className={cn(
+        "flex w-full flex-col cursor-pointer transition-colors",
+        isSelected ? "bg-accent" : "hover:bg-accent/30",
+      )}
+      onClick={onClick}
+      aria-selected={isSelected}
+    >
       {/* Line 1: Identity + Signals */}
-      <button
-        className={cn(
-          "flex w-full items-center gap-1.5 px-3 py-1 pl-6 cursor-pointer transition-colors",
-          isSelected ? "bg-accent" : "hover:bg-accent/30",
-        )}
-        onClick={onClick}
-        aria-selected={isSelected}
-      >
+      <div className="flex w-full items-center gap-1.5 px-3 py-1 pl-6">
         {isExcluded && <EyeOff className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
         <span className="shrink-0 text-[10px] text-muted-foreground">{dirSymbol}</span>
         <PatternGlyph pattern={endpoint.pattern} className="shrink-0 text-muted-foreground" />
@@ -949,7 +950,7 @@ const EndpointRow = forwardRef<HTMLDivElement, {
             {otherSyndromes.map((id) => `+${id}`).join(" ")}
           </span>
         )}
-      </button>
+      </div>
 
       {/* Line 2: Metrics */}
       <div className="flex items-center gap-2 px-3 pb-1 pl-8 font-mono text-[10px] text-muted-foreground">
@@ -961,6 +962,6 @@ const EndpointRow = forwardRef<HTMLDivElement, {
         )}
         <span>{endpoint.sexes.join(" ")}</span>
       </div>
-    </div>
+    </button>
   );
 });
