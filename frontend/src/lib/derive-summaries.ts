@@ -30,6 +30,15 @@ export interface EndpointSummary {
   pattern: string;
 }
 
+export interface OrganCoherence {
+  organ_system: string;
+  domainCount: number;           // unique domains with adverse/warning endpoints
+  domains: string[];             // e.g., ["LB", "OM", "MI"]
+  adverseEndpoints: number;
+  warningEndpoints: number;
+  convergenceLabel: string;      // "3-domain convergence" | "2-domain convergence" | "single domain"
+}
+
 // ─── Derive functions ──────────────────────────────────────
 
 export function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSummary[] {
@@ -159,4 +168,40 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     if (a.treatmentRelated !== b.treatmentRelated) return a.treatmentRelated ? -1 : 1;
     return Math.abs(b.maxEffectSize ?? 0) - Math.abs(a.maxEffectSize ?? 0);
   });
+}
+
+// ─── Organ coherence ─────────────────────────────────────────
+
+export function deriveOrganCoherence(endpoints: EndpointSummary[]): Map<string, OrganCoherence> {
+  const byOrgan = new Map<string, EndpointSummary[]>();
+  for (const ep of endpoints) {
+    let list = byOrgan.get(ep.organ_system);
+    if (!list) {
+      list = [];
+      byOrgan.set(ep.organ_system, list);
+    }
+    list.push(ep);
+  }
+
+  const result = new Map<string, OrganCoherence>();
+  for (const [organ, eps] of byOrgan) {
+    const significantEps = eps.filter(
+      (e) => e.worstSeverity === "adverse" || e.worstSeverity === "warning"
+    );
+    const domains = [...new Set(significantEps.map((e) => e.domain))].sort();
+    result.set(organ, {
+      organ_system: organ,
+      domainCount: domains.length,
+      domains,
+      adverseEndpoints: eps.filter((e) => e.worstSeverity === "adverse").length,
+      warningEndpoints: eps.filter((e) => e.worstSeverity === "warning").length,
+      convergenceLabel:
+        domains.length >= 3
+          ? "3-domain convergence"
+          : domains.length >= 2
+            ? "2-domain convergence"
+            : "single domain",
+    });
+  }
+  return result;
 }
