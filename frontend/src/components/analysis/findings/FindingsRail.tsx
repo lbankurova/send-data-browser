@@ -46,7 +46,7 @@ import type {
 } from "@/lib/findings-rail-engine";
 import { deriveOrganCoherence } from "@/lib/derive-summaries";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
-import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
+import { evaluateLabRules, getClinicalFloor, getClinicalTierBadgeClasses } from "@/lib/lab-clinical-catalog";
 import { formatPValue, titleCase, getDomainBadgeColor } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -124,21 +124,33 @@ export function FindingsRail({
   // ── Derived data (same pipeline as FindingsView) ──────
   const endpointSummaries = useMemo<EndpointSummary[]>(() => {
     if (!rawData?.findings?.length) return [];
-    const rows: AdverseEffectSummaryRow[] = rawData.findings.map((f) => ({
-      endpoint_label: f.endpoint_label ?? f.finding,
-      endpoint_type: f.data_type,
-      domain: f.domain,
-      organ_system: f.organ_system ?? "unknown",
-      dose_level: 0,
-      dose_label: "",
-      sex: f.sex,
-      p_value: f.min_p_adj,
-      effect_size: f.max_effect_size,
-      direction: f.direction,
-      severity: f.severity,
-      treatment_related: f.treatment_related,
-      dose_response_pattern: f.dose_response_pattern ?? "flat",
-    }));
+    const rows: AdverseEffectSummaryRow[] = rawData.findings.map((f) => {
+      // Compute max incidence across treated dose groups (dose_level > 0)
+      const treatedStats = (f.group_stats ?? []).filter((g) => g.dose_level > 0);
+      const maxInc = treatedStats.reduce<number | null>((max, g) => {
+        if (g.incidence == null) return max;
+        return max === null ? g.incidence : Math.max(max, g.incidence);
+      }, null);
+      return {
+        endpoint_label: f.endpoint_label ?? f.finding,
+        endpoint_type: f.data_type,
+        domain: f.domain,
+        organ_system: f.organ_system ?? "unknown",
+        dose_level: 0,
+        dose_label: "",
+        sex: f.sex,
+        p_value: f.min_p_adj,
+        effect_size: f.max_effect_size,
+        direction: f.direction,
+        severity: f.severity,
+        treatment_related: f.treatment_related,
+        dose_response_pattern: f.dose_response_pattern ?? "flat",
+        test_code: f.test_code,
+        specimen: f.specimen,
+        finding: f.finding,
+        max_incidence: maxInc,
+      };
+    });
     return deriveEndpointSummaries(rows);
   }, [rawData]);
 
@@ -176,6 +188,22 @@ export function FindingsRail({
       }
     }
     return set;
+  }, [labMatches]);
+
+  // Clinical tier per endpoint (S2+ only) — for badge display in rail endpoint rows
+  const clinicalTierMap = useMemo(() => {
+    const map = new Map<string, string>(); // endpoint_label -> tier (S2, S3, S4)
+    const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
+    for (const match of labMatches) {
+      if (sevOrder[match.severity] < 2) continue; // S1 = too noisy
+      for (const epLabel of match.matchedEndpoints) {
+        const existing = map.get(epLabel);
+        if (!existing || sevOrder[match.severity] > sevOrder[existing]) {
+          map.set(epLabel, match.severity);
+        }
+      }
+    }
+    return map;
   }, [labMatches]);
 
   // Dynamic group filter options — derived from unique values in the current grouping dimension
@@ -503,6 +531,7 @@ export function FindingsRail({
                 onClick={() => handleEndpointClick(ep.endpoint_label)}
                 onRestore={onRestoreEndpoint}
                 ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
+                clinicalTier={clinicalTierMap.get(ep.endpoint_label)}
               />
             ))
           )
@@ -524,6 +553,7 @@ export function FindingsRail({
               currentSyndromeId={grouping === "syndrome" ? card.key : undefined}
               excludedEndpoints={excludedEndpoints}
               onRestoreEndpoint={onRestoreEndpoint}
+              clinicalTierMap={clinicalTierMap}
             />
           ))
         )}
@@ -774,6 +804,7 @@ function CardSection({
   currentSyndromeId,
   excludedEndpoints,
   onRestoreEndpoint,
+  clinicalTierMap,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -789,6 +820,7 @@ function CardSection({
   currentSyndromeId?: string;
   excludedEndpoints?: ReadonlySet<string>;
   onRestoreEndpoint?: (label: string) => void;
+  clinicalTierMap?: Map<string, string>;
 }) {
   return (
     <div>
@@ -818,6 +850,7 @@ function CardSection({
                 onRestore={onRestoreEndpoint}
                 ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
                 otherSyndromes={otherSyndromes}
+                clinicalTier={clinicalTierMap?.get(ep.endpoint_label)}
               />
             );
           })}
@@ -922,7 +955,8 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
   onClick: () => void;
   onRestore?: (label: string) => void;
   otherSyndromes?: string[];
-}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onRestore, otherSyndromes }, ref) {
+  clinicalTier?: string;
+}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onRestore, otherSyndromes, clinicalTier }, ref) {
   const dirSymbol = endpoint.direction === "up" ? "▲" : endpoint.direction === "down" ? "▼" : "—";
 
   const sevColor =
@@ -960,6 +994,11 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
         <span className={cn("min-w-0 flex-1 truncate text-left text-xs", isExcluded && "text-muted-foreground/50")} title={endpoint.endpoint_label}>
           {endpoint.endpoint_label}
         </span>
+        {clinicalTier && (
+          <span className={cn("shrink-0 rounded px-0.5 text-[8px] font-semibold border", getClinicalTierBadgeClasses(clinicalTier))}>
+            {clinicalTier}
+          </span>
+        )}
         <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", sevColor)} />
         {endpoint.treatmentRelated && (
           <span className="shrink-0 text-[9px] font-medium text-muted-foreground">TR</span>

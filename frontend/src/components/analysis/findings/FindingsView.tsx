@@ -169,21 +169,33 @@ export function FindingsView() {
   // Derive endpoint summaries for scatter plot from UnifiedFinding[]
   const endpointSummaries = useMemo(() => {
     if (!data?.findings?.length) return [];
-    const rows: AdverseEffectSummaryRow[] = data.findings.map((f) => ({
-      endpoint_label: f.endpoint_label ?? f.finding,
-      endpoint_type: f.data_type,
-      domain: f.domain,
-      organ_system: f.organ_system ?? "unknown",
-      dose_level: 0,
-      dose_label: "",
-      sex: f.sex,
-      p_value: f.min_p_adj,
-      effect_size: f.max_effect_size,
-      direction: f.direction,
-      severity: f.severity,
-      treatment_related: f.treatment_related,
-      dose_response_pattern: f.dose_response_pattern ?? "flat",
-    }));
+    const rows: AdverseEffectSummaryRow[] = data.findings.map((f) => {
+      // Compute max incidence across treated dose groups (dose_level > 0)
+      const treatedStats = (f.group_stats ?? []).filter((g) => g.dose_level > 0);
+      const maxInc = treatedStats.reduce<number | null>((max, g) => {
+        if (g.incidence == null) return max;
+        return max === null ? g.incidence : Math.max(max, g.incidence);
+      }, null);
+      return {
+        endpoint_label: f.endpoint_label ?? f.finding,
+        endpoint_type: f.data_type,
+        domain: f.domain,
+        organ_system: f.organ_system ?? "unknown",
+        dose_level: 0,
+        dose_label: "",
+        sex: f.sex,
+        p_value: f.min_p_adj,
+        effect_size: f.max_effect_size,
+        direction: f.direction,
+        severity: f.severity,
+        treatment_related: f.treatment_related,
+        dose_response_pattern: f.dose_response_pattern ?? "flat",
+        test_code: f.test_code,
+        specimen: f.specimen,
+        finding: f.finding,
+        max_incidence: maxInc,
+      };
+    });
     return deriveEndpointSummaries(rows);
   }, [data]);
 
