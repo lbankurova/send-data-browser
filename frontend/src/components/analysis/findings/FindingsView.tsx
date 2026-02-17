@@ -68,14 +68,18 @@ const ALL_FILTERS: FindingsFilters = {
   organ_system: null, endpoint_label: null, dose_response_pattern: null,
 };
 
-const SCATTER_SECTIONS = [{ id: "scatter", min: 80, max: 220, defaultHeight: 140 }];
-
 export function FindingsView() {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectStudy } = useSelection();
   const { selectFinding, setEndpointSexes } = useFindingSelection();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scatterSection] = useAutoFitSections(containerRef, "findings", SCATTER_SECTIONS);
+
+  // 50/50 default split: scatter takes half the viewport-estimated container height
+  const scatterSections = useMemo(() => {
+    const half = Math.round(window.innerHeight * 0.4);
+    return [{ id: "scatter", min: 80, max: 2000, defaultHeight: half }];
+  }, []);
+  const [scatterSection] = useAutoFitSections(containerRef, "findings", scatterSections);
 
   // Rail-provided state (single source of truth for filtering)
   const [visibleLabels, setVisibleLabels] = useState<Set<string> | null>(null);
