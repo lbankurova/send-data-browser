@@ -143,6 +143,9 @@ export interface FindingContext {
       total?: number;
     }>;
     trend_p: number | null;
+    pattern_confidence?: string | null;
+    onset_dose_value?: number | null;
+    onset_dose_unit?: string | null;
     insights: Insight[];
   };
   correlations: {
