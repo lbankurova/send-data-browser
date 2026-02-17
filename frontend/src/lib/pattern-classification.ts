@@ -560,6 +560,59 @@ export function classifyFindingPattern(
   };
 }
 
+// ── Per-sex pattern classification ───────────────────────────
+
+export interface PatternClassificationResult {
+  /** Aggregate pattern (pooled across sexes) */
+  aggregate: PatternClassification;
+  /** Per-sex patterns. Present when sexes produce different pattern types. */
+  bySex?: Map<string, PatternClassification>;
+  /** True when per-sex patterns differ from each other in type or onset */
+  sexDiffers: boolean;
+}
+
+export function classifyFindingPatternWithSex(
+  specimenRows: LesionSeverityRow[],
+  finding: string,
+  trendP: number | null,
+  syndromeMatch: SyndromeMatch | null,
+  organWeightSig: boolean,
+  laterality?: LateralityAggregate | null,
+): PatternClassificationResult {
+  const aggregate = classifyFindingPattern(
+    specimenRows, finding, trendP, syndromeMatch, organWeightSig, laterality,
+  );
+
+  const sexes = [...new Set(specimenRows.map(r => r.sex))].filter(Boolean);
+  if (sexes.length < 2) {
+    return { aggregate, sexDiffers: false };
+  }
+
+  const bySex = new Map<string, PatternClassification>();
+  for (const sex of sexes) {
+    const sexRows = specimenRows.filter(r => r.sex === sex);
+    bySex.set(sex, classifyFindingPattern(
+      sexRows, finding, trendP, syndromeMatch, organWeightSig, laterality,
+    ));
+  }
+
+  // Check if patterns differ in type
+  const patterns = [...bySex.values()].map(r => r.pattern);
+  if (new Set(patterns).size > 1) {
+    return { aggregate, bySex, sexDiffers: true };
+  }
+
+  // Same type: check different onset dose (for THRESHOLD)
+  if ([...bySex.values()].every(r => r.pattern === "THRESHOLD")) {
+    const details = [...bySex.values()].map(r => r.detail);
+    if (new Set(details).size > 1) {
+      return { aggregate, bySex, sexDiffers: true };
+    }
+  }
+
+  return { aggregate, sexDiffers: false };
+}
+
 // ── Specimen-level classification ────────────────────────────
 
 export function classifySpecimenPattern(
