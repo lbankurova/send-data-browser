@@ -111,10 +111,31 @@ export function FindingsQuadrantScatter({
     ? points.find((p) => p.endpoint_label === selectedEndpoint)
     : null;
 
+  // Legend entries — only show what's present in data
+  const legendEntries = useMemo(() => {
+    const entries: { symbol: string; label: string }[] = [];
+    if (points.some((p) => p.worstSeverity === "adverse"))
+      entries.push({ symbol: "\u25CF", label: "adverse" });
+    if (points.some((p) => p.clinicalSeverity === "S3" || p.clinicalSeverity === "S4"))
+      entries.push({ symbol: "\u25C6", label: "clinical" });
+    if (points.some((p) => p.coherenceSize != null))
+      entries.push({ symbol: "\u25CF", label: "coherent" });
+    if (points.some((p) => p.syndromeId != null))
+      entries.push({ symbol: "\u25CB", label: "syndrome" });
+    return entries;
+  }, [points]);
+
   return (
     <div className="flex h-full flex-col">
-      {/* Header summary */}
-      <div className="flex items-center justify-end px-2 py-0.5">
+      {/* Header: legend left, selection summary right */}
+      <div className="flex items-center justify-between px-2 py-0.5">
+        <div className="flex items-center gap-2">
+          {legendEntries.map((e, i) => (
+            <span key={i} className="text-[8px] text-muted-foreground">
+              <span className="mr-0.5">{e.symbol}</span>{e.label}
+            </span>
+          ))}
+        </div>
         {selectedPt ? (
           <span className="text-[10px]">
             <span className="font-medium">{"\u2605"} {selectedPt.endpoint_label}</span>
