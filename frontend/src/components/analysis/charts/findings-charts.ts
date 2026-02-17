@@ -3,8 +3,24 @@
  */
 
 import type { EChartsOption } from "echarts";
-import type { EndpointSummary } from "@/lib/derive-summaries";
-import { getOrganColor, getDomainBadgeColor } from "@/lib/severity-colors";
+import type { EndpointSummary, OrganCoherence } from "@/lib/derive-summaries";
+import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
+import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
+import { resolveCanonical } from "@/lib/lab-clinical-catalog";
+import { getOrganColor } from "@/lib/severity-colors";
+
+/** Hex domain color for use in tooltip HTML (not Tailwind classes). */
+function getDomainHexColor(domain: string): string {
+  switch (domain.toUpperCase()) {
+    case "LB": return "#1D4ED8"; // blue-700
+    case "BW": return "#047857"; // emerald-700
+    case "OM": return "#7E22CE"; // purple-700
+    case "MI": return "#BE123C"; // rose-700
+    case "MA": return "#C2410C"; // orange-700
+    case "CL": return "#0E7490"; // cyan-700
+    default:   return "#6B7280"; // gray-500
+  }
+}
 
 // ─── Quadrant Scatter ──────────────────────────────────────
 
@@ -17,26 +33,75 @@ export interface QuadrantPoint {
   x: number;  // |effect size|
   y: number;  // -log10(p)
   rawP: number;
+  coherenceSize?: number;       // 7 for 3+ domain organs
+  syndromeId?: string;          // syndrome ID if endpoint is matched
+  syndromeName?: string;        // for tooltip line
+  clinicalSeverity?: string;    // "S3" | "S4" → diamond shape
 }
 
-export function prepareQuadrantPoints(endpoints: EndpointSummary[]): QuadrantPoint[] {
+export function prepareQuadrantPoints(
+  endpoints: EndpointSummary[],
+  organCoherence?: Map<string, OrganCoherence>,
+  syndromes?: CrossDomainSyndrome[],
+  labMatches?: LabClinicalMatch[],
+): QuadrantPoint[] {
+  // Index syndrome endpoint labels -> syndrome
+  const syndromeIndex = new Map<string, { id: string; name: string }>();
+  if (syndromes) {
+    for (const syn of syndromes) {
+      for (const m of syn.matchedEndpoints) {
+        syndromeIndex.set(m.endpoint_label.toLowerCase(), { id: syn.id, name: syn.name });
+      }
+    }
+  }
+
+  // Index lab match endpoint labels -> worst severity
+  const clinicalIndex = new Map<string, string>();
+  if (labMatches) {
+    const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
+    for (const match of labMatches) {
+      if (sevOrder[match.severity] >= 3) { // Only S3/S4 get diamond
+        for (const epLabel of match.matchedEndpoints) {
+          const canonical = resolveCanonical(epLabel);
+          if (canonical) {
+            const existing = clinicalIndex.get(epLabel.toLowerCase());
+            if (!existing || sevOrder[match.severity] > sevOrder[existing]) {
+              clinicalIndex.set(epLabel.toLowerCase(), match.severity);
+            }
+          }
+        }
+      }
+    }
+  }
+
   return endpoints
     .filter((ep) => ep.maxEffectSize != null && ep.minPValue != null && ep.minPValue > 0)
-    .map((ep) => ({
-      endpoint_label: ep.endpoint_label,
-      organ_system: ep.organ_system,
-      domain: ep.domain,
-      worstSeverity: ep.worstSeverity,
-      treatmentRelated: ep.treatmentRelated,
-      x: Math.abs(ep.maxEffectSize!),
-      y: -Math.log10(ep.minPValue!),
-      rawP: ep.minPValue!,
-    }));
+    .map((ep) => {
+      const coh = organCoherence?.get(ep.organ_system);
+      const syn = syndromeIndex.get(ep.endpoint_label.toLowerCase());
+      const clinical = clinicalIndex.get(ep.endpoint_label.toLowerCase());
+
+      return {
+        endpoint_label: ep.endpoint_label,
+        organ_system: ep.organ_system,
+        domain: ep.domain,
+        worstSeverity: ep.worstSeverity,
+        treatmentRelated: ep.treatmentRelated,
+        x: Math.abs(ep.maxEffectSize!),
+        y: -Math.log10(ep.minPValue!),
+        rawP: ep.minPValue!,
+        coherenceSize: coh && coh.domainCount >= 3 ? 7 : undefined,
+        syndromeId: syn?.id,
+        syndromeName: syn?.name,
+        clinicalSeverity: clinical,
+      };
+    });
 }
 
 export function buildFindingsQuadrantOption(
   points: QuadrantPoint[],
   selectedEndpoint: string | null,
+  scopeFilter?: string,
 ): EChartsOption {
   if (points.length === 0) return {};
 
@@ -46,22 +111,44 @@ export function buildFindingsQuadrantOption(
   const data = points.map((pt) => {
     const isSelected = pt.endpoint_label === selectedEndpoint;
     const isAdverse = pt.worstSeverity === "adverse";
+    const isClinical = pt.clinicalSeverity === "S3" || pt.clinicalSeverity === "S4";
+    const isOutOfScope = scopeFilter != null &&
+      pt.organ_system !== scopeFilter &&
+      pt.domain !== scopeFilter &&
+      (pt as QuadrantPoint).endpoint_label !== scopeFilter;
+
+    // Symbol size: selected > clinical > coherence > adverse > default
+    let symbolSize = 5;
+    if (isAdverse) symbolSize = 6;
+    if (pt.coherenceSize) symbolSize = 7;
+    if (isClinical) symbolSize = 7;
+    if (isSelected) symbolSize = 10;
+
+    // Symbol shape: clinical S3/S4 get diamond (persists in all states)
+    const symbol = isClinical ? "diamond" : "circle";
+
+    // Opacity: clinical 0.75, coherent 0.65, adverse 0.65, default 0.5
+    let opacity = isSelected ? 1 : isClinical ? 0.75 : (pt.coherenceSize || isAdverse) ? 0.65 : 0.5;
+    if (isOutOfScope) opacity = 0.15;
+
     return {
       value: [pt.x, pt.y],
       name: pt.endpoint_label,
-      // Carry metadata for tooltip
       _meta: pt,
-      symbolSize: isSelected ? 10 : isAdverse ? 6 : 5,
+      symbolSize,
+      symbol,
       itemStyle: {
         color: isSelected ? getOrganColor(pt.organ_system) : "#9CA3AF",
-        opacity: isSelected ? 1 : isAdverse ? 0.65 : 0.5,
-        borderColor: isSelected ? "#1F2937" : "transparent",
-        borderWidth: isSelected ? 2 : 0,
+        opacity,
+        borderColor: isSelected ? "#1F2937" : isClinical ? "#6B7280" : "transparent",
+        borderWidth: isSelected ? 2 : isClinical ? 1 : 0,
       },
       emphasis: {
         symbolSize: 8,
         itemStyle: {
           opacity: 0.8,
+          borderColor: "#6B7280",
+          borderWidth: 1,
         },
       },
     };
@@ -100,10 +187,10 @@ export function buildFindingsQuadrantOption(
         const item = params as any;
         if (!item?.data?._meta) return "";
         const meta = item.data._meta as QuadrantPoint;
-        const domainColor = getDomainBadgeColor(meta.domain).text;
+        const domainColor = getDomainHexColor(meta.domain);
         const sevLabel = meta.worstSeverity === "adverse" ? "adverse" : meta.worstSeverity === "warning" ? "warning" : "normal";
         const trLabel = meta.treatmentRelated ? "TR" : "non-TR";
-        return [
+        const lines = [
           `<div style="font-size:11px;font-weight:600">${meta.endpoint_label}</div>`,
           `<div style="font-size:10px;color:#9CA3AF"><span style="color:${domainColor}">${meta.domain}</span> \u00b7 ${meta.organ_system}</div>`,
           `<div style="display:flex;gap:12px;font-family:monospace;font-size:10px;margin-top:3px">`,
@@ -111,7 +198,11 @@ export function buildFindingsQuadrantOption(
           `<span>p=${meta.rawP.toExponential(1)}</span>`,
           `</div>`,
           `<div style="font-size:9px;color:#9CA3AF;margin-top:2px">${sevLabel} \u00b7 ${trLabel}</div>`,
-        ].join("");
+        ];
+        if (meta.syndromeName) {
+          lines.push(`<div style="font-size:9px;margin-top:2px">\uD83D\uDD17 ${meta.syndromeName} syndrome</div>`);
+        }
+        return lines.join("");
       },
     },
     series: [
