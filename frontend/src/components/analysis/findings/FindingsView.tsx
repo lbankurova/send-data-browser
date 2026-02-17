@@ -17,7 +17,7 @@ import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import type { FindingsFilters } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
-import { getDomainFullLabel, getPatternLabel, withSignalScores } from "@/lib/findings-rail-engine";
+import { getDomainFullLabel, getPatternLabel, withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import type { GroupingMode, SignalBoosts } from "@/lib/findings-rail-engine";
 import { titleCase } from "@/lib/severity-colors";
 
@@ -200,8 +200,10 @@ export function FindingsView() {
       const cohBoost = coh ? (coh.domainCount >= 3 ? 2 : coh.domainCount >= 2 ? 1 : 0) : 0;
       const synBoost = syndromeEndpoints.has(ep.endpoint_label) ? 3 : 0;
       const floor = clinicalFloors.get(ep.endpoint_label) ?? 0;
-      if (cohBoost > 0 || synBoost > 0 || floor > 0) {
-        map.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor });
+      const conf = classifyEndpointConfidence(ep);
+      const confMult = getConfidenceMultiplier(conf);
+      if (cohBoost > 0 || synBoost > 0 || floor > 0 || confMult !== 1) {
+        map.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor, confidenceMultiplier: confMult });
       }
     }
     return map;

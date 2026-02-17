@@ -21,6 +21,13 @@ interface RuleContext {
   syndromeMatched: boolean;               // from cross-domain syndromes
 }
 
+interface LabRuleThreshold {
+  /** Fold-change threshold (effect size magnitude). */
+  value: number;
+  /** Comparison direction: gte = "at or above", lte = "at or below". */
+  comparison: "gte" | "lte";
+}
+
 interface LabRule {
   id: string;
   name: string;
@@ -29,6 +36,12 @@ interface LabRule {
   severity: "S1" | "S2" | "S3" | "S4";
   speciesApplicability: "nonclinical" | "clinical" | "both";
   source: string;
+  /** Declarative threshold per primary parameter — documents trigger levels for inspection/export.
+   *  Maps canonical → threshold. Used by evaluateThreshold() for generic evaluation. */
+  thresholds?: Record<string, LabRuleThreshold>;
+  /** When true, the rule compares treated vs control (fold-change is baseline-relative).
+   *  All current rules use baseline-relative fold-change proxy from |effectSize|. */
+  baselineAware?: boolean;
   evaluate: (ctx: RuleContext) => boolean;
 }
 
@@ -47,6 +60,7 @@ export interface LabClinicalMatch {
   matchedEndpoints: string[];
   foldChanges: Record<string, number>;
   confidenceScore: number;
+  confidence: "HIGH" | "MODERATE" | "LOW";
   confidenceModifiers: ConfidenceModifier[];
   source: string;
 }
@@ -99,6 +113,10 @@ const LAB_SYNONYMS: Record<string, string[]> = {
   CHOL: ["cholesterol", "total cholesterol"],
   PT: ["prothrombin time"],
   INR: ["inr", "international normalized ratio"],
+  APTT: ["aptt", "activated partial thromboplastin", "ptt"],
+  MG: ["magnesium"],
+  URINE_VOL: ["urine volume", "urine output"],
+  URINE_SG: ["specific gravity", "urine specific gravity"],
 };
 
 export function resolveCanonical(endpointLabel: string): string | null {
@@ -127,12 +145,40 @@ function countPresent(ctx: RuleContext, canonicals: string[]): number {
   return canonicals.filter((c) => ctx.presentCanonicals.has(c)).length;
 }
 
+/** Check that two canonicals share at least one common sex. */
+function shareSex(ctx: RuleContext, a: string, b: string): boolean {
+  const sa = ctx.sexes.get(a);
+  const sb = ctx.sexes.get(b);
+  if (!sa || !sb) return true; // missing sex data → don't block
+  return sa.some((s) => sb.includes(s));
+}
+
 function hasGradedIncrease(ctx: RuleContext, canonical: string, minFold: number): boolean {
   return hasUp(ctx, canonical) && foldAbove(ctx, canonical, minFold);
 }
 
 function hasGradedDecrease(ctx: RuleContext, canonical: string, minFold: number): boolean {
   return hasDown(ctx, canonical) && foldAbove(ctx, canonical, minFold);
+}
+
+/** Generic threshold evaluator: checks all required parameters against their declarative thresholds.
+ *  Returns true if ANY required parameter meets its threshold (OR semantics for graded rules). */
+export function evaluateThreshold(rule: LabRule, ctx: RuleContext): boolean {
+  if (!rule.thresholds) return false;
+  for (const param of rule.parameters) {
+    if (param.role !== "required") continue;
+    const threshold = rule.thresholds[param.canonical];
+    if (!threshold) continue;
+    const fc = ctx.foldChanges.get(param.canonical) ?? 0;
+    const present = ctx.presentCanonicals.has(param.canonical);
+    if (!present) continue;
+    const dir = ctx.endpointDirection.get(param.canonical);
+    const dirMatch = param.direction === "increase" ? dir === "up" : dir === "down";
+    if (!dirMatch) continue;
+    if (threshold.comparison === "gte" && fc >= threshold.value) return true;
+    if (threshold.comparison === "lte" && fc <= threshold.value) return true;
+  }
+  return false;
 }
 
 // ─── Rule Catalog ──────────────────────────────────────────
@@ -143,12 +189,14 @@ const LAB_RULES: LabRule[] = [
     id: "L01", name: "ALT elevation (moderate)", category: "liver",
     parameters: [{ canonical: "ALT", direction: "increase", role: "required" }],
     severity: "S2", speciesApplicability: "both", source: "FDA Guidance (2009)",
+    thresholds: { ALT: { value: 2, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasUp(ctx, "ALT") && foldAbove(ctx, "ALT", 2) && !foldAbove(ctx, "ALT", 5),
   },
   {
     id: "L02", name: "ALT elevation (marked)", category: "liver",
     parameters: [{ canonical: "ALT", direction: "increase", role: "required" }],
     severity: "S3", speciesApplicability: "both", source: "FDA Guidance (2009)",
+    thresholds: { ALT: { value: 5, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasUp(ctx, "ALT") && foldAbove(ctx, "ALT", 5),
   },
   {
@@ -158,15 +206,16 @@ const LAB_RULES: LabRule[] = [
       { canonical: "TBILI", direction: "increase", role: "required" },
     ],
     severity: "S4", speciesApplicability: "both", source: "FDA Guidance (2009), Hy's Law",
-    evaluate: (ctx) => hasUp(ctx, "ALT") && hasUp(ctx, "TBILI"),
+    baselineAware: true,
+    evaluate: (ctx) => hasUp(ctx, "ALT") && hasUp(ctx, "TBILI") && shareSex(ctx, "ALT", "TBILI"),
   },
   {
     id: "L04", name: "Bilirubin elevation (isolated)", category: "liver",
     parameters: [{ canonical: "TBILI", direction: "increase", role: "required" }],
     severity: "S1", speciesApplicability: "both", source: "Clinical practice",
+    baselineAware: true,
     evaluate: (ctx) => {
       if (!hasUp(ctx, "TBILI")) return false;
-      // Isolated = no other hepatic enzymes elevated
       return !hasUp(ctx, "ALT") && !hasUp(ctx, "AST") && !hasUp(ctx, "ALP") && !hasUp(ctx, "GGT");
     },
   },
@@ -179,6 +228,7 @@ const LAB_RULES: LabRule[] = [
       { canonical: "GDH", direction: "increase", role: "supporting" },
     ],
     severity: "S1", speciesApplicability: "nonclinical", source: "Best practice",
+    baselineAware: false,
     evaluate: (ctx) => countPresent(ctx, ["ALT", "AST", "SDH", "GDH"]) < 2,
   },
   {
@@ -190,6 +240,7 @@ const LAB_RULES: LabRule[] = [
       { canonical: "TBILI", direction: "increase", role: "supporting" },
     ],
     severity: "S1", speciesApplicability: "nonclinical", source: "Best practice",
+    baselineAware: false,
     evaluate: (ctx) => countPresent(ctx, ["ALP", "GGT", "5NT", "TBILI"]) < 2,
   },
   {
@@ -200,10 +251,12 @@ const LAB_RULES: LabRule[] = [
       { canonical: "ALP", direction: "increase", role: "supporting" },
     ],
     severity: "S4", speciesApplicability: "both", source: "FDA Hy's Law guidance",
-    evaluate: (ctx) =>
-      (hasUp(ctx, "ALT") || hasUp(ctx, "AST")) &&
-      hasUp(ctx, "TBILI") &&
-      !hasUp(ctx, "ALP"),
+    baselineAware: true,
+    evaluate: (ctx) => {
+      const altOrAst = hasUp(ctx, "ALT") ? "ALT" : hasUp(ctx, "AST") ? "AST" : null;
+      if (!altOrAst) return false;
+      return hasUp(ctx, "TBILI") && !hasUp(ctx, "ALP") && shareSex(ctx, altOrAst, "TBILI");
+    },
   },
   {
     id: "L08", name: "Hy's Law-like animal pattern", category: "liver",
@@ -212,14 +265,18 @@ const LAB_RULES: LabRule[] = [
       { canonical: "TBILI", direction: "increase", role: "required" },
     ],
     severity: "S3", speciesApplicability: "nonclinical", source: "Nonclinical adaptation",
-    evaluate: (ctx) =>
-      (hasUp(ctx, "ALT") || hasUp(ctx, "AST")) && hasUp(ctx, "TBILI"),
+    baselineAware: true,
+    evaluate: (ctx) => {
+      const altOrAst = hasUp(ctx, "ALT") ? "ALT" : hasUp(ctx, "AST") ? "AST" : null;
+      if (!altOrAst) return false;
+      return hasUp(ctx, "TBILI") && shareSex(ctx, altOrAst, "TBILI");
+    },
   },
   {
     id: "L09", name: "Excess ALT frequency (program flag)", category: "liver",
     parameters: [{ canonical: "ALT", direction: "increase", role: "required" }],
     severity: "S3", speciesApplicability: "both", source: "Program monitoring",
-    // Fires when ALT has monotonic pattern (dose-dependent)
+    baselineAware: true,
     evaluate: (ctx) =>
       hasUp(ctx, "ALT") &&
       (ctx.endpointPattern.get("ALT") === "monotonic_increase" ||
@@ -232,12 +289,14 @@ const LAB_RULES: LabRule[] = [
       { canonical: "ALP", direction: "increase", role: "supporting" },
     ],
     severity: "S2", speciesApplicability: "both", source: "R-ratio hepatic phenotype",
-    evaluate: (ctx) => hasUp(ctx, "ALT") && hasUp(ctx, "ALP"),
+    baselineAware: true,
+    evaluate: (ctx) => hasUp(ctx, "ALT") && hasUp(ctx, "ALP") && shareSex(ctx, "ALT", "ALP"),
   },
   {
     id: "L11", name: "ALP in cholestasis (note)", category: "liver",
     parameters: [{ canonical: "ALP", direction: "increase", role: "required" }],
     severity: "S1", speciesApplicability: "both", source: "Clinical practice",
+    baselineAware: true,
     evaluate: (ctx) => hasUp(ctx, "ALP") && !hasUp(ctx, "ALT") && !hasUp(ctx, "AST"),
   },
 
@@ -246,54 +305,63 @@ const LAB_RULES: LabRule[] = [
     id: "L12", name: "BUN elevation", category: "graded",
     parameters: [{ canonical: "BUN", direction: "increase", role: "required" }],
     severity: "S3", speciesApplicability: "both", source: "Renal toxicology",
+    thresholds: { BUN: { value: 2, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasGradedIncrease(ctx, "BUN", 2),
   },
   {
     id: "L13", name: "Creatinine elevation", category: "graded",
     parameters: [{ canonical: "CREAT", direction: "increase", role: "required" }],
     severity: "S3", speciesApplicability: "both", source: "Renal toxicology",
+    thresholds: { CREAT: { value: 1.5, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasGradedIncrease(ctx, "CREAT", 1.5),
   },
   {
     id: "L14", name: "Hemoglobin decrease", category: "graded",
     parameters: [{ canonical: "HGB", direction: "decrease", role: "required" }],
     severity: "S3", speciesApplicability: "both", source: "Hematology",
+    thresholds: { HGB: { value: 2, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasGradedDecrease(ctx, "HGB", 2),
   },
   {
     id: "L15", name: "RBC decrease", category: "graded",
     parameters: [{ canonical: "RBC", direction: "decrease", role: "required" }],
     severity: "S3", speciesApplicability: "both", source: "Hematology",
+    thresholds: { RBC: { value: 2, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasGradedDecrease(ctx, "RBC", 2),
   },
   {
     id: "L16", name: "HCT decrease", category: "graded",
     parameters: [{ canonical: "HCT", direction: "decrease", role: "required" }],
     severity: "S2", speciesApplicability: "both", source: "Hematology",
+    thresholds: { HCT: { value: 1.5, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasGradedDecrease(ctx, "HCT", 1.5),
   },
   {
     id: "L17", name: "Platelet decrease", category: "graded",
     parameters: [{ canonical: "PLAT", direction: "decrease", role: "required" }],
     severity: "S3", speciesApplicability: "both", source: "Hematology",
+    thresholds: { PLAT: { value: 2, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasGradedDecrease(ctx, "PLAT", 2),
   },
   {
     id: "L18", name: "WBC decrease", category: "graded",
     parameters: [{ canonical: "WBC", direction: "decrease", role: "required" }],
     severity: "S2", speciesApplicability: "both", source: "Hematology",
+    thresholds: { WBC: { value: 1.5, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasGradedDecrease(ctx, "WBC", 1.5),
   },
   {
     id: "L19", name: "Neutrophil decrease", category: "graded",
     parameters: [{ canonical: "NEUT", direction: "decrease", role: "required" }],
     severity: "S3", speciesApplicability: "both", source: "Hematology",
+    thresholds: { NEUT: { value: 2, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasGradedDecrease(ctx, "NEUT", 2),
   },
   {
     id: "L20", name: "Potassium imbalance", category: "graded",
     parameters: [{ canonical: "K", direction: "increase", role: "required" }],
     severity: "S2", speciesApplicability: "both", source: "Clinical chemistry",
+    thresholds: { K: { value: 1.5, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) =>
       (hasUp(ctx, "K") && foldAbove(ctx, "K", 1.5)) ||
       (hasDown(ctx, "K") && foldAbove(ctx, "K", 1.5)),
@@ -302,6 +370,7 @@ const LAB_RULES: LabRule[] = [
     id: "L21", name: "Glucose imbalance", category: "graded",
     parameters: [{ canonical: "GLUC", direction: "increase", role: "required" }],
     severity: "S2", speciesApplicability: "both", source: "Clinical chemistry",
+    thresholds: { GLUC: { value: 2, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) =>
       (hasUp(ctx, "GLUC") && foldAbove(ctx, "GLUC", 2)) ||
       (hasDown(ctx, "GLUC") && foldAbove(ctx, "GLUC", 2)),
@@ -310,32 +379,82 @@ const LAB_RULES: LabRule[] = [
     id: "L22", name: "Cholesterol elevation", category: "graded",
     parameters: [{ canonical: "CHOL", direction: "increase", role: "required" }],
     severity: "S1", speciesApplicability: "both", source: "Clinical chemistry",
+    thresholds: { CHOL: { value: 1.5, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasGradedIncrease(ctx, "CHOL", 1.5),
   },
   {
     id: "L23", name: "Reticulocyte response", category: "graded",
     parameters: [{ canonical: "RETIC", direction: "increase", role: "required" }],
     severity: "S2", speciesApplicability: "both", source: "Hematology",
+    thresholds: { RETIC: { value: 2, comparison: "gte" } }, baselineAware: true,
     evaluate: (ctx) => hasGradedIncrease(ctx, "RETIC", 2),
   },
   {
     id: "L24", name: "Coagulation prolongation", category: "graded",
-    parameters: [{ canonical: "PT", direction: "increase", role: "required" }],
+    parameters: [
+      { canonical: "PT", direction: "increase", role: "required" },
+      { canonical: "INR", direction: "increase", role: "supporting" },
+      { canonical: "APTT", direction: "increase", role: "supporting" },
+    ],
     severity: "S2", speciesApplicability: "both", source: "Coagulation",
-    evaluate: (ctx) => hasGradedIncrease(ctx, "PT", 1.5),
+    thresholds: { PT: { value: 1.5, comparison: "gte" }, INR: { value: 1.3, comparison: "gte" }, APTT: { value: 1.5, comparison: "gte" } }, baselineAware: true,
+    evaluate: (ctx) =>
+      hasGradedIncrease(ctx, "PT", 1.5) ||
+      hasGradedIncrease(ctx, "INR", 1.3) ||
+      hasGradedIncrease(ctx, "APTT", 1.5),
+  },
+  {
+    id: "L25a", name: "Sodium imbalance", category: "graded",
+    parameters: [{ canonical: "NA", direction: "increase", role: "required" }],
+    severity: "S2", speciesApplicability: "both", source: "Clinical chemistry",
+    thresholds: { NA: { value: 1.2, comparison: "gte" } }, baselineAware: true,
+    evaluate: (ctx) =>
+      (hasUp(ctx, "NA") && foldAbove(ctx, "NA", 1.2)) ||
+      (hasDown(ctx, "NA") && foldAbove(ctx, "NA", 1.2)),
+  },
+  {
+    id: "L25b", name: "Calcium/Phosphate imbalance", category: "graded",
+    parameters: [
+      { canonical: "CA", direction: "increase", role: "required" },
+      { canonical: "PHOS", direction: "increase", role: "supporting" },
+      { canonical: "MG", direction: "increase", role: "supporting" },
+    ],
+    severity: "S2", speciesApplicability: "both", source: "Clinical chemistry",
+    thresholds: { CA: { value: 1.5, comparison: "gte" }, PHOS: { value: 1.5, comparison: "gte" }, MG: { value: 1.5, comparison: "gte" } }, baselineAware: true,
+    evaluate: (ctx) =>
+      (hasUp(ctx, "CA") && foldAbove(ctx, "CA", 1.5)) ||
+      (hasDown(ctx, "CA") && foldAbove(ctx, "CA", 1.5)) ||
+      (hasUp(ctx, "PHOS") && foldAbove(ctx, "PHOS", 1.5)) ||
+      (hasDown(ctx, "PHOS") && foldAbove(ctx, "PHOS", 1.5)) ||
+      (hasUp(ctx, "MG") && foldAbove(ctx, "MG", 1.5)) ||
+      (hasDown(ctx, "MG") && foldAbove(ctx, "MG", 1.5)),
+  },
+  {
+    id: "L25c", name: "Urinalysis abnormality", category: "graded",
+    parameters: [
+      { canonical: "URINE_VOL", direction: "increase", role: "required" },
+      { canonical: "URINE_SG", direction: "decrease", role: "supporting" },
+    ],
+    severity: "S1", speciesApplicability: "both", source: "Urinalysis",
+    thresholds: { URINE_VOL: { value: 1.5, comparison: "gte" }, URINE_SG: { value: 1.3, comparison: "gte" } }, baselineAware: true,
+    evaluate: (ctx) =>
+      hasGradedIncrease(ctx, "URINE_VOL", 1.5) ||
+      hasGradedDecrease(ctx, "URINE_SG", 1.3),
   },
 
-  // Governance rules L25-L26 (post-hoc confidence modifiers, not severity triggers)
+  // Governance rules L26-L27 (post-hoc confidence modifiers, not severity triggers)
   {
-    id: "L25", name: "Multi-domain convergence bonus", category: "governance",
+    id: "L26", name: "Multi-domain convergence bonus", category: "governance",
     parameters: [],
     severity: "S1", speciesApplicability: "both", source: "Internal",
+    baselineAware: false,
     evaluate: (ctx) => ctx.coherenceDomainCount >= 3,
   },
   {
-    id: "L26", name: "Syndrome pattern bonus", category: "governance",
+    id: "L27", name: "Syndrome pattern bonus", category: "governance",
     parameters: [],
     severity: "S1", speciesApplicability: "both", source: "Internal",
+    baselineAware: false,
     evaluate: (ctx) => ctx.syndromeMatched,
   },
 ];
@@ -396,47 +515,87 @@ function buildContext(
   };
 }
 
+/** Additive confidence scoring per spec (-5..+10 scale, base 0).
+ *  Interpretation: >=4 HIGH, 1-3 MODERATE, <=0 LOW. */
 function computeConfidence(
   rule: LabRule,
   ctx: RuleContext,
-): { score: number; modifiers: ConfidenceModifier[] } {
+): { score: number; confidence: "HIGH" | "MODERATE" | "LOW"; modifiers: ConfidenceModifier[] } {
   const modifiers: ConfidenceModifier[] = [];
-  let score = 50; // base confidence
+  let score = 0;
 
-  // Dose-response pattern for matched parameters
+  // Dose-response present: +2
+  let hasDoseResponse = false;
   for (const param of rule.parameters) {
     const pattern = ctx.endpointPattern.get(param.canonical);
-    if (pattern === "monotonic_increase" || pattern === "monotonic_decrease") {
-      modifiers.push({ label: "Monotonic", value: 15, reason: `${param.canonical} shows monotonic dose-response` });
-      score += 15;
-    } else if (pattern === "threshold") {
-      modifiers.push({ label: "Threshold", value: 10, reason: `${param.canonical} shows threshold pattern` });
-      score += 10;
+    if (pattern === "monotonic_increase" || pattern === "monotonic_decrease" || pattern === "threshold") {
+      if (!hasDoseResponse) {
+        modifiers.push({ label: "Dose-response", value: 2, reason: `${param.canonical} shows ${pattern} dose-response` });
+        score += 2;
+        hasDoseResponse = true;
+      }
     }
   }
 
-  // Severity of matched endpoints
-  for (const param of rule.parameters) {
-    const sev = ctx.endpointSeverity.get(param.canonical);
-    if (sev === "adverse") {
-      modifiers.push({ label: "Adverse", value: 10, reason: `${param.canonical} classified as adverse` });
-      score += 10;
-    }
+  // No dose-response: -1
+  if (!hasDoseResponse && rule.parameters.length > 0) {
+    modifiers.push({ label: "No dose-response", value: -1, reason: "No dose-response pattern detected" });
+    score -= 1;
   }
 
-  // Multi-domain convergence (governance L25)
+  // Same-organ corroboration: +2
+  const ruleCanonicals = new Set(rule.parameters.map((p) => p.canonical));
+  const otherOrgans = [...ctx.endpointSeverity.entries()]
+    .filter(([c, sev]) => !ruleCanonicals.has(c) && (sev === "adverse" || sev === "warning"));
+  if (otherOrgans.length > 0) {
+    modifiers.push({ label: "Corroboration", value: 2, reason: "Other endpoints in same organ flagged" });
+    score += 2;
+  }
+
+  // Multi-domain convergence: +2
   if (ctx.coherenceDomainCount >= 3) {
-    modifiers.push({ label: "Convergence", value: 10, reason: `${ctx.coherenceDomainCount}-domain organ convergence` });
-    score += 10;
+    modifiers.push({ label: "Convergence", value: 2, reason: `${ctx.coherenceDomainCount}-domain organ convergence` });
+    score += 2;
   }
 
-  // Syndrome match (governance L26)
+  // Syndrome: +2
   if (ctx.syndromeMatched) {
-    modifiers.push({ label: "Syndrome", value: 10, reason: "Cross-domain syndrome detected" });
-    score += 10;
+    modifiers.push({ label: "Syndrome", value: 2, reason: "Cross-domain syndrome detected" });
+    score += 2;
   }
 
-  return { score: Math.min(score, 100), modifiers };
+  // Multiple sexes: +1
+  for (const param of rule.parameters) {
+    const s = ctx.sexes.get(param.canonical);
+    if (s && s.length >= 2) {
+      modifiers.push({ label: "Both sexes", value: 1, reason: "Both sexes show same direction" });
+      score += 1;
+      break;
+    }
+  }
+
+  // Single sex only: -1
+  const allSingle = rule.parameters.every((p) => {
+    const s = ctx.sexes.get(p.canonical);
+    return s && s.length === 1;
+  });
+  if (allSingle && rule.parameters.length > 0) {
+    modifiers.push({ label: "Single sex", value: -1, reason: "Only one sex affected" });
+    score -= 1;
+  }
+
+  // Fold-change well above threshold: +1
+  for (const param of rule.parameters) {
+    const fc = ctx.foldChanges.get(param.canonical) ?? 0;
+    if (fc >= 5) {
+      modifiers.push({ label: "High fold", value: 1, reason: `${param.canonical} ${fc.toFixed(1)}x above control` });
+      score += 1;
+      break;
+    }
+  }
+
+  const confidence: "HIGH" | "MODERATE" | "LOW" = score >= 4 ? "HIGH" : score >= 1 ? "MODERATE" : "LOW";
+  return { score, confidence, modifiers };
 }
 
 function getMatchedEndpoints(rule: LabRule, endpoints: EndpointSummary[]): string[] {
@@ -475,7 +634,7 @@ export function evaluateLabRules(
     if (rule.category === "governance") continue;
     if (!rule.evaluate(ctx)) continue;
 
-    const { score, modifiers } = computeConfidence(rule, ctx);
+    const { score, confidence, modifiers } = computeConfidence(rule, ctx);
     matches.push({
       ruleId: rule.id,
       ruleName: rule.name,
@@ -485,6 +644,7 @@ export function evaluateLabRules(
       matchedEndpoints: getMatchedEndpoints(rule, endpoints),
       foldChanges: getFoldChangesForRule(rule, ctx),
       confidenceScore: score,
+      confidence,
       confidenceModifiers: modifiers,
       source: rule.source,
     });

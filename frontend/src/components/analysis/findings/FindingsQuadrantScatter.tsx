@@ -61,6 +61,7 @@ export function FindingsQuadrantScatter({
   const handleClick = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (params: any) => {
+      if (params?.data?._outOfScope) return; // ignore dimmed dots
       if (params?.data?._meta?.endpoint_label) {
         onSelect(params.data._meta.endpoint_label);
       }
