@@ -63,6 +63,53 @@ export interface OrganCoherence {
   convergenceLabel: string;      // "3-domain convergence" | "2-domain convergence" | "single domain"
 }
 
+// ─── Organ system overrides for LB domain ─────────────────
+// The API's organ_system for LB endpoints comes from BIOMARKER_MAP in the backend.
+// This client-side remap catches any test codes that the backend maps incorrectly
+// (e.g., NEUT/PLAT/RETIC historically mapped to "general" instead of "hematologic").
+
+const ORGAN_SYSTEM_OVERRIDES: Record<string, string> = {
+  // Hematology — complete blood count + coagulation
+  NEUT: "hematologic", ANC: "hematologic",
+  PLAT: "hematologic", PLT: "hematologic",
+  RETIC: "hematologic", RET: "hematologic",
+  BASO: "hematologic", EOS: "hematologic",
+  MONO: "hematologic", LYMPH: "hematologic", LYM: "hematologic",
+  LUC: "hematologic", LGUNSCE: "hematologic", BAND: "hematologic",
+  WBC: "hematologic", RBC: "hematologic",
+  HGB: "hematologic", HB: "hematologic",
+  HCT: "hematologic",
+  MCV: "hematologic", MCH: "hematologic", MCHC: "hematologic",
+  RDW: "hematologic", MPV: "hematologic",
+  PT: "hematologic", APTT: "hematologic", FIBRINO: "hematologic", FIB: "hematologic",
+  // Hepatic
+  ALT: "hepatic", ALAT: "hepatic",
+  AST: "hepatic", ASAT: "hepatic",
+  ALP: "hepatic", ALKP: "hepatic",
+  GGT: "hepatic",
+  SDH: "hepatic", GLDH: "hepatic", GDH: "hepatic",
+  "5NT": "hepatic",
+  BILI: "hepatic", TBILI: "hepatic", DBILI: "hepatic",
+  ALB: "hepatic", PROT: "hepatic", GLOBUL: "hepatic", ALBGLOB: "hepatic",
+  // Renal
+  BUN: "renal", UREA: "renal", UREAN: "renal",
+  CREAT: "renal", CREA: "renal",
+  SPGRAV: "renal", VOLUME: "renal", PH: "renal", KETONES: "renal",
+  // Electrolyte
+  SODIUM: "electrolyte", K: "electrolyte", CL: "electrolyte",
+  CA: "electrolyte", PHOS: "electrolyte", MG: "electrolyte",
+  // Metabolic
+  GLUC: "metabolic", CHOL: "metabolic", TRIG: "metabolic",
+};
+
+function resolveOrganSystem(row: AdverseEffectSummaryRow): string {
+  if (row.domain === "LB" && row.test_code) {
+    const override = ORGAN_SYSTEM_OVERRIDES[row.test_code.toUpperCase()];
+    if (override) return override;
+  }
+  return row.organ_system;
+}
+
 // ─── Derive functions ──────────────────────────────────────
 
 export function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSummary[] {
@@ -144,7 +191,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     let entry = map.get(row.endpoint_label);
     if (!entry) {
       entry = {
-        organ_system: row.organ_system,
+        organ_system: resolveOrganSystem(row),
         domain: row.domain,
         worstSeverity: row.severity,
         tr: row.treatment_related,
@@ -160,6 +207,12 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       };
       map.set(row.endpoint_label, entry);
     }
+
+    // H4: backfill testCode/specimen/finding from subsequent rows when first row had null
+    if (!entry.testCode && row.test_code) entry.testCode = row.test_code;
+    if (!entry.specimen && row.specimen) entry.specimen = row.specimen;
+    if (!entry.finding && row.finding) entry.finding = row.finding;
+
     entry.sexes.add(row.sex);
     if (row.severity === "adverse") entry.worstSeverity = "adverse";
     else if (row.severity === "warning" && entry.worstSeverity !== "adverse") entry.worstSeverity = "warning";
@@ -168,10 +221,14 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       const abs = Math.abs(row.effect_size);
       if (entry.maxEffect === null || abs > Math.abs(entry.maxEffect)) {
         entry.maxEffect = row.effect_size;
-        // Direction follows the strongest pairwise effect — prevents
+        // Direction and pattern follow the strongest pairwise effect — prevents
         // opposite-sex rows from overwriting (e.g., NEUT ↓ in M, ↑ in F)
         if (row.direction === "up" || row.direction === "down") {
           entry.direction = row.direction;
+        }
+        // H1: pattern follows the strongest signal row
+        if (row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
+          entry.pattern = row.dose_response_pattern;
         }
       }
     } else if (entry.direction === null && (row.direction === "up" || row.direction === "down")) {
@@ -182,8 +239,9 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     if (row.max_incidence != null && (entry.maxIncidence === null || row.max_incidence > entry.maxIncidence)) {
       entry.maxIncidence = row.max_incidence;
     }
-    // Prefer non-flat pattern
-    if (row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
+    // Fallback: accept any non-flat pattern if strongest-signal row didn't provide one
+    if ((entry.pattern === "flat" || entry.pattern === "insufficient_data") &&
+        row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
       entry.pattern = row.dose_response_pattern;
     }
   }
@@ -303,8 +361,22 @@ export function computeEndpointNoaelMap(
     }
 
     if (loaelLevel === null) {
-      // No significant pairwise → NOAEL not derivable from this data
-      result.set(label, { tier: "none", doseValue: null, doseUnit: null });
+      // No significant pairwise — check trend test as fallback.
+      // classify_severity() can mark findings "adverse" via trend_p < 0.05,
+      // so NOAEL must also account for trend to avoid showing "adverse" + "none".
+      const hasTrend = epFindings.some((f) => f.trend_p != null && f.trend_p < 0.05);
+      if (hasTrend) {
+        // Significant dose-response trend but no individually-significant pairwise.
+        // Conservative: NOAEL is below the lowest tested dose.
+        const lowestInfo = doseInfo.get(doseLevels[0]);
+        result.set(label, {
+          tier: "below-lowest",
+          doseValue: lowestInfo?.value ?? null,
+          doseUnit: lowestInfo?.unit ?? null,
+        });
+      } else {
+        result.set(label, { tier: "none", doseValue: null, doseUnit: null });
+      }
       continue;
     }
 
