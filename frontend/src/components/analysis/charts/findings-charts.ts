@@ -62,6 +62,11 @@ export function prepareQuadrantPoints(
   }
 
   // Index lab match endpoint labels -> worst severity + rule metadata
+  // Build testCode lookup from endpoints for resolveCanonical Priority 1
+  const testCodeByLabel = new Map<string, string>();
+  for (const ep of endpoints) {
+    if (ep.testCode) testCodeByLabel.set(ep.endpoint_label.toLowerCase(), ep.testCode);
+  }
   const clinicalIndex = new Map<string, {
     severity: string;
     ruleId: string;
@@ -73,7 +78,8 @@ export function prepareQuadrantPoints(
     for (const match of labMatches) {
       if (sevOrder[match.severity] >= 3) { // Only S3/S4 get diamond
         for (const epLabel of match.matchedEndpoints) {
-          const canonical = resolveCanonical(epLabel);
+          const tc = testCodeByLabel.get(epLabel.toLowerCase());
+          const canonical = resolveCanonical(epLabel, tc);
           if (canonical) {
             const existing = clinicalIndex.get(epLabel.toLowerCase());
             if (!existing || sevOrder[match.severity] > sevOrder[existing.severity]) {

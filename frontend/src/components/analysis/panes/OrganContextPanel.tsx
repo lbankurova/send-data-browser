@@ -323,7 +323,7 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
   const clinicalMap = useMemo(() => {
     const map = new Map<string, { tier: string; ruleId: string }>();
     for (const ep of organEndpoints) {
-      const match = findClinicalMatchForEndpoint(ep.endpoint_label, analytics.labMatches);
+      const match = findClinicalMatchForEndpoint(ep.endpoint_label, analytics.labMatches, ep.testCode);
       if (match) {
         map.set(ep.endpoint_label, { tier: match.severity, ruleId: match.ruleId });
       }

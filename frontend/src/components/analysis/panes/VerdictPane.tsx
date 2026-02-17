@@ -203,7 +203,7 @@ export function VerdictPane({
 
   // Clinical match for this endpoint (Layer D)
   const clinicalMatch: LabClinicalMatch | null = (!notEvaluated && analytics?.labMatches.length)
-    ? findClinicalMatchForEndpoint(finding.endpoint_label ?? finding.finding, analytics.labMatches)
+    ? findClinicalMatchForEndpoint(finding.endpoint_label ?? finding.finding, analytics.labMatches, finding.test_code)
     : null;
 
   // Sex label
