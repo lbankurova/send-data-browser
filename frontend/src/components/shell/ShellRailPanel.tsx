@@ -4,14 +4,14 @@ import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PolymorphicRail } from "./PolymorphicRail";
 import { FindingsRail } from "@/components/analysis/findings/FindingsRail";
-import { getAERailCallback, setAEClearScopeCallback } from "@/components/analysis/findings/AdverseEffectsView";
+import { getFindingsRailCallback, setFindingsClearScopeCallback } from "@/components/analysis/findings/FindingsView";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 
 /**
  * Shell-level rail panel. Renders PolymorphicRail by default,
- * or FindingsRail when on findings-aware views (Adverse Effects, Dose-Response).
+ * or FindingsRail when on findings-aware views (Findings, Dose-Response).
  * Only renders when inside a study route (studyId present).
  */
 export function ShellRailPanel() {
@@ -32,9 +32,9 @@ export function ShellRailPanel() {
   );
 
   // Route detection
-  const isAEView = pathname.includes("/adverse-effects");
+  const isFindingsRoute = pathname.includes("/findings");
   const isDRView = pathname.includes("/dose-response");
-  const isFindingsView = isAEView || isDRView;
+  const isFindingsView = isFindingsRoute || isDRView;
 
   // Reset rail-driven state on study change
   const prevStudyRef = useRef(studyId);
@@ -43,17 +43,17 @@ export function ShellRailPanel() {
       prevStudyRef.current = studyId;
       setGroupScope(null);
       setActiveEndpoint(null);
-      getAERailCallback()?.({ activeGroupScope: null, activeEndpoint: null, activeGrouping: "organ" });
+      getFindingsRailCallback()?.({ activeGroupScope: null, activeEndpoint: null, activeGrouping: "organ" });
     }
   }, [studyId]);
 
-  // Register reverse callback so AE filter bar chip can clear rail scope
+  // Register reverse callback so Findings filter bar chip can clear rail scope
   useEffect(() => {
-    setAEClearScopeCallback(() => {
+    setFindingsClearScopeCallback(() => {
       setGroupScope(null);
       setActiveEndpoint(null);
     });
-    return () => setAEClearScopeCallback(null);
+    return () => setFindingsClearScopeCallback(null);
   }, []);
 
   // ── View-aware handlers ──
@@ -61,8 +61,8 @@ export function ShellRailPanel() {
   const handleGroupScopeChange = useCallback((scope: { type: GroupingMode; value: string } | null) => {
     setGroupScope(scope);
     setActiveEndpoint(null);
-    if (isAEView) {
-      getAERailCallback()?.({ activeGroupScope: scope, activeEndpoint: null });
+    if (isFindingsRoute) {
+      getFindingsRailCallback()?.({ activeGroupScope: scope, activeEndpoint: null });
     } else if (isDRView) {
       // Organ grouping → set organSystem, cascade clears endpoint, D-R auto-selects
       if (scope && scope.type === "organ") {
@@ -73,45 +73,45 @@ export function ShellRailPanel() {
       }
       // Domain/pattern grouping: visual-only, no StudySelectionContext update
     }
-  }, [isAEView, isDRView, navigateTo]);
+  }, [isFindingsRoute, isDRView, navigateTo]);
 
   const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
     setActiveEndpoint(endpointLabel);
-    if (isAEView) {
-      getAERailCallback()?.({ activeEndpoint: endpointLabel });
+    if (isFindingsRoute) {
+      getFindingsRailCallback()?.({ activeEndpoint: endpointLabel });
     } else if (isDRView) {
       if (endpointLabel) {
         navigateTo({ endpoint: endpointLabel });
       }
     }
-  }, [isAEView, isDRView, navigateTo]);
+  }, [isFindingsRoute, isDRView, navigateTo]);
 
   const handleGroupingChange = useCallback((mode: GroupingMode) => {
-    if (isAEView) {
-      getAERailCallback()?.({ activeGrouping: mode });
+    if (isFindingsRoute) {
+      getFindingsRailCallback()?.({ activeGrouping: mode });
     } else if (isDRView) {
       // Switching grouping mode clears organ scope
       navigateTo({ organSystem: undefined });
     }
-  }, [isAEView, isDRView, navigateTo]);
+  }, [isFindingsRoute, isDRView, navigateTo]);
 
   // ── Bidirectional sync: table/context → rail highlight ──
 
-  // AE sync: FindingSelectionContext
+  // Findings sync: FindingSelectionContext
   const { selectedFinding } = useFindingSelection();
   const prevEndpointRef = useRef(activeEndpoint);
   useEffect(() => {
     prevEndpointRef.current = activeEndpoint;
   }, [activeEndpoint]);
 
-  // AE path: table row click updates FindingSelectionContext → sync to rail
+  // Findings path: table row click updates FindingSelectionContext → sync to rail
   useEffect(() => {
-    if (!isAEView) return;
+    if (!isFindingsRoute) return;
     const newEndpoint = selectedFinding?.endpoint_label ?? null;
     if (newEndpoint !== prevEndpointRef.current) {
       setActiveEndpoint(newEndpoint);
     }
-  }, [selectedFinding, isAEView]);
+  }, [selectedFinding, isFindingsRoute]);
 
   // D-R path: StudySelectionContext.endpoint changes → sync to rail
   useEffect(() => {

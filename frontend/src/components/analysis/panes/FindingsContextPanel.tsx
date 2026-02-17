@@ -11,7 +11,7 @@ import { CorrelationsPane } from "./CorrelationsPane";
 import { EffectSizePane } from "./EffectSizePane";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function AdverseEffectsContextPanel() {
+export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
   const { selectedFindingId, selectedFinding } = useFindingSelection();
@@ -24,7 +24,7 @@ export function AdverseEffectsContextPanel() {
   if (!selectedFindingId || !selectedFinding) {
     return (
       <div className="p-4">
-        <h3 className="mb-2 text-sm font-semibold">Adverse Effects</h3>
+        <h3 className="mb-2 text-sm font-semibold">Findings</h3>
         <p className="text-xs text-muted-foreground">
           Select a finding row to view detailed analysis.
         </p>

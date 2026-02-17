@@ -2,7 +2,7 @@
  * FindingsRail — hierarchical navigation rail for findings-aware views.
  * Shows signal summary, group cards, and endpoint rows with signal scoring.
  *
- * Mounts on: Adverse Effects view (Stage 1), Dose-Response view (Stage 5).
+ * Mounts on: Findings view (Stage 1), Dose-Response view (Stage 5).
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect, forwardRef } from "react";

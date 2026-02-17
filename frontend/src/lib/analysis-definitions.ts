@@ -6,7 +6,7 @@ export interface AnalysisType {
 }
 
 export const ANALYSIS_TYPES: AnalysisType[] = [
-  { key: "adverse-effects", label: "Adverse effects", icon: "AlertTriangle", implemented: true },
+  { key: "findings", label: "Findings", icon: "AlertTriangle", implemented: true },
   { key: "noael", label: "NOAEL", icon: "Target", implemented: false },
   { key: "target-organs", label: "Target organs", icon: "Crosshair", implemented: false },
   { key: "validation", label: "Validation", icon: "CheckCircle", implemented: false },
@@ -22,7 +22,7 @@ export interface AnalysisView {
 
 export const ANALYSIS_VIEWS: AnalysisView[] = [
   { key: "study-summary", label: "Study Summary", implemented: true },
-  { key: "adverse-effects", label: "Adverse effects", implemented: true },
+  { key: "findings", label: "Findings", implemented: true },
   { key: "dose-response", label: "Dose-Response", implemented: true },
   { key: "histopathology", label: "Histopathology", implemented: true },
   { key: "noael-decision", label: "NOAEL & decision", implemented: true },
