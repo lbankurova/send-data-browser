@@ -132,6 +132,7 @@ function buildConfidenceLabel(
     maxEffectSize: finding.max_effect_size,
     direction: finding.direction as "up" | "down" | "none" | null ?? null,
     sexes: finding.sex === "M" ? ["M"] : finding.sex === "F" ? ["F"] : ["M", "F"],
+    maxFoldChange: null,
   };
 
   return classifyEndpointConfidence(ep);

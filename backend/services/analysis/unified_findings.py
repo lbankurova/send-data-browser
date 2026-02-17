@@ -18,6 +18,7 @@ from services.analysis.findings_ma import compute_ma_findings
 from services.analysis.findings_cl import compute_cl_findings
 from services.analysis.classification import (
     classify_severity, classify_dose_response, determine_treatment_related,
+    compute_max_fold_change,
 )
 from services.analysis.correlations import compute_correlations
 from services.analysis.context_panes import build_finding_context
@@ -109,6 +110,11 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
         finding["pattern_confidence"] = dr_result.get("confidence")
         finding["onset_dose_level"] = dr_result.get("onset_dose_level")
         finding["treatment_related"] = determine_treatment_related(finding)
+
+        # Fold change (continuous endpoints only)
+        finding["max_fold_change"] = compute_max_fold_change(
+            finding.get("group_stats", [])
+        ) if finding.get("data_type") == "continuous" else None
 
         # Enrich with organ_system and endpoint_label (same logic as generator)
         finding["organ_system"] = get_organ_system(

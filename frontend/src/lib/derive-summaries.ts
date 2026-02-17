@@ -46,6 +46,8 @@ export interface EndpointSummary {
   finding?: string | null;
   /** Maximum incidence across treated dose groups (0-1) */
   maxIncidence?: number | null;
+  /** Maximum fold change vs control (always >= 1, continuous endpoints only) */
+  maxFoldChange: number | null;
   /** NOAEL tier relative to the dose range */
   noaelTier?: NoaelTier;
   /** NOAEL dose value (null when tier is "below-lowest" or "none") */
@@ -185,6 +187,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     specimen?: string | null;
     finding?: string | null;
     maxIncidence: number | null;
+    maxFoldChange: number | null;
   }>();
 
   for (const row of rows) {
@@ -204,6 +207,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         specimen: row.specimen,
         finding: row.finding,
         maxIncidence: null,
+        maxFoldChange: null,
       };
       map.set(row.endpoint_label, entry);
     }
@@ -239,6 +243,10 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     if (row.max_incidence != null && (entry.maxIncidence === null || row.max_incidence > entry.maxIncidence)) {
       entry.maxIncidence = row.max_incidence;
     }
+    // Track max fold change across dose groups
+    if (row.max_fold_change != null && (entry.maxFoldChange === null || row.max_fold_change > entry.maxFoldChange)) {
+      entry.maxFoldChange = row.max_fold_change;
+    }
     // Fallback: accept any non-flat pattern if strongest-signal row didn't provide one
     if ((entry.pattern === "flat" || entry.pattern === "insufficient_data") &&
         row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
@@ -263,6 +271,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       specimen: entry.specimen,
       finding: entry.finding,
       maxIncidence: entry.maxIncidence,
+      maxFoldChange: entry.maxFoldChange,
     });
   }
 

@@ -266,6 +266,7 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
                 "test_code": finding.get("test_code"),
                 "specimen": finding.get("specimen"),
                 "finding": finding.get("finding"),
+                "max_fold_change": finding.get("max_fold_change"),
             })
 
     return rows

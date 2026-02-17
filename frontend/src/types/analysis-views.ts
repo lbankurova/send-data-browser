@@ -160,6 +160,8 @@ export interface AdverseEffectSummaryRow {
   finding?: string | null;
   /** Maximum incidence across treated dose groups (0-1) */
   max_incidence?: number | null;
+  /** Maximum fold change vs control (always >= 1, continuous endpoints only) */
+  max_fold_change?: number | null;
 }
 
 // --- Dose-Response (View 2) ---
