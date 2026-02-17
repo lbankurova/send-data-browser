@@ -87,68 +87,79 @@ export function getClinicalFloor(severity: "S1" | "S2" | "S3" | "S4"): number {
 
 // ─── Synonym Lookup ────────────────────────────────────────
 
+// Exact-label architecture (following finding-term-map.ts pattern).
+// Each canonical maps to: [testCode aliases..., exact normalized endpoint labels...]
+// No substring matching, no regex — O(1) Map lookups only.
 const LAB_SYNONYMS: Record<string, string[]> = {
-  ALT: ["alt", "alanine aminotransferase", "sgpt", "gpt", "alat"],
-  AST: ["ast", "aspartate aminotransferase", "sgot", "got", "asat"],
-  ALP: ["alp", "alkaline phosphatase"],
-  GGT: ["ggt", "gamma-glutamyl", "gamma gt"],
+  ALT: ["alt", "alat", "alanine aminotransferase", "sgpt", "gpt"],
+  AST: ["ast", "asat", "aspartate aminotransferase", "sgot", "got"],
+  ALP: ["alp", "alkp", "alkaline phosphatase"],
+  GGT: ["ggt", "gamma-glutamyl transferase", "gamma-glutamyl", "gamma gt"],
   SDH: ["sdh", "sorbitol dehydrogenase"],
   GDH: ["gldh", "gdh", "glutamate dehydrogenase"],
   "5NT": ["5'nt", "5'-nucleotidase", "5nt"],
   BUN: ["bun", "blood urea nitrogen", "urea nitrogen", "urea"],
   CREAT: ["creatinine", "crea", "creat"],
-  TBILI: ["bilirubin", "tbili", "total bilirubin", "bili"],
+  TBILI: ["bilirubin", "tbili", "total bilirubin", "bili", "dbili"],
   HGB: ["hemoglobin", "hgb", "hb"],
-  RBC: ["rbc", "red blood cell", "erythrocyte"],
+  RBC: ["rbc", "red blood cell", "red blood cells", "erythrocyte", "erythrocytes"],
   HCT: ["hematocrit", "hct"],
-  PLAT: ["platelet", "plt", "thrombocyte"],
-  WBC: ["wbc", "white blood cell", "leukocyte"],
-  NEUT: ["neutrophil", "neut", "anc"],
-  RETIC: ["reticulocyte", "retic"],
+  PLAT: ["platelet", "platelets", "platelet count", "plt", "thrombocyte", "thrombocytes"],
+  WBC: ["wbc", "white blood cell", "white blood cells", "leukocyte", "leukocytes", "total leukocytes"],
+  NEUT: ["neutrophil", "neutrophils", "neutrophil count", "absolute neutrophil count",
+         "neutrophil absolute count", "neut", "anc"],
+  LYMPH: ["lymphocyte", "lymphocytes", "lymphocyte count", "lymph", "lym"],
+  MONO: ["monocyte", "monocytes", "monocyte count", "mono"],
+  EOS: ["eosinophil", "eosinophils", "eosinophil count", "eos"],
+  BASO: ["basophil", "basophils", "basophil count", "baso"],
+  RETIC: ["reticulocyte", "reticulocytes", "reticulocyte count", "retic", "ret"],
+  MCV: ["mean corpuscular volume", "mcv"],
+  MCH: ["mean corpuscular hemoglobin", "mch"],
+  MCHC: ["mchc"],
   K: ["potassium"],
   NA: ["sodium"],
   CA: ["calcium"],
-  PHOS: ["phosphate", "phosphorus"],
+  PHOS: ["phosphate", "phosphorus", "inorganic phosphorus"],
   GLUC: ["glucose", "blood glucose"],
   CHOL: ["cholesterol", "total cholesterol"],
+  TRIG: ["triglycerides", "triglyceride", "trig"],
+  ALB: ["albumin", "alb"],
+  GLOBUL: ["globulin", "globul"],
+  PROT: ["total protein", "protein", "prot"],
   PT: ["prothrombin time"],
   INR: ["inr", "international normalized ratio"],
-  APTT: ["aptt", "activated partial thromboplastin", "ptt"],
+  APTT: ["aptt", "activated partial thromboplastin time", "activated partial thromboplastin", "ptt"],
+  FIBRINO: ["fibrinogen", "fibrino", "fib"],
   MG: ["magnesium"],
-  URINE_VOL: ["urine volume", "urine output"],
-  URINE_SG: ["specific gravity", "urine specific gravity"],
+  CL: ["chloride"],
+  URINE_VOL: ["urine volume", "urine output", "volume"],
+  URINE_SG: ["specific gravity", "urine specific gravity", "spgrav"],
 };
 
-/** Pre-compiled word-boundary patterns from LAB_SYNONYMS — avoids substring
- *  false positives (e.g., "anc" in "pancreas" → NEUT, "ast" in "cast" → AST). */
-const LAB_SYNONYM_PATTERNS: [string, RegExp[]][] = Object.entries(LAB_SYNONYMS).map(
-  ([canonical, synonyms]) => [
-    canonical,
-    synonyms.map((s) => {
-      const escaped = s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      return new RegExp(`(?:^|[\\s,;()])${escaped}(?:$|[\\s,;()])`, "i");
-    }),
-  ],
-);
+// Pre-built exact-match indexes (constructed once at module load, O(1) lookups).
+// Follows the finding-term-map.ts pattern: no includes(), no regex.
+const BY_TEST_CODE = new Map<string, string>();
+const BY_LABEL = new Map<string, string>();
+
+for (const [canonical, synonyms] of Object.entries(LAB_SYNONYMS)) {
+  BY_TEST_CODE.set(canonical, canonical);
+  BY_LABEL.set(canonical.toLowerCase(), canonical);
+  for (const syn of synonyms) {
+    BY_TEST_CODE.set(syn.toUpperCase(), canonical);
+    BY_LABEL.set(syn.toLowerCase(), canonical);
+  }
+}
 
 export function resolveCanonical(endpointLabel: string, testCode?: string): string | null {
-  // Priority 1: exact test code match (most reliable, no false positives)
+  // Priority 1: test code (exact, O(1))
   if (testCode) {
-    const upper = testCode.toUpperCase();
-    // Direct canonical key match: most LBTESTCD values ARE the canonical
-    if (LAB_SYNONYMS[upper]) return upper;
-    // Check if test code appears in any synonym list
-    for (const [canonical, synonyms] of Object.entries(LAB_SYNONYMS)) {
-      if (synonyms.includes(upper.toLowerCase())) return canonical;
-    }
+    const hit = BY_TEST_CODE.get(testCode.toUpperCase());
+    if (hit) return hit;
   }
-
-  // Priority 2: word-boundary regex on label (fallback for MI/MA/OM or missing testCode)
-  // Pad with spaces so patterns can match at start/end
-  const padded = ` ${endpointLabel.toLowerCase()} `;
-  for (const [canonical, patterns] of LAB_SYNONYM_PATTERNS) {
-    if (patterns.some((re) => re.test(padded))) return canonical;
-  }
+  // Priority 2: normalized label (exact, O(1))
+  const hit = BY_LABEL.get(endpointLabel.trim().toLowerCase());
+  if (hit) return hit;
+  // No fallback — if the label doesn't match, return null.
   return null;
 }
 
@@ -768,8 +779,9 @@ export function getClinicalSeverityLabel(tier: string): string {
 export function findClinicalMatchForEndpoint(
   endpointLabel: string,
   labMatches: LabClinicalMatch[],
+  testCode?: string,
 ): LabClinicalMatch | null {
-  const canonical = resolveCanonical(endpointLabel);
+  const canonical = resolveCanonical(endpointLabel, testCode);
   if (!canonical) return null;
 
   const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
