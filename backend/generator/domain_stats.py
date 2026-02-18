@@ -99,8 +99,19 @@ def _kruskal_p(group_values: list[np.ndarray]) -> float | None:
         return None
 
 
-def compute_all_findings(study: StudyInfo) -> tuple[list[dict], dict]:
+TERMINAL_DOMAINS = {"MI", "MA", "OM"}  # Always collected at sacrifice
+LB_DOMAIN = "LB"  # Terminal timepoint only exclusion
+
+
+def compute_all_findings(
+    study: StudyInfo,
+    early_death_subjects: dict[str, str] | None = None,
+) -> tuple[list[dict], dict]:
     """Run all domain findings modules and enrich with additional tests.
+
+    When early_death_subjects is provided, runs a dual-pass for terminal domains:
+    pass 1 = all animals (base stats), pass 2 = scheduled-only (excluded early deaths).
+    Longitudinal domains (BW, FW, CL) are never affected.
 
     Returns (enriched_findings, dose_group_data).
     """
@@ -108,7 +119,10 @@ def compute_all_findings(study: StudyInfo) -> tuple[list[dict], dict]:
     subjects = dg_data["subjects"]
     dose_groups = dg_data["dose_groups"]
 
-    # Collect all findings from existing modules
+    excluded_set = set(early_death_subjects.keys()) if early_death_subjects else None
+    n_excluded = len(excluded_set) if excluded_set else 0
+
+    # Collect all findings from existing modules (pass 1 — all animals)
     all_findings = []
     all_findings.extend(compute_lb_findings(study, subjects))
     all_findings.extend(compute_bw_findings(study, subjects))
@@ -117,6 +131,43 @@ def compute_all_findings(study: StudyInfo) -> tuple[list[dict], dict]:
     all_findings.extend(compute_ma_findings(study, subjects))
     all_findings.extend(compute_cl_findings(study, subjects))
     all_findings.extend(compute_ds_findings(study, subjects))
+
+    # Pass 2 — scheduled-only stats for terminal + LB domains
+    if excluded_set:
+        # Build a lookup: (domain, test_code, sex, day) → scheduled findings
+        scheduled_findings_map: dict[tuple, dict] = {}
+
+        for sched_f in compute_mi_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+
+        for sched_f in compute_ma_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+
+        for sched_f in compute_om_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+
+        for sched_f in compute_lb_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+
+        # Merge scheduled stats into all_findings
+        for finding in all_findings:
+            key = (finding["domain"], finding["test_code"], finding["sex"], finding.get("day"))
+            sched = scheduled_findings_map.get(key)
+            if sched:
+                finding["scheduled_group_stats"] = sched["group_stats"]
+                finding["scheduled_pairwise"] = sched["pairwise"]
+                finding["scheduled_direction"] = sched.get("direction")
+                finding["scheduled_min_p_adj"] = sched.get("min_p_adj")
+                finding["scheduled_max_effect_size"] = sched.get("max_effect_size")
+                finding["scheduled_trend_p"] = sched.get("trend_p")
+                finding["n_excluded"] = n_excluded
+            elif finding["domain"] in TERMINAL_DOMAINS or finding["domain"] == LB_DOMAIN:
+                # Terminal domain but no scheduled finding (all subjects excluded?) — keep base
+                finding["n_excluded"] = n_excluded
 
     # Try FW domain (food/water consumption) — mirrors BW pattern
     if "fw" in study.xpt_files:

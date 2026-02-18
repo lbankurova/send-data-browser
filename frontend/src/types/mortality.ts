@@ -33,4 +33,6 @@ export interface StudyMortality {
   deaths: DeathRecord[];
   accidentals: DeathRecord[];
   by_dose: DoseGroupMortality[];
+  /** Non-scheduled subjects: {USUBJID: DSDECOD} */
+  early_death_subjects: Record<string, string>;
 }

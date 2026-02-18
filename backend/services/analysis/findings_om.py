@@ -10,7 +10,11 @@ from services.analysis.statistics import (
 )
 
 
-def compute_om_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def compute_om_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    excluded_subjects: set[str] | None = None,
+) -> list[dict]:
     """Compute findings from OM domain (organ weights)."""
     if "om" not in study.xpt_files:
         return []
@@ -19,6 +23,8 @@ def compute_om_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     om_df.columns = [c.upper() for c in om_df.columns]
 
     main_subs = subjects[~subjects["is_recovery"]].copy()
+    if excluded_subjects:
+        main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
     om_df = om_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     if "OMSTRESN" in om_df.columns:
