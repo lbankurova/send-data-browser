@@ -24,8 +24,8 @@ import { FilterBar, FilterSelect, FilterMultiSelect, FilterShowingLine } from "@
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
 import { getNeutralHeatColor as getNeutralHeatColor01, getDoseGroupColor, titleCase, formatDoseShortLabel } from "@/lib/severity-colors";
-import { classifySpecimenPattern, classifyFindingPattern, formatPatternLabel, patternWeight, patternToLegacyConsistency } from "@/lib/pattern-classification";
-import type { PatternClassification } from "@/lib/pattern-classification";
+import { classifySpecimenPattern, classifyFindingPatternWithSex, formatPatternLabel, patternWeight, patternToLegacyConsistency } from "@/lib/pattern-classification";
+import type { PatternClassification, PatternClassificationResult } from "@/lib/pattern-classification";
 import { detectSyndromes } from "@/lib/syndrome-rules";
 import type { SyndromeMatch } from "@/lib/syndrome-rules";
 import { SparklineGlyph } from "@/components/ui/SparklineGlyph";
@@ -563,10 +563,10 @@ function OverviewTab({
 
   // Per-finding dose consistency (with direction)
   const findingConsistency = useMemo(() => {
-    const map = new Map<string, PatternClassification>();
+    const map = new Map<string, PatternClassificationResult>();
     for (const fs of findingSummaries) {
       const trendP = trendsByFinding.get(fs.finding)?.ca_trend_p ?? null;
-      map.set(fs.finding, classifyFindingPattern(specimenData, fs.finding, trendP, null, false));
+      map.set(fs.finding, classifyFindingPatternWithSex(specimenData, fs.finding, trendP, null, false));
     }
     return map;
   }, [findingSummaries, specimenData, trendsByFinding]);
@@ -824,7 +824,7 @@ function OverviewTab({
 
     // Determine direction for selected finding (or specimen aggregate)
     const selectedFindingFull = selection?.finding ? findingConsistency.get(selection.finding) : undefined;
-    const chartDirection = selectedFindingFull?.pattern === "MONOTONIC_DOWN" ? "decreasing" as const : selectedFindingFull?.pattern === "MONOTONIC_UP" ? "increasing" as const : undefined;
+    const chartDirection = selectedFindingFull?.aggregate.pattern === "MONOTONIC_DOWN" ? "decreasing" as const : selectedFindingFull?.aggregate.pattern === "MONOTONIC_UP" ? "increasing" as const : undefined;
 
     return { chartOption: buildDoseIncidenceBarOption(groups, stableSexKeys, incidenceMode, recoveryIncidenceGroups, chartDirection), hasDoseChartData: true };
   }, [filteredData, selection?.finding, stableDoseLevels, stableAllSexes, stableSexKeys, stableUseSexGrouping, incidenceMode, recoveryIncidenceGroups, findingConsistency]);
@@ -1126,7 +1126,7 @@ function OverviewTab({
     () =>
       findingSummaries.map((fs) => {
         const pc = findingConsistency.get(fs.finding);
-        const patternType = pc?.pattern ?? "NO_PATTERN";
+        const patternType = pc?.aggregate.pattern ?? "NO_PATTERN";
         const trend = trendsByFinding.get(fs.finding);
         let isDoseDriven: boolean;
         let isNonMonotonic = false;
@@ -3796,7 +3796,8 @@ export function HistopathologyView() {
         (t) => t.finding === finding && t.specimen === selectedSpecimen,
       );
       const findingLat = subjData?.subjects ? aggregateFindingLaterality(subjData.subjects, finding) : null;
-      const findingPattern = classifyFindingPattern(specimenData, finding, trend?.ca_trend_p ?? null, null, false, findingLat);
+      const findingPatternResult = classifyFindingPatternWithSex(specimenData, finding, trend?.ca_trend_p ?? null, null, false, findingLat);
+      const findingPattern = findingPatternResult.aggregate;
       const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
       const findingNature = classifyFindingNature(finding);
 

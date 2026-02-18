@@ -48,7 +48,7 @@ import type {
 import { deriveOrganCoherence } from "@/lib/derive-summaries";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor, getClinicalTierBadgeClasses } from "@/lib/lab-clinical-catalog";
-import { formatPValue, titleCase, getDomainBadgeColor } from "@/lib/severity-colors";
+import { formatPValue, titleCase, getDomainBadgeColor, getDirectionSymbol } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
@@ -949,6 +949,19 @@ function CardLabel({ grouping, value, syndromeLabel }: { grouping: GroupingMode;
   return <span className="min-w-0 truncate font-semibold" title={titleCase(value)}>{titleCase(value)}</span>;
 }
 
+/** Short pattern label for per-sex display in endpoint row */
+function shortPatternLabel(pattern: string): string {
+  switch (pattern) {
+    case "monotonic_increase": case "monotonic_decrease": return "Monotonic";
+    case "threshold_increase": case "threshold_decrease": return "Threshold";
+    case "non_monotonic": return "Non-mono";
+    case "u_shaped": return "U-shape";
+    case "inverted_u": return "Inv-U";
+    case "flat": return "Flat";
+    default: return pattern;
+  }
+}
+
 // ─── Endpoint Row ──────────────────────────────────────────
 
 const EndpointRow = forwardRef<HTMLButtonElement, {
@@ -1021,7 +1034,21 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
         {endpoint.minPValue !== null && (
           <span>p{formatPValue(endpoint.minPValue)}</span>
         )}
-        <span>{endpoint.sexes.join(" ")}</span>
+        {(() => {
+          // Check for per-sex pattern divergence
+          const bySex = endpoint.bySex;
+          if (bySex && bySex.size >= 2) {
+            const patterns = [...bySex.values()].map(s => s.pattern);
+            if (new Set(patterns).size > 1) {
+              return [...bySex.entries()].map(([sex, s]) => (
+                <span key={sex}>
+                  {sex === "M" ? "♂" : "♀"} {shortPatternLabel(s.pattern)} {getDirectionSymbol(s.direction)}
+                </span>
+              ));
+            }
+          }
+          return <span>{endpoint.sexes.join(" ")}</span>;
+        })()}
       </div>
     </button>
   );

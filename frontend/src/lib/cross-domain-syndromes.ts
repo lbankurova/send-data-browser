@@ -1008,6 +1008,7 @@ export interface SyndromeTermReport {
 export function getSyndromeTermReport(
   syndromeId: string,
   endpoints: EndpointSummary[],
+  syndromeSexes?: string[],
 ): SyndromeTermReport | null {
   const def = SYNDROME_DEFINITIONS.find((s) => s.id === syndromeId);
   if (!def) return null;
@@ -1039,6 +1040,7 @@ export function getSyndromeTermReport(
         entry.pValue = ep.minPValue;
         entry.severity = ep.worstSeverity;
         entry.foundDirection = ep.direction;
+        if (syndromeSexes && syndromeSexes.length === 1) entry.sex = syndromeSexes[0];
         fullMatch = true;
         break;
       }
