@@ -6,6 +6,10 @@ interface ScheduledOnlyContextValue {
   /** When true, display scheduled-only stats (early-death subjects excluded). */
   useScheduledOnly: boolean;
   setUseScheduledOnly: (v: boolean) => void;
+  /** Whether the current study has early-death subjects. */
+  hasEarlyDeaths: boolean;
+  /** Set by the view that knows about mortality data. */
+  setHasEarlyDeaths: (v: boolean) => void;
   /** Return the active group stats based on toggle state. */
   getActiveGroupStats: (finding: UnifiedFinding) => GroupStat[];
   /** Return the active pairwise results based on toggle state. */
@@ -17,20 +21,16 @@ interface ScheduledOnlyContextValue {
 const ScheduledOnlyContext = createContext<ScheduledOnlyContextValue>({
   useScheduledOnly: true,
   setUseScheduledOnly: () => {},
+  hasEarlyDeaths: false,
+  setHasEarlyDeaths: () => {},
   getActiveGroupStats: (f) => f.group_stats,
   getActivePairwise: (f) => f.pairwise,
   getActiveDirection: (f) => f.direction,
 });
 
-export function ScheduledOnlyProvider({
-  children,
-  hasEarlyDeaths,
-}: {
-  children: ReactNode;
-  /** Only enable toggling when the study has early-death subjects. */
-  hasEarlyDeaths: boolean;
-}) {
+export function ScheduledOnlyProvider({ children }: { children: ReactNode }) {
   const [useScheduledOnly, setUseScheduledOnly] = useState(true);
+  const [hasEarlyDeaths, setHasEarlyDeaths] = useState(false);
 
   const getActiveGroupStats = useCallback(
     (finding: UnifiedFinding): GroupStat[] => {
@@ -67,6 +67,8 @@ export function ScheduledOnlyProvider({
       value={{
         useScheduledOnly,
         setUseScheduledOnly,
+        hasEarlyDeaths,
+        setHasEarlyDeaths,
         getActiveGroupStats,
         getActivePairwise,
         getActiveDirection,

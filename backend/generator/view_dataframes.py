@@ -8,6 +8,18 @@ from collections import defaultdict
 from services.analysis.statistics import severity_trend
 
 
+def _propagate_scheduled_fields(row: dict, finding: dict) -> None:
+    """Copy scheduled-only (early-death excluded) stats from finding to a view row."""
+    if "scheduled_group_stats" in finding:
+        row["scheduled_group_stats"] = finding["scheduled_group_stats"]
+    if "scheduled_pairwise" in finding:
+        row["scheduled_pairwise"] = finding["scheduled_pairwise"]
+    if "scheduled_direction" in finding:
+        row["scheduled_direction"] = finding["scheduled_direction"]
+    if finding.get("n_excluded") is not None:
+        row["n_excluded"] = finding["n_excluded"]
+
+
 def build_study_signal_summary(findings: list[dict], dose_groups: list[dict]) -> list[dict]:
     """Build the study signal summary: one row per endpoint x dose x sex.
 
@@ -150,7 +162,7 @@ def build_dose_response_metrics(findings: list[dict], dose_groups: list[dict]) -
             dl = gs["dose_level"]
             pw = next((p for p in finding.get("pairwise", []) if p["dose_level"] == dl), {})
 
-            rows.append({
+            row = {
                 "endpoint_label": finding.get("endpoint_label", ""),
                 "domain": finding.get("domain", ""),
                 "test_code": finding.get("test_code", ""),
@@ -168,7 +180,9 @@ def build_dose_response_metrics(findings: list[dict], dose_groups: list[dict]) -
                 "dose_response_pattern": finding.get("dose_response_pattern", ""),
                 "trend_p": finding.get("trend_p"),
                 "data_type": finding.get("data_type", "continuous"),
-            })
+            }
+            _propagate_scheduled_fields(row, finding)
+            rows.append(row)
 
     return rows
 
@@ -220,7 +234,7 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
                 sev_status = "present_ungraded"
             else:
                 sev_status = "graded"
-            rows.append({
+            row = {
                 "endpoint_label": finding.get("endpoint_label", ""),
                 "specimen": finding.get("specimen", ""),
                 "finding": finding.get("finding", ""),
@@ -234,7 +248,9 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
                 "avg_severity": avg_sev,
                 "severity_status": sev_status,
                 "severity": finding.get("severity", "normal"),
-            })
+            }
+            _propagate_scheduled_fields(row, finding)
+            rows.append(row)
 
     return rows
 
@@ -268,15 +284,7 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
                 "finding": finding.get("finding"),
                 "max_fold_change": finding.get("max_fold_change"),
             }
-            # Propagate scheduled-only (early-death excluded) stats
-            if "scheduled_group_stats" in finding:
-                row["scheduled_group_stats"] = finding["scheduled_group_stats"]
-            if "scheduled_pairwise" in finding:
-                row["scheduled_pairwise"] = finding["scheduled_pairwise"]
-            if "scheduled_direction" in finding:
-                row["scheduled_direction"] = finding["scheduled_direction"]
-            if finding.get("n_excluded") is not None:
-                row["n_excluded"] = finding["n_excluded"]
+            _propagate_scheduled_fields(row, finding)
             rows.append(row)
 
     return rows
@@ -367,6 +375,29 @@ def build_noael_summary(
                     mortality_cap_applied = True
                     mortality_cap_dose_value = dose_value_map.get(capped_level)
 
+        # Scheduled-only NOAEL: repeat derivation using scheduled_pairwise
+        scheduled_noael_level = None
+        scheduled_loael_level = None
+        has_scheduled_data = any("scheduled_pairwise" in f for f in sex_findings)
+        if has_scheduled_data:
+            sched_adverse_levels = set()
+            for f in sex_findings:
+                if f.get("severity") == "adverse":
+                    for pw in f.get("scheduled_pairwise", f.get("pairwise", [])):
+                        p = pw.get("p_value_adj", pw.get("p_value"))
+                        if p is not None and p < 0.05:
+                            sched_adverse_levels.add(pw["dose_level"])
+            if sched_adverse_levels:
+                scheduled_loael_level = min(sched_adverse_levels)
+                if scheduled_loael_level > 0:
+                    scheduled_noael_level = scheduled_loael_level - 1
+
+        # Flag when scheduled NOAEL differs from base NOAEL
+        scheduled_noael_differs = (
+            has_scheduled_data
+            and scheduled_noael_level != noael_level
+        )
+
         rows.append({
             "sex": sex_filter,
             "noael_dose_level": noael_level,
@@ -381,6 +412,11 @@ def build_noael_summary(
             "noael_derivation": noael_derivation,
             "mortality_cap_applied": mortality_cap_applied,
             "mortality_cap_dose_value": mortality_cap_dose_value,
+            "scheduled_noael_dose_level": scheduled_noael_level,
+            "scheduled_noael_label": dose_label_map.get(scheduled_noael_level, "Not established") if scheduled_noael_level is not None else "Not established",
+            "scheduled_noael_dose_value": dose_value_map.get(scheduled_noael_level) if scheduled_noael_level is not None else None,
+            "scheduled_loael_dose_level": scheduled_loael_level,
+            "scheduled_noael_differs": scheduled_noael_differs,
         })
 
     return rows
