@@ -222,7 +222,7 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
     dose_label_map = {dg["dose_level"]: dg["label"] for dg in dose_groups}
 
     for finding in findings:
-        if finding.get("domain") not in ("MI", "MA", "CL"):
+        if finding.get("domain") not in ("MI", "MA", "CL", "TF"):
             continue
 
         for gs in finding.get("group_stats", []):

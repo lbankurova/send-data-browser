@@ -31,6 +31,7 @@ from generator.static_charts import generate_target_organ_bar_chart
 from services.analysis.subject_context import build_subject_context
 from services.analysis.provenance import generate_provenance_messages
 from services.analysis.mortality import compute_study_mortality
+from generator.tumor_summary import build_tumor_summary
 
 
 OUTPUT_DIR = Path(__file__).parent.parent / "generated"
@@ -120,6 +121,16 @@ def generate(study_id: str):
     findings, dg_data = compute_all_findings(study, early_death_subjects=early_death_subjects)
     dose_groups = dg_data["dose_groups"]
     print(f"  {len(findings)} findings across {len(set(f['domain'] for f in findings))} domains")
+
+    # Phase 1d: Tumor summary (cross-domain TF + MI progression detection)
+    print("Phase 1d: Computing tumor summary...")
+    tumor_summary = build_tumor_summary(findings, study)
+    _write_json(out_dir / "tumor_summary.json", tumor_summary)
+    if tumor_summary["has_tumors"]:
+        print(f"  {tumor_summary['total_tumor_types']} tumor types in {tumor_summary['total_tumor_animals']} animals")
+        print(f"  {len(tumor_summary['progression_sequences'])} progression sequences detected")
+    else:
+        print("  No tumors found")
 
     # Phase 1c: Build enriched subject context + provenance messages
     print("Phase 1c: Building subject context...")

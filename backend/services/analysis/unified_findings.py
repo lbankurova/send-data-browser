@@ -15,6 +15,7 @@ from services.analysis.findings_bw import compute_bw_findings
 from services.analysis.findings_om import compute_om_findings
 from services.analysis.findings_mi import compute_mi_findings
 from services.analysis.findings_ma import compute_ma_findings
+from services.analysis.findings_tf import compute_tf_findings
 from services.analysis.findings_cl import compute_cl_findings
 from services.analysis.classification import (
     classify_severity, classify_dose_response, determine_treatment_related,
@@ -25,7 +26,7 @@ from services.analysis.context_panes import build_finding_context
 from services.analysis.mortality import get_early_death_subjects
 from generator.organ_map import get_organ_system
 
-TERMINAL_DOMAINS = {"MI", "MA", "OM"}
+TERMINAL_DOMAINS = {"MI", "MA", "OM", "TF"}
 LB_DOMAIN = "LB"
 
 
@@ -53,7 +54,7 @@ def _cache_path(study_id: str) -> Path:
 
 def _get_xpt_max_mtime(study: StudyInfo) -> float:
     """Get the most recent mtime across relevant XPT files."""
-    relevant = ["dm", "tx", "lb", "bw", "om", "mi", "ma", "cl", "ds"]
+    relevant = ["dm", "tx", "lb", "bw", "om", "mi", "ma", "cl", "ds", "tf"]
     mtimes = []
     for domain in relevant:
         if domain in study.xpt_files:
@@ -101,6 +102,7 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     all_findings.extend(compute_om_findings(study, subjects))
     all_findings.extend(compute_mi_findings(study, subjects))
     all_findings.extend(compute_ma_findings(study, subjects))
+    all_findings.extend(compute_tf_findings(study, subjects))
     all_findings.extend(compute_cl_findings(study, subjects))
 
     # Pass 2 — scheduled-only stats for terminal + LB domains
@@ -113,6 +115,9 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
             key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
             scheduled_findings_map[key] = sched_f
         for sched_f in compute_om_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+        for sched_f in compute_tf_findings(study, subjects, excluded_subjects=excluded_set):
             key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
             scheduled_findings_map[key] = sched_f
         for sched_f in compute_lb_findings(study, subjects, excluded_subjects=excluded_set):
@@ -160,7 +165,7 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
         )
         test_name = finding.get("test_name", finding.get("test_code", ""))
         specimen = finding.get("specimen")
-        if specimen and finding.get("domain") in ("MI", "MA", "CL", "OM"):
+        if specimen and finding.get("domain") in ("MI", "MA", "CL", "OM", "TF"):
             finding["endpoint_label"] = f"{specimen} \u2014 {test_name}"
         else:
             finding["endpoint_label"] = test_name
