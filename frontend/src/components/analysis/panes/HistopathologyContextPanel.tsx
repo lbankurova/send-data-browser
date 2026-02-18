@@ -1693,6 +1693,55 @@ function FindingDetailPane({
         )}
       </CollapsiblePane>
 
+      {/* Result modifiers (SUPP) */}
+      {(() => {
+        const modRow = findingRows.find((r) => r.dominant_distribution != null || r.dominant_temporality != null || (r.modifier_raw && r.modifier_raw.length > 0));
+        if (!modRow) return null;
+        // Aggregate distribution counts across dose rows
+        const distCounts: Record<string, number> = {};
+        const tempCounts: Record<string, number> = {};
+        for (const r of findingRows) {
+          if (r.modifier_counts) {
+            for (const [k, v] of Object.entries(r.modifier_counts)) {
+              distCounts[k] = (distCounts[k] ?? 0) + v;
+            }
+          }
+        }
+        // Use dominant_temporality from first row that has it
+        const tempRow = findingRows.find((r) => r.dominant_temporality != null);
+        if (tempRow?.dominant_temporality) tempCounts[tempRow.dominant_temporality] = modRow.n_with_modifiers ?? 0;
+        const hasDist = Object.keys(distCounts).length > 0;
+        const hasTemp = Object.keys(tempCounts).length > 0;
+        const rawValues = modRow.modifier_raw ?? [];
+        return (
+          <CollapsiblePane title="Result modifiers (SUPP)" expandAll={expandGen} collapseAll={collapseGen}>
+            <div className="space-y-1 text-[11px]">
+              {hasDist && (
+                <div className="flex items-baseline gap-1.5">
+                  <span className="w-16 shrink-0 text-[10px] text-muted-foreground/70">Distribution</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {Object.entries(distCounts).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                  </span>
+                </div>
+              )}
+              {hasTemp && (
+                <div className="flex items-baseline gap-1.5">
+                  <span className="w-16 shrink-0 text-[10px] text-muted-foreground/70">Temporality</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {Object.entries(tempCounts).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                  </span>
+                </div>
+              )}
+              {rawValues.length > 0 && (
+                <p className="text-[9px] italic text-muted-foreground/50">
+                  Source: {rawValues.length} unique modifier value{rawValues.length !== 1 ? "s" : ""} from SUPP{modRow.domain}
+                </p>
+              )}
+            </div>
+          </CollapsiblePane>
+        );
+      })()}
+
       {/* Sex summary */}
       {sexSummary && sexSummary.size > 1 && (
         <CollapsiblePane title="Sex comparison" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>

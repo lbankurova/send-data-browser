@@ -243,6 +243,16 @@ export interface LesionSeverityRow {
   avg_severity: number | null;
   severity_status: SeverityStatus;
   severity: "adverse" | "warning" | "normal";
+  /** Dominant distribution qualifier from SUPP domain: focal, diffuse, mixed, etc. */
+  dominant_distribution?: string | null;
+  /** Dominant temporality qualifier: acute, subacute, chronic */
+  dominant_temporality?: string | null;
+  /** Raw QVAL modifier strings (unique values across subjects) */
+  modifier_raw?: string[];
+  /** Number of affected subjects with modifiers */
+  n_with_modifiers?: number;
+  /** Per-dose distribution counts: {focal: 2, diffuse: 1} */
+  modifier_counts?: Record<string, number>;
 }
 
 /**

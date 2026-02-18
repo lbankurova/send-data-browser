@@ -249,6 +249,20 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
                 "severity_status": sev_status,
                 "severity": finding.get("severity", "normal"),
             }
+
+            # Propagate SUPP modifier fields
+            modifier_profile = finding.get("modifier_profile")
+            if modifier_profile:
+                row["dominant_distribution"] = modifier_profile.get("dominant_distribution")
+                row["dominant_temporality"] = modifier_profile.get("dominant_temporality")
+                row["modifier_raw"] = modifier_profile.get("raw_values", [])
+                row["n_with_modifiers"] = modifier_profile.get("n_with_modifiers", 0)
+
+            # Per-dose modifier counts from group_stats
+            gs_modifier_counts = gs.get("modifier_counts")
+            if gs_modifier_counts:
+                row["modifier_counts"] = gs_modifier_counts
+
             _propagate_scheduled_fields(row, finding)
             rows.append(row)
 
