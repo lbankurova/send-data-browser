@@ -53,6 +53,8 @@ const DOMAIN_DESCRIPTIONS: Record<string, string> = {
   MI: "Microscopy",
   MA: "Macroscopy",
   CL: "Clinical observations",
+  TF: "Tumor findings",
+  PM: "Palpable masses",
 };
 
 // ─── NOAEL computation ─────────────────────────────────────

@@ -23,6 +23,7 @@ VALID_VIEW_NAMES = {
     "provenance-messages",
     "study-metadata-enriched",
     "study-mortality",
+    "tumor-summary",
 }
 
 # Map URL slugs to file names (slug uses hyphens, files use underscores)

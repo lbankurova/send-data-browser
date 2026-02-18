@@ -65,6 +65,10 @@ export interface UnifiedFinding {
   scheduled_direction?: "up" | "down" | "none" | null;
   /** Number of early-death subjects excluded (0 for longitudinal domains). */
   n_excluded?: number;
+  /** Tumor behavior classification (TF domain only). */
+  behavior?: "BENIGN" | "MALIGNANT" | "UNCERTAIN";
+  /** True for all TF (tumor) domain findings — categorically different from non-neoplastic. */
+  isNeoplastic?: boolean;
 }
 
 export interface AnalysisSummary {

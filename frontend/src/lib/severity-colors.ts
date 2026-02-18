@@ -189,6 +189,8 @@ export function getDomainBadgeColor(domain: string): { text: string } {
     case "MI": return { text: "text-rose-700" };
     case "MA": return { text: "text-orange-700" };
     case "CL": return { text: "text-cyan-700" };
+    case "TF": return { text: "text-purple-700" };
+    case "PM": return { text: "text-gray-500" };
     default:   return { text: "text-muted-foreground" };
   }
 }

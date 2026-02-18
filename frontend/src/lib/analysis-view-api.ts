@@ -110,6 +110,50 @@ export function fetchStudyMortality(
   );
 }
 
+export interface TumorSummary {
+  has_tumors: boolean;
+  total_tumor_animals: number;
+  total_tumor_types: number;
+  summaries: {
+    organ: string;
+    morphology: string;
+    behavior: string;
+    cell_type: string;
+    sex: string;
+    count: number;
+    by_dose: { dose_level: number; n: number; affected: number; incidence: number }[];
+    trend_p: number | null;
+  }[];
+  combined_analyses: {
+    organ: string;
+    cell_type: string;
+    sex: string;
+    adenoma_count: number;
+    carcinoma_count: number;
+    combined_by_dose: { dose_level: number; n: number; affected: number; incidence: number }[];
+    combined_trend_p: number | null;
+  }[];
+  progression_sequences: {
+    organ: string;
+    cell_type: string;
+    stages: string[];
+    stages_present: string[];
+    complete: boolean;
+    mi_precursors: { finding: string; stages_matched: string[]; specimen: string }[];
+    has_mi_precursor: boolean;
+    has_tf_tumor: boolean;
+  }[];
+  palpable_masses: { animal_id: string; location: string; finding: string }[];
+}
+
+export function fetchTumorSummary(
+  studyId: string,
+): Promise<TumorSummary> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/tumor-summary`,
+  );
+}
+
 export function fetchStaticChart(
   studyId: string,
   chartName: string

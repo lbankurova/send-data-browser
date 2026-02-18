@@ -21,9 +21,11 @@ import type {
   RecoveryRow,
   ClinicalObservation,
   AnimalDisposition,
+  TumorFinding,
   StudyContext,
   SyndromeDiscriminators,
 } from "@/lib/syndrome-interpretation";
+import { assessTumorContext } from "@/lib/syndrome-interpretation";
 import type { StudyMortality, DeathRecord } from "@/types/mortality";
 import fixture from "./fixtures/pointcross-findings.json";
 
@@ -95,6 +97,7 @@ function interp(
     cl: ClinicalObservation[];
     context: StudyContext;
     mortality: AnimalDisposition[];
+    tumors: TumorFinding[];
     mortalityNoaelCap: number | null;
   }>,
 ) {
@@ -104,7 +107,7 @@ function interp(
     overrides?.histopath ?? histopath,
     overrides?.recovery ?? [],
     [], // organWeights
-    [], // tumors
+    overrides?.tumors ?? [], // tumors
     overrides?.mortality ?? [],
     [], // food
     overrides?.cl ?? [],
@@ -620,5 +623,65 @@ describe("syndrome interpretation layer", () => {
     const result = interp(xs01, { mortality, mortalityNoaelCap: 2 });
     expect(result.mortalityContext.mortalityNoaelCap).toBe(2);
     expect(result.mortalityContext.mortalityNarrative).toContain("caps NOAEL");
+  });
+
+  // ── Tumor context ──
+
+  test("tumorContext.tumorsPresent=false when no tumor data", () => {
+    const result = interp(xs01);
+    expect(result.tumorContext.tumorsPresent).toBe(false);
+    expect(result.tumorContext.interpretation).toContain("No tumor data");
+  });
+
+  test("tumorContext detects liver tumors for XS01 (hepatocellular injury)", () => {
+    const tumors: TumorFinding[] = [
+      { organ: "LIVER", morphology: "ADENOMA, HEPATOCELLULAR", behavior: "BENIGN", animalId: "S1", doseGroup: 3 },
+      { organ: "LIVER", morphology: "CARCINOMA, HEPATOCELLULAR", behavior: "MALIGNANT", animalId: "S2", doseGroup: 3 },
+    ];
+    const result = interp(xs01, { tumors });
+    expect(result.tumorContext.tumorsPresent).toBe(true);
+    expect(result.tumorContext.tumorSummaries.length).toBeGreaterThanOrEqual(1);
+    expect(result.tumorContext.interpretation).toContain("tumor");
+  });
+
+  test("tumorContext detects progression when MI precursors + TF tumors present", () => {
+    const tumors: TumorFinding[] = [
+      { organ: "LIVER", morphology: "ADENOMA, HEPATOCELLULAR", behavior: "BENIGN", animalId: "S1", doseGroup: 3 },
+      { organ: "LIVER", morphology: "CARCINOMA, HEPATOCELLULAR", behavior: "MALIGNANT", animalId: "S2", doseGroup: 3 },
+    ];
+    // histopath already includes LIVER NECROSIS + HYPERTROPHY
+    const result = interp(xs01, { tumors });
+    expect(result.tumorContext.progressionDetected).toBe(true);
+    expect(result.tumorContext.progressionSequence).toBeDefined();
+    expect(result.tumorContext.interpretation).toContain("Proliferative progression");
+  });
+
+  test("tumorContext rarity: very_rare for 13-week study", () => {
+    const tumors: TumorFinding[] = [
+      { organ: "LIVER", morphology: "ADENOMA", behavior: "BENIGN", animalId: "S1", doseGroup: 3 },
+    ];
+    const result = interp(xs01, { tumors });
+    expect(result.tumorContext.strainContext?.expectedBackground).toBe("very_rare");
+    expect(result.tumorContext.interpretation).toContain("very rare spontaneously");
+  });
+
+  test("tumorContext returns no tumors for unrelated syndrome organs", () => {
+    // XS04 (myelosuppression) organs include spleen/marrow, not liver
+    const xs04Syn = byId.get("XS04")!;
+    const tumors: TumorFinding[] = [
+      { organ: "LIVER", morphology: "ADENOMA", behavior: "BENIGN", animalId: "S1", doseGroup: 3 },
+    ];
+    const result = interp(xs04Syn, { tumors });
+    // XS04 organs don't include liver -> tumorsPresent should be false
+    expect(result.tumorContext.tumorsPresent).toBe(false);
+  });
+
+  test("assessTumorContext counts malignant tumors in interpretation", () => {
+    const tumors: TumorFinding[] = [
+      { organ: "LIVER", morphology: "CARCINOMA, HEPATOCELLULAR", behavior: "MALIGNANT", animalId: "S1", doseGroup: 3 },
+      { organ: "LIVER", morphology: "CARCINOMA, HEPATOCELLULAR", behavior: "MALIGNANT", animalId: "S2", doseGroup: 3 },
+    ];
+    const result = assessTumorContext(xs01, tumors, histopath, defaultContext);
+    expect(result.interpretation).toContain("2 malignant tumors");
   });
 });

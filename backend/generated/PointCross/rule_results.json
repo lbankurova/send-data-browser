@@ -15961,7 +15961,7 @@
     "severity": "warning",
     "context_key": "organ_hepatic",
     "organ_system": "hepatic",
-    "output_text": "Convergent evidence from 4 domains (LB, MA, MI, OM).",
+    "output_text": "Convergent evidence from 5 domains (LB, MA, MI, OM, TF).",
     "evidence_refs": [],
     "params": {
       "organ_system": "hepatic"
@@ -15973,17 +15973,18 @@
     "severity": "info",
     "context_key": "organ_hepatic",
     "organ_system": "hepatic",
-    "output_text": "37 endpoints across LB, MA, MI, OM.",
+    "output_text": "39 endpoints across LB, MA, MI, OM, TF.",
     "evidence_refs": [],
     "params": {
       "organ_system": "hepatic",
-      "n_endpoints": 37,
-      "n_domains": 4,
+      "n_endpoints": 39,
+      "n_domains": 5,
       "domains": [
         "LB",
         "MA",
         "MI",
-        "OM"
+        "OM",
+        "TF"
       ]
     }
   },
@@ -16167,16 +16168,17 @@
     "severity": "info",
     "context_key": "organ_reproductive",
     "organ_system": "reproductive",
-    "output_text": "13 endpoints across MA, MI, OM.",
+    "output_text": "14 endpoints across MA, MI, OM, TF.",
     "evidence_refs": [],
     "params": {
       "organ_system": "reproductive",
-      "n_endpoints": 13,
-      "n_domains": 3,
+      "n_endpoints": 14,
+      "n_domains": 4,
       "domains": [
         "MA",
         "MI",
-        "OM"
+        "OM",
+        "TF"
       ]
     }
   },

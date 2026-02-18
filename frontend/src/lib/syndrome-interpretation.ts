@@ -1630,11 +1630,172 @@ export function assessMortalityContext(
   };
 }
 
+// ─── Tumor context ────────────────────────────────────────
+
+/** MI precursor terms that indicate proliferative progression */
+const MI_PRECURSOR_TERMS: Record<string, string[]> = {
+  necrosis: ["NECROSIS", "NECROS"],
+  hypertrophy: ["HYPERTROPHY", "HYPERTROP"],
+  hyperplasia: ["HYPERPLASIA", "HYPERPLASI"],
+};
+
+/** TF tumor stage terms */
+const TF_TUMOR_STAGES: Record<string, string[]> = {
+  adenoma: ["ADENOMA"],
+  carcinoma: ["CARCINOMA"],
+  papilloma: ["PAPILLOMA"],
+  leiomyoma: ["LEIOMYOMA"],
+};
+
+/**
+ * Assess tumor context for a syndrome.
+ * Filters TF tumor data to organs related to the syndrome, detects
+ * proliferative progression by cross-referencing MI histopath findings,
+ * and assesses rarity based on strain + study duration.
+ */
+export function assessTumorContext(
+  syndrome: CrossDomainSyndrome,
+  tumorData: TumorFinding[],
+  histopathData: LesionSeverityRow[],
+  studyContext: StudyContext,
+): TumorContext {
+  if (!tumorData || tumorData.length === 0) {
+    return {
+      tumorsPresent: false,
+      tumorSummaries: [],
+      progressionDetected: false,
+      interpretation: "No tumor data available.",
+    };
+  }
+
+  // Filter tumors to organs related to this syndrome
+  const syndromeOrgans = getSyndromeOrgans(syndrome.id);
+  const relevantTumors = syndromeOrgans.length > 0
+    ? tumorData.filter((t) => {
+        const tumorOrgan = t.organ.toUpperCase();
+        return syndromeOrgans.some(
+          (so) => tumorOrgan.includes(so) || so.includes(tumorOrgan),
+        );
+      })
+    : tumorData; // No organ mapping → include all tumors for context
+
+  if (relevantTumors.length === 0) {
+    return {
+      tumorsPresent: false,
+      tumorSummaries: [],
+      progressionDetected: false,
+      interpretation: "No tumors found in organs related to this syndrome.",
+    };
+  }
+
+  // Summarize by organ + morphology
+  const summaryMap = new Map<string, { organ: string; morphology: string; count: number }>();
+  for (const t of relevantTumors) {
+    const key = `${t.organ}::${t.morphology}`;
+    const existing = summaryMap.get(key);
+    if (existing) {
+      existing.count++;
+    } else {
+      summaryMap.set(key, { organ: t.organ, morphology: t.morphology, count: 1 });
+    }
+  }
+  const tumorSummaries = [...summaryMap.values()];
+
+  // Detect progression: check MI histopath for precursors in tumor organs
+  const tumorOrgans = new Set(relevantTumors.map((t) => t.organ.toUpperCase()));
+  const miPrecursorsFound: string[] = [];
+  const tfStagesFound: string[] = [];
+
+  // Scan MI findings for precursor terms
+  for (const row of histopathData) {
+    const specimen = row.specimen?.toUpperCase() ?? "";
+    if (!tumorOrgans.has(specimen)) continue;
+
+    const finding = row.finding?.toUpperCase() ?? "";
+    for (const [stage, terms] of Object.entries(MI_PRECURSOR_TERMS)) {
+      if (terms.some((term) => finding.includes(term))) {
+        if (!miPrecursorsFound.includes(stage)) miPrecursorsFound.push(stage);
+      }
+    }
+  }
+
+  // Scan tumor morphology for TF stages
+  for (const t of relevantTumors) {
+    const morph = t.morphology.toUpperCase();
+    for (const [stage, terms] of Object.entries(TF_TUMOR_STAGES)) {
+      if (terms.some((term) => morph.includes(term))) {
+        if (!tfStagesFound.includes(stage)) tfStagesFound.push(stage);
+      }
+    }
+  }
+
+  const progressionDetected = miPrecursorsFound.length > 0 && tfStagesFound.length > 0;
+  const allStages = [...miPrecursorsFound, ...tfStagesFound];
+
+  // Strain/duration rarity context
+  const durationWeeks = studyContext.dosingDurationWeeks;
+  let expectedBackground: "expected" | "unusual" | "very_rare" = "expected";
+  if (durationWeeks != null && durationWeeks <= 13) {
+    // Any tumor in a ≤13-week study is extremely rare spontaneously
+    expectedBackground = "very_rare";
+  } else if (durationWeeks != null && durationWeeks <= 26) {
+    expectedBackground = "unusual";
+  }
+
+  // Build interpretation narrative
+  const organNames = [...tumorOrgans].map((o) => o.charAt(0) + o.slice(1).toLowerCase());
+  const parts: string[] = [];
+
+  parts.push(
+    `${relevantTumors.length} tumor${relevantTumors.length !== 1 ? "s" : ""} detected in ${organNames.join(", ")}.`,
+  );
+
+  if (progressionDetected) {
+    parts.push(
+      `Proliferative progression detected: MI precursors (${miPrecursorsFound.join(", ")}) → TF tumors (${tfStagesFound.join(", ")}).`,
+    );
+  }
+
+  if (expectedBackground === "very_rare") {
+    parts.push(
+      `For a ${durationWeeks}-week study, any tumor occurrence is very rare spontaneously — strongly suggests treatment-related etiology.`,
+    );
+  } else if (expectedBackground === "unusual") {
+    parts.push(
+      `Tumor occurrence is unusual for a ${durationWeeks}-week study duration.`,
+    );
+  }
+
+  const malignantCount = relevantTumors.filter((t) => t.behavior === "MALIGNANT").length;
+  if (malignantCount > 0) {
+    parts.push(`${malignantCount} malignant tumor${malignantCount !== 1 ? "s" : ""}.`);
+  }
+
+  return {
+    tumorsPresent: true,
+    tumorSummaries,
+    progressionDetected,
+    progressionSequence: progressionDetected
+      ? {
+          stages: allStages,
+          stagesPresent: allStages,
+          complete: miPrecursorsFound.length >= 2 && tfStagesFound.length >= 2,
+        }
+      : undefined,
+    strainContext: {
+      strain: studyContext.strain,
+      studyDuration: durationWeeks ?? 0,
+      expectedBackground,
+    },
+    interpretation: parts.join(" "),
+  };
+}
+
 // ─── Orchestrator ──────────────────────────────────────────
 
 /**
  * Interpret a detected syndrome using all available study data.
- * Phase A uses args 1-4; Phase C uses arg 9; the rest get stub defaults.
+ * Phase A uses args 1-4; Phase B uses tumor context; Phase C uses arg 9.
  */
 export function interpretSyndrome(
   syndrome: CrossDomainSyndrome,
@@ -1642,7 +1803,7 @@ export function interpretSyndrome(
   histopathData: LesionSeverityRow[],
   recoveryData: RecoveryRow[],
   _organWeightData: OrganWeightRow[],
-  _tumorData: TumorFinding[],
+  tumorData: TumorFinding[],
   mortalityData: AnimalDisposition[],
   _foodConsumptionData: FoodConsumptionSummary[],
   clinicalObservations: ClinicalObservation[],
@@ -1702,12 +1863,12 @@ export function interpretSyndrome(
     mortalityNoaelCap,
   );
 
-  const tumorContext: TumorContext = {
-    tumorsPresent: false,
-    tumorSummaries: [],
-    progressionDetected: false,
-    interpretation: "No tumor data available.",
-  };
+  const tumorContext = assessTumorContext(
+    syndrome,
+    tumorData,
+    histopathData,
+    studyContext,
+  );
 
   const foodConsumptionContext: FoodConsumptionContext = {
     available: false,

@@ -15,6 +15,7 @@ from services.analysis.findings_bw import compute_bw_findings
 from services.analysis.findings_om import compute_om_findings
 from services.analysis.findings_mi import compute_mi_findings
 from services.analysis.findings_ma import compute_ma_findings
+from services.analysis.findings_tf import compute_tf_findings
 from services.analysis.findings_cl import compute_cl_findings
 from services.analysis.findings_ds import compute_ds_findings
 from services.analysis.classification import (
@@ -99,7 +100,7 @@ def _kruskal_p(group_values: list[np.ndarray]) -> float | None:
         return None
 
 
-TERMINAL_DOMAINS = {"MI", "MA", "OM"}  # Always collected at sacrifice
+TERMINAL_DOMAINS = {"MI", "MA", "OM", "TF"}  # Always collected at sacrifice
 LB_DOMAIN = "LB"  # Terminal timepoint only exclusion
 
 
@@ -129,6 +130,7 @@ def compute_all_findings(
     all_findings.extend(compute_om_findings(study, subjects))
     all_findings.extend(compute_mi_findings(study, subjects))
     all_findings.extend(compute_ma_findings(study, subjects))
+    all_findings.extend(compute_tf_findings(study, subjects))
     all_findings.extend(compute_cl_findings(study, subjects))
     all_findings.extend(compute_ds_findings(study, subjects))
 
@@ -146,6 +148,10 @@ def compute_all_findings(
             scheduled_findings_map[key] = sched_f
 
         for sched_f in compute_om_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+
+        for sched_f in compute_tf_findings(study, subjects, excluded_subjects=excluded_set):
             key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
             scheduled_findings_map[key] = sched_f
 
@@ -234,7 +240,7 @@ def compute_all_findings(
         domain = finding.get("domain", "")
         test_name = finding.get("test_name", finding.get("test_code", ""))
         specimen = finding.get("specimen")
-        if specimen and domain in ("MI", "MA", "CL", "OM"):
+        if specimen and domain in ("MI", "MA", "CL", "OM", "TF"):
             finding["endpoint_label"] = f"{specimen} — {test_name}"
         else:
             finding["endpoint_label"] = test_name
@@ -255,6 +261,8 @@ def _classify_endpoint_type(domain: str, test_code: str | None = None) -> str:
         "MA": "gross_pathology",
         "OM": "organ_weight",
         "CL": "clinical_observation",
+        "TF": "tumor",
+        "PM": "palpable_mass",
     }
     return mapping.get(domain, "other")
 

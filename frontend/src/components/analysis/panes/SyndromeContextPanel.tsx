@@ -26,9 +26,10 @@ import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-sy
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { interpretSyndrome, mapDeathRecordsToDispositions } from "@/lib/syndrome-interpretation";
-import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext } from "@/lib/syndrome-interpretation";
+import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding } from "@/lib/syndrome-interpretation";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
+import { useTumorSummary } from "@/hooks/useTumorSummary";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import type { FindingsFilters, UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
@@ -257,7 +258,29 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   // Mortality data for interpretation layer
   const { data: mortalityRaw } = useStudyMortality(studyId);
 
-  // Compute syndrome interpretation (Phase A + Phase B mortality + Phase C)
+  // Tumor data for interpretation layer
+  const { data: tumorSummary } = useTumorSummary(studyId);
+  const tumorFindings = useMemo<TumorFinding[]>(() => {
+    if (!tumorSummary?.has_tumors) return [];
+    // Expand summaries into per-animal TumorFinding entries
+    const findings: TumorFinding[] = [];
+    for (const s of tumorSummary.summaries) {
+      for (const byDose of s.by_dose) {
+        for (let i = 0; i < byDose.affected; i++) {
+          findings.push({
+            organ: s.organ,
+            morphology: s.morphology,
+            behavior: s.behavior === "MALIGNANT" ? "MALIGNANT" : "BENIGN",
+            animalId: `${s.organ}-${s.morphology}-${byDose.dose_level}-${i}`,
+            doseGroup: byDose.dose_level,
+          });
+        }
+      }
+    }
+    return findings;
+  }, [tumorSummary]);
+
+  // Compute syndrome interpretation (Phase A + Phase B mortality/tumor + Phase C)
   const syndromeInterp = useMemo<SyndromeInterpretation | null>(() => {
     if (!detected || allEndpoints.length === 0 || !studyContext) return null;
     const mortalityDispositions = mortalityRaw
@@ -269,14 +292,14 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       histopathData ?? [],
       [], // recovery data (not available yet)
       [], // organ weights
-      [], // tumors
+      tumorFindings,
       mortalityDispositions,
       [], // food consumption
       [], // clinical observations (not available yet)
       studyContext,
       mortalityRaw?.mortality_noael_cap,
     );
-  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw]);
+  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings]);
 
   // Interpretation content
   const interpretation = SYNDROME_INTERPRETATIONS[syndromeId];
