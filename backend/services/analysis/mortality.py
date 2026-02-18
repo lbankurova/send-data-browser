@@ -36,14 +36,17 @@ def get_early_death_subjects(
         return {}
 
     main_subs = subjects[~subjects["is_recovery"]].copy()
-    ds_df = ds_df.merge(main_subs[["USUBJID"]], on="USUBJID", how="inner")
+    ds_df = ds_df.merge(
+        main_subs[["USUBJID", "SEX", "dose_level"]],
+        on="USUBJID", how="inner",
+    )
 
     # One disposition per subject (take first record)
-    disp = ds_df.groupby("USUBJID")["DSDECOD"].first()
+    per_subj = ds_df.groupby("USUBJID").first()
     return {
-        str(uid): str(dsdecod).strip().upper()
-        for uid, dsdecod in disp.items()
-        if str(dsdecod).strip().upper() not in SCHEDULED_DISPOSITIONS
+        str(uid): str(row["DSDECOD"]).strip().upper()
+        for uid, row in per_subj.iterrows()
+        if str(row["DSDECOD"]).strip().upper() not in SCHEDULED_DISPOSITIONS
     }
 
 
@@ -187,6 +190,33 @@ def compute_study_mortality(
     # Build early_death_subjects: all non-scheduled subjects (deaths + accidentals)
     early_death_subjects = get_early_death_subjects(study, subjects)
 
+    # Per-subject detail for the frontend (sex, dose_level, disposition)
+    # Merge enriched deaths + accidentals (main-study only) keyed to early_death set
+    early_death_details = []
+    for rec in enriched_deaths + enriched_accidentals:
+        uid = rec["USUBJID"]
+        if uid in early_death_subjects and not rec.get("is_recovery"):
+            early_death_details.append({
+                "USUBJID": uid,
+                "sex": rec["sex"],
+                "dose_level": rec["dose_level"],
+                "disposition": rec["disposition"],
+                "dose_label": rec.get("dose_label", ""),
+            })
+    # Also add any early_death_subjects not covered by deaths/accidentals
+    # (e.g., "unknown" dispositions that aren't in DEATH_TERMS)
+    covered = {d["USUBJID"] for d in early_death_details}
+    for rec in ds_records:
+        uid = rec["USUBJID"]
+        if uid in early_death_subjects and uid not in covered and not rec.get("is_recovery"):
+            early_death_details.append({
+                "USUBJID": uid,
+                "sex": rec["SEX"],
+                "dose_level": rec["dose_level"],
+                "disposition": rec.get("dsdecod", ""),
+                "dose_label": dose_label_map.get(rec["dose_level"], ""),
+            })
+
     return {
         "has_mortality": total_deaths > 0,
         "total_deaths": total_deaths,
@@ -199,6 +229,7 @@ def compute_study_mortality(
         "accidentals": enriched_accidentals,
         "by_dose": by_dose,
         "early_death_subjects": early_death_subjects,
+        "early_death_details": early_death_details,
     }
 
 

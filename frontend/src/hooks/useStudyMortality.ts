@@ -14,6 +14,7 @@ const EMPTY_MORTALITY: StudyMortality = {
   accidentals: [],
   by_dose: [],
   early_death_subjects: {},
+  early_death_details: [],
 };
 
 export function useStudyMortality(studyId: string | undefined) {

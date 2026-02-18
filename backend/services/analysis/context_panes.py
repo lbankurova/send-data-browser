@@ -88,13 +88,8 @@ def _build_treatment_summary(finding: dict, all_findings: list[dict]) -> dict:
     }
 
 
-def _build_statistics(finding: dict, dose_groups: list[dict]) -> dict:
-    """Statistics pane: group comparison table."""
-    group_stats = finding.get("group_stats", [])
-    pairwise = finding.get("pairwise", [])
-    data_type = finding.get("data_type", "continuous")
-
-    # Build comparison rows
+def _build_stat_rows(group_stats: list, pairwise: list, data_type: str, dose_groups: list[dict]) -> list[dict]:
+    """Build comparison rows from group_stats + pairwise lists."""
     rows = []
     for gs in group_stats:
         dl = gs.get("dose_level", 0)
@@ -124,14 +119,37 @@ def _build_statistics(finding: dict, dose_groups: list[dict]) -> dict:
             row["odds_ratio"] = pw.get("odds_ratio")
 
         rows.append(row)
+    return rows
 
-    return {
+
+def _build_statistics(finding: dict, dose_groups: list[dict]) -> dict:
+    """Statistics pane: group comparison table."""
+    data_type = finding.get("data_type", "continuous")
+
+    rows = _build_stat_rows(
+        finding.get("group_stats", []),
+        finding.get("pairwise", []),
+        data_type, dose_groups,
+    )
+
+    result = {
         "data_type": data_type,
         "rows": rows,
         "trend_p": finding.get("trend_p"),
         "trend_stat": finding.get("trend_stat"),
         "unit": finding.get("unit"),
     }
+
+    # Build scheduled-only rows when dual-pass data exists
+    if finding.get("scheduled_group_stats"):
+        result["scheduled_rows"] = _build_stat_rows(
+            finding["scheduled_group_stats"],
+            finding.get("scheduled_pairwise", []),
+            data_type, dose_groups,
+        )
+        result["n_excluded"] = finding.get("n_excluded", 0)
+
+    return result
 
 
 def _build_dose_response(finding: dict, dose_groups: list[dict]) -> dict:

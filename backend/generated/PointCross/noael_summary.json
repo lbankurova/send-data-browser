@@ -42,7 +42,12 @@
       "confidence_penalties": []
     },
     "mortality_cap_applied": false,
-    "mortality_cap_dose_value": null
+    "mortality_cap_dose_value": null,
+    "scheduled_noael_dose_level": 0,
+    "scheduled_noael_label": "Group 1, Control",
+    "scheduled_noael_dose_value": 0.0,
+    "scheduled_loael_dose_level": 1,
+    "scheduled_noael_differs": false
   },
   {
     "sex": "F",
@@ -106,7 +111,12 @@
       "confidence_penalties": []
     },
     "mortality_cap_applied": false,
-    "mortality_cap_dose_value": null
+    "mortality_cap_dose_value": null,
+    "scheduled_noael_dose_level": 0,
+    "scheduled_noael_label": "Group 1, Control",
+    "scheduled_noael_dose_value": 0.0,
+    "scheduled_loael_dose_level": 1,
+    "scheduled_noael_differs": false
   },
   {
     "sex": "Combined",
@@ -188,6 +198,11 @@
       "confidence_penalties": []
     },
     "mortality_cap_applied": false,
-    "mortality_cap_dose_value": null
+    "mortality_cap_dose_value": null,
+    "scheduled_noael_dose_level": 0,
+    "scheduled_noael_label": "Group 1, Control",
+    "scheduled_noael_dose_value": 0.0,
+    "scheduled_loael_dose_level": 1,
+    "scheduled_noael_differs": false
   }
 ]
