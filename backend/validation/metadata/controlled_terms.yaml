@@ -298,8 +298,55 @@ codelists:
       - "FOUND DEAD"
       - "MORIBUND SACRIFICE"
       - "TERMINAL SACRIFICE"
+      - "RECOVERY SACRIFICE"
+      - "INTERIM SACRIFICE"
       - "ACCIDENTAL DEATH"
       - "DOSING ERROR"
+      - "EUTHANIZED"
+      - "COMPLETED"
+      - "REMOVAL FROM STUDY"
+      - "PROTOCOL DEVIATION"
+      - "REPLACED"
+
+  # ----------------------------------------------------------------------
+  # EGTESTCD — Electrocardiogram test codes (EG domain)
+  # Extensible — sponsors may add custom ECG parameters
+  # ----------------------------------------------------------------------
+  EGTESTCD:
+    extensible: true
+    terms:
+      # Interval/duration measurements
+      - "PRAG"       # PR interval aggregate
+      - "QRSAG"      # QRS duration aggregate
+      - "QTAG"       # QT interval aggregate
+      - "RRAG"       # RR interval aggregate
+      - "STINT"      # ST interval
+      - "PRINTVL"    # PR interval
+      - "QRSDUR"     # QRS duration
+      - "QTINTCL"    # QT interval
+      # QTc corrections
+      - "QTCBAG"     # QTc Bazett aggregate
+      - "QTCFAG"     # QTc Fridericia aggregate
+      - "QTCVAG"     # QTc Van de Water aggregate
+      # Heart rate
+      - "HRTRT"      # Heart rate
+      - "INTVHRTRT"  # Heart rate from interval
+      # Rhythm / morphology
+      - "ECGRHYTH"   # ECG rhythm
+      - "ECGEVAL"    # ECG evaluation
+      - "ECGSTAT"    # ECG status
+      - "ECGCLSIG"   # ECG clinical significance
+      # ST/T-wave
+      - "STELEV"     # ST elevation
+      - "STDEP"      # ST depression
+      - "TWAVAMP"    # T-wave amplitude
+      # Axis
+      - "PAXIS"      # P-wave axis
+      - "QRSAXIS"    # QRS axis
+      - "TAXIS"      # T-wave axis
+      # Voltage
+      - "RAMP"       # R amplitude
+      - "SAMP"       # S amplitude
 
   # ----------------------------------------------------------------------
   # EUTHANASIA_REASON — Reason for euthanasia / sacrifice

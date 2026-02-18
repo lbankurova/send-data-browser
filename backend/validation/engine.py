@@ -21,6 +21,7 @@ from validation.models import (
     RuleDefinition,
 )
 from validation.checks.study_design import check_study_design
+from validation.checks.fda_data_quality import check_fda_data_quality
 from validation.scripts.registry import get_scripts
 from validation.core_runner import (
     is_core_available,
@@ -35,6 +36,8 @@ logger = logging.getLogger(__name__)
 CHECK_DISPATCH: dict[str, callable] = {
     # Study design enrichment rules (needs StudyInfo for build_subject_context)
     "study_design": check_study_design,
+    # FDA data quality rules (FDA-001 through FDA-007)
+    "fda_data_quality": check_fda_data_quality,
 }
 
 BASE_DIR = Path(__file__).parent
@@ -104,7 +107,7 @@ class ValidationEngine:
                 logger.warning(f"Failed to load {domain_code}: {e}")
         return domains
 
-    def validate(self, study: StudyInfo) -> ValidationResults:
+    def validate(self, study: StudyInfo, *, disabled_rule_ids: set[str] | None = None) -> ValidationResults:
         """Run all applicable rules against the study's XPT files."""
         start = time.time()
         logger.info(f"Starting validation for {study.study_id}...")
@@ -120,6 +123,8 @@ class ValidationEngine:
         all_records: dict[str, list[AffectedRecordResult]] = {}
 
         for rule in self.rules:
+            if disabled_rule_ids and rule.id in disabled_rule_ids:
+                continue
             try:
                 records = self._run_rule(rule, domains, study=study)
                 if not records:
@@ -179,7 +184,7 @@ class ValidationEngine:
 
                 # Run CORE
                 core_report = run_core_validation(
-                    study_dir=Path(study.directory),
+                    study_dir=Path(study.path),
                     study_id=study.study_id,
                     sendig_version=sendig_version,
                     timeout=120,
@@ -289,13 +294,13 @@ class ValidationEngine:
             logger.warning(f"No handler for check_type '{rule.check_type}' (rule {rule.id})")
             return []
 
-        # Study design checks need StudyInfo for build_subject_context
         kwargs = {
             "rule": rule,
             "domains": domains,
             "metadata": self.metadata,
             "rule_id_prefix": rule.id,
             "study": study,
+            "ct_data": self.ct_data,
         }
 
         return handler(**kwargs)

@@ -21,7 +21,7 @@ export interface ValidationRuleDef {
 }
 
 /**
- * All 7 custom study design rules from study_design.yaml.
+ * All 14 custom rules: 7 study design (SD) + 7 FDA data quality (FDA).
  * CDISC CORE rules (400+) are external and shown from API data.
  */
 export const VALIDATION_RULE_CATALOG: ValidationRuleDef[] = [
@@ -129,6 +129,113 @@ export const VALIDATION_RULE_CATALOG: ValidationRuleDef[] = [
     default_fix_tier: 3,
     evidence_type: "cross-domain",
     cdisc_reference: "SENDIG 3.1, Section 5.1",
+  },
+
+  // ── FDA data quality rules ──────────────────────────────────────────
+  {
+    id: "FDA-001",
+    name: "Categorical data in numeric result",
+    description:
+      "Detects LBTESTCD tests where LBSTRESN contains only a few distinct integer values (≤6), suggesting ordinal/categorical data stored as continuous numeric. FDA reviewers flag this as it affects statistical method choice.",
+    severity: "Warning",
+    category: "Data quality",
+    applicable_domains: ["LB"],
+    fix_guidance:
+      "Move categorical results to LBSTRESC. If ordinal scoring is intentional, document in analysis plan.",
+    auto_fixable: false,
+    default_fix_tier: 2,
+    evidence_type: "metadata",
+    cdisc_reference: "FDA SEND Review Guide, Section 4.2",
+  },
+  {
+    id: "FDA-002",
+    name: "Timing variable alignment",
+    description:
+      "Checks for NOMDY (nominal study day) presence alongside VISITDY. When both exist, validates alignment within tolerance. Missing NOMDY reduces the ability to compare planned vs actual timing.",
+    severity: "Warning",
+    category: "Data quality",
+    applicable_domains: ["LB", "CL", "EG", "BW"],
+    fix_guidance:
+      "Add NOMDY to findings domains if planned visit schedule is available. Align NOMDY with protocol-defined visit days.",
+    auto_fixable: false,
+    default_fix_tier: 1,
+    evidence_type: "metadata",
+    cdisc_reference: "SENDIG 3.1, Section 4.1",
+  },
+  {
+    id: "FDA-003",
+    name: "Below-LLOQ without imputation method",
+    description:
+      "Checks PC domain for below-LLOQ results (BQL/PCSTRESN null) without a corresponding SUPPPC record documenting the imputation method (QNAM=CALCN).",
+    severity: "Warning",
+    category: "Data quality",
+    applicable_domains: ["PC"],
+    fix_guidance:
+      "Add SUPPPC records with QNAM='CALCN' and QVAL describing the imputation method (e.g., 'BQL=0', 'BQL=LLOQ/2').",
+    auto_fixable: false,
+    default_fix_tier: 2,
+    evidence_type: "missing-value",
+    cdisc_reference: "FDA Bioanalytical Method Guidance, SENDIG 3.1 Section 6.3",
+  },
+  {
+    id: "FDA-004",
+    name: "Undefined controlled terminology codes",
+    description:
+      "Checks key coded fields (DSDECOD, EGTESTCD) against CDISC SEND controlled terminology. Undefined codes reduce interoperability.",
+    severity: "Info",
+    category: "Data quality",
+    applicable_domains: ["DS", "EG"],
+    fix_guidance:
+      "Map values to standard CDISC controlled terminology terms where possible.",
+    auto_fixable: false,
+    default_fix_tier: 1,
+    evidence_type: "code-mapping",
+    cdisc_reference: "CDISC SEND CT, NCI Thesaurus",
+  },
+  {
+    id: "FDA-005",
+    name: "Early-death data in terminal statistics",
+    description:
+      "Identifies subjects with DSDECOD='MORIBUND SACRIFICE' or 'FOUND DEAD' that died well before the scheduled terminal sacrifice. Their inclusion in terminal group statistics can bias results.",
+    severity: "Error",
+    category: "Data quality",
+    applicable_domains: ["DS"],
+    fix_guidance:
+      "Exclude early-death subjects from terminal sacrifice group statistics. Use the Early Death Exclusion toggle in analysis views.",
+    auto_fixable: false,
+    default_fix_tier: 2,
+    evidence_type: "cross-domain",
+    cdisc_reference: "FDA SEND Review Guide, Section 3.1",
+  },
+  {
+    id: "FDA-006",
+    name: "Cross-domain EPOCH linking",
+    description:
+      "Verifies SE domain element codes (ETCD) map to TA for each subject's arm, and that all DM subjects have SE records. Broken epoch chains prevent temporal analysis.",
+    severity: "Info",
+    category: "Data quality",
+    applicable_domains: ["SE", "DM", "TA"],
+    fix_guidance:
+      "Ensure SE contains element records for all subjects and that ETCD values match TA for the subject's ARMCD.",
+    auto_fixable: false,
+    default_fix_tier: 1,
+    evidence_type: "cross-domain",
+    cdisc_reference: "SENDIG 3.1, Section 5.1",
+  },
+  {
+    id: "FDA-007",
+    name: "QTc correction documentation",
+    description:
+      "Checks EG domain for QTc correction method documentation. Flags when EGMETHOD is empty or when only one correction formula is present for non-rodent species.",
+    severity: "Info",
+    category: "Data quality",
+    applicable_domains: ["EG"],
+    fix_guidance:
+      "Document QTc correction formula in EGMETHOD. For non-rodent species, include both Bazett and Fridericia corrections.",
+    auto_fixable: false,
+    default_fix_tier: 1,
+    evidence_type: "metadata",
+    cdisc_reference: "ICH S7B, FDA SEND Review Guide",
   },
 ];
 

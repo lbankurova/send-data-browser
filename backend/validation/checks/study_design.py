@@ -7,6 +7,7 @@ computation is cached across all SD rules within a single validation run.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import pandas as pd
 
@@ -48,6 +49,7 @@ def check_study_design(
     *,
     rule_id_prefix: str,
     study: StudyInfo | None = None,
+    **_kwargs: Any,
 ) -> list[AffectedRecordResult]:
     """Evaluate a single SD-xxx rule using the enrichment context."""
     if study is None:
