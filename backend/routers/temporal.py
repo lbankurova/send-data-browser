@@ -907,3 +907,172 @@ async def compare_subjects(
         },
         "available_timepoints": available_timepoints,
     }
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 6: Recovery comparison (terminal vs recovery sacrifice groups)
+# ---------------------------------------------------------------------------
+
+@router.get("/studies/{study_id}/recovery-comparison")
+async def get_recovery_comparison(study_id: str):
+    """Compare recovery-arm subjects vs recovery-arm controls for LB and BW.
+
+    Returns per-endpoint, per-sex, per-dose recovery statistics including
+    p-value (Welch t-test) and effect size (Cohen's d) at recovery sacrifice.
+    Also includes the terminal (main-arm) effect for comparison.
+    """
+    from services.analysis.statistics import welch_t_test, cohens_d
+
+    study = _get_study(study_id)
+    subjects_df = _get_subjects_df(study, include_recovery=True)
+
+    recovery_subjects = subjects_df[subjects_df["is_recovery"]].copy()
+    main_subjects = subjects_df[~subjects_df["is_recovery"]].copy()
+
+    if recovery_subjects.empty:
+        return {"available": False, "rows": [], "recovery_day": None}
+
+    recovery_ids = set(recovery_subjects["USUBJID"])
+    main_ids = set(main_subjects["USUBJID"])
+
+    # Determine recovery day from DS domain
+    recovery_day = None
+    if "ds" in study.xpt_files:
+        try:
+            ds_df = _read_domain_df(study, "DS")
+            ds_df["DSDY"] = pd.to_numeric(ds_df.get("DSDY"), errors="coerce")
+            rec_ds = ds_df[ds_df["USUBJID"].isin(recovery_ids)]
+            if not rec_ds.empty and rec_ds["DSDY"].notna().any():
+                recovery_day = int(rec_ds["DSDY"].dropna().max())
+        except Exception:
+            pass
+
+    rows: list[dict] = []
+
+    def _compute_domain_recovery(
+        domain_key: str,
+        testcd_col: str,
+        value_col: str,
+        day_col: str,
+        name_col: str,
+    ):
+        if domain_key not in study.xpt_files:
+            return
+        try:
+            df = _read_domain_df(study, domain_key.upper())
+        except Exception:
+            return
+
+        # BW has no BWTESTCD column
+        if domain_key.upper() == "BW":
+            if testcd_col not in df.columns:
+                df[testcd_col] = _BW_DEFAULT_TESTCD
+            if name_col not in df.columns:
+                df[name_col] = "Body Weight"
+
+        if testcd_col not in df.columns or value_col not in df.columns:
+            return
+
+        df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
+        df[day_col] = pd.to_numeric(df[day_col], errors="coerce")
+        df = df.dropna(subset=[value_col, day_col])
+
+        # Split into recovery and main arms
+        rec_df = df[df["USUBJID"].isin(recovery_ids)].copy()
+        main_df = df[df["USUBJID"].isin(main_ids)].copy()
+
+        if rec_df.empty:
+            return
+
+        # Join dose info
+        rec_df = rec_df.merge(
+            recovery_subjects[["USUBJID", "SEX", "dose_level"]],
+            on="USUBJID", how="inner",
+        )
+        main_df = main_df.merge(
+            main_subjects[["USUBJID", "SEX", "dose_level"]],
+            on="USUBJID", how="inner",
+        )
+
+        for test_code, test_group in rec_df.groupby(testcd_col):
+            test_name = str(test_group[name_col].iloc[0]) if name_col in test_group.columns else str(test_code)
+
+            for sex_val, sex_group in test_group.groupby("SEX"):
+                # Recovery control: dose_level=0, same sex, terminal timepoint
+                rec_control = sex_group[sex_group["dose_level"] == 0]
+                # Use max day as terminal timepoint for recovery arm
+                if rec_control.empty:
+                    continue
+                rec_ctrl_day = rec_control[day_col].max()
+                rec_ctrl_terminal = rec_control[rec_control[day_col] == rec_ctrl_day]
+                ctrl_vals = rec_ctrl_terminal[value_col].dropna().values
+
+                if len(ctrl_vals) < 2:
+                    continue
+
+                # Main-arm terminal effect (for comparison)
+                main_test = main_df[
+                    (main_df[testcd_col].str.upper() == str(test_code).upper()) &
+                    (main_df["SEX"] == sex_val)
+                ]
+                main_ctrl = main_test[main_test["dose_level"] == 0]
+                main_ctrl_day = main_ctrl[day_col].max() if not main_ctrl.empty else None
+
+                for dose_level, dose_group in sex_group.groupby("dose_level"):
+                    if dose_level == 0:
+                        continue
+
+                    # Recovery arm: treated group at terminal timepoint
+                    dose_day = dose_group[day_col].max()
+                    dose_terminal = dose_group[dose_group[day_col] == dose_day]
+                    treat_vals = dose_terminal[value_col].dropna().values
+
+                    if len(treat_vals) < 2:
+                        continue
+
+                    # Stats: recovery arm treated vs recovery arm control
+                    t_result = welch_t_test(treat_vals, ctrl_vals)
+                    d = cohens_d(treat_vals, ctrl_vals)
+
+                    # Terminal effect: main arm treated vs main arm control
+                    terminal_d = None
+                    if main_ctrl_day is not None:
+                        main_treated = main_test[
+                            (main_test["dose_level"] == dose_level) &
+                            (main_test[day_col] == main_ctrl_day if main_ctrl_day == main_test[day_col].max() else True)
+                        ]
+                        # Use max day for main arm treated
+                        if not main_treated.empty:
+                            mt_day = main_treated[day_col].max()
+                            mt_terminal = main_treated[main_treated[day_col] == mt_day]
+                            mc_terminal = main_ctrl[main_ctrl[day_col] == main_ctrl_day]
+                            mt_vals = mt_terminal[value_col].dropna().values
+                            mc_vals = mc_terminal[value_col].dropna().values
+                            if len(mt_vals) >= 2 and len(mc_vals) >= 2:
+                                terminal_d = cohens_d(mt_vals, mc_vals)
+
+                    rows.append({
+                        "endpoint_label": test_name,
+                        "test_code": str(test_code),
+                        "sex": str(sex_val),
+                        "recovery_day": recovery_day or int(dose_day),
+                        "dose_level": int(dose_level),
+                        "mean": round(float(np.mean(treat_vals)), 4),
+                        "sd": round(float(np.std(treat_vals, ddof=1)), 4),
+                        "p_value": round(t_result["p_value"], 6) if t_result["p_value"] is not None else None,
+                        "effect_size": round(d, 4) if d is not None else None,
+                        "terminal_effect": round(terminal_d, 4) if terminal_d is not None else None,
+                    })
+
+    # Process LB domain
+    _compute_domain_recovery("lb", "LBTESTCD", "LBSTRESN", "LBDY", "LBTEST")
+    # Process BW domain
+    _compute_domain_recovery("bw", "BWTESTCD", "BWSTRESN", "BWDY", "BWTEST")
+    # Process OM domain (organ weights at sacrifice)
+    _compute_domain_recovery("om", "OMTESTCD", "OMSTRESN", "OMDY", "OMTEST")
+
+    return {
+        "available": len(rows) > 0,
+        "recovery_day": recovery_day,
+        "rows": rows,
+    }

@@ -232,6 +232,12 @@ export interface MortalityContext {
   }[];
 }
 
+export interface HumanNonRelevance {
+  mechanism: string;
+  applies: boolean;
+  rationale: string;
+}
+
 export interface TumorContext {
   tumorsPresent: boolean;
   tumorSummaries: { organ: string; morphology: string; count: number }[];
@@ -246,6 +252,7 @@ export interface TumorContext {
     studyDuration: number;
     expectedBackground: "expected" | "unusual" | "very_rare";
   };
+  humanNonRelevance?: HumanNonRelevance[];
   interpretation: string;
 }
 
@@ -1688,6 +1695,63 @@ const TF_TUMOR_STAGES: Record<string, string[]> = {
 };
 
 /**
+ * Assess known non-human-relevant tumor mechanisms.
+ * Three well-established mechanisms that produce tumors in rodents
+ * but are not considered relevant to human risk assessment:
+ *   1. PPARα agonism → hepatocellular tumors in rodents (rodent-specific receptor density)
+ *   2. TSH-mediated thyroid tumors → follicular cell tumors from sustained TSH elevation
+ *   3. α2u-globulin nephropathy → kidney tumors in male rats only (protein absent in humans)
+ */
+function assessHumanNonRelevance(
+  tumors: TumorFinding[],
+  studyContext: StudyContext,
+): HumanNonRelevance[] {
+  const species = studyContext.species.toUpperCase();
+  const isRodent = species.includes("RAT") || species.includes("MOUSE");
+  const isMaleRat = species.includes("RAT"); // α2u only applies to male rats
+  const results: HumanNonRelevance[] = [];
+
+  const hasLiverTumor = tumors.some((t) =>
+    t.organ.toUpperCase().includes("LIVER"),
+  );
+  const hasThyroidTumor = tumors.some((t) =>
+    t.organ.toUpperCase().includes("THYROID"),
+  );
+  const hasKidneyTumor = tumors.some((t) =>
+    t.organ.toUpperCase().includes("KIDNEY"),
+  );
+
+  // PPARα agonism — liver tumors in rodents
+  results.push({
+    mechanism: "PPARα agonism",
+    applies: isRodent && hasLiverTumor,
+    rationale: isRodent && hasLiverTumor
+      ? "Rodent hepatocellular tumors may arise from PPARα-mediated peroxisome proliferation, a pathway with minimal human relevance due to lower receptor density in human liver."
+      : "Not applicable — no liver tumors in rodent species.",
+  });
+
+  // TSH-mediated thyroid follicular tumors
+  results.push({
+    mechanism: "TSH-mediated thyroid",
+    applies: isRodent && hasThyroidTumor,
+    rationale: isRodent && hasThyroidTumor
+      ? "Rodent thyroid follicular cell tumors often result from sustained TSH elevation via hepatic enzyme induction. Rats are highly susceptible; human thyroid is less responsive to this mechanism."
+      : "Not applicable — no thyroid tumors in rodent species.",
+  });
+
+  // α2u-globulin nephropathy — male rats only
+  results.push({
+    mechanism: "α2u-globulin nephropathy",
+    applies: isMaleRat && hasKidneyTumor,
+    rationale: isMaleRat && hasKidneyTumor
+      ? "Male rat kidney tumors may arise from α2u-globulin accumulation. This protein is absent in humans, making this mechanism non-relevant to human risk."
+      : "Not applicable — α2u-globulin is specific to male rats with kidney tumors.",
+  });
+
+  return results;
+}
+
+/**
  * Assess tumor context for a syndrome.
  * Filters TF tumor data to organs related to the syndrome, detects
  * proliferative progression by cross-referencing MI histopath findings,
@@ -1811,6 +1875,18 @@ export function assessTumorContext(
     parts.push(`${malignantCount} malignant tumor${malignantCount !== 1 ? "s" : ""}.`);
   }
 
+  // Assess known non-human-relevant tumor mechanisms
+  const humanNonRelevance = assessHumanNonRelevance(
+    relevantTumors,
+    studyContext,
+  );
+  if (humanNonRelevance.some((h) => h.applies)) {
+    const applicable = humanNonRelevance.filter((h) => h.applies);
+    parts.push(
+      `Non-human-relevant mechanism${applicable.length !== 1 ? "s" : ""}: ${applicable.map((h) => h.mechanism).join(", ")}.`,
+    );
+  }
+
   return {
     tumorsPresent: true,
     tumorSummaries,
@@ -1827,6 +1903,7 @@ export function assessTumorContext(
       studyDuration: durationWeeks ?? 0,
       expectedBackground,
     },
+    humanNonRelevance,
     interpretation: parts.join(" "),
   };
 }

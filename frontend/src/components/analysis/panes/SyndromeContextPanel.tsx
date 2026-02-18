@@ -26,11 +26,13 @@ import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-sy
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { interpretSyndrome, mapDeathRecordsToDispositions } from "@/lib/syndrome-interpretation";
-import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext, TreatmentRelatednessScore, AdversityAssessment, OverallSeverity } from "@/lib/syndrome-interpretation";
+import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext, TreatmentRelatednessScore, AdversityAssessment, OverallSeverity, ClinicalObservation, RecoveryRow } from "@/lib/syndrome-interpretation";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useTumorSummary } from "@/hooks/useTumorSummary";
 import { useFoodConsumptionSummary } from "@/hooks/useFoodConsumptionSummary";
+import { useClinicalObservations } from "@/hooks/useClinicalObservations";
+import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import type { FindingsFilters, UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
@@ -284,7 +286,51 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
     return findings;
   }, [tumorSummary]);
 
-  // Compute syndrome interpretation (Phase A + Phase B mortality/tumor + Phase C)
+  // Clinical observations for interpretation layer (Phase C)
+  const { data: clTimecourse } = useClinicalObservations(studyId);
+  const clinicalObservations = useMemo<ClinicalObservation[]>(() => {
+    if (!clTimecourse?.timecourse?.length) return [];
+    // Aggregate CL timecourse into peak incidence per finding × dose × sex
+    const key = (obs: string, dose: number, sex: string) => `${obs}|${dose}|${sex}`;
+    const peaks = new Map<string, ClinicalObservation>();
+    for (const tp of clTimecourse.timecourse) {
+      for (const g of tp.counts) {
+        for (const [finding, count] of Object.entries(g.findings)) {
+          const k = key(finding, g.dose_level, g.sex);
+          const existing = peaks.get(k);
+          if (!existing || count > existing.incidence) {
+            peaks.set(k, {
+              observation: finding,
+              doseGroup: g.dose_level,
+              sex: g.sex,
+              incidence: count,
+              totalN: g.total_subjects,
+            });
+          }
+        }
+      }
+    }
+    return [...peaks.values()];
+  }, [clTimecourse]);
+
+  // Recovery comparison data for interpretation layer
+  const { data: recoveryComparison } = useRecoveryComparison(studyId);
+  const recoveryData = useMemo<RecoveryRow[]>(() => {
+    if (!recoveryComparison?.available) return [];
+    return recoveryComparison.rows.map((r) => ({
+      endpoint_label: r.endpoint_label,
+      sex: r.sex,
+      recovery_day: r.recovery_day,
+      dose_level: r.dose_level,
+      mean: r.mean,
+      sd: r.sd,
+      p_value: r.p_value,
+      effect_size: r.effect_size,
+      terminal_effect: r.terminal_effect,
+    }));
+  }, [recoveryComparison]);
+
+  // Compute syndrome interpretation (Phase A + Phase B + Phase C)
   const syndromeInterp = useMemo<SyndromeInterpretation | null>(() => {
     if (!detected || allEndpoints.length === 0 || !studyContext) return null;
     const mortalityDispositions = mortalityRaw
@@ -294,16 +340,16 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       detected,
       allEndpoints,
       histopathData ?? [],
-      [], // recovery data (not available yet)
+      recoveryData,
       [], // organ weights
       tumorFindings,
       mortalityDispositions,
       foodConsumptionSummary ?? { available: false, water_consumption: null },
-      [], // clinical observations (not available yet)
+      clinicalObservations,
       studyContext,
       mortalityRaw?.mortality_noael_cap,
     );
-  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings, foodConsumptionSummary]);
+  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings, foodConsumptionSummary, clinicalObservations, recoveryData]);
 
   // Interpretation content
   const interpretation = SYNDROME_INTERPRETATIONS[syndromeId];

@@ -4,6 +4,12 @@
  * historical controls, recovery assessment, syndrome detection, CT normalization.
  */
 
+export interface ECGInterpretation {
+  qtcTranslational: boolean;
+  preferredCorrection: "Bazett" | "Fridericia" | "VanDeWater" | null;
+  rationale: string;
+}
+
 export interface StudyContext {
   studyId: string;
   strain: string;                       // STRAIN → "SPRAGUE-DAWLEY"
@@ -26,4 +32,5 @@ export interface StudyContext {
   glpCompliant: boolean;                // GLPTYP present → true
   sendCtVersion: string;                // SNDCTVER → "SEND Terminology 2017-03-31"
   title: string;                        // STITLE
+  ecgInterpretation: ECGInterpretation; // Derived from species
 }
