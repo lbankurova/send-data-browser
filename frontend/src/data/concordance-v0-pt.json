@@ -1,0 +1,80 @@
+{
+  "version": "concordance-v0",
+  "generated": "2026-02-18",
+  "source": "Liu & Fan 2026 paper text (bioRxiv 10.64898/2026.01.29.702667)",
+  "license": "CC-BY 4.0",
+  "extractionMethod": "manual extraction from paper text and figures",
+  "identicalTermConcordance": {
+    "constipation": [
+      { "species": "all", "modality": "SM", "lrPlus": 21.5, "sourceDetail": "Supp Table 4", "inCurrentSpec": false }
+    ],
+    "rash": [
+      { "species": "all", "modality": "SM", "lrPlus": 20, "sourceDetail": "Supp Table 4", "inCurrentSpec": false },
+      { "species": "all", "modality": "Bio", "lrPlus": 45.2, "sourceDetail": "Supp Table 4", "inCurrentSpec": false }
+    ],
+    "neutropenia": [
+      { "species": "all", "modality": "SM", "lrPlus": 16.1, "sourceDetail": "Supp Table 4", "inCurrentSpec": true },
+      { "species": "all", "modality": "Bio", "lrPlus": 21.8, "sourceDetail": "Supp Table 4", "inCurrentSpec": false }
+    ],
+    "anemia": [
+      { "species": "all", "modality": "SM", "lrPlus": 10.1, "sourceDetail": "Supp Table 4", "inCurrentSpec": true }
+    ],
+    "infection": [
+      { "species": "all", "modality": "Bio", "lrPlus": 116, "sourceDetail": "Supp Table 4", "inCurrentSpec": false }
+    ],
+    "hyperglycemia": [
+      { "species": "all", "modality": "Bio", "lrPlus": 34.4, "sourceDetail": "Supp Table 4", "inCurrentSpec": true }
+    ],
+    "immune-mediated hepatitis": [
+      { "species": "mouse", "modality": "All", "lrPlus": 462.4, "sourceDetail": "Fig 5C / text p12", "inCurrentSpec": true },
+      { "species": "all", "modality": "All", "lrPlus": 321.8, "sourceDetail": "Fig 5A / text p12", "inCurrentSpec": false }
+    ],
+    "hyperinsulinemia": [
+      { "species": "all", "modality": "All", "lrPlus": 217.7, "sourceDetail": "Text p12", "inCurrentSpec": false }
+    ],
+    "hypertriglyceridemia": [
+      { "species": "all", "modality": "All", "lrPlus": 113.1, "sourceDetail": "Text p12", "inCurrentSpec": false },
+      { "species": "rat", "modality": "All", "lrPlus": 112.7, "sourceDetail": "Text p12", "inCurrentSpec": true }
+    ],
+    "hyperphosphatasemia": [
+      { "species": "all", "modality": "SM", "lrPlus": 295.1, "sourceDetail": "Text p12", "inCurrentSpec": false }
+    ],
+    "lactic acidosis": [
+      { "species": "all", "modality": "SM", "lrPlus": 89, "sourceDetail": "Text p12", "inCurrentSpec": false }
+    ],
+    "diabetes mellitus": [
+      { "species": "all", "modality": "SM", "lrPlus": 106.3, "sourceDetail": "Text p12", "inCurrentSpec": false },
+      { "species": "all", "modality": "Bio", "lrPlus": 34.9, "sourceDetail": "Text p12", "inCurrentSpec": false }
+    ],
+    "hyperphagia": [
+      { "species": "dog", "modality": "SM", "lrPlus": 230.8, "sourceDetail": "Fig 5C / text p13", "inCurrentSpec": true },
+      { "species": "all", "modality": "Exp-controlled", "lrPlus": 344, "sourceDetail": "Text p12", "inCurrentSpec": false }
+    ],
+    "hypercalcemia": [
+      { "species": "dog", "modality": "SM", "lrPlus": 98.2, "sourceDetail": "Text p13", "inCurrentSpec": false }
+    ],
+    "metabolic disorder": [
+      { "species": "monkey", "modality": "All", "lrPlus": 217.4, "sourceDetail": "Text p13", "inCurrentSpec": false }
+    ],
+    "hepatotoxicity": [
+      { "species": "all", "modality": "All", "lrPlus": 2.2, "sourceDetail": "Text p12", "inCurrentSpec": true }
+    ],
+    "hepatic function abnormal": [
+      { "species": "all", "modality": "All", "lrPlus": 4.2, "sourceDetail": "Text p12", "inCurrentSpec": false }
+    ],
+    "liver disorder": [
+      { "species": "all", "modality": "All", "lrPlus": 3.2, "sourceDetail": "Text p12", "inCurrentSpec": true }
+    ]
+  },
+  "crossTermConcordance": [
+    { "preclinicalEndpoint": "hyperesthesia", "clinicalEndpoint": "seizure", "species": "monkey", "modality": "All", "lrPlus": 40.7, "sourceDetail": "Cross-term, text p15" },
+    { "preclinicalEndpoint": "brain hypoxia", "clinicalEndpoint": "seizure", "species": "rat", "modality": "All", "lrPlus": 38.1, "sourceDetail": "Cross-term, text p15" },
+    { "preclinicalEndpoint": "allodynia", "clinicalEndpoint": "seizure", "species": "mouse", "modality": "All", "lrPlus": 22.7, "sourceDetail": "Cross-term, text p15" },
+    { "preclinicalEndpoint": "motor dysfunction", "clinicalEndpoint": "seizure", "species": "monkey", "modality": "All", "lrPlus": 19.6, "sourceDetail": "Cross-term, text p15" },
+    { "preclinicalEndpoint": "cerebellar ataxia", "clinicalEndpoint": "seizure", "species": "rabbit", "modality": "All", "lrPlus": 10.9, "sourceDetail": "Cross-term, text p15" },
+    { "preclinicalEndpoint": "gastritis", "clinicalEndpoint": "vomiting", "species": "rat", "modality": "SM", "lrPlus": 29.86, "sourceDetail": "Case Study 3, text p18" },
+    { "preclinicalEndpoint": "pancreatic disorder", "clinicalEndpoint": "vomiting", "species": "rat", "modality": "SM", "lrPlus": 16.95, "sourceDetail": "Case Study 3, text p18" },
+    { "preclinicalEndpoint": "erosive gastritis", "clinicalEndpoint": "vomiting", "species": "rat", "modality": "SM", "lrPlus": 15.55, "sourceDetail": "Case Study 3, text p18" },
+    { "preclinicalEndpoint": "gastric ulcer", "clinicalEndpoint": "vomiting", "species": "rat", "modality": "SM", "lrPlus": 13.68, "sourceDetail": "Case Study 3, text p18" }
+  ]
+}

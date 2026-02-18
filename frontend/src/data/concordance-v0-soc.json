@@ -1,0 +1,63 @@
+{
+  "version": "concordance-v0",
+  "generated": "2026-02-18",
+  "source": "Liu & Fan 2026 Fig. 3C (approximated)",
+  "note": "Values are midpoints of approximate ranges. Replace with exact values in v0.1.",
+  "socConcordance": {
+    "rat": {
+      "hepatobiliary disorders": 3.5,
+      "blood and lymphatic system disorders": 3.5,
+      "gastrointestinal disorders": 2.5,
+      "renal and urinary disorders": 4.0,
+      "immune system disorders": 2.5,
+      "metabolism and nutrition disorders": 2.5,
+      "cardiac disorders": 2.5,
+      "nervous system disorders": 1.5,
+      "investigations": 1.5
+    },
+    "dog": {
+      "hepatobiliary disorders": 3.5,
+      "blood and lymphatic system disorders": 4.5,
+      "gastrointestinal disorders": 4.5,
+      "renal and urinary disorders": 3.5,
+      "immune system disorders": 2.5,
+      "metabolism and nutrition disorders": 3.5,
+      "cardiac disorders": 3.5,
+      "nervous system disorders": 2.5,
+      "investigations": 1.5
+    },
+    "monkey": {
+      "hepatobiliary disorders": 4.5,
+      "blood and lymphatic system disorders": 5.5,
+      "gastrointestinal disorders": 4.5,
+      "renal and urinary disorders": 4.5,
+      "immune system disorders": 6.0,
+      "metabolism and nutrition disorders": 4.5,
+      "cardiac disorders": 3.5,
+      "nervous system disorders": 2.5,
+      "investigations": 2.5
+    },
+    "mouse": {
+      "hepatobiliary disorders": 5.0,
+      "blood and lymphatic system disorders": 2.5,
+      "gastrointestinal disorders": 2.5,
+      "renal and urinary disorders": 2.5,
+      "immune system disorders": 4.0,
+      "metabolism and nutrition disorders": 2.5,
+      "cardiac disorders": 1.5,
+      "nervous system disorders": 1.5,
+      "investigations": 1.5
+    },
+    "rabbit": {
+      "hepatobiliary disorders": 1.5,
+      "blood and lymphatic system disorders": 2.5,
+      "gastrointestinal disorders": 1.5,
+      "renal and urinary disorders": 2.5,
+      "immune system disorders": 1.5,
+      "metabolism and nutrition disorders": 1.5,
+      "cardiac disorders": 1.5,
+      "nervous system disorders": 1.5,
+      "investigations": 1.5
+    }
+  }
+}
