@@ -122,8 +122,8 @@ describe("cross-surface consistency", () => {
 
   // ── Count bounds (structural, not hardcoded) ──
 
-  test("at most 9 syndromes detected (XS01–XS09 is the full catalog)", () => {
-    expect(syndromes.length).toBeLessThanOrEqual(9);
+  test("at most 10 syndromes detected (XS01–XS10 is the full catalog)", () => {
+    expect(syndromes.length).toBeLessThanOrEqual(10);
   });
 
   test("per-sex rule matches reference a valid sex", () => {

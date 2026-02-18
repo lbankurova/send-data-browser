@@ -21,6 +21,11 @@ import {
   deriveOverallSeverity,
   assessTumorContext,
   assessFoodConsumptionContext,
+  SYNDROME_SOC_MAP,
+  normalizeSpecies,
+  lookupSOCLRPlus,
+  assignTranslationalTier,
+  assessTranslationalConfidence,
 } from "@/lib/syndrome-interpretation";
 import type {
   RecoveryRow,
@@ -1069,5 +1074,141 @@ describe("ECGInterpretation in StudyContext", () => {
     };
     expect(nhpContext.ecgInterpretation.preferredCorrection).toBe("Fridericia");
     expect(nhpContext.ecgInterpretation.qtcTranslational).toBe(true);
+  });
+});
+
+// ─── Translational Confidence Scoring ───────────────────────
+
+describe("translational confidence", () => {
+  // TC-01: Syndrome → SOC mapping
+  test("TC-01: every mapped syndrome has a valid SOC string", () => {
+    const mappedIds = ["XS01", "XS02", "XS03", "XS04", "XS05", "XS07", "XS09", "XS10"];
+    for (const id of mappedIds) {
+      const soc = SYNDROME_SOC_MAP[id];
+      expect(soc).toBeTruthy();
+      expect(typeof soc).toBe("string");
+      expect(soc.length).toBeGreaterThan(0);
+    }
+    // Verify corrected mappings
+    expect(SYNDROME_SOC_MAP.XS02).toBe("hepatobiliary disorders"); // cholestatic = hepatobiliary
+    expect(SYNDROME_SOC_MAP.XS07).toBe("immune system disorders"); // immunotoxicity
+    expect(SYNDROME_SOC_MAP.XS03).toBe("renal and urinary disorders"); // nephrotoxicity
+  });
+
+  // TC-02: rat × hepatobiliary
+  test("TC-02: rat × hepatobiliary → tier moderate, socLRPlus ≈ 3.5", () => {
+    const socLR = lookupSOCLRPlus("RAT", "hepatobiliary disorders");
+    expect(socLR).toBe(3.5);
+    const tier = assignTranslationalTier("RAT", "hepatobiliary disorders", []);
+    expect(tier).toBe("moderate");
+  });
+
+  // TC-03: rat × hematological + neutropenia PT → high
+  test("TC-03: rat × hematological with neutropenia PT → tier high", () => {
+    const ptMatches = [{ endpoint: "neutropenia", lrPlus: 16.1, species: "all" }];
+    const tier = assignTranslationalTier("RAT", "blood and lymphatic system disorders", ptMatches);
+    expect(tier).toBe("high");
+  });
+
+  // TC-04: unknown species → insufficient_data
+  test("TC-04: unknown species → tier insufficient_data", () => {
+    const tier = assignTranslationalTier("HAMSTER", undefined, []);
+    expect(tier).toBe("insufficient_data");
+  });
+
+  // TC-05: unmapped syndrome ID → insufficient_data
+  test("TC-05: unmapped syndrome ID → tier insufficient_data", () => {
+    const fakeSyndrome = { id: "XS99", name: "Unknown", matchedEndpoints: [], requiredMet: false, domainsCovered: [], confidence: "LOW" as const, supportScore: 0, sexes: [] };
+    const result = assessTranslationalConfidence(fakeSyndrome, "RAT", false);
+    expect(result.tier).toBe("insufficient_data");
+  });
+
+  // TC-06: PT precedence over SOC
+  test("TC-06: PT match takes precedence over SOC for tier", () => {
+    const ptMatches = [{ lrPlus: 112.7 }];
+    const tier = assignTranslationalTier("RAT", "metabolism and nutrition disorders", ptMatches);
+    expect(tier).toBe("high");
+    // Verify SOC alone would give low
+    const tierSocOnly = assignTranslationalTier("RAT", "metabolism and nutrition disorders", []);
+    expect(tierSocOnly).toBe("low");
+  });
+
+  // TC-07: absence caveat
+  test("TC-07: absenceCaveat null when hasAbsenceMeaningful = false", () => {
+    const result = assessTranslationalConfidence(xs01, "RAT", false);
+    expect(result.absenceCaveat).toBeNull();
+  });
+
+  test("TC-07b: absenceCaveat present when hasAbsenceMeaningful = true", () => {
+    const result = assessTranslationalConfidence(xs01, "RAT", true);
+    expect(result.absenceCaveat).toBeTruthy();
+    expect(result.absenceCaveat).toContain("iLR⁻ <3");
+  });
+
+  // TC-08: summary includes citation
+  test("TC-08: summary includes Liu & Fan 2026 citation", () => {
+    const result = assessTranslationalConfidence(xs01, "RAT", false);
+    expect(result.summary).toContain("Liu & Fan 2026");
+  });
+
+  // TC-09: summary includes numeric LR+
+  test("TC-09: summary includes numeric LR+ value", () => {
+    const result = assessTranslationalConfidence(xs01, "RAT", false);
+    expect(result.summary).toMatch(/LR\+\s*[\d≈]/);
+  });
+
+  // TC-10: PointCross XS01 — dynamic matching resolves ALT/AST to hepatic necrosis PT
+  test("TC-10: PointCross XS01 → moderate or higher, references hepatic", () => {
+    const result = assessTranslationalConfidence(xs01, "RAT", false);
+    // XS01 has ALT/AST/BILI/MI endpoints → maps to hepatic necrosis (8.7), cholestasis (6.1), hepatotoxicity (2.2)
+    expect(["moderate", "high"]).toContain(result.tier);
+    expect(result.summary.toLowerCase()).toMatch(/hepat|cholest/);
+    expect(result.endpointLRPlus.length).toBeGreaterThan(0);
+  });
+
+  // TC-11: PointCross XS04 — dynamic matching resolves NEUT/PLT/RBC/HGB
+  test("TC-11: PointCross XS04 → high, resolves hematology endpoints to PTs", () => {
+    const result = assessTranslationalConfidence(xs04, "RAT", false);
+    expect(result.tier).toBe("high");
+    // Should resolve NEUT→neutropenia (16.1), RBC/HGB→anemia (10.1), PLT→thrombocytopenia (8.4)
+    expect(result.endpointLRPlus.some(e => e.endpoint === "neutropenia")).toBe(true);
+    expect(result.summary).toContain("16.1");
+  });
+
+  // TC-12: XS07 immunotoxicity — dynamic matching with WBC/LYMPH endpoints
+  test("TC-12: XS07 immunotoxicity with WBC/LYMPH → maps to infection PT", () => {
+    const xs07Synthetic = {
+      id: "XS07", name: "Immunotoxicity",
+      matchedEndpoints: [
+        { endpoint_label: "WBC", domain: "LB", role: "required" as const, direction: "down", severity: "significant", sex: null },
+        { endpoint_label: "LYMPH", domain: "LB", role: "required" as const, direction: "down", severity: "significant", sex: null },
+      ],
+      requiredMet: true, domainsCovered: ["LB", "OM"], confidence: "MODERATE" as const, supportScore: 3, sexes: [],
+    };
+    const result = assessTranslationalConfidence(xs07Synthetic, "RAT", false);
+    // WBC/LYMPH → infection PT (LR+ 116, species "all") → high
+    expect(result.tier).toBe("high");
+    expect(result.endpointLRPlus.some(e => e.endpoint === "infection")).toBe(true);
+    expect(result.primarySOC).toBe("immune system disorders");
+  });
+
+  // TC-12b: XS07 with no matched endpoints falls back to SOC
+  test("TC-12b: XS07 empty endpoints → SOC fallback (rat immune = 2.5 → low)", () => {
+    const xs07Empty = {
+      id: "XS07", name: "Immunotoxicity",
+      matchedEndpoints: [], requiredMet: true,
+      domainsCovered: ["LB"], confidence: "LOW" as const, supportScore: 1, sexes: [],
+    };
+    const result = assessTranslationalConfidence(xs07Empty, "RAT", false);
+    expect(result.tier).toBe("low");
+    expect(result.socLRPlus).toBe(2.5);
+  });
+
+  // TC-13: dataVersion non-empty
+  test("TC-13: dataVersion is a non-empty string", () => {
+    const result = assessTranslationalConfidence(xs01, "RAT", false);
+    expect(result.dataVersion).toBeTruthy();
+    expect(typeof result.dataVersion).toBe("string");
+    expect(result.dataVersion.length).toBeGreaterThan(0);
   });
 });

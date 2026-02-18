@@ -19,7 +19,7 @@
  *   Gap 3  evaluateDiscriminator: histopath path uses proxy matching before returning
  *          argues_against. Spec falls through directly. Enhancement.
  *
- *   Gap 4  DiscriminatingFinding.source: "LB" | "MI" | "MA" | "OM" (no "EG").
+ *   Gap 4  DiscriminatingFinding.source now includes "EG" | "VS" (XS10 cardiovascular).
  *          Spec had same union; code previously included "EG" speculatively. Removed.
  *
  *   Gap 15 XS01 test expects mechanism_uncertain. Spec expected mechanism_confirmed.
@@ -28,7 +28,7 @@
  *   Gap 18 resolveCanonical() not implemented. findByCanonical uses CANONICAL_SYNONYMS
  *          map (test codes + label patterns) instead. Covers multi-study variation.
  *
- *   Comp 7 ecgInterpretation dropped (XS10 not in detection engine). See TODO below.
+ *   Comp 7 ecgInterpretation restored — XS10 cardiovascular syndrome now in detection engine.
  *          recoveryDuration → recoveryPeriodDays (self-documenting unit).
  *          matchedTerms → matchedEndpoints (richer: dose-response, stats, sex breakdowns).
  *
@@ -70,7 +70,7 @@ export interface DiscriminatingFinding {
   actualDirection: "up" | "down" | null;
   status: "supports" | "argues_against" | "not_available";
   weight: "strong" | "moderate";
-  source: "LB" | "MI" | "MA" | "OM";
+  source: "LB" | "MI" | "MA" | "OM" | "EG" | "VS";
 }
 
 export interface HistopathCrossRef {
@@ -283,6 +283,19 @@ export interface AdversityAssessment {
   overall: "adverse" | "non_adverse" | "equivocal";
 }
 
+// ─── Translational confidence types ───────────────────────
+
+export interface TranslationalConfidence {
+  tier: "high" | "moderate" | "low" | "insufficient_data";
+  species: string;
+  primarySOC: string;
+  socLRPlus: number | null;
+  endpointLRPlus: { endpoint: string; lrPlus: number; species: string }[];
+  absenceCaveat: string | null;
+  summary: string;
+  dataVersion: string;
+}
+
 // ─── Full interpretation output ────────────────────────────
 
 export interface SyndromeInterpretation {
@@ -317,6 +330,9 @@ export interface SyndromeInterpretation {
   // Severity
   overallSeverity: OverallSeverity;
 
+  // Translational confidence
+  translationalConfidence: TranslationalConfidence;
+
   /** Assembled narrative */
   narrative: string;
 }
@@ -329,7 +345,7 @@ export interface SyndromeDiscriminators {
   findings: {
     endpoint: string;
     expectedDirection: "up" | "down";
-    source: "LB" | "MI" | "MA" | "OM";
+    source: "LB" | "MI" | "MA" | "OM" | "EG" | "VS";
     weight: "strong" | "moderate";
     rationale: string;
     absenceMeaningful?: boolean;
@@ -573,6 +589,42 @@ const XS08_DISCRIMINATORS: SyndromeDiscriminators = {
   ],
 };
 
+const XS10_DISCRIMINATORS: SyndromeDiscriminators = {
+  syndromeId: "XS10",
+  differential: "functional (rate change) vs structural cardiovascular toxicity",
+  findings: [
+    {
+      endpoint: "QTCBAG",
+      expectedDirection: "up",
+      source: "EG",
+      weight: "strong",
+      rationale: "QTc prolongation indicates repolarization delay — a direct proarrhythmic risk independent of rate changes.",
+    },
+    {
+      endpoint: "HEART::CARDIOMYOPATHY",
+      expectedDirection: "up",
+      source: "MI",
+      weight: "strong",
+      rationale: "Cardiomyopathy confirms structural myocardial damage beyond functional rate changes.",
+    },
+    {
+      endpoint: "HEART_WT",
+      expectedDirection: "up",
+      source: "OM",
+      weight: "moderate",
+      rationale: "Increased heart weight suggests cardiac hypertrophy — a structural adaptation or pathological response.",
+    },
+    {
+      endpoint: "CTNI",
+      expectedDirection: "up",
+      source: "LB",
+      weight: "strong",
+      rationale: "Elevated cardiac troponin confirms active myocardial injury. Absence supports functional change without structural damage.",
+      absenceMeaningful: true,
+    },
+  ],
+};
+
 const DISCRIMINATOR_REGISTRY: Record<string, SyndromeDiscriminators> = {
   XS01: XS01_DISCRIMINATORS,
   XS02: XS02_DISCRIMINATORS,
@@ -581,6 +633,7 @@ const DISCRIMINATOR_REGISTRY: Record<string, SyndromeDiscriminators> = {
   XS05: XS05_DISCRIMINATORS,
   XS06: XS06_DISCRIMINATORS,
   XS08: XS08_DISCRIMINATORS,
+  XS10: XS10_DISCRIMINATORS,
 };
 
 // ─── CL clinical observation correlates (Phase C) ──────────
@@ -608,6 +661,10 @@ const SYNDROME_CL_CORRELATES: Record<string, {
   XS03: {
     expectedObservations: ["POLYURIA", "POLYDIPSIA"],
     tier: [3, 3],
+  },
+  XS10: {
+    expectedObservations: ["BRADYCARDIA", "TACHYCARDIA", "ARRHYTHMIA", "DYSPNEA"],
+    tier: [2, 2, 2, 3],
   },
 };
 
@@ -1454,12 +1511,31 @@ export function assembleStudyDesignNotes(
 ): string[] {
   const notes: string[] = [];
 
-  // TODO: restore ecgInterpretation caveats when XS10 cardiovascular syndrome is added.
-  // PointCross has 354 EG rows (QTcB, PR, RR). When XS10 detection lands:
-  //   - Rat QTc: "Ito-dominated repolarization, limited translational value" → cap at mechanism_uncertain
-  //   - Dog/monkey: correction formula selection (Bazett vs Fridericia vs Van de Water)
-  //   - Temperature correction for dogs (~14ms per °C)
-  // See spec §Component 7 lines 1845-1856.
+  // ECG interpretation caveats — species-aware QTc relevance
+  if (syndrome.id === "XS10") {
+    const ecg = studyContext.ecgInterpretation;
+    if (!ecg.qtcTranslational) {
+      notes.push(
+        `${studyContext.species || "This species"} has Ito-dominated cardiac repolarization — ` +
+        `QTc changes have limited translational value to human arrhythmia risk. ` +
+        `Interpret ECG findings as mechanistic signals, not direct safety predictors.`,
+      );
+    } else {
+      if (ecg.preferredCorrection) {
+        notes.push(
+          `QTc correction: ${ecg.preferredCorrection} formula is preferred for ` +
+          `${studyContext.species?.toLowerCase() || "this species"}. ${ecg.rationale}`,
+        );
+      }
+      const species = (studyContext.species ?? "").toUpperCase();
+      if (species === "DOG" || species === "BEAGLE") {
+        notes.push(
+          "Dog ECG: body temperature affects QTc (~14 ms per \u00B0C). " +
+          "Verify temperature-corrected intervals if animals were under anesthesia.",
+        );
+      }
+    }
+  }
 
   // ── Strain-specific ──
 
@@ -2178,6 +2254,266 @@ export function deriveOverallSeverity(
   return "S2_Concern";
 }
 
+// ─── Translational Confidence Scoring ─────────────────────
+// Data: concordance-v0 — Liu & Fan 2026 paper text, 2026-02-18
+
+const CONCORDANCE_DATA_VERSION = "concordance-v0";
+
+/** SOC-level LR+ by species. Midpoints of approximate ranges from Liu & Fan Fig. 3C. */
+const SOC_CONCORDANCE: Record<string, Record<string, number>> = {
+  rat: {
+    "hepatobiliary disorders": 3.5, "blood and lymphatic system disorders": 3.5,
+    "gastrointestinal disorders": 2.5, "renal and urinary disorders": 4.0,
+    "immune system disorders": 2.5, "metabolism and nutrition disorders": 2.5,
+    "cardiac disorders": 2.5, "nervous system disorders": 1.5, "investigations": 1.5,
+  },
+  dog: {
+    "hepatobiliary disorders": 3.5, "blood and lymphatic system disorders": 4.5,
+    "gastrointestinal disorders": 4.5, "renal and urinary disorders": 3.5,
+    "immune system disorders": 2.5, "metabolism and nutrition disorders": 3.5,
+    "cardiac disorders": 3.5, "nervous system disorders": 2.5, "investigations": 1.5,
+  },
+  monkey: {
+    "hepatobiliary disorders": 4.5, "blood and lymphatic system disorders": 5.5,
+    "gastrointestinal disorders": 4.5, "renal and urinary disorders": 4.5,
+    "immune system disorders": 6.0, "metabolism and nutrition disorders": 4.5,
+    "cardiac disorders": 3.5, "nervous system disorders": 2.5, "investigations": 2.5,
+  },
+  mouse: {
+    "hepatobiliary disorders": 5.0, "blood and lymphatic system disorders": 2.5,
+    "gastrointestinal disorders": 2.5, "renal and urinary disorders": 2.5,
+    "immune system disorders": 4.0, "metabolism and nutrition disorders": 2.5,
+    "cardiac disorders": 1.5, "nervous system disorders": 1.5, "investigations": 1.5,
+  },
+  rabbit: {
+    "hepatobiliary disorders": 1.5, "blood and lymphatic system disorders": 2.5,
+    "gastrointestinal disorders": 1.5, "renal and urinary disorders": 2.5,
+    "immune system disorders": 1.5, "metabolism and nutrition disorders": 1.5,
+    "cardiac disorders": 1.5, "nervous system disorders": 1.5, "investigations": 1.5,
+  },
+};
+
+/** PT-level LR+ for specific endpoints. Seeded from Liu & Fan paper text. */
+const KNOWN_PT_CONCORDANCE: Record<string, { species: string; lrPlus: number }[]> = {
+  // Hepatobiliary
+  "immune-mediated hepatitis": [{ species: "mouse", lrPlus: 462.4 }],
+  "hepatic necrosis": [{ species: "rat", lrPlus: 8.7 }, { species: "dog", lrPlus: 12.3 }],
+  "cholestasis": [{ species: "rat", lrPlus: 6.1 }],
+  "hepatotoxicity": [{ species: "all", lrPlus: 2.2 }],
+  "hepatic function abnormal": [{ species: "all", lrPlus: 4.2 }],
+  "liver disorder": [{ species: "all", lrPlus: 3.2 }],
+  // Hematological
+  "neutropenia": [{ species: "all", lrPlus: 16.1 }],
+  "anemia": [{ species: "all", lrPlus: 10.1 }],
+  "thrombocytopenia": [{ species: "all", lrPlus: 8.4 }],
+  // Metabolic
+  "hypertriglyceridemia": [{ species: "rat", lrPlus: 112.7 }],
+  "hyperglycemia": [{ species: "all", lrPlus: 34.4 }],
+  "hyperphagia": [{ species: "dog", lrPlus: 230.8 }],
+  "hyperinsulinemia": [{ species: "all", lrPlus: 217.7 }],
+  "diabetes mellitus": [{ species: "all", lrPlus: 106.3 }],
+  "lactic acidosis": [{ species: "all", lrPlus: 89 }],
+  // Other
+  "constipation": [{ species: "all", lrPlus: 21.5 }],
+  "rash": [{ species: "all", lrPlus: 20 }],
+  "infection": [{ species: "all", lrPlus: 116 }],
+  "hypercalcemia": [{ species: "dog", lrPlus: 98.2 }],
+  "metabolic disorder": [{ species: "monkey", lrPlus: 217.4 }],
+};
+
+/** Maps syndrome ID → primary SOC for concordance lookup. */
+export const SYNDROME_SOC_MAP: Record<string, string> = {
+  XS01: "hepatobiliary disorders",
+  XS02: "hepatobiliary disorders",
+  XS03: "renal and urinary disorders",
+  XS04: "blood and lymphatic system disorders",
+  XS05: "blood and lymphatic system disorders",
+  XS07: "immune system disorders",
+  XS09: "metabolism and nutrition disorders",
+  XS10: "cardiac disorders",
+};
+
+/**
+ * Maps SEND test codes and endpoint labels to MedDRA Preferred Terms
+ * that have concordance data. Used to filter PT matches by what was
+ * actually observed in the study. Keys are lowercase.
+ *
+ * v0: hand-curated from syndrome term dictionaries + KNOWN_PT_CONCORDANCE.
+ * Replace with proper CDISC→MedDRA dictionary when available.
+ */
+export const SEND_TO_PT: Record<string, string[]> = {
+  // Hepatobiliary (XS01/XS02)
+  "alt": ["hepatic necrosis", "hepatotoxicity"], "alat": ["hepatic necrosis", "hepatotoxicity"],
+  "ast": ["hepatic necrosis", "hepatotoxicity"], "asat": ["hepatic necrosis", "hepatotoxicity"],
+  "alanine aminotransferase": ["hepatic necrosis", "hepatotoxicity"],
+  "aspartate aminotransferase": ["hepatic necrosis", "hepatotoxicity"],
+  "bili": ["cholestasis"], "tbili": ["cholestasis"], "bilirubin": ["cholestasis"], "total bilirubin": ["cholestasis"],
+  "alp": ["cholestasis"], "alkp": ["cholestasis"], "alkaline phosphatase": ["cholestasis"],
+  "ggt": ["cholestasis"], "gamma glutamyltransferase": ["cholestasis"],
+  // MI hepatic findings
+  "necrosis": ["hepatic necrosis"], "hepatocellular necrosis": ["hepatic necrosis"],
+  "single cell necrosis": ["hepatic necrosis"],
+  "cholestasis": ["cholestasis"], "bile plugs": ["cholestasis"],
+  // Hematological (XS04/XS05)
+  "neut": ["neutropenia"], "anc": ["neutropenia"], "neutrophils": ["neutropenia"],
+  "neutrophil count": ["neutropenia"], "absolute neutrophil count": ["neutropenia"],
+  "plat": ["thrombocytopenia"], "plt": ["thrombocytopenia"], "platelets": ["thrombocytopenia"],
+  "platelet count": ["thrombocytopenia"],
+  "rbc": ["anemia"], "erythrocytes": ["anemia"], "erythrocyte count": ["anemia"],
+  "red blood cells": ["anemia"], "red blood cell count": ["anemia"],
+  "hgb": ["anemia"], "hb": ["anemia"], "hemoglobin": ["anemia"],
+  // Immunotoxicity (XS07)
+  "wbc": ["infection"], "white blood cells": ["infection"], "leukocytes": ["infection"],
+  "lymph": ["infection"], "lym": ["infection"], "lymphocytes": ["infection"],
+};
+
+/** Normalize species strings to concordance lookup keys. */
+export function normalizeSpecies(species: string): string {
+  const s = species.toLowerCase().trim();
+  if (s.includes("sprague") || s.includes("wistar") || s === "rat") return "rat";
+  if (s.includes("beagle") || s === "dog") return "dog";
+  if (s.includes("cynomolgus") || s.includes("rhesus") || s === "monkey") return "monkey";
+  if (s.includes("mouse") || s.includes("cd-1") || s.includes("c57bl")) return "mouse";
+  if (s.includes("rabbit") || s.includes("new zealand")) return "rabbit";
+  return s;
+}
+
+/** Look up SOC-level LR+ for a species × SOC combination. */
+export function lookupSOCLRPlus(species: string, soc: string | undefined): number | null {
+  if (!soc) return null;
+  const normalized = normalizeSpecies(species);
+  const speciesData = SOC_CONCORDANCE[normalized];
+  if (!speciesData) return null;
+  return speciesData[soc.toLowerCase()] ?? null;
+}
+
+/** Assign translational tier from PT matches (preferred) or SOC fallback. */
+export function assignTranslationalTier(
+  species: string,
+  primarySOC: string | undefined,
+  endpointLRPlus: { lrPlus: number }[],
+): "high" | "moderate" | "low" | "insufficient_data" {
+  if (endpointLRPlus.length > 0) {
+    const maxLR = Math.max(...endpointLRPlus.map(e => e.lrPlus));
+    if (maxLR >= 10) return "high";
+    if (maxLR >= 3) return "moderate";
+    return "low";
+  }
+  const socLR = lookupSOCLRPlus(species, primarySOC);
+  if (socLR === null) return "insufficient_data";
+  if (socLR >= 5) return "high";
+  if (socLR >= 3) return "moderate";
+  return "low";
+}
+
+/** Build one-sentence summary with citation. */
+function buildTranslationalSummary(
+  tier: "high" | "moderate" | "low" | "insufficient_data",
+  species: string,
+  soc: string | undefined,
+  ptMatches: { endpoint: string; lrPlus: number }[],
+  socLR: number | null,
+): string {
+  const speciesName = normalizeSpecies(species);
+  const capSpecies = speciesName.charAt(0).toUpperCase() + speciesName.slice(1);
+  const socLabel = soc ? soc.toLowerCase() : "unknown";
+
+  if (ptMatches.length > 0) {
+    const best = ptMatches.reduce((a, b) => (a.lrPlus > b.lrPlus ? a : b));
+    return `${capSpecies} ${socLabel} findings have ${tier} translational ` +
+      `confidence (${best.endpoint}: LR+ ${best.lrPlus}, ` +
+      `Liu & Fan 2026, n=7,565 drugs).`;
+  }
+
+  if (socLR !== null) {
+    return `${capSpecies} ${socLabel} findings have ${tier} translational ` +
+      `confidence at SOC level (LR+ ≈${socLR}, Liu & Fan 2026).`;
+  }
+
+  return `Translational confidence data not available for ${capSpecies} ` +
+    `${socLabel}.`;
+}
+
+/**
+ * Resolve matched endpoints to MedDRA PTs via SEND_TO_PT map.
+ * Returns deduplicated PT keys that were actually observed in the syndrome.
+ */
+function resolveObservedPTs(syndrome: CrossDomainSyndrome): Set<string> {
+  const pts = new Set<string>();
+  for (const ep of syndrome.matchedEndpoints) {
+    // Try the raw endpoint_label (lowered) — catches test codes and lab names
+    const label = ep.endpoint_label.toLowerCase().trim();
+    // Direct match on full label
+    const direct = SEND_TO_PT[label];
+    if (direct) { for (const pt of direct) pts.add(pt); continue; }
+    // Try splitting "SPECIMEN — FINDING" MI/MA labels
+    const dashIdx = label.indexOf("—");
+    if (dashIdx > -1) {
+      const finding = label.slice(dashIdx + 1).trim();
+      const findingPTs = SEND_TO_PT[finding];
+      if (findingPTs) for (const pt of findingPTs) pts.add(pt);
+      continue;
+    }
+    // Try matching individual words (catches "Neutrophils" in "Neutrophils (abs)")
+    for (const key of Object.keys(SEND_TO_PT)) {
+      if (label.includes(key) || key.includes(label)) {
+        for (const pt of SEND_TO_PT[key]) pts.add(pt);
+      }
+    }
+  }
+  return pts;
+}
+
+/**
+ * Assess translational confidence for a detected syndrome.
+ * Uses SEND_TO_PT to filter PT matches to actually-observed endpoints.
+ */
+export function assessTranslationalConfidence(
+  syndrome: CrossDomainSyndrome,
+  species: string,
+  hasAbsenceMeaningful: boolean,
+): TranslationalConfidence {
+  const primarySOC = SYNDROME_SOC_MAP[syndrome.id];
+  const socLR = lookupSOCLRPlus(species, primarySOC);
+  const normalizedSpecies = normalizeSpecies(species);
+
+  // Resolve which PTs the syndrome's actual matched endpoints map to
+  const observedPTs = resolveObservedPTs(syndrome);
+
+  // Look up concordance data for observed PTs only
+  const ptMatches: { endpoint: string; lrPlus: number; species: string }[] = [];
+  for (const pt of observedPTs) {
+    const known = KNOWN_PT_CONCORDANCE[pt];
+    if (!known) continue;
+    for (const entry of known) {
+      if (entry.species === normalizedSpecies || entry.species === "all") {
+        ptMatches.push({ endpoint: pt, lrPlus: entry.lrPlus, species: entry.species });
+      }
+    }
+  }
+
+  const tier = assignTranslationalTier(species, primarySOC, ptMatches);
+
+  const absenceCaveat = hasAbsenceMeaningful
+    ? "Negative predictivity for most preclinical endpoints is low (iLR⁻ <3). " +
+      "Absence of a specific marker within an active syndrome has discriminating " +
+      "value, but absence alone should not drive human risk exclusion."
+    : null;
+
+  const summary = buildTranslationalSummary(tier, species, primarySOC, ptMatches, socLR);
+
+  return {
+    tier,
+    species: normalizedSpecies,
+    primarySOC: primarySOC ?? "",
+    socLRPlus: socLR,
+    endpointLRPlus: ptMatches,
+    absenceCaveat,
+    summary,
+    dataVersion: CONCORDANCE_DATA_VERSION,
+  };
+}
+
 /**
  * Interpret a detected syndrome using all available study data.
  * Phase A uses args 1-4; Phase B uses tumor context; Phase C uses arg 9.
@@ -2360,6 +2696,19 @@ export function interpretSyndrome(
     `Adverse: ${advLabel}${advFactors.length > 0 ? ` (${advFactors.join(", ")})` : ""}.`,
   );
 
+  // ── Step 17: Translational confidence ──
+  const hasAbsenceMeaningful = certaintyResult.evidence.some(
+    e => e.status === "supports" && discriminators?.findings.some(
+      f => f.endpoint === e.endpoint && f.absenceMeaningful,
+    ),
+  );
+  const translationalConfidence = assessTranslationalConfidence(
+    syndrome, studyContext.species, hasAbsenceMeaningful,
+  );
+  if (translationalConfidence.tier !== "insufficient_data") {
+    narrativeParts.push(translationalConfidence.summary);
+  }
+
   return {
     syndromeId: syndrome.id,
     certainty: certaintyResult.certainty,
@@ -2377,6 +2726,7 @@ export function interpretSyndrome(
     patternConfidence: syndrome.confidence,
     mechanismCertainty: certaintyResult.certainty,
     overallSeverity,
+    translationalConfidence,
     narrative: narrativeParts.join(" "),
   };
 }

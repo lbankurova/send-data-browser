@@ -65,6 +65,7 @@ const ALL_FINDINGS_FILTERS: FindingsFilters = {
 export interface RailVisibleState {
   labels: string[];
   scopeLabel: string | null;
+  scopeType: GroupingMode | null;
   filterLabels: string[];
 }
 
@@ -308,6 +309,7 @@ export function FindingsRail({
     onVisibleEndpointsChange?.({
       labels: visibleEndpointLabels,
       scopeLabel: railScopeLabel,
+      scopeType: activeGroupScope?.type ?? null,
       filterLabels: railFilterLabels,
     });
   }, [visibleEndpointLabels, railScopeLabel, railFilterLabels, onVisibleEndpointsChange]);
@@ -715,7 +717,7 @@ function RailFiltersSection({
           <option value="organ">Group: Organ</option>
           <option value="domain">Group: Domain</option>
           <option value="pattern">Group: Pattern</option>
-          <option value="finding">Group: Finding</option>
+          <option value="finding">Group: Endpoint</option>
           {hasSyndromes && <option value="syndrome">Group: Syndrome</option>}
         </FilterSelect>
         {grouping !== "finding" && (
