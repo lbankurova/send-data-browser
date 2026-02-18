@@ -1,10 +1,11 @@
 [
   {
     "organ_system": "general",
-    "evidence_score": 1.219,
-    "n_endpoints": 59,
-    "n_domains": 7,
+    "evidence_score": 1.35,
+    "n_endpoints": 61,
+    "n_domains": 8,
     "domains": [
+      "BG",
       "BW",
       "CL",
       "DS",
@@ -14,25 +15,10 @@
       "OM"
     ],
     "max_signal_score": 0.86,
-    "n_significant": 32,
-    "n_treatment_related": 30,
+    "n_significant": 34,
+    "n_treatment_related": 32,
     "target_organ_flag": true,
     "max_severity": 2.6
-  },
-  {
-    "organ_system": "cardiovascular",
-    "evidence_score": 0.617,
-    "n_endpoints": 4,
-    "n_domains": 2,
-    "domains": [
-      "MI",
-      "OM"
-    ],
-    "max_signal_score": 0.8,
-    "n_significant": 2,
-    "n_treatment_related": 2,
-    "target_organ_flag": true,
-    "max_severity": 2.0
   },
   {
     "organ_system": "neurological",
@@ -99,6 +85,23 @@
     "n_treatment_related": 7,
     "target_organ_flag": true,
     "max_severity": 3.0
+  },
+  {
+    "organ_system": "cardiovascular",
+    "evidence_score": 0.416,
+    "n_endpoints": 12,
+    "n_domains": 4,
+    "domains": [
+      "EG",
+      "MI",
+      "OM",
+      "VS"
+    ],
+    "max_signal_score": 0.8,
+    "n_significant": 2,
+    "n_treatment_related": 2,
+    "target_organ_flag": true,
+    "max_severity": 2.0
   },
   {
     "organ_system": "endocrine",

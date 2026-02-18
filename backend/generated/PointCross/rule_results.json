@@ -15778,12 +15778,424 @@
     }
   },
   {
+    "rule_id": "R11",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "EG_PRAG_F",
+    "organ_system": "cardiovascular",
+    "output_text": "PR Interval, Aggregate: Cohen's d = 0.57 at high dose.",
+    "evidence_refs": [
+      "EG: PR Interval, Aggregate (F)"
+    ],
+    "params": {
+      "endpoint_label": "PR Interval, Aggregate",
+      "domain": "EG",
+      "test_code": "PRAG",
+      "sex": "F",
+      "direction": "up",
+      "specimen": null,
+      "finding": "PR Interval, Aggregate",
+      "data_type": "continuous",
+      "dose_response_pattern": "threshold_increase",
+      "severity_class": "normal",
+      "treatment_related": false,
+      "p_value": 0.655945,
+      "trend_p": 0.830588559501121,
+      "effect_size": 0.5719,
+      "n_affected": 0,
+      "max_n": 10
+    }
+  },
+  {
+    "rule_id": "R11",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "EG_PRAG_M",
+    "organ_system": "cardiovascular",
+    "output_text": "PR Interval, Aggregate: Cohen's d = -0.59 at high dose.",
+    "evidence_refs": [
+      "EG: PR Interval, Aggregate (M)"
+    ],
+    "params": {
+      "endpoint_label": "PR Interval, Aggregate",
+      "domain": "EG",
+      "test_code": "PRAG",
+      "sex": "M",
+      "direction": "down",
+      "specimen": null,
+      "finding": "PR Interval, Aggregate",
+      "data_type": "continuous",
+      "dose_response_pattern": "flat",
+      "severity_class": "normal",
+      "treatment_related": false,
+      "p_value": 0.651287,
+      "trend_p": 0.24664586365878732,
+      "effect_size": -0.5854,
+      "n_affected": 0,
+      "max_n": 10
+    }
+  },
+  {
+    "rule_id": "R04",
+    "scope": "endpoint",
+    "severity": "warning",
+    "context_key": "EG_RRAG_M",
+    "organ_system": "cardiovascular",
+    "output_text": "RR Interval, Aggregate classified as adverse in M (p=0.1039).",
+    "evidence_refs": [
+      "EG: RR Interval, Aggregate (M)"
+    ],
+    "params": {
+      "endpoint_label": "RR Interval, Aggregate",
+      "domain": "EG",
+      "test_code": "RRAG",
+      "sex": "M",
+      "direction": "down",
+      "specimen": null,
+      "finding": "RR Interval, Aggregate",
+      "data_type": "continuous",
+      "dose_response_pattern": "threshold_decrease",
+      "severity_class": "adverse",
+      "treatment_related": false,
+      "p_value": 0.103885,
+      "trend_p": 0.020110328534703112,
+      "effect_size": -1.0895,
+      "n_affected": 0,
+      "max_n": 10
+    }
+  },
+  {
+    "rule_id": "R10",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "EG_RRAG_M",
+    "organ_system": "cardiovascular",
+    "output_text": "RR Interval, Aggregate: Cohen's d = -1.09 at high dose in M.",
+    "evidence_refs": [
+      "EG: RR Interval, Aggregate (M)"
+    ],
+    "params": {
+      "endpoint_label": "RR Interval, Aggregate",
+      "domain": "EG",
+      "test_code": "RRAG",
+      "sex": "M",
+      "direction": "down",
+      "specimen": null,
+      "finding": "RR Interval, Aggregate",
+      "data_type": "continuous",
+      "dose_response_pattern": "threshold_decrease",
+      "severity_class": "adverse",
+      "treatment_related": false,
+      "p_value": 0.103885,
+      "trend_p": 0.020110328534703112,
+      "effect_size": -1.0895,
+      "n_affected": 0,
+      "max_n": 10,
+      "dampened": true,
+      "dampening_reason": "single_affected"
+    }
+  },
+  {
+    "rule_id": "R07",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "VS_HR_F",
+    "organ_system": "cardiovascular",
+    "output_text": "Heart Rate: inconsistent dose-response in F.",
+    "evidence_refs": [
+      "VS: Heart Rate (F)"
+    ],
+    "params": {
+      "endpoint_label": "Heart Rate",
+      "domain": "VS",
+      "test_code": "HR",
+      "sex": "F",
+      "direction": "up",
+      "specimen": null,
+      "finding": "Heart Rate",
+      "data_type": "continuous",
+      "dose_response_pattern": "non_monotonic",
+      "severity_class": "normal",
+      "treatment_related": false,
+      "p_value": 0.860986,
+      "trend_p": 0.7620750114995908,
+      "effect_size": 0.4933,
+      "n_affected": 0,
+      "max_n": 10
+    }
+  },
+  {
+    "rule_id": "R07",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "VS_HR_M",
+    "organ_system": "cardiovascular",
+    "output_text": "Heart Rate: inconsistent dose-response in M.",
+    "evidence_refs": [
+      "VS: Heart Rate (M)"
+    ],
+    "params": {
+      "endpoint_label": "Heart Rate",
+      "domain": "VS",
+      "test_code": "HR",
+      "sex": "M",
+      "direction": "up",
+      "specimen": null,
+      "finding": "Heart Rate",
+      "data_type": "continuous",
+      "dose_response_pattern": "non_monotonic",
+      "severity_class": "normal",
+      "treatment_related": false,
+      "p_value": 0.592937,
+      "trend_p": 0.18582175724337585,
+      "effect_size": 0.6291,
+      "n_affected": 0,
+      "max_n": 10
+    }
+  },
+  {
+    "rule_id": "R11",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "VS_HR_M",
+    "organ_system": "cardiovascular",
+    "output_text": "Heart Rate: Cohen's d = 0.63 at high dose.",
+    "evidence_refs": [
+      "VS: Heart Rate (M)"
+    ],
+    "params": {
+      "endpoint_label": "Heart Rate",
+      "domain": "VS",
+      "test_code": "HR",
+      "sex": "M",
+      "direction": "up",
+      "specimen": null,
+      "finding": "Heart Rate",
+      "data_type": "continuous",
+      "dose_response_pattern": "non_monotonic",
+      "severity_class": "normal",
+      "treatment_related": false,
+      "p_value": 0.592937,
+      "trend_p": 0.18582175724337585,
+      "effect_size": 0.6291,
+      "n_affected": 0,
+      "max_n": 10
+    }
+  },
+  {
+    "rule_id": "R02",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "BG_BWGAIN_F",
+    "organ_system": "general",
+    "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0000, d=-1.82).",
+    "evidence_refs": [
+      "BG: Body Weight Gain (F)"
+    ],
+    "params": {
+      "endpoint_label": "Body Weight Gain",
+      "domain": "BG",
+      "test_code": "BWGAIN",
+      "sex": "F",
+      "direction": "down",
+      "specimen": null,
+      "finding": "Body Weight Gain",
+      "data_type": "continuous",
+      "dose_response_pattern": "threshold_decrease",
+      "severity_class": "adverse",
+      "treatment_related": true,
+      "p_value": 4e-06,
+      "trend_p": 6.185977612584513e-06,
+      "effect_size": -1.8201,
+      "n_affected": 0,
+      "max_n": 20
+    }
+  },
+  {
+    "rule_id": "R04",
+    "scope": "endpoint",
+    "severity": "warning",
+    "context_key": "BG_BWGAIN_F",
+    "organ_system": "general",
+    "output_text": "Body Weight Gain classified as adverse in F (p=0.0000).",
+    "evidence_refs": [
+      "BG: Body Weight Gain (F)"
+    ],
+    "params": {
+      "endpoint_label": "Body Weight Gain",
+      "domain": "BG",
+      "test_code": "BWGAIN",
+      "sex": "F",
+      "direction": "down",
+      "specimen": null,
+      "finding": "Body Weight Gain",
+      "data_type": "continuous",
+      "dose_response_pattern": "threshold_decrease",
+      "severity_class": "adverse",
+      "treatment_related": true,
+      "p_value": 4e-06,
+      "trend_p": 6.185977612584513e-06,
+      "effect_size": -1.8201,
+      "n_affected": 0,
+      "max_n": 20
+    }
+  },
+  {
+    "rule_id": "R10",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "BG_BWGAIN_F",
+    "organ_system": "general",
+    "output_text": "Body Weight Gain: Cohen's d = -1.82 at high dose in F.",
+    "evidence_refs": [
+      "BG: Body Weight Gain (F)"
+    ],
+    "params": {
+      "endpoint_label": "Body Weight Gain",
+      "domain": "BG",
+      "test_code": "BWGAIN",
+      "sex": "F",
+      "direction": "down",
+      "specimen": null,
+      "finding": "Body Weight Gain",
+      "data_type": "continuous",
+      "dose_response_pattern": "threshold_decrease",
+      "severity_class": "adverse",
+      "treatment_related": true,
+      "p_value": 4e-06,
+      "trend_p": 6.185977612584513e-06,
+      "effect_size": -1.8201,
+      "n_affected": 0,
+      "max_n": 20,
+      "dampened": true,
+      "dampening_reason": "single_affected"
+    }
+  },
+  {
+    "rule_id": "R02",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "BG_BWGAIN_M",
+    "organ_system": "general",
+    "output_text": "Significant pairwise difference at Group 4,200 mg/kg PCDRUG (p=0.0000, d=-2.73).",
+    "evidence_refs": [
+      "BG: Body Weight Gain (M)"
+    ],
+    "params": {
+      "endpoint_label": "Body Weight Gain",
+      "domain": "BG",
+      "test_code": "BWGAIN",
+      "sex": "M",
+      "direction": "down",
+      "specimen": null,
+      "finding": "Body Weight Gain",
+      "data_type": "continuous",
+      "dose_response_pattern": "threshold_decrease",
+      "severity_class": "adverse",
+      "treatment_related": true,
+      "p_value": 0.0,
+      "trend_p": 1.3821719508317047e-09,
+      "effect_size": -2.7291,
+      "n_affected": 0,
+      "max_n": 20
+    }
+  },
+  {
+    "rule_id": "R04",
+    "scope": "endpoint",
+    "severity": "warning",
+    "context_key": "BG_BWGAIN_M",
+    "organ_system": "general",
+    "output_text": "Body Weight Gain classified as adverse in M (p=0.0000).",
+    "evidence_refs": [
+      "BG: Body Weight Gain (M)"
+    ],
+    "params": {
+      "endpoint_label": "Body Weight Gain",
+      "domain": "BG",
+      "test_code": "BWGAIN",
+      "sex": "M",
+      "direction": "down",
+      "specimen": null,
+      "finding": "Body Weight Gain",
+      "data_type": "continuous",
+      "dose_response_pattern": "threshold_decrease",
+      "severity_class": "adverse",
+      "treatment_related": true,
+      "p_value": 0.0,
+      "trend_p": 1.3821719508317047e-09,
+      "effect_size": -2.7291,
+      "n_affected": 0,
+      "max_n": 20
+    }
+  },
+  {
+    "rule_id": "R10",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "BG_BWGAIN_M",
+    "organ_system": "general",
+    "output_text": "Body Weight Gain: Cohen's d = -2.73 at high dose in M.",
+    "evidence_refs": [
+      "BG: Body Weight Gain (M)"
+    ],
+    "params": {
+      "endpoint_label": "Body Weight Gain",
+      "domain": "BG",
+      "test_code": "BWGAIN",
+      "sex": "M",
+      "direction": "down",
+      "specimen": null,
+      "finding": "Body Weight Gain",
+      "data_type": "continuous",
+      "dose_response_pattern": "threshold_decrease",
+      "severity_class": "adverse",
+      "treatment_related": true,
+      "p_value": 0.0,
+      "trend_p": 1.3821719508317047e-09,
+      "effect_size": -2.7291,
+      "n_affected": 0,
+      "max_n": 20,
+      "dampened": true,
+      "dampening_reason": "single_affected"
+    }
+  },
+  {
+    "rule_id": "R11",
+    "scope": "endpoint",
+    "severity": "info",
+    "context_key": "BG_BWGAIN_M",
+    "organ_system": "general",
+    "output_text": "Body Weight Gain: Cohen's d = 0.67 at high dose.",
+    "evidence_refs": [
+      "BG: Body Weight Gain (M)"
+    ],
+    "params": {
+      "endpoint_label": "Body Weight Gain",
+      "domain": "BG",
+      "test_code": "BWGAIN",
+      "sex": "M",
+      "direction": "up",
+      "specimen": null,
+      "finding": "Body Weight Gain",
+      "data_type": "continuous",
+      "dose_response_pattern": "non_monotonic",
+      "severity_class": "normal",
+      "treatment_related": false,
+      "p_value": 0.51271,
+      "trend_p": 0.2798210208814011,
+      "effect_size": 0.671,
+      "n_affected": 0,
+      "max_n": 10
+    }
+  },
+  {
     "rule_id": "R08",
     "scope": "organ",
     "severity": "warning",
     "context_key": "organ_general",
     "organ_system": "general",
-    "output_text": "Convergent evidence from 7 domains (BW, CL, DS, FW, MA, MI, OM).",
+    "output_text": "Convergent evidence from 8 domains (BG, BW, CL, DS, FW, MA, MI, OM).",
     "evidence_refs": [],
     "params": {
       "organ_system": "general"
@@ -15795,13 +16207,14 @@
     "severity": "info",
     "context_key": "organ_general",
     "organ_system": "general",
-    "output_text": "59 endpoints across BW, CL, DS, FW, MA, MI, OM.",
+    "output_text": "61 endpoints across BG, BW, CL, DS, FW, MA, MI, OM.",
     "evidence_refs": [],
     "params": {
       "organ_system": "general",
-      "n_endpoints": 59,
-      "n_domains": 7,
+      "n_endpoints": 61,
+      "n_domains": 8,
       "domains": [
+        "BG",
         "BW",
         "CL",
         "DS",
@@ -15818,7 +16231,7 @@
     "severity": "info",
     "context_key": "organ_general",
     "organ_system": "general",
-    "output_text": "ALOPECIA, BEDDING WET, BODY CAVITY, CRANIAL \u2014 CONTENTS, DARK RED, Body Weight, CRUST show convergent pattern.",
+    "output_text": "ALOPECIA, BEDDING WET, BODY CAVITY, CRANIAL \u2014 CONTENTS, DARK RED, Body Weight, Body Weight Gain show convergent pattern.",
     "evidence_refs": [],
     "params": {
       "organ_system": "general",
@@ -15827,53 +16240,7 @@
         "BEDDING WET",
         "BODY CAVITY, CRANIAL \u2014 CONTENTS, DARK RED",
         "Body Weight",
-        "CRUST"
-      ]
-    }
-  },
-  {
-    "rule_id": "R08",
-    "scope": "organ",
-    "severity": "warning",
-    "context_key": "organ_cardiovascular",
-    "organ_system": "cardiovascular",
-    "output_text": "Convergent evidence from 2 domains (MI, OM).",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "cardiovascular"
-    }
-  },
-  {
-    "rule_id": "R09",
-    "scope": "organ",
-    "severity": "info",
-    "context_key": "organ_cardiovascular",
-    "organ_system": "cardiovascular",
-    "output_text": "4 endpoints across MI, OM.",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "cardiovascular",
-      "n_endpoints": 4,
-      "n_domains": 2,
-      "domains": [
-        "MI",
-        "OM"
-      ]
-    }
-  },
-  {
-    "rule_id": "R16",
-    "scope": "organ",
-    "severity": "info",
-    "context_key": "organ_cardiovascular",
-    "organ_system": "cardiovascular",
-    "output_text": "HEART \u2014 HEART (WEIGHT), HEART \u2014 INFLAMMATION show convergent pattern.",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "cardiovascular",
-      "endpoint_labels": [
-        "HEART \u2014 HEART (WEIGHT)",
-        "HEART \u2014 INFLAMMATION"
+        "Body Weight Gain"
       ]
     }
   },
@@ -16055,6 +16422,57 @@
         "KIDNEY \u2014 CAST",
         "KIDNEY \u2014 CYST",
         "KIDNEY \u2014 DISCOLORATION"
+      ]
+    }
+  },
+  {
+    "rule_id": "R08",
+    "scope": "organ",
+    "severity": "warning",
+    "context_key": "organ_cardiovascular",
+    "organ_system": "cardiovascular",
+    "output_text": "Convergent evidence from 4 domains (EG, MI, OM, VS).",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "cardiovascular"
+    }
+  },
+  {
+    "rule_id": "R09",
+    "scope": "organ",
+    "severity": "info",
+    "context_key": "organ_cardiovascular",
+    "organ_system": "cardiovascular",
+    "output_text": "12 endpoints across EG, MI, OM, VS.",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "cardiovascular",
+      "n_endpoints": 12,
+      "n_domains": 4,
+      "domains": [
+        "EG",
+        "MI",
+        "OM",
+        "VS"
+      ]
+    }
+  },
+  {
+    "rule_id": "R16",
+    "scope": "organ",
+    "severity": "info",
+    "context_key": "organ_cardiovascular",
+    "organ_system": "cardiovascular",
+    "output_text": "HEART \u2014 HEART (WEIGHT), HEART \u2014 INFLAMMATION, Heart Rate, PR Interval, Aggregate, QTcB Interval, Aggregate show convergent pattern.",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "cardiovascular",
+      "endpoint_labels": [
+        "HEART \u2014 HEART (WEIGHT)",
+        "HEART \u2014 INFLAMMATION",
+        "Heart Rate",
+        "PR Interval, Aggregate",
+        "QTcB Interval, Aggregate"
       ]
     }
   },
