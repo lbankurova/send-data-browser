@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Info } from "lucide-react";
 import { useFindings } from "@/hooks/useFindings";
+import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { FilterBar } from "@/components/ui/FilterBar";
+import { MortalityBanner } from "@/components/analysis/MortalityBanner";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
@@ -87,6 +89,9 @@ export function FindingsView() {
     return [{ id: "scatter", min: 80, max: 2000, defaultHeight: half }];
   }, []);
   const [scatterSection] = useAutoFitSections(containerRef, "findings", scatterSections);
+
+  // Mortality data
+  const { data: mortalityData } = useStudyMortality(studyId);
 
   // Rail-provided state (single source of truth for filtering)
   const [visibleLabels, setVisibleLabels] = useState<Set<string> | null>(null);
@@ -390,6 +395,8 @@ export function FindingsView() {
   return (
     <FindingsAnalyticsProvider value={analyticsValue}>
     <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
+      {/* Mortality banner */}
+      {mortalityData && <MortalityBanner mortality={mortalityData} />}
       {/* Header */}
       <FilterBar>
         <span className="text-xs font-semibold">Findings</span>

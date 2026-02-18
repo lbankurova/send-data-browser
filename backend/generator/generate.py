@@ -30,6 +30,7 @@ from generator.scores_and_rules import evaluate_rules
 from generator.static_charts import generate_target_organ_bar_chart
 from services.analysis.subject_context import build_subject_context
 from services.analysis.provenance import generate_provenance_messages
+from services.analysis.mortality import compute_study_mortality
 
 
 OUTPUT_DIR = Path(__file__).parent.parent / "generated"
@@ -117,6 +118,16 @@ def generate(study_id: str):
         print(f"  WARNING: Subject context failed: {e}")
         provenance_msgs = []
 
+    # Phase 1c: Compute mortality summary (DS + DD domains)
+    print("Phase 1c: Computing mortality summary...")
+    try:
+        mortality = compute_study_mortality(study, dg_data["subjects"], dose_groups)
+        _write_json(out_dir / "study_mortality.json", mortality)
+        print(f"  {mortality['total_deaths']} deaths, {mortality['total_accidental']} accidental")
+    except Exception as e:
+        print(f"  WARNING: Mortality computation failed: {e}")
+        mortality = None
+
     # Phase 2: Assemble view-specific data
     print("Phase 2: Assembling view DataFrames...")
     signal_summary = build_study_signal_summary(findings, dose_groups)
@@ -125,7 +136,7 @@ def generate(study_id: str):
     organ_evidence = build_organ_evidence_detail(findings, dose_groups)
     lesion_severity = build_lesion_severity_summary(findings, dose_groups)
     adverse_effects = build_adverse_effect_summary(findings, dose_groups)
-    noael = build_noael_summary(findings, dose_groups)
+    noael = build_noael_summary(findings, dose_groups, mortality=mortality)
     finding_dose_trends = build_finding_dose_trends(findings, dose_groups)
 
     # Phase 3: Signal scores + rules + adversity
