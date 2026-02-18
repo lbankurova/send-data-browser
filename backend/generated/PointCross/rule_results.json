@@ -9608,7 +9608,7 @@
       "specimen": "BONE MARROW, FEMUR",
       "finding": "FIBROSIS",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -9639,7 +9639,7 @@
       "specimen": "BONE MARROW, FEMUR",
       "finding": "FIBROSIS",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -9649,35 +9649,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_BONE MARROW, FEMUR_HYPERPLASIA_F",
-    "organ_system": "hematologic",
-    "output_text": "BONE MARROW, FEMUR \u2014 HYPERPLASIA: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: BONE MARROW, FEMUR \u2014 HYPERPLASIA (F)"
-    ],
-    "params": {
-      "endpoint_label": "BONE MARROW, FEMUR \u2014 HYPERPLASIA",
-      "domain": "MI",
-      "test_code": "BONE MARROW, FEMUR_HYPERPLASIA",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "BONE MARROW, FEMUR",
-      "finding": "HYPERPLASIA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -9699,7 +9670,7 @@
       "specimen": "BONE MARROW, FEMUR",
       "finding": "HYPERPLASIA",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -9709,35 +9680,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_BONE MARROW, FEMUR_HYPERPLASIA_M",
-    "organ_system": "hematologic",
-    "output_text": "BONE MARROW, FEMUR \u2014 HYPERPLASIA: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: BONE MARROW, FEMUR \u2014 HYPERPLASIA (M)"
-    ],
-    "params": {
-      "endpoint_label": "BONE MARROW, FEMUR \u2014 HYPERPLASIA",
-      "domain": "MI",
-      "test_code": "BONE MARROW, FEMUR_HYPERPLASIA",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "BONE MARROW, FEMUR",
-      "finding": "HYPERPLASIA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -9759,7 +9701,7 @@
       "specimen": "BONE MARROW, FEMUR",
       "finding": "HYPERPLASIA",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -9769,35 +9711,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_BONE MARROW, STERNUM_HYPERPLASIA_F",
-    "organ_system": "hematologic",
-    "output_text": "BONE MARROW, STERNUM \u2014 HYPERPLASIA: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: BONE MARROW, STERNUM \u2014 HYPERPLASIA (F)"
-    ],
-    "params": {
-      "endpoint_label": "BONE MARROW, STERNUM \u2014 HYPERPLASIA",
-      "domain": "MI",
-      "test_code": "BONE MARROW, STERNUM_HYPERPLASIA",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "BONE MARROW, STERNUM",
-      "finding": "HYPERPLASIA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -9819,7 +9732,7 @@
       "specimen": "BONE MARROW, STERNUM",
       "finding": "HYPERPLASIA",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -9829,35 +9742,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_BONE MARROW, STERNUM_HYPERPLASIA_M",
-    "organ_system": "hematologic",
-    "output_text": "BONE MARROW, STERNUM \u2014 HYPERPLASIA: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: BONE MARROW, STERNUM \u2014 HYPERPLASIA (M)"
-    ],
-    "params": {
-      "endpoint_label": "BONE MARROW, STERNUM \u2014 HYPERPLASIA",
-      "domain": "MI",
-      "test_code": "BONE MARROW, STERNUM_HYPERPLASIA",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "BONE MARROW, STERNUM",
-      "finding": "HYPERPLASIA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -9879,7 +9763,7 @@
       "specimen": "BONE MARROW, STERNUM",
       "finding": "HYPERPLASIA",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -9889,38 +9773,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "warning",
-    "context_key": "MI_EPIDIDYMIS_ASPERMIA_M",
-    "organ_system": "reproductive",
-    "output_text": "EPIDIDYMIS \u2014 ASPERMIA: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: EPIDIDYMIS \u2014 ASPERMIA (M)"
-    ],
-    "params": {
-      "endpoint_label": "EPIDIDYMIS \u2014 ASPERMIA",
-      "domain": "MI",
-      "test_code": "EPIDIDYMIS_ASPERMIA",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "EPIDIDYMIS",
-      "finding": "ASPERMIA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.5000000000000001,
-      "trend_p": 0.6132417445640952,
-      "effect_size": null,
-      "n_affected": 3,
-      "max_n": 15,
-      "clinical_class": "Sentinel",
-      "catalog_id": "C01",
-      "clinical_confidence": "Medium"
     }
   },
   {
@@ -9942,7 +9794,7 @@
       "specimen": "ESOPHAGUS",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -9973,7 +9825,7 @@
       "specimen": "ESOPHAGUS",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -10006,7 +9858,7 @@
       "specimen": "EYE",
       "finding": "RETINAL FOLD",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -10037,7 +9889,7 @@
       "specimen": "EYE",
       "finding": "RETINAL FOLD",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -10068,7 +9920,7 @@
       "specimen": "EYE",
       "finding": "RETINAL FOLD(S)",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -10099,7 +9951,7 @@
       "specimen": "EYE",
       "finding": "RETINAL FOLD(S)",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -10132,7 +9984,7 @@
       "specimen": "EYE",
       "finding": "RETINAL FOLD(S)",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -10163,7 +10015,7 @@
       "specimen": "EYE",
       "finding": "RETINAL FOLD(S)",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -10196,7 +10048,7 @@
       "specimen": "GLAND, ADRENAL",
       "finding": "HEMORRHAGE",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -10227,7 +10079,7 @@
       "specimen": "GLAND, ADRENAL",
       "finding": "HEMORRHAGE",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -10606,7 +10458,7 @@
       "specimen": "GLAND, HARDERIAN",
       "finding": "DILATATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -10637,7 +10489,7 @@
       "specimen": "GLAND, HARDERIAN",
       "finding": "DILATATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -10842,7 +10694,7 @@
       "specimen": "GLAND, PITUITARY",
       "finding": "CYST",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -10873,7 +10725,7 @@
       "specimen": "GLAND, PITUITARY",
       "finding": "CYST",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -10906,7 +10758,7 @@
       "specimen": "GLAND, PITUITARY",
       "finding": "CYST",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -10937,7 +10789,7 @@
       "specimen": "GLAND, PITUITARY",
       "finding": "CYST",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -10949,35 +10801,6 @@
       "high_pct": "0",
       "protective_excluded": true,
       "exclusion_id": "PEX05"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_GLAND, PROSTATE_INFLAMMATION_M",
-    "organ_system": "general",
-    "output_text": "GLAND, PROSTATE \u2014 INFLAMMATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: GLAND, PROSTATE \u2014 INFLAMMATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, PROSTATE \u2014 INFLAMMATION",
-      "domain": "MI",
-      "test_code": "GLAND, PROSTATE_INFLAMMATION",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "GLAND, PROSTATE",
-      "finding": "INFLAMMATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.4422196796338671,
-      "trend_p": 0.8706031216640759,
-      "effect_size": 2.33,
-      "n_affected": 18,
-      "max_n": 15
     }
   },
   {
@@ -10999,7 +10822,7 @@
       "specimen": "GLAND, PROSTATE",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4422196796338671,
@@ -11015,7 +10838,7 @@
     "severity": "info",
     "context_key": "MI_GLAND, PROSTATE_INFLAMMATION_M",
     "organ_system": "general",
-    "output_text": "INFLAMMATION in GLAND, PROSTATE: decreased incidence noted but excluded from protective classification (PEX07).",
+    "output_text": "Decreased incidence of INFLAMMATION in GLAND, PROSTATE with treatment (M): 50% in controls vs 47% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
     "evidence_refs": [
       "MI: GLAND, PROSTATE \u2014 INFLAMMATION (M)"
     ],
@@ -11028,7 +10851,7 @@
       "specimen": "GLAND, PROSTATE",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4422196796338671,
@@ -11037,38 +10860,7 @@
       "n_affected": 18,
       "max_n": 15,
       "ctrl_pct": "50",
-      "high_pct": "47",
-      "protective_excluded": true,
-      "exclusion_id": "PEX07"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_GLAND, SALIVARY, PAROTID_CALCULUS_F",
-    "organ_system": "general",
-    "output_text": "GLAND, SALIVARY, PAROTID \u2014 CALCULUS: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: GLAND, SALIVARY, PAROTID \u2014 CALCULUS (F)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, SALIVARY, PAROTID \u2014 CALCULUS",
-      "domain": "MI",
-      "test_code": "GLAND, SALIVARY, PAROTID_CALCULUS",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "GLAND, SALIVARY, PAROTID",
-      "finding": "CALCULUS",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
+      "high_pct": "47"
     }
   },
   {
@@ -11090,7 +10882,7 @@
       "specimen": "GLAND, SALIVARY, PAROTID",
       "finding": "CALCULUS",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -11100,35 +10892,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_GLAND, SALIVARY, PAROTID_CALCULUS_M",
-    "organ_system": "general",
-    "output_text": "GLAND, SALIVARY, PAROTID \u2014 CALCULUS: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: GLAND, SALIVARY, PAROTID \u2014 CALCULUS (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, SALIVARY, PAROTID \u2014 CALCULUS",
-      "domain": "MI",
-      "test_code": "GLAND, SALIVARY, PAROTID_CALCULUS",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "GLAND, SALIVARY, PAROTID",
-      "finding": "CALCULUS",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -11150,7 +10913,7 @@
       "specimen": "GLAND, SALIVARY, PAROTID",
       "finding": "CALCULUS",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -11160,35 +10923,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_GLAND, SALIVARY, PAROTID_INFLAMMATION_F",
-    "organ_system": "general",
-    "output_text": "GLAND, SALIVARY, PAROTID \u2014 INFLAMMATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: GLAND, SALIVARY, PAROTID \u2014 INFLAMMATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, SALIVARY, PAROTID \u2014 INFLAMMATION",
-      "domain": "MI",
-      "test_code": "GLAND, SALIVARY, PAROTID_INFLAMMATION",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "GLAND, SALIVARY, PAROTID",
-      "finding": "INFLAMMATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -11210,7 +10944,7 @@
       "specimen": "GLAND, SALIVARY, PAROTID",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -11220,35 +10954,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_GLAND, SALIVARY, PAROTID_INFLAMMATION_M",
-    "organ_system": "general",
-    "output_text": "GLAND, SALIVARY, PAROTID \u2014 INFLAMMATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: GLAND, SALIVARY, PAROTID \u2014 INFLAMMATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, SALIVARY, PAROTID \u2014 INFLAMMATION",
-      "domain": "MI",
-      "test_code": "GLAND, SALIVARY, PAROTID_INFLAMMATION",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "GLAND, SALIVARY, PAROTID",
-      "finding": "INFLAMMATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -11270,7 +10975,7 @@
       "specimen": "GLAND, SALIVARY, PAROTID",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -11301,7 +11006,7 @@
       "specimen": "GLAND, SALIVARY, PAROTID",
       "finding": "METAPLASIA",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.5000000000000001,
@@ -11330,40 +11035,11 @@
       "specimen": "GLAND, SALIVARY, PAROTID",
       "finding": "METAPLASIA",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.5000000000000001,
       "trend_p": 0.08569904877830492,
-      "effect_size": 2.0,
-      "n_affected": 3,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_GLAND, THYROID_ECTOPIC LYMPHOID TISSUE_F",
-    "organ_system": "general",
-    "output_text": "GLAND, THYROID \u2014 ECTOPIC LYMPHOID TISSUE: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: GLAND, THYROID \u2014 ECTOPIC LYMPHOID TISSUE (F)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, THYROID \u2014 ECTOPIC LYMPHOID TISSUE",
-      "domain": "MI",
-      "test_code": "GLAND, THYROID_ECTOPIC LYMPHOID TISSUE",
-      "sex": "F",
-      "direction": "down",
-      "specimen": "GLAND, THYROID",
-      "finding": "ECTOPIC LYMPHOID TISSUE",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.4,
-      "trend_p": 0.4524073321257993,
       "effect_size": 2.0,
       "n_affected": 3,
       "max_n": 15
@@ -11388,7 +11064,7 @@
       "specimen": "GLAND, THYROID",
       "finding": "ECTOPIC LYMPHOID TISSUE",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -11404,7 +11080,7 @@
     "severity": "info",
     "context_key": "MI_GLAND, THYROID_ECTOPIC LYMPHOID TISSUE_F",
     "organ_system": "general",
-    "output_text": "ECTOPIC LYMPHOID TISSUE in GLAND, THYROID: decreased incidence noted but excluded from protective classification (PEX07).",
+    "output_text": "Decreased incidence of ECTOPIC LYMPHOID TISSUE in GLAND, THYROID with treatment (F): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
     "evidence_refs": [
       "MI: GLAND, THYROID \u2014 ECTOPIC LYMPHOID TISSUE (F)"
     ],
@@ -11417,7 +11093,7 @@
       "specimen": "GLAND, THYROID",
       "finding": "ECTOPIC LYMPHOID TISSUE",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -11426,38 +11102,7 @@
       "n_affected": 3,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0",
-      "protective_excluded": true,
-      "exclusion_id": "PEX07"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_GLAND, THYROID_ECTOPIC LYMPHOID TISSUE_M",
-    "organ_system": "general",
-    "output_text": "GLAND, THYROID \u2014 ECTOPIC LYMPHOID TISSUE: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: GLAND, THYROID \u2014 ECTOPIC LYMPHOID TISSUE (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, THYROID \u2014 ECTOPIC LYMPHOID TISSUE",
-      "domain": "MI",
-      "test_code": "GLAND, THYROID_ECTOPIC LYMPHOID TISSUE",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "GLAND, THYROID",
-      "finding": "ECTOPIC LYMPHOID TISSUE",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.4,
-      "trend_p": 0.4524073321257993,
-      "effect_size": 2.0,
-      "n_affected": 3,
-      "max_n": 15
+      "high_pct": "0"
     }
   },
   {
@@ -11479,7 +11124,7 @@
       "specimen": "GLAND, THYROID",
       "finding": "ECTOPIC LYMPHOID TISSUE",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -11495,7 +11140,7 @@
     "severity": "info",
     "context_key": "MI_GLAND, THYROID_ECTOPIC LYMPHOID TISSUE_M",
     "organ_system": "general",
-    "output_text": "ECTOPIC LYMPHOID TISSUE in GLAND, THYROID: decreased incidence noted but excluded from protective classification (PEX07).",
+    "output_text": "Decreased incidence of ECTOPIC LYMPHOID TISSUE in GLAND, THYROID with treatment (M): 10% in controls vs 0% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
     "evidence_refs": [
       "MI: GLAND, THYROID \u2014 ECTOPIC LYMPHOID TISSUE (M)"
     ],
@@ -11508,7 +11153,7 @@
       "specimen": "GLAND, THYROID",
       "finding": "ECTOPIC LYMPHOID TISSUE",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -11517,9 +11162,7 @@
       "n_affected": 3,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "0",
-      "protective_excluded": true,
-      "exclusion_id": "PEX07"
+      "high_pct": "0"
     }
   },
   {
@@ -11732,35 +11375,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_GLAND, THYROID_INFLAMMATION_F",
-    "organ_system": "general",
-    "output_text": "GLAND, THYROID \u2014 INFLAMMATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: GLAND, THYROID \u2014 INFLAMMATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, THYROID \u2014 INFLAMMATION",
-      "domain": "MI",
-      "test_code": "GLAND, THYROID_INFLAMMATION",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "GLAND, THYROID",
-      "finding": "INFLAMMATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
     "rule_id": "R10",
     "scope": "endpoint",
     "severity": "info",
@@ -11779,7 +11393,7 @@
       "specimen": "GLAND, THYROID",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -11789,35 +11403,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_GLAND, THYROID_INFLAMMATION_M",
-    "organ_system": "general",
-    "output_text": "GLAND, THYROID \u2014 INFLAMMATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: GLAND, THYROID \u2014 INFLAMMATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, THYROID \u2014 INFLAMMATION",
-      "domain": "MI",
-      "test_code": "GLAND, THYROID_INFLAMMATION",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "GLAND, THYROID",
-      "finding": "INFLAMMATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -11839,7 +11424,7 @@
       "specimen": "GLAND, THYROID",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -12031,7 +11616,7 @@
     "severity": "info",
     "context_key": "MI_KIDNEY_BASOPHILIC TUBULES_F",
     "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 BASOPHILIC TUBULES: significant dose-dependent down in F (monotonic_decrease).",
+    "output_text": "KIDNEY \u2014 BASOPHILIC TUBULES: significant dose-dependent down in F (threshold_decrease).",
     "evidence_refs": [
       "MI: KIDNEY \u2014 BASOPHILIC TUBULES (F)"
     ],
@@ -12044,7 +11629,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12052,7 +11637,7 @@
       "effect_size": 2.0,
       "n_affected": 8,
       "max_n": 15,
-      "pattern": "monotonic_decrease"
+      "pattern": "threshold_decrease"
     }
   },
   {
@@ -12074,7 +11659,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12103,7 +11688,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12132,7 +11717,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12140,36 +11725,6 @@
       "effect_size": 2.0,
       "n_affected": 8,
       "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R05",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_KIDNEY_BASOPHILIC TUBULES_F",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 BASOPHILIC TUBULES: monotonic_decrease across dose groups in F.",
-    "evidence_refs": [
-      "MI: KIDNEY \u2014 BASOPHILIC TUBULES (F)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
-      "domain": "MI",
-      "test_code": "KIDNEY_BASOPHILIC TUBULES",
-      "sex": "F",
-      "direction": "down",
-      "specimen": "KIDNEY",
-      "finding": "BASOPHILIC TUBULES",
-      "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
-      "severity_class": "warning",
-      "treatment_related": true,
-      "p_value": 0.0017058456417724153,
-      "trend_p": 0.00037556567746555025,
-      "effect_size": 2.0,
-      "n_affected": 8,
-      "max_n": 15,
-      "pattern": "monotonic_decrease"
     }
   },
   {
@@ -12191,7 +11746,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12220,38 +11775,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
-      "severity_class": "warning",
-      "treatment_related": true,
-      "p_value": 0.0017058456417724153,
-      "trend_p": 0.00037556567746555025,
-      "effect_size": 2.0,
-      "n_affected": 8,
-      "max_n": 15,
-      "ctrl_pct": "70",
-      "high_pct": "7"
-    }
-  },
-  {
-    "rule_id": "R19",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_KIDNEY_BASOPHILIC TUBULES_F",
-    "organ_system": "renal",
-    "output_text": "BASOPHILIC TUBULES in KIDNEY: high baseline incidence (70% control) with dose-dependent decrease suggests a potential protective or therapeutic effect. Consider relevance to drug repurposing \u2014 compound activity against this pathology may indicate utility in related disease contexts.",
-    "evidence_refs": [
-      "MI: KIDNEY \u2014 BASOPHILIC TUBULES (F)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
-      "domain": "MI",
-      "test_code": "KIDNEY_BASOPHILIC TUBULES",
-      "sex": "F",
-      "direction": "down",
-      "specimen": "KIDNEY",
-      "finding": "BASOPHILIC TUBULES",
-      "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12269,7 +11793,7 @@
     "severity": "info",
     "context_key": "MI_KIDNEY_BASOPHILIC TUBULES_M",
     "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 BASOPHILIC TUBULES: significant dose-dependent down in M (monotonic_decrease).",
+    "output_text": "KIDNEY \u2014 BASOPHILIC TUBULES: significant dose-dependent down in M (threshold_decrease).",
     "evidence_refs": [
       "MI: KIDNEY \u2014 BASOPHILIC TUBULES (M)"
     ],
@@ -12282,7 +11806,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12290,7 +11814,7 @@
       "effect_size": 2.0,
       "n_affected": 8,
       "max_n": 15,
-      "pattern": "monotonic_decrease"
+      "pattern": "threshold_decrease"
     }
   },
   {
@@ -12312,7 +11836,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12341,7 +11865,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12370,7 +11894,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12378,36 +11902,6 @@
       "effect_size": 2.0,
       "n_affected": 8,
       "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R05",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_KIDNEY_BASOPHILIC TUBULES_M",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 BASOPHILIC TUBULES: monotonic_decrease across dose groups in M.",
-    "evidence_refs": [
-      "MI: KIDNEY \u2014 BASOPHILIC TUBULES (M)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
-      "domain": "MI",
-      "test_code": "KIDNEY_BASOPHILIC TUBULES",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "KIDNEY",
-      "finding": "BASOPHILIC TUBULES",
-      "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
-      "severity_class": "warning",
-      "treatment_related": true,
-      "p_value": 0.0017058456417724153,
-      "trend_p": 0.00037556567746555025,
-      "effect_size": 2.0,
-      "n_affected": 8,
-      "max_n": 15,
-      "pattern": "monotonic_decrease"
     }
   },
   {
@@ -12429,7 +11923,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12458,7 +11952,7 @@
       "specimen": "KIDNEY",
       "finding": "BASOPHILIC TUBULES",
       "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "warning",
       "treatment_related": true,
       "p_value": 0.0017058456417724153,
@@ -12468,66 +11962,6 @@
       "max_n": 15,
       "ctrl_pct": "70",
       "high_pct": "7"
-    }
-  },
-  {
-    "rule_id": "R19",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_KIDNEY_BASOPHILIC TUBULES_M",
-    "organ_system": "renal",
-    "output_text": "BASOPHILIC TUBULES in KIDNEY: high baseline incidence (70% control) with dose-dependent decrease suggests a potential protective or therapeutic effect. Consider relevance to drug repurposing \u2014 compound activity against this pathology may indicate utility in related disease contexts.",
-    "evidence_refs": [
-      "MI: KIDNEY \u2014 BASOPHILIC TUBULES (M)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
-      "domain": "MI",
-      "test_code": "KIDNEY_BASOPHILIC TUBULES",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "KIDNEY",
-      "finding": "BASOPHILIC TUBULES",
-      "data_type": "incidence",
-      "dose_response_pattern": "monotonic_decrease",
-      "severity_class": "warning",
-      "treatment_related": true,
-      "p_value": 0.0017058456417724153,
-      "trend_p": 0.00037556567746555025,
-      "effect_size": 2.0,
-      "n_affected": 8,
-      "max_n": 15,
-      "ctrl_pct": "70",
-      "high_pct": "7"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_KIDNEY_CAST_F",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 CAST: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: KIDNEY \u2014 CAST (F)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 CAST",
-      "domain": "MI",
-      "test_code": "KIDNEY_CAST",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "KIDNEY",
-      "finding": "CAST",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -12549,7 +11983,7 @@
       "specimen": "KIDNEY",
       "finding": "CAST",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -12559,35 +11993,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_KIDNEY_CAST_M",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 CAST: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: KIDNEY \u2014 CAST (M)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 CAST",
-      "domain": "MI",
-      "test_code": "KIDNEY_CAST",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "KIDNEY",
-      "finding": "CAST",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -12609,7 +12014,7 @@
       "specimen": "KIDNEY",
       "finding": "CAST",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -12619,35 +12024,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_KIDNEY_CYST_F",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 CYST: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: KIDNEY \u2014 CYST (F)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 CYST",
-      "domain": "MI",
-      "test_code": "KIDNEY_CYST",
-      "sex": "F",
-      "direction": "down",
-      "specimen": "KIDNEY",
-      "finding": "CYST",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.4,
-      "trend_p": 0.9596879696921041,
-      "effect_size": 2.0,
-      "n_affected": 2,
-      "max_n": 15
     }
   },
   {
@@ -12669,7 +12045,7 @@
       "specimen": "KIDNEY",
       "finding": "CYST",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -12685,7 +12061,7 @@
     "severity": "info",
     "context_key": "MI_KIDNEY_CYST_F",
     "organ_system": "renal",
-    "output_text": "CYST in KIDNEY: decreased incidence noted but excluded from protective classification (PEX07).",
+    "output_text": "Decreased incidence of CYST in KIDNEY with treatment (F): 10% in controls vs 7% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
     "evidence_refs": [
       "MI: KIDNEY \u2014 CYST (F)"
     ],
@@ -12698,7 +12074,7 @@
       "specimen": "KIDNEY",
       "finding": "CYST",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -12707,38 +12083,7 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "7",
-      "protective_excluded": true,
-      "exclusion_id": "PEX07"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_KIDNEY_CYST_M",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 CYST: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: KIDNEY \u2014 CYST (M)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 CYST",
-      "domain": "MI",
-      "test_code": "KIDNEY_CYST",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "KIDNEY",
-      "finding": "CYST",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.4,
-      "trend_p": 0.8250906703670127,
-      "effect_size": 2.0,
-      "n_affected": 3,
-      "max_n": 15
+      "high_pct": "7"
     }
   },
   {
@@ -12760,7 +12105,7 @@
       "specimen": "KIDNEY",
       "finding": "CYST",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -12776,7 +12121,7 @@
     "severity": "info",
     "context_key": "MI_KIDNEY_CYST_M",
     "organ_system": "renal",
-    "output_text": "CYST in KIDNEY: decreased incidence noted but excluded from protective classification (PEX07).",
+    "output_text": "Decreased incidence of CYST in KIDNEY with treatment (M): 10% in controls vs 7% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
     "evidence_refs": [
       "MI: KIDNEY \u2014 CYST (M)"
     ],
@@ -12789,7 +12134,7 @@
       "specimen": "KIDNEY",
       "finding": "CYST",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -12798,38 +12143,7 @@
       "n_affected": 3,
       "max_n": 15,
       "ctrl_pct": "10",
-      "high_pct": "7",
-      "protective_excluded": true,
-      "exclusion_id": "PEX07"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_KIDNEY_INFLAMMATION_F",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 INFLAMMATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: KIDNEY \u2014 INFLAMMATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 INFLAMMATION",
-      "domain": "MI",
-      "test_code": "KIDNEY_INFLAMMATION",
-      "sex": "F",
-      "direction": "down",
-      "specimen": "KIDNEY",
-      "finding": "INFLAMMATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.15000000000000002,
-      "trend_p": 0.21585971169382945,
-      "effect_size": 2.0,
-      "n_affected": 2,
-      "max_n": 15
+      "high_pct": "7"
     }
   },
   {
@@ -12851,7 +12165,7 @@
       "specimen": "KIDNEY",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.15000000000000002,
@@ -12867,7 +12181,7 @@
     "severity": "info",
     "context_key": "MI_KIDNEY_INFLAMMATION_F",
     "organ_system": "renal",
-    "output_text": "INFLAMMATION in KIDNEY: decreased incidence noted but excluded from protective classification (PEX07).",
+    "output_text": "Decreased incidence of INFLAMMATION in KIDNEY with treatment (F): 20% in controls vs 7% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
     "evidence_refs": [
       "MI: KIDNEY \u2014 INFLAMMATION (F)"
     ],
@@ -12880,7 +12194,7 @@
       "specimen": "KIDNEY",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.15000000000000002,
@@ -12889,38 +12203,7 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "20",
-      "high_pct": "7",
-      "protective_excluded": true,
-      "exclusion_id": "PEX07"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_KIDNEY_INFLAMMATION_M",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 INFLAMMATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: KIDNEY \u2014 INFLAMMATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 INFLAMMATION",
-      "domain": "MI",
-      "test_code": "KIDNEY_INFLAMMATION",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "KIDNEY",
-      "finding": "INFLAMMATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.15000000000000002,
-      "trend_p": 0.21585971169382945,
-      "effect_size": 2.0,
-      "n_affected": 2,
-      "max_n": 15
+      "high_pct": "7"
     }
   },
   {
@@ -12942,7 +12225,7 @@
       "specimen": "KIDNEY",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.15000000000000002,
@@ -12958,7 +12241,7 @@
     "severity": "info",
     "context_key": "MI_KIDNEY_INFLAMMATION_M",
     "organ_system": "renal",
-    "output_text": "INFLAMMATION in KIDNEY: decreased incidence noted but excluded from protective classification (PEX07).",
+    "output_text": "Decreased incidence of INFLAMMATION in KIDNEY with treatment (M): 20% in controls vs 7% at high dose. This finding is likely a background/spontaneous lesion reduced by compound exposure.",
     "evidence_refs": [
       "MI: KIDNEY \u2014 INFLAMMATION (M)"
     ],
@@ -12971,7 +12254,7 @@
       "specimen": "KIDNEY",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.15000000000000002,
@@ -12980,9 +12263,7 @@
       "n_affected": 2,
       "max_n": 15,
       "ctrl_pct": "20",
-      "high_pct": "7",
-      "protective_excluded": true,
-      "exclusion_id": "PEX07"
+      "high_pct": "7"
     }
   },
   {
@@ -13120,7 +12401,7 @@
       "specimen": "LARYNX",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -13149,7 +12430,7 @@
       "specimen": "LARYNX",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -13180,7 +12461,7 @@
       "specimen": "LARYNX",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -13209,7 +12490,7 @@
       "specimen": "LARYNX",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -13562,38 +12843,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "warning",
-    "context_key": "MI_LIVER_NECROSIS_F",
-    "organ_system": "hepatic",
-    "output_text": "LIVER \u2014 NECROSIS: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: LIVER \u2014 NECROSIS (F)"
-    ],
-    "params": {
-      "endpoint_label": "LIVER \u2014 NECROSIS",
-      "domain": "MI",
-      "test_code": "LIVER_NECROSIS",
-      "sex": "F",
-      "direction": "up",
-      "specimen": "LIVER",
-      "finding": "NECROSIS",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.12450592885375493,
-      "trend_p": 0.0903301042981417,
-      "effect_size": 2.0,
-      "n_affected": 6,
-      "max_n": 15,
-      "clinical_class": "HighConcern",
-      "catalog_id": "C08",
-      "clinical_confidence": "Medium"
-    }
-  },
-  {
     "rule_id": "R10",
     "scope": "endpoint",
     "severity": "warning",
@@ -13612,7 +12861,7 @@
       "specimen": "LIVER",
       "finding": "NECROSIS",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.12450592885375493,
@@ -13690,35 +12939,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_LIVER_VACUOLIZATION_F",
-    "organ_system": "hepatic",
-    "output_text": "LIVER \u2014 VACUOLIZATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: LIVER \u2014 VACUOLIZATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "LIVER \u2014 VACUOLIZATION",
-      "domain": "MI",
-      "test_code": "LIVER_VACUOLIZATION",
-      "sex": "F",
-      "direction": "up",
-      "specimen": "LIVER",
-      "finding": "VACUOLIZATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.5000000000000001,
-      "trend_p": 0.24501680202436282,
-      "effect_size": 2.67,
-      "n_affected": 3,
-      "max_n": 15
-    }
-  },
-  {
     "rule_id": "R10",
     "scope": "endpoint",
     "severity": "warning",
@@ -13737,42 +12957,13 @@
       "specimen": "LIVER",
       "finding": "VACUOLIZATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.5000000000000001,
       "trend_p": 0.24501680202436282,
       "effect_size": 2.67,
       "n_affected": 3,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_LIVER_VACUOLIZATION_M",
-    "organ_system": "hepatic",
-    "output_text": "LIVER \u2014 VACUOLIZATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: LIVER \u2014 VACUOLIZATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "LIVER \u2014 VACUOLIZATION",
-      "domain": "MI",
-      "test_code": "LIVER_VACUOLIZATION",
-      "sex": "M",
-      "direction": "up",
-      "specimen": "LIVER",
-      "finding": "VACUOLIZATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.25,
-      "trend_p": 0.0930318181568286,
-      "effect_size": 2.75,
-      "n_affected": 4,
       "max_n": 15
     }
   },
@@ -13795,7 +12986,7 @@
       "specimen": "LIVER",
       "finding": "VACUOLIZATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.25,
@@ -13824,7 +13015,7 @@
       "specimen": "LUNG",
       "finding": "ASPIRATION BLOOD",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -13855,7 +13046,7 @@
       "specimen": "LUNG",
       "finding": "ASPIRATION BLOOD",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -14006,7 +13197,7 @@
       "specimen": "LUNG",
       "finding": "INFILTRATION MONONUCLEAR CELL",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -14037,7 +13228,7 @@
       "specimen": "LUNG",
       "finding": "INFILTRATION MONONUCLEAR CELL",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -14166,35 +13357,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_LUNG_MACROPHAGES INTRA-ALVEOLAR_F",
-    "organ_system": "respiratory",
-    "output_text": "LUNG \u2014 MACROPHAGES INTRA-ALVEOLAR: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: LUNG \u2014 MACROPHAGES INTRA-ALVEOLAR (F)"
-    ],
-    "params": {
-      "endpoint_label": "LUNG \u2014 MACROPHAGES INTRA-ALVEOLAR",
-      "domain": "MI",
-      "test_code": "LUNG_MACROPHAGES INTRA-ALVEOLAR",
-      "sex": "F",
-      "direction": "up",
-      "specimen": "LUNG",
-      "finding": "MACROPHAGES INTRA-ALVEOLAR",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.1793530268358644,
-      "trend_p": 0.18042535554982475,
-      "effect_size": 2.06,
-      "n_affected": 15,
-      "max_n": 15
-    }
-  },
-  {
     "rule_id": "R10",
     "scope": "endpoint",
     "severity": "warning",
@@ -14213,36 +13375,7 @@
       "specimen": "LUNG",
       "finding": "MACROPHAGES INTRA-ALVEOLAR",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.1793530268358644,
-      "trend_p": 0.18042535554982475,
-      "effect_size": 2.06,
-      "n_affected": 15,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_LUNG_MACROPHAGES INTRA-ALVEOLAR_M",
-    "organ_system": "respiratory",
-    "output_text": "LUNG \u2014 MACROPHAGES INTRA-ALVEOLAR: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: LUNG \u2014 MACROPHAGES INTRA-ALVEOLAR (M)"
-    ],
-    "params": {
-      "endpoint_label": "LUNG \u2014 MACROPHAGES INTRA-ALVEOLAR",
-      "domain": "MI",
-      "test_code": "LUNG_MACROPHAGES INTRA-ALVEOLAR",
-      "sex": "M",
-      "direction": "up",
-      "specimen": "LUNG",
-      "finding": "MACROPHAGES INTRA-ALVEOLAR",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.1793530268358644,
@@ -14271,7 +13404,7 @@
       "specimen": "LUNG",
       "finding": "MACROPHAGES INTRA-ALVEOLAR",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.1793530268358644,
@@ -14398,35 +13531,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION_F",
-    "organ_system": "general",
-    "output_text": "MUSCLE, QUADRICEPS FEMORIS \u2014 INFLAMMATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: MUSCLE, QUADRICEPS FEMORIS \u2014 INFLAMMATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "MUSCLE, QUADRICEPS FEMORIS \u2014 INFLAMMATION",
-      "domain": "MI",
-      "test_code": "MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "MUSCLE, QUADRICEPS FEMORIS",
-      "finding": "INFLAMMATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
     "rule_id": "R10",
     "scope": "endpoint",
     "severity": "info",
@@ -14445,7 +13549,7 @@
       "specimen": "MUSCLE, QUADRICEPS FEMORIS",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -14455,35 +13559,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION_M",
-    "organ_system": "general",
-    "output_text": "MUSCLE, QUADRICEPS FEMORIS \u2014 INFLAMMATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: MUSCLE, QUADRICEPS FEMORIS \u2014 INFLAMMATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "MUSCLE, QUADRICEPS FEMORIS \u2014 INFLAMMATION",
-      "domain": "MI",
-      "test_code": "MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "MUSCLE, QUADRICEPS FEMORIS",
-      "finding": "INFLAMMATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -14505,7 +13580,7 @@
       "specimen": "MUSCLE, QUADRICEPS FEMORIS",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -14808,35 +13883,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_SMALL INTESTINE, JEJUNUM_INFLAMMATION_F",
-    "organ_system": "gastrointestinal",
-    "output_text": "SMALL INTESTINE, JEJUNUM \u2014 INFLAMMATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: SMALL INTESTINE, JEJUNUM \u2014 INFLAMMATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "SMALL INTESTINE, JEJUNUM \u2014 INFLAMMATION",
-      "domain": "MI",
-      "test_code": "SMALL INTESTINE, JEJUNUM_INFLAMMATION",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "SMALL INTESTINE, JEJUNUM",
-      "finding": "INFLAMMATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
     "rule_id": "R10",
     "scope": "endpoint",
     "severity": "info",
@@ -14855,7 +13901,7 @@
       "specimen": "SMALL INTESTINE, JEJUNUM",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -14886,7 +13932,7 @@
       "specimen": "SPLEEN",
       "finding": "ATROPHY",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -14920,7 +13966,7 @@
       "specimen": "SPLEEN",
       "finding": "ATROPHY",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_increase",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -14933,35 +13979,6 @@
       "clinical_class": "HighConcern",
       "catalog_id": "C13",
       "clinical_confidence": "Low"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_SPLEEN_CONGESTION_F",
-    "organ_system": "hematologic",
-    "output_text": "SPLEEN \u2014 CONGESTION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: SPLEEN \u2014 CONGESTION (F)"
-    ],
-    "params": {
-      "endpoint_label": "SPLEEN \u2014 CONGESTION",
-      "domain": "MI",
-      "test_code": "SPLEEN_CONGESTION",
-      "sex": "F",
-      "direction": "up",
-      "specimen": "SPLEEN",
-      "finding": "CONGESTION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.6881679903082514,
-      "trend_p": 0.4394086765316232,
-      "effect_size": 2.0,
-      "n_affected": 18,
-      "max_n": 15
     }
   },
   {
@@ -14983,36 +14000,7 @@
       "specimen": "SPLEEN",
       "finding": "CONGESTION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.6881679903082514,
-      "trend_p": 0.4394086765316232,
-      "effect_size": 2.0,
-      "n_affected": 18,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_SPLEEN_CONGESTION_M",
-    "organ_system": "hematologic",
-    "output_text": "SPLEEN \u2014 CONGESTION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: SPLEEN \u2014 CONGESTION (M)"
-    ],
-    "params": {
-      "endpoint_label": "SPLEEN \u2014 CONGESTION",
-      "domain": "MI",
-      "test_code": "SPLEEN_CONGESTION",
-      "sex": "M",
-      "direction": "up",
-      "specimen": "SPLEEN",
-      "finding": "CONGESTION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.6881679903082514,
@@ -15041,7 +14029,7 @@
       "specimen": "SPLEEN",
       "finding": "CONGESTION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.6881679903082514,
@@ -15070,36 +14058,7 @@
       "specimen": "SPLEEN",
       "finding": "PIGMENTATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "warning",
-      "treatment_related": false,
-      "p_value": 0.21070803607484181,
-      "trend_p": 0.01021145888436159,
-      "effect_size": 2.17,
-      "n_affected": 16,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_SPLEEN_PIGMENTATION_F",
-    "organ_system": "hematologic",
-    "output_text": "SPLEEN \u2014 PIGMENTATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: SPLEEN \u2014 PIGMENTATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
-      "domain": "MI",
-      "test_code": "SPLEEN_PIGMENTATION",
-      "sex": "F",
-      "direction": "up",
-      "specimen": "SPLEEN",
-      "finding": "PIGMENTATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "warning",
       "treatment_related": false,
       "p_value": 0.21070803607484181,
@@ -15128,7 +14087,7 @@
       "specimen": "SPLEEN",
       "finding": "PIGMENTATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "warning",
       "treatment_related": false,
       "p_value": 0.21070803607484181,
@@ -15157,7 +14116,7 @@
       "specimen": "SPLEEN",
       "finding": "PIGMENTATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "warning",
       "treatment_related": false,
       "p_value": 0.21070803607484181,
@@ -15186,36 +14145,7 @@
       "specimen": "SPLEEN",
       "finding": "PIGMENTATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "warning",
-      "treatment_related": false,
-      "p_value": 0.21070803607484181,
-      "trend_p": 0.01021145888436159,
-      "effect_size": 2.17,
-      "n_affected": 16,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_SPLEEN_PIGMENTATION_M",
-    "organ_system": "hematologic",
-    "output_text": "SPLEEN \u2014 PIGMENTATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: SPLEEN \u2014 PIGMENTATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
-      "domain": "MI",
-      "test_code": "SPLEEN_PIGMENTATION",
-      "sex": "M",
-      "direction": "up",
-      "specimen": "SPLEEN",
-      "finding": "PIGMENTATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "warning",
       "treatment_related": false,
       "p_value": 0.21070803607484181,
@@ -15244,7 +14174,7 @@
       "specimen": "SPLEEN",
       "finding": "PIGMENTATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "warning",
       "treatment_related": false,
       "p_value": 0.21070803607484181,
@@ -15273,42 +14203,13 @@
       "specimen": "SPLEEN",
       "finding": "PIGMENTATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "warning",
       "treatment_related": false,
       "p_value": 0.21070803607484181,
       "trend_p": 0.01021145888436159,
       "effect_size": 2.17,
       "n_affected": 16,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_STOMACH_EDEMA_F",
-    "organ_system": "gastrointestinal",
-    "output_text": "STOMACH \u2014 EDEMA: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: STOMACH \u2014 EDEMA (F)"
-    ],
-    "params": {
-      "endpoint_label": "STOMACH \u2014 EDEMA",
-      "domain": "MI",
-      "test_code": "STOMACH_EDEMA",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "STOMACH",
-      "finding": "EDEMA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
       "max_n": 15
     }
   },
@@ -15331,7 +14232,7 @@
       "specimen": "STOMACH",
       "finding": "EDEMA",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -15341,35 +14242,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_STOMACH_EDEMA_M",
-    "organ_system": "gastrointestinal",
-    "output_text": "STOMACH \u2014 EDEMA: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: STOMACH \u2014 EDEMA (M)"
-    ],
-    "params": {
-      "endpoint_label": "STOMACH \u2014 EDEMA",
-      "domain": "MI",
-      "test_code": "STOMACH_EDEMA",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "STOMACH",
-      "finding": "EDEMA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 2.0,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -15391,7 +14263,7 @@
       "specimen": "STOMACH",
       "finding": "EDEMA",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -15401,35 +14273,6 @@
       "max_n": 15,
       "dampened": true,
       "dampening_reason": "single_affected"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_STOMACH_EROSION_M",
-    "organ_system": "gastrointestinal",
-    "output_text": "STOMACH \u2014 EROSION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: STOMACH \u2014 EROSION (M)"
-    ],
-    "params": {
-      "endpoint_label": "STOMACH \u2014 EROSION",
-      "domain": "MI",
-      "test_code": "STOMACH_EROSION",
-      "sex": "M",
-      "direction": "up",
-      "specimen": "STOMACH",
-      "finding": "EROSION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.6237482928726448,
-      "effect_size": 2.0,
-      "n_affected": 2,
-      "max_n": 15
     }
   },
   {
@@ -15451,7 +14294,7 @@
       "specimen": "STOMACH",
       "finding": "EROSION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -15459,38 +14302,6 @@
       "effect_size": 2.0,
       "n_affected": 2,
       "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "warning",
-    "context_key": "MI_TESTIS_ATROPHY_M",
-    "organ_system": "reproductive",
-    "output_text": "TESTIS \u2014 ATROPHY: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: TESTIS \u2014 ATROPHY (M)"
-    ],
-    "params": {
-      "endpoint_label": "TESTIS \u2014 ATROPHY",
-      "domain": "MI",
-      "test_code": "TESTIS_ATROPHY",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "TESTIS",
-      "finding": "ATROPHY",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": 4.0,
-      "n_affected": 1,
-      "max_n": 15,
-      "clinical_class": "Sentinel",
-      "catalog_id": "C01",
-      "clinical_confidence": "Medium"
     }
   },
   {
@@ -15512,7 +14323,7 @@
       "specimen": "TESTIS",
       "finding": "ATROPHY",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 1.0,
@@ -15525,64 +14336,6 @@
       "clinical_class": "Sentinel",
       "catalog_id": "C01",
       "clinical_confidence": "Medium"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_TESTIS_AZOOSPERMIA_M",
-    "organ_system": "reproductive",
-    "output_text": "TESTIS \u2014 AZOOSPERMIA: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: TESTIS \u2014 AZOOSPERMIA (M)"
-    ],
-    "params": {
-      "endpoint_label": "TESTIS \u2014 AZOOSPERMIA",
-      "domain": "MI",
-      "test_code": "TESTIS_AZOOSPERMIA",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "TESTIS",
-      "finding": "AZOOSPERMIA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.8540492466773077,
-      "effect_size": null,
-      "n_affected": 2,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_TONGUE_HEMORRHAGE_F",
-    "organ_system": "general",
-    "output_text": "TONGUE \u2014 HEMORRHAGE: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: TONGUE \u2014 HEMORRHAGE (F)"
-    ],
-    "params": {
-      "endpoint_label": "TONGUE \u2014 HEMORRHAGE",
-      "domain": "MI",
-      "test_code": "TONGUE_HEMORRHAGE",
-      "sex": "F",
-      "direction": "up",
-      "specimen": "TONGUE",
-      "finding": "HEMORRHAGE",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.5000000000000001,
-      "trend_p": 0.4245517323446324,
-      "effect_size": 2.0,
-      "n_affected": 5,
-      "max_n": 15
     }
   },
   {
@@ -15604,36 +14357,7 @@
       "specimen": "TONGUE",
       "finding": "HEMORRHAGE",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.5000000000000001,
-      "trend_p": 0.4245517323446324,
-      "effect_size": 2.0,
-      "n_affected": 5,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_TONGUE_HEMORRHAGE_M",
-    "organ_system": "general",
-    "output_text": "TONGUE \u2014 HEMORRHAGE: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MI: TONGUE \u2014 HEMORRHAGE (M)"
-    ],
-    "params": {
-      "endpoint_label": "TONGUE \u2014 HEMORRHAGE",
-      "domain": "MI",
-      "test_code": "TONGUE_HEMORRHAGE",
-      "sex": "M",
-      "direction": "up",
-      "specimen": "TONGUE",
-      "finding": "HEMORRHAGE",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.5000000000000001,
@@ -15662,7 +14386,7 @@
       "specimen": "TONGUE",
       "finding": "HEMORRHAGE",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_increase",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.5000000000000001,
@@ -15691,7 +14415,7 @@
       "specimen": "TRACHEA",
       "finding": "DILATATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -15722,7 +14446,7 @@
       "specimen": "TRACHEA",
       "finding": "DILATATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -15755,7 +14479,7 @@
       "specimen": "TRACHEA",
       "finding": "DILATATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -15786,7 +14510,7 @@
       "specimen": "TRACHEA",
       "finding": "DILATATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -15935,7 +14659,7 @@
       "specimen": "URINARY BLADDER",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -15966,7 +14690,7 @@
       "specimen": "URINARY BLADDER",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -15999,7 +14723,7 @@
       "specimen": "URINARY BLADDER",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -16030,7 +14754,7 @@
       "specimen": "URINARY BLADDER",
       "finding": "INFLAMMATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -16042,93 +14766,6 @@
       "high_pct": "0",
       "protective_excluded": true,
       "exclusion_id": "PEX05"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MI_UTERUS_LEIOMYOMA_F",
-    "organ_system": "reproductive",
-    "output_text": "UTERUS \u2014 LEIOMYOMA: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MI: UTERUS \u2014 LEIOMYOMA (F)"
-    ],
-    "params": {
-      "endpoint_label": "UTERUS \u2014 LEIOMYOMA",
-      "domain": "MI",
-      "test_code": "UTERUS_LEIOMYOMA",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "UTERUS",
-      "finding": "LEIOMYOMA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_EPIDIDYMIS_AREA(S), DARK RED_M",
-    "organ_system": "reproductive",
-    "output_text": "EPIDIDYMIS \u2014 AREA(S), DARK RED: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: EPIDIDYMIS \u2014 AREA(S), DARK RED (M)"
-    ],
-    "params": {
-      "endpoint_label": "EPIDIDYMIS \u2014 AREA(S), DARK RED",
-      "domain": "MA",
-      "test_code": "EPIDIDYMIS_AREA(S), DARK RED",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "EPIDIDYMIS",
-      "finding": "AREA(S), DARK RED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_EPIDIDYMIS_SMALL_M",
-    "organ_system": "reproductive",
-    "output_text": "EPIDIDYMIS \u2014 SMALL: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: EPIDIDYMIS \u2014 SMALL (M)"
-    ],
-    "params": {
-      "endpoint_label": "EPIDIDYMIS \u2014 SMALL",
-      "domain": "MA",
-      "test_code": "EPIDIDYMIS_SMALL",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "EPIDIDYMIS",
-      "finding": "SMALL",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.15000000000000002,
-      "trend_p": 0.10578229175801401,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -16150,7 +14787,7 @@
       "specimen": "EPIDIDYMIS",
       "finding": "SMALL",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.15000000000000002,
@@ -16183,7 +14820,7 @@
       "specimen": "ESOPHAGUS",
       "finding": "PERFORATION",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -16198,64 +14835,6 @@
       "clinical_class": "Sentinel",
       "catalog_id": "C12",
       "clinical_confidence": "Low"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_GLAND, ADRENAL_DISCOLORATION_F",
-    "organ_system": "general",
-    "output_text": "GLAND, ADRENAL \u2014 DISCOLORATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: GLAND, ADRENAL \u2014 DISCOLORATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, ADRENAL \u2014 DISCOLORATION",
-      "domain": "MA",
-      "test_code": "GLAND, ADRENAL_DISCOLORATION",
-      "sex": "F",
-      "direction": "up",
-      "specimen": "GLAND, ADRENAL",
-      "finding": "DISCOLORATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.6237482928726448,
-      "effect_size": null,
-      "n_affected": 2,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_GLAND, ADRENAL_DISCOLORATION_M",
-    "organ_system": "general",
-    "output_text": "GLAND, ADRENAL \u2014 DISCOLORATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: GLAND, ADRENAL \u2014 DISCOLORATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, ADRENAL \u2014 DISCOLORATION",
-      "domain": "MA",
-      "test_code": "GLAND, ADRENAL_DISCOLORATION",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "GLAND, ADRENAL",
-      "finding": "DISCOLORATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -16321,64 +14900,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_GLAND, ADRENAL_PALE_M",
-    "organ_system": "general",
-    "output_text": "GLAND, ADRENAL \u2014 PALE: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: GLAND, ADRENAL \u2014 PALE (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, ADRENAL \u2014 PALE",
-      "domain": "MA",
-      "test_code": "GLAND, ADRENAL_PALE",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "GLAND, ADRENAL",
-      "finding": "PALE",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_GLAND, COAGULATING_SMALL_M",
-    "organ_system": "general",
-    "output_text": "GLAND, COAGULATING \u2014 SMALL: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: GLAND, COAGULATING \u2014 SMALL (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, COAGULATING \u2014 SMALL",
-      "domain": "MA",
-      "test_code": "GLAND, COAGULATING_SMALL",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "GLAND, COAGULATING",
-      "finding": "SMALL",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.4,
-      "trend_p": 0.39064195584702377,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
     "rule_id": "R18",
     "scope": "endpoint",
     "severity": "info",
@@ -16397,7 +14918,7 @@
       "specimen": "GLAND, COAGULATING",
       "finding": "SMALL",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -16409,35 +14930,6 @@
       "high_pct": "0",
       "protective_excluded": true,
       "exclusion_id": "PEX05"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_GLAND, SEMINAL VESICLE_SMALL_M",
-    "organ_system": "general",
-    "output_text": "GLAND, SEMINAL VESICLE \u2014 SMALL: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: GLAND, SEMINAL VESICLE \u2014 SMALL (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, SEMINAL VESICLE \u2014 SMALL",
-      "domain": "MA",
-      "test_code": "GLAND, SEMINAL VESICLE_SMALL",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "GLAND, SEMINAL VESICLE",
-      "finding": "SMALL",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.4,
-      "trend_p": 0.39064195584702377,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -16459,7 +14951,7 @@
       "specimen": "GLAND, SEMINAL VESICLE",
       "finding": "SMALL",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -16492,7 +14984,7 @@
       "specimen": "GLAND, THYROID",
       "finding": "ENLARGED",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "warning",
       "treatment_related": false,
       "p_value": 0.15000000000000002,
@@ -16521,7 +15013,7 @@
       "specimen": "GLAND, THYROID",
       "finding": "ENLARGED",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "warning",
       "treatment_related": false,
       "p_value": 0.15000000000000002,
@@ -16533,64 +15025,6 @@
       "high_pct": "0",
       "protective_excluded": true,
       "exclusion_id": "PEX05"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_GLAND, THYROID_PALE_M",
-    "organ_system": "general",
-    "output_text": "GLAND, THYROID \u2014 PALE: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: GLAND, THYROID \u2014 PALE (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, THYROID \u2014 PALE",
-      "domain": "MA",
-      "test_code": "GLAND, THYROID_PALE",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "GLAND, THYROID",
-      "finding": "PALE",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_GLAND, THYROID_SMALL_M",
-    "organ_system": "general",
-    "output_text": "GLAND, THYROID \u2014 SMALL: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: GLAND, THYROID \u2014 SMALL (M)"
-    ],
-    "params": {
-      "endpoint_label": "GLAND, THYROID \u2014 SMALL",
-      "domain": "MA",
-      "test_code": "GLAND, THYROID_SMALL",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "GLAND, THYROID",
-      "finding": "SMALL",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -16612,7 +15046,7 @@
       "specimen": "HINDLIMB",
       "finding": "HARD THICKENING",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -16624,35 +15058,6 @@
       "high_pct": "0",
       "protective_excluded": true,
       "exclusion_id": "PEX05"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_HINDLIMB_HEMORRHAGE_F",
-    "organ_system": "general",
-    "output_text": "HINDLIMB \u2014 HEMORRHAGE: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: HINDLIMB \u2014 HEMORRHAGE (F)"
-    ],
-    "params": {
-      "endpoint_label": "HINDLIMB \u2014 HEMORRHAGE",
-      "domain": "MA",
-      "test_code": "HINDLIMB_HEMORRHAGE",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "HINDLIMB",
-      "finding": "HEMORRHAGE",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.8540492466773077,
-      "effect_size": null,
-      "n_affected": 2,
-      "max_n": 15
     }
   },
   {
@@ -16674,7 +15079,7 @@
       "specimen": "HINDLIMB",
       "finding": "SWELLING",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -16686,325 +15091,6 @@
       "high_pct": "0",
       "protective_excluded": true,
       "exclusion_id": "PEX05"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_KIDNEY_CYST_F",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 CYST: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: KIDNEY \u2014 CYST (F)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 CYST",
-      "domain": "MA",
-      "test_code": "KIDNEY_CYST",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "KIDNEY",
-      "finding": "CYST",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_KIDNEY_CYST_M",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 CYST: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: KIDNEY \u2014 CYST (M)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 CYST",
-      "domain": "MA",
-      "test_code": "KIDNEY_CYST",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "KIDNEY",
-      "finding": "CYST",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_KIDNEY_DISCOLORATION_F",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 DISCOLORATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: KIDNEY \u2014 DISCOLORATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 DISCOLORATION",
-      "domain": "MA",
-      "test_code": "KIDNEY_DISCOLORATION",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "KIDNEY",
-      "finding": "DISCOLORATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_KIDNEY_DISCOLORATION_M",
-    "organ_system": "renal",
-    "output_text": "KIDNEY \u2014 DISCOLORATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: KIDNEY \u2014 DISCOLORATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "KIDNEY \u2014 DISCOLORATION",
-      "domain": "MA",
-      "test_code": "KIDNEY_DISCOLORATION",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "KIDNEY",
-      "finding": "DISCOLORATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LARGE INTESTINE, CECUM_DISTENDED_F",
-    "organ_system": "gastrointestinal",
-    "output_text": "LARGE INTESTINE, CECUM \u2014 DISTENDED: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: LARGE INTESTINE, CECUM \u2014 DISTENDED (F)"
-    ],
-    "params": {
-      "endpoint_label": "LARGE INTESTINE, CECUM \u2014 DISTENDED",
-      "domain": "MA",
-      "test_code": "LARGE INTESTINE, CECUM_DISTENDED",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "LARGE INTESTINE, CECUM",
-      "finding": "DISTENDED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LARGE INTESTINE, CECUM_FIRM FECES_M",
-    "organ_system": "gastrointestinal",
-    "output_text": "LARGE INTESTINE, CECUM \u2014 FIRM FECES: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: LARGE INTESTINE, CECUM \u2014 FIRM FECES (M)"
-    ],
-    "params": {
-      "endpoint_label": "LARGE INTESTINE, CECUM \u2014 FIRM FECES",
-      "domain": "MA",
-      "test_code": "LARGE INTESTINE, CECUM_FIRM FECES",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "LARGE INTESTINE, CECUM",
-      "finding": "FIRM FECES",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LARGE INTESTINE, CECUM_WATERY CONTENTS_F",
-    "organ_system": "gastrointestinal",
-    "output_text": "LARGE INTESTINE, CECUM \u2014 WATERY CONTENTS: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: LARGE INTESTINE, CECUM \u2014 WATERY CONTENTS (F)"
-    ],
-    "params": {
-      "endpoint_label": "LARGE INTESTINE, CECUM \u2014 WATERY CONTENTS",
-      "domain": "MA",
-      "test_code": "LARGE INTESTINE, CECUM_WATERY CONTENTS",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "LARGE INTESTINE, CECUM",
-      "finding": "WATERY CONTENTS",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LARGE INTESTINE, COLON_FIRM FECES_M",
-    "organ_system": "gastrointestinal",
-    "output_text": "LARGE INTESTINE, COLON \u2014 FIRM FECES: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: LARGE INTESTINE, COLON \u2014 FIRM FECES (M)"
-    ],
-    "params": {
-      "endpoint_label": "LARGE INTESTINE, COLON \u2014 FIRM FECES",
-      "domain": "MA",
-      "test_code": "LARGE INTESTINE, COLON_FIRM FECES",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "LARGE INTESTINE, COLON",
-      "finding": "FIRM FECES",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LARGE INTESTINE, RECTUM_FIRM FECES_M",
-    "organ_system": "gastrointestinal",
-    "output_text": "LARGE INTESTINE, RECTUM \u2014 FIRM FECES: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: LARGE INTESTINE, RECTUM \u2014 FIRM FECES (M)"
-    ],
-    "params": {
-      "endpoint_label": "LARGE INTESTINE, RECTUM \u2014 FIRM FECES",
-      "domain": "MA",
-      "test_code": "LARGE INTESTINE, RECTUM_FIRM FECES",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "LARGE INTESTINE, RECTUM",
-      "finding": "FIRM FECES",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LIVER_AREA(S), WHITE_F",
-    "organ_system": "hepatic",
-    "output_text": "LIVER \u2014 AREA(S), WHITE: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: LIVER \u2014 AREA(S), WHITE (F)"
-    ],
-    "params": {
-      "endpoint_label": "LIVER \u2014 AREA(S), WHITE",
-      "domain": "MA",
-      "test_code": "LIVER_AREA(S), WHITE",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "LIVER",
-      "finding": "AREA(S), WHITE",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LIVER_DISCOLORATION_F",
-    "organ_system": "hepatic",
-    "output_text": "LIVER \u2014 DISCOLORATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: LIVER \u2014 DISCOLORATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "LIVER \u2014 DISCOLORATION",
-      "domain": "MA",
-      "test_code": "LIVER_DISCOLORATION",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "LIVER",
-      "finding": "DISCOLORATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -17153,122 +15239,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LIVER_MISSHAPEN_F",
-    "organ_system": "hepatic",
-    "output_text": "LIVER \u2014 MISSHAPEN: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: LIVER \u2014 MISSHAPEN (F)"
-    ],
-    "params": {
-      "endpoint_label": "LIVER \u2014 MISSHAPEN",
-      "domain": "MA",
-      "test_code": "LIVER_MISSHAPEN",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "LIVER",
-      "finding": "MISSHAPEN",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LUNG_DISCOLORATION_M",
-    "organ_system": "respiratory",
-    "output_text": "LUNG \u2014 DISCOLORATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: LUNG \u2014 DISCOLORATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "LUNG \u2014 DISCOLORATION",
-      "domain": "MA",
-      "test_code": "LUNG_DISCOLORATION",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "LUNG",
-      "finding": "DISCOLORATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LUNG_DISCOLORED AREA_F",
-    "organ_system": "respiratory",
-    "output_text": "LUNG \u2014 DISCOLORED AREA: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: LUNG \u2014 DISCOLORED AREA (F)"
-    ],
-    "params": {
-      "endpoint_label": "LUNG \u2014 DISCOLORED AREA",
-      "domain": "MA",
-      "test_code": "LUNG_DISCOLORED AREA",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "LUNG",
-      "finding": "DISCOLORED AREA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LYMPH NODE, MESENTERIC_DISCOLORATION_F",
-    "organ_system": "hematologic",
-    "output_text": "LYMPH NODE, MESENTERIC \u2014 DISCOLORATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: LYMPH NODE, MESENTERIC \u2014 DISCOLORATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "LYMPH NODE, MESENTERIC \u2014 DISCOLORATION",
-      "domain": "MA",
-      "test_code": "LYMPH NODE, MESENTERIC_DISCOLORATION",
-      "sex": "F",
-      "direction": "down",
-      "specimen": "LYMPH NODE, MESENTERIC",
-      "finding": "DISCOLORATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.4,
-      "trend_p": 0.39064195584702377,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
     "rule_id": "R18",
     "scope": "endpoint",
     "severity": "info",
@@ -17287,7 +15257,7 @@
       "specimen": "LYMPH NODE, MESENTERIC",
       "finding": "DISCOLORATION",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -17299,122 +15269,6 @@
       "high_pct": "0",
       "protective_excluded": true,
       "exclusion_id": "PEX06"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LYMPH NODE, MESENTERIC_DISCOLORATION_M",
-    "organ_system": "hematologic",
-    "output_text": "LYMPH NODE, MESENTERIC \u2014 DISCOLORATION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: LYMPH NODE, MESENTERIC \u2014 DISCOLORATION (M)"
-    ],
-    "params": {
-      "endpoint_label": "LYMPH NODE, MESENTERIC \u2014 DISCOLORATION",
-      "domain": "MA",
-      "test_code": "LYMPH NODE, MESENTERIC_DISCOLORATION",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "LYMPH NODE, MESENTERIC",
-      "finding": "DISCOLORATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LYMPH NODE, MESENTERIC_ENLARGED_F",
-    "organ_system": "hematologic",
-    "output_text": "LYMPH NODE, MESENTERIC \u2014 ENLARGED: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: LYMPH NODE, MESENTERIC \u2014 ENLARGED (F)"
-    ],
-    "params": {
-      "endpoint_label": "LYMPH NODE, MESENTERIC \u2014 ENLARGED",
-      "domain": "MA",
-      "test_code": "LYMPH NODE, MESENTERIC_ENLARGED",
-      "sex": "F",
-      "direction": "up",
-      "specimen": "LYMPH NODE, MESENTERIC",
-      "finding": "ENLARGED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.5000000000000001,
-      "trend_p": 0.24501680202436282,
-      "effect_size": null,
-      "n_affected": 3,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LYMPH NODE, MESENTERIC_ENLARGED_M",
-    "organ_system": "hematologic",
-    "output_text": "LYMPH NODE, MESENTERIC \u2014 ENLARGED: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: LYMPH NODE, MESENTERIC \u2014 ENLARGED (M)"
-    ],
-    "params": {
-      "endpoint_label": "LYMPH NODE, MESENTERIC \u2014 ENLARGED",
-      "domain": "MA",
-      "test_code": "LYMPH NODE, MESENTERIC_ENLARGED",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "LYMPH NODE, MESENTERIC",
-      "finding": "ENLARGED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_LYMPH NODE, MESENTERIC_SMALL_F",
-    "organ_system": "hematologic",
-    "output_text": "LYMPH NODE, MESENTERIC \u2014 SMALL: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: LYMPH NODE, MESENTERIC \u2014 SMALL (F)"
-    ],
-    "params": {
-      "endpoint_label": "LYMPH NODE, MESENTERIC \u2014 SMALL",
-      "domain": "MA",
-      "test_code": "LYMPH NODE, MESENTERIC_SMALL",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "LYMPH NODE, MESENTERIC",
-      "finding": "SMALL",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
     }
   },
   {
@@ -17472,35 +15326,6 @@
       "trend_p": 0.39064195584702377,
       "effect_size": null,
       "n_affected": 2,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_SKIN_MATTING_F",
-    "organ_system": "integumentary",
-    "output_text": "SKIN \u2014 MATTING: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: SKIN \u2014 MATTING (F)"
-    ],
-    "params": {
-      "endpoint_label": "SKIN \u2014 MATTING",
-      "domain": "MA",
-      "test_code": "SKIN_MATTING",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "SKIN",
-      "finding": "MATTING",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
       "max_n": 15
     }
   },
@@ -17566,238 +15391,6 @@
     "rule_id": "R07",
     "scope": "endpoint",
     "severity": "info",
-    "context_key": "MA_SMALL INTESTINE, DUODENUM_DISTENDED_F",
-    "organ_system": "gastrointestinal",
-    "output_text": "SMALL INTESTINE, DUODENUM \u2014 DISTENDED: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: SMALL INTESTINE, DUODENUM \u2014 DISTENDED (F)"
-    ],
-    "params": {
-      "endpoint_label": "SMALL INTESTINE, DUODENUM \u2014 DISTENDED",
-      "domain": "MA",
-      "test_code": "SMALL INTESTINE, DUODENUM_DISTENDED",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "SMALL INTESTINE, DUODENUM",
-      "finding": "DISTENDED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_SMALL INTESTINE, ILEUM_CONTENTS, DARK RED_F",
-    "organ_system": "gastrointestinal",
-    "output_text": "SMALL INTESTINE, ILEUM \u2014 CONTENTS, DARK RED: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: SMALL INTESTINE, ILEUM \u2014 CONTENTS, DARK RED (F)"
-    ],
-    "params": {
-      "endpoint_label": "SMALL INTESTINE, ILEUM \u2014 CONTENTS, DARK RED",
-      "domain": "MA",
-      "test_code": "SMALL INTESTINE, ILEUM_CONTENTS, DARK RED",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "SMALL INTESTINE, ILEUM",
-      "finding": "CONTENTS, DARK RED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_SMALL INTESTINE, ILEUM_WATERY CONTENTS_M",
-    "organ_system": "gastrointestinal",
-    "output_text": "SMALL INTESTINE, ILEUM \u2014 WATERY CONTENTS: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: SMALL INTESTINE, ILEUM \u2014 WATERY CONTENTS (M)"
-    ],
-    "params": {
-      "endpoint_label": "SMALL INTESTINE, ILEUM \u2014 WATERY CONTENTS",
-      "domain": "MA",
-      "test_code": "SMALL INTESTINE, ILEUM_WATERY CONTENTS",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "SMALL INTESTINE, ILEUM",
-      "finding": "WATERY CONTENTS",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_SPLEEN_ADHESION_M",
-    "organ_system": "hematologic",
-    "output_text": "SPLEEN \u2014 ADHESION: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: SPLEEN \u2014 ADHESION (M)"
-    ],
-    "params": {
-      "endpoint_label": "SPLEEN \u2014 ADHESION",
-      "domain": "MA",
-      "test_code": "SPLEEN_ADHESION",
-      "sex": "M",
-      "direction": "none",
-      "specimen": "SPLEEN",
-      "finding": "ADHESION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_SPLEEN_SMALL_M",
-    "organ_system": "hematologic",
-    "output_text": "SPLEEN \u2014 SMALL: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: SPLEEN \u2014 SMALL (M)"
-    ],
-    "params": {
-      "endpoint_label": "SPLEEN \u2014 SMALL",
-      "domain": "MA",
-      "test_code": "SPLEEN_SMALL",
-      "sex": "M",
-      "direction": "up",
-      "specimen": "SPLEEN",
-      "finding": "SMALL",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.5000000000000001,
-      "trend_p": 0.24501680202436282,
-      "effect_size": null,
-      "n_affected": 3,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_STOMACH_AREA(S), DARK RED_F",
-    "organ_system": "gastrointestinal",
-    "output_text": "STOMACH \u2014 AREA(S), DARK RED: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: STOMACH \u2014 AREA(S), DARK RED (F)"
-    ],
-    "params": {
-      "endpoint_label": "STOMACH \u2014 AREA(S), DARK RED",
-      "domain": "MA",
-      "test_code": "STOMACH_AREA(S), DARK RED",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "STOMACH",
-      "finding": "AREA(S), DARK RED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_STOMACH_AREA(S), DARK RED_M",
-    "organ_system": "gastrointestinal",
-    "output_text": "STOMACH \u2014 AREA(S), DARK RED: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: STOMACH \u2014 AREA(S), DARK RED (M)"
-    ],
-    "params": {
-      "endpoint_label": "STOMACH \u2014 AREA(S), DARK RED",
-      "domain": "MA",
-      "test_code": "STOMACH_AREA(S), DARK RED",
-      "sex": "M",
-      "direction": "up",
-      "specimen": "STOMACH",
-      "finding": "AREA(S), DARK RED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.6237482928726448,
-      "effect_size": null,
-      "n_affected": 2,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_STOMACH_DISTENDED_F",
-    "organ_system": "gastrointestinal",
-    "output_text": "STOMACH \u2014 DISTENDED: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: STOMACH \u2014 DISTENDED (F)"
-    ],
-    "params": {
-      "endpoint_label": "STOMACH \u2014 DISTENDED",
-      "domain": "MA",
-      "test_code": "STOMACH_DISTENDED",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "STOMACH",
-      "finding": "DISTENDED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.8540492466773077,
-      "effect_size": null,
-      "n_affected": 2,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
     "context_key": "MA_STOMACH_DISTENDED_M",
     "organ_system": "gastrointestinal",
     "output_text": "STOMACH \u2014 DISTENDED: inconsistent dose-response in M.",
@@ -17824,64 +15417,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_STOMACH_YELLOW FLUID_F",
-    "organ_system": "gastrointestinal",
-    "output_text": "STOMACH \u2014 YELLOW FLUID: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: STOMACH \u2014 YELLOW FLUID (F)"
-    ],
-    "params": {
-      "endpoint_label": "STOMACH \u2014 YELLOW FLUID",
-      "domain": "MA",
-      "test_code": "STOMACH_YELLOW FLUID",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "STOMACH",
-      "finding": "YELLOW FLUID",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_TESTIS_SMALL_M",
-    "organ_system": "reproductive",
-    "output_text": "TESTIS \u2014 SMALL: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: TESTIS \u2014 SMALL (M)"
-    ],
-    "params": {
-      "endpoint_label": "TESTIS \u2014 SMALL",
-      "domain": "MA",
-      "test_code": "TESTIS_SMALL",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "TESTIS",
-      "finding": "SMALL",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.4,
-      "trend_p": 0.10578229175801401,
-      "effect_size": null,
-      "n_affected": 2,
-      "max_n": 15
-    }
-  },
-  {
     "rule_id": "R18",
     "scope": "endpoint",
     "severity": "info",
@@ -17900,7 +15435,7 @@
       "specimen": "TESTIS",
       "finding": "SMALL",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "threshold_decrease",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -17933,7 +15468,7 @@
       "specimen": "TESTIS",
       "finding": "SOFT",
       "data_type": "incidence",
-      "dose_response_pattern": "threshold_decrease",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -17945,64 +15480,6 @@
       "high_pct": "0",
       "protective_excluded": true,
       "exclusion_id": "PEX01"
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_THYMUS_AREA(S), DARK RED_F",
-    "organ_system": "hematologic",
-    "output_text": "THYMUS \u2014 AREA(S), DARK RED: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: THYMUS \u2014 AREA(S), DARK RED (F)"
-    ],
-    "params": {
-      "endpoint_label": "THYMUS \u2014 AREA(S), DARK RED",
-      "domain": "MA",
-      "test_code": "THYMUS_AREA(S), DARK RED",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "THYMUS",
-      "finding": "AREA(S), DARK RED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.5000000000000001,
-      "trend_p": 0.9596879696921041,
-      "effect_size": null,
-      "n_affected": 3,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_THYMUS_SMALL_M",
-    "organ_system": "hematologic",
-    "output_text": "THYMUS \u2014 SMALL: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "MA: THYMUS \u2014 SMALL (M)"
-    ],
-    "params": {
-      "endpoint_label": "THYMUS \u2014 SMALL",
-      "domain": "MA",
-      "test_code": "THYMUS_SMALL",
-      "sex": "M",
-      "direction": "down",
-      "specimen": "THYMUS",
-      "finding": "SMALL",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.4,
-      "trend_p": 0.6132417445640952,
-      "effect_size": null,
-      "n_affected": 2,
-      "max_n": 15
     }
   },
   {
@@ -18024,7 +15501,7 @@
       "specimen": "THYMUS",
       "finding": "SMALL",
       "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
+      "dose_response_pattern": "flat",
       "severity_class": "normal",
       "treatment_related": false,
       "p_value": 0.4,
@@ -18097,35 +15574,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_URINARY BLADDER_DISTENDED_F",
-    "organ_system": "renal",
-    "output_text": "URINARY BLADDER \u2014 DISTENDED: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: URINARY BLADDER \u2014 DISTENDED (F)"
-    ],
-    "params": {
-      "endpoint_label": "URINARY BLADDER \u2014 DISTENDED",
-      "domain": "MA",
-      "test_code": "URINARY BLADDER_DISTENDED",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "URINARY BLADDER",
-      "finding": "DISTENDED",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
     "rule_id": "R03",
     "scope": "endpoint",
     "severity": "info",
@@ -18180,64 +15628,6 @@
       "trend_p": 0.012291268923231957,
       "effect_size": null,
       "n_affected": 6,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_UTERUS_DILATATION_F",
-    "organ_system": "reproductive",
-    "output_text": "UTERUS \u2014 DILATATION: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: UTERUS \u2014 DILATATION (F)"
-    ],
-    "params": {
-      "endpoint_label": "UTERUS \u2014 DILATATION",
-      "domain": "MA",
-      "test_code": "UTERUS_DILATATION",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "UTERUS",
-      "finding": "DILATATION",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "MA_UTERUS_MASS_F",
-    "organ_system": "reproductive",
-    "output_text": "UTERUS \u2014 MASS: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "MA: UTERUS \u2014 MASS (F)"
-    ],
-    "params": {
-      "endpoint_label": "UTERUS \u2014 MASS",
-      "domain": "MA",
-      "test_code": "UTERUS_MASS",
-      "sex": "F",
-      "direction": "none",
-      "specimen": "UTERUS",
-      "finding": "MASS",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.5475924666383167,
-      "effect_size": null,
-      "n_affected": 1,
       "max_n": 15
     }
   },
@@ -18388,93 +15778,6 @@
     }
   },
   {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "CL_EXUDATE_F",
-    "organ_system": "general",
-    "output_text": "EXUDATE: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "CL: EXUDATE (F)"
-    ],
-    "params": {
-      "endpoint_label": "EXUDATE",
-      "domain": "CL",
-      "test_code": "EXUDATE",
-      "sex": "F",
-      "direction": "none",
-      "specimen": null,
-      "finding": "EXUDATE",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 0.5000000000000001,
-      "trend_p": 0.9596879696921041,
-      "effect_size": null,
-      "n_affected": 3,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "CL_RED AREA_F",
-    "organ_system": "general",
-    "output_text": "RED AREA: inconsistent dose-response in F.",
-    "evidence_refs": [
-      "CL: RED AREA (F)"
-    ],
-    "params": {
-      "endpoint_label": "RED AREA",
-      "domain": "CL",
-      "test_code": "RED AREA",
-      "sex": "F",
-      "direction": "none",
-      "specimen": null,
-      "finding": "RED AREA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.8540492466773077,
-      "effect_size": null,
-      "n_affected": 2,
-      "max_n": 15
-    }
-  },
-  {
-    "rule_id": "R07",
-    "scope": "endpoint",
-    "severity": "info",
-    "context_key": "CL_RED AREA_M",
-    "organ_system": "general",
-    "output_text": "RED AREA: inconsistent dose-response in M.",
-    "evidence_refs": [
-      "CL: RED AREA (M)"
-    ],
-    "params": {
-      "endpoint_label": "RED AREA",
-      "domain": "CL",
-      "test_code": "RED AREA",
-      "sex": "M",
-      "direction": "none",
-      "specimen": null,
-      "finding": "RED AREA",
-      "data_type": "incidence",
-      "dose_response_pattern": "non_monotonic",
-      "severity_class": "normal",
-      "treatment_related": false,
-      "p_value": 1.0,
-      "trend_p": 0.7311163232744013,
-      "effect_size": null,
-      "n_affected": 1,
-      "max_n": 15
-    }
-  },
-  {
     "rule_id": "R08",
     "scope": "organ",
     "severity": "warning",
@@ -18578,6 +15881,33 @@
     "rule_id": "R08",
     "scope": "organ",
     "severity": "warning",
+    "context_key": "organ_neurological",
+    "organ_system": "neurological",
+    "output_text": "Convergent evidence from 1 domains (OM).",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "neurological"
+    }
+  },
+  {
+    "rule_id": "R16",
+    "scope": "organ",
+    "severity": "info",
+    "context_key": "organ_neurological",
+    "organ_system": "neurological",
+    "output_text": "BRAIN \u2014 BRAIN (WEIGHT) show convergent pattern.",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "neurological",
+      "endpoint_labels": [
+        "BRAIN \u2014 BRAIN (WEIGHT)"
+      ]
+    }
+  },
+  {
+    "rule_id": "R08",
+    "scope": "organ",
+    "severity": "warning",
     "context_key": "organ_hematologic",
     "organ_system": "hematologic",
     "output_text": "Convergent evidence from 4 domains (LB, MA, MI, OM).",
@@ -18629,26 +15959,50 @@
     "rule_id": "R08",
     "scope": "organ",
     "severity": "warning",
-    "context_key": "organ_neurological",
-    "organ_system": "neurological",
-    "output_text": "Convergent evidence from 1 domains (OM).",
+    "context_key": "organ_hepatic",
+    "organ_system": "hepatic",
+    "output_text": "Convergent evidence from 4 domains (LB, MA, MI, OM).",
     "evidence_refs": [],
     "params": {
-      "organ_system": "neurological"
+      "organ_system": "hepatic"
+    }
+  },
+  {
+    "rule_id": "R09",
+    "scope": "organ",
+    "severity": "info",
+    "context_key": "organ_hepatic",
+    "organ_system": "hepatic",
+    "output_text": "37 endpoints across LB, MA, MI, OM.",
+    "evidence_refs": [],
+    "params": {
+      "organ_system": "hepatic",
+      "n_endpoints": 37,
+      "n_domains": 4,
+      "domains": [
+        "LB",
+        "MA",
+        "MI",
+        "OM"
+      ]
     }
   },
   {
     "rule_id": "R16",
     "scope": "organ",
     "severity": "info",
-    "context_key": "organ_neurological",
-    "organ_system": "neurological",
-    "output_text": "BRAIN \u2014 BRAIN (WEIGHT) show convergent pattern.",
+    "context_key": "organ_hepatic",
+    "organ_system": "hepatic",
+    "output_text": "Alanine Aminotransferase, Albumin, Albumin/Globulin, Alkaline Phosphatase, Aspartate Aminotransferase show convergent pattern.",
     "evidence_refs": [],
     "params": {
-      "organ_system": "neurological",
+      "organ_system": "hepatic",
       "endpoint_labels": [
-        "BRAIN \u2014 BRAIN (WEIGHT)"
+        "Alanine Aminotransferase",
+        "Albumin",
+        "Albumin/Globulin",
+        "Alkaline Phosphatase",
+        "Aspartate Aminotransferase"
       ]
     }
   },
@@ -18700,57 +16054,6 @@
         "KIDNEY \u2014 CAST",
         "KIDNEY \u2014 CYST",
         "KIDNEY \u2014 DISCOLORATION"
-      ]
-    }
-  },
-  {
-    "rule_id": "R08",
-    "scope": "organ",
-    "severity": "warning",
-    "context_key": "organ_hepatic",
-    "organ_system": "hepatic",
-    "output_text": "Convergent evidence from 4 domains (LB, MA, MI, OM).",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "hepatic"
-    }
-  },
-  {
-    "rule_id": "R09",
-    "scope": "organ",
-    "severity": "info",
-    "context_key": "organ_hepatic",
-    "organ_system": "hepatic",
-    "output_text": "37 endpoints across LB, MA, MI, OM.",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "hepatic",
-      "n_endpoints": 37,
-      "n_domains": 4,
-      "domains": [
-        "LB",
-        "MA",
-        "MI",
-        "OM"
-      ]
-    }
-  },
-  {
-    "rule_id": "R16",
-    "scope": "organ",
-    "severity": "info",
-    "context_key": "organ_hepatic",
-    "organ_system": "hepatic",
-    "output_text": "Alanine Aminotransferase, Albumin, Albumin/Globulin, Alkaline Phosphatase, Aspartate Aminotransferase show convergent pattern.",
-    "evidence_refs": [],
-    "params": {
-      "organ_system": "hepatic",
-      "endpoint_labels": [
-        "Alanine Aminotransferase",
-        "Albumin",
-        "Albumin/Globulin",
-        "Alkaline Phosphatase",
-        "Aspartate Aminotransferase"
       ]
     }
   },
