@@ -8,6 +8,10 @@ import type { RailVisibleState } from "@/components/analysis/findings/FindingsRa
 import { getFindingsRailCallback, setFindingsClearScopeCallback, setFindingsExcludedCallback } from "@/components/analysis/findings/FindingsView";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
+import { ValidationRuleRail } from "@/components/analysis/validation/ValidationRuleRail";
+import { useViewSelection } from "@/contexts/ViewSelectionContext";
+import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
+import type { ValidationRuleResult } from "@/hooks/useValidationResults";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 
 /**
@@ -146,6 +150,38 @@ export function ShellRailPanel() {
     }
   }, [studySelection.endpoint, isDRView]);
 
+  // Route detection — validation view
+  const isValidationRoute = pathname.includes("/validation");
+
+  // Validation rail: read/write selected rule via ViewSelectionContext
+  const { selection: viewSelection, setSelection } = useViewSelection();
+  const selectedRuleId =
+    viewSelection?._view === "validation" ? viewSelection.rule_id : null;
+
+  const handleValidationRuleSelect = useCallback(
+    (rule: ValidationRuleResult) => {
+      // Toggle off if re-selecting
+      if (selectedRuleId === rule.rule_id) {
+        setSelection(null);
+        return;
+      }
+      const sel: ValidationViewSelection = {
+        _view: "validation",
+        mode: "rule",
+        rule_id: rule.rule_id,
+        severity: rule.severity,
+        domain: rule.domain,
+        category: rule.category,
+        description: rule.description,
+        records_affected: rule.records_affected,
+        source: rule.source,
+        status: rule.status,
+      };
+      setSelection(sel);
+    },
+    [selectedRuleId, setSelection]
+  );
+
   // Don't render on landing page, non-study routes, or domain browser
   if (!studyId || domainName) return null;
 
@@ -155,7 +191,13 @@ export function ShellRailPanel() {
         className="shrink-0 overflow-hidden border-r"
         style={{ width }}
       >
-        {isFindingsView ? (
+        {isValidationRoute ? (
+          <ValidationRuleRail
+            studyId={studyId}
+            selectedRuleId={selectedRuleId}
+            onRuleSelect={handleValidationRuleSelect}
+          />
+        ) : isFindingsView ? (
           <FindingsRail
             studyId={studyId}
             activeGroupScope={groupScope}

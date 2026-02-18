@@ -18,6 +18,9 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# Module-level cache for CORE rule catalog (keyed by version)
+_core_rules_cache: dict[str, list[dict]] = {}
+
 # Paths relative to backend/
 BACKEND_DIR = Path(__file__).parent.parent
 CORE_VENV_PYTHON = BACKEND_DIR / ".venv-core" / "Scripts" / "python.exe"
@@ -259,6 +262,48 @@ def _map_category(core_category: str) -> str:
         "Consistency": "Consistency",
     }
     return category_map.get(core_category, core_category)
+
+
+def list_core_rules(sendig_version: str = "3-0") -> list[dict]:
+    """
+    List all available CORE rules for a given SENDIG version.
+
+    Returns a list of dicts with core_id, description, domains, rule_type, etc.
+    Returns empty list if CORE is not available. Results are cached in memory.
+    """
+    if sendig_version in _core_rules_cache:
+        return _core_rules_cache[sendig_version]
+
+    if not is_core_available():
+        return []
+
+    try:
+        cmd = [
+            str(CORE_VENV_PYTHON),
+            str(CORE_SCRIPT),
+            "list-rules",
+            "-s", "sendig",
+            "-v", sendig_version,
+        ]
+        result = subprocess.run(
+            cmd,
+            cwd=str(CORE_SCRIPT.parent),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            logger.warning(f"CORE list-rules failed: {result.stderr[:200]}")
+            return []
+
+        rules = json.loads(result.stdout)
+        logger.info(f"CORE has {len(rules)} rules for SENDIG {sendig_version}")
+        _core_rules_cache[sendig_version] = rules
+        return rules
+
+    except Exception as e:
+        logger.warning(f"Failed to list CORE rules: {e}")
+        return []
 
 
 def get_sendig_version_from_ts(ts_metadata: dict) -> str:
