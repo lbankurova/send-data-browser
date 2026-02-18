@@ -35,4 +35,12 @@ export interface StudyMortality {
   by_dose: DoseGroupMortality[];
   /** Non-scheduled subjects: {USUBJID: DSDECOD} */
   early_death_subjects: Record<string, string>;
+  /** Per-subject detail for exclusion counts: sex, dose_level, disposition */
+  early_death_details: Array<{
+    USUBJID: string;
+    sex: string;
+    dose_level: number;
+    disposition: string;
+    dose_label: string;
+  }>;
 }

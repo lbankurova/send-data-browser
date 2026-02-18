@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import type { StudyMortality } from "@/types/mortality";
 
@@ -16,7 +17,8 @@ interface MortalityBannerProps {
 export function MortalityBanner({ mortality }: MortalityBannerProps) {
   if (!mortality.has_mortality) return null;
 
-  const earlyDeathCount = Object.keys(mortality.early_death_subjects ?? {}).length;
+  const details = mortality.early_death_details ?? [];
+  const earlyDeathCount = details.length;
 
   // Build cause summary from death records (main-study only)
   const mainDeaths = mortality.deaths.filter((d) => !d.is_recovery);
@@ -42,23 +44,35 @@ export function MortalityBanner({ mortality }: MortalityBannerProps) {
         {doseText ? ` ${doseText}` : ""} — {causeText}
         {accidentalNote}
       </span>
-      {earlyDeathCount > 0 && <EarlyDeathToggle count={earlyDeathCount} />}
+      {earlyDeathCount > 0 && <EarlyDeathToggle details={details} />}
     </div>
   );
 }
 
-function EarlyDeathToggle({ count }: { count: number }) {
+function EarlyDeathToggle({
+  details,
+}: {
+  details: StudyMortality["early_death_details"];
+}) {
   const { useScheduledOnly: isScheduledOnly, setUseScheduledOnly } = useScheduledOnly();
+  const count = details.length;
+
+  // Build per-sex/dose summary for tooltip
+  const tooltip = useMemo(() => {
+    if (!isScheduledOnly) return "Click to exclude early-death subjects from terminal stats.";
+    const lines: string[] = [];
+    for (const d of details) {
+      lines.push(`${d.USUBJID} (${d.sex}, ${d.dose_label || `dose ${d.dose_level}`}): ${d.disposition}`);
+    }
+    return `Excluded from terminal stats:\n${lines.join("\n")}\n\nClick to show all animals.`;
+  }, [details, isScheduledOnly]);
+
   return (
     <button
       type="button"
       className="ml-auto flex items-center gap-1.5 rounded border border-border/60 bg-background px-2 py-0.5 text-[10px] transition-colors hover:bg-muted/60"
       onClick={() => setUseScheduledOnly(!isScheduledOnly)}
-      title={
-        isScheduledOnly
-          ? `${count} early-death subject${count !== 1 ? "s" : ""} excluded from terminal stats. Click to show all animals.`
-          : "Click to exclude early-death subjects from terminal stats."
-      }
+      title={tooltip}
     >
       <span
         className={`inline-block h-2 w-2 rounded-full ${isScheduledOnly ? "bg-gray-400" : "bg-gray-300"}`}

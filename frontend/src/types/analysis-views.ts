@@ -162,6 +162,8 @@ export interface AdverseEffectSummaryRow {
   max_incidence?: number | null;
   /** Maximum fold change vs control (always >= 1, continuous endpoints only) */
   max_fold_change?: number | null;
+  /** Number of early-death subjects excluded (terminal domains only) */
+  n_excluded?: number;
 }
 
 // --- Dose-Response (View 2) ---

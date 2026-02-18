@@ -70,6 +70,8 @@ export interface EndpointSummary {
   noaelBySex?: Map<string, EndpointNoael>;
   /** Per-sex breakdowns. Present when endpoint has data for multiple sexes. */
   bySex?: Map<string, SexEndpointSummary>;
+  /** True when this endpoint has early-death subjects excluded (terminal domains). */
+  hasEarlyDeathExclusion?: boolean;
 }
 
 export interface OrganCoherence {
@@ -204,6 +206,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     finding?: string | null;
     maxIncidence: number | null;
     maxFoldChange: number | null;
+    hasEarlyDeathExclusion: boolean;
   }>();
 
   // Per-sex aggregation: label → sex → accumulator
@@ -236,6 +239,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         finding: row.finding,
         maxIncidence: null,
         maxFoldChange: null,
+        hasEarlyDeathExclusion: false,
       };
       map.set(row.endpoint_label, entry);
     }
@@ -288,6 +292,9 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       }
     }
 
+    if ((row as { n_excluded?: number }).n_excluded != null && (row as { n_excluded?: number }).n_excluded! > 0) {
+      entry.hasEarlyDeathExclusion = true;
+    }
     if (row.severity === "adverse") entry.worstSeverity = "adverse";
     else if (row.severity === "warning" && entry.worstSeverity !== "adverse") entry.worstSeverity = "warning";
     if (row.treatment_related) entry.tr = true;
@@ -343,6 +350,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       finding: entry.finding,
       maxIncidence: entry.maxIncidence,
       maxFoldChange: entry.maxFoldChange,
+      hasEarlyDeathExclusion: entry.hasEarlyDeathExclusion,
     };
 
     // Attach bySex for multi-sex endpoints

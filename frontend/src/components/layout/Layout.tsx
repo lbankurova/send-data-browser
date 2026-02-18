@@ -12,6 +12,7 @@ import { DesignModeProvider } from "@/contexts/DesignModeContext";
 import { StudySelectionProvider } from "@/contexts/StudySelectionContext";
 import { GlobalFilterProvider } from "@/contexts/GlobalFilterContext";
 import { RailModeProvider } from "@/contexts/RailModeContext";
+import { ScheduledOnlyProvider } from "@/contexts/ScheduledOnlyContext";
 import { ShellRailPanel } from "@/components/shell/ShellRailPanel";
 import { GlobalTooltip } from "@/components/ui/GlobalTooltip";
 
@@ -114,6 +115,7 @@ export function Layout() {
         <StudySelectionProvider studyId={studyId}>
         <GlobalFilterProvider>
         <RailModeProvider studyId={studyId}>
+        <ScheduledOnlyProvider>
         <TreeControlProvider>
         <div className="flex h-screen flex-col">
           <Header />
@@ -189,6 +191,7 @@ export function Layout() {
           </div>
         </div>
         </TreeControlProvider>
+        </ScheduledOnlyProvider>
         </RailModeProvider>
         </GlobalFilterProvider>
         </StudySelectionProvider>

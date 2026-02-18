@@ -88,5 +88,21 @@
   "early_death_subjects": {
     "PC201708-1001": "MORIBUND SACRIFICE",
     "PC201708-4003": "MORIBUND SACRIFICE"
-  }
+  },
+  "early_death_details": [
+    {
+      "USUBJID": "PC201708-4003",
+      "sex": "M",
+      "dose_level": 3,
+      "disposition": "MORIBUND SACRIFICE",
+      "dose_label": "Group 4,200 mg/kg PCDRUG"
+    },
+    {
+      "USUBJID": "PC201708-1001",
+      "sex": "M",
+      "dose_level": 0,
+      "disposition": "MORIBUND SACRIFICE",
+      "dose_label": "Group 1, Control"
+    }
+  ]
 }

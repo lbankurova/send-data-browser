@@ -43,6 +43,7 @@ export interface QuadrantPoint {
   noaelTier?: NoaelTier;
   noaelDoseValue?: number | null;
   noaelDoseUnit?: string | null;
+  hasEarlyDeathExclusion?: boolean;
 }
 
 export function prepareQuadrantPoints(
@@ -126,6 +127,7 @@ export function prepareQuadrantPoints(
         noaelTier: ep.noaelTier,
         noaelDoseValue: ep.noaelDoseValue,
         noaelDoseUnit: ep.noaelDoseUnit,
+        hasEarlyDeathExclusion: ep.hasEarlyDeathExclusion,
       };
     });
 }
@@ -144,6 +146,7 @@ export function buildFindingsQuadrantOption(
     const isSelected = pt.endpoint_label === selectedEndpoint;
     const isAdverse = pt.worstSeverity === "adverse";
     const isClinical = pt.clinicalSeverity === "S3" || pt.clinicalSeverity === "S4";
+    const hasExclusion = pt.hasEarlyDeathExclusion === true;
     const isOutOfScope = scopeFilter != null &&
       pt.organ_system !== scopeFilter &&
       pt.domain !== scopeFilter &&
@@ -188,8 +191,9 @@ export function buildFindingsQuadrantOption(
       itemStyle: {
         color: dotColor,
         opacity,
-        borderColor: isSelected ? "#1F2937" : isClinical ? "#6B7280" : "transparent",
-        borderWidth: isSelected ? 2 : isClinical ? 1 : 0,
+        borderColor: isSelected ? "#1F2937" : isClinical ? "#6B7280" : hasExclusion ? "#9CA3AF" : "transparent",
+        borderWidth: isSelected ? 2 : isClinical ? 1 : hasExclusion ? 1 : 0,
+        borderType: hasExclusion && !isSelected && !isClinical ? "dashed" as const : "solid" as const,
       },
       emphasis: isOutOfScope
         ? { disabled: true }
@@ -258,6 +262,9 @@ export function buildFindingsQuadrantOption(
         }
         if (meta.syndromeName) {
           lines.push(`<div style="font-size:9px;margin-top:2px">\uD83D\uDD17 ${meta.syndromeName} syndrome</div>`);
+        }
+        if (meta.hasEarlyDeathExclusion) {
+          lines.push(`<div style="font-size:9px;margin-top:2px;color:#6B7280">Early deaths excluded from stats</div>`);
         }
         // NOAEL line
         if (meta.noaelTier === "below-lowest") {

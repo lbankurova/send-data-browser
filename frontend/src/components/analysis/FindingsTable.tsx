@@ -113,20 +113,25 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             const activeStats = getActiveGroupStats(f);
             const gs = activeStats.find((g) => g.dose_level === dg.dose_level);
             if (!gs) return "\u2014";
-            // Show excluded count annotation for terminal domains in scheduled-only mode
-            const showExcluded = isScheduledOnly && (f.n_excluded ?? 0) > 0 && dg.dose_level === 0;
+            // Per-dose-group exclusion: compare base N vs scheduled N
+            let excludedInGroup = 0;
+            if (isScheduledOnly && f.scheduled_group_stats) {
+              const baseGs = f.group_stats.find((g) => g.dose_level === dg.dose_level);
+              if (baseGs) excludedInGroup = baseGs.n - gs.n;
+            }
+            const excludedMark = excludedInGroup > 0
+              ? <span className="ml-0.5 text-muted-foreground/50" title={`${excludedInGroup} excluded from this group`}>*</span>
+              : null;
             if (f.data_type === "continuous") {
               return (
                 <span className="font-mono">
-                  {gs.mean != null ? gs.mean.toFixed(2) : "\u2014"}
-                  {showExcluded && <span className="ml-0.5 text-muted-foreground/50" title={`${f.n_excluded} early-death subject(s) excluded`}>*</span>}
+                  {gs.mean != null ? gs.mean.toFixed(2) : "\u2014"}{excludedMark}
                 </span>
               );
             }
             return (
               <span className="font-mono">
-                {gs.affected != null && gs.n ? `${gs.affected}/${gs.n}` : "\u2014"}
-                {showExcluded && <span className="ml-0.5 text-muted-foreground/50" title={`${f.n_excluded} early-death subject(s) excluded`}>*</span>}
+                {gs.affected != null && gs.n ? `${gs.affected}/${gs.n}` : "\u2014"}{excludedMark}
               </span>
             );
           },

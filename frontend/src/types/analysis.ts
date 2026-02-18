@@ -136,6 +136,25 @@ export interface FindingContext {
     trend_stat: number | null;
     unit: string | null;
     insights: Insight[];
+    /** Scheduled-only rows (early-death subjects excluded). Present only for terminal domains. */
+    scheduled_rows?: Array<{
+      dose_level: number;
+      label: string;
+      dose_value: number | null;
+      dose_unit: string | null;
+      n: number;
+      mean?: number | null;
+      sd?: number | null;
+      median?: number | null;
+      affected?: number;
+      incidence?: number;
+      p_value?: number | null;
+      p_value_adj?: number | null;
+      cohens_d?: number | null;
+      odds_ratio?: number | null;
+    }>;
+    /** Number of early-death subjects excluded from scheduled_rows. */
+    n_excluded?: number;
   };
   dose_response: {
     pattern: string;

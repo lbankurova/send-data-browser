@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
+import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import { useFindingContext } from "@/hooks/useFindingContext";
@@ -30,13 +32,23 @@ export function FindingsContextPanel() {
   const { data: noaelRows } = useEffectiveNoael(studyId);
   const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-finding");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+  const { useScheduledOnly: isScheduledOnly, hasEarlyDeaths } = useScheduledOnly();
+
+  // When scheduled-only mode is active, swap statistics rows to scheduled variants
+  const activeStatistics = useMemo(() => {
+    if (!context?.statistics) return context?.statistics;
+    if (isScheduledOnly && hasEarlyDeaths && context.statistics.scheduled_rows) {
+      return { ...context.statistics, rows: context.statistics.scheduled_rows };
+    }
+    return context.statistics;
+  }, [context?.statistics, isScheduledOnly, hasEarlyDeaths]);
 
   // Derive finding-level NOAEL from statistics rows (highest dose where p > 0.05
   // for all doses at and below it). Falls back to study-level NOAEL if stats unavailable.
   const noael = (() => {
-    // Try finding-level first from context statistics
-    if (context?.statistics?.rows && context.statistics.rows.length >= 2) {
-      const rows = context.statistics.rows; // sorted by dose_level ascending
+    // Try finding-level first from active statistics (respects scheduled-only toggle)
+    if (activeStatistics?.rows && activeStatistics.rows.length >= 2) {
+      const rows = activeStatistics.rows; // sorted by dose_level ascending
       // Find the LOAEL: lowest dose with p_value_adj < 0.05
       let loaelIndex = -1;
       for (let i = 1; i < rows.length; i++) { // skip control (index 0)
@@ -51,7 +63,7 @@ export function FindingsContextPanel() {
         const noaelRow = rows[loaelIndex - 1];
         return {
           dose_value: noaelRow.dose_value,
-          dose_unit: noaelRow.dose_unit ?? context.statistics.unit ?? "mg/kg",
+          dose_unit: noaelRow.dose_unit ?? activeStatistics.unit ?? "mg/kg",
         };
       }
       if (loaelIndex === 1) {
@@ -62,7 +74,7 @@ export function FindingsContextPanel() {
       const highest = rows[rows.length - 1];
       return {
         dose_value: highest.dose_value,
-        dose_unit: highest.dose_unit ?? context.statistics.unit ?? "mg/kg",
+        dose_unit: highest.dose_unit ?? activeStatistics.unit ?? "mg/kg",
       };
     }
 
@@ -139,7 +151,7 @@ export function FindingsContextPanel() {
           analytics={analytics}
           noael={noael}
           doseResponse={context.dose_response}
-          statistics={context.statistics}
+          statistics={activeStatistics!}
           treatmentSummary={context.treatment_summary}
           endpointSexes={endpointSexes}
           notEvaluated={notEvaluated}
@@ -150,7 +162,7 @@ export function FindingsContextPanel() {
         <EvidencePane
           finding={selectedFinding}
           analytics={analytics}
-          statistics={context.statistics}
+          statistics={activeStatistics!}
           effectSize={context.effect_size}
         />
       </CollapsiblePane>
@@ -160,10 +172,10 @@ export function FindingsContextPanel() {
         defaultOpen
         expandAll={expandGen}
         collapseAll={collapseGen}
-        headerRight={context.statistics.unit ? <span className="text-[10px] text-muted-foreground">Unit: {context.statistics.unit}</span> : undefined}
+        headerRight={activeStatistics!.unit ? <span className="text-[10px] text-muted-foreground">Unit: {activeStatistics!.unit}</span> : undefined}
       >
         <DoseDetailPane
-          statistics={context.statistics}
+          statistics={activeStatistics!}
           doseResponse={context.dose_response}
         />
       </CollapsiblePane>
