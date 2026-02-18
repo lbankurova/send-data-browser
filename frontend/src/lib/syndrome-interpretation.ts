@@ -3,7 +3,34 @@
  * Does NOT modify detection logic. Enriches detected syndromes with:
  *   Phase A: certainty grading, histopath cross-reference, recovery assessment
  *   Phase C: clinical observation (CL) correlation
- *   Phase B: (stub defaults) mortality, tumor, food consumption, study design, ECETOC
+ *   Phase B: study design notes live; mortality, tumor, food, ECETOC still stubbed
+ *
+ * Approved deviations from syndrome-interpretation-layer-spec.md:
+ *
+ *   Gap 1  assessCertainty: strong support + moderate-only against → mechanism_confirmed.
+ *          Spec returns uncertain. Rationale: weight asymmetry — a strong reticulocyte
+ *          increase is definitive, a moderate spleen weight change is softer. XS04 is
+ *          unaffected (RETIC is strong against, hits the strongAgainst gate first).
+ *
+ *   Gap 2  evaluateDiscriminator: absenceMeaningful is direction-aware.
+ *          expectedDirection="down" + not significant → supports (expected absence confirmed).
+ *          Spec unconditionally returns argues_against. Fixes XS01 ALP/GGT logic.
+ *
+ *   Gap 3  evaluateDiscriminator: histopath path uses proxy matching before returning
+ *          argues_against. Spec falls through directly. Enhancement.
+ *
+ *   Gap 4  DiscriminatingFinding.source: "LB" | "MI" | "MA" | "OM" (no "EG").
+ *          Spec had same union; code previously included "EG" speculatively. Removed.
+ *
+ *   Gap 15 XS01 test expects mechanism_uncertain. Spec expected mechanism_confirmed.
+ *          ALP is genuinely significant+up in PointCross → strong argues_against.
+ *
+ *   Gap 18 resolveCanonical() not implemented. findByCanonical uses CANONICAL_SYNONYMS
+ *          map (test codes + label patterns) instead. Covers multi-study variation.
+ *
+ *   Comp 7 ecgInterpretation dropped (XS10 not in detection engine). See TODO below.
+ *          recoveryDuration → recoveryPeriodDays (self-documenting unit).
+ *          matchedTerms → matchedEndpoints (richer: dose-response, stats, sex breakdowns).
  */
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
@@ -11,6 +38,7 @@ import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import { getSyndromeDefinition } from "@/lib/cross-domain-syndromes";
 import type { LesionSeverityRow } from "@/types/analysis-views";
 import type { StudyContext } from "@/types/study-context";
+import type { StudyMortality } from "@/types/mortality";
 
 // ─── Output types ──────────────────────────────────────────
 
@@ -1367,6 +1395,241 @@ export function assessClinicalObservationSupport(
   };
 }
 
+// ─── Component 7: Study design notes ────────────────────────
+
+/**
+ * Assemble study-design caveats relevant to a specific syndrome.
+ * Rules are species-agnostic; interpretation is species-aware.
+ */
+export function assembleStudyDesignNotes(
+  syndrome: CrossDomainSyndrome,
+  studyContext: StudyContext,
+): string[] {
+  const notes: string[] = [];
+
+  // TODO: restore ecgInterpretation caveats when XS10 cardiovascular syndrome is added.
+  // PointCross has 354 EG rows (QTcB, PR, RR). When XS10 detection lands:
+  //   - Rat QTc: "Ito-dominated repolarization, limited translational value" → cap at mechanism_uncertain
+  //   - Dog/monkey: correction formula selection (Bazett vs Fridericia vs Van de Water)
+  //   - Temperature correction for dogs (~14ms per °C)
+  // See spec §Component 7 lines 1845-1856.
+
+  // ── Strain-specific ──
+
+  // Fischer 344 rats have high background mononuclear cell leukemia
+  if (["XS04", "XS05"].includes(syndrome.id)) {
+    const strain = studyContext.strain.toUpperCase();
+    if (strain.includes("FISCHER") || strain.includes("F344")) {
+      notes.push(
+        "Fischer 344 rats have high background mononuclear cell leukemia (~38% males). " +
+        "Interpret hematology findings in context of strain predisposition.",
+      );
+    }
+  }
+
+  // ── Duration-specific ──
+
+  // Short studies (≤13 weeks): any neoplastic findings in MI domain are very unusual
+  const duration = studyContext.dosingDurationWeeks;
+  if (duration != null && duration <= 13) {
+    const hasMiFindings = syndrome.matchedEndpoints.some(
+      (ep) => ep.domain === "MI",
+    );
+    if (hasMiFindings) {
+      // Check if any MI findings look neoplastic (carcinoma, adenoma, tumor, neoplasm)
+      const neoTerms = /carcinom|adenom|tumor|neoplas/i;
+      const hasNeo = syndrome.matchedEndpoints.some(
+        (ep) => ep.domain === "MI" && neoTerms.test(ep.endpoint_label),
+      );
+      if (hasNeo) {
+        notes.push(
+          `Neoplastic findings at ${duration} weeks are extremely rare ` +
+          `spontaneously in ${studyContext.strain || studyContext.species}. ` +
+          `Any tumors are likely treatment-related.`,
+        );
+      }
+    }
+  }
+
+  // ── Route-specific ──
+
+  // Oral gavage GI findings may be route-related
+  if (studyContext.route?.toUpperCase().includes("GAVAGE")) {
+    // XS08 (stress response) may include secondary GI effects
+    if (syndrome.id === "XS08") {
+      notes.push(
+        "Oral gavage route: GI tract findings may include route-related irritation. " +
+        "Distinguish local (esophagus, forestomach) from systemic (small intestine, colon) effects.",
+      );
+    }
+  }
+
+  // ── Recovery arm ──
+
+  if (studyContext.recoveryPeriodDays != null && studyContext.recoveryPeriodDays > 0) {
+    const weeks = Math.round(studyContext.recoveryPeriodDays / 7);
+    notes.push(
+      `Recovery period: ${weeks > 0 ? `${weeks} week${weeks !== 1 ? "s" : ""}` : `${studyContext.recoveryPeriodDays} days`}. ` +
+      `Reversibility data available — see Recovery section.`,
+    );
+  }
+
+  return notes;
+}
+
+// ─── Phase B: Mortality context ─────────────────────────────
+
+/**
+ * Extract target organ terms from a syndrome definition.
+ * Uses specimenTerms + organWeightTerms from the syndrome's term definitions.
+ * E.g. XS01 → ["LIVER", "HEPAT"] (from MI/MA specimenTerms + OM organWeightTerms).
+ */
+export function getSyndromeOrgans(syndromeId: string): string[] {
+  const def = getSyndromeDefinition(syndromeId);
+  if (!def) return [];
+  const organs = new Set<string>();
+  for (const term of def.terms) {
+    if (term.specimenTerms) {
+      for (const spec of term.specimenTerms.specimen) {
+        organs.add(spec.toUpperCase());
+      }
+    }
+    if (term.organWeightTerms) {
+      for (const spec of term.organWeightTerms.specimen) {
+        organs.add(spec.toUpperCase());
+      }
+    }
+  }
+  return [...organs];
+}
+
+/**
+ * Simple dose-related mortality check: deaths at higher dose groups than control.
+ */
+export function isDoseRelatedMortality(deathsByDose: Map<number, number>): boolean {
+  if (deathsByDose.size === 0) return false;
+  const controlDeaths = deathsByDose.get(0) ?? 0;
+  for (const [dose, count] of deathsByDose) {
+    if (dose > 0 && count > controlDeaths) return true;
+  }
+  return false;
+}
+
+/**
+ * Bridge API StudyMortality type to interpretation layer AnimalDisposition[].
+ * - mortality.deaths[] → treatmentRelated: true
+ * - mortality.accidentals[] → treatmentRelated: false
+ * - All mapped entries get excludeFromTerminalStats: true
+ */
+export function mapDeathRecordsToDispositions(mortality: StudyMortality): AnimalDisposition[] {
+  const dispositions: AnimalDisposition[] = [];
+  for (const d of mortality.deaths) {
+    dispositions.push({
+      animalId: d.USUBJID,
+      doseGroup: d.dose_level,
+      sex: d.sex,
+      dispositionCode: d.disposition,
+      dispositionDay: d.study_day ?? 0,
+      treatmentRelated: true,
+      causeOfDeath: d.cause ?? undefined,
+      excludeFromTerminalStats: true,
+    });
+  }
+  for (const a of mortality.accidentals) {
+    dispositions.push({
+      animalId: a.USUBJID,
+      doseGroup: a.dose_level,
+      sex: a.sex,
+      dispositionCode: a.disposition,
+      dispositionDay: a.study_day ?? 0,
+      treatmentRelated: false,
+      causeOfDeath: a.cause ?? undefined,
+      excludeFromTerminalStats: true,
+    });
+  }
+  return dispositions;
+}
+
+/**
+ * Assess mortality context for a syndrome.
+ * Matches cause-of-death text against syndrome organ terms,
+ * computes dose-related mortality pattern, and builds narrative.
+ */
+export function assessMortalityContext(
+  syndrome: CrossDomainSyndrome,
+  mortalityData: AnimalDisposition[],
+  _studyContext: StudyContext,
+  mortalityNoaelCap?: number | null,
+): MortalityContext {
+  if (mortalityData.length === 0) {
+    return {
+      deathsInSyndromeOrgans: 0,
+      treatmentRelatedDeaths: 0,
+      doseRelatedMortality: false,
+      mortalityNarrative: "No mortality data available.",
+      mortalityNoaelCap: null,
+      deathDetails: [],
+    };
+  }
+
+  const treatmentRelated = mortalityData.filter((d) => d.treatmentRelated);
+  const syndromeOrgans = getSyndromeOrgans(syndrome.id);
+
+  // Match cause-of-death against syndrome organs
+  let deathsInOrgans = 0;
+  const matchedOrgans = new Set<string>();
+  for (const d of treatmentRelated) {
+    if (d.causeOfDeath) {
+      const causeUpper = d.causeOfDeath.toUpperCase();
+      for (const organ of syndromeOrgans) {
+        if (causeUpper.includes(organ)) {
+          deathsInOrgans++;
+          matchedOrgans.add(organ);
+          break;
+        }
+      }
+    }
+  }
+
+  // Dose-related mortality
+  const deathsByDose = new Map<number, number>();
+  for (const d of treatmentRelated) {
+    deathsByDose.set(d.doseGroup, (deathsByDose.get(d.doseGroup) ?? 0) + 1);
+  }
+  const doseRelated = isDoseRelatedMortality(deathsByDose);
+
+  // Build narrative
+  const parts: string[] = [];
+  parts.push(`${treatmentRelated.length} treatment-related death${treatmentRelated.length !== 1 ? "s" : ""}.`);
+  if (deathsInOrgans > 0) {
+    const organList = [...matchedOrgans].join(", ").toLowerCase();
+    parts.push(
+      `${deathsInOrgans} attributed to ${organList} — directly relevant to this syndrome.`,
+    );
+  }
+  if (doseRelated) {
+    parts.push("Dose-related mortality pattern detected.");
+  }
+  if (mortalityNoaelCap != null) {
+    parts.push(`Mortality caps NOAEL at dose level ${mortalityNoaelCap}.`);
+  }
+
+  return {
+    deathsInSyndromeOrgans: deathsInOrgans,
+    treatmentRelatedDeaths: treatmentRelated.length,
+    doseRelatedMortality: doseRelated,
+    mortalityNarrative: parts.join(" "),
+    mortalityNoaelCap: mortalityNoaelCap ?? null,
+    deathDetails: treatmentRelated.map((d) => ({
+      animalId: d.animalId,
+      doseGroup: d.doseGroup,
+      dispositionCode: d.dispositionCode,
+      dispositionDay: d.dispositionDay,
+      causeOfDeath: d.causeOfDeath,
+    })),
+  };
+}
+
 // ─── Orchestrator ──────────────────────────────────────────
 
 /**
@@ -1380,10 +1643,11 @@ export function interpretSyndrome(
   recoveryData: RecoveryRow[],
   _organWeightData: OrganWeightRow[],
   _tumorData: TumorFinding[],
-  _mortalityData: AnimalDisposition[],
+  mortalityData: AnimalDisposition[],
   _foodConsumptionData: FoodConsumptionSummary[],
   clinicalObservations: ClinicalObservation[],
-  _studyContext: StudyContext,
+  studyContext: StudyContext,
+  mortalityNoaelCap?: number | null,
 ): SyndromeInterpretation {
   const discriminators = DISCRIMINATOR_REGISTRY[syndrome.id];
 
@@ -1430,15 +1694,13 @@ export function interpretSyndrome(
     clinicalObservations,
   );
 
-  // ── Phase B stubs ──
-  const mortalityContext: MortalityContext = {
-    deathsInSyndromeOrgans: 0,
-    treatmentRelatedDeaths: 0,
-    doseRelatedMortality: false,
-    mortalityNarrative: "No mortality data available.",
-    mortalityNoaelCap: null,
-    deathDetails: [],
-  };
+  // ── Phase B: Mortality ──
+  const mortalityContext = assessMortalityContext(
+    syndrome,
+    mortalityData,
+    studyContext,
+    mortalityNoaelCap,
+  );
 
   const tumorContext: TumorContext = {
     tumorsPresent: false,
@@ -1487,11 +1749,15 @@ export function interpretSyndrome(
         : "equivocal",
   };
 
-  // Severity
+  // Severity — escalate based on mortality
   const overallSeverity: OverallSeverity =
-    certaintyResult.certainty === "mechanism_confirmed"
-      ? "S3_Adverse"
-      : "S2_Concern";
+    mortalityContext.deathsInSyndromeOrgans > 0
+      ? "S0_Death"
+      : mortalityContext.treatmentRelatedDeaths > 0
+        ? "S4_Critical"
+        : certaintyResult.certainty === "mechanism_confirmed"
+          ? "S3_Adverse"
+          : "S2_Concern";
 
   // Narrative
   const narrativeParts: string[] = [];
@@ -1522,6 +1788,16 @@ export function interpretSyndrome(
     );
   }
 
+  if (mortalityContext.treatmentRelatedDeaths > 0) {
+    narrativeParts.push(mortalityContext.mortalityNarrative);
+  }
+
+  // ── Component 7: Study design notes ──
+  const designNotes = assembleStudyDesignNotes(syndrome, studyContext);
+  for (const note of designNotes) {
+    narrativeParts.push(note);
+  }
+
   return {
     syndromeId: syndrome.id,
     certainty: certaintyResult.certainty,
@@ -1533,7 +1809,7 @@ export function interpretSyndrome(
     mortalityContext,
     tumorContext,
     foodConsumptionContext,
-    studyDesignNotes: [],
+    studyDesignNotes: designNotes,
     treatmentRelatedness,
     adversity,
     patternConfidence: syndrome.confidence,

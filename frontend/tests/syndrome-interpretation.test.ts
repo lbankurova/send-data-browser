@@ -14,13 +14,17 @@ import {
   crossReferenceHistopath,
   assessSyndromeRecovery,
   assessClinicalObservationSupport,
+  assembleStudyDesignNotes,
+  mapDeathRecordsToDispositions,
 } from "@/lib/syndrome-interpretation";
 import type {
   RecoveryRow,
   ClinicalObservation,
+  AnimalDisposition,
   StudyContext,
   SyndromeDiscriminators,
 } from "@/lib/syndrome-interpretation";
+import type { StudyMortality, DeathRecord } from "@/types/mortality";
 import fixture from "./fixtures/pointcross-findings.json";
 
 // ─── Setup from golden dataset ─────────────────────────────
@@ -90,6 +94,8 @@ function interp(
     recovery: RecoveryRow[];
     cl: ClinicalObservation[];
     context: StudyContext;
+    mortality: AnimalDisposition[];
+    mortalityNoaelCap: number | null;
   }>,
 ) {
   return interpretSyndrome(
@@ -99,10 +105,11 @@ function interp(
     overrides?.recovery ?? [],
     [], // organWeights
     [], // tumors
-    [], // mortality
+    overrides?.mortality ?? [],
     [], // food
     overrides?.cl ?? [],
     overrides?.context ?? defaultContext,
+    overrides?.mortalityNoaelCap,
   );
 }
 
@@ -414,6 +421,204 @@ describe("syndrome interpretation layer", () => {
     expect(result.mortalityContext.treatmentRelatedDeaths).toBe(0);
     expect(result.tumorContext.tumorsPresent).toBe(false);
     expect(result.foodConsumptionContext.available).toBe(false);
+  });
+
+  // ── Component 7: Study design notes ──
+
+  test("no study design notes for default PointCross context (SD rat, no special conditions)", () => {
+    const result = interp(xs01);
     expect(result.studyDesignNotes).toEqual([]);
+  });
+
+  test("Fischer 344 strain + XS04 gets mononuclear cell leukemia caveat", () => {
+    const f344Context: StudyContext = {
+      ...defaultContext,
+      strain: "FISCHER 344",
+    };
+    const notes = assembleStudyDesignNotes(xs04, f344Context);
+    expect(notes.length).toBe(1);
+    expect(notes[0]).toContain("mononuclear cell leukemia");
+    expect(notes[0]).toContain("38%");
+  });
+
+  test("Fischer 344 caveat also fires for XS05 but not XS01", () => {
+    const f344Context: StudyContext = {
+      ...defaultContext,
+      strain: "F344/DuCrl",
+    };
+    expect(assembleStudyDesignNotes(xs05, f344Context).length).toBe(1);
+    expect(assembleStudyDesignNotes(xs01, f344Context).length).toBe(0);
+  });
+
+  test("recovery period present adds recovery note", () => {
+    const recoveryContext: StudyContext = {
+      ...defaultContext,
+      recoveryPeriodDays: 28,
+    };
+    const notes = assembleStudyDesignNotes(xs01, recoveryContext);
+    expect(notes.some((n) => n.includes("Recovery period"))).toBe(true);
+    expect(notes.some((n) => n.includes("4 week"))).toBe(true);
+  });
+
+  test("no recovery note when recoveryPeriodDays is null", () => {
+    const notes = assembleStudyDesignNotes(xs01, defaultContext);
+    expect(notes.some((n) => n.includes("Recovery period"))).toBe(false);
+  });
+
+  test("oral gavage route + XS08 gets GI caveat", () => {
+    const xs08 = byId.get("XS08");
+    if (xs08) {
+      const notes = assembleStudyDesignNotes(xs08, defaultContext);
+      expect(notes.some((n) => n.includes("gavage"))).toBe(true);
+      expect(notes.some((n) => n.includes("forestomach"))).toBe(true);
+    }
+  });
+
+  test("oral gavage route does NOT add GI caveat for non-XS08 syndromes", () => {
+    const notes = assembleStudyDesignNotes(xs01, defaultContext);
+    expect(notes.some((n) => n.includes("gavage"))).toBe(false);
+  });
+
+  // ── Phase B: Mortality context ──
+
+  test("empty mortality → treatmentRelatedDeaths = 0, severity unchanged", () => {
+    const result = interp(xs01, { mortality: [] });
+    expect(result.mortalityContext.treatmentRelatedDeaths).toBe(0);
+    expect(result.mortalityContext.deathsInSyndromeOrgans).toBe(0);
+    expect(result.mortalityContext.mortalityNarrative).toBe("No mortality data available.");
+    // Severity should be unaffected (same as base case)
+    expect(["S3_Adverse", "S2_Concern"]).toContain(result.overallSeverity);
+  });
+
+  test("death in syndrome organs → S0_Death", () => {
+    const mortality: AnimalDisposition[] = [{
+      animalId: "SUBJ-001",
+      doseGroup: 3,
+      sex: "M",
+      dispositionCode: "FOUND DEAD",
+      dispositionDay: 90,
+      treatmentRelated: true,
+      causeOfDeath: "HEPATOCELLULAR CARCINOMA",
+      excludeFromTerminalStats: true,
+    }];
+    const result = interp(xs01, { mortality });
+    expect(result.mortalityContext.deathsInSyndromeOrgans).toBe(1);
+    expect(result.overallSeverity).toBe("S0_Death");
+  });
+
+  test("death in unrelated organs → S4_Critical (not S0_Death)", () => {
+    const mortality: AnimalDisposition[] = [{
+      animalId: "SUBJ-002",
+      doseGroup: 3,
+      sex: "M",
+      dispositionCode: "MORIBUND SACRIFICE",
+      dispositionDay: 85,
+      treatmentRelated: true,
+      causeOfDeath: "RENAL FAILURE",
+      excludeFromTerminalStats: true,
+    }];
+    const result = interp(xs01, { mortality });
+    expect(result.mortalityContext.deathsInSyndromeOrgans).toBe(0);
+    expect(result.mortalityContext.treatmentRelatedDeaths).toBe(1);
+    expect(result.overallSeverity).toBe("S4_Critical");
+  });
+
+  test("HEPATOCELLULAR CARCINOMA matches XS01 organs (LIVER/HEPAT)", () => {
+    const mortality: AnimalDisposition[] = [{
+      animalId: "SUBJ-003",
+      doseGroup: 2,
+      sex: "F",
+      dispositionCode: "FOUND DEAD",
+      dispositionDay: 88,
+      treatmentRelated: true,
+      causeOfDeath: "HEPATOCELLULAR CARCINOMA",
+      excludeFromTerminalStats: true,
+    }];
+    const result = interp(xs01, { mortality });
+    // Should match because XS01 has LIVER and/or HEPAT in organ terms
+    expect(result.mortalityContext.deathsInSyndromeOrgans).toBeGreaterThanOrEqual(1);
+    expect(result.mortalityContext.mortalityNarrative).toContain("directly relevant");
+  });
+
+  test("accidental deaths (treatmentRelated=false) do not count as treatment-related", () => {
+    const mortality: AnimalDisposition[] = [{
+      animalId: "SUBJ-004",
+      doseGroup: 1,
+      sex: "M",
+      dispositionCode: "FOUND DEAD",
+      dispositionDay: 30,
+      treatmentRelated: false,
+      causeOfDeath: "GAVAGE ERROR",
+      excludeFromTerminalStats: true,
+    }];
+    const result = interp(xs01, { mortality });
+    expect(result.mortalityContext.treatmentRelatedDeaths).toBe(0);
+    expect(result.mortalityContext.deathsInSyndromeOrgans).toBe(0);
+  });
+
+  test("mapDeathRecordsToDispositions correctly maps deaths and accidentals", () => {
+    const mortality: StudyMortality = {
+      has_mortality: true,
+      total_deaths: 1,
+      total_accidental: 1,
+      mortality_loael: 3,
+      mortality_loael_label: "200 mg/kg",
+      mortality_noael_cap: 2,
+      severity_tier: "critical",
+      deaths: [{
+        USUBJID: "SUBJ-101",
+        sex: "M",
+        dose_level: 3,
+        is_recovery: false,
+        disposition: "FOUND DEAD",
+        cause: "HEPATOCELLULAR CARCINOMA",
+        relatedness: "DRUG RELATED",
+        study_day: 90,
+        dose_label: "200 mg/kg",
+      }],
+      accidentals: [{
+        USUBJID: "SUBJ-102",
+        sex: "F",
+        dose_level: 1,
+        is_recovery: false,
+        disposition: "FOUND DEAD",
+        cause: "GAVAGE ERROR",
+        relatedness: "NOT RELATED",
+        study_day: 30,
+        dose_label: "50 mg/kg",
+      }],
+      by_dose: [],
+    };
+
+    const dispositions = mapDeathRecordsToDispositions(mortality);
+    expect(dispositions).toHaveLength(2);
+
+    const death = dispositions.find((d) => d.animalId === "SUBJ-101")!;
+    expect(death.treatmentRelated).toBe(true);
+    expect(death.doseGroup).toBe(3);
+    expect(death.dispositionCode).toBe("FOUND DEAD");
+    expect(death.causeOfDeath).toBe("HEPATOCELLULAR CARCINOMA");
+    expect(death.excludeFromTerminalStats).toBe(true);
+
+    const accidental = dispositions.find((d) => d.animalId === "SUBJ-102")!;
+    expect(accidental.treatmentRelated).toBe(false);
+    expect(accidental.causeOfDeath).toBe("GAVAGE ERROR");
+    expect(accidental.excludeFromTerminalStats).toBe(true);
+  });
+
+  test("mortality NOAEL cap is propagated", () => {
+    const mortality: AnimalDisposition[] = [{
+      animalId: "SUBJ-005",
+      doseGroup: 3,
+      sex: "M",
+      dispositionCode: "FOUND DEAD",
+      dispositionDay: 90,
+      treatmentRelated: true,
+      causeOfDeath: "RENAL FAILURE",
+      excludeFromTerminalStats: true,
+    }];
+    const result = interp(xs01, { mortality, mortalityNoaelCap: 2 });
+    expect(result.mortalityContext.mortalityNoaelCap).toBe(2);
+    expect(result.mortalityContext.mortalityNarrative).toContain("caps NOAEL");
   });
 });
