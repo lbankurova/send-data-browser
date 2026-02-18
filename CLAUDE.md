@@ -131,7 +131,7 @@ Present before moving on, so they can prioritize or dismiss items.
 - **Framework**: FastAPI with uvicorn
 - **Entry**: `main.py` — app setup, CORS (allows *), lifespan startup discovers studies
 - **Routers**: `studies.py` (domain browsing), `analyses.py` (dynamic adverse effects), `analysis_views.py` (pre-generated JSON), `validation.py` (validation engine), `annotations.py` (annotations CRUD) — all under `/api`
-- **Validation Engine**: `validation/` package — 18 YAML rules, 15 check types, SENDIG metadata. See `docs/systems/validation-engine.md`.
+- **Validation Engine**: `validation/` package — 14 YAML rules (7 SD + 7 FDA), 2 check types, optional CDISC CORE integration, SENDIG metadata. See `docs/systems/validation-engine.md`.
 - **Services**: `services/study_discovery.py`, `services/xpt_processor.py`, `services/analysis/` (statistical pipeline)
 - **Generator**: `generator/generate.py` — reads .XPT, writes 8 JSON files + static charts to `generated/{study_id}/`
 - **Config**: `config.py` — paths, skip list, allowed studies filter
@@ -231,7 +231,7 @@ All color functions implemented in `lib/severity-colors.ts` (p-value, signal sco
 
 ## Implementation Status
 
-**All 5 build steps complete.** 7 analysis views (Study Summary, Adverse Effects, Dose-Response, Histopathology, NOAEL Decision, Validation, plus HTML Report). Real validation engine (18 YAML rules, 15 check types). All FEAT-01 through FEAT-09 incoming features implemented. See system specs (`docs/systems/*.md`) and view specs (`docs/views/*.md`) for current architecture. Detailed implementation notes archived in `docs/reference/claude-md-archive.md`.
+**All 5 build steps complete.** 7 analysis views (Study Summary, Adverse Effects, Dose-Response, Histopathology, NOAEL Decision, Validation, plus HTML Report). Real validation engine (14 YAML rules, 2 check types). All FEAT-01 through FEAT-09 incoming features implemented. See system specs (`docs/systems/*.md`) and view specs (`docs/views/*.md`) for current architecture. Detailed implementation notes archived in `docs/reference/claude-md-archive.md`.
 
 **Data nullability note:** `lesion_severity_summary.json`: `avg_severity` is null for 550/728 rows — always null-guard with `?? 0`.
 
@@ -252,7 +252,7 @@ Full migration guide with file paths and line numbers: `docs/reference/demo-stub
 | Annotation API contract | **Real** | GET/PUT endpoints, 4 schema types — only storage backend needs changing |
 | React Query data hooks | **Real** | All hooks are production-ready, no mocking |
 | Landing page | **Real** | Shows all discovered studies, no demo entries |
-| Validation engine & rules | **Real** | 18 YAML rules, Python engine reads XPT data, API serves results via hooks |
+| Validation engine & rules | **Real** | 14 YAML rules (7 SD + 7 FDA), Python engine reads XPT data, optional CDISC CORE, API serves results via hooks |
 | Import section | **Real** | Drag-and-drop .zip upload, backend extraction, auto-registration |
 | Delete study | **Real** | Context menu delete with confirmation, removes all dirs |
 | Treatment arms | **Real** | Dynamic ARMCD detection from TX/DM, treatment arms table in details |
