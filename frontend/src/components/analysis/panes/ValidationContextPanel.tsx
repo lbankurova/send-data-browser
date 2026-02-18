@@ -16,11 +16,13 @@ import {
 import type { RuleDetail, AffectedRecord } from "@/components/analysis/ValidationView";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
+import { useValidationCatalog } from "@/hooks/useValidationCatalog";
 import { useAffectedRecords } from "@/hooks/useAffectedRecords";
-import type { ValidationRecordReview } from "@/types/annotations";
+import type { ValidationRecordReview, ValidationRuleOverride } from "@/types/annotations";
 import type { ValidationViewSelection, ValidationIssueViewSelection } from "@/contexts/ViewSelectionContext";
 import { getValidationRuleDef, FIX_TIER_DEFINITIONS } from "@/lib/validation-rule-catalog";
 import { DomainLabel } from "@/components/ui/DomainLabel";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Props {
   selection: ValidationViewSelection | null;
@@ -114,6 +116,92 @@ function PaneNavBar({
         <ChevronRight className="h-3.5 w-3.5" />
       </button>
     </div>
+  );
+}
+
+// ── Rule configuration pane (enable/disable toggle) ────────────────────
+
+function RuleConfigPane({
+  studyId,
+  ruleId,
+  expandGen,
+  collapseGen,
+}: {
+  studyId: string;
+  ruleId: string;
+  expandGen: number;
+  collapseGen: number;
+}) {
+  const queryClient = useQueryClient();
+  const { data: overrideAnnotations } = useAnnotations<ValidationRuleOverride>(
+    studyId,
+    "validation-rule-config"
+  );
+  const { mutate: saveOverride, isPending } = useSaveAnnotation<ValidationRuleOverride>(
+    studyId,
+    "validation-rule-config"
+  );
+
+  const existing = overrideAnnotations?.[ruleId];
+  const isEnabled = existing?.enabled !== false;
+
+  const handleToggle = () => {
+    saveOverride(
+      {
+        entityKey: ruleId,
+        data: {
+          enabled: !isEnabled,
+          severityOverride: existing?.severityOverride ?? null,
+          comment: existing?.comment ?? "",
+        },
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["validation-catalog", studyId] });
+        },
+      }
+    );
+  };
+
+  return (
+    <CollapsiblePane
+      title="Rule configuration"
+      defaultOpen={false}
+      expandAll={expandGen}
+      collapseAll={collapseGen}
+    >
+      <div className="flex items-center gap-3 text-[11px]">
+        <label className="flex items-center gap-2">
+          <span className="text-muted-foreground">Rule status</span>
+          <button
+            className={cn(
+              "relative inline-flex h-4 w-7 shrink-0 cursor-pointer items-center rounded-full border transition-colors",
+              isEnabled ? "bg-primary border-primary" : "bg-gray-300 border-gray-300",
+              isPending && "opacity-50",
+            )}
+            onClick={handleToggle}
+            disabled={isPending}
+            role="switch"
+            aria-checked={isEnabled}
+          >
+            <span
+              className={cn(
+                "pointer-events-none block h-3 w-3 rounded-full bg-white shadow transition-transform",
+                isEnabled ? "translate-x-3.5" : "translate-x-0.5"
+              )}
+            />
+          </button>
+          <span className="font-medium">
+            {isEnabled ? "Enabled" : "Disabled"}
+          </span>
+        </label>
+      </div>
+      {!isEnabled && (
+        <p className="mt-1.5 text-[10px] text-muted-foreground">
+          Disabled rules are skipped during validation runs.
+        </p>
+      )}
+    </CollapsiblePane>
   );
 }
 
@@ -215,47 +303,91 @@ function RuleReviewSummary({
         )}
       </CollapsiblePane>
 
-      {/* Rule metadata (from static catalog — TRUST-05p1) */}
+      {/* Rule metadata — static catalog for SD-* rules, API data for others */}
       {(() => {
         const catalogRule = getValidationRuleDef(selection.rule_id);
-        if (!catalogRule) return null;
-        const tierDef = FIX_TIER_DEFINITIONS.find((t) => t.tier === catalogRule.default_fix_tier);
+        if (catalogRule) {
+          // Rich metadata from static catalog (SD-* custom rules)
+          const tierDef = FIX_TIER_DEFINITIONS.find((t) => t.tier === catalogRule.default_fix_tier);
+          return (
+            <CollapsiblePane title="Rule metadata" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+              <div className="space-y-2 text-[11px]">
+                <div>
+                  <span className="font-medium text-muted-foreground">Applicable domains: </span>
+                  <span className="inline-flex gap-1">
+                    {catalogRule.applicable_domains.map((d) => (
+                      <DomainLabel key={d} domain={d} />
+                    ))}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-medium text-muted-foreground">Evidence type: </span>
+                  <span className="font-mono text-[10px]">{catalogRule.evidence_type}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-muted-foreground">Default fix tier: </span>
+                  <span className="font-mono text-[10px]">{catalogRule.default_fix_tier}</span>
+                  {tierDef && (
+                    <span className="ml-1 text-muted-foreground">({tierDef.name})</span>
+                  )}
+                </div>
+                <div>
+                  <span className="font-medium text-muted-foreground">Auto-fixable: </span>
+                  <span>{catalogRule.auto_fixable ? "Yes" : "No"}</span>
+                </div>
+                {catalogRule.cdisc_reference && (
+                  <div>
+                    <span className="font-medium text-muted-foreground">CDISC reference: </span>
+                    <span>{catalogRule.cdisc_reference}</span>
+                  </div>
+                )}
+              </div>
+            </CollapsiblePane>
+          );
+        }
+        // For CORE / FDA-* rules: show source, domain, and CDISC reference from API detail
+        const source = ("source" in selection ? selection.source : undefined) ?? (selection.rule_id.startsWith("CORE-") ? "core" : "custom");
         return (
           <CollapsiblePane title="Rule metadata" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
             <div className="space-y-2 text-[11px]">
               <div>
+                <span className="font-medium text-muted-foreground">Source: </span>
+                <span>{source === "core" ? "CDISC CORE" : "Custom"}</span>
+              </div>
+              <div>
                 <span className="font-medium text-muted-foreground">Applicable domains: </span>
                 <span className="inline-flex gap-1">
-                  {catalogRule.applicable_domains.map((d) => (
+                  {selection.domain.split(",").map((d) => d.trim()).filter(Boolean).map((d) => (
                     <DomainLabel key={d} domain={d} />
                   ))}
                 </span>
               </div>
-              <div>
-                <span className="font-medium text-muted-foreground">Evidence type: </span>
-                <span className="font-mono text-[10px]">{catalogRule.evidence_type}</span>
-              </div>
-              <div>
-                <span className="font-medium text-muted-foreground">Default fix tier: </span>
-                <span className="font-mono text-[10px]">{catalogRule.default_fix_tier}</span>
-                {tierDef && (
-                  <span className="ml-1 text-muted-foreground">({tierDef.name})</span>
-                )}
-              </div>
-              <div>
-                <span className="font-medium text-muted-foreground">Auto-fixable: </span>
-                <span>{catalogRule.auto_fixable ? "Yes" : "No"}</span>
-              </div>
-              {catalogRule.cdisc_reference && (
+              {detail?.standard && (
                 <div>
-                  <span className="font-medium text-muted-foreground">CDISC reference: </span>
-                  <span>{catalogRule.cdisc_reference}</span>
+                  <span className="font-medium text-muted-foreground">Standard: </span>
+                  <span>{detail.standard}</span>
+                </div>
+              )}
+              {detail?.howToFix && detail.howToFix !== "See CDISC rules catalog for detailed guidance" && (
+                <div>
+                  <span className="font-medium text-muted-foreground">How to fix: </span>
+                  <span>{detail.howToFix}</span>
                 </div>
               )}
             </div>
           </CollapsiblePane>
         );
       })()}
+
+      {/* Rule configuration — enable/disable toggle */}
+      {studyId && (
+        <RuleConfigPane
+          studyId={studyId}
+          ruleId={selection.rule_id}
+          expandGen={expandGen}
+          collapseGen={collapseGen}
+        />
+      )}
 
       {/* Review progress */}
       <CollapsiblePane title="Review progress" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
@@ -1577,11 +1709,17 @@ export function ValidationContextPanel({ selection, studyId, setSelection }: Pro
   };
 
   const { data: validationData } = useValidationResults(studyId);
+  const { data: catalogData } = useValidationCatalog(studyId);
   const detail = useMemo(() => {
-    if (!selection || !validationData?.rules) return null;
-    const rule = validationData.rules.find(r => r.rule_id === selection.rule_id);
-    return rule ? extractRuleDetail(rule) : null;
-  }, [selection, validationData]);
+    if (!selection) return null;
+    // Try triggered results first (most detailed for triggered rules)
+    const fromResults = validationData?.rules?.find(r => r.rule_id === selection.rule_id);
+    if (fromResults) return extractRuleDetail(fromResults);
+    // Fall back to full catalog (clean/disabled/CORE rules)
+    const fromCatalog = catalogData?.rules?.find(r => r.rule_id === selection.rule_id);
+    if (fromCatalog) return extractRuleDetail(fromCatalog);
+    return null;
+  }, [selection, validationData, catalogData]);
 
   if (!selection) {
     return (

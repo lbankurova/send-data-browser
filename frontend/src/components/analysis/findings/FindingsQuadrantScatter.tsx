@@ -75,22 +75,16 @@ export function FindingsQuadrantScatter({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (params: any) => {
       if (params?.data?._outOfScope) return; // ignore dimmed dots
-      if (params?.data?._meta?.endpoint_label) {
-        onSelect(params.data._meta.endpoint_label);
-      }
-    },
-    [onSelect],
-  );
-
-  const handleDoubleClick = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (params: any) => {
       const label = params?.data?._meta?.endpoint_label;
-      if (label && onExclude) {
+      if (!label) return;
+      // Ctrl+click → exclude endpoint from scatter
+      if (params?.event?.event?.ctrlKey && onExclude) {
         onExclude(label);
+        return;
       }
+      onSelect(label);
     },
-    [onExclude],
+    [onSelect, onExclude],
   );
 
   // Syndrome hover linking: highlight all dots in the same syndrome
@@ -173,7 +167,7 @@ export function FindingsQuadrantScatter({
     ? `${points.length}/${totalEndpoints} endpoints`
     : `${points.length} endpoints`;
   const tooltipLines = [
-    "Click to select \u00b7 Double-click to exclude",
+    "Click to select \u00b7 Ctrl+click to exclude",
     ...(gap > 0 ? [`${gap} endpoint${gap > 1 ? "s" : ""} not plotted (missing effect size or p-value)`] : []),
   ];
   const countTooltip = tooltipLines.join("\n");
@@ -197,7 +191,6 @@ export function FindingsQuadrantScatter({
       <EChartsWrapper
         option={option}
         onClick={handleClick}
-        onDoubleClick={handleDoubleClick}
         onMouseOver={handleMouseOver}
         onMouseOut={handleMouseOut}
         ref={chartRef}
