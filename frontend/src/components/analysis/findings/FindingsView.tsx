@@ -3,9 +3,12 @@ import { useParams } from "react-router-dom";
 import { Info } from "lucide-react";
 import { useFindings } from "@/hooks/useFindings";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
+import { useStudyContext } from "@/hooks/useStudyContext";
+import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { FilterBar } from "@/components/ui/FilterBar";
+import { StudyBanner } from "@/components/analysis/StudyBanner";
 import { MortalityBanner } from "@/components/analysis/MortalityBanner";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
@@ -92,6 +95,11 @@ export function FindingsView() {
 
   // Mortality data
   const { data: mortalityData } = useStudyMortality(studyId);
+
+  // Study context for StudyBanner
+  const { data: studyContext } = useStudyContext(studyId);
+  const { data: studyMeta } = useStudyMetadata(studyId ?? "");
+  const doseGroupCount = studyMeta?.dose_groups?.length ?? 0;
 
   // Rail-provided state (single source of truth for filtering)
   const [visibleLabels, setVisibleLabels] = useState<Set<string> | null>(null);
@@ -395,6 +403,8 @@ export function FindingsView() {
   return (
     <FindingsAnalyticsProvider value={analyticsValue}>
     <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
+      {/* Study context banner */}
+      {studyContext && <StudyBanner studyContext={studyContext} doseGroupCount={doseGroupCount} />}
       {/* Mortality banner */}
       {mortalityData && <MortalityBanner mortality={mortalityData} />}
       {/* Header */}
