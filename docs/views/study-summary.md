@@ -196,22 +196,30 @@ Container: `shrink-0 border-b px-4 py-2`.
 
 ### Organ Selection (shell-level rail)
 
-The Signals tab does **not** embed its own organ rail. Organ selection flows from the shell-level `OrganRailMode` (declared via `useRailModePreference("organ")` in `StudySummaryViewWrapper`). The `SignalsOrganRail` component exists in `SignalsPanel.tsx` but is used by the shell rail mode, not embedded in the view.
+The Signals tab does **not** embed its own organ rail. Organ selection flows from the shell-level `OrganRailMode` (in `components/shell/OrganRailMode.tsx`, declared via `useRailModePreference("organ")` in `StudySummaryViewWrapper`).
 
-The selected organ flows from `StudySelectionContext` (`studySelection.organSystem`). Each rail item (`SignalsOrganRailItem`) shows:
+**Note:** `SignalsOrganRail` in `SignalsPanel.tsx` is dead code — the actual shell rail is `OrganRailMode`, which is an independent implementation.
+
+The selected organ flows from `StudySelectionContext` (`studySelection.organSystem`). Each rail item shows:
 
 - **Row 1: Name line** — `flex items-center gap-2`:
   - Organ name: `text-xs font-semibold` + `titleCase()`
-  - Dominant direction arrow (if available): `text-[10px] text-muted-foreground/60` — up/down/mixed. Computed from significant signals (p < 0.05) in `computeOrganRailStats()`.
-  - "TARGET" badge (if target organ): `text-[9px] font-semibold uppercase text-red-600`
-- **Row 2: Evidence score bar** — uses `<EvidenceBar>` reusable component. Neutral gray track and fill, width normalized to max across all organs.
-- **Row 3: Stats line** — `text-[10px] text-muted-foreground`: `{n_significant} sig · {n_treatment_related} TR · {n_domains} domains` + domain chips
-- **Row 4: Effect metrics** (if available) — `text-[10px] text-muted-foreground tabular-nums`: `|d|={maxAbsEffectSize}` + `trend p={minTrendP}`
-- **Row 5: D-R summary** (if available from OrganBlock): `text-[10px] text-muted-foreground` — `D-R: {nEndpoints} ({topEndpoint})`
+  - Dominant direction arrow (if available): `text-[10px] text-muted-foreground/60` — up/down/mixed
+  - "TARGET" badge (if target organ): `text-[9px] font-semibold uppercase text-[#DC2626]`
+- **Row 2: Evidence score bar** — uses `<EvidenceBar>` reusable component. Neutral gray track and fill, width normalized to max across all organs. Includes `EvidenceScorePopover` "?" button for score breakdown details.
+- **Row 3: Signal metrics** — from `computeOrganStats()` (`organ-analytics.ts`): min p-value, max effect size, and **dose consistency label** (e.g., "Consistent", "Mixed")
+- **Row 4: Stats line** — `text-[10px] text-muted-foreground`: `{n_significant} sig · {n_treatment_related} TR · {n_domains} domains` + domain chips
+- **Row 5: Effect metrics** (if available) — `text-[10px] text-muted-foreground tabular-nums`: `|d|={maxAbsEffectSize}` + `trend p={minTrendP}`
 
-**Target/non-target separator:** "Other organs" divider between target and non-target groups.
+**Sort controls:** Dropdown with 4 modes: Evidence (default), Adverse count, Effect size, A-Z.
 
-**Sorted by:** Targets first, then by `evidence_score` descending within each group.
+**Global filter integration:** Uses `useGlobalFilters()` for search, adverseOnly, significantOnly, minSeverity. Active filter summary shown via `FilterShowingLine`.
+
+**Keyboard navigation:** `useRailKeyboard` enables arrow-key navigation between rail items.
+
+**Target/non-target separator:** "Other organs" divider between target and non-target groups. Only shown in "Evidence" sort mode.
+
+**Sorted by:** Varies by sort mode. Default (Evidence): targets first, then by `evidence_score` descending within each group.
 **Auto-select:** Highest-evidence organ is auto-selected when data loads and no organ is selected (via `useEffect` in `StudySummaryView`).
 
 ### Evidence Panel (full width, flex-1, `bg-muted/5`)
@@ -353,9 +361,9 @@ Route-detected: when pathname matches `/studies/{studyId}`, shows `StudySummaryC
 **Wrapper architecture:** `StudySummaryContextPanelWrapper` (in `ContextPanel.tsx`) bridges `StudySelectionContext` to the context panel:
 - Reads `studySel` from `useStudySelection()` hook
 - Extracts `organSelection = studySel.organSystem ?? null`
+- Builds `endpointSel` from `studySel.endpoint` (when a signal is selected in the Metrics or Signal Matrix tab, `handleSetSelection` calls `navigateTo({ endpoint: sel.endpoint_label })`)
 - Fetches `signalData` (via `useStudySignalSummary`) and `ruleResults` (via `useRuleResults`)
-- Always passes `selection={null}` — endpoint-level selection is managed locally within `SignalsEvidencePanel` and does not flow to the context panel
-- Passes `organSelection` to `StudySummaryContextPanel` which shows `OrganPanel` (organ selected) or empty state (no organ selected)
+- Passes both `organSelection` and `selection` (endpoint) to `StudySummaryContextPanel`, which shows `EndpointPanel` (endpoint selected), `OrganPanel` (organ selected), or empty state (no selection)
 
 ### No Selection State
 - Primary message: "Select a signal from the heatmap or grid to view details."
@@ -364,7 +372,7 @@ Route-detected: when pathname matches `/studies/{studyId}`, shows `StudySummaryC
 
 ### Organ Selected (`OrganPanel`)
 
-Triggered when an organ is selected in the rail. Since `selection` is always `null` from the wrapper, this panel shows whenever an organ is selected.
+Triggered when an organ is selected in the rail and no endpoint is selected.
 
 #### Header
 - `sticky top-0 z-10 border-b bg-background px-4 py-3`
@@ -400,7 +408,7 @@ Note: There is a duplicate "View histopathology" link — one with the organ nam
 
 ### Endpoint Selected (`EndpointPanel`)
 
-**Note:** This panel exists in the codebase but is currently **not reachable** from the wrapper. `StudySummaryContextPanelWrapper` always passes `selection={null}`, so this panel never renders in normal operation. The code is preserved for future use if endpoint selection is wired through to the context panel.
+Triggered when a signal is selected in the Metrics or Signal Matrix tab (which sets `studySel.endpoint` via `handleSetSelection` → `navigateTo`).
 
 #### Header
 - `sticky top-0 z-10 border-b bg-background px-4 py-3`
@@ -464,7 +472,8 @@ Note: There is a duplicate "View histopathology" link — one with the organ nam
 | Evidence panel tab | Session-persisted | `useSessionState<EvidenceTab>("pcc.signals.tab", "overview")` — "overview" \| "matrix" \| "metrics" \| "rules" |
 | Show all insights | Local (CrossStudyInsightsTab) | `useState<boolean>` — toggles visibility of priority 2-3 insights |
 | Rail width | Shell | Managed by shell-level `OrganRailMode` (not embedded in this view) |
-| Rail search | Shell (SignalsOrganRail) | `useState<string>` |
+| Rail search | Shell (OrganRailMode) | `useState<string>` |
+| Rail sort mode | Shell (OrganRailMode) | `useState` — Evidence \| Adverse count \| Effect size \| A-Z |
 | Metrics tab filters | Local (SignalsMetricsTab) | `useState<{ sex, severity, significant_only }>` |
 | Metrics tab sorting | Session-persisted | `useSessionState<SortingState>("pcc.signals.sorting", [{ id: "signal_score", desc: true }])` |
 | Metrics tab column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.signals.columnSizing", {})` |
@@ -477,8 +486,7 @@ Note: There is a duplicate "View histopathology" link — one with the organ nam
 | Insights | Server | `useInsights` hook — cross-study intelligence (19 rules, 0-18) |
 | Panel data | Derived | `buildSignalsPanelData(noaelData, targetOrgans, signalData)` |
 | Selected organ data | Derived | Matched from `targetOrgans` by `selectedOrgan` |
-| OrganBlocksMap | Derived (in SignalsOrganRail) | Map from `panelData.organBlocks` keyed by `organKey` |
-| RailStatsMap | Derived (in SignalsOrganRail) | Per-organ `{ maxAbsEffectSize, minTrendP, dominantDirection }` from signal data |
+| OrganStats | Derived (in OrganRailMode) | Per-organ stats from `computeOrganStats()` (organ-analytics.ts): min p-value, max effect size, dose consistency |
 
 ---
 
@@ -498,20 +506,20 @@ useRuleResults(studyId)         ──> ruleResults
     ┌────┴────────────────────────────────────┐
     │                                         │
 Shell OrganRailMode              SignalsEvidencePanel
-(SignalsOrganRail,                (selected organ's data)
- organBlocksMap)                  ├── Evidence (InsightsList, domain table,
+(organ-analytics.ts,              (selected organ's data)
+ computeOrganStats)               ├── Evidence (InsightsList, domain table,
     │                             │            top findings)
     └── selectedOrgan ──────>     ├── Signal matrix (filtered heatmap)
          (via                     ├── Metrics (sortable data table)
     StudySelectionContext)         └── Rules (RuleInspectorTab)
                                          │
-                                    localSignalSel (local only)
+                                    handleSetSelection → navigateTo
                                          │
                                   StudySummaryContextPanel
-                                    (receives organSelection, NOT endpoint sel)
-                                    /          \
-                              OrganPanel     Empty state
-                              (organ mode)   (no organ)
+                                    (receives organSelection + endpoint sel)
+                                    /          |          \
+                              EndpointPanel  OrganPanel   Empty state
+                              (endpoint)     (organ only)  (no selection)
 ```
 
 ---
@@ -534,7 +542,7 @@ No keyboard shortcuts are implemented in the Study Summary view. Organ navigatio
 | Provenance "Review" link | Click | Validation view with rule pre-selected |
 | Generate Report button | Click | Opens HTML report in new browser tab via `generateStudyReport()` |
 
-Note: The context panel `EndpointPanel` is currently not reachable because `StudySummaryContextPanelWrapper` always passes `selection={null}`. It shows only `OrganPanel` (organ selected) or empty state (no organ selected).
+Note: `EndpointPanel` renders when a signal is selected in the Metrics or Signal Matrix tab (which sets `studySel.endpoint` via `navigateTo`).
 
 ---
 

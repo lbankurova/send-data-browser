@@ -92,6 +92,20 @@ Card surface is always neutral (plain `border`). Color is confined to the status
 - If sexes have different NOAEL levels (divergent): shows "Males: {narrative}" + "Females: {narrative}" with `font-medium` labels
 - Otherwise: shows single combined narrative
 
+**PK Exposure integration (conditional):**
+When `usePkIntegration(studyId)` returns `pkData?.available` and a "Combined" sex NOAEL row exists, the Combined card includes an `ExposureSection` component (lines 68-149 of `NoaelDecisionView.tsx`) displaying:
+- Cmax, AUC, HED (Human Equivalent Dose), MRSD (Maximum Recommended Starting Dose) from PK data
+- Each metric as label + value in `text-[10px]`
+
+**Safety Margin Calculator (conditional):**
+Rendered below the banner cards at `mt-3` when PK exposure data is available. `SafetyMarginCalculator` component (lines 153-235) provides:
+- Interactive inputs for human Cmax and AUC values
+- Computes NOAEL-based or LOAEL-based safety margins
+- Displays calculated margins with interpretation
+
+**Dose proportionality warning (conditional):**
+Shown between the banner and organ header when PK data indicates non-linear pharmacokinetics (supralinear, sublinear, or non-monotonic). Amber-colored warning bar: `shrink-0 border-b bg-amber-50 px-4 py-1.5`.
+
 ---
 
 ## Organ Selection (shell-level rail)
@@ -101,6 +115,8 @@ The NOAEL view does **not** embed its own organ rail. Instead, it declares a pre
 The selected organ flows from `StudySelectionContext` (`studySelection.organSystem`). Organ items, sorting, and search are managed by `OrganRailMode` (see `docs/systems/navigation-and-layout.md`).
 
 When the user clicks an organ in the shell rail, the view reads the selection and filters adverse effect data accordingly. Clicking an organ resets the TR filter to null and clears any endpoint selection. The sex filter is **not** reset because it is managed globally via `GlobalFilterContext`.
+
+**Auto-select:** When data loads and no organ is selected, the first organ in `organSummaries` is auto-selected (via `useEffect` that sets `organSummaries[0].organ_system`).
 
 ---
 
@@ -241,7 +257,7 @@ Row cap: 200 rows with truncation message ("Showing first 200 of {N} rows. Use f
 
 Route-detected: when pathname matches `/studies/{studyId}/noael-decision`, shows `NoaelContextPanel`.
 
-The `NoaelContextPanelWrapper` in `ContextPanel.tsx` fetches `aeData` and `ruleResults` via hooks and passes as props. Selection flows from `ViewSelectionContext`. (`noaelData` is not passed — the banner already shows all NOAEL numerics, so the context panel focuses on narrative interpretation.)
+The `NoaelContextPanelWrapper` in `ContextPanel.tsx` fetches `aeData` and `ruleResults` via hooks and passes as props. Selection flows from `ViewSelectionContext`. The context panel also fetches NOAEL data directly via `useNoaelSummary(studyId)` to generate narrative text (not passed as a prop from the wrapper).
 
 ### No Selection State
 
@@ -284,7 +300,8 @@ Panes (ordered per design system priority — insights → stats → annotation 
 | NOAEL override annotations | Server | `useAnnotations<NoaelOverride>(studyId, "noael-override")` — override edits saved via `useSaveAnnotation` |
 | Adverse effect data | Server | `useAdverseEffectSummary` hook (React Query, 5min stale) |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
-| Recovery data | Server | `useOrganRecovery` hook — fetches histopath subject data per MI/MA specimen, derives recovery assessments via `deriveRecoveryAssessments()` |
+| Recovery data | Server | `useOrganRecovery` hook — fetches histopath subject data per MI/MA specimen, derives recovery assessments via `deriveRecoveryAssessments()`. Returns `{ bySpecimen, byEndpointLabel, assessmentByLabel, overall, hasRecovery, recoveryDaysBySpecimen }` |
+| PK integration | Server | `usePkIntegration(studyId)` — returns `{ available, cmax, auc, hed, mrsd, doseProportionality }` |
 
 ---
 
@@ -354,7 +371,7 @@ useRuleResults(studyId)           ──> ruleResults (shared React Query cache)
 |-------|---------|
 | Loading | Centered spinner `Loader2` (animate-spin) + "Loading NOAEL data..." |
 | Error (no generated data) | Red box with instructions to run generator command |
-| No organ selected (but data exists) | "Select an organ system to view adverse effect details." AND "Select an organ system from the shell rail." (known bug: duplicate empty states rendered simultaneously) |
+| No organ selected (but data exists) | "Select an organ system from the shell rail to view adverse effect details." |
 | No data at all | "No adverse effect data available." |
 | Empty search results (rail) | "No matches for '{search}'" |
 | No data for organ (both tabs empty) | "No data for this organ." |

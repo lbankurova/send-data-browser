@@ -318,7 +318,7 @@ Rendered when `heatmapData` exists and has findings.
 - Each `flex cursor-pointer border-t hover:bg-accent/20`, selected: `ring-1 ring-primary`
 - Finding label: `w-52 shrink-0 truncate py-0.5 pr-2 text-[10px]`, truncated at 40 chars
 - **Graded cells (severity mode):** `flex h-6 w-20 shrink-0 items-center justify-center` with `h-5 w-16 rounded-sm` inner block colored by `getNeutralHeatColor(avg_severity)`. Cell label: severity value (n.n) when > 0, or `{affected}/{n}` fraction when severity is 0. Gray placeholder (`h-5 w-16 bg-gray-100`) when no data. **Outlier detection**: max_severity ≥ 3 AND (max - avg) ≥ 2 → white `▴` triangle marker at top-right of cell.
-- **Non-graded cells (severity mode):** `h-5 w-12 rounded-sm bg-gray-100 font-mono text-[10px] text-muted-foreground` showing `{pct}%` incidence. Narrower (`w-12`) than graded cells to visually distinguish.
+- **Non-graded cells (severity mode):** `h-5 w-12 rounded-sm font-mono text-[10px] text-muted-foreground` showing `{pct}%` incidence. Uses diagonal hatch pattern (`repeating-linear-gradient(-45deg, #E5E7EB, #E5E7EB 2px, #F3F4F6 2px, #F3F4F6 6px)`) instead of solid background. Narrower (`w-12`) than graded cells to visually distinguish.
 - **Incidence cells:** Percentage format colored by `getNeutralHeatColor01(incidence)`.
 - **Recovery cells:** Separated by `w-px bg-border mx-0.5` vertical line. Five special cases checked in order:
   1. **Not examined** (`recovery.examined === 0`): renders `∅` with `text-muted-foreground/30`, tooltip "Not examined in recovery arm".
@@ -327,6 +327,8 @@ Rendered when `heatmapData` exists and has findings.
   4. **Low power** (main incidence × recovery examined < 2): renders `~` with `text-muted-foreground/30`, tooltip "Low power: expected affected < 2 at this dose level".
   5. **Not observed** (main incidence = 0 AND recovery incidence = 0): empty cell with `bg-gray-50`.
   Otherwise, same rendering as main cells (heat-colored by incidence/severity). Empty recovery cells (no data at all) use `bg-gray-50` instead of `bg-gray-100`.
+
+**Examined count heuristic:** The `examined` count for recovery cells is determined by: if ANY subject at a dose level has any finding, then all subjects at that dose level are considered examined. This avoids undercounting when tissue was examined but no findings were recorded.
 
 **Neutral heat color scale:** `getNeutralHeatColor()` — 5 distinct grades: transparent (minimal, grade 1), `#D1D5DB` (mild), `#9CA3AF` (moderate), `#6B7280` (marked), `#4B5563` (severe). Minimal gets no color to reinforce low clinical significance; thresholds are integer-aligned (`>= 2`, `>= 3`, etc.). Incidence mode uses `getNeutralHeatColor01()` (0-1 scale).
 
@@ -339,8 +341,8 @@ Subject data always fetched via `useHistopathSubjects(studyId, specimen)` (not l
 **Structure:** Five-tier header (plus optional comparison checkbox and laterality rows):
 1. **Dose group headers** — horizontal bar above each dose group with colored indicator stripe (`getDoseGroupColor(doseLevel)`), label with `({N})` subject count. When comparison is active, includes a tri-state checkbox per dose group (checked/indeterminate/unchecked) to toggle all subjects in the group.
 2. **Subject IDs** — one column per subject (`w-8`), showing abbreviated ID via `shortId()` (splits on dashes, returns last segment; falls back to `slice(-4)`). Clickable — highlights column and fires `onSubjectClick`.
-3. **Comparison checkboxes** (conditional, when `comparisonSubjects` + `onComparisonChange` are provided) — `h-5 w-8` per subject with a checkbox. Supports shift+click for range-select across visible subjects. Max 8 subjects (`MAX_COMPARISON_SUBJECTS`). Exceeding max shows a toast: "Maximum 8 subjects for comparison. Deselect one to add another." (3s auto-dismiss).
-4. **Laterality header row** (conditional, when `showLaterality` is true) — per-subject laterality indicator (`B`/`L`/`R`/`mixed`, `text-[8px] font-semibold text-muted-foreground`). Only shown for paired organs with laterality data.
+3. **Laterality header row** (conditional, when `showLaterality` is true) — per-subject laterality indicator (`B`/`L`/`R`/`mixed`, `text-[7px] font-medium text-muted-foreground`). Only shown for paired organs with laterality data.
+4. **Comparison checkboxes** (conditional, when `comparisonSubjects` + `onComparisonChange` are provided) — `h-5 w-8` per subject with a checkbox. Supports shift+click for range-select across visible subjects. Max 8 subjects (`MAX_COMPARISON_SUBJECTS`). Exceeding max shows a toast: "Maximum 8 subjects for comparison. Deselect one to add another." (3s auto-dismiss).
 5. **Sex indicator row** (hidden when sex filter active) — "M"/"F" per subject, `text-[8px] font-semibold text-muted-foreground` (no sex-specific coloring).
 6. **Examined row** — "E" if subject has any findings, empty otherwise. `border-b`.
 
@@ -395,7 +397,7 @@ Right-click on pills opens context menu for pin/unpin from favorites.
 |------|------|-----------|-------------|
 | Severity distribution | `BarChart3` | Yes | Severity grade distribution across dose groups |
 | Treatment-related assessment | `Microscope` | Yes | Classify findings as treatment-related, incidental, or spontaneous |
-| Peer comparison | `Users` | No (production) | Compare against historical control incidence data |
+| Peer comparison | `Users` | Yes | Compare against historical control incidence data (HCD comparison table) |
 | Dose-severity trend | `TrendingUp` | Yes | Severity and incidence changes across dose groups |
 | Recovery assessment | `Undo2` | Conditional | Classify recovery patterns across all findings in specimen |
 
@@ -411,7 +413,7 @@ Rendered when `intent === "recovery"`. Shows specimen-level and per-finding reco
 
 **Specimen-level summary:** Left-bordered block (color from `CLASSIFICATION_BORDER[type]`) with classification label + confidence. Below: summary sentence "N of M findings show incomplete or delayed recovery."
 
-**Findings table:** Sorted by `CLASSIFICATION_PRIORITY` (most concerning first). Columns: Finding, Classification, Confidence. Rows are clickable — fire `onFindingClick` to select the finding.
+**Findings table:** Sorted by `CLASSIFICATION_PRIORITY` (most concerning first). Columns: Finding, Nature (from `classifyFindingNature()` with `titleCase()`, tooltip shows `reversibilityLabel()`), Classification, Confidence. Proliferative findings get "not applicable" in the Classification column and dimmed styling. Rows are clickable — fire `onFindingClick` to select the finding.
 
 **Missing inputs:** Deduplicated list of `inputsMissing` across all classifications, shown at bottom when present.
 
@@ -427,7 +429,7 @@ Multi-subject comparison surface. Appears only when 2+ subjects are selected in 
 
 Sticky (`sticky top-0 z-10 border-b bg-background px-4 py-2`):
 - Title: `text-xs font-semibold text-foreground` — "Comparing {N} subjects in {specimen}"
-- Edit button: `text-xs text-primary hover:underline` — switches back to Evidence tab and scrolls to the severity matrix section.
+- Edit button: `text-xs text-primary hover:underline` — switches back to Evidence tab (via `onEditSelection` which calls `setActiveTab("overview")`).
 - Subject summary line: `text-[10px] text-muted-foreground` — `{shortId} ({sex}, {doseLabel})` for each subject, joined by ` · `.
 
 ### Four Collapsible Sections
@@ -436,7 +438,11 @@ Each uses a local `CollapsiblePane` component (ChevronDown + `text-xs font-semib
 
 #### 1. Finding Concordance
 
-Matrix of subjects (columns) vs. findings (rows), derived from `useHistopathSubjects` data (no additional API call). Sorted: severity-graded findings first by max severity desc, then non-graded alphabetical.
+Matrix of subjects (columns) vs. findings (rows), derived from `useHistopathSubjects` data (no additional API call).
+
+**Sort controls:** `SortMode` — `"severity"` (default, severity-graded first by max severity desc, then non-graded alphabetical), `"concordance"` (by concordance count desc), `"alpha"` (alphabetical).
+
+**Filter controls:** `FilterMode` — `"all"` (default, all findings), `"shared"` (only findings present in 2+ subjects), `"graded"` (only severity-graded findings).
 
 - Header row: "Finding" + per-subject columns (short ID + `sex / dose_label`) + "Concordance" column.
 - Severity > 0: `h-5 w-6 rounded-sm` color block from `getNeutralHeatColor(sevNum)`.
@@ -487,7 +493,7 @@ Recovery reversibility assessment logic lives in `lib/recovery-assessment.ts`. W
 
 ### Types
 
-- `RecoveryVerdict`: `"reversed" | "reversing" | "persistent" | "progressing" | "anomaly" | "insufficient_n" | "not_examined" | "low_power" | "not_observed" | "no_data"`
+- `RecoveryVerdict`: `"reversed" | "reversing" | "persistent" | "progressing" | "anomaly" | "insufficient_n" | "not_examined" | "low_power" | "not_observed" | "no_data" | "recovery_too_short"`
 - `RecoveryAssessment`: per-finding with array of `RecoveryDoseAssessment` (one per shared dose level, plus `no_data` entries for recovery-only dose levels) + `overall` (worst verdict across dose levels)
 - `RecoveryDoseAssessment`: per-dose-level with main/recovery stats (incidence, n, examined, affected, avgSeverity, maxSeverity) + verdict + recovery subject details
 - `MIN_RECOVERY_N = 3`: minimum recovery-arm subjects for meaningful comparison
@@ -518,9 +524,9 @@ Recovery reversibility assessment logic lives in `lib/recovery-assessment.ts`. W
 
 ### Verdict Display
 
-- `verdictArrow()`: `↓` reversed, `↘` reversing, `→` persistent, `↑` progressing, `?` anomaly, `—` insufficient_n/not_observed/no_data, `∅` not_examined, `~` low_power
-- `verdictPriority()`: anomaly (0) > not_examined (1) > progressing (2) > persistent (3) > low_power (4) > reversing (5) > reversed (6) > insufficient_n (7) > not_observed (8) > no_data (9)
-- `specimenRecoveryLabel()`: filters out `insufficient_n`/`not_observed`/`no_data`/`not_examined`/`low_power`; "reversed" if all reversed; "partial" if mixed or sole "reversing"; otherwise worst verdict (maps "reversing" → "partial" per §7.2)
+- `verdictArrow()`: `↓` reversed, `↘` reversing, `→` persistent, `↑` progressing, `?` anomaly, `—` insufficient_n/not_observed/no_data, `∅` not_examined, `~` low_power, blue timer icon for `recovery_too_short`
+- `verdictPriority()`: anomaly (0) > not_examined (1) > progressing (2) > persistent (3) > recovery_too_short (3.5) > low_power (4) > reversing (5) > reversed (6) > insufficient_n (7) > not_observed (8) > no_data (9)
+- `specimenRecoveryLabel()`: filters out `insufficient_n`/`not_observed`/`no_data`/`not_examined`/`low_power`/`recovery_too_short`; "reversed" if all reversed; "partial" if mixed or sole "reversing"; "assessment limited" if all substantive verdicts are `recovery_too_short`; otherwise worst verdict (maps "reversing" → "partial" per §7.2)
 
 **Findings table cell rendering** (`text-[9px]`):
 
@@ -534,6 +540,7 @@ Recovery reversibility assessment logic lives in `lib/recovery-assessment.ts`. W
 | `not_examined` | `∅ not examined` | `font-medium text-foreground/70` |
 | `low_power` | `~ low power` | `text-muted-foreground/50` |
 | `insufficient_n` | `† (N<3)` | `text-muted-foreground/50` |
+| `recovery_too_short` | blue timer icon + "too short" | `text-blue-500/70` |
 | `not_observed`/`no_data` | `—` | `text-muted-foreground/40` |
 
 Arrow icon rendered in a fixed-width `w-[10px] text-center` container for alignment across rows.
@@ -636,7 +643,7 @@ Returns "Male only", "Female only", or "Both sexes" based on unique `sex` values
 Main aggregation function. Builds per-specimen summaries with signal score, pattern classification, clinical class, sex skew, and recovery status. See §Sorting for the signal score formula. Uses `classifySpecimenPattern()` for pattern detection, `patternWeight()` for score contribution, and integrates R01/R04 rule signals and clinical catalog data for score boosting.
 
 ### `deriveFindingSummaries(rows: LesionSeverityRow[]): FindingSummary[]`
-Per-finding aggregation: max severity, max incidence, total affected/N, worst severity classification. Severity escalation: "adverse" > "warning" > "normal".
+Per-finding aggregation: max severity, max incidence, total affected/N, worst severity classification. Severity type: `"adverse" | "warning" | "decreased" | "normal"`. The "decreased" level is derived when `doseDirection === "decreasing" && severity === "warning"`.
 
 ### `classifySpecimenPattern(rows, trendData, syndromeMatches, signalData): PatternClassification`
 From `lib/pattern-classification.ts`. Detects dose-response patterns: `MONOTONIC_UP`, `MONOTONIC_DOWN`, `THRESHOLD`, `NON_MONOTONIC`, `CONTROL_ONLY`, `NO_PATTERN`. Returns pattern, confidence (`LOW`/`MODERATE`/`HIGH`), confidence factors, sparkline data, syndrome match, and alerts.
@@ -663,6 +670,8 @@ Aggregates peer review annotations across all findings in a specimen. Returns on
 - **Revised**: any finding has "Disagreed"
 - **Confirmed**: all findings have "Agreed"
 - **In review**: mix of reviewed + unreviewed (no "Disagreed")
+- **Under dispute**: escalated disagreement requiring resolution
+- **PWG pending**: awaiting Pathology Working Group review
 
 ### `deriveRecoveryAssessments(findingNames, subjects, thresholds?): RecoveryAssessment[]`
 Splits subjects into main and recovery arms, identifies shared dose levels, computes per-finding per-dose verdict via `computeVerdict()`, derives overall worst verdict per finding.
@@ -716,8 +725,11 @@ Panes:
    - **Clinical significance** (clinical blocks): findings matched by clinical catalog but not already in adverse section — shows class + catalog ID + confidence
    - **Decreased with treatment** (protective blocks): per-finding with control->high dose percentages; excluded findings show info kind with exclusion ID
    - **Notes** (info blocks): suppressed protective findings, etc.
-3. **Pathology Review** — `PathologyReviewForm` (specimen-level, keyed by `specimen:{name}`)
-4. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL decision" links
+3. **Syndrome detected** (conditional) — shows matched syndromes from `detectSyndromes()` for this specimen's organ
+4. **Lab correlates** — organ-relevant lab test correlations from `useSpecimenLabCorrelation`
+5. **Laterality** (conditional) — laterality distribution for paired organs
+6. **Pathology Review** — `PathologyReviewForm` (specimen-level, keyed by `specimen:{name}`)
+7. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL decision" links
 
 Review status is derived via `deriveSpecimenReviewStatus(findingNames, pathReviews)` where `pathReviews` is fetched by the wrapper and passed through.
 
@@ -725,17 +737,21 @@ Review status is derived via `deriveSpecimenReviewStatus(findingNames, pathRevie
 
 Header: sticky, finding name (`text-sm font-semibold`) + `CollapseAllButtons`, specimen name below (`text-xs text-muted-foreground`).
 
-**Header metrics line** (`mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground`): Four inline metrics computed from finding rows — Peak incidence (`{pct}%`), Max sev (`{n.n}`), Dose (`{Weak|Moderate|Strong}`), Sex (`{M|F|M/F}`). Makes the panel presentation-ready without scrolling.
+**Header metrics line** (`mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground`): Four inline metrics computed from finding rows — Peak incidence (`{pct}%`), Max sev (`{n.n}`), Pattern (via `formatPatternLabel()`, e.g., "Monotonic increase (HIGH)"), Sex (`{M|F|M/F}`). Makes the panel presentation-ready without scrolling.
 
 Panes in order (follows design system priority: insights > stats > related > annotation > navigation):
-1. **Insights** (default open) — `SpecimenInsights` with finding-scoped rules. Includes clinical catalog annotations when present. When recovery data exists, a **Recovery assessment** block (`RecoveryInsightBlock`) appears after `SpecimenInsights` — see §Recovery Classification below.
-2. **Dose detail** (default open) — all dose-level rows for finding + specimen, sorted by dose_level then sex. Table columns: Dose (`<DoseLabel>`), Sex, Incid. (right-aligned font-mono), mini dose ramp bar (color from `getDoseGroupColor(dose_level)`), Avg sev (right-aligned font-mono), Sev (colored text: adverse red, warning amber, normal green). The mini dose ramp is a `h-1.5 rounded-full` horizontal bar (track `bg-gray-100`, fill colored by dose group) showing relative incidence percentage per row.
-3. **Sex comparison** (conditional, default open) — only shown when finding has data from both sexes. Per-sex row: affected/total + max severity badge with `getNeutralHeatColor()`.
-4. **Recovery** (conditional, default open) — only shown when `specimenHasRecovery` and finding has non-trivial recovery verdicts. Uses `RecoveryPaneContent` rendering per-dose `RecoveryDoseBlock` components. Each block shows: dose group label + recovery period, main arm incidence (with mini bar), recovery arm incidence (with mini bar), avg severity for both, verdict assessment, and clickable recovery subject links with severity values. Special cases: `insufficient_n` verdict skips the comparison and shows "Recovery arm has only N subject(s). Minimum 3 required for meaningful comparison." `anomaly` verdict adds a bordered warning block (`border-border/50 bg-muted/20`) with explanation text about delayed onset or data quality issues.
-5. **Correlating evidence** (default open) — up to 10 other findings in same specimen, sorted by max severity desc, with severity badge colored by `getNeutralHeatColor()`
-6. **Pathology review** — `PathologyReviewForm` (not wrapped in CollapsiblePane, uses own form state)
-7. **Tox Assessment** — `ToxFindingForm` keyed by finding (not wrapped in CollapsiblePane)
-8. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL decision" links
+1. **Insights** (default open) — `SpecimenInsights` with finding-scoped rules. Includes clinical catalog annotations when present. When recovery data exists, a **Recovery assessment** block (`RecoveryInsightBlock`) appears after `SpecimenInsights`. Also includes **historical context** inline.
+2. **Dose-response pattern** — shows pattern classification details for the selected finding
+3. **Concordant findings** — other findings with similar dose-response pattern or co-occurring in the same dose groups
+4. **Dose detail** (default open) — all dose-level rows for finding + specimen, sorted by dose_level then sex. Table columns: Dose (`<DoseLabel>`), Sex, Incid. (right-aligned font-mono), mini dose ramp bar (color from `getDoseGroupColor(dose_level)`), Avg sev (right-aligned font-mono), Sev (colored text: adverse red, warning amber, normal green). The mini dose ramp is a `h-1.5 rounded-full` horizontal bar (track `bg-gray-100`, fill colored by dose group) showing relative incidence percentage per row.
+5. **Sex comparison** (conditional, default open) — only shown when finding has data from both sexes. Per-sex row: affected/total + max severity badge with `getNeutralHeatColor()`.
+6. **Recovery** (conditional, default open) — only shown when `specimenHasRecovery` and finding has non-trivial recovery verdicts. Uses `RecoveryPaneContent` rendering per-dose `RecoveryDoseBlock` components. Each block shows: dose group label + recovery period, main arm incidence (with mini bar), recovery arm incidence (with mini bar), avg severity for both, verdict assessment, and clickable recovery subject links with severity values. Special cases: `insufficient_n` verdict skips the comparison and shows "Recovery arm has only N subject(s). Minimum 3 required for meaningful comparison." `anomaly` verdict adds a bordered warning block (`border-border/50 bg-muted/20`) with explanation text about delayed onset or data quality issues.
+7. **Correlating evidence** (default open) — up to 10 other findings in same specimen, sorted by max severity desc, with severity badge colored by `getNeutralHeatColor()`
+8. **Lab correlates** — organ-relevant lab test data correlated with the histopathology finding
+9. **Laterality** (conditional) — laterality distribution for paired organs (left/right/bilateral counts)
+10. **Pathology review** — `PathologyReviewForm` (not wrapped in CollapsiblePane, uses own form state)
+11. **Tox Assessment** — `ToxFindingForm` keyed by finding (not wrapped in CollapsiblePane)
+12. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL decision" links
 
 ---
 
@@ -744,7 +760,7 @@ Panes in order (follows design system priority: insights > stats > related > ann
 | State | Scope | Managed By |
 |-------|-------|------------|
 | Selected specimen | Shell context | `StudySelectionContext` — `studySelection.specimen` |
-| Active tab | Local (parent) | `useState<EvidenceTab>` — `"overview"`, `"hypotheses"`, or `"compare"` |
+| Active tab | Session-persisted | `useSessionState<EvidenceTab>("pcc.histopath.tab", "overview")` — `"overview"`, `"hypotheses"`, or `"compare"` |
 | Selection (finding) | Shared via context | `ViewSelectionContext` with `_view: "histopathology"` tag |
 | Sex filter | Global | `GlobalFilterContext` — `filters.sex` |
 | Min severity | Global | `GlobalFilterContext` — `filters.minSeverity` |
@@ -760,8 +776,8 @@ Panes in order (follows design system priority: insights > stats > related > ann
 | Severity graded only | Local (OverviewTab) | `useState<boolean>` — filter heatmap findings (default false, resets on specimen change) |
 | Chart display modes | Local (OverviewTab) | `useState<ChartDisplayMode>` x 2 — "compact" or "scaled" for incidence and severity charts (default "scaled") |
 | Section heights | Local (OverviewTab) | `useSectionLayout` — adaptive heights from naturalHeights + container ResizeObserver |
-| Sorting | Local | `useState<SortingState>` — TanStack sorting state (in OverviewTab) |
-| Column sizing | Local | `useState<ColumnSizingState>` — TanStack column resize state (in OverviewTab) |
+| Sorting | Session-persisted | `useSessionState<SortingState>("pcc.histopath.sorting", [])` — TanStack sorting state (in OverviewTab) |
+| Column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.histopath.columnSizing", {})` — TanStack column resize state (in OverviewTab) |
 | Show laterality | Derived (OverviewTab) | `useMemo` — true when specimen is paired organ AND has laterality data in subject records |
 | Selected subject | Local (SubjectHeatmap) | `useState<string \| null>` — column highlight in SubjectHeatmap |
 | Label column width | Local (SubjectHeatmap) | `useResizePanel(124, 100, 400)` — finding label column width |

@@ -20,13 +20,12 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a single-panel layout with a dropdown endpoint picker in the summary header:
+The view itself is a single-panel layout with a summary header and tabbed content:
 
 ```
 +-----------------------------------------------------------+
-| [Endpoint picker ▾]  Summary header                        |
-|  endpoint name, pattern badge, conclusion,                  |
-|  compact metrics (trend p, min p, max |d|, data, NOAEL)   |
+| Summary header (endpoint name, pattern badge, conclusion,  |
+|  compact metrics: trend p, min p, max |d|, data, NOAEL)   |
 +-----------------------------------------------------------+
 | [Evidence] [Hypotheses] [Metrics]  <── tab bar             |
 +-----------------------------------------------------------+
@@ -37,15 +36,17 @@ The view itself is a single-panel layout with a dropdown endpoint picker in the 
 +-----------------------------------------------------------+
 ```
 
-There is no left-panel endpoint rail. Endpoint selection is via the `DoseResponseEndpointPicker` dropdown component in the evidence panel header.
+There is no left-panel endpoint rail or header-embedded picker. Endpoint selection is via: (1) Metrics tab table row click, (2) Pareto scatter chart click in Hypotheses tab, (3) cross-view navigation from context panel correlations.
+
+**Note:** `DoseResponseEndpointPicker.tsx` exists as a component but is not currently wired into the view.
 
 ---
 
-## Endpoint Picker (dropdown, not left-panel rail)
+## Endpoint Picker (not currently wired into view)
 
 **Component:** `DoseResponseEndpointPicker.tsx`
 
-The view uses a dropdown button for endpoint selection, not a left-panel rail. The picker appears in the evidence panel header area.
+The component exists and is fully functional but is **not imported or rendered** by `DoseResponseView.tsx`. Endpoint selection currently happens via Metrics tab row click, Pareto scatter click, or cross-view navigation. The picker documentation below describes the component for reference.
 
 ### Trigger Button
 
@@ -100,7 +101,7 @@ Container: `flex h-full flex-col bg-muted/5`
 `shrink-0 border-b px-3 py-1.5`
 
 **Title row:** `flex items-start justify-between gap-2`
-- Left: `min-w-0 flex-1` div with `DoseResponseEndpointPicker` dropdown (in a `mb-1 flex items-center gap-2` container) + subtitle on next line
+- Left: `min-w-0 flex-1` div with endpoint name + subtitle on next line
 - Right: full pattern badge (`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium` with pattern-specific gray variant from `PATTERN_BG`). Per-pattern colors: monotonic_increase/decrease/threshold/non_monotonic = `bg-gray-100 text-gray-600`; flat = `bg-gray-100 text-gray-500`; insufficient_data = `bg-gray-100 text-gray-400`.
 
 **Subtitle:** `text-[11px] text-muted-foreground`
@@ -122,8 +123,7 @@ Container: `flex h-full flex-col bg-muted/5`
 #### No Endpoint Selected State
 
 `shrink-0 border-b px-3 py-1.5`
-- Shows `DoseResponseEndpointPicker` dropdown (in `mb-1 flex items-center gap-2` container)
-- Message: "Select an endpoint to view dose-response details." -- `text-xs text-muted-foreground`
+- Message: "Select an endpoint from the list or chart to view insights and assessment." — `text-xs text-muted-foreground`
 
 ### Tab Bar
 

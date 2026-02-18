@@ -61,7 +61,7 @@ Container: `border-b bg-card px-8 py-8`
   - "Navigate study and subject level views"
   - "Browse adverse events"
   - "Validate SEND compliance"
-- "Learn more" link: `mt-2 inline-block pl-4 text-xs text-primary hover:underline`, opens alert in prototype
+- "Learn more" link: `mt-2 inline-block pl-4 text-xs text-primary hover:underline`, opens `alert("Documentation is not available in this prototype.")`
 
 ---
 
