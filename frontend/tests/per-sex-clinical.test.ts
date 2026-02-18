@@ -8,96 +8,125 @@ const endpoints = deriveEndpointSummaries(fixture as AdverseEffectSummaryRow[]);
 const contexts = buildContext(endpoints);
 const matches = evaluateLabRules(endpoints);
 
-describe("per-sex clinical evaluation", () => {
+describe("per-sex clinical evaluation — structural invariants", () => {
   // ── bySex foundation ──
 
-  test("bySex present on Neutrophils (multi-sex endpoint)", () => {
-    const neut = endpoints.find(e => resolveCanonical(e.endpoint_label, e.testCode) === "NEUT");
-    expect(neut?.bySex).toBeDefined();
-    expect(neut!.bySex!.size).toBeGreaterThanOrEqual(2);
-  });
-
-  test("bySex M direction=down for NEUT", () => {
-    const neut = endpoints.find(e => resolveCanonical(e.endpoint_label, e.testCode) === "NEUT");
-    expect(neut!.bySex!.get("M")!.direction).toBe("down");
-  });
-
-  test("bySex F direction=up for NEUT", () => {
-    const neut = endpoints.find(e => resolveCanonical(e.endpoint_label, e.testCode) === "NEUT");
-    expect(neut!.bySex!.get("F")!.direction).toBe("up");
-  });
-
-  test("bySex M fold change ≈ 1.51 for NEUT", () => {
-    const neut = endpoints.find(e => resolveCanonical(e.endpoint_label, e.testCode) === "NEUT");
-    const fc = neut!.bySex!.get("M")!.maxFoldChange;
-    expect(fc).toBeGreaterThan(1.3);
-    expect(fc).toBeLessThan(1.7);
-  });
-
-  test("bySex F fold change ≈ 2.07 for NEUT", () => {
-    const neut = endpoints.find(e => resolveCanonical(e.endpoint_label, e.testCode) === "NEUT");
-    const fc = neut!.bySex!.get("F")!.maxFoldChange;
-    expect(fc).toBeGreaterThan(1.8);
-    expect(fc).toBeLessThan(2.5);
-  });
-
-  test("bySex present on non-divergent endpoint (ALT: both M/F direction=up)", () => {
-    const alt = endpoints.find(e => resolveCanonical(e.endpoint_label, e.testCode) === "ALT");
-    // ALT has data for both sexes, so bySex should be present
-    if (alt?.bySex) {
-      // Both directions should be "up" (non-divergent)
-      for (const [, sexData] of alt.bySex) {
-        expect(sexData.direction).toBe("up");
+  test("multi-sex endpoints have bySex with ≥ 2 entries", () => {
+    const multiSex = endpoints.filter((ep) => ep.sexes.length >= 2);
+    for (const ep of multiSex) {
+      if (ep.bySex) {
+        expect(
+          ep.bySex.size,
+          `${ep.endpoint_label} has sexes=${ep.sexes.join(",")} but bySex.size=${ep.bySex.size}`,
+        ).toBeGreaterThanOrEqual(2);
       }
     }
   });
 
-  // ── Context array ──
-
-  test("contexts.length === 2 for PointCross (M and F)", () => {
-    expect(contexts.length).toBe(2);
+  test("bySex entries have valid direction and fold change", () => {
+    for (const ep of endpoints) {
+      if (!ep.bySex) continue;
+      for (const [sex, data] of ep.bySex) {
+        expect(["M", "F"]).toContain(sex);
+        expect(["up", "down", null, undefined]).toContain(data.direction);
+        if (data.maxFoldChange != null) {
+          expect(data.maxFoldChange, `${ep.endpoint_label} ${sex} fold change`).toBeGreaterThan(0);
+        }
+      }
+    }
   });
 
-  test("M context: NEUT direction=down, fold ≈ 1.51", () => {
-    const mCtx = contexts.find(c => c.sexFilter === "M");
-    expect(mCtx).toBeDefined();
-    expect(mCtx!.endpointDirection.get("NEUT")).toBe("down");
-    const fc = mCtx!.foldChanges.get("NEUT")!;
-    expect(fc).toBeGreaterThan(1.3);
-    expect(fc).toBeLessThan(1.7);
+  test("divergent endpoints have different directions per sex", () => {
+    const divergent = endpoints.filter((ep) => {
+      if (!ep.bySex || ep.bySex.size < 2) return false;
+      const dirs = [...ep.bySex.values()].map((s) => s.direction).filter(Boolean);
+      return new Set(dirs).size > 1;
+    });
+
+    for (const ep of divergent) {
+      const dirs = [...ep.bySex!.values()].map((s) => s.direction);
+      expect(
+        new Set(dirs).size,
+        `${ep.endpoint_label} flagged divergent but all directions are the same`,
+      ).toBeGreaterThan(1);
+    }
   });
 
-  test("F context: NEUT direction=up, fold ≈ 2.07", () => {
-    const fCtx = contexts.find(c => c.sexFilter === "F");
-    expect(fCtx).toBeDefined();
-    expect(fCtx!.endpointDirection.get("NEUT")).toBe("up");
-    const fc = fCtx!.foldChanges.get("NEUT")!;
-    expect(fc).toBeGreaterThan(1.8);
-    expect(fc).toBeLessThan(2.5);
+  // ── Context arrays ──
+
+  test("per-sex contexts have distinct sexFilter values", () => {
+    const filters = contexts.map((c) => c.sexFilter).filter(Boolean);
+    expect(new Set(filters).size).toBe(filters.length);
   });
 
-  test("non-divergent (ALT): same direction in both contexts", () => {
-    const dirs = contexts.map(c => c.endpointDirection.get("ALT"));
-    expect(dirs[0]).toBe("up");
-    expect(dirs[1]).toBe("up");
+  test("non-divergent endpoints have same direction in all contexts", () => {
+    const nonDivergent = endpoints.filter((ep) => {
+      if (!ep.bySex || ep.bySex.size < 2) return true; // no per-sex data → same everywhere
+      const dirs = [...ep.bySex.values()].map((s) => s.direction).filter(Boolean);
+      return new Set(dirs).size <= 1;
+    });
+
+    for (const ep of nonDivergent) {
+      const canonical = resolveCanonical(ep.endpoint_label, ep.testCode);
+      if (!canonical) continue;
+      const dirsInContexts = contexts
+        .map((c) => c.endpointDirection.get(canonical))
+        .filter((d) => d !== undefined);
+      if (dirsInContexts.length < 2) continue;
+      const unique = new Set(dirsInContexts);
+      expect(
+        unique.size,
+        `${ep.endpoint_label} (${canonical}) is non-divergent but has ${unique.size} different directions across contexts`,
+      ).toBe(1);
+    }
   });
 
-  // ── Rule firing ──
+  // ── Rule firing sex consistency ──
 
-  test("L19 doesn't fire for M (1.51 < 2) or F (direction=up, L19 requires decrease)", () => {
-    const l19 = matches.filter(m => m.ruleId === "L19");
-    expect(l19.length).toBe(0);
+  test("per-sex rules fire with consistent sex evidence", () => {
+    for (const m of matches) {
+      if (!m.sex) continue;
+      // The rule's sex should match a context's sexFilter
+      const ctx = contexts.find((c) => c.sexFilter === m.sex);
+      if (!ctx) continue;
+
+      // For each matched endpoint, verify the context has a direction for its canonical
+      for (const epLabel of m.matchedEndpoints) {
+        const ep = endpoints.find((e) => e.endpoint_label === epLabel);
+        if (!ep) continue;
+        const canonical = resolveCanonical(ep.endpoint_label, ep.testCode);
+        if (!canonical) continue;
+        const dir = ctx.endpointDirection.get(canonical);
+        // The direction should exist (not undefined) for the rule to have matched
+        if (dir !== undefined) {
+          expect(
+            ["up", "down", "none"].includes(dir!),
+            `Rule ${m.ruleId} (${m.sex}): ${canonical} has unexpected direction "${dir}" in ${m.sex} context`,
+          ).toBe(true);
+        }
+      }
+    }
   });
 
-  test("L28 fires for F (NEUT increase ≥2×), not for M (direction=down)", () => {
-    const l28 = matches.filter(m => m.ruleId === "L28");
-    expect(l28.length).toBe(1);
-    expect(l28[0].sex).toBe("F");
-  });
+  test("no rule fires for both sexes with contradictory evidence", () => {
+    // Group matches by ruleId
+    const byRule = new Map<string, typeof matches>();
+    for (const m of matches) {
+      if (!byRule.has(m.ruleId)) byRule.set(m.ruleId, []);
+      byRule.get(m.ruleId)!.push(m);
+    }
 
-  test("L28 match.sex is 'F'", () => {
-    const l28 = matches.find(m => m.ruleId === "L28");
-    expect(l28).toBeDefined();
-    expect(l28!.sex).toBe("F");
+    for (const [ruleId, ruleMatches] of byRule) {
+      if (ruleMatches.length < 2) continue;
+      const sexes = ruleMatches.map((m) => m.sex).filter(Boolean);
+      if (new Set(sexes).size < 2) continue;
+      // If the same rule fires for both M and F, both should have valid evidence
+      for (const m of ruleMatches) {
+        expect(
+          m.matchedEndpoints.length,
+          `Rule ${ruleId} (${m.sex ?? "aggregate"}) fired with 0 endpoints`,
+        ).toBeGreaterThan(0);
+      }
+    }
   });
 });

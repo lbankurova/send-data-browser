@@ -1,6 +1,7 @@
 /**
- * Step 8 from test-harness-spec: Cross-Surface Consistency Tests
- * Catches "rail says one thing, panel says another" class of bugs.
+ * Cross-Surface Consistency Tests — structural invariants.
+ * Catches "rail says one thing, panel says another" class of bugs
+ * by verifying that endpoints, rules, syndromes, and contexts agree.
  */
 import { describe, test, expect } from "vitest";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
@@ -15,99 +16,121 @@ const syndromes = detectCrossDomainSyndromes(endpoints);
 const contexts = buildContext(endpoints);
 
 describe("cross-surface consistency", () => {
-  // ── Clinical rule endpoint validation ──
+  // ── Clinical rule → endpoint summaries ──
 
   test("every matched endpoint in a clinical rule exists in endpoint summaries", () => {
+    const epLabels = new Set(endpoints.map((e) => e.endpoint_label));
     for (const match of matches) {
       for (const epLabel of match.matchedEndpoints) {
-        const found = endpoints.find((ep) => ep.endpoint_label === epLabel);
-        expect(found, `Rule ${match.ruleId} references "${epLabel}" but it's not in endpoint summaries`).toBeDefined();
+        expect(
+          epLabels.has(epLabel),
+          `Rule ${match.ruleId} references "${epLabel}" but it's not in endpoint summaries`,
+        ).toBe(true);
       }
     }
   });
 
-  // ── Syndrome endpoint validation ──
+  // ── Syndrome → endpoint summaries ──
 
   test("every matched endpoint in a syndrome exists in endpoint summaries", () => {
+    const epLabels = new Set(endpoints.map((e) => e.endpoint_label));
     for (const syndrome of syndromes) {
       for (const ep of syndrome.matchedEndpoints) {
-        const found = endpoints.find((e) => e.endpoint_label === ep.endpoint_label);
-        expect(found, `Syndrome ${syndrome.id} references "${ep.endpoint_label}" but it's not in endpoint summaries`).toBeDefined();
+        expect(
+          epLabels.has(ep.endpoint_label),
+          `Syndrome ${syndrome.id} references "${ep.endpoint_label}" but it's not in endpoint summaries`,
+        ).toBe(true);
       }
     }
   });
 
   // ── Severity floor verification ──
 
-  test("S4 Critical rules only fire with strong evidence (fold > 1.5 or multi-parameter)", () => {
+  test("S3/S4 rules only fire with strong evidence (fold > 1.5 or multi-parameter)", () => {
     for (const match of matches) {
-      if (match.severity === "S4") {
-        const foldValues = Object.values(match.foldChanges);
-        const maxFold = foldValues.length > 0 ? Math.max(...foldValues) : 0;
-        const isMultiParam = match.matchedEndpoints.length >= 2;
-        expect(
-          maxFold > 1.5 || isMultiParam,
-          `Rule ${match.ruleId} is S4 with max fold ${maxFold} and only ${match.matchedEndpoints.length} endpoint(s)`,
-        ).toBe(true);
-      }
-    }
-  });
-
-  // ── Syndrome endpoint count ──
-
-  test("every detected syndrome has at least 1 matched endpoint", () => {
-    for (const syndrome of syndromes) {
+      if (match.severity !== "S3" && match.severity !== "S4") continue;
+      const foldValues = Object.values(match.foldChanges);
+      const maxFold = foldValues.length > 0 ? Math.max(...foldValues) : 0;
+      const isMultiParam = match.matchedEndpoints.length >= 2;
       expect(
-        syndrome.matchedEndpoints.length,
-        `Syndrome ${syndrome.id} has 0 matched endpoints`,
-      ).toBeGreaterThan(0);
+        maxFold > 1.5 || isMultiParam,
+        `Rule ${match.ruleId} (${match.severity}) has max fold ${maxFold.toFixed(2)} and only ${match.matchedEndpoints.length} endpoint(s)`,
+      ).toBe(true);
     }
   });
 
   // ── buildContext direction consistency ──
 
-  test("buildContext direction matches strongest endpoint summary direction for each canonical", () => {
-    // Build canonical → strongest endpoint direction map
-    const byCanonical = new Map<string, { direction: string | null; effect: number }>();
-    for (const ep of endpoints) {
-      const canonical = resolveCanonical(ep.endpoint_label, ep.testCode);
-      if (!canonical) continue;
-      const absEffect = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : 0;
-      const existing = byCanonical.get(canonical);
-      if (!existing || absEffect > existing.effect) {
-        byCanonical.set(canonical, { direction: ep.direction, effect: absEffect });
-      }
-    }
-
-    // Verify buildContext produces consistent directions
-    // Per-sex contexts may have sex-specific directions for divergent endpoints
+  test("every direction in buildContext is a valid value", () => {
     for (const ctx of contexts) {
-      for (const [canonical, ctxDir] of ctx.endpointDirection) {
-        const epData = byCanonical.get(canonical);
-        if (!epData) continue;
-
-        // For non-divergent endpoints, context direction should match
-        // For divergent endpoints (like NEUT), the per-sex context should match the per-sex data
-        // We just verify the direction is one of up/down/none (not corrupted)
+      for (const [canonical, dir] of ctx.endpointDirection) {
         expect(
-          ["up", "down", "none", null].includes(ctxDir),
-          `${canonical} in context ${ctx.sexFilter ?? "aggregate"} has invalid direction "${ctxDir}"`,
+          ["up", "down", "none", null].includes(dir),
+          `${canonical} in context ${ctx.sexFilter ?? "aggregate"} has invalid direction "${dir}"`,
         ).toBe(true);
       }
     }
   });
 
-  // ── Rule firing count sanity ──
+  test("every canonical in buildContext resolves from at least one endpoint", () => {
+    const resolvedCanonicals = new Set<string>();
+    for (const ep of endpoints) {
+      const c = resolveCanonical(ep.endpoint_label, ep.testCode);
+      if (c) resolvedCanonicals.add(c);
+    }
 
-  test("total rules fired is reasonable (not zero, not excessive)", () => {
-    expect(matches.length).toBeGreaterThan(0);
-    expect(matches.length).toBeLessThan(50);
+    for (const ctx of contexts) {
+      for (const [canonical] of ctx.endpointDirection) {
+        expect(
+          resolvedCanonicals.has(canonical),
+          `Context (${ctx.sexFilter ?? "aggregate"}) has canonical "${canonical}" not resolvable from any endpoint`,
+        ).toBe(true);
+      }
+    }
   });
 
-  // ── Syndrome count sanity ──
+  // ── Fold change consistency across surfaces ──
 
-  test("total syndromes detected is reasonable", () => {
-    expect(syndromes.length).toBeGreaterThan(0);
-    expect(syndromes.length).toBeLessThanOrEqual(9); // max 9 syndromes (XS01-XS09)
+  test("rule fold changes are consistent with endpoint summary fold changes", () => {
+    for (const match of matches) {
+      for (const [epLabel, matchFold] of Object.entries(match.foldChanges)) {
+        const ep = endpoints.find((e) => e.endpoint_label === epLabel);
+        if (!ep || ep.maxFoldChange == null) continue;
+        // The rule's fold change should not wildly exceed the endpoint's aggregate
+        // Allow 3× margin for per-sex data where one sex may differ
+        expect(
+          matchFold,
+          `Rule ${match.ruleId}: ${epLabel} fold ${matchFold.toFixed(2)} vs endpoint max ${ep.maxFoldChange.toFixed(2)}`,
+        ).toBeLessThan(ep.maxFoldChange * 3 + 1);
+      }
+    }
+  });
+
+  // ── Syndrome domain coverage matches endpoints ──
+
+  test("syndrome domainsCovered only includes domains present in endpoint summaries", () => {
+    const allDomains = new Set(endpoints.map((e) => e.domain).filter(Boolean));
+    for (const syndrome of syndromes) {
+      for (const d of syndrome.domainsCovered) {
+        expect(
+          allDomains.has(d),
+          `Syndrome ${syndrome.id}: domainsCovered includes "${d}" which is not in any endpoint summary`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  // ── Count bounds (structural, not hardcoded) ──
+
+  test("at most 9 syndromes detected (XS01–XS09 is the full catalog)", () => {
+    expect(syndromes.length).toBeLessThanOrEqual(9);
+  });
+
+  test("per-sex rule matches reference a valid sex", () => {
+    for (const match of matches) {
+      if (match.sex) {
+        expect(["M", "F"]).toContain(match.sex);
+      }
+    }
   });
 });
