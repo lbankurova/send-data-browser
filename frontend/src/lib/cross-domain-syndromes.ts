@@ -999,6 +999,10 @@ export interface SyndromeTermReport {
   missingDomains: string[];   // domains with terms but no matches
   /** Count of "opposite" entries across required + supporting (active counter-evidence) */
   oppositeCount: number;
+  /** Human-readable required logic expression (e.g. "any of (NEUT, PLAT, (RBC + HGB))") */
+  requiredLogicText: string;
+  /** Required logic type from syndrome definition */
+  requiredLogicType: "any" | "all" | "compound";
 }
 
 /**
@@ -1085,14 +1089,15 @@ export function getSyndromeTermReport(
   const requiredMetCount = requiredEntries.filter((e) => e.status === "matched").length;
   const supportingMetCount = supportingEntries.filter((e) => e.status === "matched").length;
 
-  // Domains covered = domains with at least one match
+  // Domains covered = domains with at least one checked term (status ≠ "not_measured")
+  // This includes matched, opposite, and not_significant — all indicate the domain was present
   const domainsCovered = [...new Set(
     [...requiredEntries, ...supportingEntries]
-      .filter((e) => e.status === "matched")
+      .filter((e) => e.status !== "not_measured")
       .map((e) => e.domain),
   )].sort();
 
-  // Missing domains = domains with terms defined but NO matches
+  // Missing domains = domains with terms defined but none checked (all not_measured)
   const allTermDomains = [...new Set(def.terms.map((t) => t.domain))];
   const missingDomains = allTermDomains
     .filter((d) => !domainsCovered.includes(d))
@@ -1100,6 +1105,12 @@ export function getSyndromeTermReport(
 
   const oppositeCount = [...requiredEntries, ...supportingEntries]
     .filter((e) => e.status === "opposite").length;
+
+  // Required logic metadata for ARM display
+  const allRequiredTags = [...new Set(
+    requiredEntries.map((e) => e.tag).filter((t): t is string => !!t),
+  )];
+  const requiredLogicText = formatRequiredLogic(def.requiredLogic, allRequiredTags);
 
   return {
     requiredEntries,
@@ -1111,6 +1122,8 @@ export function getSyndromeTermReport(
     domainsCovered,
     missingDomains,
     oppositeCount,
+    requiredLogicText,
+    requiredLogicType: def.requiredLogic.type,
   };
 }
 

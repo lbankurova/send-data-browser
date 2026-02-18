@@ -194,13 +194,17 @@ export function classifyPattern(
     return result;
   }
 
-  // Baseline-awareness gate
-  const treatedMedian = median(treated.map((g) => g.incidence));
+  // Baseline-awareness gate: only dismiss when ALL treated groups
+  // are within noise range of control (no dose-dependent departure)
   const maxTreatedInc = Math.max(...treated.map((g) => g.incidence));
-  if (
-    control.incidence > treatedMedian &&
-    maxTreatedInc <= control.incidence + cfg.control_threshold
-  ) {
+  const effectiveThreshold = Math.max(
+    cfg.control_threshold,
+    control.incidence * 0.15,  // 15% relative for high baselines
+  );
+  const allTreatedNearControl = treated.every(
+    (g) => Math.abs(g.incidence - control.incidence) <= effectiveThreshold,
+  );
+  if (control.incidence > 0 && allTreatedNearControl) {
     return makeResult("NO_PATTERN", "control exceeds treated", groups, _trendP);
   }
 
@@ -230,51 +234,90 @@ export function classifyPattern(
   // Monotonic down test
   if (isMonotonicDown(treated, cfg.monotonic_tolerance) &&
       control.incidence > maxTreatedInc + cfg.control_threshold) {
+    // Check threshold subtype: is there a clear onset dose where decrease begins?
+    const firstDropIdx = treated.findIndex(
+      (g) => g.incidence < control.incidence - cfg.control_threshold,
+    );
+    if (firstDropIdx > 0) {
+      const allBeforeNearControl = treated
+        .slice(0, firstDropIdx)
+        .every((g) => Math.abs(g.incidence - control.incidence) <= cfg.control_threshold);
+      if (allBeforeNearControl) {
+        return makeResult("THRESHOLD", treated[firstDropIdx].dose_label, groups, _trendP);
+      }
+    }
     return makeResult("MONOTONIC_DOWN", null, groups, _trendP);
   }
 
-  // Non-monotonic
+  // Non-monotonic (tolerance-aware: peak must exceed neighbors by more than noise)
   const peakIdx = treated.reduce(
     (maxI, g, i) => (g.incidence > treated[maxI].incidence ? i : maxI),
     0,
   );
-  if (
-    peakIdx > 0 &&
-    peakIdx < treated.length - 1 &&
-    treated[peakIdx].incidence > treated[peakIdx - 1].incidence &&
-    treated[peakIdx].incidence > treated[peakIdx + 1].incidence
-  ) {
-    if (treated[peakIdx].n_affected >= cfg.min_affected_non_monotonic) {
-      return makeResult(
-        "NON_MONOTONIC",
+  if (peakIdx > 0 && peakIdx < treated.length - 1) {
+    const tolBefore = incidenceTolerance(
+      Math.min(treated[peakIdx].n_examined, treated[peakIdx - 1].n_examined),
+      (treated[peakIdx].incidence + treated[peakIdx - 1].incidence) / 2,
+      cfg.monotonic_tolerance,
+    );
+    const tolAfter = incidenceTolerance(
+      Math.min(treated[peakIdx].n_examined, treated[peakIdx + 1].n_examined),
+      (treated[peakIdx].incidence + treated[peakIdx + 1].incidence) / 2,
+      cfg.monotonic_tolerance,
+    );
+    if (
+      treated[peakIdx].incidence > treated[peakIdx - 1].incidence + tolBefore &&
+      treated[peakIdx].incidence > treated[peakIdx + 1].incidence + tolAfter
+    ) {
+      if (treated[peakIdx].n_affected >= cfg.min_affected_non_monotonic) {
+        return makeResult(
+          "NON_MONOTONIC",
+          treated[peakIdx].dose_label,
+          groups,
+          _trendP,
+        );
+      }
+      const peakResult = makeResult(
+        "SINGLE_GROUP",
         treated[peakIdx].dose_label,
         groups,
         _trendP,
       );
+      peakResult.isHighestDoseGroup = peakIdx === treated.length - 1;
+      return peakResult;
     }
-    const peakResult = makeResult(
-      "SINGLE_GROUP",
-      treated[peakIdx].dose_label,
-      groups,
-      _trendP,
-    );
-    peakResult.isHighestDoseGroup = peakIdx === treated.length - 1;
-    return peakResult;
   }
 
   return makeResult("NO_PATTERN", null, groups, _trendP);
 }
 
+/** Binomial-aware tolerance: wider for high-incidence groups with small n. */
+function incidenceTolerance(n: number, p: number, baseTolerance: number): number {
+  if (n <= 0 || p <= 0 || p >= 1) return baseTolerance;
+  const se = Math.sqrt(p * (1 - p) / n);
+  return Math.max(1.5 * se, baseTolerance);
+}
+
 function isMonotonicUp(treated: DoseGroupData[], tolerance: number): boolean {
   for (let i = 1; i < treated.length; i++) {
-    if (treated[i].incidence < treated[i - 1].incidence - tolerance) return false;
+    const tol = incidenceTolerance(
+      Math.min(treated[i].n_examined, treated[i - 1].n_examined),
+      (treated[i].incidence + treated[i - 1].incidence) / 2,
+      tolerance,
+    );
+    if (treated[i].incidence < treated[i - 1].incidence - tol) return false;
   }
   return true;
 }
 
 function isMonotonicDown(treated: DoseGroupData[], tolerance: number): boolean {
   for (let i = 1; i < treated.length; i++) {
-    if (treated[i].incidence > treated[i - 1].incidence + tolerance) return false;
+    const tol = incidenceTolerance(
+      Math.min(treated[i].n_examined, treated[i - 1].n_examined),
+      (treated[i].incidence + treated[i - 1].incidence) / 2,
+      tolerance,
+    );
+    if (treated[i].incidence > treated[i - 1].incidence + tol) return false;
   }
   return true;
 }
