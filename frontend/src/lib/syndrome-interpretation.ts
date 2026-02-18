@@ -3,7 +3,7 @@
  * Does NOT modify detection logic. Enriches detected syndromes with:
  *   Phase A: certainty grading, histopath cross-reference, recovery assessment
  *   Phase C: clinical observation (CL) correlation
- *   Phase B: study design notes live; mortality, tumor, food, ECETOC still stubbed
+ *   Phase B: mortality, tumor, food consumption, study design, ECETOC treatment-relatedness + adversity
  *
  * Approved deviations from syndrome-interpretation-layer-spec.md:
  *
@@ -31,6 +31,13 @@
  *   Comp 7 ecgInterpretation dropped (XS10 not in detection engine). See TODO below.
  *          recoveryDuration → recoveryPeriodDays (self-documenting unit).
  *          matchedTerms → matchedEndpoints (richer: dose-response, stats, sex breakdowns).
+ *
+ *   Step 14 ECETOC A-factors: hcdComparison always "no_hcd" (no historical control database).
+ *          Overall uses weighted factor scoring (strong DR=2, concordant=1, significant=1, CL=1).
+ *
+ *   Step 15 ECETOC B-factors: adaptive always false (no adaptive classification in syndrome
+ *          definitions). magnitudeLevel uses Cohen's d thresholds (0.5/1.0/1.5/2.0).
+ *          precursorToWorse and secondaryToOther wired to tumorContext and foodConsumptionContext.
  */
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
@@ -288,7 +295,7 @@ export interface SyndromeInterpretation {
   // Phase C: CL
   clinicalObservationSupport: ClinicalObservationSupport;
 
-  // Phase B stubs (defaults until multi-domain data available)
+  // Phase B: Multi-domain context
   mortalityContext: MortalityContext;
   tumorContext: TumorContext;
   foodConsumptionContext: FoodConsumptionContext;
@@ -1898,6 +1905,202 @@ export function assessFoodConsumptionContext(
 
 // ─── Orchestrator ──────────────────────────────────────────
 
+// ─── Step 14: ECETOC Treatment-Relatedness ──────────────────
+
+/**
+ * Compute ECETOC A-factor treatment-relatedness score.
+ *
+ * - A-1 (doseResponse): from syndrome confidence (HIGH → strong, MODERATE → weak)
+ * - A-2 (crossEndpoint): concordant when ≥2 domains covered
+ * - A-4 (hcdComparison): no historical control data → "no_hcd"
+ * - A-6 (statisticalSignificance): derived from matched endpoints' p-values
+ * - A-2 ext (clinicalObservationSupport): from CL correlation assessment
+ */
+export function computeTreatmentRelatedness(
+  syndrome: CrossDomainSyndrome,
+  allEndpoints: EndpointSummary[],
+  clSupport: ClinicalObservationSupport,
+): TreatmentRelatednessScore {
+  // A-1: dose-response strength
+  const doseResponse: TreatmentRelatednessScore["doseResponse"] =
+    syndrome.confidence === "HIGH"
+      ? "strong"
+      : syndrome.confidence === "MODERATE"
+        ? "weak"
+        : "absent";
+
+  // A-2: cross-endpoint concordance
+  const crossEndpoint: TreatmentRelatednessScore["crossEndpoint"] =
+    syndrome.domainsCovered.length >= 2 ? "concordant" : "isolated";
+
+  // A-6: statistical significance — derive from matched endpoints
+  const matchedLabels = new Set(syndrome.matchedEndpoints.map((m) => m.endpoint_label));
+  const matchedEps = allEndpoints.filter((ep) => matchedLabels.has(ep.endpoint_label));
+  const minP = matchedEps.reduce<number | null>((min, ep) => {
+    if (ep.minPValue == null) return min;
+    return min == null ? ep.minPValue : Math.min(min, ep.minPValue);
+  }, null);
+
+  const statisticalSignificance: TreatmentRelatednessScore["statisticalSignificance"] =
+    minP != null && minP < 0.05
+      ? "significant"
+      : minP != null && minP < 0.1
+        ? "borderline"
+        : "not_significant";
+
+  // Overall: combine A-factors
+  const clinicalObs = clSupport.assessment === "strengthens";
+  const positiveFactors =
+    (doseResponse === "strong" ? 2 : doseResponse === "weak" ? 1 : 0) +
+    (crossEndpoint === "concordant" ? 1 : 0) +
+    (statisticalSignificance === "significant" ? 1 : statisticalSignificance === "borderline" ? 0.5 : 0) +
+    (clinicalObs ? 1 : 0);
+
+  const overall: TreatmentRelatednessScore["overall"] =
+    positiveFactors >= 3
+      ? "treatment_related"
+      : positiveFactors >= 1.5
+        ? "possibly_related"
+        : "not_related";
+
+  return {
+    doseResponse,
+    crossEndpoint,
+    hcdComparison: "no_hcd",
+    statisticalSignificance,
+    clinicalObservationSupport: clinicalObs,
+    overall,
+  };
+}
+
+// ─── Step 15: ECETOC Adversity Assessment ───────────────────
+
+/**
+ * Derive magnitude level from the maximum effect size of matched endpoints.
+ * Uses Cohen's d thresholds adapted for tox:
+ *   |d| < 0.5 → minimal, < 1.0 → mild, < 1.5 → moderate, < 2.0 → marked, ≥ 2.0 → severe
+ */
+function deriveMagnitudeLevel(
+  syndrome: CrossDomainSyndrome,
+  allEndpoints: EndpointSummary[],
+): AdversityAssessment["magnitudeLevel"] {
+  const matchedLabels = new Set(syndrome.matchedEndpoints.map((m) => m.endpoint_label));
+  const matchedEps = allEndpoints.filter((ep) => matchedLabels.has(ep.endpoint_label));
+  const maxD = matchedEps.reduce<number>(
+    (max, ep) => Math.max(max, Math.abs(ep.maxEffectSize ?? 0)),
+    0,
+  );
+
+  if (maxD >= 2.0) return "severe";
+  if (maxD >= 1.5) return "marked";
+  if (maxD >= 1.0) return "moderate";
+  if (maxD >= 0.5) return "mild";
+  return "minimal";
+}
+
+/**
+ * Compute ECETOC B-factor adversity assessment.
+ *
+ * - B-2 (adaptive): not determinable from current data model → false
+ * - B-3 (reversible): from recovery assessment
+ * - B-4 (magnitudeLevel): from matched endpoints' max effect size
+ * - B-5 (crossDomainSupport): from domain coverage
+ * - B-6 (precursorToWorse): from tumor context progression detection
+ * - B-7 (secondaryToOther): from food consumption context
+ */
+export function computeAdversity(
+  syndrome: CrossDomainSyndrome,
+  allEndpoints: EndpointSummary[],
+  recovery: SyndromeRecoveryAssessment,
+  certainty: SyndromeCertainty,
+  tumorContext: TumorContext,
+  foodConsumptionContext: FoodConsumptionContext,
+): AdversityAssessment {
+  const reversible =
+    recovery.status === "recovered" ? true
+    : recovery.status === "not_recovered" ? false
+    : null;
+
+  const magnitudeLevel = deriveMagnitudeLevel(syndrome, allEndpoints);
+
+  const crossDomainSupport = syndrome.domainsCovered.length >= 2;
+
+  const precursorToWorse = tumorContext.progressionDetected;
+
+  const secondaryToOther =
+    foodConsumptionContext.bwFwAssessment === "secondary_to_food";
+
+  // Overall adversity decision tree
+  // Adverse if: mechanism confirmed + cross-domain, OR precursor to worse, OR severe magnitude
+  // Non-adverse if: recovered + minimal magnitude + no progression
+  // Equivocal otherwise
+  let overall: AdversityAssessment["overall"];
+  if (precursorToWorse) {
+    overall = "adverse";
+  } else if (certainty === "mechanism_confirmed" && crossDomainSupport) {
+    overall = "adverse";
+  } else if (magnitudeLevel === "severe" || magnitudeLevel === "marked") {
+    overall = "adverse";
+  } else if (
+    reversible === true &&
+    (magnitudeLevel === "minimal" || magnitudeLevel === "mild") &&
+    !precursorToWorse
+  ) {
+    overall = "non_adverse";
+  } else {
+    overall = "equivocal";
+  }
+
+  return {
+    adaptive: false,
+    reversible,
+    magnitudeLevel,
+    crossDomainSupport,
+    precursorToWorse,
+    secondaryToOther,
+    overall,
+  };
+}
+
+// ─── Step 15b: Overall Severity Cascade ─────────────────────
+
+/**
+ * Derive overall severity from mortality, tumor, and adversity context.
+ *
+ * Cascade:
+ *   S0_Death → carcinogenic → proliferative → S4_Critical → S3_Adverse → S2_Concern → S1_Monitor
+ */
+export function deriveOverallSeverity(
+  mortalityContext: MortalityContext,
+  tumorContext: TumorContext,
+  adversity: AdversityAssessment,
+  certainty: SyndromeCertainty,
+): OverallSeverity {
+  // Deaths in syndrome organs → S0
+  if (mortalityContext.deathsInSyndromeOrgans > 0) return "S0_Death";
+
+  // Tumors with progression → carcinogenic
+  if (tumorContext.tumorsPresent && tumorContext.progressionDetected) return "carcinogenic";
+
+  // Tumors without progression → proliferative
+  if (tumorContext.tumorsPresent) return "proliferative";
+
+  // Treatment-related deaths in non-syndrome organs → S4
+  if (mortalityContext.treatmentRelatedDeaths > 0) return "S4_Critical";
+
+  // Mechanism confirmed + adverse → S3
+  if (certainty === "mechanism_confirmed" && adversity.overall === "adverse") return "S3_Adverse";
+
+  // Any adverse signal → S2
+  if (adversity.overall === "adverse") return "S2_Concern";
+
+  // Non-adverse with confirmed mechanism → S1
+  if (adversity.overall === "non_adverse") return "S1_Monitor";
+
+  // Default
+  return "S2_Concern";
+}
+
 /**
  * Interpret a detected syndrome using all available study data.
  * Phase A uses args 1-4; Phase B uses tumor context; Phase C uses arg 9.
@@ -1981,49 +2184,35 @@ export function interpretSyndrome(
     studyContext,
   );
 
-  const treatmentRelatedness: TreatmentRelatednessScore = {
-    doseResponse:
-      syndrome.confidence === "HIGH"
-        ? "strong"
-        : syndrome.confidence === "MODERATE"
-          ? "weak"
-          : "absent",
-    crossEndpoint:
-      syndrome.domainsCovered.length >= 2 ? "concordant" : "isolated",
-    hcdComparison: "no_hcd",
-    statisticalSignificance: "significant",
-    clinicalObservationSupport: clSupport.assessment === "strengthens",
-    overall:
-      syndrome.confidence === "HIGH" || syndrome.confidence === "MODERATE"
-        ? "treatment_related"
-        : "possibly_related",
-  };
+  // ── Step 14: Treatment-relatedness ──
+  const treatmentRelatedness = computeTreatmentRelatedness(
+    syndrome,
+    allEndpoints,
+    clSupport,
+  );
 
-  const adversity: AdversityAssessment = {
-    adaptive: false,
-    reversible: recovery.status === "recovered" ? true : recovery.status === "not_recovered" ? false : null,
-    magnitudeLevel: "moderate",
-    crossDomainSupport: syndrome.domainsCovered.length >= 2,
-    precursorToWorse: false,
-    secondaryToOther: false,
-    overall:
-      certaintyResult.certainty === "mechanism_confirmed" &&
-      syndrome.domainsCovered.length >= 2
-        ? "adverse"
-        : "equivocal",
-  };
+  // ── Step 15: Adversity ──
+  const adversity = computeAdversity(
+    syndrome,
+    allEndpoints,
+    recovery,
+    certaintyResult.certainty,
+    tumorContext,
+    foodConsumptionContext,
+  );
 
-  // Severity — escalate based on mortality
-  const overallSeverity: OverallSeverity =
-    mortalityContext.deathsInSyndromeOrgans > 0
-      ? "S0_Death"
-      : mortalityContext.treatmentRelatedDeaths > 0
-        ? "S4_Critical"
-        : certaintyResult.certainty === "mechanism_confirmed"
-          ? "S3_Adverse"
-          : "S2_Concern";
+  // ── Step 15b: Severity cascade ──
+  const overallSeverity = deriveOverallSeverity(
+    mortalityContext,
+    tumorContext,
+    adversity,
+    certaintyResult.certainty,
+  );
 
-  // Narrative
+  // ── Component 7: Study design notes ──
+  const designNotes = assembleStudyDesignNotes(syndrome, studyContext);
+
+  // ── Step 16: Narrative assembly ──
   const narrativeParts: string[] = [];
   narrativeParts.push(certaintyResult.rationale);
 
@@ -2056,15 +2245,43 @@ export function interpretSyndrome(
     narrativeParts.push(mortalityContext.mortalityNarrative);
   }
 
+  if (tumorContext.tumorsPresent) {
+    narrativeParts.push(tumorContext.interpretation);
+  }
+
   if (foodConsumptionContext.available && foodConsumptionContext.bwFwAssessment !== "not_applicable") {
     narrativeParts.push(foodConsumptionContext.fwNarrative);
   }
 
-  // ── Component 7: Study design notes ──
-  const designNotes = assembleStudyDesignNotes(syndrome, studyContext);
   for (const note of designNotes) {
     narrativeParts.push(note);
   }
+
+  // ECETOC assessment summary
+  const trLabel = treatmentRelatedness.overall === "treatment_related" ? "YES"
+    : treatmentRelatedness.overall === "possibly_related" ? "POSSIBLY" : "NO";
+  const trFactors: string[] = [];
+  if (treatmentRelatedness.doseResponse !== "absent") trFactors.push(`${treatmentRelatedness.doseResponse} dose-response`);
+  if (treatmentRelatedness.statisticalSignificance === "significant") trFactors.push("significant");
+  if (treatmentRelatedness.crossEndpoint === "concordant") trFactors.push(`concordant across ${syndrome.domainsCovered.join("+")}`);
+  if (treatmentRelatedness.clinicalObservationSupport) trFactors.push("CL support");
+
+  const advLabel = adversity.overall === "adverse" ? "YES"
+    : adversity.overall === "non_adverse" ? "NO" : "EQUIVOCAL";
+  const advFactors: string[] = [];
+  if (adversity.magnitudeLevel === "severe" || adversity.magnitudeLevel === "marked") advFactors.push(`${adversity.magnitudeLevel} severity`);
+  if (adversity.precursorToWorse) advFactors.push("precursor to worse");
+  if (adversity.reversible === true) advFactors.push("reversible");
+  if (adversity.reversible === false) advFactors.push("irreversible");
+  if (adversity.secondaryToOther) advFactors.push("secondary to food consumption");
+  if (adversity.crossDomainSupport) advFactors.push("cross-domain support");
+
+  narrativeParts.push(
+    `Treatment-related: ${trLabel}${trFactors.length > 0 ? ` (${trFactors.join(", ")})` : ""}.`,
+  );
+  narrativeParts.push(
+    `Adverse: ${advLabel}${advFactors.length > 0 ? ` (${advFactors.join(", ")})` : ""}.`,
+  );
 
   return {
     syndromeId: syndrome.id,
