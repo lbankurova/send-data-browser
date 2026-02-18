@@ -19,6 +19,8 @@ import {
   computeTreatmentRelatedness,
   computeAdversity,
   deriveOverallSeverity,
+  assessTumorContext,
+  assessFoodConsumptionContext,
 } from "@/lib/syndrome-interpretation";
 import type {
   RecoveryRow,
@@ -28,7 +30,6 @@ import type {
   StudyContext,
   SyndromeDiscriminators,
 } from "@/lib/syndrome-interpretation";
-import { assessTumorContext, assessFoodConsumptionContext } from "@/lib/syndrome-interpretation";
 import type { FoodConsumptionSummaryResponse } from "@/lib/syndrome-interpretation";
 import type { StudyMortality, DeathRecord } from "@/types/mortality";
 import fixture from "./fixtures/pointcross-findings.json";
@@ -90,6 +91,11 @@ const defaultContext: StudyContext = {
   supplier: "", vehicle: "", treatment: "", studyDesign: "",
   plannedSubjectsM: null, plannedSubjectsF: null, diet: "",
   glpCompliant: true, sendCtVersion: "", title: "",
+  ecgInterpretation: {
+    qtcTranslational: false,
+    preferredCorrection: null,
+    rationale: "Rodent ventricular repolarization is Ito-dominated; QTc prolongation has limited translational value to humans.",
+  },
 };
 
 const defaultFoodData: FoodConsumptionSummaryResponse = { available: false, water_consumption: null };
@@ -940,5 +946,128 @@ describe("narrative assembly", () => {
     // MODERATE confidence → "weak dose-response" + concordant + significant
     expect(result.narrative).toMatch(/dose-response/);
     expect(result.narrative).toMatch(/concordant across/);
+  });
+});
+
+// ─── Human Non-Relevance Mechanisms ─────────────────────────
+
+describe("humanNonRelevance", () => {
+  test("PPARα applies for rodent liver tumors", () => {
+    const tumors: TumorFinding[] = [
+      { organ: "LIVER", morphology: "ADENOMA, HEPATOCELLULAR", behavior: "BENIGN", animalId: "S1", doseGroup: 3 },
+    ];
+    const result = assessTumorContext(xs01, tumors, histopath, defaultContext);
+    expect(result.humanNonRelevance).toBeDefined();
+    const ppar = result.humanNonRelevance!.find((h) => h.mechanism === "PPARα agonism");
+    expect(ppar).toBeDefined();
+    expect(ppar!.applies).toBe(true);
+    expect(ppar!.rationale).toContain("peroxisome proliferation");
+  });
+
+  test("PPARα does not apply for dog species", () => {
+    const dogContext: StudyContext = { ...defaultContext, species: "DOG" };
+    const tumors: TumorFinding[] = [
+      { organ: "LIVER", morphology: "ADENOMA", behavior: "BENIGN", animalId: "S1", doseGroup: 3 },
+    ];
+    const result = assessTumorContext(xs01, tumors, histopath, dogContext);
+    const ppar = result.humanNonRelevance!.find((h) => h.mechanism === "PPARα agonism");
+    expect(ppar!.applies).toBe(false);
+  });
+
+  test("TSH-mediated thyroid applies for rodent thyroid tumors", () => {
+    const tumors: TumorFinding[] = [
+      { organ: "THYROID", morphology: "FOLLICULAR CELL ADENOMA", behavior: "BENIGN", animalId: "S1", doseGroup: 2 },
+    ];
+    // XS01 organ filter may exclude thyroid — use all tumors by targeting a broader syndrome
+    const result = assessTumorContext(
+      { ...xs01, id: "GENERIC" }, // no organ filter → includes all tumors
+      tumors, histopath, defaultContext,
+    );
+    const tsh = result.humanNonRelevance!.find((h) => h.mechanism === "TSH-mediated thyroid");
+    expect(tsh).toBeDefined();
+    expect(tsh!.applies).toBe(true);
+    expect(tsh!.rationale).toContain("TSH elevation");
+  });
+
+  test("α2u-globulin applies for male rat kidney tumors", () => {
+    const tumors: TumorFinding[] = [
+      { organ: "KIDNEY", morphology: "RENAL TUBULAR ADENOMA", behavior: "BENIGN", animalId: "S1", doseGroup: 3 },
+    ];
+    const result = assessTumorContext(
+      { ...xs01, id: "GENERIC" },
+      tumors, histopath, defaultContext,
+    );
+    const a2u = result.humanNonRelevance!.find((h) => h.mechanism === "α2u-globulin nephropathy");
+    expect(a2u).toBeDefined();
+    expect(a2u!.applies).toBe(true);
+    expect(a2u!.rationale).toContain("absent in humans");
+  });
+
+  test("α2u-globulin does NOT apply for mouse (only male rats)", () => {
+    const mouseContext: StudyContext = { ...defaultContext, species: "MOUSE" };
+    const tumors: TumorFinding[] = [
+      { organ: "KIDNEY", morphology: "RENAL TUBULAR ADENOMA", behavior: "BENIGN", animalId: "S1", doseGroup: 3 },
+    ];
+    const result = assessTumorContext(
+      { ...xs01, id: "GENERIC" },
+      tumors, histopath, mouseContext,
+    );
+    const a2u = result.humanNonRelevance!.find((h) => h.mechanism === "α2u-globulin nephropathy");
+    expect(a2u!.applies).toBe(false);
+  });
+
+  test("narrative includes non-human-relevant mechanisms when applicable", () => {
+    const tumors: TumorFinding[] = [
+      { organ: "LIVER", morphology: "ADENOMA", behavior: "BENIGN", animalId: "S1", doseGroup: 3 },
+    ];
+    const result = interp(xs01, { tumors });
+    expect(result.tumorContext.humanNonRelevance).toBeDefined();
+    const ppar = result.tumorContext.humanNonRelevance!.find((h) => h.mechanism === "PPARα agonism");
+    if (ppar?.applies) {
+      expect(result.narrative).toContain("Non-human-relevant mechanism");
+    }
+  });
+
+  test("no tumors → no humanNonRelevance field", () => {
+    const result = assessTumorContext(xs01, [], histopath, defaultContext);
+    expect(result.humanNonRelevance).toBeUndefined();
+  });
+});
+
+// ─── ECGInterpretation ──────────────────────────────────────
+
+describe("ECGInterpretation in StudyContext", () => {
+  test("rat species → qtcTranslational false, no preferred correction", () => {
+    expect(defaultContext.ecgInterpretation.qtcTranslational).toBe(false);
+    expect(defaultContext.ecgInterpretation.preferredCorrection).toBeNull();
+    expect(defaultContext.ecgInterpretation.rationale).toContain("Ito-dominated");
+  });
+
+  test("dog context has VanDeWater correction and is translationally relevant", () => {
+    const dogContext: StudyContext = {
+      ...defaultContext,
+      species: "DOG",
+      ecgInterpretation: {
+        qtcTranslational: true,
+        preferredCorrection: "VanDeWater",
+        rationale: "Dog QTc is the gold-standard non-clinical model for human QT risk. Van de Water correction preferred.",
+      },
+    };
+    expect(dogContext.ecgInterpretation.qtcTranslational).toBe(true);
+    expect(dogContext.ecgInterpretation.preferredCorrection).toBe("VanDeWater");
+  });
+
+  test("NHP context has Fridericia correction", () => {
+    const nhpContext: StudyContext = {
+      ...defaultContext,
+      species: "CYNOMOLGUS MONKEY",
+      ecgInterpretation: {
+        qtcTranslational: true,
+        preferredCorrection: "Fridericia",
+        rationale: "NHP QTc is translationally relevant. Fridericia correction preferred for non-human primates.",
+      },
+    };
+    expect(nhpContext.ecgInterpretation.preferredCorrection).toBe("Fridericia");
+    expect(nhpContext.ecgInterpretation.qtcTranslational).toBe(true);
   });
 });

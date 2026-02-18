@@ -86,3 +86,28 @@ export function fetchSubjectComparison(
     `/studies/${encodeURIComponent(studyId)}/subjects/compare?ids=${ids}`,
   );
 }
+
+export interface RecoveryComparisonResponse {
+  available: boolean;
+  recovery_day: number | null;
+  rows: {
+    endpoint_label: string;
+    test_code: string;
+    sex: string;
+    recovery_day: number;
+    dose_level: number;
+    mean: number;
+    sd: number;
+    p_value: number | null;
+    effect_size: number | null;
+    terminal_effect: number | null;
+  }[];
+}
+
+export function fetchRecoveryComparison(
+  studyId: string,
+): Promise<RecoveryComparisonResponse> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/recovery-comparison`,
+  );
+}
