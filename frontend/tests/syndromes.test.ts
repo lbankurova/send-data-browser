@@ -49,6 +49,30 @@ describe("detectCrossDomainSyndromes — PointCross golden dataset", () => {
     const matched = byId.get("XS04")?.matchedEndpoints ?? [];
     expect(matched.some((m) => m.endpoint_label === "Neutrophils")).toBe(true);
   });
+
+  // ── XS10 Cardiovascular ──
+
+  test("XS10 Cardiovascular is detected", () => {
+    expect(byId.has("XS10")).toBe(true);
+  });
+
+  test("XS10 has requiredMet = true (RRAG adverse)", () => {
+    expect(byId.get("XS10")?.requiredMet).toBe(true);
+  });
+
+  test("XS10 covers EG domain", () => {
+    const domains = byId.get("XS10")?.domainsCovered ?? [];
+    expect(domains).toContain("EG");
+  });
+
+  test("XS10 includes RR Interval as matched endpoint", () => {
+    const matched = byId.get("XS10")?.matchedEndpoints ?? [];
+    expect(matched.some((m) => m.endpoint_label.includes("RR Interval"))).toBe(true);
+  });
+
+  test("XS10 confidence is MODERATE (EG + OM heart weight + MI inflammation)", () => {
+    expect(byId.get("XS10")?.confidence).toBe("MODERATE");
+  });
 });
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -58,9 +82,9 @@ describe("detectCrossDomainSyndromes — PointCross golden dataset", () => {
 describe("detectCrossDomainSyndromes — structural invariants", () => {
   // ── Identity ──
 
-  test("every syndrome ID matches XS01–XS09 pattern", () => {
+  test("every syndrome ID matches XS01–XS10 pattern", () => {
     for (const s of syndromes) {
-      expect(s.id, `unexpected syndrome id: ${s.id}`).toMatch(/^XS0[1-9]$/);
+      expect(s.id, `unexpected syndrome id: ${s.id}`).toMatch(/^XS(?:0[1-9]|10)$/);
     }
   });
 
