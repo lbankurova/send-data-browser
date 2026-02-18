@@ -22,6 +22,7 @@ import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules } from "@/lib/lab-clinical-catalog";
 import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
+import { ScheduledOnlyProvider } from "@/contexts/ScheduledOnlyContext";
 import type { FindingsFilters } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
@@ -400,8 +401,11 @@ export function FindingsView() {
     );
   }
 
+  const hasEarlyDeaths = !!mortalityData && Object.keys(mortalityData.early_death_subjects ?? {}).length > 0;
+
   return (
     <FindingsAnalyticsProvider value={analyticsValue}>
+    <ScheduledOnlyProvider hasEarlyDeaths={hasEarlyDeaths}>
     <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
       {/* Study context banner */}
       {studyContext && <StudyBanner studyContext={studyContext} doseGroupCount={doseGroupCount} />}
@@ -463,6 +467,7 @@ export function FindingsView() {
       ) : null}
       </div>
     </div>
+    </ScheduledOnlyProvider>
     </FindingsAnalyticsProvider>
   );
 }

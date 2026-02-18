@@ -1,3 +1,4 @@
+import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import type { StudyMortality } from "@/types/mortality";
 
 interface MortalityBannerProps {
@@ -8,9 +9,14 @@ interface MortalityBannerProps {
  * Compact mortality context banner for findings/NOAEL views.
  * Returns null when no mortality events detected.
  * Uses neutral gray per design system (no colored badges for categorical info).
+ *
+ * When early_death_subjects exist, shows a toggle to switch between
+ * all-animals and scheduled-sacrifice-only terminal statistics.
  */
 export function MortalityBanner({ mortality }: MortalityBannerProps) {
   if (!mortality.has_mortality) return null;
+
+  const earlyDeathCount = Object.keys(mortality.early_death_subjects ?? {}).length;
 
   // Build cause summary from death records (main-study only)
   const mainDeaths = mortality.deaths.filter((d) => !d.is_recovery);
@@ -36,6 +42,32 @@ export function MortalityBanner({ mortality }: MortalityBannerProps) {
         {doseText ? ` ${doseText}` : ""} — {causeText}
         {accidentalNote}
       </span>
+      {earlyDeathCount > 0 && <EarlyDeathToggle count={earlyDeathCount} />}
     </div>
+  );
+}
+
+function EarlyDeathToggle({ count }: { count: number }) {
+  const { useScheduledOnly: isScheduledOnly, setUseScheduledOnly } = useScheduledOnly();
+  return (
+    <button
+      type="button"
+      className="ml-auto flex items-center gap-1.5 rounded border border-border/60 bg-background px-2 py-0.5 text-[10px] transition-colors hover:bg-muted/60"
+      onClick={() => setUseScheduledOnly(!isScheduledOnly)}
+      title={
+        isScheduledOnly
+          ? `${count} early-death subject${count !== 1 ? "s" : ""} excluded from terminal stats. Click to show all animals.`
+          : "Click to exclude early-death subjects from terminal stats."
+      }
+    >
+      <span
+        className={`inline-block h-2 w-2 rounded-full ${isScheduledOnly ? "bg-gray-400" : "bg-gray-300"}`}
+      />
+      <span>
+        {isScheduledOnly
+          ? `${count} early death${count !== 1 ? "s" : ""} excluded`
+          : "All animals"}
+      </span>
+    </button>
   );
 }

@@ -59,6 +59,12 @@ export interface UnifiedFinding {
   max_fold_change?: number | null;
   group_stats: GroupStat[];
   pairwise: PairwiseResult[];
+  /** Scheduled-only stats (early-death subjects excluded from terminal domains). */
+  scheduled_group_stats?: GroupStat[];
+  scheduled_pairwise?: PairwiseResult[];
+  scheduled_direction?: "up" | "down" | "none" | null;
+  /** Number of early-death subjects excluded (0 for longitudinal domains). */
+  n_excluded?: number;
 }
 
 export interface AnalysisSummary {

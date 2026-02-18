@@ -12,6 +12,41 @@ from services.analysis.findings_ds import classify_disposition
 from services.analysis.findings_dd import parse_dd_domain
 
 
+SCHEDULED_DISPOSITIONS = {"TERMINAL SACRIFICE", "INTERIM SACRIFICE",
+                          "SCHEDULED EUTHANASIA", "SCHEDULED SACRIFICE",
+                          "TERMINAL KILL"}
+
+
+def get_early_death_subjects(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+) -> dict[str, str]:
+    """Return {USUBJID: DSDECOD} for main-study subjects NOT in scheduled dispositions.
+
+    These are animals that died or were removed before terminal sacrifice —
+    their data should be excluded from terminal-endpoint group statistics.
+    """
+    if "ds" not in study.xpt_files:
+        return {}
+
+    ds_df, _ = read_xpt(study.xpt_files["ds"])
+    ds_df.columns = [c.upper() for c in ds_df.columns]
+
+    if "DSDECOD" not in ds_df.columns:
+        return {}
+
+    main_subs = subjects[~subjects["is_recovery"]].copy()
+    ds_df = ds_df.merge(main_subs[["USUBJID"]], on="USUBJID", how="inner")
+
+    # One disposition per subject (take first record)
+    disp = ds_df.groupby("USUBJID")["DSDECOD"].first()
+    return {
+        str(uid): str(dsdecod).strip().upper()
+        for uid, dsdecod in disp.items()
+        if str(dsdecod).strip().upper() not in SCHEDULED_DISPOSITIONS
+    }
+
+
 def compute_study_mortality(
     study: StudyInfo,
     subjects: pd.DataFrame,
@@ -149,6 +184,9 @@ def compute_study_mortality(
     total_deaths = len(main_deaths)
     total_accidental = len(main_accidentals)
 
+    # Build early_death_subjects: all non-scheduled subjects (deaths + accidentals)
+    early_death_subjects = get_early_death_subjects(study, subjects)
+
     return {
         "has_mortality": total_deaths > 0,
         "total_deaths": total_deaths,
@@ -160,6 +198,7 @@ def compute_study_mortality(
         "deaths": enriched_deaths,
         "accidentals": enriched_accidentals,
         "by_dose": by_dose,
+        "early_death_subjects": early_death_subjects,
     }
 
 

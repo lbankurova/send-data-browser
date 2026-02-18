@@ -249,7 +249,7 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
             continue
 
         for pw in finding.get("pairwise", []):
-            rows.append({
+            row = {
                 "endpoint_label": finding.get("endpoint_label", ""),
                 "endpoint_type": finding.get("endpoint_type", ""),
                 "domain": finding.get("domain", ""),
@@ -267,7 +267,17 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
                 "specimen": finding.get("specimen"),
                 "finding": finding.get("finding"),
                 "max_fold_change": finding.get("max_fold_change"),
-            })
+            }
+            # Propagate scheduled-only (early-death excluded) stats
+            if "scheduled_group_stats" in finding:
+                row["scheduled_group_stats"] = finding["scheduled_group_stats"]
+            if "scheduled_pairwise" in finding:
+                row["scheduled_pairwise"] = finding["scheduled_pairwise"]
+            if "scheduled_direction" in finding:
+                row["scheduled_direction"] = finding["scheduled_direction"]
+            if finding.get("n_excluded") is not None:
+                row["n_excluded"] = finding["n_excluded"]
+            rows.append(row)
 
     return rows
 

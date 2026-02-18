@@ -10,7 +10,11 @@ from services.analysis.statistics import (
 )
 
 
-def compute_lb_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def compute_lb_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    excluded_subjects: set[str] | None = None,
+) -> list[dict]:
     """Compute findings from LB domain."""
     if "lb" not in study.xpt_files:
         return []
@@ -21,6 +25,15 @@ def compute_lb_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     # Merge with subject info (main study only)
     main_subs = subjects[~subjects["is_recovery"]].copy()
     lb_df = lb_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+
+    # LB special case: only exclude early-death subjects from their terminal timepoint
+    # (max VISITDY per subject), not from earlier longitudinal visits
+    if excluded_subjects:
+        lb_df["LBDY"] = pd.to_numeric(lb_df.get("LBDY", pd.Series(dtype=float)), errors="coerce")
+        max_day = lb_df.groupby("USUBJID")["LBDY"].transform("max")
+        terminal_mask = lb_df["LBDY"] == max_day
+        exclude_mask = terminal_mask & lb_df["USUBJID"].isin(excluded_subjects)
+        lb_df = lb_df[~exclude_mask]
 
     # Parse numeric result
     if "LBSTRESN" in lb_df.columns:

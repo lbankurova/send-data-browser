@@ -97,14 +97,32 @@ def generate(study_id: str):
     out_dir = OUTPUT_DIR / study_id
     static_dir = out_dir / "static"
 
-    # Phase 1: Compute all findings with enriched stats
-    print("Phase 1: Computing domain statistics...")
-    findings, dg_data = compute_all_findings(study)
+    # Phase 1a: Compute mortality summary (DS + DD domains) — must run before domain stats
+    # so early_death_subjects can feed into dual-pass statistics
+    print("Phase 1a: Computing mortality summary...")
+    from services.analysis.dose_groups import build_dose_groups as _build_dg
+    _dg_data = _build_dg(study)
+    _subjects = _dg_data["subjects"]
+    _dose_groups = _dg_data["dose_groups"]
+    mortality = None
+    early_death_subjects = None
+    try:
+        mortality = compute_study_mortality(study, _subjects, _dose_groups)
+        early_death_subjects = mortality.get("early_death_subjects") or None
+        _write_json(out_dir / "study_mortality.json", mortality)
+        n_early = len(early_death_subjects) if early_death_subjects else 0
+        print(f"  {mortality['total_deaths']} deaths, {mortality['total_accidental']} accidental, {n_early} early-death subjects")
+    except Exception as e:
+        print(f"  WARNING: Mortality computation failed: {e}")
+
+    # Phase 1b: Compute all findings with enriched stats (dual-pass for terminal domains)
+    print("Phase 1b: Computing domain statistics...")
+    findings, dg_data = compute_all_findings(study, early_death_subjects=early_death_subjects)
     dose_groups = dg_data["dose_groups"]
     print(f"  {len(findings)} findings across {len(set(f['domain'] for f in findings))} domains")
 
-    # Phase 1b: Build enriched subject context + provenance messages
-    print("Phase 1b: Building subject context...")
+    # Phase 1c: Build enriched subject context + provenance messages
+    print("Phase 1c: Building subject context...")
     try:
         context_result = build_subject_context(study)
         provenance_msgs = generate_provenance_messages(context_result)
@@ -117,16 +135,6 @@ def generate(study_id: str):
     except Exception as e:
         print(f"  WARNING: Subject context failed: {e}")
         provenance_msgs = []
-
-    # Phase 1c: Compute mortality summary (DS + DD domains)
-    print("Phase 1c: Computing mortality summary...")
-    try:
-        mortality = compute_study_mortality(study, dg_data["subjects"], dose_groups)
-        _write_json(out_dir / "study_mortality.json", mortality)
-        print(f"  {mortality['total_deaths']} deaths, {mortality['total_accidental']} accidental")
-    except Exception as e:
-        print(f"  WARNING: Mortality computation failed: {e}")
-        mortality = None
 
     # Phase 2: Assemble view-specific data
     print("Phase 2: Assembling view DataFrames...")

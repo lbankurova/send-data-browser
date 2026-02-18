@@ -84,5 +84,9 @@
       ],
       "accidental_subjects": []
     }
-  ]
+  ],
+  "early_death_subjects": {
+    "PC201708-1001": "MORIBUND SACRIFICE",
+    "PC201708-4003": "MORIBUND SACRIFICE"
+  }
 }

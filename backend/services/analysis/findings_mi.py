@@ -13,7 +13,11 @@ SEVERITY_SCORES = {"MINIMAL": 1, "MILD": 2, "MODERATE": 3, "MARKED": 4, "SEVERE"
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE"}
 
 
-def compute_mi_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def compute_mi_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    excluded_subjects: set[str] | None = None,
+) -> list[dict]:
     """Compute findings from MI domain (microscopic/histopathology)."""
     if "mi" not in study.xpt_files:
         return []
@@ -22,6 +26,8 @@ def compute_mi_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     mi_df.columns = [c.upper() for c in mi_df.columns]
 
     main_subs = subjects[~subjects["is_recovery"]].copy()
+    if excluded_subjects:
+        main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
     mi_df = mi_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     spec_col = "MISPEC" if "MISPEC" in mi_df.columns else None

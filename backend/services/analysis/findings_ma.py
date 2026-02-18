@@ -9,7 +9,11 @@ from services.analysis.statistics import fisher_exact_2x2, trend_test_incidence
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE"}
 
 
-def compute_ma_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def compute_ma_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    excluded_subjects: set[str] | None = None,
+) -> list[dict]:
     """Compute findings from MA domain (macroscopic/gross pathology)."""
     if "ma" not in study.xpt_files:
         return []
@@ -18,6 +22,8 @@ def compute_ma_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     ma_df.columns = [c.upper() for c in ma_df.columns]
 
     main_subs = subjects[~subjects["is_recovery"]].copy()
+    if excluded_subjects:
+        main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
     ma_df = ma_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     spec_col = "MASPEC" if "MASPEC" in ma_df.columns else None
