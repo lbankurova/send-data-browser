@@ -65,6 +65,12 @@ BIOMARKER_MAP: dict[str, dict] = {
     # Muscle
     "CK": {"name": "Creatine Kinase", "organ": "SKELETAL MUSCLE", "system": "musculoskeletal", "direction_of_concern": "up", "category": "enzyme"},
     "LDH": {"name": "Lactate Dehydrogenase", "organ": None, "system": "general", "direction_of_concern": "up", "category": "enzyme"},
+    # Cardiovascular / ECG
+    "PRAG": {"name": "PR Interval", "organ": "HEART", "system": "cardiovascular", "direction_of_concern": "up", "category": "ecg"},
+    "QTCBAG": {"name": "QTcB Interval", "organ": "HEART", "system": "cardiovascular", "direction_of_concern": "up", "category": "ecg"},
+    "RRAG": {"name": "RR Interval", "organ": "HEART", "system": "cardiovascular", "direction_of_concern": "down", "category": "ecg"},
+    # Vital Signs
+    "HR": {"name": "Heart Rate", "organ": "HEART", "system": "cardiovascular", "direction_of_concern": "up", "category": "vital_sign"},
 }
 
 # Specimen/organ name → organ system

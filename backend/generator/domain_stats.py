@@ -18,6 +18,9 @@ from services.analysis.findings_ma import compute_ma_findings
 from services.analysis.findings_tf import compute_tf_findings
 from services.analysis.findings_cl import compute_cl_findings
 from services.analysis.findings_ds import compute_ds_findings
+from services.analysis.findings_eg import compute_eg_findings
+from services.analysis.findings_vs import compute_vs_findings
+from services.analysis.findings_bg import compute_bg_findings
 from services.analysis.classification import (
     classify_severity, classify_dose_response, determine_treatment_related,
     compute_max_fold_change,
@@ -133,6 +136,9 @@ def compute_all_findings(
     all_findings.extend(compute_tf_findings(study, subjects))
     all_findings.extend(compute_cl_findings(study, subjects))
     all_findings.extend(compute_ds_findings(study, subjects))
+    all_findings.extend(compute_eg_findings(study, subjects))
+    all_findings.extend(compute_vs_findings(study, subjects))
+    all_findings.extend(compute_bg_findings(study, subjects))
 
     # Pass 2 — scheduled-only stats for terminal + LB domains
     if excluded_set:
@@ -263,6 +269,9 @@ def _classify_endpoint_type(domain: str, test_code: str | None = None) -> str:
         "CL": "clinical_observation",
         "TF": "tumor",
         "PM": "palpable_mass",
+        "EG": "electrocardiogram",
+        "VS": "vital_signs",
+        "BG": "body_weight_gain",
     }
     return mapping.get(domain, "other")
 
