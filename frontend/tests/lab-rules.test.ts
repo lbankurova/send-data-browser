@@ -31,6 +31,12 @@ describe("evaluateLabRules for PointCross", () => {
     expect(firedRules.has("L07")).toBe(false);
   });
 
+  // ── Rules that SHOULD fire ──
+
+  test("L10 fires (ALP R-ratio — ALP is elevated)", () => {
+    expect(firedRules.has("L10")).toBe(true);
+  });
+
   // ── Per-sex rules that SHOULD fire ──
 
   test("L28 fires for NEUT increase (F sex)", () => {

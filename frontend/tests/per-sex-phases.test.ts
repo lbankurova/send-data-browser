@@ -442,6 +442,18 @@ describe("pattern classifier fixes", () => {
     expect(result.pattern).toBe("MONOTONIC_UP");
   });
 
+  test("Threshold increase (0%→0%→20%→40%) has onset at mid dose", () => {
+    const groups = makeDoseGroups([0, 0, 0.20, 0.40], [10, 10, 10, 10]);
+    const result = classifyPattern(groups);
+    expect(result.pattern).toBe("THRESHOLD");
+  });
+
+  test("Monotonic decrease (80%→60%→40%→20%) is MONOTONIC_DOWN", () => {
+    const groups = makeDoseGroups([0.80, 0.60, 0.40, 0.20], [15, 15, 15, 15]);
+    const result = classifyPattern(groups);
+    expect(result.pattern).toBe("MONOTONIC_DOWN");
+  });
+
   test("Plateau with noise (0%→20%→22%→18%) is THRESHOLD not NON_MONOTONIC", () => {
     const groups = makeDoseGroups([0, 0.20, 0.22, 0.18], [15, 15, 15, 15]);
     const result = classifyPattern(groups);
