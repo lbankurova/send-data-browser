@@ -32,6 +32,7 @@ from services.analysis.subject_context import build_subject_context
 from services.analysis.provenance import generate_provenance_messages
 from services.analysis.mortality import compute_study_mortality
 from generator.tumor_summary import build_tumor_summary
+from generator.food_consumption_summary import build_food_consumption_summary_with_subjects
 
 
 OUTPUT_DIR = Path(__file__).parent.parent / "generated"
@@ -131,6 +132,17 @@ def generate(study_id: str):
         print(f"  {len(tumor_summary['progression_sequences'])} progression sequences detected")
     else:
         print("  No tumors found")
+
+    # Phase 1e: Food consumption summary (cross-domain FW + BW food efficiency)
+    print("Phase 1e: Computing food consumption summary...")
+    food_summary = build_food_consumption_summary_with_subjects(findings, study)
+    _write_json(out_dir / "food_consumption_summary.json", food_summary)
+    if food_summary.get("available"):
+        n_periods = len(food_summary.get("periods", []))
+        assessment = food_summary.get("overall_assessment", {}).get("assessment", "unknown")
+        print(f"  {n_periods} measurement period(s), assessment: {assessment}")
+    else:
+        print("  No FW data available")
 
     # Phase 1c: Build enriched subject context + provenance messages
     print("Phase 1c: Building subject context...")
