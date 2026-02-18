@@ -68,10 +68,11 @@ These rules are non-negotiable. No agent may override, reinterpret, or skip them
 ## Agent Commit Protocol
 
 Before committing changes that alter system or view behavior:
-1. **Run `npm test`.** All 48 pipeline assertions must pass. If a test fails, the fix is wrong — do not commit. If the fix intentionally changes behavior, update the test first and explain why.
+1. **Run `npm test`.** All pipeline assertions must pass. If a test fails, the fix is wrong — do not commit. If the fix intentionally changes behavior, update the test first and explain why.
 2. **Update the affected spec.** If you changed how a system or view works, update the corresponding `docs/systems/*.md` or `docs/views/*.md` to match. Specs must reflect code, not the other way around.
 3. **Mark MANIFEST.md.** Set "Last validated" to today for any spec you updated. If you can't update the spec, mark it `STALE — <reason>` in MANIFEST.
 4. **Check `docs/incoming/`** for feature specs that conflict with your changes. If a conflict exists, ask the user before committing.
+5. **Update the issue tracker.** Mark resolved items in `docs/incoming/arch-overhaul/spec-cleanup-b66dfd0.md` with strikethrough + commit hash. Update the summary counts and per-view table. This is mandatory for every commit — no exceptions.
 
 **When fixing a data pipeline bug:** Write the failing test FIRST, then apply the fix, then confirm all tests pass. This is non-negotiable for changes to: `derive-summaries.ts`, `lab-clinical-catalog.ts`, `cross-domain-syndromes.ts`, `findings-rail-engine.ts`, classification.py, or any findings_*.py module.
 
