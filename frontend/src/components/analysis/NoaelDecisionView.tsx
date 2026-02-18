@@ -49,6 +49,8 @@ import { generateNoaelNarrative } from "@/lib/noael-narrative";
 import type { NoaelNarrative } from "@/lib/noael-narrative";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import type { NoaelOverride } from "@/types/annotations";
+import { usePkIntegration } from "@/hooks/usePkIntegration";
+import type { PkIntegration } from "@/types/analysis-views";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -61,9 +63,180 @@ interface NoaelSelection {
 // OrganSummary, EndpointSummary, deriveOrganSummaries, deriveEndpointSummaries
 // imported from @/lib/derive-summaries
 
+// ─── Exposure Section (PK context in NOAEL card) ────────────
+
+function ExposureSection({ pkData }: { pkData: PkIntegration }) {
+  const noaelExp = pkData.noael_exposure;
+  const loaelExp = pkData.loael_exposure;
+  const hed = pkData.hed;
+  const atControl = hed?.noael_status === "at_control";
+
+  // Show exposure data from NOAEL if available, otherwise LOAEL
+  const exposure = noaelExp ?? loaelExp;
+  const exposureLabel = noaelExp ? "Exposure at NOAEL" : "Exposure at LOAEL";
+
+  const fmtStat = (val: number | null | undefined, sd: number | null | undefined, unit: string) => {
+    if (val == null) return "\u2014";
+    const sdStr = sd != null ? ` \u00b1 ${Math.round(sd)}` : "";
+    return `${Math.round(val)}${sdStr} ${unit}`;
+  };
+
+  return (
+    <div className="mt-1.5 border-t pt-1.5">
+      {atControl ? (
+        <>
+          <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {exposureLabel}
+          </div>
+          {exposure && (
+            <div className="space-y-px text-[10px]">
+              {exposure.cmax && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">C<sub>max</sub></span>
+                  <span className="font-medium">{fmtStat(exposure.cmax.mean, exposure.cmax.sd, exposure.cmax.unit)}</span>
+                </div>
+              )}
+              {exposure.auc && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">AUC</span>
+                  <span className="font-medium">{fmtStat(exposure.auc.mean, exposure.auc.sd, exposure.auc.unit)}</span>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="mt-1 border-t pt-1 text-[10px] text-muted-foreground">
+            No safe starting dose can be derived from this study using standard allometric scaling
+            (adverse effects at all tested doses). LOAEL-based margin shown as alternative.
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Exposure at NOAEL
+          </div>
+          {noaelExp && (
+            <div className="space-y-px text-[10px]">
+              {noaelExp.cmax && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">C<sub>max</sub></span>
+                  <span className="font-medium">{fmtStat(noaelExp.cmax.mean, noaelExp.cmax.sd, noaelExp.cmax.unit)}</span>
+                </div>
+              )}
+              {noaelExp.auc && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">AUC</span>
+                  <span className="font-medium">{fmtStat(noaelExp.auc.mean, noaelExp.auc.sd, noaelExp.auc.unit)}</span>
+                </div>
+              )}
+            </div>
+          )}
+          {hed && (
+            <div className="mt-1 space-y-px border-t pt-1 text-[10px]">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">HED</span>
+                <span className="font-medium">{hed.hed_mg_kg.toFixed(2)} mg/kg</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">MRSD</span>
+                <span className="font-medium">{hed.mrsd_mg_kg.toFixed(3)} mg/kg</span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Safety Margin Calculator ────────────────────────────────
+
+function SafetyMarginCalculator({ pkData }: { pkData: PkIntegration }) {
+  const [humanCmax, setHumanCmax] = useState("");
+  const [humanAuc, setHumanAuc] = useState("");
+
+  const atControl = pkData.hed?.noael_status === "at_control";
+  // Use NOAEL exposure if available; fall back to LOAEL for at-control case
+  const refExposure = pkData.noael_exposure ?? pkData.loael_exposure;
+  if (!refExposure) return null;
+
+  const cmaxMargin = humanCmax && refExposure.cmax?.mean
+    ? refExposure.cmax.mean / parseFloat(humanCmax)
+    : null;
+  const aucMargin = humanAuc && refExposure.auc?.mean
+    ? refExposure.auc.mean / parseFloat(humanAuc)
+    : null;
+
+  const marginLabel = atControl ? "LOAEL-based" : "NOAEL-based";
+  const marginSuffix = atControl ? " (LOAEL)" : "";
+
+  return (
+    <div className="rounded-lg border p-3">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Safety margin calculator
+        {atControl && (
+          <span className="ml-1.5 normal-case font-normal text-muted-foreground/70">
+            — {marginLabel}, NOAEL not established above control
+          </span>
+        )}
+      </div>
+      <div className="flex items-end gap-4 text-[11px]">
+        <div className="flex-1">
+          <label className="mb-0.5 block text-[10px] text-muted-foreground">
+            Human C<sub>max</sub> ({refExposure.cmax?.unit ?? "ng/mL"})
+          </label>
+          <input
+            type="number"
+            value={humanCmax}
+            onChange={(e) => setHumanCmax(e.target.value)}
+            placeholder="0"
+            className="w-full rounded border bg-background px-1.5 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="mb-0.5 block text-[10px] text-muted-foreground">
+            Human AUC ({refExposure.auc?.unit ?? "h*ng/mL"})
+          </label>
+          <input
+            type="number"
+            value={humanAuc}
+            onChange={(e) => setHumanAuc(e.target.value)}
+            placeholder="0"
+            className="w-full rounded border bg-background px-1.5 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+        <div className="flex-1 text-[11px]">
+          {(cmaxMargin != null && isFinite(cmaxMargin) && cmaxMargin > 0) || (aucMargin != null && isFinite(aucMargin) && aucMargin > 0) ? (
+            <div className="space-y-0.5">
+              {cmaxMargin != null && isFinite(cmaxMargin) && cmaxMargin > 0 && (
+                <div>
+                  <span className="text-muted-foreground">C<sub>max</sub>{marginSuffix}: </span>
+                  <span className="font-semibold">{cmaxMargin.toFixed(1)}\u00d7</span>
+                </div>
+              )}
+              {aucMargin != null && isFinite(aucMargin) && aucMargin > 0 && (
+                <div>
+                  <span className="text-muted-foreground">AUC{marginSuffix}: </span>
+                  <span className="font-semibold">{aucMargin.toFixed(1)}\u00d7</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <span className="text-muted-foreground/50">Enter values to compute margin</span>
+          )}
+        </div>
+      </div>
+      {pkData.tk_design?.has_satellite_groups && !pkData.tk_design.individual_correlation_possible && (
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          TK data from satellite animals (n={pkData.tk_design.n_tk_subjects}). Individual exposure-toxicity correlation not available.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── NOAEL Banner (compact, persistent) ────────────────────
 
-function NoaelBanner({ data, aeData, studyId, onFindingClick }: { data: NoaelSummaryRow[]; aeData: AdverseEffectSummaryRow[]; studyId: string; onFindingClick?: (finding: string, organSystem: string) => void }) {
+function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: { data: NoaelSummaryRow[]; aeData: AdverseEffectSummaryRow[]; studyId: string; onFindingClick?: (finding: string, organSystem: string) => void; pkData?: PkIntegration }) {
   const combined = data.find((r) => r.sex === "Combined");
   const males = data.find((r) => r.sex === "M");
   const females = data.find((r) => r.sex === "F");
@@ -273,6 +446,10 @@ function NoaelBanner({ data, aeData, studyId, onFindingClick }: { data: NoaelSum
                       <DomainLabel key={d} domain={d} />
                     ))}
                   </div>
+                )}
+                {/* PK exposure at NOAEL (or LOAEL fallback) */}
+                {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && r.sex === "Combined" && (
+                  <ExposureSection pkData={pkData} />
                 )}
               </div>
               {/* Inline override form */}
@@ -930,6 +1107,7 @@ export function NoaelDecisionView() {
   const { data: noaelData, isLoading: noaelLoading, error: noaelError } = useEffectiveNoael(studyId);
   const { data: aeData, isLoading: aeLoading, error: aeError } = useAdverseEffectSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
+  const { data: pkData } = usePkIntegration(studyId);
 
   // Read organ from StudySelectionContext
   const selectedOrgan = studySelection.organSystem ?? null;
@@ -1088,7 +1266,33 @@ export function NoaelDecisionView() {
             if (organSystem) navigateTo({ organSystem });
             setActiveTab("overview");
           }}
+          pkData={pkData}
         />
+      )}
+
+      {/* Dose proportionality warning */}
+      {pkData?.available && pkData.dose_proportionality?.assessment && pkData.dose_proportionality.assessment !== "linear" && pkData.dose_proportionality.assessment !== "insufficient_data" && (
+        <div className="shrink-0 border-b bg-amber-50 px-4 py-1.5 text-[11px] text-amber-800">
+          <div>
+            {"\u26a0"}{" "}
+            {pkData.dose_proportionality.non_monotonic
+              ? `Non-monotonic pharmacokinetics detected (slope ${pkData.dose_proportionality.slope}, R\u00b2 ${pkData.dose_proportionality.r_squared})`
+              : `${pkData.dose_proportionality.assessment === "supralinear" ? "Supralinear" : "Sublinear"} pharmacokinetics detected (slope ${pkData.dose_proportionality.slope})`
+            }
+          </div>
+          {pkData.dose_proportionality.interpretation && (
+            <div className="mt-0.5 text-[10px] text-amber-700">
+              {pkData.dose_proportionality.interpretation}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Safety margin calculator */}
+      {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (
+        <div className="shrink-0 border-b px-4 py-2">
+          <SafetyMarginCalculator pkData={pkData} />
+        </div>
       )}
 
       {/* Evidence panel — full width */}

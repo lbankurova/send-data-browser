@@ -33,6 +33,7 @@ from services.analysis.provenance import generate_provenance_messages
 from services.analysis.mortality import compute_study_mortality
 from generator.tumor_summary import build_tumor_summary
 from generator.food_consumption_summary import build_food_consumption_summary_with_subjects
+from generator.pk_integration import build_pk_integration
 
 
 OUTPUT_DIR = Path(__file__).parent.parent / "generated"
@@ -169,6 +170,18 @@ def generate(study_id: str):
     adverse_effects = build_adverse_effect_summary(findings, dose_groups)
     noael = build_noael_summary(findings, dose_groups, mortality=mortality)
     finding_dose_trends = build_finding_dose_trends(findings, dose_groups)
+
+    # Phase 2b: PK integration (needs NOAEL dose level from Phase 2)
+    print("Phase 2b: Computing PK integration...")
+    pk_integration = build_pk_integration(study, dose_groups, noael)
+    _write_json(out_dir / "pk_integration.json", pk_integration)
+    if pk_integration.get("available"):
+        n_tk = pk_integration["tk_design"]["n_tk_subjects"]
+        hed = pk_integration["hed"]["hed_mg_kg"] if pk_integration.get("hed") else None
+        hed_str = f", HED={hed:.2f} mg/kg" if hed is not None else ""
+        print(f"  {n_tk} TK subjects{hed_str}")
+    else:
+        print("  No PC/PP data available")
 
     # Phase 3: Signal scores + rules + adversity
     print("Phase 3: Evaluating rules...")

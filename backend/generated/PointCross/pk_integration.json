@@ -1,0 +1,566 @@
+{
+  "available": true,
+  "species": "RAT",
+  "km_factor": 6,
+  "hed_conversion_factor": 6.2,
+  "tk_design": {
+    "has_satellite_groups": true,
+    "satellite_set_codes": [
+      "2TK",
+      "3TK",
+      "4TK"
+    ],
+    "main_study_set_codes": [
+      "1",
+      "1R",
+      "2",
+      "2R",
+      "3",
+      "3R",
+      "4",
+      "4R"
+    ],
+    "n_tk_subjects": 30,
+    "individual_correlation_possible": false
+  },
+  "analyte": "PCDRUGC",
+  "specimen": "PLASMA",
+  "lloq": 20.0,
+  "lloq_unit": "ng/mL",
+  "visit_days": [
+    91
+  ],
+  "multi_visit": false,
+  "pp_parameters_available": [
+    "CMAX",
+    "AUCLST",
+    "AUCTAU",
+    "TMAX",
+    "TLST",
+    "AUCIFO"
+  ],
+  "by_dose_group": [
+    {
+      "dose_level": 1,
+      "dose_value": 2.0,
+      "dose_unit": "mg/kg",
+      "dose_label": "Group 2",
+      "n_subjects": 10,
+      "parameters": {
+        "AUCIFO": {
+          "mean": 44093.0,
+          "sd": 32480.2429,
+          "median": 44093.0,
+          "n": 2,
+          "unit": "h*ng/mL",
+          "values": [
+            21126.0,
+            67060.0
+          ]
+        },
+        "AUCLST": {
+          "mean": 13272.8333,
+          "sd": 5792.7834,
+          "median": 13803.5,
+          "n": 6,
+          "unit": "h*ng/mL",
+          "values": [
+            8348.0,
+            5222.0,
+            12724.0,
+            14883.0,
+            20786.0,
+            17674.0
+          ]
+        },
+        "CMAX": {
+          "mean": 2356.0,
+          "sd": 648.7629,
+          "median": 2345.0,
+          "n": 10,
+          "unit": "ng/mL",
+          "values": [
+            1670.0,
+            1410.0,
+            2140.0,
+            2380.0,
+            2640.0,
+            1990.0,
+            2540.0,
+            2310.0,
+            3770.0,
+            2710.0
+          ]
+        },
+        "TLST": {
+          "mean": 24.0,
+          "sd": 0.0,
+          "median": 24.0,
+          "n": 10,
+          "unit": "h",
+          "values": [
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0
+          ]
+        },
+        "TMAX": {
+          "mean": 5.0,
+          "sd": 6.8961,
+          "median": 2.0,
+          "n": 10,
+          "unit": "h",
+          "values": [
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            4.0,
+            1.0,
+            24.0,
+            4.0,
+            7.0,
+            2.0
+          ]
+        },
+        "AUCTAU": {
+          "mean": 29380.1429,
+          "sd": 19281.4349,
+          "median": 24975.0,
+          "n": 7,
+          "unit": "h*ng/mL",
+          "values": [
+            6888.0,
+            14883.0,
+            17674.0,
+            52790.0,
+            30636.0,
+            57815.0,
+            24975.0
+          ]
+        }
+      },
+      "concentration_time": [
+        {
+          "timepoint": "Predose",
+          "tptnum": 1,
+          "elapsed_h": null,
+          "mean": 404.75,
+          "sd": 617.3465,
+          "n": 10,
+          "n_bql": 2
+        },
+        {
+          "timepoint": "0.5H",
+          "tptnum": 2,
+          "elapsed_h": 0.5,
+          "mean": 1797.9,
+          "sd": 504.6866,
+          "n": 10,
+          "n_bql": 0
+        },
+        {
+          "timepoint": "2H",
+          "tptnum": 3,
+          "elapsed_h": 2.0,
+          "mean": 2951.0,
+          "sd": 1292.8044,
+          "n": 10,
+          "n_bql": 0
+        },
+        {
+          "timepoint": "4H",
+          "tptnum": 4,
+          "elapsed_h": 4.0,
+          "mean": 2227.6,
+          "sd": 1285.6299,
+          "n": 10,
+          "n_bql": 0
+        },
+        {
+          "timepoint": "24H",
+          "tptnum": 5,
+          "elapsed_h": 24.0,
+          "mean": 404.75,
+          "sd": 617.3465,
+          "n": 10,
+          "n_bql": 2
+        }
+      ]
+    },
+    {
+      "dose_level": 2,
+      "dose_value": 20.0,
+      "dose_unit": "mg/kg",
+      "dose_label": "Group 3",
+      "n_subjects": 10,
+      "parameters": {
+        "AUCIFO": {
+          "mean": 48242.6667,
+          "sd": 24716.3289,
+          "median": 57417.0,
+          "n": 3,
+          "unit": "h*ng/mL",
+          "values": [
+            67060.0,
+            57417.0,
+            20251.0
+          ]
+        },
+        "AUCTAU": {
+          "mean": 50894.8889,
+          "sd": 26189.0785,
+          "median": 48067.0,
+          "n": 9,
+          "unit": "h*ng/mL",
+          "values": [
+            54596.0,
+            25853.0,
+            63790.0,
+            27820.0,
+            48067.0,
+            93020.0,
+            83456.0,
+            46396.0,
+            15056.0
+          ]
+        },
+        "CMAX": {
+          "mean": 3926.0,
+          "sd": 1091.5147,
+          "median": 3600.0,
+          "n": 10,
+          "unit": "ng/mL",
+          "values": [
+            3590.0,
+            3090.0,
+            3610.0,
+            3460.0,
+            4060.0,
+            6760.0,
+            4190.0,
+            4150.0,
+            3560.0,
+            2790.0
+          ]
+        },
+        "TLST": {
+          "mean": 24.0,
+          "sd": 0.0,
+          "median": 24.0,
+          "n": 10,
+          "unit": "h",
+          "values": [
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0
+          ]
+        },
+        "TMAX": {
+          "mean": 3.2,
+          "sd": 2.2509,
+          "median": 2.0,
+          "n": 10,
+          "unit": "h",
+          "values": [
+            7.0,
+            2.0,
+            7.0,
+            2.0,
+            4.0,
+            1.0,
+            4.0,
+            2.0,
+            2.0,
+            1.0
+          ]
+        },
+        "AUCLST": {
+          "mean": 39063.8,
+          "sd": 33001.6398,
+          "median": 27820.0,
+          "n": 5,
+          "unit": "h*ng/mL",
+          "values": [
+            27820.0,
+            93020.0,
+            46396.0,
+            16566.0,
+            11517.0
+          ]
+        }
+      },
+      "concentration_time": [
+        {
+          "timepoint": "Predose",
+          "tptnum": 1,
+          "elapsed_h": null,
+          "mean": 967.02,
+          "sd": 1559.0791,
+          "n": 10,
+          "n_bql": 1
+        },
+        {
+          "timepoint": "0.5H",
+          "tptnum": 2,
+          "elapsed_h": 0.5,
+          "mean": 3686.2,
+          "sd": 1873.3071,
+          "n": 10,
+          "n_bql": 0
+        },
+        {
+          "timepoint": "2H",
+          "tptnum": 3,
+          "elapsed_h": 2.0,
+          "mean": 5445.3,
+          "sd": 2429.76,
+          "n": 10,
+          "n_bql": 0
+        },
+        {
+          "timepoint": "4H",
+          "tptnum": 4,
+          "elapsed_h": 4.0,
+          "mean": 4489.6,
+          "sd": 2458.7759,
+          "n": 10,
+          "n_bql": 0
+        },
+        {
+          "timepoint": "24H",
+          "tptnum": 5,
+          "elapsed_h": 24.0,
+          "mean": 967.02,
+          "sd": 1559.0791,
+          "n": 10,
+          "n_bql": 1
+        }
+      ]
+    },
+    {
+      "dose_level": 3,
+      "dose_value": 200.0,
+      "dose_unit": "mg/kg",
+      "dose_label": "Group 4",
+      "n_subjects": 10,
+      "parameters": {
+        "AUCIFO": {
+          "mean": 20425.5,
+          "sd": 8280.9275,
+          "median": 20425.5,
+          "n": 2,
+          "unit": "h*ng/mL",
+          "values": [
+            26281.0,
+            14570.0
+          ]
+        },
+        "AUCLST": {
+          "mean": 17005.0,
+          "sd": 7163.2267,
+          "median": 16317.5,
+          "n": 4,
+          "unit": "h*ng/mL",
+          "values": [
+            26186.0,
+            18288.0,
+            14347.0,
+            9199.0
+          ]
+        },
+        "CMAX": {
+          "mean": 4370.0,
+          "sd": 1800.0309,
+          "median": 4260.0,
+          "n": 10,
+          "unit": "ng/mL",
+          "values": [
+            3480.0,
+            3100.0,
+            2210.0,
+            2100.0,
+            6210.0,
+            4720.0,
+            5550.0,
+            7770.0,
+            3800.0,
+            4760.0
+          ]
+        },
+        "TLST": {
+          "mean": 24.0,
+          "sd": 0.0,
+          "median": 24.0,
+          "n": 10,
+          "unit": "h",
+          "values": [
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0,
+            24.0
+          ]
+        },
+        "TMAX": {
+          "mean": 4.45,
+          "sd": 6.9938,
+          "median": 2.0,
+          "n": 10,
+          "unit": "h",
+          "values": [
+            4.0,
+            2.0,
+            0.5,
+            1.0,
+            4.0,
+            1.0,
+            4.0,
+            2.0,
+            24.0,
+            2.0
+          ]
+        },
+        "AUCTAU": {
+          "mean": 52489.625,
+          "sd": 39588.8022,
+          "median": 50956.0,
+          "n": 8,
+          "unit": "h*ng/mL",
+          "values": [
+            18288.0,
+            -14586.0,
+            106832.0,
+            43791.0,
+            94374.0,
+            71620.0,
+            58121.0,
+            41477.0
+          ]
+        }
+      },
+      "concentration_time": [
+        {
+          "timepoint": "Predose",
+          "tptnum": 1,
+          "elapsed_h": null,
+          "mean": 975.7,
+          "sd": 1808.6928,
+          "n": 10,
+          "n_bql": 2
+        },
+        {
+          "timepoint": "0.5H",
+          "tptnum": 2,
+          "elapsed_h": 0.5,
+          "mean": 4343.9,
+          "sd": 2344.5484,
+          "n": 10,
+          "n_bql": 0
+        },
+        {
+          "timepoint": "2H",
+          "tptnum": 3,
+          "elapsed_h": 2.0,
+          "mean": 6039.3,
+          "sd": 3041.3806,
+          "n": 10,
+          "n_bql": 0
+        },
+        {
+          "timepoint": "4H",
+          "tptnum": 4,
+          "elapsed_h": 4.0,
+          "mean": 4876.3,
+          "sd": 3045.4667,
+          "n": 10,
+          "n_bql": 0
+        },
+        {
+          "timepoint": "24H",
+          "tptnum": 5,
+          "elapsed_h": 24.0,
+          "mean": 975.7,
+          "sd": 1808.6928,
+          "n": 10,
+          "n_bql": 2
+        }
+      ]
+    }
+  ],
+  "dose_proportionality": {
+    "parameter": "AUCLST",
+    "slope": 0.054,
+    "r_squared": 0.048,
+    "assessment": "sublinear",
+    "dose_levels_used": [
+      1,
+      2,
+      3
+    ],
+    "log_doses": [
+      0.693,
+      2.996,
+      5.298
+    ],
+    "log_aucs": [
+      9.493,
+      10.573,
+      9.741
+    ],
+    "non_monotonic": true,
+    "interpretation": "Exposure (AUC) decreases at 200 mg/kg despite higher dose, indicating non-monotonic pharmacokinetics. TK satellite animals all survived at this dose, but 2 main study animal(s) died with target organ toxicity. AUC drop reflects genuine saturable absorption or autoinduction of metabolism, not a survivorship artifact. Log-log regression slope = 0.05 (R\u00b2 = 0.05); low R\u00b2 confirms non-linear dose-exposure relationship."
+  },
+  "accumulation": {
+    "available": false,
+    "ratio": null,
+    "assessment": "unknown",
+    "reason": "Single visit day (91) \u2014 no Day 1 comparison available"
+  },
+  "noael_exposure": null,
+  "loael_exposure": {
+    "dose_level": 1,
+    "dose_value": 2.0,
+    "cmax": {
+      "mean": 2356.0,
+      "sd": 648.7629,
+      "unit": "ng/mL"
+    },
+    "auc": {
+      "mean": 13272.8333,
+      "sd": 5792.7834,
+      "unit": "h*ng/mL"
+    },
+    "tmax": {
+      "mean": 5.0,
+      "unit": "h"
+    }
+  },
+  "hed": {
+    "noael_mg_kg": 0.0,
+    "hed_mg_kg": 0.0,
+    "mrsd_mg_kg": 0.0,
+    "safety_factor": 10,
+    "method": "FDA body surface area scaling (Km-based)",
+    "noael_status": "at_control"
+  }
+}

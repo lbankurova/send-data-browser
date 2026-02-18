@@ -11,6 +11,7 @@ import type {
   LesionSeverityRow,
   ProvenanceMessage,
   FindingDoseTrend,
+  PkIntegration,
 } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 
@@ -151,6 +152,14 @@ export function fetchTumorSummary(
 ): Promise<TumorSummary> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/tumor-summary`,
+  );
+}
+
+export function fetchPkIntegration(
+  studyId: string,
+): Promise<PkIntegration> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/pk-integration`,
   );
 }
 
