@@ -4,7 +4,7 @@
  */
 
 import type { StudyMetadata } from "@/types";
-import type { StudyContext } from "@/types/study-context";
+import type { StudyContext, ECGInterpretation } from "@/types/study-context";
 
 // ---------------------------------------------------------------------------
 // ISO 8601 duration parser (subset: P{n}W, P{n}D, P{n}M)
@@ -76,6 +76,49 @@ function parseIntOrNull(s: string | null): number | null {
 }
 
 // ---------------------------------------------------------------------------
+// ECG interpretation — species-aware QTc translational relevance
+// ---------------------------------------------------------------------------
+
+function deriveECGInterpretation(species: string): ECGInterpretation {
+  const s = species.toUpperCase();
+  if (s.includes("RAT") || s.includes("MOUSE")) {
+    return {
+      qtcTranslational: false,
+      preferredCorrection: null,
+      rationale:
+        "Rodent ventricular repolarization is Ito-dominated; QTc prolongation has limited translational value to humans.",
+    };
+  }
+  if (s.includes("DOG") || s.includes("CANINE") || s.includes("BEAGLE")) {
+    return {
+      qtcTranslational: true,
+      preferredCorrection: "VanDeWater",
+      rationale:
+        "Dog QTc is the gold-standard non-clinical model for human QT risk. Van de Water correction preferred.",
+    };
+  }
+  if (
+    s.includes("MONKEY") ||
+    s.includes("PRIMATE") ||
+    s.includes("MACAQUE") ||
+    s.includes("CYNOMOLGUS") ||
+    s.includes("MARMOSET")
+  ) {
+    return {
+      qtcTranslational: true,
+      preferredCorrection: "Fridericia",
+      rationale:
+        "NHP QTc is translationally relevant. Fridericia correction preferred for non-human primates.",
+    };
+  }
+  return {
+    qtcTranslational: false,
+    preferredCorrection: null,
+    rationale: "QTc interpretation not configured for this species.",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Main parser
 // ---------------------------------------------------------------------------
 
@@ -117,5 +160,6 @@ export function parseStudyContext(meta: StudyMetadata): StudyContext {
     glpCompliant: meta.glp != null && meta.glp !== "",
     sendCtVersion: meta.ct_version ?? "",
     title: meta.title ?? "",
+    ecgInterpretation: deriveECGInterpretation(meta.species ?? ""),
   };
 }

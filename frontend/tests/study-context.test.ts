@@ -173,4 +173,56 @@ describe("parseStudyContext", () => {
     expect(ctx.plannedSubjectsM).toBeNull();
     expect(ctx.plannedSubjectsF).toBeNull();
   });
+
+  // ── ECGInterpretation derivation ──
+
+  test("RAT → qtcTranslational false, no preferred correction", () => {
+    const ctx = parseStudyContext(makeMetadata({ species: "RAT" }));
+    expect(ctx.ecgInterpretation.qtcTranslational).toBe(false);
+    expect(ctx.ecgInterpretation.preferredCorrection).toBeNull();
+    expect(ctx.ecgInterpretation.rationale).toContain("Ito-dominated");
+  });
+
+  test("MOUSE → qtcTranslational false", () => {
+    const ctx = parseStudyContext(makeMetadata({ species: "MOUSE" }));
+    expect(ctx.ecgInterpretation.qtcTranslational).toBe(false);
+  });
+
+  test("DOG → qtcTranslational true, VanDeWater correction", () => {
+    const ctx = parseStudyContext(makeMetadata({ species: "DOG" }));
+    expect(ctx.ecgInterpretation.qtcTranslational).toBe(true);
+    expect(ctx.ecgInterpretation.preferredCorrection).toBe("VanDeWater");
+    expect(ctx.ecgInterpretation.rationale).toContain("gold-standard");
+  });
+
+  test("BEAGLE → same as DOG", () => {
+    const ctx = parseStudyContext(makeMetadata({ species: "BEAGLE" }));
+    expect(ctx.ecgInterpretation.qtcTranslational).toBe(true);
+    expect(ctx.ecgInterpretation.preferredCorrection).toBe("VanDeWater");
+  });
+
+  test("CYNOMOLGUS MONKEY → Fridericia correction", () => {
+    const ctx = parseStudyContext(makeMetadata({ species: "CYNOMOLGUS MONKEY" }));
+    expect(ctx.ecgInterpretation.qtcTranslational).toBe(true);
+    expect(ctx.ecgInterpretation.preferredCorrection).toBe("Fridericia");
+    expect(ctx.ecgInterpretation.rationale).toContain("non-human primates");
+  });
+
+  test("MACAQUE → same as monkey (NHP)", () => {
+    const ctx = parseStudyContext(makeMetadata({ species: "MACAQUE" }));
+    expect(ctx.ecgInterpretation.qtcTranslational).toBe(true);
+    expect(ctx.ecgInterpretation.preferredCorrection).toBe("Fridericia");
+  });
+
+  test("unknown species → qtcTranslational false, no preferred correction", () => {
+    const ctx = parseStudyContext(makeMetadata({ species: "GUINEA PIG" }));
+    expect(ctx.ecgInterpretation.qtcTranslational).toBe(false);
+    expect(ctx.ecgInterpretation.preferredCorrection).toBeNull();
+  });
+
+  test("null species → defaults to unknown", () => {
+    const ctx = parseStudyContext(makeMetadata({ species: null }));
+    expect(ctx.ecgInterpretation.qtcTranslational).toBe(false);
+    expect(ctx.ecgInterpretation.preferredCorrection).toBeNull();
+  });
 });
