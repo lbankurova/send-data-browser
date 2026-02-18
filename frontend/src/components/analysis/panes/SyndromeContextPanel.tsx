@@ -25,9 +25,10 @@ import { getSyndromeTermReport, getSyndromeDefinition } from "@/lib/cross-domain
 import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
-import { interpretSyndrome } from "@/lib/syndrome-interpretation";
-import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef } from "@/lib/syndrome-interpretation";
+import { interpretSyndrome, mapDeathRecordsToDispositions } from "@/lib/syndrome-interpretation";
+import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext } from "@/lib/syndrome-interpretation";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
+import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import type { FindingsFilters, UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
@@ -253,9 +254,15 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   // Study context for interpretation layer (real data from TS domain)
   const { data: studyContext } = useStudyContext(studyId);
 
-  // Compute syndrome interpretation (Phase A + Phase C)
+  // Mortality data for interpretation layer
+  const { data: mortalityRaw } = useStudyMortality(studyId);
+
+  // Compute syndrome interpretation (Phase A + Phase B mortality + Phase C)
   const syndromeInterp = useMemo<SyndromeInterpretation | null>(() => {
     if (!detected || allEndpoints.length === 0 || !studyContext) return null;
+    const mortalityDispositions = mortalityRaw
+      ? mapDeathRecordsToDispositions(mortalityRaw)
+      : [];
     return interpretSyndrome(
       detected,
       allEndpoints,
@@ -263,12 +270,13 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       [], // recovery data (not available yet)
       [], // organ weights
       [], // tumors
-      [], // mortality
+      mortalityDispositions,
       [], // food consumption
       [], // clinical observations (not available yet)
       studyContext,
+      mortalityRaw?.mortality_noael_cap,
     );
-  }, [detected, allEndpoints, histopathData, studyContext]);
+  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw]);
 
   // Interpretation content
   const interpretation = SYNDROME_INTERPRETATIONS[syndromeId];
@@ -416,6 +424,24 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       {syndromeInterp && (
         <CollapsiblePane title="Recovery" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <RecoveryPane recovery={syndromeInterp.recovery} />
+        </CollapsiblePane>
+      )}
+
+      {/* Pane: MORTALITY CONTEXT (Phase B) */}
+      {syndromeInterp && syndromeInterp.mortalityContext.treatmentRelatedDeaths > 0 && (
+        <CollapsiblePane title="Mortality context" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <MortalityContextPane mortality={syndromeInterp.mortalityContext} />
+        </CollapsiblePane>
+      )}
+
+      {/* Pane: STUDY DESIGN (Phase B, Component 7) */}
+      {syndromeInterp && syndromeInterp.studyDesignNotes.length > 0 && (
+        <CollapsiblePane title="Study design" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="space-y-1.5">
+            {syndromeInterp.studyDesignNotes.map((note, i) => (
+              <p key={i} className="text-xs leading-relaxed text-foreground/80">{note}</p>
+            ))}
+          </div>
         </CollapsiblePane>
       )}
 
@@ -1161,6 +1187,44 @@ function ClinicalObservationsPane({ support }: { support: SyndromeInterpretation
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">No correlating clinical observations.</p>
+      )}
+    </div>
+  );
+}
+
+/** Mortality context pane (Phase B) */
+function MortalityContextPane({ mortality }: { mortality: MortalityContext }) {
+  return (
+    <div>
+      <p className="mb-2 text-xs leading-relaxed text-foreground/80">
+        {mortality.mortalityNarrative}
+      </p>
+      {mortality.mortalityNoaelCap != null && (
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">NOAEL cap:</span>
+          <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+            Dose level {mortality.mortalityNoaelCap}
+          </span>
+        </div>
+      )}
+      {mortality.deathDetails.length > 0 && (
+        <div className="space-y-0.5">
+          <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Death details
+          </div>
+          {mortality.deathDetails.map((d, i) => (
+            <div key={i} className="flex items-center gap-1.5 text-xs">
+              <span className="shrink-0 font-mono text-muted-foreground">{d.animalId}</span>
+              <span className="shrink-0 text-muted-foreground">dose {d.doseGroup}</span>
+              <span className="shrink-0 text-muted-foreground">day {d.dispositionDay}</span>
+              {d.causeOfDeath && (
+                <span className="min-w-0 flex-1 truncate text-foreground/80" title={d.causeOfDeath}>
+                  {d.causeOfDeath}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
