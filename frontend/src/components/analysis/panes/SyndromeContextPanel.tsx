@@ -420,7 +420,11 @@ function EvidenceSummaryContent({
       <div className="mb-2">
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">Required findings:</span>
-          <span className="text-muted-foreground">{report.requiredMetCount} of {report.requiredTotal} met</span>
+          <span className="text-muted-foreground">
+            {report.requiredLogicType === "compound"
+              ? report.requiredLogicText
+              : `${report.requiredMetCount} of ${report.requiredTotal} met`}
+          </span>
         </div>
         <div className="mt-1 space-y-0.5">
           {report.requiredEntries.map((entry, i) => (

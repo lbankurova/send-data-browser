@@ -15,6 +15,10 @@ describe("regression guards", () => {
     expect(resolveCanonical("PANCREAS \u2014 INFLAMMATION")).not.toBe("NEUT");
   });
 
+  test("KIDNEY — CAST does not resolve to AST (Bug C1)", () => {
+    expect(resolveCanonical("KIDNEY \u2014 CAST")).not.toBe("AST");
+  });
+
   // Bug C4: fold change vs Cohen's d
   test("HGB fold change < 2.0 (Bug C4 — was 2.64 from Cohen's d)", () => {
     const ep = byLabel.get("Hemoglobin");
@@ -26,7 +30,19 @@ describe("regression guards", () => {
     expect(byLabel.get("Neutrophils")?.organ_system).toBe("hematologic");
   });
 
-  // Bug 13: L14 false trigger
+  test("Platelets in hematologic (Bug 9)", () => {
+    expect(byLabel.get("Platelets")?.organ_system).toBe("hematologic");
+  });
+
+  test("ALT in hepatic (Bug 9)", () => {
+    expect(byLabel.get("Alanine Aminotransferase")?.organ_system).toBe("hepatic");
+  });
+
+  // Bug 13: L01/L14 false trigger (fold change, not Cohen's d)
+  test("L01 does not fire for ALT ~1.25× (threshold 2×, Bug 13)", () => {
+    expect(firedRules.has("L01")).toBe(false);
+  });
+
   test("L14 does not fire for HGB 1.10× (Bug 13)", () => {
     expect(firedRules.has("L14")).toBe(false);
   });
