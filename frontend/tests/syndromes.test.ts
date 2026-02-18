@@ -201,3 +201,107 @@ describe("detectCrossDomainSyndromes — structural invariants", () => {
     }
   });
 });
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BTM-1/2/3: Term match statuses and opposite-direction confidence capping
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import { getSyndromeTermReport } from "@/lib/cross-domain-syndromes";
+
+describe("term match statuses (BTM-1/2/3)", () => {
+  // ── 4 status types ──
+
+  test("XS04 RETIC term has status 'opposite' (present, significant, wrong direction)", () => {
+    const report = getSyndromeTermReport("XS04", endpoints);
+    expect(report).not.toBeNull();
+    const reticEntry = [...report!.requiredEntries, ...report!.supportingEntries]
+      .find((e) => e.label.toUpperCase().includes("RETIC"));
+    expect(reticEntry).toBeDefined();
+    expect(reticEntry!.status).toBe("opposite");
+    expect(reticEntry!.foundDirection).toBe("up");
+  });
+
+  test("XS04 spleen weight term has status 'opposite' (significant, up instead of down)", () => {
+    const report = getSyndromeTermReport("XS04", endpoints);
+    const spleenEntry = [...report!.requiredEntries, ...report!.supportingEntries]
+      .find((e) => e.label.toUpperCase().includes("SPLEEN") && e.label.includes("↓"));
+    if (spleenEntry) {
+      expect(spleenEntry.status).toBe("opposite");
+    }
+  });
+
+  test("XS04 bone marrow hypocellularity is 'not_measured' (not in dataset)", () => {
+    const report = getSyndromeTermReport("XS04", endpoints);
+    const bmEntry = [...report!.requiredEntries, ...report!.supportingEntries]
+      .find((e) => e.label.toUpperCase().includes("BONE MARROW"));
+    if (bmEntry) {
+      expect(bmEntry.status).toBe("not_measured");
+    }
+  });
+
+  test("XS01 ALT term has status 'matched' (present, significant, correct direction)", () => {
+    const report = getSyndromeTermReport("XS01", endpoints);
+    expect(report).not.toBeNull();
+    const altEntry = [...report!.requiredEntries, ...report!.supportingEntries]
+      .find((e) => e.label.toUpperCase().includes("ALT"));
+    expect(altEntry).toBeDefined();
+    expect(altEntry!.status).toBe("matched");
+  });
+
+  // ── oppositeCount computation ──
+
+  test("XS04 oppositeCount includes RETIC opposite", () => {
+    const report = getSyndromeTermReport("XS04", endpoints);
+    expect(report!.oppositeCount).toBeGreaterThanOrEqual(1);
+  });
+
+  // ── Confidence capping (BTM-1/2) ──
+
+  test("≥2 opposite findings caps confidence at LOW", () => {
+    const report = getSyndromeTermReport("XS04", endpoints);
+    // XS04 has RETIC opposite + potentially spleen weight opposite
+    if (report!.oppositeCount >= 2) {
+      const xs04 = byId.get("XS04")!;
+      expect(xs04.confidence).toBe("LOW");
+    }
+  });
+
+  test("XS05 has opposites but detection gave MODERATE — capping should apply", () => {
+    // XS05 (Hemolytic anemia) is typically MODERATE in PointCross.
+    // Check if it has any opposite findings that should cap it.
+    const xs05 = byId.get("XS05");
+    if (!xs05) return;
+    const report = getSyndromeTermReport("XS05", endpoints, xs05.sexes);
+    if (!report) return;
+    // If XS05 has opposites AND was MODERATE, after the fix it should stay ≤MODERATE
+    // This test documents current state for regression
+    if (report.oppositeCount >= 1) {
+      expect(xs05.confidence).not.toBe("HIGH");
+    }
+  });
+
+  test("≥1 opposite finding caps confidence at MODERATE (not HIGH)", () => {
+    // For any syndrome with oppositeCount >= 1, confidence must not be HIGH
+    for (const s of syndromes) {
+      const report = getSyndromeTermReport(s.id, endpoints, s.sexes);
+      if (report && report.oppositeCount >= 1) {
+        expect(
+          s.confidence,
+          `${s.id} has ${report.oppositeCount} opposite findings but confidence ${s.confidence}`,
+        ).not.toBe("HIGH");
+      }
+    }
+  });
+
+  test("≥2 opposite findings forces confidence to LOW", () => {
+    for (const s of syndromes) {
+      const report = getSyndromeTermReport(s.id, endpoints, s.sexes);
+      if (report && report.oppositeCount >= 2) {
+        expect(
+          s.confidence,
+          `${s.id} has ${report.oppositeCount} opposite findings but confidence ${s.confidence}`,
+        ).toBe("LOW");
+      }
+    }
+  });
+});

@@ -710,10 +710,20 @@ function assignConfidence(
   requiredMet: boolean,
   supportCount: number,
   domainCount: number,
+  oppositeCount: number = 0,
 ): "HIGH" | "MODERATE" | "LOW" {
-  if (requiredMet && supportCount >= 3 && domainCount >= 3) return "HIGH";
-  if (requiredMet && supportCount >= 1 && domainCount >= 2) return "MODERATE";
-  return "LOW";
+  // Base confidence from matched evidence
+  let base: "HIGH" | "MODERATE" | "LOW" = "LOW";
+  if (requiredMet && supportCount >= 3 && domainCount >= 3) base = "HIGH";
+  else if (requiredMet && supportCount >= 1 && domainCount >= 2) base = "MODERATE";
+
+  // Cap confidence when opposite-direction matches exist (BTM-1/2)
+  // ≥2 opposite → force LOW (strong counter-evidence)
+  if (oppositeCount >= 2) return "LOW";
+  // ≥1 opposite → cap at MODERATE (some counter-evidence)
+  if (oppositeCount >= 1 && base === "HIGH") return "MODERATE";
+
+  return base;
 }
 
 // ─── Per-sex projection ──────────────────────────────────
@@ -876,13 +886,39 @@ function detectFromEndpoints(
     const meetsMinDomains = domainsCovered.length >= syndrome.minDomains;
 
     if ((requiredMet && meetsMinDomains) || (!requiredMet && supportCount >= 3)) {
+      // Count opposite-direction matches for confidence capping (BTM-1/2).
+      // An "opposite" is a term whose identity matches an endpoint in the data,
+      // the endpoint is statistically significant, but the direction is wrong.
+      let oppositeCount = 0;
+      const allTerms = [...requiredTerms, ...supportingTerms];
+      for (const term of allTerms) {
+        // Skip terms that already matched (correct direction)
+        const alreadyMatched = matchedEndpoints.some((m) =>
+          endpoints.some((ep) =>
+            ep.endpoint_label === m.endpoint_label && matchEndpoint(ep, term),
+          ),
+        );
+        if (alreadyMatched) continue;
+
+        // Check identity match (ignoring direction) with significant p-value
+        for (const ep of endpoints) {
+          if (matchEndpointIdentity(ep, term)) {
+            const isSignificant = ep.minPValue != null && ep.minPValue < 0.05;
+            if (isSignificant && term.direction !== "any" && ep.direction !== term.direction) {
+              oppositeCount++;
+            }
+            break; // one identity match per term is enough
+          }
+        }
+      }
+
       results.push({
         id: syndrome.id,
         name: syndrome.name,
         matchedEndpoints,
         requiredMet,
         domainsCovered,
-        confidence: assignConfidence(requiredMet, supportCount, domainsCovered.length),
+        confidence: assignConfidence(requiredMet, supportCount, domainsCovered.length, oppositeCount),
         supportScore: supportCount,
         sexes: sex ? [sex] : [],
       });
