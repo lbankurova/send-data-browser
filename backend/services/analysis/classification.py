@@ -74,6 +74,21 @@ def _pooled_sd(group_stats: list[dict]) -> float:
     return 0.0
 
 
+_MIN_INCIDENCE_TOLERANCE = 0.02  # floor at 2pp, matching client-side
+
+
+def _binomial_tolerance(n: int, p: float) -> float:
+    """Binomial SE-based tolerance for incidence data.
+
+    Wider for high-incidence groups with small n — absorbs sampling noise.
+    Floor at 2pp to match client-side pattern-classification.ts.
+    """
+    if n <= 0 or p <= 0 or p >= 1:
+        return _MIN_INCIDENCE_TOLERANCE
+    se = math.sqrt(p * (1 - p) / n)
+    return max(1.5 * se, _MIN_INCIDENCE_TOLERANCE)
+
+
 def _step_direction(val_from: float, val_to: float, band: float) -> str:
     """Classify a single step as 'up', 'down', or 'flat' using equivalence band."""
     if abs(val_to - val_from) <= band:
@@ -192,39 +207,25 @@ def classify_dose_response(group_stats: list[dict], data_type: str = "continuous
 
         return {"pattern": pattern, "confidence": confidence, "onset_dose_level": onset}
     else:
-        # Categorical/incidence data: use original consecutive-diff approach
-        # (no SD available; 1% control threshold is appropriate for proportions)
+        # Categorical/incidence data: use binomial SE-based tolerance
+        # to absorb sampling noise in proportions
         values = [g.get("incidence", g.get("affected", 0)) for g in group_stats]
+        ns = [g.get("n", 15) for g in group_stats]
         if len(values) < 2:
             return {"pattern": "insufficient_data", "confidence": None, "onset_dose_level": None}
 
-        control_val = values[0] if values[0] is not None else 0
-        min_threshold = abs(control_val) * 0.01 if abs(control_val) > 1e-10 else 1e-10
+        # Build step sequence using binomial-aware tolerance
+        steps = []
+        for i in range(len(values) - 1):
+            n_pair = min(ns[i], ns[i + 1]) if ns[i] > 0 and ns[i + 1] > 0 else 15
+            p_avg = (values[i] + values[i + 1]) / 2
+            band = _binomial_tolerance(n_pair, p_avg)
+            steps.append(_step_direction(values[i], values[i + 1], band))
 
-        diffs = [values[i + 1] - values[i] for i in range(len(values) - 1)]
+        pattern = _classify_from_steps(steps)
+        onset = _find_onset_dose_level(steps) if pattern.startswith("threshold") else None
 
-        pattern = "non_monotonic"
-        if all(abs(d) <= min_threshold for d in diffs):
-            pattern = "flat"
-        elif all(d > min_threshold for d in diffs):
-            pattern = "monotonic_increase"
-        elif all(d < -min_threshold for d in diffs):
-            pattern = "monotonic_decrease"
-        elif len(diffs) >= 2:
-            # Check for threshold patterns:
-            # Case 1: flat then change (onset at higher dose)
-            # Case 2: change then flat (plateau after onset)
-            # Case 3: change then flat then same-direction change
-            non_flat = [(i, d) for i, d in enumerate(diffs) if abs(d) > min_threshold]
-            flat_count = sum(1 for d in diffs if abs(d) <= min_threshold)
-
-            if non_flat and flat_count > 0:
-                dirs = set("up" if d > 0 else "down" for _, d in non_flat)
-                if len(dirs) == 1:
-                    d = dirs.pop()
-                    pattern = "threshold_increase" if d == "up" else "threshold_decrease"
-
-        return {"pattern": pattern, "confidence": None, "onset_dose_level": None}
+        return {"pattern": pattern, "confidence": None, "onset_dose_level": onset}
 
 
 def compute_max_fold_change(group_stats: list[dict]) -> float | None:

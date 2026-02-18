@@ -11680,7 +11680,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11699,7 +11699,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11718,7 +11718,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11737,7 +11737,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11756,7 +11756,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11775,7 +11775,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11794,7 +11794,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11813,7 +11813,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -11832,7 +11832,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -11851,7 +11851,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -11870,7 +11870,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -11889,7 +11889,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -11908,7 +11908,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -11927,7 +11927,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -11946,7 +11946,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -11965,7 +11965,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -11984,7 +11984,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -12003,7 +12003,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -12022,7 +12022,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -12041,7 +12041,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -12060,7 +12060,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -12079,7 +12079,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -12098,7 +12098,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -12117,7 +12117,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -12136,7 +12136,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.6132417445640952,
     "data_type": "incidence"
   },
@@ -12155,7 +12155,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.6132417445640952,
     "data_type": "incidence"
   },
@@ -12174,7 +12174,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.6132417445640952,
     "data_type": "incidence"
   },
@@ -12193,7 +12193,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.6132417445640952,
     "data_type": "incidence"
   },
@@ -12212,7 +12212,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12231,7 +12231,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12250,7 +12250,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12269,7 +12269,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12288,7 +12288,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12307,7 +12307,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12326,7 +12326,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12345,7 +12345,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12364,7 +12364,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12383,7 +12383,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12402,7 +12402,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12421,7 +12421,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12440,7 +12440,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12459,7 +12459,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12478,7 +12478,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12497,7 +12497,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12516,7 +12516,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12535,7 +12535,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12554,7 +12554,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12573,7 +12573,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -12592,7 +12592,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12611,7 +12611,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12630,7 +12630,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12649,7 +12649,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12668,7 +12668,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12687,7 +12687,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12706,7 +12706,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12725,7 +12725,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12896,7 +12896,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12915,7 +12915,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12934,7 +12934,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12953,7 +12953,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12972,7 +12972,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -12991,7 +12991,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -13010,7 +13010,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -13029,7 +13029,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -13200,7 +13200,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -13219,7 +13219,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -13238,7 +13238,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -13257,7 +13257,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -13276,7 +13276,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -13295,7 +13295,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -13314,7 +13314,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -13333,7 +13333,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -13352,7 +13352,7 @@
     "affected": 5,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8706031216640759,
     "data_type": "incidence"
   },
@@ -13371,7 +13371,7 @@
     "affected": 6,
     "p_value": 0.6968299905774666,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8706031216640759,
     "data_type": "incidence"
   },
@@ -13390,7 +13390,7 @@
     "affected": 5,
     "p_value": 0.4422196796338671,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8706031216640759,
     "data_type": "incidence"
   },
@@ -13409,7 +13409,7 @@
     "affected": 7,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8706031216640759,
     "data_type": "incidence"
   },
@@ -13428,7 +13428,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13447,7 +13447,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13466,7 +13466,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13485,7 +13485,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13504,7 +13504,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13523,7 +13523,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13542,7 +13542,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13561,7 +13561,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13580,7 +13580,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13599,7 +13599,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13618,7 +13618,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13637,7 +13637,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13656,7 +13656,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13675,7 +13675,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13694,7 +13694,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13713,7 +13713,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -13732,7 +13732,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13751,7 +13751,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13770,7 +13770,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13789,7 +13789,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13808,7 +13808,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13827,7 +13827,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13846,7 +13846,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13865,7 +13865,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.08569904877830492,
     "data_type": "incidence"
   },
@@ -13884,7 +13884,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.4524073321257993,
     "data_type": "incidence"
   },
@@ -13903,7 +13903,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.4524073321257993,
     "data_type": "incidence"
   },
@@ -13922,7 +13922,7 @@
     "affected": 2,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.4524073321257993,
     "data_type": "incidence"
   },
@@ -13941,7 +13941,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.4524073321257993,
     "data_type": "incidence"
   },
@@ -13960,7 +13960,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.4524073321257993,
     "data_type": "incidence"
   },
@@ -13979,7 +13979,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.4524073321257993,
     "data_type": "incidence"
   },
@@ -13998,7 +13998,7 @@
     "affected": 2,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.4524073321257993,
     "data_type": "incidence"
   },
@@ -14017,7 +14017,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.4524073321257993,
     "data_type": "incidence"
   },
@@ -14264,7 +14264,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14283,7 +14283,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14302,7 +14302,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14321,7 +14321,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14340,7 +14340,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14359,7 +14359,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14378,7 +14378,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14397,7 +14397,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14568,7 +14568,7 @@
     "affected": 7,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "monotonic_decrease",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00037556567746555025,
     "data_type": "incidence"
   },
@@ -14587,7 +14587,7 @@
     "affected": 5,
     "p_value": 0.1107013056939023,
     "effect_size": null,
-    "dose_response_pattern": "monotonic_decrease",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00037556567746555025,
     "data_type": "incidence"
   },
@@ -14606,7 +14606,7 @@
     "affected": 2,
     "p_value": 0.008952630355241744,
     "effect_size": null,
-    "dose_response_pattern": "monotonic_decrease",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00037556567746555025,
     "data_type": "incidence"
   },
@@ -14625,7 +14625,7 @@
     "affected": 1,
     "p_value": 0.0017058456417724153,
     "effect_size": null,
-    "dose_response_pattern": "monotonic_decrease",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00037556567746555025,
     "data_type": "incidence"
   },
@@ -14644,7 +14644,7 @@
     "affected": 7,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "monotonic_decrease",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00037556567746555025,
     "data_type": "incidence"
   },
@@ -14663,7 +14663,7 @@
     "affected": 5,
     "p_value": 0.1107013056939023,
     "effect_size": null,
-    "dose_response_pattern": "monotonic_decrease",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00037556567746555025,
     "data_type": "incidence"
   },
@@ -14682,7 +14682,7 @@
     "affected": 2,
     "p_value": 0.008952630355241744,
     "effect_size": null,
-    "dose_response_pattern": "monotonic_decrease",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00037556567746555025,
     "data_type": "incidence"
   },
@@ -14701,7 +14701,7 @@
     "affected": 1,
     "p_value": 0.0017058456417724153,
     "effect_size": null,
-    "dose_response_pattern": "monotonic_decrease",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.00037556567746555025,
     "data_type": "incidence"
   },
@@ -14720,7 +14720,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14739,7 +14739,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14758,7 +14758,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14777,7 +14777,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14796,7 +14796,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14815,7 +14815,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14834,7 +14834,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14853,7 +14853,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -14872,7 +14872,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -14891,7 +14891,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -14910,7 +14910,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -14929,7 +14929,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -14948,7 +14948,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.8250906703670127,
     "data_type": "incidence"
   },
@@ -14967,7 +14967,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.8250906703670127,
     "data_type": "incidence"
   },
@@ -14986,7 +14986,7 @@
     "affected": 2,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.8250906703670127,
     "data_type": "incidence"
   },
@@ -15005,7 +15005,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.8250906703670127,
     "data_type": "incidence"
   },
@@ -15024,7 +15024,7 @@
     "affected": 2,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.21585971169382945,
     "data_type": "incidence"
   },
@@ -15043,7 +15043,7 @@
     "affected": 1,
     "p_value": 0.5434782608695652,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.21585971169382945,
     "data_type": "incidence"
   },
@@ -15062,7 +15062,7 @@
     "affected": 0,
     "p_value": 0.15000000000000002,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.21585971169382945,
     "data_type": "incidence"
   },
@@ -15081,7 +15081,7 @@
     "affected": 1,
     "p_value": 0.5434782608695652,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.21585971169382945,
     "data_type": "incidence"
   },
@@ -15100,7 +15100,7 @@
     "affected": 2,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.21585971169382945,
     "data_type": "incidence"
   },
@@ -15119,7 +15119,7 @@
     "affected": 1,
     "p_value": 0.5434782608695652,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.21585971169382945,
     "data_type": "incidence"
   },
@@ -15138,7 +15138,7 @@
     "affected": 0,
     "p_value": 0.15000000000000002,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.21585971169382945,
     "data_type": "incidence"
   },
@@ -15157,7 +15157,7 @@
     "affected": 1,
     "p_value": 0.5434782608695652,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.21585971169382945,
     "data_type": "incidence"
   },
@@ -15328,7 +15328,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -15347,7 +15347,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -15366,7 +15366,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -15385,7 +15385,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -15404,7 +15404,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -15423,7 +15423,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -15442,7 +15442,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -15461,7 +15461,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -15556,7 +15556,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -15575,7 +15575,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -15594,7 +15594,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -15613,7 +15613,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -15936,7 +15936,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0903301042981417,
     "data_type": "incidence"
   },
@@ -15955,7 +15955,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0903301042981417,
     "data_type": "incidence"
   },
@@ -15974,7 +15974,7 @@
     "affected": 4,
     "p_value": 0.12450592885375493,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0903301042981417,
     "data_type": "incidence"
   },
@@ -15993,7 +15993,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0903301042981417,
     "data_type": "incidence"
   },
@@ -16088,7 +16088,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -16107,7 +16107,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -16126,7 +16126,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -16145,7 +16145,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -16164,7 +16164,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0930318181568286,
     "data_type": "incidence"
   },
@@ -16183,7 +16183,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0930318181568286,
     "data_type": "incidence"
   },
@@ -16202,7 +16202,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0930318181568286,
     "data_type": "incidence"
   },
@@ -16221,7 +16221,7 @@
     "affected": 3,
     "p_value": 0.25,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.0930318181568286,
     "data_type": "incidence"
   },
@@ -16240,7 +16240,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16259,7 +16259,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16278,7 +16278,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16297,7 +16297,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16316,7 +16316,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16335,7 +16335,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16354,7 +16354,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16373,7 +16373,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16544,7 +16544,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16563,7 +16563,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16582,7 +16582,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16601,7 +16601,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16620,7 +16620,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16639,7 +16639,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16658,7 +16658,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16677,7 +16677,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -16848,7 +16848,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.18042535554982475,
     "data_type": "incidence"
   },
@@ -16867,7 +16867,7 @@
     "affected": 4,
     "p_value": 0.6146245059288538,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.18042535554982475,
     "data_type": "incidence"
   },
@@ -16886,7 +16886,7 @@
     "affected": 6,
     "p_value": 0.1793530268358644,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.18042535554982475,
     "data_type": "incidence"
   },
@@ -16905,7 +16905,7 @@
     "affected": 5,
     "p_value": 0.34486166007905134,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.18042535554982475,
     "data_type": "incidence"
   },
@@ -16924,7 +16924,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.18042535554982475,
     "data_type": "incidence"
   },
@@ -16943,7 +16943,7 @@
     "affected": 4,
     "p_value": 0.6146245059288538,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.18042535554982475,
     "data_type": "incidence"
   },
@@ -16962,7 +16962,7 @@
     "affected": 6,
     "p_value": 0.1793530268358644,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.18042535554982475,
     "data_type": "incidence"
   },
@@ -16981,7 +16981,7 @@
     "affected": 5,
     "p_value": 0.34486166007905134,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.18042535554982475,
     "data_type": "incidence"
   },
@@ -17152,7 +17152,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17171,7 +17171,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17190,7 +17190,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17209,7 +17209,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17228,7 +17228,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17247,7 +17247,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17266,7 +17266,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17285,7 +17285,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17608,7 +17608,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17627,7 +17627,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17646,7 +17646,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17665,7 +17665,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -17684,7 +17684,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17703,7 +17703,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17722,7 +17722,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17741,7 +17741,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17760,7 +17760,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17779,7 +17779,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17798,7 +17798,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17817,7 +17817,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -17836,7 +17836,7 @@
     "affected": 4,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4394086765316232,
     "data_type": "incidence"
   },
@@ -17855,7 +17855,7 @@
     "affected": 5,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4394086765316232,
     "data_type": "incidence"
   },
@@ -17874,7 +17874,7 @@
     "affected": 5,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4394086765316232,
     "data_type": "incidence"
   },
@@ -17893,7 +17893,7 @@
     "affected": 8,
     "p_value": 0.6881679903082514,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4394086765316232,
     "data_type": "incidence"
   },
@@ -17912,7 +17912,7 @@
     "affected": 4,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4394086765316232,
     "data_type": "incidence"
   },
@@ -17931,7 +17931,7 @@
     "affected": 5,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4394086765316232,
     "data_type": "incidence"
   },
@@ -17950,7 +17950,7 @@
     "affected": 5,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4394086765316232,
     "data_type": "incidence"
   },
@@ -17969,7 +17969,7 @@
     "affected": 8,
     "p_value": 0.6881679903082514,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4394086765316232,
     "data_type": "incidence"
   },
@@ -17988,7 +17988,7 @@
     "affected": 2,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.01021145888436159,
     "data_type": "incidence"
   },
@@ -18007,7 +18007,7 @@
     "affected": 1,
     "p_value": 0.5434782608695652,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.01021145888436159,
     "data_type": "incidence"
   },
@@ -18026,7 +18026,7 @@
     "affected": 7,
     "p_value": 0.22896266474136978,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.01021145888436159,
     "data_type": "incidence"
   },
@@ -18045,7 +18045,7 @@
     "affected": 8,
     "p_value": 0.21070803607484181,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.01021145888436159,
     "data_type": "incidence"
   },
@@ -18064,7 +18064,7 @@
     "affected": 2,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.01021145888436159,
     "data_type": "incidence"
   },
@@ -18083,7 +18083,7 @@
     "affected": 1,
     "p_value": 0.5434782608695652,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.01021145888436159,
     "data_type": "incidence"
   },
@@ -18102,7 +18102,7 @@
     "affected": 7,
     "p_value": 0.22896266474136978,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.01021145888436159,
     "data_type": "incidence"
   },
@@ -18121,7 +18121,7 @@
     "affected": 8,
     "p_value": 0.21070803607484181,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.01021145888436159,
     "data_type": "incidence"
   },
@@ -18140,7 +18140,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18159,7 +18159,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18178,7 +18178,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18197,7 +18197,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18216,7 +18216,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18235,7 +18235,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18254,7 +18254,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18273,7 +18273,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18292,7 +18292,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -18311,7 +18311,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -18330,7 +18330,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -18349,7 +18349,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -18368,7 +18368,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18387,7 +18387,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18406,7 +18406,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18425,7 +18425,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -18444,7 +18444,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -18463,7 +18463,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -18482,7 +18482,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -18501,7 +18501,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -18520,7 +18520,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4245517323446324,
     "data_type": "incidence"
   },
@@ -18539,7 +18539,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4245517323446324,
     "data_type": "incidence"
   },
@@ -18558,7 +18558,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4245517323446324,
     "data_type": "incidence"
   },
@@ -18577,7 +18577,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4245517323446324,
     "data_type": "incidence"
   },
@@ -18596,7 +18596,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4245517323446324,
     "data_type": "incidence"
   },
@@ -18615,7 +18615,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4245517323446324,
     "data_type": "incidence"
   },
@@ -18634,7 +18634,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4245517323446324,
     "data_type": "incidence"
   },
@@ -18653,7 +18653,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.4245517323446324,
     "data_type": "incidence"
   },
@@ -18672,7 +18672,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -18691,7 +18691,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -18710,7 +18710,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -18729,7 +18729,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -18748,7 +18748,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -18767,7 +18767,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -18786,7 +18786,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -18805,7 +18805,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -18976,7 +18976,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -18995,7 +18995,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -19014,7 +19014,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -19033,7 +19033,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -19052,7 +19052,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -19071,7 +19071,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -19090,7 +19090,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -19109,7 +19109,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -19128,7 +19128,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19147,7 +19147,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19166,7 +19166,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19185,7 +19185,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19204,7 +19204,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -19223,7 +19223,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -19242,7 +19242,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -19261,7 +19261,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -19280,7 +19280,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19299,7 +19299,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19318,7 +19318,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19337,7 +19337,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19356,7 +19356,7 @@
     "affected": 2,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.10578229175801401,
     "data_type": "incidence"
   },
@@ -19375,7 +19375,7 @@
     "affected": 0,
     "p_value": 0.15000000000000002,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.10578229175801401,
     "data_type": "incidence"
   },
@@ -19394,7 +19394,7 @@
     "affected": 1,
     "p_value": 0.5434782608695652,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.10578229175801401,
     "data_type": "incidence"
   },
@@ -19413,7 +19413,7 @@
     "affected": 0,
     "p_value": 0.15000000000000002,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.10578229175801401,
     "data_type": "incidence"
   },
@@ -19432,7 +19432,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -19451,7 +19451,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -19470,7 +19470,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -19489,7 +19489,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -19508,7 +19508,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -19527,7 +19527,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -19546,7 +19546,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -19565,7 +19565,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -19584,7 +19584,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -19603,7 +19603,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -19622,7 +19622,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -19641,7 +19641,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -19736,7 +19736,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19755,7 +19755,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19774,7 +19774,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19793,7 +19793,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -19812,7 +19812,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -19831,7 +19831,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -19850,7 +19850,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -19869,7 +19869,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -19888,7 +19888,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -19907,7 +19907,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -19926,7 +19926,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -19945,7 +19945,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -19964,7 +19964,7 @@
     "affected": 2,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.02974710324483909,
     "data_type": "incidence"
   },
@@ -19983,7 +19983,7 @@
     "affected": 1,
     "p_value": 0.5434782608695652,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.02974710324483909,
     "data_type": "incidence"
   },
@@ -20002,7 +20002,7 @@
     "affected": 0,
     "p_value": 0.15000000000000002,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.02974710324483909,
     "data_type": "incidence"
   },
@@ -20021,7 +20021,7 @@
     "affected": 0,
     "p_value": 0.15000000000000002,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.02974710324483909,
     "data_type": "incidence"
   },
@@ -20040,7 +20040,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -20059,7 +20059,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -20078,7 +20078,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -20097,7 +20097,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -20116,7 +20116,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20135,7 +20135,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20154,7 +20154,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20173,7 +20173,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20192,7 +20192,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -20211,7 +20211,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -20230,7 +20230,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -20249,7 +20249,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12528740273661487,
     "data_type": "incidence"
   },
@@ -20268,7 +20268,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -20287,7 +20287,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -20306,7 +20306,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -20325,7 +20325,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -20344,7 +20344,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -20363,7 +20363,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -20382,7 +20382,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -20401,7 +20401,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -20420,7 +20420,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20439,7 +20439,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20458,7 +20458,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20477,7 +20477,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20496,7 +20496,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20515,7 +20515,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20534,7 +20534,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20553,7 +20553,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20572,7 +20572,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20591,7 +20591,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20610,7 +20610,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20629,7 +20629,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20648,7 +20648,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20667,7 +20667,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20686,7 +20686,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20705,7 +20705,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20724,7 +20724,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -20743,7 +20743,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -20762,7 +20762,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -20781,7 +20781,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -20800,7 +20800,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20819,7 +20819,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20838,7 +20838,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20857,7 +20857,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -20876,7 +20876,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -20895,7 +20895,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -20914,7 +20914,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -20933,7 +20933,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -20952,7 +20952,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -20971,7 +20971,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -20990,7 +20990,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21009,7 +21009,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21028,7 +21028,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21047,7 +21047,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21066,7 +21066,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21085,7 +21085,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21104,7 +21104,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21123,7 +21123,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21142,7 +21142,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21161,7 +21161,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21180,7 +21180,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21199,7 +21199,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21218,7 +21218,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21237,7 +21237,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21256,7 +21256,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21275,7 +21275,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21294,7 +21294,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21313,7 +21313,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21332,7 +21332,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21351,7 +21351,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21370,7 +21370,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21389,7 +21389,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21636,7 +21636,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21655,7 +21655,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21674,7 +21674,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21693,7 +21693,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -21712,7 +21712,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21731,7 +21731,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21750,7 +21750,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21769,7 +21769,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21788,7 +21788,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21807,7 +21807,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21826,7 +21826,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21845,7 +21845,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -21864,7 +21864,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21883,7 +21883,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21902,7 +21902,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21921,7 +21921,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -21940,7 +21940,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -21959,7 +21959,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -21978,7 +21978,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -21997,7 +21997,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.39064195584702377,
     "data_type": "incidence"
   },
@@ -22016,7 +22016,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22035,7 +22035,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22054,7 +22054,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22073,7 +22073,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22092,7 +22092,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -22111,7 +22111,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -22130,7 +22130,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -22149,7 +22149,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -22168,7 +22168,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -22187,7 +22187,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -22206,7 +22206,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -22225,7 +22225,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -22244,7 +22244,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -22263,7 +22263,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -22282,7 +22282,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -22301,7 +22301,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -22320,7 +22320,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22339,7 +22339,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22358,7 +22358,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22377,7 +22377,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22548,7 +22548,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22567,7 +22567,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22586,7 +22586,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22605,7 +22605,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22700,7 +22700,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22719,7 +22719,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22738,7 +22738,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22757,7 +22757,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22776,7 +22776,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22795,7 +22795,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22814,7 +22814,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22833,7 +22833,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22852,7 +22852,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22871,7 +22871,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22890,7 +22890,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22909,7 +22909,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -22928,7 +22928,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22947,7 +22947,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22966,7 +22966,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -22985,7 +22985,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23004,7 +23004,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23023,7 +23023,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23042,7 +23042,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23061,7 +23061,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23080,7 +23080,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.24400102835081117,
     "data_type": "incidence"
   },
@@ -23099,7 +23099,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.24400102835081117,
     "data_type": "incidence"
   },
@@ -23118,7 +23118,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.24400102835081117,
     "data_type": "incidence"
   },
@@ -23137,7 +23137,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.24400102835081117,
     "data_type": "incidence"
   },
@@ -23156,7 +23156,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23175,7 +23175,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23194,7 +23194,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23213,7 +23213,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23232,7 +23232,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23251,7 +23251,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23270,7 +23270,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23289,7 +23289,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23308,7 +23308,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23327,7 +23327,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23346,7 +23346,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23365,7 +23365,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -23384,7 +23384,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23403,7 +23403,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23422,7 +23422,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23441,7 +23441,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23460,7 +23460,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5441550224111107,
     "data_type": "incidence"
   },
@@ -23479,7 +23479,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5441550224111107,
     "data_type": "incidence"
   },
@@ -23498,7 +23498,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5441550224111107,
     "data_type": "incidence"
   },
@@ -23517,7 +23517,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5441550224111107,
     "data_type": "incidence"
   },
@@ -23536,7 +23536,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -23555,7 +23555,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -23574,7 +23574,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -23593,7 +23593,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_increase",
     "trend_p": 0.24501680202436282,
     "data_type": "incidence"
   },
@@ -23612,7 +23612,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23631,7 +23631,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23650,7 +23650,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23669,7 +23669,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23688,7 +23688,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -23707,7 +23707,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -23726,7 +23726,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -23745,7 +23745,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6237482928726448,
     "data_type": "incidence"
   },
@@ -23764,7 +23764,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -23783,7 +23783,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -23802,7 +23802,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -23821,7 +23821,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -23916,7 +23916,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23935,7 +23935,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23954,7 +23954,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23973,7 +23973,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -23992,7 +23992,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.10578229175801401,
     "data_type": "incidence"
   },
@@ -24011,7 +24011,7 @@
     "affected": 2,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.10578229175801401,
     "data_type": "incidence"
   },
@@ -24030,7 +24030,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.10578229175801401,
     "data_type": "incidence"
   },
@@ -24049,7 +24049,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.10578229175801401,
     "data_type": "incidence"
   },
@@ -24068,7 +24068,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -24087,7 +24087,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -24106,7 +24106,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -24125,7 +24125,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.28848627060980014,
     "data_type": "incidence"
   },
@@ -24144,7 +24144,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -24163,7 +24163,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -24182,7 +24182,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -24201,7 +24201,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -24220,7 +24220,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6132417445640952,
     "data_type": "incidence"
   },
@@ -24239,7 +24239,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6132417445640952,
     "data_type": "incidence"
   },
@@ -24258,7 +24258,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6132417445640952,
     "data_type": "incidence"
   },
@@ -24277,7 +24277,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.6132417445640952,
     "data_type": "incidence"
   },
@@ -24372,7 +24372,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -24391,7 +24391,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -24410,7 +24410,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -24429,7 +24429,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -24524,7 +24524,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -24543,7 +24543,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -24562,7 +24562,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -24581,7 +24581,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -24600,7 +24600,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -24619,7 +24619,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -24638,7 +24638,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -24657,7 +24657,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.5475924666383167,
     "data_type": "incidence"
   },
@@ -24676,7 +24676,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -24695,7 +24695,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -24714,7 +24714,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -24733,7 +24733,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.19751855128761941,
     "data_type": "incidence"
   },
@@ -24980,7 +24980,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -24999,7 +24999,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -25018,7 +25018,7 @@
     "affected": 2,
     "p_value": 0.5000000000000001,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -25037,7 +25037,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "threshold_decrease",
     "trend_p": 0.9596879696921041,
     "data_type": "incidence"
   },
@@ -25056,7 +25056,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.24400102835081117,
     "data_type": "incidence"
   },
@@ -25075,7 +25075,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.24400102835081117,
     "data_type": "incidence"
   },
@@ -25094,7 +25094,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.24400102835081117,
     "data_type": "incidence"
   },
@@ -25113,7 +25113,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "threshold_increase",
+    "dose_response_pattern": "flat",
     "trend_p": 0.24400102835081117,
     "data_type": "incidence"
   },
@@ -25132,7 +25132,7 @@
     "affected": 1,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -25151,7 +25151,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -25170,7 +25170,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -25189,7 +25189,7 @@
     "affected": 0,
     "p_value": 0.4,
     "effect_size": null,
-    "dose_response_pattern": "threshold_decrease",
+    "dose_response_pattern": "flat",
     "trend_p": 0.12201178788406808,
     "data_type": "incidence"
   },
@@ -25208,7 +25208,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -25227,7 +25227,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -25246,7 +25246,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -25265,7 +25265,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.8540492466773077,
     "data_type": "incidence"
   },
@@ -25284,7 +25284,7 @@
     "affected": 0,
     "p_value": null,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -25303,7 +25303,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -25322,7 +25322,7 @@
     "affected": 1,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
@@ -25341,7 +25341,7 @@
     "affected": 0,
     "p_value": 1.0,
     "effect_size": null,
-    "dose_response_pattern": "non_monotonic",
+    "dose_response_pattern": "flat",
     "trend_p": 0.7311163232744013,
     "data_type": "incidence"
   },
