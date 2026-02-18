@@ -132,6 +132,9 @@ export interface FindingTableRow extends FindingSummary {
   catalogId?: string;
   recoveryVerdict?: RecoveryVerdict;
   laterality?: { left: number; right: number; bilateral: number };
+  dominantDistribution?: string | null;
+  dominantTemporality?: string | null;
+  modifierRaw?: string[];
 }
 
 export interface HeatmapData {
@@ -144,6 +147,21 @@ export interface HeatmapData {
 }
 
 const findingColHelper = createColumnHelper<FindingTableRow>();
+
+/** Short labels for distribution qualifiers in the Dist. column */
+const DIST_SHORT_LABELS: Record<string, string> = {
+  focal: "F",
+  multifocal: "MF",
+  "focal/multifocal": "F/MF",
+  diffuse: "D",
+  segmental: "S",
+  mixed: "mix",
+  perivascular: "PV",
+  periportal: "PP",
+  centrilobular: "CL",
+  global: "G",
+  zonal: "Z",
+};
 
 // ─── Helpers ───────────────────────────────────────────────
 
@@ -1179,6 +1197,8 @@ function OverviewTab({
           ? aggregateFindingLaterality(subjData.subjects, fs.finding)
           : undefined;
         const hasLat = latAgg && (latAgg.left > 0 || latAgg.right > 0 || latAgg.bilateral > 0);
+        // SUPP modifier data: pick from first row that has it (same across all dose rows for a finding)
+        const modRow = findingRows.find((r) => r.dominant_distribution != null || r.dominant_temporality != null);
         return {
           ...fs, severity: effectiveSeverity, isDoseDriven, isNonMonotonic, doseDirection,
           controlIncidence, highDoseIncidence,
@@ -1189,6 +1209,9 @@ function OverviewTab({
           catalogId: clin?.catalogId,
           recoveryVerdict: recAssessment?.overall,
           laterality: hasLat ? { left: latAgg.left, right: latAgg.right, bilateral: latAgg.bilateral } : undefined,
+          dominantDistribution: modRow?.dominant_distribution,
+          dominantTemporality: modRow?.dominant_temporality,
+          modifierRaw: modRow?.modifier_raw,
         };
       }),
     [findingSummaries, findingConsistency, findingRelatedOrgans, findingRelatedOrgansWithIncidence, findingClinical, doseDepThreshold, trendsByFinding, recoveryAssessments, pairwiseFisherResults, subjData?.subjects]
@@ -1251,15 +1274,32 @@ function OverviewTab({
         cell: (info) => {
           const v = info.getValue();
           const sev = info.row.original.maxSeverity;
+          const temp = info.row.original.dominantTemporality;
+          const titleText = temp ? `${v} (${temp})` : v;
           return (
             <div className="flex items-center gap-1.5 overflow-hidden">
               <div
                 className="h-2.5 w-2.5 shrink-0 rounded-sm"
                 style={{ backgroundColor: getNeutralHeatColor(sev).bg }}
               />
-              <span className={cn("truncate", sev >= 4 ? "font-bold" : sev >= 2 ? "font-semibold" : "font-medium")} title={v}>{v}</span>
+              <span className={cn("truncate", sev >= 4 ? "font-bold" : sev >= 2 ? "font-semibold" : "font-medium")} title={titleText}>{v}</span>
             </div>
           );
+        },
+      }),
+      findingColHelper.display({
+        id: "distribution",
+        header: "Dist.",
+        size: 55,
+        minSize: 40,
+        maxSize: 70,
+        cell: (info) => {
+          const dist = info.row.original.dominantDistribution;
+          if (!dist) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const label = DIST_SHORT_LABELS[dist] ?? dist.slice(0, 3);
+          const raw = info.row.original.modifierRaw;
+          const tooltip = `Distribution: ${dist}${raw?.length ? "\n" + raw.join(", ") : ""}`;
+          return <span className="text-[9px] text-muted-foreground" title={tooltip}>{label}</span>;
         },
       }),
       findingColHelper.accessor("maxSeverity", {

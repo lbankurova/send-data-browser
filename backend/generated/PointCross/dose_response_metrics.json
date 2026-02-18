@@ -34638,28 +34638,40 @@
         "n": 10,
         "affected": 10,
         "incidence": 1.0,
-        "avg_severity": 2.3
+        "avg_severity": 2.3,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -34712,28 +34724,40 @@
         "n": 10,
         "affected": 10,
         "incidence": 1.0,
-        "avg_severity": 2.3
+        "avg_severity": 2.3,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -34786,28 +34810,40 @@
         "n": 10,
         "affected": 10,
         "incidence": 1.0,
-        "avg_severity": 2.3
+        "avg_severity": 2.3,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -34860,28 +34896,40 @@
         "n": 10,
         "affected": 10,
         "incidence": 1.0,
-        "avg_severity": 2.3
+        "avg_severity": 2.3,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -34934,28 +34982,40 @@
         "n": 9,
         "affected": 9,
         "incidence": 1.0,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -35008,28 +35068,40 @@
         "n": 9,
         "affected": 9,
         "incidence": 1.0,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -35082,28 +35154,40 @@
         "n": 9,
         "affected": 9,
         "incidence": 1.0,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -35156,28 +35240,40 @@
         "n": 9,
         "affected": 9,
         "incidence": 1.0,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -35829,7 +35925,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -35903,7 +36002,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -35977,7 +36079,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36051,7 +36156,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36125,7 +36233,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36199,7 +36310,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36273,7 +36387,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36347,7 +36464,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36421,7 +36541,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36495,7 +36618,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36569,7 +36695,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36643,7 +36772,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36717,7 +36849,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36791,7 +36926,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36865,7 +37003,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -36939,7 +37080,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -38587,7 +38731,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -38661,7 +38808,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -38735,7 +38885,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -38809,7 +38962,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -38883,7 +39039,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -38957,7 +39116,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39031,7 +39193,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39105,7 +39270,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39165,7 +39333,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 2,
@@ -39179,7 +39350,10 @@
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39239,7 +39413,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 2,
@@ -39253,7 +39430,10 @@
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39313,7 +39493,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 2,
@@ -39327,7 +39510,10 @@
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39387,7 +39573,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 2,
@@ -39401,7 +39590,10 @@
         "n": 15,
         "affected": 10,
         "incidence": 0.6667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 10
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39461,7 +39653,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 2,
@@ -39475,7 +39670,10 @@
         "n": 14,
         "affected": 9,
         "incidence": 0.6429,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39535,7 +39733,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 2,
@@ -39549,7 +39750,10 @@
         "n": 14,
         "affected": 9,
         "incidence": 0.6429,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39609,7 +39813,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 2,
@@ -39623,7 +39830,10 @@
         "n": 14,
         "affected": 9,
         "incidence": 0.6429,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39683,7 +39893,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       },
       {
         "dose_level": 2,
@@ -39697,7 +39910,10 @@
         "n": 14,
         "affected": 9,
         "incidence": 0.6429,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39771,7 +39987,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39845,7 +40064,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39919,7 +40141,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -39993,7 +40218,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -40067,7 +40295,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -40141,7 +40372,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -40215,7 +40449,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -40289,7 +40526,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -40934,7 +41174,10 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -41008,7 +41251,10 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -41082,7 +41328,10 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -41156,7 +41405,10 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -41230,7 +41482,10 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -41304,7 +41559,10 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -41378,7 +41636,10 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -41452,7 +41713,10 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -41526,28 +41790,40 @@
         "n": 9,
         "affected": 4,
         "incidence": 0.4444,
-        "avg_severity": 2.4
+        "avg_severity": 2.4,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.4
+        "avg_severity": 2.4,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 6,
         "incidence": 0.4286,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -41600,28 +41876,40 @@
         "n": 9,
         "affected": 4,
         "incidence": 0.4444,
-        "avg_severity": 2.4
+        "avg_severity": 2.4,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.4
+        "avg_severity": 2.4,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 6,
         "incidence": 0.4286,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -41674,28 +41962,40 @@
         "n": 9,
         "affected": 4,
         "incidence": 0.4444,
-        "avg_severity": 2.4
+        "avg_severity": 2.4,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.4
+        "avg_severity": 2.4,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 6,
         "incidence": 0.4286,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -41748,28 +42048,40 @@
         "n": 9,
         "affected": 4,
         "incidence": 0.4444,
-        "avg_severity": 2.4
+        "avg_severity": 2.4,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.4
+        "avg_severity": 2.4,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 6,
         "incidence": 0.4286,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -42421,7 +42733,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -42495,7 +42810,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -42569,7 +42887,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -42643,7 +42964,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -42717,7 +43041,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -42791,7 +43118,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -42865,7 +43195,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -42939,7 +43272,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -43020,14 +43356,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -43094,14 +43436,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -43168,14 +43516,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -43242,14 +43596,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -43316,14 +43676,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 2,
         "incidence": 0.1429,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -43390,14 +43756,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 2,
         "incidence": 0.1429,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -43464,14 +43836,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 2,
         "incidence": 0.1429,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -43538,14 +43916,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 2,
         "incidence": 0.1429,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -43598,7 +43982,10 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -43612,7 +43999,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -43672,7 +44062,10 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -43686,7 +44079,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -43746,7 +44142,10 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -43760,7 +44159,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -43820,7 +44222,10 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -43834,7 +44239,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -43894,7 +44302,10 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -43908,7 +44319,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -43968,7 +44382,10 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -43982,7 +44399,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -44042,7 +44462,10 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -44056,7 +44479,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -44116,7 +44542,10 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 1,
@@ -44130,7 +44559,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -44190,7 +44622,11 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1,
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 1,
@@ -44264,7 +44700,11 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1,
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 1,
@@ -44338,7 +44778,11 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1,
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 1,
@@ -44412,7 +44856,11 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1,
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 1,
@@ -44493,7 +44941,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 2,
@@ -44567,7 +45018,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 2,
@@ -44641,7 +45095,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 2,
@@ -44715,7 +45172,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 2,
@@ -44789,7 +45249,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 2,
@@ -44863,7 +45326,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 2,
@@ -44937,7 +45403,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 2,
@@ -45011,7 +45480,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 2,
@@ -45085,7 +45557,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -45159,7 +45634,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -45233,7 +45711,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -45307,7 +45788,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -45381,7 +45865,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -45455,7 +45942,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -45529,7 +46019,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -45603,7 +46096,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -45684,14 +46180,20 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -45758,14 +46260,20 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -45832,14 +46340,20 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -45906,14 +46420,20 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -45980,14 +46500,20 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46054,14 +46580,20 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46128,14 +46660,20 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46202,14 +46740,20 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46262,28 +46806,40 @@
         "n": 10,
         "affected": 7,
         "incidence": 0.7,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 7
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46336,28 +46892,40 @@
         "n": 10,
         "affected": 7,
         "incidence": 0.7,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 7
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46410,28 +46978,40 @@
         "n": 10,
         "affected": 7,
         "incidence": 0.7,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 7
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46484,28 +47064,40 @@
         "n": 10,
         "affected": 7,
         "incidence": 0.7,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 7
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46558,28 +47150,40 @@
         "n": 9,
         "affected": 7,
         "incidence": 0.7778,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 7
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46632,28 +47236,40 @@
         "n": 9,
         "affected": 7,
         "incidence": 0.7778,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 7
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46706,28 +47322,40 @@
         "n": 9,
         "affected": 7,
         "incidence": 0.7778,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 7
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46780,28 +47408,40 @@
         "n": 9,
         "affected": 7,
         "incidence": 0.7778,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 7
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -46861,7 +47501,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -46935,7 +47578,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -47009,7 +47655,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -47083,7 +47732,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -47157,7 +47809,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -47231,7 +47886,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -47305,7 +47963,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -47379,7 +48040,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -47460,14 +48124,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -47534,14 +48204,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -47608,14 +48284,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -47682,14 +48364,20 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -47756,14 +48444,20 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -47830,14 +48524,20 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -47904,14 +48604,20 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -47978,14 +48684,20 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48038,14 +48750,20 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -48059,7 +48777,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48112,14 +48833,20 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -48133,7 +48860,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48186,14 +48916,20 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -48207,7 +48943,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48260,14 +48999,20 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -48281,7 +49026,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48334,14 +49082,20 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -48355,7 +49109,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48408,14 +49165,20 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -48429,7 +49192,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48482,14 +49248,20 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -48503,7 +49275,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48556,14 +49331,20 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -48577,7 +49358,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48637,7 +49421,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 2,
@@ -48651,7 +49438,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48711,7 +49501,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 2,
@@ -48725,7 +49518,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48785,7 +49581,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 2,
@@ -48799,7 +49598,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48859,7 +49661,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 2,
@@ -48873,7 +49678,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -48933,7 +49741,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 2,
@@ -48947,7 +49758,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -49007,7 +49821,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 2,
@@ -49021,7 +49838,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -49081,7 +49901,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 2,
@@ -49095,7 +49918,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -49155,7 +49981,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 3
+        }
       },
       {
         "dose_level": 2,
@@ -49169,7 +49998,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -49236,7 +50068,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -49310,7 +50145,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -49384,7 +50222,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -49458,7 +50299,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -49532,7 +50376,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -49606,7 +50453,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -49680,7 +50530,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -49754,7 +50607,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -50211,7 +51067,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.56
+        "avg_severity": 2.56,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -50285,7 +51144,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.56
+        "avg_severity": 2.56,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -50359,7 +51221,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.56
+        "avg_severity": 2.56,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -50433,7 +51298,10 @@
         "n": 15,
         "affected": 9,
         "incidence": 0.6,
-        "avg_severity": 2.56
+        "avg_severity": 2.56,
+        "modifier_counts": {
+          "diffuse": 9
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -50507,7 +51375,10 @@
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -50581,7 +51452,10 @@
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -50655,7 +51529,10 @@
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -50729,7 +51606,10 @@
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.5
+        "avg_severity": 2.5,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -50796,7 +51676,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -50870,7 +51753,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -50944,7 +51830,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -51018,7 +51907,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -51092,7 +51984,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -51166,7 +52061,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -51240,7 +52138,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -51314,7 +52215,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -51388,14 +52292,21 @@
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4,
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -51462,14 +52373,21 @@
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4,
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -51536,14 +52454,21 @@
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4,
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -51610,14 +52535,21 @@
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4,
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -51684,14 +52616,20 @@
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -51758,14 +52696,20 @@
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -51832,14 +52776,20 @@
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -51906,14 +52856,20 @@
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -51973,7 +52929,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "centrilobular": 1
+        }
       },
       {
         "dose_level": 2,
@@ -51987,7 +52946,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "centrilobular": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52047,7 +53009,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "centrilobular": 1
+        }
       },
       {
         "dose_level": 2,
@@ -52061,7 +53026,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "centrilobular": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52121,7 +53089,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "centrilobular": 1
+        }
       },
       {
         "dose_level": 2,
@@ -52135,7 +53106,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "centrilobular": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52195,7 +53169,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "centrilobular": 1
+        }
       },
       {
         "dose_level": 2,
@@ -52209,7 +53186,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "centrilobular": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52269,7 +53249,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "centrilobular": 1
+        }
       },
       {
         "dose_level": 2,
@@ -52283,7 +53266,10 @@
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "centrilobular": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52343,7 +53329,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "centrilobular": 1
+        }
       },
       {
         "dose_level": 2,
@@ -52357,7 +53346,10 @@
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "centrilobular": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52417,7 +53409,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "centrilobular": 1
+        }
       },
       {
         "dose_level": 2,
@@ -52431,7 +53426,10 @@
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "centrilobular": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52491,7 +53489,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "centrilobular": 1
+        }
       },
       {
         "dose_level": 2,
@@ -52505,7 +53506,10 @@
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "centrilobular": 3
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52579,7 +53583,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52653,7 +53660,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52727,7 +53737,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52801,7 +53814,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52875,7 +53891,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -52949,7 +53968,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -53023,7 +54045,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -53097,7 +54122,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -53150,21 +54178,30 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -53224,21 +54261,30 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -53298,21 +54344,30 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -53372,21 +54427,30 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -53446,21 +54510,30 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -53520,21 +54593,30 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -53594,21 +54676,30 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -53668,21 +54759,30 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 3,
@@ -53763,7 +54863,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -53837,7 +54940,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -53911,7 +55017,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -53985,7 +55094,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -54059,7 +55171,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -54133,7 +55248,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -54207,7 +55325,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -54281,7 +55402,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -54341,14 +55465,21 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2,
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -54415,14 +55546,21 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2,
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -54489,14 +55627,21 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2,
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -54563,14 +55708,21 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2,
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -54637,14 +55789,21 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2,
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -54711,14 +55870,21 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2,
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -54785,14 +55951,21 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2,
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -54859,14 +56032,21 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2,
+          "multifocal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -54926,28 +56106,40 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 4
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 6
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -55000,28 +56192,40 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 4
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 6
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -55074,28 +56278,40 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 4
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 6
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -55148,28 +56364,40 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 4
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 6
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -55222,28 +56450,40 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 4
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 6
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -55296,28 +56536,40 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 4
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 6
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -55370,28 +56622,40 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 4
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 6
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -55444,28 +56708,40 @@
         "n": 9,
         "affected": 1,
         "incidence": 0.1111,
-        "avg_severity": 3.0
+        "avg_severity": 3.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 4,
         "incidence": 0.2667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 4
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 6
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 5
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -55525,7 +56801,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
@@ -55599,7 +56878,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
@@ -55673,7 +56955,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
@@ -55747,7 +57032,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
@@ -55821,7 +57109,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
@@ -55895,7 +57186,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
@@ -55969,7 +57263,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
@@ -56043,7 +57340,10 @@
         "n": 15,
         "affected": 2,
         "incidence": 0.1333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 2
+        }
       },
       {
         "dose_level": 2,
@@ -56124,7 +57424,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -56198,7 +57501,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -56272,7 +57578,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -56346,7 +57655,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -56420,7 +57732,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -56494,7 +57809,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -56568,7 +57886,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -56642,7 +57963,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -56723,7 +58047,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -56797,7 +58124,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -56871,7 +58201,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -56945,7 +58278,10 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57019,7 +58355,10 @@
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57093,7 +58432,10 @@
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57167,7 +58509,10 @@
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57241,7 +58586,10 @@
         "n": 14,
         "affected": 3,
         "incidence": 0.2143,
-        "avg_severity": 2.33
+        "avg_severity": 2.33,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57301,21 +58649,32 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2,
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4,
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57375,21 +58734,32 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2,
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4,
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57449,21 +58819,32 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2,
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4,
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57523,21 +58904,32 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2,
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 6,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 4,
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57597,21 +58989,32 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2,
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3,
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57671,21 +59074,32 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2,
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3,
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57745,21 +59159,32 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2,
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3,
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57819,21 +59244,32 @@
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 2,
+          "focal": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 3,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 5,
         "incidence": 0.3571,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 3,
+          "focal": 2
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -57900,7 +59336,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -57974,7 +59413,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -58048,7 +59490,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -58122,7 +59567,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal": 1
+        }
       },
       {
         "dose_level": 3,
@@ -58203,7 +59651,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58277,7 +59728,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58351,7 +59805,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58425,7 +59882,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58499,7 +59959,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58573,7 +60036,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58647,7 +60113,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58721,7 +60190,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58774,28 +60246,40 @@
         "n": 10,
         "affected": 4,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 8,
         "incidence": 0.5333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 8
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58848,28 +60332,40 @@
         "n": 10,
         "affected": 4,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 8,
         "incidence": 0.5333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 8
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58922,28 +60418,40 @@
         "n": 10,
         "affected": 4,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 8,
         "incidence": 0.5333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 8
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -58996,28 +60504,40 @@
         "n": 10,
         "affected": 4,
         "incidence": 0.4,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 8,
         "incidence": 0.5333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 8
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59070,28 +60590,40 @@
         "n": 9,
         "affected": 4,
         "incidence": 0.4444,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 7,
         "incidence": 0.5,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59144,28 +60676,40 @@
         "n": 9,
         "affected": 4,
         "incidence": 0.4444,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 7,
         "incidence": 0.5,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59218,28 +60762,40 @@
         "n": 9,
         "affected": 4,
         "incidence": 0.4444,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 7,
         "incidence": 0.5,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59292,28 +60848,40 @@
         "n": 9,
         "affected": 4,
         "incidence": 0.4444,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 4
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 5,
         "incidence": 0.3333,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 5
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 7,
         "incidence": 0.5,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59366,28 +60934,40 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 7,
         "incidence": 0.4667,
-        "avg_severity": 2.14
+        "avg_severity": 2.14,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 8,
         "incidence": 0.5333,
-        "avg_severity": 2.25
+        "avg_severity": 2.25,
+        "modifier_counts": {
+          "diffuse": 8
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59440,28 +61020,40 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 7,
         "incidence": 0.4667,
-        "avg_severity": 2.14
+        "avg_severity": 2.14,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 8,
         "incidence": 0.5333,
-        "avg_severity": 2.25
+        "avg_severity": 2.25,
+        "modifier_counts": {
+          "diffuse": 8
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59514,28 +61106,40 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 7,
         "incidence": 0.4667,
-        "avg_severity": 2.14
+        "avg_severity": 2.14,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 8,
         "incidence": 0.5333,
-        "avg_severity": 2.25
+        "avg_severity": 2.25,
+        "modifier_counts": {
+          "diffuse": 8
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59588,28 +61192,40 @@
         "n": 10,
         "affected": 2,
         "incidence": 0.2,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 7,
         "incidence": 0.4667,
-        "avg_severity": 2.14
+        "avg_severity": 2.14,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       },
       {
         "dose_level": 3,
         "n": 15,
         "affected": 8,
         "incidence": 0.5333,
-        "avg_severity": 2.25
+        "avg_severity": 2.25,
+        "modifier_counts": {
+          "diffuse": 8
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59662,28 +61278,40 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 7,
         "incidence": 0.4667,
-        "avg_severity": 2.14
+        "avg_severity": 2.14,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 7,
         "incidence": 0.5,
-        "avg_severity": 2.29
+        "avg_severity": 2.29,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59736,28 +61364,40 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 7,
         "incidence": 0.4667,
-        "avg_severity": 2.14
+        "avg_severity": 2.14,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 7,
         "incidence": 0.5,
-        "avg_severity": 2.29
+        "avg_severity": 2.29,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59810,28 +61450,40 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 7,
         "incidence": 0.4667,
-        "avg_severity": 2.14
+        "avg_severity": 2.14,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 7,
         "incidence": 0.5,
-        "avg_severity": 2.29
+        "avg_severity": 2.29,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -59884,28 +61536,40 @@
         "n": 9,
         "affected": 2,
         "incidence": 0.2222,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 2
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
         "n": 15,
         "affected": 7,
         "incidence": 0.4667,
-        "avg_severity": 2.14
+        "avg_severity": 2.14,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       },
       {
         "dose_level": 3,
         "n": 14,
         "affected": 7,
         "incidence": 0.5,
-        "avg_severity": 2.29
+        "avg_severity": 2.29,
+        "modifier_counts": {
+          "diffuse": 7
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -60571,7 +62235,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -60645,7 +62312,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -60719,7 +62389,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -60793,7 +62466,10 @@
         "n": 14,
         "affected": 1,
         "incidence": 0.0714,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "multifocal": 1
+        }
       }
     ],
     "scheduled_pairwise": [
@@ -60853,7 +62529,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 4.0
+        "avg_severity": 4.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -60927,7 +62606,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 4.0
+        "avg_severity": 4.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -61001,7 +62683,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 4.0
+        "avg_severity": 4.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -61075,7 +62760,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 4.0
+        "avg_severity": 4.0,
+        "modifier_counts": {
+          "diffuse": 1
+        }
       },
       {
         "dose_level": 2,
@@ -63214,14 +64902,20 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -63288,14 +64982,20 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -63362,14 +65062,20 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -63436,14 +65142,20 @@
         "n": 10,
         "affected": 1,
         "incidence": 0.1,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 1,
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -63517,7 +65229,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -63591,7 +65306,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -63665,7 +65383,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,
@@ -63739,7 +65460,10 @@
         "n": 15,
         "affected": 1,
         "incidence": 0.0667,
-        "avg_severity": 2.0
+        "avg_severity": 2.0,
+        "modifier_counts": {
+          "focal/multifocal": 1
+        }
       },
       {
         "dose_level": 2,

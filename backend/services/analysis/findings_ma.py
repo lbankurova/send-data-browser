@@ -5,6 +5,9 @@ import pandas as pd
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 from services.analysis.statistics import fisher_exact_2x2, trend_test_incidence
+from services.analysis.supp_qualifiers import (
+    load_supp_modifiers, aggregate_modifiers, count_distributions,
+)
 
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE"}
 
@@ -25,6 +28,14 @@ def compute_ma_findings(
     if excluded_subjects:
         main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
     ma_df = ma_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+
+    # Load SUPPMA modifiers
+    supp_map = load_supp_modifiers(study, "ma")
+    if supp_map and "MASEQ" in ma_df.columns:
+        ma_df["_modifiers"] = ma_df.apply(
+            lambda r: supp_map.get((r["USUBJID"], int(float(r["MASEQ"])))),
+            axis=1,
+        )
 
     spec_col = "MASPEC" if "MASPEC" in ma_df.columns else None
     finding_col = "MASTRESC" if "MASTRESC" in ma_df.columns else None
@@ -62,12 +73,21 @@ def compute_ma_findings(
 
             dose_counts[dose_level] = (affected, total)
 
-            group_stats.append({
+            gs_entry = {
                 "dose_level": int(dose_level),
                 "n": total,
                 "affected": affected,
                 "incidence": round(affected / total, 4) if total > 0 else 0,
-            })
+            }
+
+            # Per-dose modifier counts
+            if "_modifiers" in dose_grp.columns:
+                dose_mods = dose_grp["_modifiers"].dropna().tolist()
+                mod_counts = count_distributions(dose_mods)
+                if mod_counts:
+                    gs_entry["modifier_counts"] = mod_counts
+
+            group_stats.append(gs_entry)
 
             if dose_level == all_dose_levels[0]:
                 control_affected = affected
@@ -114,6 +134,15 @@ def compute_ma_findings(
                 if min_p is None or pw["p_value"] < min_p:
                     min_p = pw["p_value"]
 
+        # Aggregate modifiers for this (specimen, finding, sex)
+        modifier_profile = None
+        if "_modifiers" in grp.columns:
+            modifier_records = grp["_modifiers"].dropna().tolist()
+            if modifier_records:
+                profile = aggregate_modifiers(modifier_records)
+                profile["n_total"] = int(grp["USUBJID"].nunique())
+                modifier_profile = profile
+
         findings.append({
             "domain": "MA",
             "test_code": f"{specimen}_{finding_str}",
@@ -131,6 +160,7 @@ def compute_ma_findings(
             "direction": direction,
             "max_effect_size": None,
             "min_p_adj": min_p,
+            "modifier_profile": modifier_profile,
         })
 
     return findings
