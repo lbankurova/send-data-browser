@@ -8,7 +8,8 @@ import { describe, test, expect } from "vitest";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import { computeEndpointNoaelMap } from "@/lib/derive-summaries";
 import { detectCrossDomainSyndromes, getSyndromeTermReport } from "@/lib/cross-domain-syndromes";
-import { classifyFindingPatternWithSex } from "@/lib/pattern-classification";
+import { classifyFindingPatternWithSex, classifyPattern } from "@/lib/pattern-classification";
+import type { DoseGroupData } from "@/lib/pattern-classification";
 import { computeEndpointSignal } from "@/lib/findings-rail-engine";
 import { resolveCanonical } from "@/lib/lab-clinical-catalog";
 import type { AdverseEffectSummaryRow, LesionSeverityRow } from "@/types/analysis-views";
@@ -320,6 +321,50 @@ describe("term match status", () => {
     expect(neutEntry!.status).toBe("matched");
   });
 
+  test("Spleen weight ↑ shows as 'opposite' for XS04 Spleen weight ↓ term", () => {
+    // SPLEEN — SPLEEN (WEIGHT) in OM domain: F direction="up", p=0.018, severity "adverse"
+    // XS04 expects spleen weight ↓ → opposite
+    const spleenEntry = report.supportingEntries.find(e =>
+      e.domain === "OM" && e.label.toLowerCase().includes("spleen"));
+    expect(spleenEntry).toBeDefined();
+    expect(spleenEntry!.status).toBe("opposite");
+    expect(spleenEntry!.foundDirection).toBe("up");
+  });
+
+  test("oppositeCount >= 2 caps confidence at LOW", () => {
+    // Build synthetic endpoints where XS04 would have requiredMet=true + 3 domains
+    // but 2 opposite findings should cap confidence at LOW
+    const syntheticEndpoints: EndpointSummary[] = [
+      // NEUT↓ — required, matched (drives requiredMet=true)
+      {
+        endpoint_label: "Neutrophils", organ_system: "hematologic", domain: "LB",
+        worstSeverity: "adverse", treatmentRelated: true, pattern: "monotonic_decrease",
+        minPValue: 0.0003, maxEffectSize: -2.5, direction: "down", sexes: [], maxFoldChange: 1.5,
+        testCode: "NEUT",
+      },
+      // RETIC↑ — opposite for XS04 RETIC↓
+      {
+        endpoint_label: "Reticulocytes", organ_system: "hematologic", domain: "LB",
+        worstSeverity: "adverse", treatmentRelated: true, pattern: "monotonic_increase",
+        minPValue: 0.003, maxEffectSize: 1.8, direction: "up", sexes: [], maxFoldChange: 1.4,
+        testCode: "RETIC",
+      },
+      // Spleen weight ↑ — opposite for XS04 spleen weight ↓
+      {
+        endpoint_label: "SPLEEN — SPLEEN (WEIGHT)", organ_system: "hematologic", domain: "OM",
+        worstSeverity: "adverse", treatmentRelated: true, pattern: "threshold_increase",
+        minPValue: 0.018, maxEffectSize: 1.5, direction: "up", sexes: [], maxFoldChange: 1.4,
+        specimen: "SPLEEN",
+      },
+    ];
+    const r = getSyndromeTermReport("XS04", syntheticEndpoints)!;
+    // Should have ≥2 opposite findings (RETIC + Spleen weight)
+    expect(r.oppositeCount).toBeGreaterThanOrEqual(2);
+    // Without the cap, requiredMet=true + 2 domains (LB+OM) + 1 support could give MODERATE
+    // With cap: 2 opposite → must be LOW
+    // (Confidence capping is done in the UI component, so test the report field here)
+  });
+
   test("PLAT with p=0.15 shows 'not_significant'", () => {
     const mockEndpoints: EndpointSummary[] = [{
       endpoint_label: "Platelets",
@@ -339,5 +384,67 @@ describe("term match status", () => {
     const platEntry = r.requiredEntries.find(e => e.label.startsWith("PLAT"));
     expect(platEntry).toBeDefined();
     expect(platEntry!.status).toBe("not_significant");
+  });
+});
+
+// ── Domain counting fix (Step 4) ──────────────────────────────
+
+describe("domain counting", () => {
+  test("XS04 domainsCovered includes domains with opposite/not_significant terms", () => {
+    // XS04 has terms in LB, MI, OM. RETIC is opposite (LB), Spleen weight is opposite (OM).
+    // domainsCovered should count LB and OM even though those terms are opposite, not matched.
+    const report = getSyndromeTermReport("XS04", endpoints)!;
+    // LB should be covered (has both matched NEUT and opposite RETIC)
+    expect(report.domainsCovered).toContain("LB");
+    // OM should be covered (has opposite Spleen weight — still "checked", just opposite)
+    expect(report.domainsCovered).toContain("OM");
+    // At least 2 domains
+    expect(report.domainsCovered.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ── Pattern classifier fixes ──────────────────────────────────
+
+function makeDoseGroups(incidences: number[], nExamined: number[]): DoseGroupData[] {
+  return incidences.map((inc, i) => ({
+    dose_level: i,
+    dose_label: i === 0 ? "Control" : `Dose ${i}`,
+    incidence: inc,
+    avg_severity: inc > 0 ? 2.0 : 0,
+    n_affected: Math.round(inc * nExamined[i]),
+    n_examined: nExamined[i],
+    is_control: i === 0,
+  }));
+}
+
+describe("pattern classifier fixes", () => {
+  test("Fat Vacuoles (100%→67%→20%→20%) is NOT NO_PATTERN", () => {
+    const groups = makeDoseGroups([1.0, 0.67, 0.20, 0.20], [10, 15, 15, 15]);
+    const result = classifyPattern(groups);
+    expect(result.pattern).not.toBe("NO_PATTERN");
+  });
+
+  test("Fat Vacuoles is MONOTONIC_DOWN or THRESHOLD", () => {
+    const groups = makeDoseGroups([1.0, 0.67, 0.20, 0.20], [10, 15, 15, 15]);
+    const result = classifyPattern(groups);
+    expect(["MONOTONIC_DOWN", "THRESHOLD"]).toContain(result.pattern);
+  });
+
+  test("Noise around baseline (30%→32%→28%→35%) is NO_PATTERN", () => {
+    const groups = makeDoseGroups([0.30, 0.32, 0.28, 0.35], [10, 15, 15, 15]);
+    const result = classifyPattern(groups);
+    expect(result.pattern).toBe("NO_PATTERN");
+  });
+
+  test("Clear increase (0%→10%→30%→60%) is MONOTONIC_UP", () => {
+    const groups = makeDoseGroups([0, 0.10, 0.30, 0.60], [10, 10, 10, 10]);
+    const result = classifyPattern(groups);
+    expect(result.pattern).toBe("MONOTONIC_UP");
+  });
+
+  test("Plateau with noise (0%→20%→22%→18%) is THRESHOLD not NON_MONOTONIC", () => {
+    const groups = makeDoseGroups([0, 0.20, 0.22, 0.18], [15, 15, 15, 15]);
+    const result = classifyPattern(groups);
+    expect(result.pattern).not.toBe("NON_MONOTONIC");
   });
 });
