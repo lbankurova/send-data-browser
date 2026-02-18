@@ -1,12 +1,12 @@
-# Adverse Effects View
+# Findings View (formerly Adverse Effects)
 
-**Route:** `/studies/:studyId/adverse-effects` (primary), `/studies/:studyId/analyses/adverse-effects` (legacy redirect)
-**Wrapper:** `AdverseEffectsViewWrapper.tsx` (in `components/analysis/findings/`) — sets `useRailModePreference("organ")`, renders `AdverseEffectsView`
-**Component:** `AdverseEffectsView.tsx` (in `components/analysis/findings/`)
+**Route:** `/studies/:studyId/findings` (primary). Legacy redirects: `/studies/:studyId/adverse-effects` and `/studies/:studyId/analyses/adverse-effects` both redirect to `/findings`.
+**Wrapper:** `FindingsViewWrapper.tsx` (in `components/analysis/findings/`) — sets `useRailModePreference("findings")`, renders `FindingsView`
+**Component:** `FindingsView.tsx` (in `components/analysis/findings/`)
 **Scientific question:** "What are all the findings and how do they compare across dose groups?"
-**Role:** Dynamic server-side adverse effects analysis. Sortable, resizable findings table with per-dose-group values, client-side sorting, and detailed finding context panel.
+**Role:** Dynamic server-side adverse effects analysis. Two-zone layout (quadrant scatter + sortable findings table), with FindingsRail in the left panel and detailed context panel.
 
-**Key difference from other views:** This view uses **server-side filtering** (not pre-generated JSON). Data is fetched from `/api/studies/{studyId}/analyses/adverse-effects` with all results loaded at once (page=1, pageSize=10000). Sorting is client-side via TanStack React Table.
+**Key difference from other views:** This view uses **server-side filtering** (not pre-generated JSON). Data is fetched from `/api/studies/{studyId}/analyses/adverse-effects` with all results loaded at once (page=1, pageSize=10000, empty filters). Sorting is client-side via TanStack React Table. The view derives `EndpointSummary[]`, cross-domain syndromes, lab rule matches, and signal scores from the raw findings data for the scatter plot and analytics context.
 
 ---
 
@@ -17,8 +17,8 @@ The view lives in the center panel of the 3-panel shell:
 ```
 +--[260px]--+----------[flex-1]----------+--[280px]--+
 |            |                            |            |
-| Browsing   |  Adverse Effects View      | Context    |
-| Tree       |  (this document)           | Panel      |
+| Findings   |  Findings View             | Context    |
+| Rail       |  (this document)           | Panel      |
 |            |                            |            |
 +------------+----------------------------+------------+
 ```
@@ -27,16 +27,29 @@ The view itself uses a flex column layout (`flex h-full flex-col overflow-hidden
 
 ```
 +-----------------------------------------------------------+
-|  Domain [v] Sex [v] Class [v] [Search…]  N adv N wrn N nrm  {total} total |  <-- FilterBar with inline badges
+|  StudyBanner (conditional — study context info)            |  border-b
 +-----------------------------------------------------------+
-|                                                           |
-|  Findings table (TanStack React Table)                     |
-|  (flex-1 overflow-auto, fills remaining space)             |
-|                                                           |
+|  MortalityBanner (conditional — early death summary)       |  border-b
++-----------------------------------------------------------+
+|  [Findings]                        N adverse N warning N normal |  <-- FilterBar
++-----------------------------------------------------------+
+|  Quadrant scatter (ViewSection, resizable)                 |
+|  (FindingsQuadrantScatter)                                 |
++-----------------------------------------------------------+
+|  FindingsTable (TanStack React Table)                      |
+|  (flex-1 overflow-hidden, fills remaining space)           |
 +-----------------------------------------------------------+
 ```
 
-No header (title/subtitle) section. No pagination.
+---
+
+## Study Banner (conditional)
+
+`StudyBanner` component renders when `studyContext` is available. Shows study-level context: species, strain, study type, dose group count, tumor animal count if available.
+
+## Mortality Banner (conditional)
+
+`MortalityBanner` component renders when `mortalityData` is available. Shows early death summary information.
 
 ---
 
@@ -44,36 +57,24 @@ No header (title/subtitle) section. No pagination.
 
 Uses the shared `FilterBar` container component: `flex items-center gap-2 border-b bg-muted/30 px-4 py-2`.
 
-Inside the FilterBar, `FindingsFilterBar` renders the filter controls, followed by inline summary badges and a total count (only shown when data is loaded).
+The FilterBar contains:
+- "Findings" label: `text-xs font-semibold`
+- Summary badges (right-aligned via `ml-auto`): `flex items-center gap-2 text-[10px] text-muted-foreground` — "{N} adverse", "{N} warning", "{N} normal"
 
-### Filter Controls
+**Note:** The `FindingsFilterBar` component exists separately but is **not** used in the main FindingsView. Filtering is handled through the FindingsRail (left panel) which manages endpoint grouping, scoping, and exclusion. The center panel FilterBar only displays summary counts.
 
-`FindingsFilterBar` component (`components/analysis/FindingsFilterBar.tsx`): renders native `<select>` elements via `FilterSelect` (from `@/components/ui/FilterBar`). `FilterSelect` applies the design-token class `filter.select` = `h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary`. Filters are rendered as bare `FilterSelect` components without label wrappers -- the default option text serves as the label.
+---
 
-The filter controls are wrapped in `flex flex-wrap items-center gap-3`.
+## Quadrant Scatter
 
-| Filter | Control | Options | Default |
-|--------|---------|---------|---------|
-| Domain | `FilterSelect` (native `<select>`) | "All domains" + LB / BW / OM / MI / MA / CL | All domains |
-| Sex | `FilterSelect` (native `<select>`) | "All sexes" / Male / Female | All sexes |
-| Classification | `FilterSelect` (native `<select>`) | "All classifications" / Adverse / Warning / Normal | All classifications |
-| Search | Native `<input>` with placeholder "Search findings..." | Free text | Empty |
+Rendered inside `ViewSection mode="fixed"` when endpoint summaries are available. Height managed by `useAutoFitSections` with "findings" section key (default ~40% viewport height, 80-2000px).
 
-The search input uses classes: `rounded border bg-background px-2 py-0.5 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary`.
+**Component:** `FindingsQuadrantScatter` — interactive scatter plot of endpoints by statistical significance (p-value) vs effect size. Props include: endpoints, selectedEndpoint, organCoherence, syndromes, labMatches.
 
-### Inline Summary Badges
-
-Three classification count badges rendered after the filter controls inside the same FilterBar. All use uniform neutral styling (categorical identity, not signal color):
-
-| Badge | Classes |
-|-------|---------|
-| adverse | `rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground` |
-| warning | `rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground` |
-| normal | `rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground` |
-
-**Total count:** `FilterBarCount` component — `ml-auto text-[10px] text-muted-foreground` — "{total_findings} total". Pushed to the right edge of the FilterBar via `ml-auto`.
-
-**Filter change behavior:** Changing any filter clears the finding selection (via `useEffect` on `filters`).
+**Interactions:**
+- Click dot: selects endpoint (fires `onSelect`)
+- Ctrl+click dot: excludes endpoint from rail (fires `onExclude`)
+- Selected point details passed via `onSelectedPointChange`
 
 ---
 
@@ -81,12 +82,12 @@ Three classification count badges rendered after the filter controls inside the 
 
 ### Structure
 
-TanStack React Table (`useReactTable`) with client-side sorting and column resizing. Table element: `<table>` with `w-full text-[10px]`. Wrapped in `h-full overflow-auto` (a flex child of the view that fills remaining vertical space).
+TanStack React Table (`useReactTable`) with client-side sorting and column resizing. Table element: `<table>` with `w-full text-[10px]`. Wrapped in `flex-1 overflow-hidden` (fills remaining vertical space below scatter).
 
 ### TanStack Table Features
 
-- **Sorting:** Double-click a column header to toggle sort. Sort indicators `↑` (asc) / `↓` (desc) appended to header text. Session-persisted via `useSessionState("pcc.adverseEffects.sorting", [])`.
-- **Column resizing:** Drag resize handle on column borders. Resize handle: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none`. Shows `bg-primary` when actively resizing, `hover:bg-primary/30` otherwise. Session-persisted via `useSessionState("pcc.adverseEffects.columnSizing", {})`.
+- **Sorting:** Double-click a column header to toggle sort. Sort indicators `↑` (asc) / `↓` (desc) appended to header text. Session-persisted via `useSessionState("pcc.findings.sorting", [])`.
+- **Column resizing:** Drag resize handle on column borders. Resize handle: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none`. Shows `bg-primary` when actively resizing, `hover:bg-primary/30` otherwise. Session-persisted via `useSessionState("pcc.findings.columnSizing", {})`.
 - **Content-hugging + absorber:** All columns except the "finding" column (the absorber) use `width: 1px; white-space: nowrap` so the browser shrinks them to fit content. The finding column uses `width: 100%` to absorb remaining space. Manual resize overrides with an explicit `width` + `maxWidth`.
 
 ### Header Row
@@ -185,12 +186,18 @@ When `findings.length === 0`, a message is shown below the table: `p-4 text-cent
 
 ## Context Panel (Right Sidebar -- 280px)
 
-Route-detected: when pathname matches regex `/\/studies\/[^/]+\/(analyses\/)?adverse-effects/`, shows `AdverseEffectsContextPanel` (uses `FindingSelectionContext`). This regex matches both the primary `/adverse-effects` path and the legacy `/analyses/adverse-effects` path.
+Route-detected: when pathname matches regex `/\/studies\/[^/]+\/(findings|(analyses\/)?adverse-effects)/`, shows `FindingsContextPanel` (uses `FindingSelectionContext`). This regex matches both the primary `/findings` path and the legacy adverse-effects paths.
 
 ### No Selection State
-- Header: `text-sm font-semibold` -- "Adverse Effects" (`<h3>` with `mb-2`)
-- Message: "Select a finding row to view detailed analysis."
-- `p-4 text-xs text-muted-foreground`
+
+Three selection priorities:
+1. **Endpoint selected** → endpoint-level panel (see "With Selection" below)
+2. **Group selected** (`selectedGroupType === "organ"`) → `OrganContextPanel` for the organ key
+3. **Syndrome selected** (`selectedGroupType === "syndrome"`) → `SyndromeContextPanel` for the syndrome ID
+4. **Nothing selected** → empty state:
+   - Header: `text-sm font-semibold` -- "Findings" (`<h3>` with `mb-2`)
+   - Message: "Select a finding row to view detailed analysis."
+   - `p-4 text-xs text-muted-foreground`
 
 ### Loading State
 - `Skeleton` components: h-4 w-2/3, then h-20 w-full x3
@@ -199,31 +206,28 @@ Route-detected: when pathname matches regex `/\/studies\/[^/]+\/(analyses\/)?adv
 ### With Selection
 
 #### Header
-- `border-b px-4 py-3`
+- `sticky top-0 z-10 border-b bg-background px-4 py-3`
 - Row: `flex items-center justify-between`
 - Finding name: `text-sm font-semibold` (`<h3>`)
 - Expand/collapse all buttons: `CollapseAllButtons` component in the header row (right side)
-  - Expand all: `ChevronsUpDown` icon (h-3.5 w-3.5)
-  - Collapse all: `ChevronsDownUp` icon (h-3.5 w-3.5)
-  - Button classes: `rounded p-0.5 text-muted-foreground hover:bg-accent/50 hover:text-foreground`
 - Subtitle: "{domain} | {sex} | Day {day}" (or "Terminal" if day is null) in `text-[10px] text-muted-foreground`
 
-#### Pane 1: Treatment summary (default open)
-`TreatmentRelatedSummaryPane` component -- shows treatment-relatedness assessment.
+#### Verdict pane (always visible, not in CollapsiblePane)
+`VerdictPane` component — treatment-relatedness assessment with analytics, NOAEL context, dose-response data, and statistics. Rendered in a `border-b px-4 py-3` container outside of CollapsiblePane.
 
-#### Pane 2: Statistics (default open)
-`StatisticsPane` component -- key statistical metrics.
+#### Pane 1: Evidence (default open)
+`EvidencePane` component — statistical evidence summary with finding data, analytics, statistics, and effect size context.
 
-#### Pane 3: Dose response (default open)
-`DoseResponsePane` component -- dose-response relationship details. No `defaultOpen` prop passed, so it inherits the `CollapsiblePane` default of `true` (open).
+#### Pane 2: Dose detail (default open)
+`DoseDetailPane` component — dose-level detail table with statistics and dose-response data. Header right shows unit when available.
 
-#### Pane 4: Correlations (default closed)
-`CorrelationsPane` component -- correlated findings. Explicitly passed `defaultOpen={false}`.
+#### Pane 3: Correlations (conditional, default closed)
+`CorrelationsPane` component — shown only when correlations have related items that are not purely group-mean based (`basis !== "group_means"`) and have sufficient sample size (`n >= 10`). Explicitly passed `defaultOpen={false}`.
 
-#### Pane 5: Effect size (default closed)
-`EffectSizePane` component -- effect size analysis. Explicitly passed `defaultOpen={false}`.
+#### Pane 4: Context (default open)
+`ContextPane` component — effect size interpretation and contextual information.
 
-#### Pane 6: Related views (default closed)
+#### Pane 5: Related views (default closed)
 Navigation links to other views. Explicitly passed `defaultOpen={false}`. Contains 4 links:
 
 | Link Text | Target Route |
@@ -233,17 +237,15 @@ Navigation links to other views. Explicitly passed `defaultOpen={false}`. Contai
 | View NOAEL decision → | `/studies/{studyId}/noael-decision` |
 | View study summary → | `/studies/{studyId}` |
 
-Links: `block text-[11px] text-primary hover:underline`, use `<a href="#">` with `onClick` handler calling `navigate()`. Wrapped in `space-y-1`.
+Links: `block text-primary hover:underline`, use `<a href="#">` with `onClick` handler calling `navigate()`. Wrapped in `space-y-1 text-[11px]`.
 
 #### Pane Rendering
-All panes use the `CollapsiblePane` component:
+All panes (except Verdict) use the `CollapsiblePane` component:
 - Toggle button: `flex w-full items-center gap-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`
 - Chevron icons: `h-3 w-3` (`ChevronDown` when open, `ChevronRight` when closed)
 - Content area: `px-4 pb-3`
 - Panes are separated by `border-b` (last pane has `last:border-b-0`)
 - Panes respond to expand-all / collapse-all via generation counter (`expandAll` / `collapseAll` props)
-
-**Note:** All context pane data comes from a separate API call: `/api/studies/{studyId}/analyses/adverse-effects/finding/{findingId}`.
 
 ---
 
@@ -251,34 +253,57 @@ All panes use the `CollapsiblePane` component:
 
 | State | Scope | Managed By |
 |-------|-------|------------|
-| Filters | Local | `useState<AdverseEffectsFilters>` -- domain, sex, severity, search |
-| Finding selection | Shared via context | `FindingSelectionContext` -- syncs table and context panel |
-| Study selection | Shared via context | `SelectionContext` -- synced on mount |
-| Table sorting | Session-persisted | `useSessionState<SortingState>("pcc.adverseEffects.sorting", [])` |
-| Column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.adverseEffects.columnSizing", {})` |
-| Findings data | Server | `useAdverseEffects(studyId, 1, 10000, filters)` hook (React Query, 5 min stale) |
-| Finding context | Server | `useFindingContext(studyId, findingId)` hook -- loaded on selection |
-| Collapse all | Local (context panel) | `useCollapseAll()` hook -- provides expandGen/collapseGen counters |
-| Rail mode | Shared | `useRailModePreference("organ")` -- set by wrapper |
+| Finding selection | Shared via context | `FindingSelectionContext` — syncs table and context panel. Includes `selectedFindingId`, `selectedFinding`, `endpointSexes`, `selectedGroupType`, `selectedGroupKey` |
+| Study selection | Shared via context | `SelectionContext` — synced on mount |
+| Table sorting | Session-persisted | `useSessionState<SortingState>("pcc.findings.sorting", [])` |
+| Column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {})` |
+| Findings data | Server | `useFindings(studyId, 1, 10000, ALL_FILTERS)` hook (React Query, 5 min stale) — fetches all findings with empty filters |
+| Finding context | Server | `useFindingContext(studyId, findingId)` hook — loaded on selection |
+| Mortality data | Server | `useStudyMortality(studyId)` — early death subject data |
+| Tumor summary | Server | `useTumorSummary(studyId)` — tumor animal count |
+| Study context | Server | `useStudyContext(studyId)` — study metadata for banner |
+| Endpoint summaries | Derived | `deriveEndpointSummaries(findings)` — computed from raw findings data |
+| Cross-domain syndromes | Derived | `detectCrossDomainSyndromes(endpoints)` — XS01-XS09 |
+| Lab rule matches | Derived | `evaluateLabRules(endpoints)` — clinical catalog matches |
+| Signal scores | Derived | `withSignalScores(endpoints, ...)` — signal score computation |
+| Organ coherence | Derived | `deriveOrganCoherence(endpoints)` — for scatter coloring |
+| Scatter section height | Local | `useAutoFitSections(containerRef, "findings", ...)` — resizable scatter panel |
+| Active endpoint | Local (via event bus) | `_findingsRailCallback` — endpoint selection from rail |
+| Excluded endpoints | Local (via event bus) | `_findingsExcludedCallback` — Ctrl+click exclusion |
+| Scheduled-only mode | Shared | `useScheduledOnly()` — toggles statistics to scheduled variants when early deaths present |
+| Collapse all | Local (context panel) | `useCollapseAll()` hook — provides expandGen/collapseGen counters |
+| Rail mode | Shared | `useRailModePreference("findings")` — set by wrapper |
+| Analytics | Derived (composite) | `FindingsAnalyticsProvider` — bundles endpoint summaries, syndromes, lab matches, signal scores for child components |
 
 ---
 
 ## Data Flow
 
 ```
-useAdverseEffects(studyId, 1, 10000, filters)
+useFindings(studyId, 1, 10000, ALL_FILTERS)
     --> { findings, dose_groups, summary, ... }
                                   |
-                            FindingsTable (TanStack)
+                  deriveEndpointSummaries() → EndpointSummary[]
+                  detectCrossDomainSyndromes() → syndromes
+                  evaluateLabRules() → labMatches
+                  withSignalScores() → signal scores
                                   |
-                          FindingSelectionContext
-                                  |
-                    useFindingContext(studyId, findingId)
-                          --> context data
-                                  |
-                     AdverseEffectsContextPanel
-                      /     |      |      \      \       \
-                    TR   Stats   D-R   Corr   Effect   Related
+                    ┌──────────────┼──────────────┐
+                    │              │              │
+           FindingsQuadrant   FindingsTable   FindingsRail
+           Scatter (scatter)   (TanStack)     (left panel)
+                    │              │              │
+                    └──────┬───────┘              │
+                           │                      │
+                  FindingSelectionContext          │
+                    (endpoint or group)            │
+                           │                      │
+                  FindingsContextPanel             │
+                    /    |    |    \    \          │
+                Verdict Evid Dose Corr Related    │
+                           │                      │
+                  FindingsAnalyticsContext ────────┘
+                    (shared analytics data)
 ```
 
 ---
