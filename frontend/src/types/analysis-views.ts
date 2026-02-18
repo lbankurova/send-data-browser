@@ -257,3 +257,93 @@ export function getSeverityState(
   if (avgSeverity == null) return "present_ungraded";
   return "graded";
 }
+
+// --- PK Integration (Phase 6) ---
+
+export interface PkParameterStats {
+  mean: number | null;
+  sd: number | null;
+  median: number | null;
+  n: number;
+  unit: string;
+  values?: number[];
+}
+
+export interface PkConcentrationTimePoint {
+  timepoint: string;
+  tptnum: number;
+  elapsed_h: number | null;
+  mean: number;
+  sd: number;
+  n: number;
+  n_bql: number;
+}
+
+export interface PkDoseGroup {
+  dose_level: number;
+  dose_value: number;
+  dose_unit: string;
+  dose_label: string;
+  n_subjects: number;
+  parameters: Record<string, PkParameterStats>;
+  concentration_time: PkConcentrationTimePoint[];
+}
+
+export interface TKDesign {
+  has_satellite_groups: boolean;
+  satellite_set_codes: string[];
+  main_study_set_codes: string[];
+  n_tk_subjects: number;
+  individual_correlation_possible: boolean;
+}
+
+export interface DoseProportionality {
+  parameter: string;
+  slope: number | null;
+  r_squared: number | null;
+  assessment: "linear" | "supralinear" | "sublinear" | "insufficient_data";
+  dose_levels_used: number[];
+  non_monotonic?: boolean;
+  interpretation?: string | null;
+}
+
+export interface PkExposureSummary {
+  dose_level: number;
+  dose_value: number;
+  cmax: { mean: number; sd: number | null; unit: string } | null;
+  auc: { mean: number; sd: number | null; unit: string } | null;
+  tmax: { mean: number; unit: string } | null;
+}
+
+export interface PkIntegration {
+  available: boolean;
+  species?: string;
+  km_factor?: number;
+  hed_conversion_factor?: number;
+  tk_design?: TKDesign;
+  analyte?: string;
+  specimen?: string;
+  lloq?: number;
+  lloq_unit?: string;
+  visit_days?: number[];
+  multi_visit?: boolean;
+  pp_parameters_available?: string[];
+  by_dose_group?: PkDoseGroup[];
+  dose_proportionality?: DoseProportionality;
+  accumulation?: {
+    available: boolean;
+    ratio: number | null;
+    assessment: "accumulation" | "autoinduction" | "stable" | "unknown";
+    reason?: string;
+  };
+  noael_exposure?: PkExposureSummary;
+  loael_exposure?: PkExposureSummary;
+  hed?: {
+    noael_mg_kg: number;
+    hed_mg_kg: number;
+    mrsd_mg_kg: number;
+    safety_factor: number;
+    method: string;
+    noael_status: "established" | "at_control";
+  };
+}
