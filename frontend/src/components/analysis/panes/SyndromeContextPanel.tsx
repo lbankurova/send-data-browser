@@ -25,6 +25,10 @@ import { getSyndromeTermReport, getSyndromeDefinition } from "@/lib/cross-domain
 import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
+import { interpretSyndrome } from "@/lib/syndrome-interpretation";
+import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef } from "@/lib/syndrome-interpretation";
+import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
+import { useStudyContext } from "@/hooks/useStudyContext";
 import type { FindingsFilters, UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 
@@ -243,6 +247,29 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   const endpointCount = detected?.matchedEndpoints.length ?? 0;
   const domainCount = detected?.domainsCovered.length ?? 0;
 
+  // Histopath data for interpretation layer
+  const { data: histopathData } = useLesionSeveritySummary(studyId);
+
+  // Study context for interpretation layer (real data from TS domain)
+  const { data: studyContext } = useStudyContext(studyId);
+
+  // Compute syndrome interpretation (Phase A + Phase C)
+  const syndromeInterp = useMemo<SyndromeInterpretation | null>(() => {
+    if (!detected || allEndpoints.length === 0 || !studyContext) return null;
+    return interpretSyndrome(
+      detected,
+      allEndpoints,
+      histopathData ?? [],
+      [], // recovery data (not available yet)
+      [], // organ weights
+      [], // tumors
+      [], // mortality
+      [], // food consumption
+      [], // clinical observations (not available yet)
+      studyContext,
+    );
+  }, [detected, allEndpoints, histopathData, studyContext]);
+
   // Interpretation content
   const interpretation = SYNDROME_INTERPRETATIONS[syndromeId];
 
@@ -297,6 +324,17 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
               : detected.sexes.map(s => `${s === "M" ? "\u2642" : "\u2640"} ${s}`).join(", ")}</>
           )}
         </p>
+        {/* Dual badges: Pattern confidence + Mechanism certainty */}
+        {syndromeInterp && (
+          <div className="mt-1.5 flex items-center gap-2">
+            <span className="text-[9px] text-muted-foreground">Pattern</span>
+            <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+              {syndromeInterp.patternConfidence}
+            </span>
+            <span className="text-[9px] text-muted-foreground">Mechanism</span>
+            <CertaintyBadge certainty={syndromeInterp.mechanismCertainty} />
+          </div>
+        )}
       </div>
 
       {/* Pane 1: INTERPRETATION — always visible, not collapsible */}
@@ -322,6 +360,13 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
             </>
           )}
         </div>
+      )}
+
+      {/* Pane: CERTAINTY ASSESSMENT (Phase A, Component 1) */}
+      {syndromeInterp && syndromeInterp.discriminatingEvidence.length > 0 && (
+        <CollapsiblePane title="Certainty assessment" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <CertaintyAssessmentPane interp={syndromeInterp} />
+        </CollapsiblePane>
       )}
 
       {/* Pane 2: EVIDENCE SUMMARY */}
@@ -350,6 +395,27 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
             allEndpoints={allEndpoints}
             detectedSyndromes={analytics.syndromes}
           />
+        </CollapsiblePane>
+      )}
+
+      {/* Pane: HISTOPATHOLOGY CONTEXT (Phase A, Component 2) */}
+      {syndromeInterp && syndromeInterp.histopathContext.length > 0 && (
+        <CollapsiblePane title="Histopathology context" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <HistopathContextPane crossRefs={syndromeInterp.histopathContext} />
+        </CollapsiblePane>
+      )}
+
+      {/* Pane: CLINICAL OBSERVATIONS (Phase C) */}
+      {syndromeInterp && syndromeInterp.clinicalObservationSupport.assessment !== "no_cl_data" && (
+        <CollapsiblePane title="Clinical observations" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <ClinicalObservationsPane support={syndromeInterp.clinicalObservationSupport} />
+        </CollapsiblePane>
+      )}
+
+      {/* Pane: RECOVERY (Phase A, Component 3) */}
+      {syndromeInterp && (
+        <CollapsiblePane title="Recovery" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <RecoveryPane recovery={syndromeInterp.recovery} />
         </CollapsiblePane>
       )}
 
@@ -926,4 +992,221 @@ function SeverityDot({ severity }: { severity: "adverse" | "warning" | "normal" 
     severity === "warning" ? "bg-amber-500" :
     "bg-gray-400";
   return <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${color}`} />;
+}
+
+// ─── Interpretation layer sub-components ────────────────────
+
+/** Mechanism certainty badge with icon + color */
+function CertaintyBadge({ certainty }: { certainty: SyndromeInterpretation["mechanismCertainty"] }) {
+  const label =
+    certainty === "mechanism_confirmed" ? "CONFIRMED"
+    : certainty === "mechanism_uncertain" ? "UNCERTAIN"
+    : "PATTERN ONLY";
+  const colorClass =
+    certainty === "mechanism_confirmed" ? "text-green-600"
+    : certainty === "mechanism_uncertain" ? "text-amber-600"
+    : "text-muted-foreground";
+  const icon =
+    certainty === "mechanism_confirmed" ? "\u2713"
+    : certainty === "mechanism_uncertain" ? "?"
+    : "\u2014";
+
+  return (
+    <span className={`rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium ${colorClass}`}>
+      {icon} {label}
+    </span>
+  );
+}
+
+/** Certainty assessment pane — discriminating evidence table */
+function CertaintyAssessmentPane({ interp }: { interp: SyndromeInterpretation }) {
+  return (
+    <div>
+      <p className="mb-2 text-xs leading-relaxed text-foreground/80">
+        {interp.certaintyRationale}
+      </p>
+      <div className="space-y-0.5">
+        {interp.discriminatingEvidence.map((disc, i) => (
+          <DiscriminatingEvidenceRow key={i} disc={disc} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Single row in discriminating evidence table */
+function DiscriminatingEvidenceRow({ disc }: { disc: DiscriminatingFinding }) {
+  const icon =
+    disc.status === "supports" ? "\u2713"
+    : disc.status === "argues_against" ? "\u2298"
+    : "\u2014";
+  const iconColor =
+    disc.status === "supports" ? "text-green-600"
+    : disc.status === "argues_against" ? "text-amber-600"
+    : "text-muted-foreground/40";
+  const dirArrow = disc.expectedDirection === "up" ? "\u2191" : "\u2193";
+  const actualArrow = disc.actualDirection === "up" ? "\u2191" : disc.actualDirection === "down" ? "\u2193" : "";
+
+  return (
+    <div className="flex items-start gap-1.5 text-xs">
+      <span className={`shrink-0 ${iconColor}`}>{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="text-foreground">{disc.endpoint}</span>
+        <span className="ml-1 text-muted-foreground">
+          expected {dirArrow}
+          {disc.status === "not_available"
+            ? " \u2014 not available"
+            : disc.status === "argues_against"
+              ? `, found ${actualArrow} (argues against)`
+              : `, found ${actualArrow}`}
+        </span>
+      </span>
+      <span className="shrink-0 text-[9px] text-muted-foreground">
+        {disc.weight === "strong" ? "STRONG" : "moderate"}
+      </span>
+    </div>
+  );
+}
+
+/** Histopathology context pane — specimen-by-specimen cross-reference */
+function HistopathContextPane({ crossRefs }: { crossRefs: HistopathCrossRef[] }) {
+  return (
+    <div className="space-y-3">
+      {crossRefs.map((ref) => (
+        <div key={ref.specimen}>
+          <div className="flex items-center gap-1.5 text-xs font-medium">
+            <span className="text-foreground">{ref.specimen}</span>
+            <span className="text-muted-foreground">
+              ({ref.examined ? "examined" : "not examined"})
+            </span>
+          </div>
+
+          {!ref.examined && (
+            <p className="ml-2 text-[10px] text-muted-foreground italic">Not examined in study</p>
+          )}
+
+          {ref.examined && (
+            <div className="ml-2 mt-1">
+              {ref.expectedFindings.length > 0 && (
+                <p className="text-[10px] text-muted-foreground">
+                  Expected: {ref.expectedFindings.join(", ").toLowerCase()}
+                </p>
+              )}
+              {ref.observedFindings.length > 0 && (
+                <div className="mt-0.5 space-y-0.5">
+                  {ref.observedFindings.filter(o => o.peakIncidence > 0).map((obs, i) => (
+                    <div key={i} className="text-[10px]">
+                      <span className={
+                        obs.relevance === "expected" ? "text-green-600"
+                        : obs.relevance === "unexpected" ? "text-amber-600"
+                        : "text-foreground/70"
+                      }>
+                        {obs.finding}
+                      </span>
+                      <span className="ml-1 text-muted-foreground">
+                        peak {Math.round(obs.peakIncidence * 100)}%, {obs.doseResponse}
+                      </span>
+                      {obs.proxy && (
+                        <span className="ml-1 text-[9px] text-muted-foreground italic">
+                          (proxy: {obs.proxy.relationship.split(".")[0].toLowerCase()})
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-1 text-[10px] font-medium">
+                <span className={
+                  ref.assessment === "supports" ? "text-green-600"
+                  : ref.assessment === "argues_against" ? "text-amber-600"
+                  : "text-muted-foreground"
+                }>
+                  Assessment: {ref.assessment.replace(/_/g, " ")}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Clinical observations pane (Phase C) */
+function ClinicalObservationsPane({ support }: { support: SyndromeInterpretation["clinicalObservationSupport"] }) {
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Assessment:</span>
+        <span className={`text-xs font-medium ${
+          support.assessment === "strengthens" ? "text-green-600"
+          : support.assessment === "weakens" ? "text-amber-600"
+          : "text-muted-foreground"
+        }`}>
+          {support.assessment}
+        </span>
+      </div>
+      {support.correlatingObservations.length > 0 ? (
+        <div className="space-y-0.5">
+          {support.correlatingObservations.map((obs, i) => (
+            <div key={i} className="flex items-center gap-1.5 text-xs">
+              <span className="shrink-0 text-green-600">{"\u2713"}</span>
+              <span className="text-foreground">{obs.observation}</span>
+              <span className="text-muted-foreground">
+                {obs.incidenceDoseDependent ? "dose-dependent" : ""}
+                {` (Tier ${obs.tier})`}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">No correlating clinical observations.</p>
+      )}
+    </div>
+  );
+}
+
+/** Recovery pane (Phase A, Component 3) */
+function RecoveryPane({ recovery }: { recovery: SyndromeInterpretation["recovery"] }) {
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Status:</span>
+        <span className={`rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium ${
+          recovery.status === "recovered" ? "text-green-600"
+          : recovery.status === "not_recovered" ? "text-amber-600"
+          : "text-gray-600"
+        }`}>
+          {recovery.status.replace(/_/g, " ")}
+        </span>
+      </div>
+      <p className="text-xs text-foreground/80">{recovery.summary}</p>
+      {recovery.endpoints.length > 0 && (
+        <div className="mt-2 space-y-0.5">
+          {recovery.endpoints.map((ep, i) => (
+            <div key={i} className="flex items-center gap-1.5 text-xs">
+              <span className="min-w-0 flex-1 truncate text-foreground">
+                {ep.label}{ep.sex !== "Both" && ` (${ep.sex})`}
+              </span>
+              <span className="shrink-0 text-muted-foreground">
+                terminal |d|={Math.abs(ep.terminalEffect).toFixed(2)}
+              </span>
+              {ep.recoveryEffect != null && (
+                <span className="shrink-0 text-muted-foreground">
+                  recovery |d|={Math.abs(ep.recoveryEffect).toFixed(2)}
+                </span>
+              )}
+              <span className={`shrink-0 text-[9px] font-medium ${
+                ep.status === "recovered" ? "text-green-600"
+                : ep.status === "not_recovered" ? "text-amber-600"
+                : "text-muted-foreground"
+              }`}>
+                {ep.status.replace(/_/g, " ")}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
