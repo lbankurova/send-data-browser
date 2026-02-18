@@ -203,9 +203,10 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   }, [rawData]);
 
   // Evidence Summary: term report
+  const syndromeSexes = detected?.sexes;
   const termReport = useMemo(
-    () => getSyndromeTermReport(syndromeId, allEndpoints),
-    [syndromeId, allEndpoints],
+    () => getSyndromeTermReport(syndromeId, allEndpoints, syndromeSexes),
+    [syndromeId, allEndpoints, syndromeSexes],
   );
 
   // Member endpoints — the detected syndrome's matched endpoints enriched with EndpointSummary data
@@ -683,7 +684,7 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
     return (
       <div className="flex items-center gap-1.5 text-xs">
         <span className="shrink-0 text-green-600">{"\u2713"}</span>
-        <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+        <span className="min-w-0 flex-1 truncate">{entry.label}{entry.sex && <span className="text-[9px] text-muted-foreground"> ({entry.sex})</span>}</span>
         <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
           {entry.domain}
         </span>
