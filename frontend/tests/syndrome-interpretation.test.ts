@@ -25,7 +25,8 @@ import type {
   StudyContext,
   SyndromeDiscriminators,
 } from "@/lib/syndrome-interpretation";
-import { assessTumorContext } from "@/lib/syndrome-interpretation";
+import { assessTumorContext, assessFoodConsumptionContext } from "@/lib/syndrome-interpretation";
+import type { FoodConsumptionSummaryResponse } from "@/lib/syndrome-interpretation";
 import type { StudyMortality, DeathRecord } from "@/types/mortality";
 import fixture from "./fixtures/pointcross-findings.json";
 
@@ -109,7 +110,7 @@ function interp(
     [], // organWeights
     overrides?.tumors ?? [], // tumors
     overrides?.mortality ?? [],
-    [], // food
+    { available: false, water_consumption: null }, // food
     overrides?.cl ?? [],
     overrides?.context ?? defaultContext,
     overrides?.mortalityNoaelCap,
@@ -683,5 +684,79 @@ describe("syndrome interpretation layer", () => {
     ];
     const result = assessTumorContext(xs01, tumors, histopath, defaultContext);
     expect(result.interpretation).toContain("2 malignant tumors");
+  });
+});
+
+// ─── Food Consumption Context ─────────────────────────────
+
+describe("food consumption context", () => {
+  const emptyFood: FoodConsumptionSummaryResponse = {
+    available: false,
+    water_consumption: null,
+  };
+
+  const primaryWeightLossFood: FoodConsumptionSummaryResponse = {
+    available: true,
+    study_route: "ORAL GAVAGE",
+    caloric_dilution_risk: false,
+    has_water_data: false,
+    periods: [{
+      start_day: 1,
+      end_day: 92,
+      days: 91,
+      by_dose_sex: [
+        { dose_level: 0, sex: "M", n: 10, mean_fw: 5.09, mean_bw_gain: 186.22, mean_food_efficiency: 0.4006, food_efficiency_sd: 0.0658, food_efficiency_control: 0.4006, food_efficiency_reduced: false, fe_p_value: null, fe_cohens_d: null, fw_pct_change: 0.0, bw_pct_change: 0.0 },
+        { dose_level: 3, sex: "M", n: 9, mean_fw: 4.84, mean_bw_gain: 86.0, mean_food_efficiency: 0.1953, food_efficiency_sd: 0.0477, food_efficiency_control: 0.4006, food_efficiency_reduced: true, fe_p_value: 0.000002, fe_cohens_d: -3.5712, fw_pct_change: -4.9, bw_pct_change: -53.8 },
+      ],
+    }],
+    overall_assessment: {
+      bw_decreased: true,
+      fw_decreased: false,
+      fe_reduced: true,
+      assessment: "primary_weight_loss",
+      temporal_onset: "unknown",
+      narrative: "Body weight decreased at high dose while food consumption was minimally affected. Food efficiency markedly reduced, indicating primary weight loss.",
+    },
+    water_consumption: null,
+    recovery: {
+      available: true,
+      fw_recovered: true,
+      bw_recovered: false,
+      interpretation: "Food consumption recovered but body weight remained depressed.",
+    },
+  };
+
+  // Get XS08 syndrome for BW-relevant testing
+  const xs08 = byId.get("XS08");
+
+  test("empty food data → available: false, not_applicable", () => {
+    const result = assessFoodConsumptionContext(xs01, emptyFood, defaultContext);
+    expect(result.available).toBe(false);
+    expect(result.bwFwAssessment).toBe("not_applicable");
+  });
+
+  test("primary weight loss scenario → correct assessment", () => {
+    // XS08 (stress response) is BW-relevant
+    if (!xs08) return;
+    const result = assessFoodConsumptionContext(xs08, primaryWeightLossFood, defaultContext);
+    expect(result.available).toBe(true);
+    expect(result.bwFwAssessment).toBe("primary_weight_loss");
+    expect(result.foodEfficiencyReduced).toBe(true);
+    expect(result.fwNarrative).toContain("weight");
+  });
+
+  test("non-BW syndrome (XS01) → not_applicable even with food data", () => {
+    const result = assessFoodConsumptionContext(xs01, primaryWeightLossFood, defaultContext);
+    expect(result.available).toBe(true);
+    expect(result.bwFwAssessment).toBe("not_applicable");
+  });
+
+  test("XS08 stress syndrome → properly receives assessment", () => {
+    if (!xs08) return;
+    const result = assessFoodConsumptionContext(xs08, primaryWeightLossFood, defaultContext);
+    expect(result.available).toBe(true);
+    // XS08 is in BW_RELEVANT_SYNDROMES set
+    expect(result.bwFwAssessment).not.toBe("not_applicable");
+    expect(result.fwNarrative.length).toBeGreaterThan(0);
   });
 });

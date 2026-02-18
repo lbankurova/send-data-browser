@@ -26,10 +26,11 @@ import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-sy
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { interpretSyndrome, mapDeathRecordsToDispositions } from "@/lib/syndrome-interpretation";
-import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding } from "@/lib/syndrome-interpretation";
+import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext } from "@/lib/syndrome-interpretation";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useTumorSummary } from "@/hooks/useTumorSummary";
+import { useFoodConsumptionSummary } from "@/hooks/useFoodConsumptionSummary";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import type { FindingsFilters, UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
@@ -258,6 +259,9 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   // Mortality data for interpretation layer
   const { data: mortalityRaw } = useStudyMortality(studyId);
 
+  // Food consumption data for interpretation layer
+  const { data: foodConsumptionSummary } = useFoodConsumptionSummary(studyId);
+
   // Tumor data for interpretation layer
   const { data: tumorSummary } = useTumorSummary(studyId);
   const tumorFindings = useMemo<TumorFinding[]>(() => {
@@ -294,12 +298,12 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       [], // organ weights
       tumorFindings,
       mortalityDispositions,
-      [], // food consumption
+      foodConsumptionSummary ?? { available: false, water_consumption: null },
       [], // clinical observations (not available yet)
       studyContext,
       mortalityRaw?.mortality_noael_cap,
     );
-  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings]);
+  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings, foodConsumptionSummary]);
 
   // Interpretation content
   const interpretation = SYNDROME_INTERPRETATIONS[syndromeId];
@@ -454,6 +458,17 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       {syndromeInterp && syndromeInterp.mortalityContext.treatmentRelatedDeaths > 0 && (
         <CollapsiblePane title="Mortality context" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <MortalityContextPane mortality={syndromeInterp.mortalityContext} />
+        </CollapsiblePane>
+      )}
+
+      {/* Pane: FOOD CONSUMPTION CONTEXT (Phase B) */}
+      {syndromeInterp && syndromeInterp.foodConsumptionContext.available &&
+        syndromeInterp.foodConsumptionContext.bwFwAssessment !== "not_applicable" && (
+        <CollapsiblePane title="Food consumption" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <FoodConsumptionPane
+            context={syndromeInterp.foodConsumptionContext}
+            rawData={foodConsumptionSummary}
+          />
         </CollapsiblePane>
       )}
 
@@ -1247,6 +1262,87 @@ function MortalityContextPane({ mortality }: { mortality: MortalityContext }) {
               )}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Food consumption context pane (Phase B) */
+function FoodConsumptionPane({
+  context,
+  rawData,
+}: {
+  context: FoodConsumptionContext;
+  rawData?: import("@/lib/syndrome-interpretation").FoodConsumptionSummaryResponse;
+}) {
+  // Find highest-dose entries with reduced FE for the mini summary
+  const reducedEntries = rawData?.periods?.flatMap((p) =>
+    p.by_dose_sex.filter((e) => e.food_efficiency_reduced)
+  ) ?? [];
+
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Assessment:</span>
+        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+          {context.bwFwAssessment.replace(/_/g, " ")}
+        </span>
+      </div>
+      <p className="text-xs leading-relaxed text-foreground/80">
+        {context.fwNarrative}
+      </p>
+
+      {/* Food efficiency by dose (mini summary) */}
+      {reducedEntries.length > 0 && (
+        <div className="mt-2">
+          <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Food efficiency by dose
+          </div>
+          <div className="mt-1 space-y-0.5">
+            {reducedEntries.map((e, i) => (
+              <div key={i} className="flex items-center gap-1.5 text-xs">
+                <span className="shrink-0 text-muted-foreground">
+                  Dose {e.dose_level} ({e.sex})
+                </span>
+                <span className="text-foreground">
+                  FE={e.mean_food_efficiency.toFixed(2)}
+                </span>
+                {e.food_efficiency_control != null && (
+                  <span className="text-muted-foreground">
+                    vs {e.food_efficiency_control.toFixed(2)} control
+                  </span>
+                )}
+                {e.fe_p_value != null && (
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    p={formatPValue(e.fe_p_value)}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recovery section */}
+      {rawData?.recovery?.available && (
+        <div className="mt-2">
+          <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Recovery
+          </div>
+          <div className="mt-1 flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">FW:</span>
+            <span className={rawData.recovery.fw_recovered ? "text-green-600" : "text-amber-600"}>
+              {rawData.recovery.fw_recovered ? "recovered" : "not recovered"}
+            </span>
+            <span className="text-muted-foreground">BW:</span>
+            <span className={rawData.recovery.bw_recovered ? "text-green-600" : "text-amber-600"}>
+              {rawData.recovery.bw_recovered ? "recovered" : "not recovered"}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            {rawData.recovery.interpretation}
+          </p>
         </div>
       )}
     </div>
