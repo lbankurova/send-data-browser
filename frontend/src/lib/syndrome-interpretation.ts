@@ -155,14 +155,47 @@ export interface AnimalDisposition {
   excludeFromTerminalStats: boolean;
 }
 
-export interface FoodConsumptionSummary {
-  doseGroup: number;
-  studyDay: number;
-  foodConsumption: number;
-  foodConsumptionVsControl: number;
-  foodEfficiencyRatio: number;
-  foodEfficiencyRatioVsControl: number;
-  significantVsControl: boolean;
+/** Backend-aligned food consumption summary response. */
+export interface FoodConsumptionSummaryResponse {
+  available: boolean;
+  study_route?: string | null;
+  caloric_dilution_risk?: boolean;
+  has_water_data?: boolean;
+  periods?: {
+    start_day: number;
+    end_day: number;
+    days: number;
+    by_dose_sex: {
+      dose_level: number;
+      sex: string;
+      n: number;
+      mean_fw: number;
+      mean_bw_gain: number;
+      mean_food_efficiency: number;
+      food_efficiency_sd: number | null;
+      food_efficiency_control: number | null;
+      food_efficiency_reduced: boolean | null;
+      fe_p_value: number | null;
+      fe_cohens_d: number | null;
+      fw_pct_change: number | null;
+      bw_pct_change: number | null;
+    }[];
+  }[];
+  overall_assessment?: {
+    bw_decreased: boolean;
+    fw_decreased: boolean;
+    fe_reduced: boolean;
+    assessment: string;
+    temporal_onset: string;
+    narrative: string;
+  };
+  water_consumption: null;
+  recovery?: {
+    available: boolean;
+    fw_recovered: boolean;
+    bw_recovered: boolean;
+    interpretation: string;
+  } | null;
 }
 
 export interface ClinicalObservation {
@@ -1791,6 +1824,78 @@ export function assessTumorContext(
   };
 }
 
+// ─── Food Consumption Context ──────────────────────────────
+
+/** BW-relevant syndromes that benefit from food consumption context. */
+const BW_RELEVANT_SYNDROMES = new Set(["XS07", "XS08", "XS09"]);
+
+/**
+ * Assess food consumption context for a syndrome.
+ * Returns food efficiency assessment if FW data is available and the syndrome
+ * involves body weight. Otherwise returns a "not_applicable" stub.
+ */
+export function assessFoodConsumptionContext(
+  syndrome: CrossDomainSyndrome,
+  foodData: FoodConsumptionSummaryResponse,
+  _studyContext: StudyContext,
+): FoodConsumptionContext {
+  if (!foodData.available) {
+    return {
+      available: false,
+      bwFwAssessment: "not_applicable",
+      foodEfficiencyReduced: null,
+      temporalOnset: null,
+      fwNarrative: "Food consumption data not available.",
+    };
+  }
+
+  // Check if this syndrome involves BW
+  const isBwRelevant =
+    BW_RELEVANT_SYNDROMES.has(syndrome.id) ||
+    syndrome.matchedEndpoints.some(
+      (ep) => ep.domain === "BW" || ep.domain === "FW",
+    );
+
+  if (!isBwRelevant) {
+    return {
+      available: true,
+      bwFwAssessment: "not_applicable",
+      foodEfficiencyReduced: null,
+      temporalOnset: null,
+      fwNarrative: "Food consumption data available but not relevant to this syndrome.",
+    };
+  }
+
+  // Pass through the backend's assessment
+  const overall = foodData.overall_assessment;
+  if (!overall) {
+    return {
+      available: true,
+      bwFwAssessment: "not_applicable",
+      foodEfficiencyReduced: null,
+      temporalOnset: null,
+      fwNarrative: "Food consumption data available but assessment not computed.",
+    };
+  }
+
+  return {
+    available: true,
+    bwFwAssessment: (overall.assessment === "primary_weight_loss"
+      || overall.assessment === "secondary_to_food"
+      || overall.assessment === "malabsorption")
+      ? overall.assessment as FoodConsumptionContext["bwFwAssessment"]
+      : "not_applicable",
+    foodEfficiencyReduced: overall.fe_reduced,
+    temporalOnset: (overall.temporal_onset === "bw_first"
+      || overall.temporal_onset === "fw_first"
+      || overall.temporal_onset === "simultaneous"
+      || overall.temporal_onset === "unknown")
+      ? overall.temporal_onset as FoodConsumptionContext["temporalOnset"]
+      : "unknown",
+    fwNarrative: overall.narrative,
+  };
+}
+
 // ─── Orchestrator ──────────────────────────────────────────
 
 /**
@@ -1805,7 +1910,7 @@ export function interpretSyndrome(
   _organWeightData: OrganWeightRow[],
   tumorData: TumorFinding[],
   mortalityData: AnimalDisposition[],
-  _foodConsumptionData: FoodConsumptionSummary[],
+  foodConsumptionData: FoodConsumptionSummaryResponse,
   clinicalObservations: ClinicalObservation[],
   studyContext: StudyContext,
   mortalityNoaelCap?: number | null,
@@ -1870,13 +1975,11 @@ export function interpretSyndrome(
     studyContext,
   );
 
-  const foodConsumptionContext: FoodConsumptionContext = {
-    available: false,
-    bwFwAssessment: "not_applicable",
-    foodEfficiencyReduced: null,
-    temporalOnset: null,
-    fwNarrative: "Food consumption data not available.",
-  };
+  const foodConsumptionContext = assessFoodConsumptionContext(
+    syndrome,
+    foodConsumptionData,
+    studyContext,
+  );
 
   const treatmentRelatedness: TreatmentRelatednessScore = {
     doseResponse:
@@ -1951,6 +2054,10 @@ export function interpretSyndrome(
 
   if (mortalityContext.treatmentRelatedDeaths > 0) {
     narrativeParts.push(mortalityContext.mortalityNarrative);
+  }
+
+  if (foodConsumptionContext.available && foodConsumptionContext.bwFwAssessment !== "not_applicable") {
+    narrativeParts.push(foodConsumptionContext.fwNarrative);
   }
 
   // ── Component 7: Study design notes ──

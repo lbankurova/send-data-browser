@@ -154,6 +154,14 @@ export function fetchTumorSummary(
   );
 }
 
+export function fetchFoodConsumptionSummary(
+  studyId: string,
+): Promise<import("@/lib/syndrome-interpretation").FoodConsumptionSummaryResponse> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/food-consumption-summary`,
+  );
+}
+
 export function fetchStaticChart(
   studyId: string,
   chartName: string
