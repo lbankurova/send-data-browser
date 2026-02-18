@@ -1,8 +1,8 @@
 [
   {
     "organ_system": "general",
-    "evidence_score": 1.197,
-    "n_endpoints": 60,
+    "evidence_score": 1.219,
+    "n_endpoints": 59,
     "n_domains": 7,
     "domains": [
       "BW",

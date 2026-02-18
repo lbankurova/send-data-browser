@@ -272,7 +272,11 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
     return rows
 
 
-def build_noael_summary(findings: list[dict], dose_groups: list[dict]) -> list[dict]:
+def build_noael_summary(
+    findings: list[dict],
+    dose_groups: list[dict],
+    mortality: dict | None = None,
+) -> list[dict]:
     """Build NOAEL summary: 3 rows (M, F, combined)."""
     rows = []
     dose_label_map = {dg["dose_level"]: dg["label"] for dg in dose_groups}
@@ -340,6 +344,19 @@ def build_noael_summary(findings: list[dict], dose_groups: list[dict]) -> list[d
             noael_derivation["confidence_penalties"].append("single_endpoint")
         # Note: sex consistency penalty checked in _compute_noael_confidence
 
+        # Mortality cap: if mortality LOAEL exists and NOAEL >= it, cap down
+        mortality_cap_applied = False
+        mortality_cap_dose_value = None
+        if mortality is not None and mortality.get("mortality_loael") is not None:
+            mort_loael = mortality["mortality_loael"]
+            if noael_level is not None and noael_level >= mort_loael:
+                # Cap NOAEL to one level below mortality LOAEL
+                capped_level = mort_loael - 1
+                if capped_level >= 0 and capped_level < noael_level:
+                    noael_level = capped_level
+                    mortality_cap_applied = True
+                    mortality_cap_dose_value = dose_value_map.get(capped_level)
+
         rows.append({
             "sex": sex_filter,
             "noael_dose_level": noael_level,
@@ -352,6 +369,8 @@ def build_noael_summary(findings: list[dict], dose_groups: list[dict]) -> list[d
             "adverse_domains_at_loael": sorted(adverse_domains),
             "noael_confidence": confidence,
             "noael_derivation": noael_derivation,
+            "mortality_cap_applied": mortality_cap_applied,
+            "mortality_cap_dose_value": mortality_cap_dose_value,
         })
 
     return rows

@@ -12,6 +12,7 @@ import type {
   ProvenanceMessage,
   FindingDoseTrend,
 } from "@/types/analysis-views";
+import type { StudyMortality } from "@/types/mortality";
 
 const API_BASE = "/api";
 
@@ -98,6 +99,14 @@ export function fetchFindingDoseTrends(
 ): Promise<FindingDoseTrend[]> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/finding-dose-trends`
+  );
+}
+
+export function fetchStudyMortality(
+  studyId: string,
+): Promise<StudyMortality> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/study-mortality`,
   );
 }
 

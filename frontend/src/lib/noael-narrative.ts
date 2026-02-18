@@ -1,4 +1,5 @@
 import type { NoaelSummaryRow, AdverseEffectSummaryRow } from "@/types/analysis-views";
+import type { StudyMortality } from "@/types/mortality";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
 
 /** Structured NOAEL narrative for display in banner and context panel. */
@@ -15,6 +16,7 @@ export interface NoaelNarrative {
     p_value: number | null;
   }[];
   noael_basis: "adverse_findings" | "control_noael" | "not_established";
+  mortality_context: string | null;
 }
 
 /**
@@ -23,11 +25,13 @@ export interface NoaelNarrative {
  * @param noaelRow - The NOAEL summary row for the target sex
  * @param aeData - All adverse effect summary rows (will be filtered to LOAEL dose)
  * @param sex - Which sex to generate for ("Combined", "M", or "F")
+ * @param mortality - Optional study mortality summary for mortality context sentence
  */
 export function generateNoaelNarrative(
   noaelRow: NoaelSummaryRow,
   aeData: AdverseEffectSummaryRow[],
   sex: "Combined" | "M" | "F",
+  mortality?: StudyMortality,
 ): NoaelNarrative {
   const loaelDoseLevel = noaelRow.loael_dose_level;
 
@@ -117,10 +121,27 @@ export function generateNoaelNarrative(
       break;
   }
 
+  // Build mortality context sentence
+  let mortality_context: string | null = null;
+  if (mortality?.has_mortality) {
+    const mainDeaths = mortality.deaths.filter((d) => !d.is_recovery);
+    const causes = [...new Set(mainDeaths.map((d) => d.cause).filter(Boolean))];
+    const causePhrase = causes.length > 0 ? ` (${causes.join(", ")})` : "";
+    const accPhrase =
+      mortality.total_accidental > 0
+        ? ` ${mortality.total_accidental} accidental death${mortality.total_accidental > 1 ? "s" : ""} excluded from analysis.`
+        : "";
+    mortality_context =
+      `${mortality.total_deaths} treatment-related death${mortality.total_deaths !== 1 ? "s" : ""}${causePhrase}` +
+      ` observed${mortality.mortality_loael_label ? ` at ${formatDoseShortLabel(mortality.mortality_loael_label)}` : ""}.` +
+      accPhrase;
+  }
+
   return {
     summary,
     loael_findings: findingNames,
     loael_details: details,
     noael_basis: basis,
+    mortality_context,
   };
 }

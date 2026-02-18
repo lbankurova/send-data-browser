@@ -40,7 +40,9 @@
       "n_adverse_at_loael": 3,
       "confidence": 0.8,
       "confidence_penalties": []
-    }
+    },
+    "mortality_cap_applied": false,
+    "mortality_cap_dose_value": null
   },
   {
     "sex": "F",
@@ -102,7 +104,9 @@
       "n_adverse_at_loael": 6,
       "confidence": 0.8,
       "confidence_penalties": []
-    }
+    },
+    "mortality_cap_applied": false,
+    "mortality_cap_dose_value": null
   },
   {
     "sex": "Combined",
@@ -182,6 +186,8 @@
       "n_adverse_at_loael": 9,
       "confidence": 0.8,
       "confidence_penalties": []
-    }
+    },
+    "mortality_cap_applied": false,
+    "mortality_cap_dose_value": null
   }
 ]

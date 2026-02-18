@@ -15795,11 +15795,11 @@
     "severity": "info",
     "context_key": "organ_general",
     "organ_system": "general",
-    "output_text": "60 endpoints across BW, CL, DS, FW, MA, MI, OM.",
+    "output_text": "59 endpoints across BW, CL, DS, FW, MA, MI, OM.",
     "evidence_refs": [],
     "params": {
       "organ_system": "general",
-      "n_endpoints": 60,
+      "n_endpoints": 59,
       "n_domains": 7,
       "domains": [
         "BW",
@@ -16441,26 +16441,13 @@
     "rule_id": "R17",
     "scope": "study",
     "severity": "critical",
-    "context_key": "study_F",
-    "organ_system": "",
-    "output_text": "55 deaths in F, dose-dependent pattern.",
-    "evidence_refs": [],
-    "params": {
-      "sex": "F",
-      "count": 55
-    }
-  },
-  {
-    "rule_id": "R17",
-    "scope": "study",
-    "severity": "critical",
     "context_key": "study_M",
     "organ_system": "",
-    "output_text": "55 deaths in M, dose-dependent pattern.",
+    "output_text": "2 deaths in M, dose-dependent pattern.",
     "evidence_refs": [],
     "params": {
       "sex": "M",
-      "count": 55
+      "count": 2
     }
   }
 ]

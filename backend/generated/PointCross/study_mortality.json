@@ -1,0 +1,88 @@
+{
+  "has_mortality": true,
+  "total_deaths": 1,
+  "total_accidental": 1,
+  "mortality_loael": 3,
+  "mortality_loael_label": "Group 4,200 mg/kg PCDRUG",
+  "mortality_noael_cap": 200.0,
+  "severity_tier": "S0_Death",
+  "deaths": [
+    {
+      "USUBJID": "PC201708-4003",
+      "sex": "M",
+      "dose_level": 3,
+      "is_recovery": false,
+      "disposition": "MORIBUND SACRIFICE",
+      "cause": "HEPATOCELLULAR CARCINOMA",
+      "relatedness": "UNDETERMINED",
+      "study_day": 90,
+      "dose_label": "Group 4,200 mg/kg PCDRUG"
+    },
+    {
+      "USUBJID": "PC201708-4113",
+      "sex": "F",
+      "dose_level": 3,
+      "is_recovery": true,
+      "disposition": "MORIBUND SACRIFICE",
+      "cause": "HEPATOCELLULAR CARCINOMA",
+      "relatedness": "UNDETERMINED",
+      "study_day": 100,
+      "dose_label": "Group 4,200 mg/kg PCDRUG"
+    }
+  ],
+  "accidentals": [
+    {
+      "USUBJID": "PC201708-1001",
+      "sex": "M",
+      "dose_level": 0,
+      "is_recovery": false,
+      "disposition": "MORIBUND SACRIFICE",
+      "cause": "GAVAGE ERROR",
+      "relatedness": "ACCIDENTAL",
+      "study_day": 30,
+      "dose_label": "Group 1, Control"
+    }
+  ],
+  "by_dose": [
+    {
+      "dose_level": 0,
+      "dose_label": "Group 1, Control",
+      "dose_value": 0.0,
+      "deaths": 0,
+      "accidental": 1,
+      "subjects": [],
+      "accidental_subjects": [
+        "PC201708-1001"
+      ]
+    },
+    {
+      "dose_level": 1,
+      "dose_label": "Group 2,2 mg/kg PCDRUG",
+      "dose_value": 2.0,
+      "deaths": 0,
+      "accidental": 0,
+      "subjects": [],
+      "accidental_subjects": []
+    },
+    {
+      "dose_level": 2,
+      "dose_label": "Group 3,20 mg/kg PCDRUG",
+      "dose_value": 20.0,
+      "deaths": 0,
+      "accidental": 0,
+      "subjects": [],
+      "accidental_subjects": []
+    },
+    {
+      "dose_level": 3,
+      "dose_label": "Group 4,200 mg/kg PCDRUG",
+      "dose_value": 200.0,
+      "deaths": 1,
+      "accidental": 0,
+      "subjects": [
+        "PC201708-4003"
+      ],
+      "accidental_subjects": []
+    }
+  ]
+}
