@@ -2,39 +2,39 @@ import { describe, test, expect } from "vitest";
 import { resolveCanonical } from "@/lib/lab-clinical-catalog";
 import fixture from "./fixtures/pointcross-findings.json";
 
-describe("resolveCanonical", () => {
-  // ── Positive matches ──
+// ── Known canonical mappings (function behavior, not study-specific) ──
 
-  test("Alanine Aminotransferase → ALT", () => {
-    expect(resolveCanonical("Alanine Aminotransferase")).toBe("ALT");
-  });
+const KNOWN_MAPPINGS: Record<string, string> = {
+  "Alanine Aminotransferase": "ALT",
+  "Aspartate Aminotransferase": "AST",
+  "Alkaline Phosphatase": "ALP",
+  "Neutrophils": "NEUT",
+  "Hemoglobin": "HGB",
+  "Hematocrit": "HCT",
+  "Erythrocytes": "RBC",
+  "Reticulocytes": "RETIC",
+  "Platelets": "PLAT",
+  "Bilirubin": "TBILI",
+  "Creatinine": "CREAT",
+  "Glucose": "GLUC",
+  "Cholesterol": "CHOL",
+  "Potassium": "K",
+  "Albumin": "ALB",
+  "Globulin": "GLOBUL",
+  "Activated Partial Thromboplastin Time": "APTT",
+};
 
-  test("Aspartate Aminotransferase → AST", () => {
-    expect(resolveCanonical("Aspartate Aminotransferase")).toBe("AST");
-  });
+describe("resolveCanonical — mapping correctness", () => {
+  // Pure function tests: these verify the mapping dictionary, not study data
+  for (const [label, expected] of Object.entries(KNOWN_MAPPINGS)) {
+    test(`"${label}" → ${expected}`, () => {
+      expect(resolveCanonical(label)).toBe(expected);
+    });
+  }
+});
 
-  test("Neutrophils → NEUT", () => {
-    expect(resolveCanonical("Neutrophils")).toBe("NEUT");
-  });
-
-  test("Alkaline Phosphatase → ALP", () => {
-    expect(resolveCanonical("Alkaline Phosphatase")).toBe("ALP");
-  });
-
-  test("Hemoglobin → HGB", () => {
-    expect(resolveCanonical("Hemoglobin")).toBe("HGB");
-  });
-
-  test("Reticulocytes → RETIC", () => {
-    expect(resolveCanonical("Reticulocytes")).toBe("RETIC");
-  });
-
-  test("Activated Partial Thromboplastin Time → APTT", () => {
-    expect(resolveCanonical("Activated Partial Thromboplastin Time")).toBe("APTT");
-  });
-
-  // ── Negative matches ──
-
+describe("resolveCanonical — false positive guards", () => {
+  // Substring containment must not cause false matches
   test("PANCREAS — INFLAMMATION must not resolve to NEUT", () => {
     expect(resolveCanonical("PANCREAS \u2014 INFLAMMATION")).not.toBe("NEUT");
   });
@@ -46,45 +46,21 @@ describe("resolveCanonical", () => {
   test("Activated Partial Thromboplastin Time must not resolve to AST", () => {
     expect(resolveCanonical("Activated Partial Thromboplastin Time")).not.toBe("AST");
   });
+});
 
-  // ── Exhaustive: known expected mappings ──
+describe("resolveCanonical — collision check against fixture", () => {
+  const rows = fixture as { endpoint_label: string }[];
+  const labels = [...new Set(rows.map((r) => r.endpoint_label))];
 
-  test("every expected canonical resolves correctly from PointCross labels", () => {
-    const rows = fixture as { endpoint_label: string }[];
-    const labels = [...new Set(rows.map((r) => r.endpoint_label))];
-
-    const expected: Record<string, string | null> = {
-      "Alanine Aminotransferase": "ALT",
-      "Aspartate Aminotransferase": "AST",
-      "Alkaline Phosphatase": "ALP",
-      "Neutrophils": "NEUT",
-      "Hemoglobin": "HGB",
-      "Hematocrit": "HCT",
-      "Erythrocytes": "RBC",
-      "Reticulocytes": "RETIC",
-      "Platelets": "PLAT",
-      "Bilirubin": "TBILI",
-      "Creatinine": "CREAT",
-      "Glucose": "GLUC",
-      "Cholesterol": "CHOL",
-      "Potassium": "K",
-      "Albumin": "ALB",
-      "Globulin": "GLOBUL",
-    };
-
-    for (const [label, expectedCanonical] of Object.entries(expected)) {
+  test("known mappings resolve correctly for any labels present in the fixture", () => {
+    for (const [label, expected] of Object.entries(KNOWN_MAPPINGS)) {
       if (labels.includes(label)) {
-        expect(resolveCanonical(label)).toBe(expectedCanonical);
+        expect(resolveCanonical(label)).toBe(expected);
       }
     }
   });
 
-  // ── Collision check ──
-
-  test("no false canonical sharing in PointCross dataset", () => {
-    const rows = fixture as { endpoint_label: string }[];
-    const labels = [...new Set(rows.map((r) => r.endpoint_label))];
-
+  test("no canonical code is shared by more than 2 endpoint labels", () => {
     const canonicalToLabels = new Map<string, string[]>();
     for (const label of labels) {
       const canonical = resolveCanonical(label);
@@ -94,10 +70,11 @@ describe("resolveCanonical", () => {
       }
     }
 
-    // Flag unexpected collisions — same canonical from unrelated labels
-    for (const [, matchedLabels] of canonicalToLabels) {
-      // More than 2 labels for same canonical is suspicious
-      expect(matchedLabels.length).toBeLessThanOrEqual(2);
+    for (const [canonical, matchedLabels] of canonicalToLabels) {
+      expect(
+        matchedLabels.length,
+        `Canonical "${canonical}" matched by ${matchedLabels.length} labels: ${matchedLabels.join(", ")}`,
+      ).toBeLessThanOrEqual(2);
     }
   });
 });
