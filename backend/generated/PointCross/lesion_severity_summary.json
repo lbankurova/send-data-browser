@@ -46456,6 +46456,598 @@
     "n_excluded": 2
   },
   {
+    "endpoint_label": "LIVER \u2014 ADENOMA, HEPATOCELLULAR, BENIGN",
+    "specimen": "LIVER",
+    "finding": "ADENOMA, HEPATOCELLULAR, BENIGN",
+    "domain": "TF",
+    "dose_level": 0,
+    "dose_label": "Group 1, Control",
+    "sex": "M",
+    "n": 10,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal",
+    "scheduled_group_stats": [
+      {
+        "dose_level": 0,
+        "n": 9,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 1,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 2,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 3,
+        "n": 14,
+        "affected": 2,
+        "incidence": 0.1429
+      }
+    ],
+    "scheduled_pairwise": [
+      {
+        "dose_level": 1,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 2,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 3,
+        "p_value": 0.5019762845849801,
+        "p_value_adj": 0.5019762845849801,
+        "odds_ratio": null,
+        "risk_ratio": null
+      }
+    ],
+    "scheduled_direction": "up",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "LIVER \u2014 ADENOMA, HEPATOCELLULAR, BENIGN",
+    "specimen": "LIVER",
+    "finding": "ADENOMA, HEPATOCELLULAR, BENIGN",
+    "domain": "TF",
+    "dose_level": 1,
+    "dose_label": "Group 2,2 mg/kg PCDRUG",
+    "sex": "M",
+    "n": 15,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal",
+    "scheduled_group_stats": [
+      {
+        "dose_level": 0,
+        "n": 9,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 1,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 2,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 3,
+        "n": 14,
+        "affected": 2,
+        "incidence": 0.1429
+      }
+    ],
+    "scheduled_pairwise": [
+      {
+        "dose_level": 1,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 2,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 3,
+        "p_value": 0.5019762845849801,
+        "p_value_adj": 0.5019762845849801,
+        "odds_ratio": null,
+        "risk_ratio": null
+      }
+    ],
+    "scheduled_direction": "up",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "LIVER \u2014 ADENOMA, HEPATOCELLULAR, BENIGN",
+    "specimen": "LIVER",
+    "finding": "ADENOMA, HEPATOCELLULAR, BENIGN",
+    "domain": "TF",
+    "dose_level": 2,
+    "dose_label": "Group 3,20 mg/kg PCDRUG",
+    "sex": "M",
+    "n": 15,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal",
+    "scheduled_group_stats": [
+      {
+        "dose_level": 0,
+        "n": 9,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 1,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 2,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 3,
+        "n": 14,
+        "affected": 2,
+        "incidence": 0.1429
+      }
+    ],
+    "scheduled_pairwise": [
+      {
+        "dose_level": 1,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 2,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 3,
+        "p_value": 0.5019762845849801,
+        "p_value_adj": 0.5019762845849801,
+        "odds_ratio": null,
+        "risk_ratio": null
+      }
+    ],
+    "scheduled_direction": "up",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "LIVER \u2014 ADENOMA, HEPATOCELLULAR, BENIGN",
+    "specimen": "LIVER",
+    "finding": "ADENOMA, HEPATOCELLULAR, BENIGN",
+    "domain": "TF",
+    "dose_level": 3,
+    "dose_label": "Group 4,200 mg/kg PCDRUG",
+    "sex": "M",
+    "n": 15,
+    "affected": 2,
+    "incidence": 0.1333,
+    "avg_severity": null,
+    "severity_status": "present_ungraded",
+    "severity": "normal",
+    "scheduled_group_stats": [
+      {
+        "dose_level": 0,
+        "n": 9,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 1,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 2,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 3,
+        "n": 14,
+        "affected": 2,
+        "incidence": 0.1429
+      }
+    ],
+    "scheduled_pairwise": [
+      {
+        "dose_level": 1,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 2,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 3,
+        "p_value": 0.5019762845849801,
+        "p_value_adj": 0.5019762845849801,
+        "odds_ratio": null,
+        "risk_ratio": null
+      }
+    ],
+    "scheduled_direction": "up",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "LIVER \u2014 CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+    "specimen": "LIVER",
+    "finding": "CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+    "domain": "TF",
+    "dose_level": 0,
+    "dose_label": "Group 1, Control",
+    "sex": "M",
+    "n": 10,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "LIVER \u2014 CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+    "specimen": "LIVER",
+    "finding": "CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+    "domain": "TF",
+    "dose_level": 1,
+    "dose_label": "Group 2,2 mg/kg PCDRUG",
+    "sex": "M",
+    "n": 15,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "LIVER \u2014 CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+    "specimen": "LIVER",
+    "finding": "CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+    "domain": "TF",
+    "dose_level": 2,
+    "dose_label": "Group 3,20 mg/kg PCDRUG",
+    "sex": "M",
+    "n": 15,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "LIVER \u2014 CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+    "specimen": "LIVER",
+    "finding": "CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+    "domain": "TF",
+    "dose_level": 3,
+    "dose_label": "Group 4,200 mg/kg PCDRUG",
+    "sex": "M",
+    "n": 15,
+    "affected": 1,
+    "incidence": 0.0667,
+    "avg_severity": null,
+    "severity_status": "present_ungraded",
+    "severity": "normal",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "UTERUS \u2014 LEIOMYOMA, BENIGN",
+    "specimen": "UTERUS",
+    "finding": "LEIOMYOMA, BENIGN",
+    "domain": "TF",
+    "dose_level": 0,
+    "dose_label": "Group 1, Control",
+    "sex": "F",
+    "n": 10,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal",
+    "scheduled_group_stats": [
+      {
+        "dose_level": 0,
+        "n": 10,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 1,
+        "n": 15,
+        "affected": 1,
+        "incidence": 0.0667
+      },
+      {
+        "dose_level": 2,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 3,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      }
+    ],
+    "scheduled_pairwise": [
+      {
+        "dose_level": 1,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 2,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 3,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      }
+    ],
+    "scheduled_direction": "none",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "UTERUS \u2014 LEIOMYOMA, BENIGN",
+    "specimen": "UTERUS",
+    "finding": "LEIOMYOMA, BENIGN",
+    "domain": "TF",
+    "dose_level": 1,
+    "dose_label": "Group 2,2 mg/kg PCDRUG",
+    "sex": "F",
+    "n": 15,
+    "affected": 1,
+    "incidence": 0.0667,
+    "avg_severity": null,
+    "severity_status": "present_ungraded",
+    "severity": "normal",
+    "scheduled_group_stats": [
+      {
+        "dose_level": 0,
+        "n": 10,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 1,
+        "n": 15,
+        "affected": 1,
+        "incidence": 0.0667
+      },
+      {
+        "dose_level": 2,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 3,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      }
+    ],
+    "scheduled_pairwise": [
+      {
+        "dose_level": 1,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 2,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 3,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      }
+    ],
+    "scheduled_direction": "none",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "UTERUS \u2014 LEIOMYOMA, BENIGN",
+    "specimen": "UTERUS",
+    "finding": "LEIOMYOMA, BENIGN",
+    "domain": "TF",
+    "dose_level": 2,
+    "dose_label": "Group 3,20 mg/kg PCDRUG",
+    "sex": "F",
+    "n": 15,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal",
+    "scheduled_group_stats": [
+      {
+        "dose_level": 0,
+        "n": 10,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 1,
+        "n": 15,
+        "affected": 1,
+        "incidence": 0.0667
+      },
+      {
+        "dose_level": 2,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 3,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      }
+    ],
+    "scheduled_pairwise": [
+      {
+        "dose_level": 1,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 2,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 3,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      }
+    ],
+    "scheduled_direction": "none",
+    "n_excluded": 2
+  },
+  {
+    "endpoint_label": "UTERUS \u2014 LEIOMYOMA, BENIGN",
+    "specimen": "UTERUS",
+    "finding": "LEIOMYOMA, BENIGN",
+    "domain": "TF",
+    "dose_level": 3,
+    "dose_label": "Group 4,200 mg/kg PCDRUG",
+    "sex": "F",
+    "n": 15,
+    "affected": 0,
+    "incidence": 0.0,
+    "avg_severity": null,
+    "severity_status": "absent",
+    "severity": "normal",
+    "scheduled_group_stats": [
+      {
+        "dose_level": 0,
+        "n": 10,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 1,
+        "n": 15,
+        "affected": 1,
+        "incidence": 0.0667
+      },
+      {
+        "dose_level": 2,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      },
+      {
+        "dose_level": 3,
+        "n": 15,
+        "affected": 0,
+        "incidence": 0.0
+      }
+    ],
+    "scheduled_pairwise": [
+      {
+        "dose_level": 1,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 2,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      },
+      {
+        "dose_level": 3,
+        "p_value": 1.0,
+        "p_value_adj": 1.0,
+        "odds_ratio": null,
+        "risk_ratio": null
+      }
+    ],
+    "scheduled_direction": "none",
+    "n_excluded": 2
+  },
+  {
     "endpoint_label": "ALOPECIA",
     "specimen": null,
     "finding": "ALOPECIA",

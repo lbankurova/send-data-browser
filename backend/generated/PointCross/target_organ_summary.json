@@ -67,14 +67,15 @@
   },
   {
     "organ_system": "hepatic",
-    "evidence_score": 0.493,
-    "n_endpoints": 37,
-    "n_domains": 4,
+    "evidence_score": 0.531,
+    "n_endpoints": 39,
+    "n_domains": 5,
     "domains": [
       "LB",
       "MA",
       "MI",
-      "OM"
+      "OM",
+      "TF"
     ],
     "max_signal_score": 0.86,
     "n_significant": 10,
@@ -172,13 +173,14 @@
   },
   {
     "organ_system": "reproductive",
-    "evidence_score": 0.185,
-    "n_endpoints": 13,
-    "n_domains": 3,
+    "evidence_score": 0.198,
+    "n_endpoints": 14,
+    "n_domains": 4,
     "domains": [
       "MA",
       "MI",
-      "OM"
+      "OM",
+      "TF"
     ],
     "max_signal_score": 0.554,
     "n_significant": 1,

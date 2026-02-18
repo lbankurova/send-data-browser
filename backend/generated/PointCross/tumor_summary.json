@@ -1,0 +1,235 @@
+{
+  "has_tumors": true,
+  "total_tumor_animals": 5,
+  "total_tumor_types": 3,
+  "summaries": [
+    {
+      "organ": "LIVER",
+      "morphology": "ADENOMA, HEPATOCELLULAR, BENIGN",
+      "behavior": "BENIGN",
+      "cell_type": "hepatocellular",
+      "sex": "M",
+      "count": 2,
+      "by_dose": [
+        {
+          "dose_level": 0,
+          "n": 10,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 1,
+          "n": 15,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 2,
+          "n": 15,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 3,
+          "n": 15,
+          "affected": 2,
+          "incidence": 0.1333
+        }
+      ],
+      "trend_p": 0.06583524760876891
+    },
+    {
+      "organ": "LIVER",
+      "morphology": "CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+      "behavior": "MALIGNANT",
+      "cell_type": "hepatocellular",
+      "sex": "M",
+      "count": 1,
+      "by_dose": [
+        {
+          "dose_level": 0,
+          "n": 10,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 1,
+          "n": 15,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 2,
+          "n": 15,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 3,
+          "n": 15,
+          "affected": 1,
+          "incidence": 0.0667
+        }
+      ],
+      "trend_p": 0.19751855128761941
+    },
+    {
+      "organ": "UTERUS",
+      "morphology": "LEIOMYOMA, BENIGN",
+      "behavior": "BENIGN",
+      "cell_type": "smooth_muscle",
+      "sex": "F",
+      "count": 1,
+      "by_dose": [
+        {
+          "dose_level": 0,
+          "n": 10,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 1,
+          "n": 15,
+          "affected": 1,
+          "incidence": 0.0667
+        },
+        {
+          "dose_level": 2,
+          "n": 15,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 3,
+          "n": 15,
+          "affected": 0,
+          "incidence": 0.0
+        }
+      ],
+      "trend_p": 0.5475924666383167
+    }
+  ],
+  "combined_analyses": [
+    {
+      "organ": "LIVER",
+      "cell_type": "hepatocellular",
+      "sex": "M",
+      "adenoma_count": 2,
+      "carcinoma_count": 1,
+      "combined_by_dose": [
+        {
+          "dose_level": 0,
+          "n": 10,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 1,
+          "n": 15,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 2,
+          "n": 15,
+          "affected": 0,
+          "incidence": 0.0
+        },
+        {
+          "dose_level": 3,
+          "n": 15,
+          "affected": 3,
+          "incidence": 0.2
+        }
+      ],
+      "combined_trend_p": 0.022934030391992044
+    }
+  ],
+  "progression_sequences": [
+    {
+      "organ": "LIVER",
+      "cell_type": "hepatocellular",
+      "stages": [
+        "necrosis",
+        "regeneration",
+        "hypertrophy",
+        "hyperplasia",
+        "altered_hepatocellular_foci",
+        "adenoma",
+        "carcinoma"
+      ],
+      "stages_present": [
+        "necrosis",
+        "hypertrophy",
+        "adenoma",
+        "carcinoma"
+      ],
+      "complete": false,
+      "mi_precursors": [
+        {
+          "finding": "HYPERTROPHY",
+          "stages_matched": [
+            "hypertrophy"
+          ],
+          "specimen": "LIVER"
+        },
+        {
+          "finding": "HYPERTROPHY",
+          "stages_matched": [
+            "hypertrophy"
+          ],
+          "specimen": "LIVER"
+        },
+        {
+          "finding": "NECROSIS",
+          "stages_matched": [
+            "necrosis"
+          ],
+          "specimen": "LIVER"
+        },
+        {
+          "finding": "NECROSIS",
+          "stages_matched": [
+            "necrosis"
+          ],
+          "specimen": "LIVER"
+        }
+      ],
+      "has_mi_precursor": true,
+      "has_tf_tumor": true
+    },
+    {
+      "organ": "UTERUS",
+      "cell_type": "smooth_muscle",
+      "stages": [
+        "hyperplasia",
+        "leiomyoma",
+        "leiomyosarcoma"
+      ],
+      "stages_present": [
+        "leiomyoma"
+      ],
+      "complete": false,
+      "mi_precursors": [],
+      "has_mi_precursor": false,
+      "has_tf_tumor": true
+    }
+  ],
+  "palpable_masses": [
+    {
+      "animal_id": "PC201708-3111",
+      "location": "Left hindlimb",
+      "finding": "11x22mm"
+    },
+    {
+      "animal_id": "PC201708-4005",
+      "location": "Top of head",
+      "finding": "RED, 5x6mm"
+    },
+    {
+      "animal_id": "PC201708-4108",
+      "location": "Right abdomen",
+      "finding": "13x20mm"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Info } from "lucide-react";
 import { useFindings } from "@/hooks/useFindings";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
+import { useTumorSummary } from "@/hooks/useTumorSummary";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useSelection } from "@/contexts/SelectionContext";
@@ -96,6 +97,9 @@ export function FindingsView() {
 
   // Mortality data
   const { data: mortalityData } = useStudyMortality(studyId);
+
+  // Tumor summary for StudyBanner
+  const { data: tumorSummary } = useTumorSummary(studyId);
 
   // Study context for StudyBanner
   const { data: studyContext } = useStudyContext(studyId);
@@ -412,7 +416,7 @@ export function FindingsView() {
     <FindingsAnalyticsProvider value={analyticsValue}>
     <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
       {/* Study context banner */}
-      {studyContext && <StudyBanner studyContext={studyContext} doseGroupCount={doseGroupCount} />}
+      {studyContext && <StudyBanner studyContext={studyContext} doseGroupCount={doseGroupCount} tumorCount={tumorSummary?.total_tumor_animals} />}
       {/* Mortality banner */}
       {mortalityData && <MortalityBanner mortality={mortalityData} />}
       {/* Header */}
