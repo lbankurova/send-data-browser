@@ -36,6 +36,9 @@ def get_organ_system(specimen: str | None, test_code: str | None = None,
         "DS": "general",
         "TF": "general",
         "PM": "general",
+        "EG": "cardiovascular",
+        "VS": "cardiovascular",
+        "BG": "general",
     }
     if domain:
         return domain_defaults.get(domain, "general")
