@@ -17,8 +17,6 @@ export interface ScatterSelectedPoint {
 
 interface FindingsQuadrantScatterProps {
   endpoints: EndpointSummary[];
-  /** Total endpoint count before scatter exclusions (for N/M display). */
-  totalEndpoints: number;
   selectedEndpoint: string | null;
   onSelect: (label: string) => void;
   onExclude?: (label: string) => void;
@@ -31,7 +29,6 @@ interface FindingsQuadrantScatterProps {
 
 export function FindingsQuadrantScatter({
   endpoints,
-  totalEndpoints,
   selectedEndpoint,
   onSelect,
   onExclude,
@@ -161,21 +158,10 @@ export function FindingsQuadrantScatter({
     );
   }
 
-  // Count label: "53/60 endpoints" when some are unplottable, "60 endpoints" otherwise
-  const gap = totalEndpoints - points.length;
-  const countLabel = gap > 0
-    ? `${points.length}/${totalEndpoints} endpoints`
-    : `${points.length} endpoints`;
-  const tooltipLines = [
-    "Click to select \u00b7 Ctrl+click to exclude",
-    ...(gap > 0 ? [`${gap} endpoint${gap > 1 ? "s" : ""} not plotted (missing effect size or p-value)`] : []),
-  ];
-  const countTooltip = tooltipLines.join("\n");
-
   return (
     <div className="flex h-full flex-col">
-      {/* Header: legend left, finding count right */}
-      <div className="flex items-center justify-between px-2 py-0.5">
+      {/* Header: legend only */}
+      <div className="flex items-center px-2 py-0.5">
         <div className="flex items-center gap-2">
           {legendEntries.map((e, i) => (
             <span key={i} className="flex items-center gap-0.5 text-[8px] text-muted-foreground">
@@ -183,9 +169,6 @@ export function FindingsQuadrantScatter({
             </span>
           ))}
         </div>
-        <span className="text-[10px] text-muted-foreground" title={countTooltip}>
-          {countLabel}
-        </span>
       </div>
       {/* Chart */}
       <EChartsWrapper

@@ -1,6 +1,6 @@
 /**
  * Cross-Domain Syndrome Detection Engine (Layer B).
- * Matches endpoints against 9 predefined cross-domain patterns (XS01-XS09)
+ * Matches endpoints against 10 predefined cross-domain patterns (XS01-XS10)
  * using structured term dictionaries with test codes, canonical labels,
  * specimen+finding matching, and compound required logic.
  *
@@ -554,6 +554,49 @@ const XS09_TERMS: SyndromeTermMatch[] = [
   },
 ];
 
+const XS10_TERMS: SyndromeTermMatch[] = [
+  // === REQUIRED (ANY: at least one ECG or VS finding) ===
+  {
+    testCodes: ["QTCBAG", "QTCFAG", "QTCVAG", "QTCAG"],
+    canonicalLabels: ["qtcb interval", "qtcf interval", "qtcv interval", "qtc interval"],
+    domain: "EG", direction: "any", role: "required", tag: "QTC",
+  },
+  {
+    testCodes: ["PRAG"],
+    canonicalLabels: ["pr interval"],
+    domain: "EG", direction: "any", role: "required", tag: "PR",
+  },
+  {
+    testCodes: ["RRAG"],
+    canonicalLabels: ["rr interval"],
+    domain: "EG", direction: "any", role: "required", tag: "RR",
+  },
+  {
+    testCodes: ["HR"],
+    canonicalLabels: ["heart rate"],
+    domain: "VS", direction: "any", role: "required", tag: "HR",
+  },
+  // === SUPPORTING ===
+  {
+    organWeightTerms: { specimen: ["heart"] },
+    domain: "OM", direction: "up", role: "supporting",
+  },
+  {
+    specimenTerms: {
+      specimen: ["heart"],
+      finding: ["cardiomyopathy", "myocyte degeneration", "necrosis",
+                "myocardial degeneration", "fibrosis", "vacuolation",
+                "myocardial necrosis", "inflammation"],
+    },
+    domain: "MI", direction: "any", role: "supporting",
+  },
+  {
+    testCodes: ["CTNI", "CTNT", "TNNI", "TNNT"],
+    canonicalLabels: ["troponin i", "troponin t", "cardiac troponin"],
+    domain: "LB", direction: "up", role: "supporting",
+  },
+];
+
 // ─── Syndrome definitions ─────────────────────────────────
 
 const SYNDROME_DEFINITIONS: SyndromeDefinition[] = [
@@ -619,6 +662,13 @@ const SYNDROME_DEFINITIONS: SyndromeDefinition[] = [
     requiredLogic: { type: "any" },
     terms: XS09_TERMS,
     minDomains: 2,
+  },
+  {
+    id: "XS10",
+    name: "Cardiovascular",
+    requiredLogic: { type: "any" },
+    terms: XS10_TERMS,
+    minDomains: 1,
   },
 ];
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Info } from "lucide-react";
+import { Info, Eye } from "lucide-react";
 import { useFindings } from "@/hooks/useFindings";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useTumorSummary } from "@/hooks/useTumorSummary";
@@ -109,6 +109,7 @@ export function FindingsView() {
   // Rail-provided state (single source of truth for filtering)
   const [visibleLabels, setVisibleLabels] = useState<Set<string> | null>(null);
   const [scopeLabel, setScopeLabel] = useState<string | null>(null);
+  const [scopeType, setScopeType] = useState<string | null>(null);
   const [filterLabels, setFilterLabels] = useState<string[]>([]);
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
 
@@ -141,7 +142,12 @@ export function FindingsView() {
 
   // Sync excluded endpoints to rail via reverse callback
   useEffect(() => {
-    _findingsExcludedCallback?.(excludedEndpoints);
+    if (_findingsExcludedCallback) {
+      _findingsExcludedCallback(excludedEndpoints);
+    } else if (excludedEndpoints.size > 0) {
+      const id = requestAnimationFrame(() => _findingsExcludedCallback?.(excludedEndpoints));
+      return () => cancelAnimationFrame(id);
+    }
   }, [excludedEndpoints]);
 
   // Sync study selection
@@ -163,6 +169,7 @@ export function FindingsView() {
         const ve = state.visibleEndpoints;
         setVisibleLabels(new Set(ve.labels));
         setScopeLabel(ve.scopeLabel);
+        setScopeType(ve.scopeType);
         setFilterLabels(ve.filterLabels);
       }
     });
@@ -261,80 +268,136 @@ export function FindingsView() {
     return f;
   }, [data, visibleLabels]);
 
-  // Section title with info tooltip
+  // Plottable count: endpoints with both effect size and p-value
+  const plottableCount = useMemo(() =>
+    scatterEndpoints.filter(ep => ep.maxEffectSize != null && ep.minPValue != null).length,
+    [scatterEndpoints],
+  );
+
+  // Section title: dynamic based on scope type
   const sectionTitle = useMemo(() => {
     const sep = <span className="text-muted-foreground/40"> · </span>;
-    const hasMeta = scopeLabel || filterLabels.length > 0;
+
+    // Dynamic title based on scope
+    let titleText: string;
+    if (!scopeLabel) {
+      titleText = "All endpoints";
+    } else if (scopeType === "syndrome") {
+      titleText = scopeLabel; // syndrome name stands alone
+    } else if (scopeType === "finding") {
+      titleText = scopeLabel; // individual endpoint label stands alone
+    } else {
+      titleText = `${scopeLabel} endpoints`;
+    }
+
+    // Count: (plottable/total) when they differ, (plottable) when equal
+    const total = railFilteredEndpoints.length;
+    const countText = plottableCount !== total
+      ? `(${plottableCount}/${total})`
+      : `(${plottableCount})`;
+
+    const hasFilters = filterLabels.length > 0;
+
     return (
       <span className="flex items-baseline gap-1.5">
-        <span>Findings</span>
-        {(hasMeta || selectedPointData) && (
-          <span className="truncate text-[10px] normal-case tracking-normal font-normal text-foreground">
-            {scopeLabel && <span className="font-medium">{scopeLabel}</span>}
-            {scopeLabel && filterLabels.length > 0 && sep}
-            {filterLabels.map((label, i) => (
-              <span key={label}>
-                {i > 0 && sep}
-                <span className="text-muted-foreground">{label}</span>
-              </span>
-            ))}
-            {hasMeta && selectedPointData && sep}
-            {selectedPointData && (
-              <>
-                <span className="text-muted-foreground/60">{"\u2605"}</span>
+        <span>{titleText}</span>
+        <span className="truncate text-[10px] normal-case tracking-normal font-normal text-foreground">
+          <span className="text-muted-foreground/50">{countText}</span>
+          {hasFilters && filterLabels.map((label) => (
+            <span key={label}>
+              {sep}
+              <span className="text-muted-foreground">{label}</span>
+            </span>
+          ))}
+          {selectedPointData && (
+            <>
+              {sep}
+              <span className="text-muted-foreground/60">{"\u2605"}</span>
+              {" "}
+              <span className="font-medium">{selectedPointData.label}</span>
+              {sep}
+              <span className="font-mono">|d|={formatEffectSize(selectedPointData.effectSize)}</span>
+              {sep}
+              <span className="font-mono">
+                p={formatPValue(selectedPointData.rawP)}
                 {" "}
-                <span className="font-medium">{selectedPointData.label}</span>
-                {sep}
-                <span className="font-mono">|d|={formatEffectSize(selectedPointData.effectSize)}</span>
-                {sep}
-                <span className="font-mono">
-                  p={formatPValue(selectedPointData.rawP)}
-                  {" "}
-                  <span className="font-normal text-muted-foreground/60">
-                    ({["LB", "BW", "OM", "FW"].includes(selectedPointData.domain) ? "Welch\u2019s" : "Fisher\u2019s"})
-                  </span>
+                <span className="font-normal text-muted-foreground/60">
+                  ({["LB", "BW", "OM", "FW"].includes(selectedPointData.domain) ? "Welch\u2019s" : "Fisher\u2019s"})
                 </span>
-              </>
-            )}
-            {!selectedPointData && hasMeta && (
-              <span className="text-muted-foreground/50"> ({tableFindings.length})</span>
-            )}
+              </span>
+            </>
+          )}
+        </span>
+      </span>
+    );
+  }, [scopeLabel, scopeType, filterLabels, selectedPointData, plottableCount, railFilteredEndpoints.length]);
+
+  // Excluded endpoint chips for header
+  const excludedChips = useMemo(() => {
+    if (excludedEndpoints.size === 0) return null;
+    const labels = [...excludedEndpoints];
+    const showLabels = labels.length > 3 ? labels.slice(0, 2) : labels;
+    const overflow = labels.length > 3 ? labels.length - 2 : 0;
+    return (
+      <span className="flex items-center gap-1 mr-1.5">
+        {showLabels.map((label) => (
+          <span
+            key={label}
+            className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground/70"
+          >
+            <span className="max-w-[80px] truncate">{label}</span>
+            <Eye
+              className="h-2.5 w-2.5 shrink-0 cursor-pointer hover:text-foreground"
+              onClick={(e) => { e.stopPropagation(); handleRestoreEndpoint(label); }}
+            />
+          </span>
+        ))}
+        {overflow > 0 && (
+          <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground/70">
+            <span>+{overflow} more</span>
+            <Eye
+              className="h-2.5 w-2.5 shrink-0 cursor-pointer hover:text-foreground"
+              onClick={(e) => { e.stopPropagation(); setExcludedEndpoints(new Set()); }}
+            />
           </span>
         )}
       </span>
     );
-  }, [scopeLabel, filterLabels, selectedPointData, tableFindings.length]);
+  }, [excludedEndpoints, handleRestoreEndpoint]);
 
-  // Header right: info tooltip icon
+  // Header right: excluded chips + info tooltip icon
   const headerRight = useMemo(() => (
-    <span
-      className="relative shrink-0"
-      onMouseEnter={handleInfoMouseEnter}
-      onMouseLeave={handleInfoMouseLeave}
-    >
-      <Info className="h-3 w-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
-      {showInfoTooltip && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover px-3 py-2 shadow-md">
-          <div className="text-[11px] leading-relaxed text-popover-foreground">
-            <p>Each dot is one endpoint (e.g., "ALT", "Liver weight").</p>
-            <p className="mt-1.5 font-medium">Position shows signal strength:</p>
-            <p><span className="text-muted-foreground">&rarr;</span> Right = larger effect (Cohen&apos;s d)</p>
-            <p><span className="text-muted-foreground">&uarr;</span> Up = more statistically significant</p>
-            <p className="mt-1.5 font-medium">Reference lines:</p>
-            <p><span className="text-muted-foreground">&mdash;</span> Vertical at |d| = 0.8 (large effect)</p>
-            <p><span className="text-muted-foreground">&mdash;</span> Horizontal at p = 0.05 (significance)</p>
-            <p className="mt-1.5 font-medium">Dot color:</p>
-            <p><span className="text-muted-foreground">&bull;</span> Gray = effect at higher doses only</p>
-            <p><span style={{ color: "rgba(248,113,113,0.8)" }}>&bull;</span> Warm = NOAEL below lowest tested dose</p>
-            <p className="pl-3 text-muted-foreground">(effect present at all doses)</p>
-            <p className="mt-1.5 italic text-muted-foreground">
-              Upper-right quadrant = investigate first. Dots show the strongest result across all timepoints and sexes for each endpoint.
-            </p>
+    <span className="flex items-center">
+      {excludedChips}
+      <span
+        className="relative shrink-0"
+        onMouseEnter={handleInfoMouseEnter}
+        onMouseLeave={handleInfoMouseLeave}
+      >
+        <Info className="h-3 w-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
+        {showInfoTooltip && (
+          <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover px-3 py-2 shadow-md">
+            <div className="text-[11px] leading-relaxed text-popover-foreground">
+              <p>Each dot is one endpoint (e.g., "ALT", "Liver weight").</p>
+              <p className="mt-1.5 font-medium">Position shows signal strength:</p>
+              <p><span className="text-muted-foreground">&rarr;</span> Right = larger effect (Cohen&apos;s d)</p>
+              <p><span className="text-muted-foreground">&uarr;</span> Up = more statistically significant</p>
+              <p className="mt-1.5 font-medium">Reference lines:</p>
+              <p><span className="text-muted-foreground">&mdash;</span> Vertical at |d| = 0.8 (large effect)</p>
+              <p><span className="text-muted-foreground">&mdash;</span> Horizontal at p = 0.05 (significance)</p>
+              <p className="mt-1.5 font-medium">Dot color:</p>
+              <p><span className="text-muted-foreground">&bull;</span> Gray = effect at higher doses only</p>
+              <p><span style={{ color: "rgba(248,113,113,0.8)" }}>&bull;</span> Warm = NOAEL below lowest tested dose</p>
+              <p className="pl-3 text-muted-foreground">(effect present at all doses)</p>
+              <p className="mt-1.5 italic text-muted-foreground">
+                Upper-right quadrant = investigate first. Dots show the strongest result across all timepoints and sexes for each endpoint.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </span>
     </span>
-  ), [showInfoTooltip, handleInfoMouseEnter, handleInfoMouseLeave]);
+  ), [showInfoTooltip, handleInfoMouseEnter, handleInfoMouseLeave, excludedChips]);
 
   // Build signal boosts from analytics layers
   const boostMap = useMemo(() => {
@@ -443,7 +506,6 @@ export function FindingsView() {
         >
           <FindingsQuadrantScatter
             endpoints={scatterEndpoints}
-            totalEndpoints={railFilteredEndpoints.length}
             selectedEndpoint={activeEndpoint}
             onSelect={handleEndpointSelect}
             onExclude={handleExcludeEndpoint}

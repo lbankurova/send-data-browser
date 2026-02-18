@@ -26,7 +26,7 @@ import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-sy
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { interpretSyndrome, mapDeathRecordsToDispositions } from "@/lib/syndrome-interpretation";
-import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext, TreatmentRelatednessScore, AdversityAssessment, OverallSeverity, ClinicalObservation, RecoveryRow } from "@/lib/syndrome-interpretation";
+import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext, TreatmentRelatednessScore, AdversityAssessment, OverallSeverity, ClinicalObservation, RecoveryRow, TranslationalConfidence } from "@/lib/syndrome-interpretation";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useTumorSummary } from "@/hooks/useTumorSummary";
@@ -106,6 +106,11 @@ const SYNDROME_INTERPRETATIONS: Record<string, {
     description: "Target organ wasting indicates generalized toxicity with decreased body weight, food consumption, and secondary organ weight reductions. May represent non-specific malaise or palatability issues rather than direct organ toxicity.",
     regulatory: "Confounds interpretation of organ weight changes \u2014 organ weights should be evaluated both as absolute and as ratio-to-body-weight. Body weight decrease >10% typically requires noting as a confounder in all organ weight assessments.",
     discriminator: "Organ weight decreases proportional to body weight decrease are likely secondary (not direct toxicity). Organ weights that decrease MORE than body weight, or that INCREASE despite BW decrease, suggest direct target organ effects on top of the general wasting.",
+  },
+  XS10: {
+    description: "Cardiovascular syndrome indicates drug effects on cardiac electrophysiology or hemodynamics, detected through ECG interval changes (QTc, PR, RR) or vital sign shifts (heart rate). Multi-domain convergence with heart weight and cardiac histopathology strengthens confidence in structural cardiac toxicity.",
+    regulatory: "ICH S7B and E14 govern cardiac safety assessment. QTc prolongation is the most scrutinized signal \u2014 may require dedicated QT study or thorough QT (TQT) in clinical program. Species-specific QTc correction formulas apply. Heart rate changes may be primary (direct ion channel effects) or secondary (autonomic compensation).",
+    discriminator: "Functional vs structural: isolated rate/interval changes without histopathology or troponin elevation suggest functional effect (ion channel modulation). Concurrent heart weight increase, cardiomyopathy, or troponin elevation indicates structural myocardial damage.",
   },
 };
 
@@ -538,6 +543,13 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
             overallSeverity={syndromeInterp.overallSeverity}
             domainsCovered={detected.domainsCovered}
           />
+        </CollapsiblePane>
+      )}
+
+      {/* Pane: TRANSLATIONAL CONFIDENCE */}
+      {syndromeInterp && syndromeInterp.translationalConfidence.tier !== "insufficient_data" && (
+        <CollapsiblePane title="Translational confidence" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <TranslationalConfidencePane confidence={syndromeInterp.translationalConfidence} />
         </CollapsiblePane>
       )}
 
@@ -1526,6 +1538,45 @@ function EcetocFactorRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-baseline gap-1.5 text-[10px]">
       <span className="text-muted-foreground">{label}</span>
       <span className="text-foreground">{value}</span>
+    </div>
+  );
+}
+
+// ─── Translational Confidence Pane ────────────────────────
+
+function TranslationalConfidencePane({ confidence }: { confidence: TranslationalConfidence }) {
+  return (
+    <div className="space-y-2">
+      {/* Tier + summary */}
+      <div className="flex items-baseline gap-1.5">
+        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-semibold text-gray-600 border border-gray-200">
+          {confidence.tier.toUpperCase()}
+        </span>
+      </div>
+      <p className="text-[11px] text-foreground leading-relaxed">{confidence.summary}</p>
+
+      {/* PT-level matches */}
+      {confidence.endpointLRPlus.length > 0 && (
+        <div className="space-y-0.5">
+          {confidence.endpointLRPlus.map((pt) => (
+            <div key={`${pt.endpoint}-${pt.species}`} className="flex items-baseline gap-1 text-[10px]">
+              <span className="text-muted-foreground">{pt.endpoint}:</span>
+              <span className="text-foreground">LR+ {pt.lrPlus}</span>
+              <span className="text-muted-foreground">({pt.species})</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Absence caveat */}
+      {confidence.absenceCaveat && (
+        <p className="text-[10px] text-muted-foreground leading-relaxed">
+          <span className="mr-1">⚠</span>{confidence.absenceCaveat}
+        </p>
+      )}
+
+      {/* Data version */}
+      <p className="text-[9px] text-muted-foreground">Data: {confidence.dataVersion}</p>
     </div>
   );
 }
