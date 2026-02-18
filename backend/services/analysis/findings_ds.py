@@ -12,8 +12,23 @@ DEATH_TERMS = {
     "DEAD", "DEATH", "FOUND DEAD", "DIED",
     "EUTHANIZED", "EUTHANASIA", "EUTHANIZED MORIBUND",
     "SACRIFICED MORIBUND", "MORIBUND SACRIFICE", "MORIBUND",
-    "TERMINAL SACRIFICE", "SCHEDULED EUTHANASIA",
 }
+
+
+def classify_disposition(dsdecod: str) -> str:
+    """Classify a DS disposition term into a category.
+
+    Returns one of: "death", "accidental", "scheduled", "unknown".
+    """
+    term = dsdecod.strip().upper()
+    if term in DEATH_TERMS:
+        return "death"
+    if term in {"TERMINAL SACRIFICE", "SCHEDULED EUTHANASIA",
+                "SCHEDULED SACRIFICE", "TERMINAL KILL"}:
+        return "scheduled"
+    if term in {"ACCIDENTAL DEATH", "DOSING ACCIDENT", "GAVAGE ERROR"}:
+        return "accidental"
+    return "unknown"
 
 
 def compute_ds_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
