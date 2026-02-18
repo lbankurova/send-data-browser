@@ -22,7 +22,11 @@ from services.analysis.classification import (
 )
 from services.analysis.correlations import compute_correlations
 from services.analysis.context_panes import build_finding_context
+from services.analysis.mortality import get_early_death_subjects
 from generator.organ_map import get_organ_system
+
+TERMINAL_DOMAINS = {"MI", "MA", "OM"}
+LB_DOMAIN = "LB"
 
 
 def _sanitize_floats(obj):
@@ -85,7 +89,12 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     dose_groups = dg_data["dose_groups"]
     subjects = dg_data["subjects"]
 
-    # Step 2: Compute findings from each domain
+    # Step 1b: Identify early-death subjects for dual-pass
+    early_death_subjects = get_early_death_subjects(study, subjects)
+    excluded_set = set(early_death_subjects.keys()) if early_death_subjects else None
+    n_excluded = len(excluded_set) if excluded_set else 0
+
+    # Step 2: Compute findings from each domain (pass 1 — all animals)
     all_findings = []
     all_findings.extend(compute_lb_findings(study, subjects))
     all_findings.extend(compute_bw_findings(study, subjects))
@@ -93,6 +102,33 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     all_findings.extend(compute_mi_findings(study, subjects))
     all_findings.extend(compute_ma_findings(study, subjects))
     all_findings.extend(compute_cl_findings(study, subjects))
+
+    # Pass 2 — scheduled-only stats for terminal + LB domains
+    if excluded_set:
+        scheduled_findings_map: dict[tuple, dict] = {}
+        for sched_f in compute_mi_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+        for sched_f in compute_ma_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+        for sched_f in compute_om_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+        for sched_f in compute_lb_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+
+        for finding in all_findings:
+            key = (finding["domain"], finding["test_code"], finding["sex"], finding.get("day"))
+            sched = scheduled_findings_map.get(key)
+            if sched:
+                finding["scheduled_group_stats"] = sched["group_stats"]
+                finding["scheduled_pairwise"] = sched["pairwise"]
+                finding["scheduled_direction"] = sched.get("direction")
+                finding["n_excluded"] = n_excluded
+            elif finding["domain"] in TERMINAL_DOMAINS or finding["domain"] == LB_DOMAIN:
+                finding["n_excluded"] = n_excluded
 
     # Step 3: Assign IDs and classify
     for i, finding in enumerate(all_findings):
