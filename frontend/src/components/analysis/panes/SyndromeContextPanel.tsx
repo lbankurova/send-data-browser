@@ -26,7 +26,7 @@ import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-sy
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { interpretSyndrome, mapDeathRecordsToDispositions } from "@/lib/syndrome-interpretation";
-import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext } from "@/lib/syndrome-interpretation";
+import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext, TreatmentRelatednessScore, AdversityAssessment, OverallSeverity } from "@/lib/syndrome-interpretation";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useTumorSummary } from "@/hooks/useTumorSummary";
@@ -480,6 +480,18 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
               <p key={i} className="text-xs leading-relaxed text-foreground/80">{note}</p>
             ))}
           </div>
+        </CollapsiblePane>
+      )}
+
+      {/* Pane: ECETOC ASSESSMENT (Steps 14-15) */}
+      {syndromeInterp && detected && (
+        <CollapsiblePane title="ECETOC assessment" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <EcetocAssessmentPane
+            treatmentRelatedness={syndromeInterp.treatmentRelatedness}
+            adversity={syndromeInterp.adversity}
+            overallSeverity={syndromeInterp.overallSeverity}
+            domainsCovered={detected.domainsCovered}
+          />
         </CollapsiblePane>
       )}
 
@@ -1390,6 +1402,84 @@ function RecoveryPane({ recovery }: { recovery: SyndromeInterpretation["recovery
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── ECETOC Assessment Pane ───────────────────────────────
+
+const SEVERITY_LABELS: Record<OverallSeverity, string> = {
+  S0_Death: "Death",
+  carcinogenic: "Carcinogenic",
+  proliferative: "Proliferative",
+  S4_Critical: "Critical",
+  S3_Adverse: "Adverse",
+  S2_Concern: "Concern",
+  S1_Monitor: "Monitor",
+};
+
+function EcetocAssessmentPane({
+  treatmentRelatedness,
+  adversity,
+  overallSeverity,
+  domainsCovered,
+}: {
+  treatmentRelatedness: TreatmentRelatednessScore;
+  adversity: AdversityAssessment;
+  overallSeverity: OverallSeverity;
+  domainsCovered: string[];
+}) {
+  const trLabel = treatmentRelatedness.overall === "treatment_related" ? "Yes"
+    : treatmentRelatedness.overall === "possibly_related" ? "Possibly" : "No";
+  const advLabel = adversity.overall === "adverse" ? "Yes"
+    : adversity.overall === "non_adverse" ? "No" : "Equivocal";
+
+  return (
+    <div className="space-y-3">
+      {/* Overall severity */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Severity:</span>
+        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+          {SEVERITY_LABELS[overallSeverity]}
+        </span>
+      </div>
+
+      {/* Treatment-relatedness */}
+      <div>
+        <div className="mb-1 flex items-center gap-2">
+          <span className="text-xs font-medium text-foreground">Treatment-related: {trLabel}</span>
+        </div>
+        <div className="space-y-0.5 pl-2">
+          <EcetocFactorRow label="A-1 Dose-response" value={treatmentRelatedness.doseResponse} />
+          <EcetocFactorRow label="A-2 Cross-endpoint" value={treatmentRelatedness.crossEndpoint === "concordant" ? `concordant (${domainsCovered.join(", ")})` : "isolated"} />
+          <EcetocFactorRow label="A-4 Historical control" value={treatmentRelatedness.hcdComparison === "no_hcd" ? "no data" : treatmentRelatedness.hcdComparison.replace(/_/g, " ")} />
+          <EcetocFactorRow label="A-6 Significance" value={treatmentRelatedness.statisticalSignificance.replace(/_/g, " ")} />
+          <EcetocFactorRow label="CL observations" value={treatmentRelatedness.clinicalObservationSupport ? "supports" : "no support"} />
+        </div>
+      </div>
+
+      {/* Adversity */}
+      <div>
+        <div className="mb-1 flex items-center gap-2">
+          <span className="text-xs font-medium text-foreground">Adverse: {advLabel}</span>
+        </div>
+        <div className="space-y-0.5 pl-2">
+          <EcetocFactorRow label="B-3 Reversible" value={adversity.reversible === true ? "yes" : adversity.reversible === false ? "no" : "unknown"} />
+          <EcetocFactorRow label="B-4 Magnitude" value={adversity.magnitudeLevel} />
+          <EcetocFactorRow label="B-5 Cross-domain" value={adversity.crossDomainSupport ? "yes" : "no"} />
+          <EcetocFactorRow label="B-6 Precursor" value={adversity.precursorToWorse ? "yes" : "no"} />
+          <EcetocFactorRow label="B-7 Secondary" value={adversity.secondaryToOther ? "yes" : "no"} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EcetocFactorRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-1.5 text-[10px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-foreground">{value}</span>
     </div>
   );
 }

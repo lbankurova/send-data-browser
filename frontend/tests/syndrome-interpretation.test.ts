@@ -16,6 +16,9 @@ import {
   assessClinicalObservationSupport,
   assembleStudyDesignNotes,
   mapDeathRecordsToDispositions,
+  computeTreatmentRelatedness,
+  computeAdversity,
+  deriveOverallSeverity,
 } from "@/lib/syndrome-interpretation";
 import type {
   RecoveryRow,
@@ -89,6 +92,8 @@ const defaultContext: StudyContext = {
   glpCompliant: true, sendCtVersion: "", title: "",
 };
 
+const defaultFoodData: FoodConsumptionSummaryResponse = { available: false, water_consumption: null };
+
 function interp(
   syndrome: typeof xs01,
   overrides?: Partial<{
@@ -99,6 +104,7 @@ function interp(
     context: StudyContext;
     mortality: AnimalDisposition[];
     tumors: TumorFinding[];
+    food: FoodConsumptionSummaryResponse;
     mortalityNoaelCap: number | null;
   }>,
 ) {
@@ -110,7 +116,7 @@ function interp(
     [], // organWeights
     overrides?.tumors ?? [], // tumors
     overrides?.mortality ?? [],
-    { available: false, water_consumption: null }, // food
+    overrides?.food ?? defaultFoodData,
     overrides?.cl ?? [],
     overrides?.context ?? defaultContext,
     overrides?.mortalityNoaelCap,
@@ -758,5 +764,181 @@ describe("food consumption context", () => {
     // XS08 is in BW_RELEVANT_SYNDROMES set
     expect(result.bwFwAssessment).not.toBe("not_applicable");
     expect(result.fwNarrative.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── Step 14: Treatment-Relatedness ──────────────────────────
+
+describe("computeTreatmentRelatedness", () => {
+  const noClSupport = { correlatingObservations: [], assessment: "no_cl_data" as const };
+  const clStrengthens = {
+    correlatingObservations: [{ observation: "PALLOR", tier: 2 as const, expectedForSyndrome: true, incidenceDoseDependent: true }],
+    assessment: "strengthens" as const,
+  };
+
+  test("XS05 with MODERATE confidence → treatment_related", () => {
+    const result = computeTreatmentRelatedness(xs05, endpoints, noClSupport);
+    // XS05 is MODERATE confidence → weak dose-response, but concordant + significant = treatment_related
+    expect(result.doseResponse).toBe("weak");
+    expect(result.crossEndpoint).toBe("concordant");
+    expect(result.statisticalSignificance).toBe("significant");
+    expect(result.overall).toBe("treatment_related");
+  });
+
+  test("statisticalSignificance derives from matched endpoint p-values", () => {
+    const result = computeTreatmentRelatedness(xs01, endpoints, noClSupport);
+    // XS01 matched endpoints have significant p-values in PointCross
+    expect(result.statisticalSignificance).toBe("significant");
+  });
+
+  test("CL support counts toward treatment-relatedness", () => {
+    const result = computeTreatmentRelatedness(xs05, endpoints, clStrengthens);
+    expect(result.clinicalObservationSupport).toBe(true);
+    expect(result.overall).toBe("treatment_related");
+  });
+
+  test("LOW confidence single-domain → possibly_related or not_related", () => {
+    // Create a fake low-confidence single-domain syndrome
+    const weak = {
+      ...xs01,
+      confidence: "LOW" as const,
+      domainsCovered: ["LB"],
+    };
+    const result = computeTreatmentRelatedness(weak, endpoints, noClSupport);
+    expect(result.doseResponse).toBe("absent");
+    expect(result.crossEndpoint).toBe("isolated");
+    // With significant p-values from matched endpoints, gets 1 factor → possibly_related
+    expect(["possibly_related", "not_related"]).toContain(result.overall);
+  });
+});
+
+// ─── Step 15: Adversity Assessment ───────────────────────────
+
+describe("computeAdversity", () => {
+  const noRecovery = { status: "not_examined" as const, endpoints: [], summary: "No recovery data." };
+  const recovered = { status: "recovered" as const, endpoints: [], summary: "All endpoints recovered." };
+  const noTumors = { tumorsPresent: false, tumorSummaries: [], progressionDetected: false, interpretation: "No tumors." };
+  const withProgression = { tumorsPresent: true, tumorSummaries: [], progressionDetected: true, interpretation: "Progression detected." };
+  const noFood = { available: false, bwFwAssessment: "not_applicable" as const, foodEfficiencyReduced: null, temporalOnset: null, fwNarrative: "" };
+  const secondaryFood = { available: true, bwFwAssessment: "secondary_to_food" as const, foodEfficiencyReduced: true, temporalOnset: "fw_first" as const, fwNarrative: "BW loss secondary." };
+
+  test("precursorToWorse wired to tumorContext.progressionDetected", () => {
+    const result = computeAdversity(xs01, endpoints, noRecovery, "mechanism_confirmed", withProgression, noFood);
+    expect(result.precursorToWorse).toBe(true);
+    expect(result.overall).toBe("adverse");
+  });
+
+  test("secondaryToOther wired to food consumption", () => {
+    const result = computeAdversity(xs01, endpoints, noRecovery, "mechanism_uncertain", noTumors, secondaryFood);
+    expect(result.secondaryToOther).toBe(true);
+  });
+
+  test("magnitudeLevel derives from endpoint effect sizes", () => {
+    const result = computeAdversity(xs05, endpoints, noRecovery, "mechanism_confirmed", noTumors, noFood);
+    // PointCross XS05 endpoints should have measurable effect sizes
+    expect(["minimal", "mild", "moderate", "marked", "severe"]).toContain(result.magnitudeLevel);
+    expect(result.magnitudeLevel).not.toBe("moderate"); // should actually compute, not be hardcoded
+  });
+
+  test("recovered + mild magnitude → non_adverse", () => {
+    // Use xs01 which should have moderate+ effects, so create fake low-effect syndrome
+    const lowEffect = { ...xs01, matchedEndpoints: [] }; // no matched endpoints → minimal magnitude
+    const result = computeAdversity(lowEffect, endpoints, recovered, "mechanism_uncertain", noTumors, noFood);
+    expect(result.reversible).toBe(true);
+    expect(result.magnitudeLevel).toBe("minimal");
+    expect(result.overall).toBe("non_adverse");
+  });
+
+  test("mechanism_confirmed + cross-domain → adverse", () => {
+    const result = computeAdversity(xs05, endpoints, noRecovery, "mechanism_confirmed", noTumors, noFood);
+    expect(result.crossDomainSupport).toBe(true);
+    expect(result.overall).toBe("adverse");
+  });
+});
+
+// ─── Step 15b: Severity Cascade ──────────────────────────────
+
+describe("deriveOverallSeverity", () => {
+  const baseMortality = {
+    deathsInSyndromeOrgans: 0, treatmentRelatedDeaths: 0,
+    doseRelatedMortality: false, mortalityNarrative: "", mortalityNoaelCap: null, deathDetails: [],
+  };
+  const noTumors = { tumorsPresent: false, tumorSummaries: [], progressionDetected: false, interpretation: "" };
+  const equivocal = {
+    adaptive: false, reversible: null, magnitudeLevel: "moderate" as const,
+    crossDomainSupport: true, precursorToWorse: false, secondaryToOther: false, overall: "equivocal" as const,
+  };
+  const adverse = { ...equivocal, overall: "adverse" as const };
+  const nonAdverse = { ...equivocal, overall: "non_adverse" as const };
+
+  test("deaths in syndrome organs → S0_Death", () => {
+    const mort = { ...baseMortality, deathsInSyndromeOrgans: 1 };
+    expect(deriveOverallSeverity(mort, noTumors, equivocal, "mechanism_confirmed")).toBe("S0_Death");
+  });
+
+  test("tumors with progression → carcinogenic", () => {
+    const tumors = { tumorsPresent: true, tumorSummaries: [], progressionDetected: true, interpretation: "" };
+    expect(deriveOverallSeverity(baseMortality, tumors, equivocal, "mechanism_confirmed")).toBe("carcinogenic");
+  });
+
+  test("tumors without progression → proliferative", () => {
+    const tumors = { tumorsPresent: true, tumorSummaries: [], progressionDetected: false, interpretation: "" };
+    expect(deriveOverallSeverity(baseMortality, tumors, equivocal, "mechanism_confirmed")).toBe("proliferative");
+  });
+
+  test("treatment-related deaths (non-organ) → S4_Critical", () => {
+    const mort = { ...baseMortality, treatmentRelatedDeaths: 2 };
+    expect(deriveOverallSeverity(mort, noTumors, equivocal, "mechanism_confirmed")).toBe("S4_Critical");
+  });
+
+  test("mechanism_confirmed + adverse → S3_Adverse", () => {
+    expect(deriveOverallSeverity(baseMortality, noTumors, adverse, "mechanism_confirmed")).toBe("S3_Adverse");
+  });
+
+  test("adverse without confirmed mechanism → S2_Concern", () => {
+    expect(deriveOverallSeverity(baseMortality, noTumors, adverse, "mechanism_uncertain")).toBe("S2_Concern");
+  });
+
+  test("non_adverse → S1_Monitor", () => {
+    expect(deriveOverallSeverity(baseMortality, noTumors, nonAdverse, "mechanism_confirmed")).toBe("S1_Monitor");
+  });
+});
+
+// ─── Narrative ECETOC Summary ────────────────────────────────
+
+describe("narrative assembly", () => {
+  test("narrative includes ECETOC treatment-relatedness summary", () => {
+    const result = interp(xs05);
+    expect(result.narrative).toContain("Treatment-related:");
+  });
+
+  test("narrative includes ECETOC adversity summary", () => {
+    const result = interp(xs05);
+    expect(result.narrative).toContain("Adverse:");
+  });
+
+  test("narrative includes tumor context when tumors present", () => {
+    const tumors: TumorFinding[] = [
+      { organ: "LIVER", morphology: "ADENOMA, HEPATOCELLULAR", behavior: "BENIGN", animalId: "S1", doseGroup: 3 },
+    ];
+    const result = interp(xs01, { tumors });
+    expect(result.tumorContext.tumorsPresent).toBe(true);
+    expect(result.narrative).toContain(result.tumorContext.interpretation);
+  });
+
+  test("overall severity reflects tumor progression", () => {
+    const tumors: TumorFinding[] = [
+      { organ: "LIVER", morphology: "ADENOMA, HEPATOCELLULAR", behavior: "BENIGN", animalId: "S1", doseGroup: 2 },
+      { organ: "LIVER", morphology: "CARCINOMA, HEPATOCELLULAR", behavior: "MALIGNANT", animalId: "S2", doseGroup: 3 },
+    ];
+    const result = interp(xs01, { tumors });
+    expect(result.overallSeverity).toBe("carcinogenic");
+  });
+
+  test("treatment-relatedness factors appear in narrative parenthetical", () => {
+    const result = interp(xs05);
+    // MODERATE confidence → "weak dose-response" + concordant + significant
+    expect(result.narrative).toMatch(/dose-response/);
+    expect(result.narrative).toMatch(/concordant across/);
   });
 });
