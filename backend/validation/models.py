@@ -35,13 +35,14 @@ class ValidationRuleResult(BaseModel):
     category: str
     description: str
     records_affected: int
-    # Embedded detail
-    standard: str
-    section: str
-    rationale: str
-    how_to_fix: str
+    # Embedded detail (optional for catalog entries)
+    standard: str = ""
+    section: str = ""
+    rationale: str = ""
+    how_to_fix: str = ""
     cdisc_reference: str | None = None
     source: Literal["custom", "core"] = "custom"  # Rule origin
+    status: Literal["triggered", "clean", "disabled"] = "triggered"
 
 
 class AffectedRecordResult(BaseModel):

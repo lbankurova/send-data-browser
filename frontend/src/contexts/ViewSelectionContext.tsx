@@ -19,6 +19,8 @@ export interface ValidationRuleViewSelection {
   category: string;
   description: string;
   records_affected: number;
+  source?: "custom" | "core";
+  status?: "triggered" | "clean" | "disabled";
   recordFixStatusFilter?: string;
   recordReviewStatusFilter?: string;
 }

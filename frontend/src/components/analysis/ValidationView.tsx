@@ -1,6 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSessionState } from "@/hooks/useSessionState";
-import { useSearchParams } from "react-router-dom";
 import {
   useReactTable,
   getCoreRowModel,
@@ -11,25 +10,15 @@ import {
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
 import { cn } from "@/lib/utils";
-import { ViewTabBar } from "@/components/ui/ViewTabBar";
-import { ViewSection } from "@/components/ui/ViewSection";
 import { FilterBar, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { useAutoFitSections } from "@/hooks/useAutoFitSections";
-import { useCollapseAll } from "@/hooks/useCollapseAll";
-import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import type { ValidationRuleResult } from "@/hooks/useValidationResults";
+import { useValidationCatalog } from "@/hooks/useValidationCatalog";
 import { useAffectedRecords } from "@/hooks/useAffectedRecords";
-import { useRunValidation } from "@/hooks/useRunValidation";
 import type { AffectedRecordData } from "@/hooks/useAffectedRecords";
 import type { ValidationRecordReview } from "@/types/annotations";
-import { ValidationRuleCatalog } from "./ValidationRuleCatalog";
-
-type ValidationMode = "data-quality" | "study-design" | "rule-catalog";
-
-const STUDY_DESIGN_CATEGORY = "Study design";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -144,69 +133,6 @@ interface RecordRowData extends AffectedRecord {
   assignedTo: string;
 }
 
-// ── Top table columns ──────────────────────────────────────────────────
-
-const ruleColumnHelper = createColumnHelper<ValidationRuleResult>();
-
-const ruleColumns = [
-  ruleColumnHelper.accessor("rule_id", {
-    header: "Rule",
-    size: 150,
-    cell: (info) => <span className="font-mono text-xs">{info.getValue()}</span>,
-  }),
-  ruleColumnHelper.accessor("severity", {
-    header: "Severity",
-    size: 90,
-    cell: (info) => {
-      const sev = info.getValue();
-      return (
-        <span
-          className="inline-block border-l-2 pl-1.5 py-0.5 text-[10px] font-semibold text-gray-600"
-          style={{ borderLeftColor: SEVERITY_BORDER_COLORS[sev] ?? "#6B7280" }}
-        >
-          {sev}
-        </span>
-      );
-    },
-  }),
-  ruleColumnHelper.accessor("source", {
-    header: "Source",
-    size: 60,
-    cell: (info) => {
-      const src = info.getValue();
-      return (
-        <span
-          className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground"
-          title={src === "core" ? "CDISC CORE conformance rule" : "Custom study design rule"}
-        >
-          {src}
-        </span>
-      );
-    },
-  }),
-  ruleColumnHelper.accessor("domain", {
-    header: "Domain",
-    size: 70,
-    cell: (info) => {
-      const d = info.getValue();
-      return <DomainLabel domain={d} />;
-    },
-  }),
-  ruleColumnHelper.accessor("category", {
-    header: "Category",
-    size: 140,
-  }),
-  ruleColumnHelper.accessor("description", {
-    header: "Description",
-    size: 400,
-  }),
-  ruleColumnHelper.accessor("records_affected", {
-    header: "Records",
-    size: 70,
-    cell: (info) => <span className="tabular-nums">{info.getValue()}</span>,
-  }),
-];
-
 // ── Bottom table columns ───────────────────────────────────────────────
 
 const recordColumnHelper = createColumnHelper<RecordRowData>();
@@ -220,122 +146,96 @@ interface Props {
 }
 
 export function ValidationView({ studyId, onSelectionChange, viewSelection }: Props) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [ruleSorting, setRuleSorting] = useSessionState<SortingState>("pcc.validation.ruleSorting", []);
   const [recordSorting, setRecordSorting] = useSessionState<SortingState>("pcc.validation.recordSorting", []);
-  const [ruleColumnSizing, setRuleColumnSizing] = useSessionState<ColumnSizingState>("pcc.validation.ruleColumnSizing", {});
   const [recordColumnSizing, setRecordColumnSizing] = useSessionState<ColumnSizingState>("pcc.validation.recordColumnSizing", {});
-  const [selectedRule, setSelectedRule] = useState<ValidationRuleResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>({ fixStatus: "", reviewStatus: "", subjectId: "" });
-  const [severityFilter, setSeverityFilter] = useState<"" | "Error" | "Warning" | "Info">("");
-  const [sourceFilter, setSourceFilter] = useState<"" | "core" | "custom">("");
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sections = useAutoFitSections(containerRef, "validation", [
-    { id: "rules", min: 100, max: 500, defaultHeight: 280 },
-  ]);
-  const rulesSection = sections[0];
-  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
-  // Mode: data-quality (default) or study-design
-  const [mode, setMode] = useState<ValidationMode>(() => {
-    const urlMode = searchParams.get("mode");
-    return urlMode === "study-design" ? "study-design" : "data-quality";
-  });
-
-  // Track if we've consumed the initial ?rule= param
-  const [initialRuleConsumed, setInitialRuleConsumed] = useState(false);
-  const urlRuleParam = searchParams.get("rule");
-
-  // API hooks
+  // Derive selected rule from viewSelection (set by rail via context)
   const { data: validationData, isLoading: resultsLoading } = useValidationResults(studyId);
-  const { data: affectedData } = useAffectedRecords(studyId, selectedRule?.rule_id);
-  const { mutate: runValidation, isPending: isValidating } = useRunValidation(studyId);
-
-  // Split rules by mode
-  const allRules = useMemo(() => validationData?.rules ?? [], [validationData?.rules]);
-  const modeRules = useMemo(
-    () => mode === "study-design"
-      ? allRules.filter((r) => r.category === STUDY_DESIGN_CATEGORY)
-      : allRules.filter((r) => r.category !== STUDY_DESIGN_CATEGORY),
-    [allRules, mode]
-  );
-  const rules = useMemo(() => {
-    let filtered = modeRules;
-    if (severityFilter) {
-      filtered = filtered.filter((r) => r.severity === severityFilter);
-    }
-    if (sourceFilter) {
-      filtered = filtered.filter((r) => r.source === sourceFilter);
-    }
-    return filtered;
-  }, [modeRules, severityFilter, sourceFilter]);
-
-  // Counts per mode
-  const modeCounts = useMemo(() => {
-    const sd = allRules.filter((r) => r.category === STUDY_DESIGN_CATEGORY);
-    const dq = allRules.filter((r) => r.category !== STUDY_DESIGN_CATEGORY);
+  // Catalog has ALL rules (triggered + clean + disabled) with full detail
+  const { data: catalogData } = useValidationCatalog(studyId);
+  const selectedRule = useMemo<ValidationRuleResult | null>(() => {
+    if (!viewSelection || viewSelection._view !== "validation") return null;
+    if (viewSelection.mode !== "rule") return null;
+    // First try triggered results (most detail for triggered rules)
+    const fromResults = validationData?.rules?.find((r) => r.rule_id === viewSelection.rule_id);
+    if (fromResults) return fromResults;
+    // Second: try full catalog (has detail for clean/disabled/CORE rules)
+    const fromCatalog = catalogData?.rules?.find((r) => r.rule_id === viewSelection.rule_id);
+    if (fromCatalog) return fromCatalog;
+    // Last resort: reconstruct from viewSelection
     return {
-      studyDesign: sd.length,
-      dataQuality: dq.length,
+      rule_id: viewSelection.rule_id,
+      severity: viewSelection.severity,
+      domain: viewSelection.domain,
+      category: viewSelection.category,
+      description: viewSelection.description,
+      records_affected: viewSelection.records_affected,
+      standard: "",
+      section: "",
+      rationale: "",
+      how_to_fix: "",
+      cdisc_reference: null,
+      source: viewSelection.rule_id.startsWith("CORE-") ? "core" as const : "custom" as const,
+      status: viewSelection.records_affected > 0 ? "triggered" as const : "clean" as const,
     };
-  }, [allRules]);
+  }, [viewSelection, validationData, catalogData]);
 
-  // Auto-select rule from URL param (e.g., ?rule=SD-003)
-  useEffect(() => {
-    if (initialRuleConsumed || !urlRuleParam || !validationData) return;
-    const target = allRules.find(
-      (r) => r.rule_id === urlRuleParam || r.rule_id.startsWith(urlRuleParam)
-    );
-    if (target) {
-      setSelectedRule(target);
-      onSelectionChange?.({
-        _view: "validation",
-        mode: "rule",
-        rule_id: target.rule_id,
-        severity: target.severity,
-        domain: target.domain,
-        category: target.category,
-        description: target.description,
-        records_affected: target.records_affected,
-      });
+  // Catalog stats for header bar (catalogData already fetched above)
+  const catalogStats = useMemo(() => {
+    const rules = catalogData?.rules ?? [];
+    const total = rules.length;
+    const enabled = rules.filter((r) => r.status !== "disabled").length;
+    const triggered = rules.filter((r) => r.status === "triggered").length;
+    const summary = catalogData?.summary;
+    let lastRun: { ago: number; elapsed: number | undefined } | null = null;
+    if (summary?.validated_at) {
+      const d = new Date(summary.validated_at);
+      lastRun = {
+        ago: Math.round((Date.now() - d.getTime()) / 60000),
+        elapsed: summary.elapsed_seconds,
+      };
     }
-    setInitialRuleConsumed(true);
-  }, [urlRuleParam, initialRuleConsumed, allRules, validationData, onSelectionChange]);
+    return { total, enabled, triggered, lastRun };
+  }, [catalogData]);
 
-  // Sync mode to URL
-  const handleModeChange = (newMode: ValidationMode) => {
-    setMode(newMode);
-    setSelectedRule(null);
-    setSelectedIssueId(null);
-    setSeverityFilter("");
-    setSourceFilter("");
-    setRecordFilters({ fixStatus: "", reviewStatus: "", subjectId: "" });
-    onSelectionChange?.(null);
-    // Update URL param without navigation
-    const params = new URLSearchParams(searchParams);
-    if (newMode === "study-design") {
-      params.set("mode", "study-design");
-    } else {
-      params.delete("mode");
-    }
-    params.delete("rule");
-    setSearchParams(params, { replace: true });
-  };
+  const { data: affectedData } = useAffectedRecords(studyId, selectedRule?.rule_id);
 
   // Load record annotations
   const { data: recordAnnotations } = useAnnotations<ValidationRecordReview>(studyId, "validation-records");
 
-  // Severity counts — scoped to current mode
-  const counts = useMemo(() => {
-    return {
-      errors: modeRules.filter((r) => r.severity === "Error").length,
-      warnings: modeRules.filter((r) => r.severity === "Warning").length,
-      info: modeRules.filter((r) => r.severity === "Info").length,
-      core: modeRules.filter((r) => r.source === "core").length,
-      custom: modeRules.filter((r) => r.source === "custom").length,
-    };
-  }, [modeRules]);
+  // Derived values for effect dependency tracking
+  const vsFixFilter = viewSelection?.recordFixStatusFilter;
+  const vsReviewFilter = viewSelection?.recordReviewStatusFilter;
+  const vsMode = viewSelection?.mode;
+  const vsIssueId = viewSelection?.mode === "issue" ? viewSelection.issue_id : undefined;
+
+  // Watch for filter changes from context panel
+  useEffect(() => {
+    if (vsFixFilter !== undefined) {
+      setRecordFilters((prev) => ({ ...prev, fixStatus: vsFixFilter }));
+    }
+    if (vsReviewFilter !== undefined) {
+      setRecordFilters((prev) => ({ ...prev, reviewStatus: vsReviewFilter }));
+    }
+  }, [vsFixFilter, vsReviewFilter]);
+
+  // Watch for mode changes from context panel (back link)
+  useEffect(() => {
+    if (vsMode === "rule") {
+      setSelectedIssueId(null);
+    }
+    if (vsMode === "issue" && vsIssueId) {
+      setSelectedIssueId(vsIssueId);
+    }
+  }, [vsMode, vsIssueId]);
+
+  // Reset record filters when rule changes
+  useEffect(() => {
+    setSelectedIssueId(null);
+    setRecordFilters({ fixStatus: "", reviewStatus: "", subjectId: "" });
+  }, [selectedRule?.rule_id]);
 
   // Records for selected rule, enriched with annotation data
   const recordRows = useMemo<RecordRowData[]>(() => {
@@ -444,20 +344,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     }),
   ], [selectedRule, onSelectionChange]);
 
-  // Top table
-  const ruleTable = useReactTable({
-    data: rules,
-    columns: ruleColumns,
-    state: { sorting: ruleSorting, columnSizing: ruleColumnSizing },
-    onSortingChange: setRuleSorting,
-    onColumnSizingChange: setRuleColumnSizing,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    enableColumnResizing: true,
-    columnResizeMode: "onChange",
-  });
-
-  // Bottom table
+  // Record table
   const recordTable = useReactTable({
     data: filteredRecords,
     columns: recordColumns,
@@ -470,15 +357,8 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     columnResizeMode: "onChange",
   });
 
-  // Absorber pattern helpers
-  const RULE_ABSORBER = "description";
+  // Absorber pattern
   const RECORD_ABSORBER = "actual_value";
-  function ruleColStyle(colId: string) {
-    const manualWidth = ruleColumnSizing[colId];
-    if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
-    if (colId === RULE_ABSORBER) return undefined;
-    return { width: 1, whiteSpace: "nowrap" as const };
-  }
   function recordColStyle(colId: string) {
     const manualWidth = recordColumnSizing[colId];
     if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
@@ -486,74 +366,11 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
     return { width: 1, whiteSpace: "nowrap" as const };
   }
 
-  // Derived values for effect dependency tracking
-  const vsFixFilter = viewSelection?.recordFixStatusFilter;
-  const vsReviewFilter = viewSelection?.recordReviewStatusFilter;
-  const vsMode = viewSelection?.mode;
-  const vsIssueId = viewSelection?.mode === "issue" ? viewSelection.issue_id : undefined;
-
-  // Watch for filter changes from context panel
-  useEffect(() => {
-    if (vsFixFilter !== undefined) {
-      setRecordFilters((prev) => ({ ...prev, fixStatus: vsFixFilter }));
-    }
-    if (vsReviewFilter !== undefined) {
-      setRecordFilters((prev) => ({ ...prev, reviewStatus: vsReviewFilter }));
-    }
-  }, [vsFixFilter, vsReviewFilter]);
-
-  // Watch for mode changes from context panel (back link)
-  useEffect(() => {
-    if (vsMode === "rule") {
-      setSelectedIssueId(null);
-    }
-    if (vsMode === "issue" && vsIssueId) {
-      setSelectedIssueId(vsIssueId);
-    }
-  }, [vsMode, vsIssueId]);
-
-  const handleRuleClick = (rule: ValidationRuleResult) => {
-    const isReselect = selectedRule?.rule_id === rule.rule_id;
-    if (isReselect) {
-      setSelectedRule(null);
-      setSelectedIssueId(null);
-      setRecordFilters({ fixStatus: "", reviewStatus: "", subjectId: "" });
-      onSelectionChange?.(null);
-    } else {
-      setSelectedRule(rule);
-      setSelectedIssueId(null);
-      setRecordFilters({ fixStatus: "", reviewStatus: "", subjectId: "" });
-      onSelectionChange?.({
-        _view: "validation",
-        mode: "rule",
-        rule_id: rule.rule_id,
-        severity: rule.severity,
-        domain: rule.domain,
-        category: rule.category,
-        description: rule.description,
-        records_affected: rule.records_affected,
-      });
-    }
-  };
-
-  // Shared mode tab bar for loading/empty states
-  const modeTabBar = (
-    <ViewTabBar
-      tabs={[
-        { key: "data-quality", label: "Data quality" },
-        { key: "study-design", label: "Study design" },
-        { key: "rule-catalog", label: "Rule catalog" },
-      ]}
-      value={mode}
-      onChange={(k) => handleModeChange(k as ValidationMode)}
-    />
-  );
-
   // ── Loading state ──
   if (resultsLoading) {
     return (
-      <div className="flex h-full flex-col overflow-hidden">
-        {modeTabBar}
+      <div className="flex h-full flex-col">
+        <CatalogStatsBar stats={catalogStats} />
         <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
           Loading validation results...
         </div>
@@ -564,17 +381,48 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   // ── No results state ──
   if (!validationData) {
     return (
-      <div className="flex h-full flex-col overflow-hidden">
-        {modeTabBar}
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-xs text-muted-foreground">
-          <span>No validation results available for this study.</span>
-          <button
-            className="rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            disabled={isValidating}
-            onClick={() => runValidation()}
-          >
-            {isValidating ? "RUNNING..." : "RUN"}
-          </button>
+      <div className="flex h-full flex-col">
+        <CatalogStatsBar stats={catalogStats} />
+        <div className="flex flex-1 items-center justify-center gap-3 text-xs text-muted-foreground">
+          <span>No validation results available. Use the RUN button in the rule rail.</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ── No rule selected ──
+  if (!selectedRule) {
+    return (
+      <div className="flex h-full flex-col">
+        <CatalogStatsBar stats={catalogStats} />
+        <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
+          Select a rule in the left panel to view affected records
+        </div>
+      </div>
+    );
+  }
+
+  // ── Clean rule selected ──
+  if (selectedRule.status === "clean") {
+    return (
+      <div className="flex h-full flex-col">
+        <CatalogStatsBar stats={catalogStats} />
+        <RuleHeader rule={selectedRule} recordCount={0} />
+        <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
+          This rule passed — no issues detected.
+        </div>
+      </div>
+    );
+  }
+
+  // ── Disabled rule selected ──
+  if (selectedRule.status === "disabled") {
+    return (
+      <div className="flex h-full flex-col">
+        <CatalogStatsBar stats={catalogStats} />
+        <RuleHeader rule={selectedRule} recordCount={0} />
+        <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
+          This rule is disabled. Enable it in the context panel to run checks.
         </div>
       </div>
     );
@@ -582,380 +430,179 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Mode tab bar */}
-      <ViewTabBar
-        tabs={[
-          { key: "data-quality", label: "Data quality", count: modeCounts.dataQuality },
-          { key: "study-design", label: "Study design", count: modeCounts.studyDesign },
-          { key: "rule-catalog", label: "Rule catalog" },
-        ]}
-        value={mode}
-        onChange={(k) => handleModeChange(k as ValidationMode)}
-        right={
-          <span className="flex items-center gap-2 mr-3">
-            <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-            <button
-              className="rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-              disabled={isValidating}
-              onClick={() => runValidation()}
-            >
-              {isValidating ? "RUNNING..." : "RUN"}
-            </button>
-          </span>
-        }
-      />
+      <CatalogStatsBar stats={catalogStats} />
+      {/* Rule header bar */}
+      <RuleHeader rule={selectedRule} recordCount={filteredRecords.length} />
 
-      {/* Rule catalog mode */}
-      {mode === "rule-catalog" ? (
-        <ValidationRuleCatalog
-          firedRules={allRules}
-          scripts={validationData.scripts ?? []}
-          coreConformance={validationData.core_conformance ?? null}
-          studyId={studyId}
-        />
-      ) : (
-      <>
-      {/* Severity filter bar */}
-      <div className="flex items-center gap-4 border-b px-4 py-2">
-        <div className="flex items-center gap-3 text-xs">
-          <button
-            className={cn(
-              "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
-              severityFilter === "Error" && "ring-1 ring-border bg-muted/50",
-              severityFilter && severityFilter !== "Error" && "opacity-40"
-            )}
-            onClick={() => setSeverityFilter((prev) => (prev === "Error" ? "" : "Error"))}
-            title="Filter by errors"
+      {/* Record filter bar */}
+      <FilterBar>
+        <span className="text-xs font-medium">
+          {recordFilters.fixStatus || recordFilters.reviewStatus || recordFilters.subjectId
+            ? <>{filteredRecords.length} of {recordRows.length} record{recordRows.length !== 1 ? "s" : ""}</>
+            : <>{filteredRecords.length} record{filteredRecords.length !== 1 ? "s" : ""}</>
+          }
+        </span>
+        <div className="ml-auto flex items-center gap-1.5">
+          <FilterSelect
+            value={recordFilters.fixStatus}
+            onChange={(e) => setRecordFilters((prev) => ({ ...prev, fixStatus: e.target.value }))}
           >
-            <span className="text-[10px] text-muted-foreground">&#x2716;</span>
-            <span className="font-medium">{counts.errors}</span>
-            <span className="text-muted-foreground">errors</span>
-          </button>
-          <button
-            className={cn(
-              "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
-              severityFilter === "Warning" && "ring-1 ring-border bg-muted/50",
-              severityFilter && severityFilter !== "Warning" && "opacity-40"
-            )}
-            onClick={() => setSeverityFilter((prev) => (prev === "Warning" ? "" : "Warning"))}
-            title="Filter by warnings"
+            <option value="">All fix status</option>
+            <option value="Not fixed">Not fixed</option>
+            <option value="Auto-fixed">Auto-fixed</option>
+            <option value="Manually fixed">Manually fixed</option>
+            <option value="Accepted as-is">Accepted as-is</option>
+            <option value="Flagged">Flagged</option>
+          </FilterSelect>
+          <FilterSelect
+            value={recordFilters.reviewStatus}
+            onChange={(e) => setRecordFilters((prev) => ({ ...prev, reviewStatus: e.target.value }))}
           >
-            <span className="text-[10px] text-muted-foreground">&#x26A0;</span>
-            <span className="font-medium">{counts.warnings}</span>
-            <span className="text-muted-foreground">warnings</span>
-          </button>
-          <button
-            className={cn(
-              "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
-              severityFilter === "Info" && "ring-1 ring-border bg-muted/50",
-              severityFilter && severityFilter !== "Info" && "opacity-40"
-            )}
-            onClick={() => setSeverityFilter((prev) => (prev === "Info" ? "" : "Info"))}
-            title="Filter by info"
+            <option value="">All review status</option>
+            <option value="Not reviewed">Not reviewed</option>
+            <option value="Reviewed">Reviewed</option>
+            <option value="Approved">Approved</option>
+          </FilterSelect>
+          <FilterSelect
+            value={recordFilters.subjectId}
+            onChange={(e) => setRecordFilters((prev) => ({ ...prev, subjectId: e.target.value }))}
           >
-            <span className="text-[10px] text-muted-foreground">&#x2139;</span>
-            <span className="font-medium">{counts.info}</span>
-            <span className="text-muted-foreground">info</span>
-          </button>
-          {validationData.summary.elapsed_seconds != null && (
-            <span className="text-muted-foreground">
-              ({validationData.summary.elapsed_seconds}s)
-            </span>
-          )}
+            <option value="">All subjects</option>
+            {uniqueSubjects.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </FilterSelect>
         </div>
-        {/* Source filter (CORE vs Custom) */}
-        {(counts.core > 0 || counts.custom > 0) && (
-          <div className="ml-auto flex items-center gap-2 border-l pl-4 text-xs">
-            <span className="text-muted-foreground">Source:</span>
-            <button
-              className={cn(
-                "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
-                sourceFilter === "core" && "ring-1 ring-border bg-muted/50",
-                sourceFilter && sourceFilter !== "core" && "opacity-40"
-              )}
-              onClick={() => setSourceFilter((prev) => (prev === "core" ? "" : "core"))}
-              title="Show only CDISC CORE rules"
-            >
-              <span className="font-medium">{counts.core}</span>
-              <span className="text-muted-foreground">CORE</span>
-            </button>
-            <button
-              className={cn(
-                "flex items-center gap-1 rounded-full px-1.5 py-0.5 transition-opacity",
-                sourceFilter === "custom" && "ring-1 ring-border bg-muted/50",
-                sourceFilter && sourceFilter !== "custom" && "opacity-40"
-              )}
-              onClick={() => setSourceFilter((prev) => (prev === "custom" ? "" : "custom"))}
-              title="Show only custom rules"
-            >
-              <span className="font-medium">{counts.custom}</span>
-              <span className="text-muted-foreground">Custom</span>
-            </button>
-          </div>
-        )}
-        {/* CORE conformance metadata */}
-        {validationData.core_conformance && (
-          <div className="ml-auto flex items-center gap-2 border-l pl-4 text-[10px] text-muted-foreground">
-            <span title={`CORE Engine ${validationData.core_conformance.engine_version}`}>
-              {validationData.core_conformance.standard}
-            </span>
-            {validationData.core_conformance.ct_version && (
-              <span title="Controlled Terminology Version">
-                CT: {validationData.core_conformance.ct_version}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+      </FilterBar>
 
-      {rules.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
-          {(severityFilter || sourceFilter) && modeRules.length > 0 ? (
-            <>
-              <span>
-                No {severityFilter && severityFilter.toLowerCase()} {sourceFilter && sourceFilter} rules found.
-              </span>
-              <button
-                className="rounded border px-2 py-1 text-xs hover:bg-muted/50"
-                onClick={() => {
-                  setSeverityFilter("");
-                  setSourceFilter("");
-                }}
-              >
-                Show all
-              </button>
-            </>
-          ) : mode === "study-design" ? (
-            <span>No study design issues detected.</span>
-          ) : (
-            <span>No validation issues found. Dataset passed all checks.</span>
-          )}
-        </div>
-      ) : (
-        <div ref={containerRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {/* Top table — Rule Summary */}
-          <ViewSection
-            mode="fixed"
-            title={`Rule summary (${rules.length})`}
-            height={rulesSection.height}
-            onResizePointerDown={rulesSection.onPointerDown}
-            contentRef={rulesSection.contentRef}
-            expandGen={expandGen}
-            collapseGen={collapseGen}
-          >
-          <div className="h-full overflow-auto">
-            <table className="w-full text-[10px]">
-              <thead className="sticky top-0 z-10 bg-background">
-                {ruleTable.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="border-b bg-muted/30">
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="relative cursor-pointer select-none px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-                        style={ruleColStyle(header.id)}
-                        onDoubleClick={header.column.getToggleSortingHandler()}
-                      >
-                        <span className="flex items-center gap-1">
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? null}
-                        </span>
-                        <div
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          className={cn(
-                            "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
-                            header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
-                          )}
-                        />
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {ruleTable.getRowModel().rows.map((row) => {
-                  const isSelected = selectedRule?.rule_id === row.original.rule_id;
-                  return (
-                    <tr
-                      key={row.id}
+      {/* Records table — full height */}
+      <div className="min-h-0 flex-1 overflow-auto">
+        <table className="w-full text-[10px]">
+          <thead className="sticky top-0 z-10 bg-background">
+            {recordTable.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id} className="border-b bg-muted/30">
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="relative cursor-pointer select-none px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                    style={recordColStyle(header.id)}
+                    onDoubleClick={header.column.getToggleSortingHandler()}
+                  >
+                    <span className="flex items-center gap-1">
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? null}
+                    </span>
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
                       className={cn(
-                        "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                        isSelected && "bg-accent font-medium"
+                        "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
+                        header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
                       )}
-                      onClick={() => handleRuleClick(row.original)}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          className={cn(
-                            "px-1.5 py-px",
-                            cell.column.id === RULE_ABSORBER && !ruleColumnSizing[RULE_ABSORBER] && "overflow-hidden text-ellipsis whitespace-nowrap",
-                          )}
-                          style={ruleColStyle(cell.column.id)}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          </ViewSection>
-
-          {/* Divider bar */}
-          {selectedRule && (
-            <FilterBar>
-              <span className="text-xs font-medium">
-                {recordFilters.fixStatus || recordFilters.reviewStatus || recordFilters.subjectId
-                  ? <>{filteredRecords.length} of {recordRows.length} record{recordRows.length !== 1 ? "s" : ""}</>
-                  : <>{filteredRecords.length} record{filteredRecords.length !== 1 ? "s" : ""}</>
-                } for{" "}
-                <span className="font-mono">{selectedRule.rule_id}</span>
-                {" \u2014 "}
-                {selectedRule.category}
-              </span>
-              <div className="ml-auto flex items-center gap-1.5">
-                {/* Fix status filter */}
-                <FilterSelect
-                  value={recordFilters.fixStatus}
-                  onChange={(e) => setRecordFilters((prev) => ({ ...prev, fixStatus: e.target.value }))}
-                >
-                  <option value="">All fix status</option>
-                  <option value="Not fixed">Not fixed</option>
-                  <option value="Auto-fixed">Auto-fixed</option>
-                  <option value="Manually fixed">Manually fixed</option>
-                  <option value="Accepted as-is">Accepted as-is</option>
-                  <option value="Flagged">Flagged</option>
-                </FilterSelect>
-                {/* Review status filter */}
-                <FilterSelect
-                  value={recordFilters.reviewStatus}
-                  onChange={(e) => setRecordFilters((prev) => ({ ...prev, reviewStatus: e.target.value }))}
-                >
-                  <option value="">All review status</option>
-                  <option value="Not reviewed">Not reviewed</option>
-                  <option value="Reviewed">Reviewed</option>
-                  <option value="Approved">Approved</option>
-                </FilterSelect>
-                {/* Subject filter */}
-                <FilterSelect
-                  value={recordFilters.subjectId}
-                  onChange={(e) => setRecordFilters((prev) => ({ ...prev, subjectId: e.target.value }))}
-                >
-                  <option value="">All subjects</option>
-                  {uniqueSubjects.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </FilterSelect>
-              </div>
-            </FilterBar>
-          )}
-
-          {/* Bottom table — Affected Records */}
-          {selectedRule ? (
-            <ViewSection
-              mode="flex"
-              title={`Affected records (${filteredRecords.length})`}
-              expandGen={expandGen}
-              collapseGen={collapseGen}
-            >
-            <div className="h-full overflow-auto">
-              <table className="w-full text-[10px]">
-                <thead className="sticky top-0 z-10 bg-background">
-                  {recordTable.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id} className="border-b bg-muted/30">
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="relative cursor-pointer select-none px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-                          style={recordColStyle(header.id)}
-                          onDoubleClick={header.column.getToggleSortingHandler()}
-                        >
-                          <span className="flex items-center gap-1">
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? null}
-                          </span>
-                          <div
-                            onMouseDown={header.getResizeHandler()}
-                            onTouchStart={header.getResizeHandler()}
-                            className={cn(
-                              "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
-                              header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
-                            )}
-                          />
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {recordTable.getRowModel().rows.map((row) => {
-                    const isSelected = selectedIssueId === row.original.issue_id;
-                    return (
-                      <tr
-                        key={row.id}
-                        className={cn(
-                          "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                          isSelected && "bg-accent font-medium"
-                        )}
-                        onClick={() => {
-                          const rec = row.original;
-                          setSelectedIssueId(rec.issue_id);
-                          onSelectionChange?.({
-                            _view: "validation",
-                            mode: "issue",
-                            rule_id: selectedRule.rule_id,
-                            severity: selectedRule.severity,
-                            domain: rec.domain,
-                            category: selectedRule.category,
-                            description: selectedRule.description,
-                            records_affected: selectedRule.records_affected,
-                            issue_id: rec.issue_id,
-                            subject_id: rec.subject_id,
-                            visit: rec.visit,
-                            variable: rec.variable,
-                            actual_value: rec.actual_value,
-                            expected_value: rec.expected_value,
-                          });
-                        }}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td
-                            key={cell.id}
-                            className={cn(
-                              "px-1.5 py-px",
-                              cell.column.id === RECORD_ABSORBER && !recordColumnSizing[RECORD_ABSORBER] && "overflow-hidden text-ellipsis whitespace-nowrap",
-                            )}
-                            style={recordColStyle(cell.column.id)}
-                          >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
-                        ))}
-                      </tr>
-                    );
-                  })}
-                  {filteredRecords.length === 0 && (
-                    <tr>
-                      <td colSpan={recordColumns.length} className="px-4 py-6 text-center text-xs text-muted-foreground">
-                        No records match the current filters.
-                      </td>
-                    </tr>
+                    />
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {recordTable.getRowModel().rows.map((row) => {
+              const isSelected = selectedIssueId === row.original.issue_id;
+              return (
+                <tr
+                  key={row.id}
+                  className={cn(
+                    "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                    isSelected && "bg-accent font-medium"
                   )}
-                </tbody>
-              </table>
-            </div>
-            </ViewSection>
-          ) : (
-            <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
-              Select a rule above to view affected records
-            </div>
-          )}
-        </div>
+                  onClick={() => {
+                    const rec = row.original;
+                    setSelectedIssueId(rec.issue_id);
+                    onSelectionChange?.({
+                      _view: "validation",
+                      mode: "issue",
+                      rule_id: selectedRule.rule_id,
+                      severity: selectedRule.severity,
+                      domain: rec.domain,
+                      category: selectedRule.category,
+                      description: selectedRule.description,
+                      records_affected: selectedRule.records_affected,
+                      issue_id: rec.issue_id,
+                      subject_id: rec.subject_id,
+                      visit: rec.visit,
+                      variable: rec.variable,
+                      actual_value: rec.actual_value,
+                      expected_value: rec.expected_value,
+                    });
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className={cn(
+                        "px-1.5 py-px",
+                        cell.column.id === RECORD_ABSORBER && !recordColumnSizing[RECORD_ABSORBER] && "overflow-hidden text-ellipsis whitespace-nowrap",
+                      )}
+                      style={recordColStyle(cell.column.id)}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+            {filteredRecords.length === 0 && (
+              <tr>
+                <td colSpan={recordColumns.length} className="px-4 py-6 text-center text-xs text-muted-foreground">
+                  No records match the current filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Catalog stats bar (always visible at top of center panel) ────────────
+
+function CatalogStatsBar({ stats }: {
+  stats: { total: number; enabled: number; triggered: number; lastRun: { ago: number; elapsed: number | undefined } | null };
+}) {
+  return (
+    <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-1.5">
+      <span className="text-[10px] text-muted-foreground">
+        {stats.total} rules &middot; {stats.enabled} enabled &middot;{" "}
+        {stats.triggered} triggered
+      </span>
+      {stats.lastRun && (
+        <span className="text-[10px] text-muted-foreground">
+          Last run: {stats.lastRun.ago}m ago
+          {stats.lastRun.elapsed != null && ` (${stats.lastRun.elapsed}s)`}
+        </span>
       )}
-      </>
-      )}
+    </div>
+  );
+}
+
+// ── Rule header bar (shown when a rule is selected) ─────────────────────
+
+function RuleHeader({ rule, recordCount }: { rule: ValidationRuleResult; recordCount: number }) {
+  return (
+    <div className="flex items-center gap-3 border-b px-4 py-2">
+      <span className="font-mono text-xs font-semibold">{rule.rule_id}</span>
+      <span
+        className="border-l-2 pl-1.5 text-[10px] font-semibold text-gray-600"
+        style={{ borderLeftColor: SEVERITY_BORDER_COLORS[rule.severity] ?? "#6B7280" }}
+      >
+        {rule.severity}
+      </span>
+      <DomainLabel domain={rule.domain} />
+      <span className="text-xs text-muted-foreground">{rule.description}</span>
+      <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+        {recordCount} rec
+      </span>
     </div>
   );
 }

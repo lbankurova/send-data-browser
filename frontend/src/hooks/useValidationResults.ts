@@ -13,6 +13,7 @@ export interface ValidationRuleResult {
   how_to_fix: string;
   cdisc_reference: string | null;
   source: "custom" | "core";
+  status?: "triggered" | "clean" | "disabled";
 }
 
 export interface FixScriptDef {

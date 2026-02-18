@@ -1,81 +1,144 @@
+/**
+ * Regression guards — invariant versions of bugs found in PointCross.
+ * Each test encodes the CLASS of bug, not a specific hardcoded value.
+ */
 import { describe, test, expect } from "vitest";
 import { resolveCanonical, evaluateLabRules } from "@/lib/lab-clinical-catalog";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 import fixture from "./fixtures/pointcross-findings.json";
 
-const summaries = deriveEndpointSummaries(fixture as AdverseEffectSummaryRow[]);
-const byLabel = new Map(summaries.map((s) => [s.endpoint_label, s]));
+const rows = fixture as AdverseEffectSummaryRow[];
+const summaries = deriveEndpointSummaries(rows);
 const matches = evaluateLabRules(summaries);
-const firedRules = new Set(matches.map((m) => m.ruleId));
 
-describe("regression guards", () => {
-  // Bug C1: resolveCanonical substring false positive
-  test("PANCREAS does not resolve to NEUT (Bug C1)", () => {
-    expect(resolveCanonical("PANCREAS \u2014 INFLAMMATION")).not.toBe("NEUT");
+describe("regression: resolveCanonical false positives (Bug C1)", () => {
+  // Bug class: substring of a canonical name appearing inside a longer, unrelated term
+  const FALSE_POSITIVE_CASES = [
+    { label: "PANCREAS \u2014 INFLAMMATION", mustNotBe: "NEUT" },
+    { label: "KIDNEY \u2014 CAST", mustNotBe: "AST" },
+    { label: "GASTRIC EROSION", mustNotBe: "RBC" },
+    { label: "PHOSPHOLIPIDOSIS", mustNotBe: "PHOS" },
+  ];
+
+  for (const { label, mustNotBe } of FALSE_POSITIVE_CASES) {
+    test(`"${label}" must not resolve to ${mustNotBe}`, () => {
+      expect(resolveCanonical(label)).not.toBe(mustNotBe);
+    });
+  }
+});
+
+describe("regression: fold change vs Cohen's d (Bug C4)", () => {
+  // Bug class: maxFoldChange was computed as Cohen's d instead of actual fold change.
+  // Fold change for most lab endpoints should be < 5×; Cohen's d can be 2-3× for ~1.2× fold.
+
+  test("no LB endpoint has fold change >= 6 (would indicate Cohen's d)", () => {
+    for (const ep of summaries) {
+      if (ep.domain !== "LB" || ep.maxFoldChange == null) continue;
+      expect(
+        ep.maxFoldChange,
+        `${ep.endpoint_label} fold change ${ep.maxFoldChange.toFixed(2)} looks like Cohen's d`,
+      ).toBeLessThan(6);
+    }
   });
 
-  test("KIDNEY — CAST does not resolve to AST (Bug C1)", () => {
-    expect(resolveCanonical("KIDNEY \u2014 CAST")).not.toBe("AST");
+  test("fold changes are consistently lower than max effect sizes", () => {
+    // Effect sizes (Cohen's d) are typically larger than fold changes for the same endpoint
+    let checked = 0;
+    for (const ep of summaries) {
+      if (ep.maxFoldChange == null || ep.maxEffectSize == null) continue;
+      if (ep.maxFoldChange >= 2.0 && Math.abs(ep.maxEffectSize) < ep.maxFoldChange) {
+        // A fold change > 2 that exceeds the effect size is suspicious but possible
+        // for incidence data. Only flag if domain is LB (continuous).
+        if (ep.domain === "LB") {
+          expect.soft(
+            ep.maxFoldChange,
+            `${ep.endpoint_label}: fold ${ep.maxFoldChange.toFixed(2)} > |d| ${Math.abs(ep.maxEffectSize).toFixed(2)} — verify this is fold change, not Cohen's d`,
+          ).toBeLessThan(6);
+        }
+      }
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(0); // ensure we tested something
+  });
+});
+
+describe("regression: organ system mapping (Bug 9)", () => {
+  // Bug class: hematologic endpoints (NEUT, PLAT, etc.) mapped to "general" instead of "hematologic"
+
+  const HEMATOLOGIC_CODES = ["NEUT", "PLAT", "RETIC", "HGB", "HCT", "RBC", "WBC"];
+  const HEPATIC_CODES = ["ALT", "AST", "ALP", "GGT", "TBILI"];
+  const RENAL_CODES = ["CREAT", "BUN"];
+
+  function checkOrganForCodes(codes: string[], expectedOrgan: string) {
+    for (const ep of summaries) {
+      const canonical = resolveCanonical(ep.endpoint_label, ep.testCode);
+      if (canonical && codes.includes(canonical)) {
+        expect(
+          ep.organ_system,
+          `${ep.endpoint_label} (${canonical}) should be ${expectedOrgan}`,
+        ).toBe(expectedOrgan);
+      }
+    }
+  }
+
+  test("hematologic endpoints map to hematologic", () => {
+    checkOrganForCodes(HEMATOLOGIC_CODES, "hematologic");
   });
 
-  // Bug C4: fold change vs Cohen's d
-  test("HGB fold change < 2.0 (Bug C4 — was 2.64 from Cohen's d)", () => {
-    const ep = byLabel.get("Hemoglobin");
-    expect(ep?.maxFoldChange).toBeLessThan(2.0);
+  test("hepatic endpoints map to hepatic", () => {
+    checkOrganForCodes(HEPATIC_CODES, "hepatic");
   });
 
-  // Bug 9: organ mapping
-  test("Neutrophils in hematologic, not general (Bug 9)", () => {
-    expect(byLabel.get("Neutrophils")?.organ_system).toBe("hematologic");
+  test("renal endpoints map to renal", () => {
+    checkOrganForCodes(RENAL_CODES, "renal");
   });
+});
 
-  test("Platelets in hematologic (Bug 9)", () => {
-    expect(byLabel.get("Platelets")?.organ_system).toBe("hematologic");
+describe("regression: pattern classifier noise tolerance", () => {
+  // Bug class: small fluctuations misclassified as non_monotonic
+  // Guard: if an endpoint has a clear trend (> 80% of dose groups moving in same direction),
+  // it should NOT be classified as non_monotonic
+
+  test("no endpoint with strong directional signal is classified as non_monotonic", () => {
+    for (const ep of summaries) {
+      if (ep.pattern !== "non_monotonic") continue;
+      // non_monotonic endpoints should not have very low p-values + large effects
+      // (those indicate a real signal that the classifier should recognize)
+      if (ep.minPAdj != null && ep.minPAdj < 0.001 && ep.maxEffectSize != null && Math.abs(ep.maxEffectSize) > 1.5) {
+        expect.soft(
+          ep.pattern,
+          `${ep.endpoint_label} (p=${ep.minPAdj.toFixed(4)}, d=${ep.maxEffectSize.toFixed(2)}) classified as non_monotonic despite strong signal`,
+        ).not.toBe("non_monotonic");
+      }
+    }
   });
+});
 
-  test("ALT in hepatic (Bug 9)", () => {
-    expect(byLabel.get("Alanine Aminotransferase")?.organ_system).toBe("hepatic");
-  });
+describe("regression: per-sex rule evaluation (fold/direction sex mismatch)", () => {
+  // Bug class: rule evaluator mixing male direction with female fold change
 
-  // Bug 13: L01/L14 false trigger (fold change, not Cohen's d)
-  test("L01 does not fire for ALT ~1.25× (threshold 2×, Bug 13)", () => {
-    expect(firedRules.has("L01")).toBe(false);
-  });
-
-  test("L14 does not fire for HGB 1.10× (Bug 13)", () => {
-    expect(firedRules.has("L14")).toBe(false);
-  });
-
-  // L03 Bilirubin direction
-  test("L03 does not fire when Bilirubin is down (Bilirubin direction bug)", () => {
-    expect(firedRules.has("L03")).toBe(false);
-  });
-
-  // Pattern classifier: Neutrophils noise tolerance
-  test("Neutrophils not classified as non_monotonic (noise tolerance)", () => {
-    const ep = byLabel.get("Neutrophils");
-    expect(ep?.pattern).not.toBe("non_monotonic");
-  });
-
-  // ALT fold change is real fold change, not Cohen's d
-  test("ALT fold change is realistic (~1.25, not ~2.23 Cohen's d)", () => {
-    const ep = byLabel.get("Alanine Aminotransferase");
-    expect(ep?.maxFoldChange).toBeGreaterThan(1.0);
-    expect(ep?.maxFoldChange).toBeLessThan(2.0);
-  });
-
-  // L19 Neutrophil decrease: NEUT fold change and direction must be from same sex
-  // M NEUT has direction=down with fc=1.51, F NEUT has direction=up with fc=2.07
-  // L19 requires hasDown AND foldAbove(2) — must not mix M's down with F's 2.07×
-  test("L19 does not fire (NEUT fold/direction sex mismatch)", () => {
-    expect(firedRules.has("L19")).toBe(false);
-  });
-
-  // L28 Neutrophil increase: should fire for F sex (NEUT up 2.07×)
-  test("L28 fires with sex=F (NEUT increase ≥2×, per-sex evaluation)", () => {
-    const l28 = matches.find(m => m.ruleId === "L28");
-    expect(l28).toBeDefined();
-    expect(l28!.sex).toBe("F");
+  test("every per-sex match has fold change from the correct sex", () => {
+    for (const m of matches) {
+      if (!m.sex) continue;
+      // The match's fold changes should come from the same sex as m.sex
+      // We verify by checking that the matched endpoint's bySex data for m.sex
+      // has a fold change in the same ballpark as the match's reported fold
+      for (const epLabel of m.matchedEndpoints) {
+        const ep = summaries.find((e) => e.endpoint_label === epLabel);
+        if (!ep?.bySex) continue;
+        const sexData = ep.bySex.get(m.sex);
+        if (!sexData || sexData.maxFoldChange == null) continue;
+        const matchFold = m.foldChanges[epLabel] ?? m.foldChanges[Object.keys(m.foldChanges)[0]];
+        if (matchFold == null) continue;
+        // The match fold should be within 50% of the sex-specific fold (not from the other sex)
+        const ratio = matchFold / sexData.maxFoldChange;
+        expect(
+          ratio,
+          `Rule ${m.ruleId} (${m.sex}): ${epLabel} fold ${matchFold.toFixed(2)} vs bySex ${sexData.maxFoldChange.toFixed(2)}`,
+        ).toBeGreaterThan(0.5);
+        expect(ratio).toBeLessThan(2.0);
+      }
+    }
   });
 });

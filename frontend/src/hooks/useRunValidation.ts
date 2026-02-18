@@ -21,6 +21,7 @@ export function useRunValidation(studyId: string | undefined) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["validation-results", studyId] });
+      queryClient.invalidateQueries({ queryKey: ["validation-catalog", studyId] });
       queryClient.invalidateQueries({ queryKey: ["affected-records", studyId] });
     },
   });

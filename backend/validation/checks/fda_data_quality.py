@@ -337,9 +337,14 @@ def _check_fda003(
             calcn_mask = supppc["QNAM"].astype(str).str.strip().str.upper() == "CALCN"
             calcn_subjects = set(supppc.loc[calcn_mask, "USUBJID"].astype(str).unique())
 
-    # Flag each BQL row without CALCN documentation
+    # Flag each unique subject-test-visit BQL group without CALCN documentation
     results: list[AffectedRecordResult] = []
     subj_col = "USUBJID" if "USUBJID" in bql_rows.columns else None
+    has_test = "PCTESTCD" in bql_rows.columns
+    has_visit = "VISITDY" in bql_rows.columns
+
+    # Deduplicate: group by (subject, test, visit) — one issue per unique combo
+    seen: set[tuple[str, str, str]] = set()
 
     for idx, row in bql_rows.iterrows():
         subj = str(row[subj_col]) if subj_col else "--"
@@ -348,18 +353,19 @@ def _check_fda003(
         if subj in calcn_subjects:
             continue
 
-        visit = "--"
-        if "VISITDY" in row.index:
-            v = row["VISITDY"]
-            if pd.notna(v):
-                visit = f"Day {v}"
+        test_val = str(row.get("PCTESTCD", "")).strip() if has_test else ""
+        visit_raw = str(row["VISITDY"]) if has_visit and pd.notna(row["VISITDY"]) else "--"
 
+        dedup_key = (subj, test_val, visit_raw)
+        if dedup_key in seen:
+            continue
+        seen.add(dedup_key)
+
+        visit = f"Day {visit_raw}" if visit_raw != "--" else "--"
         orres_val = str(row.get("PCORRES", "")).strip()
         lloq_val = ""
         if "PCLLOQ" in row.index and pd.notna(row["PCLLOQ"]):
             lloq_val = str(row["PCLLOQ"])
-
-        test_val = str(row.get("PCTESTCD", "")).strip() if "PCTESTCD" in row.index else ""
 
         evidence_lines = [
             {"label": "PCORRES", "value": orres_val},

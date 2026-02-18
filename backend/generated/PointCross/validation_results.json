@@ -35,8 +35,8 @@
       "severity": "Warning",
       "domain": "PC",
       "category": "Data quality",
-      "description": "Below-LLOQ without imputation method \u2014 10 issues",
-      "records_affected": 10,
+      "description": "Below-LLOQ without imputation method \u2014 5 issues",
+      "records_affected": 5,
       "standard": "SENDIG v3.1",
       "section": "FDA Bioanalytical Method Guidance, SENDIG 3.1 Section 6.3",
       "rationale": "Checks PC domain for below-LLOQ results (BQL/PCSTRESN null) without a corresponding SUPPPC record documenting the imputation method (QNAM=CALCN).",
@@ -166,7 +166,7 @@
       {
         "issue_id": "FDA-003-PC-002",
         "rule_id": "FDA-003-PC",
-        "subject_id": "PC201708-2201",
+        "subject_id": "PC201708-2210",
         "visit": "Day 91.0",
         "domain": "PC",
         "variable": "PCSTRESN",
@@ -205,12 +205,12 @@
             }
           ]
         },
-        "diagnosis": "Subject PC201708-2201 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
+        "diagnosis": "Subject PC201708-2210 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
       },
       {
         "issue_id": "FDA-003-PC-003",
         "rule_id": "FDA-003-PC",
-        "subject_id": "PC201708-2210",
+        "subject_id": "PC201708-3202",
         "visit": "Day 91.0",
         "domain": "PC",
         "variable": "PCSTRESN",
@@ -249,12 +249,12 @@
             }
           ]
         },
-        "diagnosis": "Subject PC201708-2210 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
+        "diagnosis": "Subject PC201708-3202 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
       },
       {
         "issue_id": "FDA-003-PC-004",
         "rule_id": "FDA-003-PC",
-        "subject_id": "PC201708-2210",
+        "subject_id": "PC201708-4202",
         "visit": "Day 91.0",
         "domain": "PC",
         "variable": "PCSTRESN",
@@ -293,230 +293,10 @@
             }
           ]
         },
-        "diagnosis": "Subject PC201708-2210 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
+        "diagnosis": "Subject PC201708-4202 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
       },
       {
         "issue_id": "FDA-003-PC-005",
-        "rule_id": "FDA-003-PC",
-        "subject_id": "PC201708-3202",
-        "visit": "Day 91.0",
-        "domain": "PC",
-        "variable": "PCSTRESN",
-        "actual_value": "BQL",
-        "expected_value": "SUPPPC CALCN documenting imputation method",
-        "fix_tier": 2,
-        "auto_fixed": false,
-        "suggestions": [
-          "Add SUPPPC QNAM='CALCN' QVAL='BQL=0'",
-          "Add SUPPPC QNAM='CALCN' QVAL='BQL=LLOQ/2'"
-        ],
-        "script_key": null,
-        "evidence": {
-          "type": "missing-value",
-          "variable": "SUPPPC.CALCN",
-          "lines": [
-            {
-              "label": "PCORRES",
-              "value": "BQL"
-            },
-            {
-              "label": "PCSTRESN",
-              "value": "(NaN)"
-            },
-            {
-              "label": "PCLLOQ",
-              "value": "20.0"
-            },
-            {
-              "label": "PCTESTCD",
-              "value": "PCDRUGC"
-            },
-            {
-              "label": "SUPPPC CALCN",
-              "value": "Not found"
-            }
-          ]
-        },
-        "diagnosis": "Subject PC201708-3202 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
-      },
-      {
-        "issue_id": "FDA-003-PC-006",
-        "rule_id": "FDA-003-PC",
-        "subject_id": "PC201708-3202",
-        "visit": "Day 91.0",
-        "domain": "PC",
-        "variable": "PCSTRESN",
-        "actual_value": "BQL",
-        "expected_value": "SUPPPC CALCN documenting imputation method",
-        "fix_tier": 2,
-        "auto_fixed": false,
-        "suggestions": [
-          "Add SUPPPC QNAM='CALCN' QVAL='BQL=0'",
-          "Add SUPPPC QNAM='CALCN' QVAL='BQL=LLOQ/2'"
-        ],
-        "script_key": null,
-        "evidence": {
-          "type": "missing-value",
-          "variable": "SUPPPC.CALCN",
-          "lines": [
-            {
-              "label": "PCORRES",
-              "value": "BQL"
-            },
-            {
-              "label": "PCSTRESN",
-              "value": "(NaN)"
-            },
-            {
-              "label": "PCLLOQ",
-              "value": "20.0"
-            },
-            {
-              "label": "PCTESTCD",
-              "value": "PCDRUGC"
-            },
-            {
-              "label": "SUPPPC CALCN",
-              "value": "Not found"
-            }
-          ]
-        },
-        "diagnosis": "Subject PC201708-3202 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
-      },
-      {
-        "issue_id": "FDA-003-PC-007",
-        "rule_id": "FDA-003-PC",
-        "subject_id": "PC201708-4202",
-        "visit": "Day 91.0",
-        "domain": "PC",
-        "variable": "PCSTRESN",
-        "actual_value": "BQL",
-        "expected_value": "SUPPPC CALCN documenting imputation method",
-        "fix_tier": 2,
-        "auto_fixed": false,
-        "suggestions": [
-          "Add SUPPPC QNAM='CALCN' QVAL='BQL=0'",
-          "Add SUPPPC QNAM='CALCN' QVAL='BQL=LLOQ/2'"
-        ],
-        "script_key": null,
-        "evidence": {
-          "type": "missing-value",
-          "variable": "SUPPPC.CALCN",
-          "lines": [
-            {
-              "label": "PCORRES",
-              "value": "BQL"
-            },
-            {
-              "label": "PCSTRESN",
-              "value": "(NaN)"
-            },
-            {
-              "label": "PCLLOQ",
-              "value": "20.0"
-            },
-            {
-              "label": "PCTESTCD",
-              "value": "PCDRUGC"
-            },
-            {
-              "label": "SUPPPC CALCN",
-              "value": "Not found"
-            }
-          ]
-        },
-        "diagnosis": "Subject PC201708-4202 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
-      },
-      {
-        "issue_id": "FDA-003-PC-008",
-        "rule_id": "FDA-003-PC",
-        "subject_id": "PC201708-4202",
-        "visit": "Day 91.0",
-        "domain": "PC",
-        "variable": "PCSTRESN",
-        "actual_value": "BQL",
-        "expected_value": "SUPPPC CALCN documenting imputation method",
-        "fix_tier": 2,
-        "auto_fixed": false,
-        "suggestions": [
-          "Add SUPPPC QNAM='CALCN' QVAL='BQL=0'",
-          "Add SUPPPC QNAM='CALCN' QVAL='BQL=LLOQ/2'"
-        ],
-        "script_key": null,
-        "evidence": {
-          "type": "missing-value",
-          "variable": "SUPPPC.CALCN",
-          "lines": [
-            {
-              "label": "PCORRES",
-              "value": "BQL"
-            },
-            {
-              "label": "PCSTRESN",
-              "value": "(NaN)"
-            },
-            {
-              "label": "PCLLOQ",
-              "value": "20.0"
-            },
-            {
-              "label": "PCTESTCD",
-              "value": "PCDRUGC"
-            },
-            {
-              "label": "SUPPPC CALCN",
-              "value": "Not found"
-            }
-          ]
-        },
-        "diagnosis": "Subject PC201708-4202 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
-      },
-      {
-        "issue_id": "FDA-003-PC-009",
-        "rule_id": "FDA-003-PC",
-        "subject_id": "PC201708-4204",
-        "visit": "Day 91.0",
-        "domain": "PC",
-        "variable": "PCSTRESN",
-        "actual_value": "BQL",
-        "expected_value": "SUPPPC CALCN documenting imputation method",
-        "fix_tier": 2,
-        "auto_fixed": false,
-        "suggestions": [
-          "Add SUPPPC QNAM='CALCN' QVAL='BQL=0'",
-          "Add SUPPPC QNAM='CALCN' QVAL='BQL=LLOQ/2'"
-        ],
-        "script_key": null,
-        "evidence": {
-          "type": "missing-value",
-          "variable": "SUPPPC.CALCN",
-          "lines": [
-            {
-              "label": "PCORRES",
-              "value": "BQL"
-            },
-            {
-              "label": "PCSTRESN",
-              "value": "(NaN)"
-            },
-            {
-              "label": "PCLLOQ",
-              "value": "20.0"
-            },
-            {
-              "label": "PCTESTCD",
-              "value": "PCDRUGC"
-            },
-            {
-              "label": "SUPPPC CALCN",
-              "value": "Not found"
-            }
-          ]
-        },
-        "diagnosis": "Subject PC201708-4204 has below-LLOQ result (PCORRES='BQL') with no SUPPPC CALCN record documenting the imputation method."
-      },
-      {
-        "issue_id": "FDA-003-PC-010",
         "rule_id": "FDA-003-PC",
         "subject_id": "PC201708-4204",
         "visit": "Day 91.0",
@@ -681,8 +461,8 @@
       "PC",
       "TS"
     ],
-    "elapsed_seconds": 6.5,
-    "validated_at": "2026-02-18T15:01:24.347647+00:00"
+    "elapsed_seconds": 7.17,
+    "validated_at": "2026-02-18T16:03:35.741087+00:00"
   },
   "core_conformance": {
     "engine_version": "",
