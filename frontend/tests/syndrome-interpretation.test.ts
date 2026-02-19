@@ -240,6 +240,36 @@ describe("syndrome interpretation layer", () => {
     expect(result.status).toBe("argues_against");
   });
 
+  test("evaluateDiscriminator returns supports when direction matches but p > 0.05", () => {
+    // THYMUS_WT in PointCross: direction=down (matches expected), p=0.068 (> 0.05).
+    // Should return "supports" (not "not_available") because the directional signal
+    // is biologically informative even without statistical significance.
+    const disc: SyndromeDiscriminators["findings"][0] = {
+      endpoint: "THYMUS_WT",
+      expectedDirection: "down",
+      source: "OM",
+      weight: "moderate",
+      rationale: "Thymic atrophy indicates immune/stress effect",
+    };
+    const result = evaluateDiscriminator(disc, endpoints, []);
+    expect(result.endpoint).toBe("THYMUS_WT");
+    expect(result.actualDirection).toBe("down");
+    expect(result.status).toBe("supports");
+  });
+
+  test("evaluateDiscriminator returns not_available when direction opposes and p > 0.05", () => {
+    // Endpoint found, wrong direction, not significant → not_available
+    const disc: SyndromeDiscriminators["findings"][0] = {
+      endpoint: "THYMUS_WT",
+      expectedDirection: "up", // opposite to actual "down"
+      source: "OM",
+      weight: "moderate",
+      rationale: "test",
+    };
+    const result = evaluateDiscriminator(disc, endpoints, []);
+    expect(result.status).toBe("not_available");
+  });
+
   test("evaluateDiscriminator returns not_available when specimen not examined", () => {
     const disc: SyndromeDiscriminators["findings"][0] = {
       endpoint: "KIDNEY::TUBULAR DEGENERATION",
