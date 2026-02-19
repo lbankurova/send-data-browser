@@ -1274,6 +1274,30 @@ export function assessCertainty(
         : "Required findings met. Insufficient discriminating evidence to confirm mechanism.";
   }
 
+  // REM-24: Amend rationale when contradicting evidence exists but template claims none
+  const hasGateFired = syndrome.directionalGate?.gateFired;
+  const hasContradictingEvidence = hasGateFired || against.length > 0;
+  if (hasContradictingEvidence) {
+    // Remove any "no contradicting evidence" or "no discriminating evidence" claim
+    if (/No contradicting evidence/i.test(rationale) || /no discriminating evidence/i.test(rationale)) {
+      // Build the contradiction description
+      const contradictions: string[] = [];
+      if (hasGateFired) {
+        const gate = syndrome.directionalGate!;
+        const gateText = gate.explanation.replace(/\.+$/, "");
+        contradictions.push(`Directional gate fired (${gate.action}): ${gateText}`);
+      }
+      for (const a of against) {
+        contradictions.push(`${a.endpoint} argues against (${a.weight})`);
+      }
+      // Replace the misleading claim with accurate contradiction info
+      rationale = rationale
+        .replace(/\. No contradicting evidence\.?/i, `. Contradicting evidence: ${contradictions.join("; ")}.`)
+        .replace(/no discriminating evidence available\. Cannot confirm specific mechanism\.?/i,
+          `contradicting evidence present: ${contradictions.join("; ")}.`);
+    }
+  }
+
   ({ certainty, rationale } = applyCertaintyCaps(syndrome, certainty, rationale));
 
   return { certainty, evidence, rationale };
@@ -1329,6 +1353,49 @@ function applyCertaintyCaps(
           certainty = maxCert;
           rationale += ` Capped at ${maxCert}: ${req.role} domain ${req.domain} not available in study data.`;
         }
+      }
+    }
+  }
+
+  // v0.2.0: Liver enzyme certainty cap — single enzyme at 1.5x → max pattern_only
+  // A single liver enzyme meeting the floor cannot drive certainty above pattern_only.
+  // Upgrade paths: (a) MI hepatocellular injury, (b) ≥2 coherent liver enzymes, (c) liver weight increase.
+  // Per Ramaiah 2017: "Most CP biomarkers do not have the potential to be adverse in isolation."
+  if (syndrome.id === "XS01") {
+    const LIVER_ENZYME_CODES = new Set([
+      "ALT", "ALAT", "AST", "ASAT", "ALP", "ALKP", "GGT",
+      "SDH", "GLDH", "GDH", "5NT", "LDH",
+    ]);
+    const LIVER_ENZYME_LABELS = new Set([
+      "alanine aminotransferase", "aspartate aminotransferase",
+      "alkaline phosphatase", "gamma-glutamyltransferase",
+      "sorbitol dehydrogenase", "glutamate dehydrogenase",
+      "5-nucleotidase", "lactate dehydrogenase",
+    ]);
+
+    // Count distinct liver enzymes in matched endpoints
+    const matchedLbEndpoints = syndrome.matchedEndpoints.filter((m) => m.domain === "LB");
+    const matchedEnzymeLabels = new Set<string>();
+    for (const m of matchedLbEndpoints) {
+      const label = m.endpoint_label.toLowerCase().trim();
+      const code = m.endpoint_label.toUpperCase().trim();
+      if (LIVER_ENZYME_CODES.has(code) || LIVER_ENZYME_LABELS.has(label)) {
+        matchedEnzymeLabels.add(label);
+      }
+    }
+
+    const hasMI = syndrome.domainsCovered.includes("MI");
+    const hasLiverWeight = syndrome.matchedEndpoints.some(
+      (m) => m.domain === "OM" && /liver/i.test(m.endpoint_label),
+    );
+    const hasMultipleEnzymes = matchedEnzymeLabels.size >= 2;
+
+    // Cap applies only if: single enzyme AND no upgrade paths
+    if (matchedEnzymeLabels.size === 1 && !hasMI && !hasLiverWeight && !hasMultipleEnzymes) {
+      if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER["pattern_only"]) {
+        const enzyme = [...matchedEnzymeLabels][0];
+        certainty = "pattern_only";
+        rationale += ` Capped at pattern_only: single liver enzyme (${enzyme}) cannot confirm hepatotoxicity. Upgrade requires: MI lesion, ≥2 coherent enzymes, or liver weight change.`;
       }
     }
   }
@@ -3048,6 +3115,14 @@ export function interpretSyndrome(
     let rat = syndrome.requiredMet
       ? "Required findings met. No discriminating evidence defined for this syndrome."
       : "Syndrome detected through supporting evidence only.";
+    // REM-24: If directional gate fired, amend the rationale to mention the contradiction
+    if (syndrome.directionalGate?.gateFired) {
+      const gate = syndrome.directionalGate;
+      const gateText = gate.explanation.replace(/\.+$/, "");
+      rat = syndrome.requiredMet
+        ? `Required findings met. Contradicting evidence from directional gate (${gate.action}): ${gateText}.`
+        : `Syndrome detected through supporting evidence only. Contradicting evidence from directional gate (${gate.action}): ${gateText}.`;
+    }
     ({ certainty: cert, rationale: rat } = applyCertaintyCaps(syndrome, cert, rat));
     certaintyResult = { certainty: cert, evidence: [], rationale: rat };
   }

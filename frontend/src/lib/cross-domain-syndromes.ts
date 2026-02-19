@@ -732,6 +732,63 @@ function evaluateRequiredLogic(
 }
 
 /**
+ * REM-26: Evaluate a compound expression and return the satisfied clause + participating tags.
+ * Returns null if the expression is not satisfied.
+ */
+function evaluateCompoundExpressionDetailed(
+  expr: string,
+  matchedTags: Set<string>,
+): { clause: string; tags: string[] } | null {
+  const normalized = expr.trim();
+
+  // ANY(a, b, (c AND d)) — return the FIRST satisfied branch
+  const anyMatch = normalized.match(/^ANY\((.+)\)$/);
+  if (anyMatch) {
+    const items = splitTopLevel(anyMatch[1]);
+    for (const item of items) {
+      const result = evaluateCompoundExpressionDetailed(item.trim(), matchedTags);
+      if (result) return result;
+    }
+    return null;
+  }
+
+  // (X AND Y) — parenthesized sub-expression
+  if (normalized.startsWith("(") && normalized.endsWith(")")) {
+    return evaluateCompoundExpressionDetailed(normalized.slice(1, -1).trim(), matchedTags);
+  }
+
+  // X AND Y — all parts must be satisfied; collect all tags, resolve each part's clause
+  if (normalized.includes(" AND ")) {
+    const parts = normalized.split(" AND ").map((p) => p.trim());
+    const allTags: string[] = [];
+    const resolvedParts: string[] = [];
+    for (const p of parts) {
+      const result = evaluateCompoundExpressionDetailed(p, matchedTags);
+      if (!result) return null;
+      allTags.push(...result.tags);
+      resolvedParts.push(result.clause);
+    }
+    return { clause: resolvedParts.join(" AND "), tags: allTags };
+  }
+
+  // X OR Y — return the first satisfied branch
+  if (normalized.includes(" OR ")) {
+    const parts = normalized.split(" OR ").map((p) => p.trim());
+    for (const p of parts) {
+      const result = evaluateCompoundExpressionDetailed(p, matchedTags);
+      if (result) return result;
+    }
+    return null;
+  }
+
+  // Simple tag name
+  if (matchedTags.has(normalized)) {
+    return { clause: normalized, tags: [normalized] };
+  }
+  return null;
+}
+
+/**
  * Evaluate a compound expression like "ALP AND (GGT OR 5NT)"
  * or "ANY(NEUT, PLAT, (RBC AND HGB))".
  */
@@ -1212,6 +1269,187 @@ export function getSyndromeNearMissInfo(
   return { wouldRequire, matched, missing };
 }
 
+// ─── REM-27: Magnitude floors per endpoint class ──────────
+
+interface MagnitudeFloor {
+  /** Minimum |Hedges' g| to qualify as biologically meaningful */
+  minG: number;
+  /** Minimum |fold change - 1| to qualify (e.g. 0.10 = 10% change) */
+  minFcDelta: number;
+}
+
+/**
+ * Endpoint class floor definitions. Test codes map to exactly one class.
+ * v0.2.0: Split hematology into 5 subclasses, literature-backed thresholds.
+ * Source: magnitude-floors-config.json + magnitude-floors-research-summary.md
+ */
+const ENDPOINT_CLASS_FLOORS: { class: string; floor: MagnitudeFloor; testCodes: string[] }[] = [
+  // Hematology — erythroid (de Kort & Weber 2020: ≤10% = no histopath effect)
+  { class: "hematology_erythroid",      floor: { minG: 0.8, minFcDelta: 0.10 }, testCodes: ["RBC", "HGB", "HB", "HCT"] },
+  // Hematology — primary leukocytes (moderate CV ~15-25%)
+  { class: "hematology_leukocyte",      floor: { minG: 0.8, minFcDelta: 0.15 }, testCodes: ["WBC", "NEUT", "ANC", "LYMPH", "LYM"] },
+  // Hematology — rare leukocytes (high variance; concordance checked separately)
+  { class: "hematology_leukocyte_rare", floor: { minG: 0.8, minFcDelta: 0.30 }, testCodes: ["MONO", "EOS", "BASO"] },
+  // RBC indices (very tight CVs 2-4%; higher g threshold compensates)
+  { class: "hematology_indices",        floor: { minG: 1.0, minFcDelta: 0.05 }, testCodes: ["MCV", "MCH", "MCHC", "RDW"] },
+  // Platelets
+  { class: "platelets",                 floor: { minG: 0.8, minFcDelta: 0.15 }, testCodes: ["PLAT", "PLT"] },
+  // Reticulocytes (base floor; conditional override in checkMagnitudeFloor)
+  { class: "reticulocytes",             floor: { minG: 0.8, minFcDelta: 0.25 }, testCodes: ["RETIC", "RET", "RETI"] },
+  // Coagulation (moderate variability; preanalytical factors)
+  { class: "coagulation",               floor: { minG: 0.8, minFcDelta: 0.15 }, testCodes: ["PT", "APTT", "INR", "FIB", "FIBRINO"] },
+  // Liver enzymes (high inter-animal variability; 1.5x = screening threshold)
+  { class: "liver_enzymes",             floor: { minG: 0.5, minFcDelta: 0.50 }, testCodes: ["ALT", "ALAT", "AST", "ASAT", "ALP", "ALKP", "GGT", "SDH", "GLDH", "GDH", "5NT", "LDH"] },
+  // Renal markers
+  { class: "renal_markers",             floor: { minG: 0.5, minFcDelta: 0.20 }, testCodes: ["BUN", "UREA", "UREAN", "CREAT", "CREA"] },
+  // Clinical chemistry general
+  { class: "clinical_chemistry",        floor: { minG: 0.5, minFcDelta: 0.25 }, testCodes: ["GLUC", "CHOL", "BILI", "TBILI", "TRIG", "ALB", "GLOBUL", "PROT", "ALBGLOB", "TP"] },
+  // Electrolytes (homeostatically regulated, tight CVs)
+  { class: "electrolytes",              floor: { minG: 0.8, minFcDelta: 0.10 }, testCodes: ["SODIUM", "NA", "K", "CA", "PHOS", "CL", "MG"] },
+  // Body weight
+  { class: "body_weight",               floor: { minG: 0.5, minFcDelta: 0.05 }, testCodes: ["BW", "BWGAIN"] },
+  // Food consumption (own class — do NOT proxy with BW)
+  { class: "food_consumption",          floor: { minG: 0.5, minFcDelta: 0.10 }, testCodes: ["FOOD", "FC"] },
+];
+
+// Pre-build lookup: testCode → MagnitudeFloor
+const MAGNITUDE_FLOOR_BY_CODE: Map<string, MagnitudeFloor> = new Map();
+for (const entry of ENDPOINT_CLASS_FLOORS) {
+  for (const code of entry.testCodes) {
+    MAGNITUDE_FLOOR_BY_CODE.set(code, entry.floor);
+  }
+}
+
+// Organ weight floors — by specimen name (OM domain has testCode=WEIGHT for all)
+const ORGAN_WEIGHT_REPRODUCTIVE: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.05 };
+const ORGAN_WEIGHT_GENERAL: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.10 };
+// Immune organs use same threshold as general (0.10) but are tracked separately
+// for future ratio_policy (adrenal: organ:brain per Bailey 2004)
+const ORGAN_WEIGHT_IMMUNE: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.10 };
+
+const REPRO_ORGAN_KEYWORDS = ["testis", "epididymis", "ovary", "uterus", "prostate", "seminal"];
+const IMMUNE_ORGAN_KEYWORDS = ["thymus", "adrenal"];
+
+/** Determine organ weight floor subclass from the endpoint label. */
+function getOrganWeightFloor(ep: EndpointSummary): MagnitudeFloor {
+  const label = (ep.specimen ?? ep.endpoint_label ?? "").toLowerCase();
+  if (REPRO_ORGAN_KEYWORDS.some((kw) => label.includes(kw))) return ORGAN_WEIGHT_REPRODUCTIVE;
+  if (IMMUNE_ORGAN_KEYWORDS.some((kw) => label.includes(kw))) return ORGAN_WEIGHT_IMMUNE;
+  return ORGAN_WEIGHT_GENERAL;
+}
+
+// RETIC codes for conditional override detection
+const RETIC_CODES = new Set(["RETIC", "RET", "RETI"]);
+// Erythroid codes for concordant anemia check
+const ERYTHROID_CODES = new Set(["RBC", "HGB", "HB", "HCT"]);
+const ERYTHROID_FLOOR: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.10 };
+// Relaxed RETIC floor when concordant anemia present (v0.2.0: 25% → 15%)
+const RETIC_OVERRIDE_FLOOR: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.15 };
+// Rare leukocyte codes that require concordance with primary leukocytes
+const RARE_LEUKOCYTE_CODES = new Set(["MONO", "EOS", "BASO"]);
+// Primary leukocyte codes used for concordance validation
+const PRIMARY_LEUKOCYTE_CODES = new Set(["WBC", "NEUT", "ANC", "LYMPH", "LYM"]);
+
+/**
+ * Check if concordant anemia is present: ≥2 of RBC/HGB/HCT are ↓ AND
+ * each meets the erythroid magnitude floor (|g| ≥ 0.8 OR |FC-1| ≥ 0.10).
+ * v0.2.0: Catches regenerative anemia signals without allowing noisy RETIC-only triggers.
+ */
+function hasConcordantAnemia(allEndpoints: EndpointSummary[]): boolean {
+  let count = 0;
+  for (const ep of allEndpoints) {
+    const code = ep.testCode?.toUpperCase() ?? "";
+    if (!ERYTHROID_CODES.has(code)) continue;
+    if (ep.direction !== "down") continue;
+    // Must meet erythroid floor
+    const absG = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : null;
+    const absFcDelta = ep.maxFoldChange != null ? Math.abs(ep.maxFoldChange - 1.0) : null;
+    const passesG = absG != null && absG >= ERYTHROID_FLOOR.minG;
+    const passesFc = absFcDelta != null && absFcDelta >= ERYTHROID_FLOOR.minFcDelta;
+    if (passesG || passesFc) count++;
+    if (count >= 2) return true;
+  }
+  return false;
+}
+
+/**
+ * Phase 3: Check if a rare leukocyte has concordant primary leukocyte shifting same direction.
+ * v0.2.0: MONO/EOS/BASO require ≥1 of WBC/NEUT/LYMPH changing in same direction to be meaningful.
+ * This eliminates "cute but meaningless" EOS/BASO blips (de Kort & Weber 2020).
+ */
+function hasLeukocyteConcordance(
+  direction: "up" | "down" | "none" | null | undefined,
+  allEndpoints: EndpointSummary[],
+): boolean {
+  if (!direction || direction === "none") return false;
+  for (const ep of allEndpoints) {
+    const code = ep.testCode?.toUpperCase() ?? "";
+    if (!PRIMARY_LEUKOCYTE_CODES.has(code)) continue;
+    if (ep.direction === direction) {
+      // Primary leukocyte shifting same direction — concordance met
+      const isSignificant = ep.minPValue != null && ep.minPValue <= 0.05;
+      const hasMeaningfulEffect = (ep.maxEffectSize != null && Math.abs(ep.maxEffectSize) >= 0.5) ||
+        (ep.maxFoldChange != null && Math.abs(ep.maxFoldChange - 1.0) >= 0.05);
+      if (isSignificant || hasMeaningfulEffect) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * REM-27: Check if an endpoint meets the magnitude floor for its class.
+ * Returns null if no floor applies (pass through), or a description string if blocked.
+ * Phase 2: RETIC conditional override — relaxes from 25% to 15% when concordant anemia present.
+ * Phase 3: Rare leukocyte concordance — MONO/EOS/BASO require primary leukocyte same direction.
+ * @internal Exported for testing only.
+ */
+export function checkMagnitudeFloor(
+  ep: EndpointSummary,
+  domain: string,
+  allEndpoints?: EndpointSummary[],
+): string | null {
+  // Determine floor: look up by testCode, then by domain for OM/BW
+  const code = ep.testCode?.toUpperCase() ?? "";
+  let floor = MAGNITUDE_FLOOR_BY_CODE.get(code);
+
+  // OM domain: use organ-specific floor (reproductive 5%, immune 10%, general 10%)
+  if (!floor && domain === "OM") floor = getOrganWeightFloor(ep);
+  // BW domain fallback
+  if (!floor && domain === "BW") floor = MAGNITUDE_FLOOR_BY_CODE.get("BW");
+  // FW domain fallback
+  if (!floor && domain === "FW") floor = MAGNITUDE_FLOOR_BY_CODE.get("FC");
+
+  if (!floor) return null; // No floor defined → pass through
+
+  // Phase 2: RETIC conditional override — relax floor when concordant anemia present
+  if (RETIC_CODES.has(code) && allEndpoints && hasConcordantAnemia(allEndpoints)) {
+    floor = RETIC_OVERRIDE_FLOOR;
+  }
+
+  const absG = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : null;
+  const absFcDelta = ep.maxFoldChange != null ? Math.abs(ep.maxFoldChange - 1.0) : null;
+
+  // Must fail BOTH checks to be blocked (either criterion sufficient)
+  const passesG = absG != null && absG >= floor.minG;
+  const passesFc = absFcDelta != null && absFcDelta >= floor.minFcDelta;
+
+  if (passesG || passesFc) {
+    // Phase 3: Rare leukocyte concordance — even if floor passes, require primary concordance
+    if (RARE_LEUKOCYTE_CODES.has(code) && allEndpoints) {
+      if (!hasLeukocyteConcordance(ep.direction, allEndpoints)) {
+        return "rare leukocyte without primary concordance (MONO/EOS/BASO require WBC/NEUT/LYMPH same direction)";
+      }
+    }
+    return null; // Passes floor + concordance → acceptable
+  }
+
+  // Build description of why it failed
+  const parts: string[] = [];
+  if (absG != null) parts.push(`|g|=${absG.toFixed(2)} < ${floor.minG}`);
+  if (absFcDelta != null) parts.push(`|FC-1|=${absFcDelta.toFixed(2)} < ${floor.minFcDelta}`);
+  return parts.join(", ") || "below magnitude floor";
+}
+
 // ─── Term report for Evidence Summary pane ────────────────
 
 export interface TermReportEntry {
@@ -1219,7 +1457,7 @@ export interface TermReportEntry {
   domain: string;       // "LB", "MI", "OM"
   role: "required" | "supporting";
   tag?: string;
-  status: "matched" | "opposite" | "not_significant" | "not_measured";
+  status: "matched" | "trend" | "opposite" | "not_significant" | "not_measured";
   matchedEndpoint?: string;  // endpoint_label if matched or found
   pValue?: number | null;
   severity?: string;
@@ -1227,12 +1465,16 @@ export interface TermReportEntry {
   foundDirection?: "up" | "down" | "none" | null;
   /** Sex tag when syndrome detected for one sex only (e.g. "M" or "F") */
   sex?: string | null;
+  /** REM-27: Note when magnitude floor prevented a match (null = not applicable or passed) */
+  magnitudeFloorNote?: string | null;
 }
 
 export interface SyndromeTermReport {
   requiredEntries: TermReportEntry[];
   supportingEntries: TermReportEntry[];
   requiredMetCount: number;
+  /** REM-25: How many required terms were met only by trend (p > α but biologically meaningful) */
+  requiredTrendCount: number;
   requiredTotal: number;
   supportingMetCount: number;
   supportingTotal: number;
@@ -1244,6 +1486,10 @@ export interface SyndromeTermReport {
   requiredLogicText: string;
   /** Required logic type from syndrome definition */
   requiredLogicType: "any" | "all" | "compound";
+  /** REM-26: Which clause of compound required logic was satisfied (null for simple logic) */
+  satisfiedClause: string | null;
+  /** REM-26: Tags of supporting terms that participated in compound required logic (promoted S→R) */
+  promotedSupportingTags: string[];
 }
 
 /**
@@ -1280,7 +1526,39 @@ export function getSyndromeTermReport(
         // For supporting terms, apply supporting gate
         if (term.role === "supporting" && !passesSupportingGate(ep)) continue;
 
-        entry.status = "matched";
+        // REM-25: Check statistical significance for "matched" vs "trend" classification
+        const isSignificant = ep.minPValue != null && ep.minPValue <= 0.05;
+        const hasMeaningfulEffect = (ep.maxEffectSize != null && Math.abs(ep.maxEffectSize) >= 0.5) ||
+          (ep.maxFoldChange != null && Math.abs(ep.maxFoldChange - 1.0) >= 0.05);
+
+        // REM-27: Check magnitude floor — significant but biologically trivial → not_significant
+        // Phase 2: pass full endpoint list for RETIC conditional override
+        const floorNote = checkMagnitudeFloor(ep, term.domain, endpoints);
+
+        if (isSignificant && !floorNote) {
+          entry.status = "matched";
+        } else if (isSignificant && floorNote) {
+          // Statistically significant but below magnitude floor
+          entry.status = "not_significant";
+          entry.magnitudeFloorNote = floorNote;
+          entry.matchedEndpoint = ep.endpoint_label;
+          entry.pValue = ep.minPValue;
+          entry.severity = ep.worstSeverity;
+          entry.foundDirection = ep.direction;
+          break; // Don't set fullMatch
+        } else if (hasMeaningfulEffect) {
+          // Direction matches + biologically meaningful but not statistically significant
+          entry.status = "trend";
+        } else {
+          // Direction matches but negligible effect — treat as not significant
+          entry.status = "not_significant";
+          entry.matchedEndpoint = ep.endpoint_label;
+          entry.pValue = ep.minPValue;
+          entry.severity = ep.worstSeverity;
+          entry.foundDirection = ep.direction;
+          break; // Don't set fullMatch — fall through to Pass 2 classification
+        }
+
         entry.matchedEndpoint = ep.endpoint_label;
         entry.pValue = ep.minPValue;
         entry.severity = ep.worstSeverity;
@@ -1327,8 +1605,11 @@ export function getSyndromeTermReport(
     }
   }
 
-  const requiredMetCount = requiredEntries.filter((e) => e.status === "matched").length;
-  const supportingMetCount = supportingEntries.filter((e) => e.status === "matched").length;
+  // REM-25: "trend" satisfies required logic but is tracked separately
+  const requiredMatchedOnly = requiredEntries.filter((e) => e.status === "matched").length;
+  const requiredTrendOnly = requiredEntries.filter((e) => e.status === "trend").length;
+  const requiredMetCount = requiredMatchedOnly + requiredTrendOnly;
+  const supportingMetCount = supportingEntries.filter((e) => e.status === "matched" || e.status === "trend").length;
 
   // Domains covered = domains with at least one checked term (status ≠ "not_measured")
   // This includes matched, opposite, and not_significant — all indicate the domain was present
@@ -1353,10 +1634,39 @@ export function getSyndromeTermReport(
   )];
   const requiredLogicText = formatRequiredLogic(def.requiredLogic, allRequiredTags);
 
+  // REM-26: Determine which compound clause was satisfied and identify promoted supporting tags
+  let satisfiedClause: string | null = null;
+  const promotedSupportingTags: string[] = [];
+  if (def.requiredLogic.type === "compound") {
+    // Collect tags of all matched/trend entries (both required and supporting)
+    const matchedTags = new Set<string>();
+    for (const e of [...requiredEntries, ...supportingEntries]) {
+      if ((e.status === "matched" || e.status === "trend") && e.tag) {
+        matchedTags.add(e.tag);
+      }
+    }
+    const detailed = evaluateCompoundExpressionDetailed(def.requiredLogic.expression, matchedTags);
+    if (detailed) {
+      satisfiedClause = detailed.clause
+        .replace(/\bAND\b/g, "+")
+        .replace(/\bOR\b/g, "or");
+      // Identify supporting tags that participate in the satisfied clause
+      const supportingTagSet = new Set(
+        supportingEntries.map((e) => e.tag).filter((t): t is string => !!t),
+      );
+      for (const tag of detailed.tags) {
+        if (supportingTagSet.has(tag)) {
+          promotedSupportingTags.push(tag);
+        }
+      }
+    }
+  }
+
   return {
     requiredEntries,
     supportingEntries,
     requiredMetCount,
+    requiredTrendCount: requiredTrendOnly,
     requiredTotal: requiredEntries.length,
     supportingMetCount,
     supportingTotal: supportingEntries.length,
@@ -1365,6 +1675,8 @@ export function getSyndromeTermReport(
     oppositeCount,
     requiredLogicText,
     requiredLogicType: def.requiredLogic.type,
+    satisfiedClause,
+    promotedSupportingTags,
   };
 }
 
