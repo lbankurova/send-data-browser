@@ -136,14 +136,14 @@ export function FindingsQuadrantScatter({
   const legendEntries = useMemo(() => {
     const entries: { symbol: string; label: string; color?: string }[] = [];
     // Small dot = warning/normal (size 5)
-    if (points.some((p) => p.worstSeverity !== "adverse" && !(p.clinicalSeverity === "S3" || p.clinicalSeverity === "S4")))
+    if (points.some((p) => p.worstSeverity !== "adverse" && !p.clinicalSeverity))
       entries.push({ symbol: "\u2022", label: "warning/normal" });
     // Larger dot = adverse (size 6)
     if (points.some((p) => p.worstSeverity === "adverse"))
       entries.push({ symbol: "\u25CF", label: "adverse" });
-    // Diamond = clinical S3/S4, darker gray
-    if (points.some((p) => p.clinicalSeverity === "S3" || p.clinicalSeverity === "S4"))
-      entries.push({ symbol: "\u25C6", label: "clinical S3+", color: "#6B7280" });
+    // Diamond = clinical S2+, darker gray
+    if (points.some((p) => p.clinicalSeverity))
+      entries.push({ symbol: "\u25C6", label: "clinical S2+", color: "#6B7280" });
     // Warm rose dot = low NOAEL (below-lowest or at-lowest)
     if (points.some((p) => p.noaelTier === "below-lowest" || p.noaelTier === "at-lowest"))
       entries.push({ symbol: "\u25CF", label: "low NOAEL", color: "rgba(248,113,113,0.7)" });
