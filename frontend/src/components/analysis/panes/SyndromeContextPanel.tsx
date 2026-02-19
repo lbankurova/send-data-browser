@@ -6,8 +6,7 @@
  */
 
 import { useMemo } from "react";
-import { useParams } from "react-router-dom";
-import { useFindingSelection } from "@/contexts/FindingSelectionContext";
+import { useParams, useNavigate } from "react-router-dom";
 import { useFindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import { useFindings } from "@/hooks/useFindings";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
@@ -183,7 +182,7 @@ interface SyndromeContextPanelProps {
 
 export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) {
   const { studyId } = useParams<{ studyId: string }>();
-  const { selectFinding, selectGroup } = useFindingSelection();
+  const navigate = useNavigate();
   const analytics = useFindingsAnalytics();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
@@ -222,52 +221,6 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
     () => getSyndromeTermReport(syndromeId, allEndpoints, syndromeSexes),
     [syndromeId, allEndpoints, syndromeSexes],
   );
-
-  // Member endpoints — the detected syndrome's matched endpoints enriched with EndpointSummary data
-  // Deduplicate by endpoint_label (per-sex detection can produce multiple entries with the same label)
-  // and collect which sexes matched for each endpoint
-  const memberEndpoints = useMemo<{ endpoint: EndpointSummary; matchedSexes: string[]; matchedDirection: string }[]>(() => {
-    if (!detected) return [];
-    const byLabel = new Map<string, { endpoint: EndpointSummary; matchedSexes: string[]; matchedDirection: string }>();
-    for (const m of detected.matchedEndpoints) {
-      const existing = byLabel.get(m.endpoint_label);
-      if (existing) {
-        if (m.sex && !existing.matchedSexes.includes(m.sex)) {
-          existing.matchedSexes.push(m.sex);
-        }
-      } else {
-        const epSummary = allEndpoints.find((ep) => ep.endpoint_label === m.endpoint_label);
-        if (epSummary) {
-          byLabel.set(m.endpoint_label, {
-            endpoint: epSummary,
-            matchedSexes: m.sex ? [m.sex] : [],
-            matchedDirection: m.direction,
-          });
-        }
-      }
-    }
-    const results = [...byLabel.values()];
-    results.sort((a, b) => {
-      const sa = analytics.signalScores.get(a.endpoint.endpoint_label) ?? 0;
-      const sb = analytics.signalScores.get(b.endpoint.endpoint_label) ?? 0;
-      return sb - sa;
-    });
-    return results;
-  }, [detected, allEndpoints, analytics.signalScores]);
-
-  // Multi-syndrome membership: which other syndromes share endpoints
-  const otherSyndromeMembership = useMemo(() => {
-    const map = new Map<string, string[]>();
-    for (const { endpoint: ep } of memberEndpoints) {
-      const others = analytics.syndromes
-        .filter((s) => s.id !== syndromeId && s.matchedEndpoints.some((m) => m.endpoint_label === ep.endpoint_label))
-        .map((s) => s.id);
-      if (others.length > 0) {
-        map.set(ep.endpoint_label, others);
-      }
-    }
-    return map;
-  }, [memberEndpoints, analytics.syndromes, syndromeId]);
 
   // Header stats
   const endpointCount = detected?.matchedEndpoints.length ?? 0;
@@ -378,45 +331,13 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   // Differential pair
   const differential = DIFFERENTIAL_PAIRS[syndromeId] ?? null;
 
-  // ── Handlers ─────────────────────────────────────────────
-  const handleEndpointClick = (endpointLabel: string) => {
-    if (!rawData?.findings) return;
-    const epFindings = rawData.findings.filter(
-      (f) => (f.endpoint_label ?? f.finding) === endpointLabel,
-    );
-    if (epFindings.length === 0) return;
-    const best = epFindings.reduce((b, f) => {
-      const bestP = b.min_p_adj ?? Infinity;
-      const fP = f.min_p_adj ?? Infinity;
-      if (fP < bestP) return f;
-      if (fP === bestP && Math.abs(f.max_effect_size ?? 0) > Math.abs(b.max_effect_size ?? 0)) return f;
-      return b;
-    });
-    selectFinding(best);
-  };
-
-  const handleClose = () => {
-    selectGroup(null, null);
-  };
-
   return (
     <div>
       {/* Sticky header */}
       <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">{name}</h3>
-          <div className="flex items-center gap-1">
-            <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-            <button
-              className="rounded p-0.5 text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              onClick={handleClose}
-              title="Close"
-            >
-              <svg className="h-3.5 w-3.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M2 2l8 8M10 2l-8 8" />
-              </svg>
-            </button>
-          </div>
+          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
         </div>
         <p className="text-[10px] text-muted-foreground">
           {syndromeId} · {endpointCount} endpoint{endpointCount !== 1 ? "s" : ""} · {domainCount} domain{domainCount !== 1 ? "s" : ""}
@@ -439,27 +360,54 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
         )}
       </div>
 
-      {/* Pane 1: INTERPRETATION — always visible, not collapsible */}
-      {interpretation && (
+      {/* Verdict Card — compact glanceable summary */}
+      {syndromeInterp && detected && (
         <div className="border-b px-4 py-3">
-          <p className="text-xs leading-relaxed text-foreground/80">
-            {interpretation.description}
-          </p>
-          <div className="mt-3 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Regulatory significance
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            {/* Confidence */}
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Confidence</div>
+              <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+                {detected.confidence}
+              </span>
+            </div>
+            {/* Recovery */}
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Recovery</div>
+              <span className="text-xs font-medium text-foreground">
+                {syndromeInterp.recovery.status.replace(/_/g, " ")}
+              </span>
+            </div>
+            {/* NOAEL Impact */}
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">NOAEL impact</div>
+              <span className="text-xs font-medium text-foreground">
+                {syndromeInterp.mortalityContext.mortalityNoaelCap != null
+                  ? `Capped at dose level ${syndromeInterp.mortalityContext.mortalityNoaelCap}`
+                  : "No mortality impact"}
+              </span>
+            </div>
+            {/* Mechanism certainty */}
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Mechanism</div>
+              <CertaintyBadge certainty={syndromeInterp.mechanismCertainty} />
+            </div>
           </div>
-          <p className="text-xs leading-relaxed text-foreground/80">
-            {interpretation.regulatory}
-          </p>
-          {interpretation.discriminator && (
-            <>
-              <div className="mt-3 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Key discriminator
-              </div>
-              <p className="text-xs leading-relaxed text-foreground/80">
-                {interpretation.discriminator}
-              </p>
-            </>
+          {/* Key discriminator — surfaced when mechanism is uncertain */}
+          {syndromeInterp.mechanismCertainty === "mechanism_uncertain" && interpretation?.discriminator && (
+            <p className="mt-2 text-[10px] leading-relaxed text-foreground/70">
+              {interpretation.discriminator}
+            </p>
+          )}
+          {/* Conditional mortality callout */}
+          {syndromeInterp.mortalityContext.treatmentRelatedDeaths > 0 && (
+            <div className="mt-2 flex items-start gap-1.5 rounded bg-muted/30 px-2.5 py-1.5 text-[10px] text-muted-foreground">
+              <span className="mt-0.5 shrink-0">&#x26A0;</span>
+              <span>
+                {syndromeInterp.mortalityContext.treatmentRelatedDeaths} treatment-related death{syndromeInterp.mortalityContext.treatmentRelatedDeaths !== 1 ? "s" : ""}
+                {syndromeInterp.mortalityContext.mortalityNoaelCap != null && " \u2014 mortality caps NOAEL"}
+              </span>
+            </div>
           )}
         </div>
       )}
@@ -489,7 +437,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
         )}
       </CollapsiblePane>
 
-      {/* Pane 3: DIFFERENTIAL (only shown when pair exists) */}
+      {/* Pane: DIFFERENTIAL (only shown when pair exists) */}
       {differential && (
         <CollapsiblePane title="Differential" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <DifferentialContent
@@ -524,7 +472,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
 
       {/* Pane: MORTALITY CONTEXT (Phase B) */}
       {syndromeInterp && syndromeInterp.mortalityContext.treatmentRelatedDeaths > 0 && (
-        <CollapsiblePane title="Mortality context" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Mortality context" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <MortalityContextPane mortality={syndromeInterp.mortalityContext} />
         </CollapsiblePane>
       )}
@@ -536,18 +484,8 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
           <FoodConsumptionPane
             context={syndromeInterp.foodConsumptionContext}
             rawData={foodConsumptionSummary}
+            doseGroups={rawData?.dose_groups}
           />
-        </CollapsiblePane>
-      )}
-
-      {/* Pane: STUDY DESIGN (Phase B, Component 7) */}
-      {syndromeInterp && syndromeInterp.studyDesignNotes.length > 0 && (
-        <CollapsiblePane title="Study design" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-1.5">
-            {syndromeInterp.studyDesignNotes.map((note, i) => (
-              <p key={i} className="text-xs leading-relaxed text-foreground/80">{note}</p>
-            ))}
-          </div>
         </CollapsiblePane>
       )}
 
@@ -570,22 +508,54 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
         </CollapsiblePane>
       )}
 
-      {/* Pane 4: MEMBER ENDPOINTS */}
-      <CollapsiblePane title="Member endpoints" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-0.5">
-          {memberEndpoints.map(({ endpoint: ep, matchedSexes, matchedDirection }) => (
-            <MemberEndpointRow
-              key={ep.endpoint_label}
-              endpoint={ep}
-              matchedSexes={matchedSexes}
-              matchedDirection={matchedDirection}
-              otherSyndromes={otherSyndromeMembership.get(ep.endpoint_label)}
-              onClick={() => handleEndpointClick(ep.endpoint_label)}
-            />
-          ))}
-          {memberEndpoints.length === 0 && (
-            <p className="text-xs text-muted-foreground">No matched endpoints.</p>
+      {/* Pane: INTERPRETATION — collapsible, default closed */}
+      {interpretation && (
+        <CollapsiblePane title="Interpretation" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <p className="text-xs leading-relaxed text-foreground/80">
+            {interpretation.description}
+          </p>
+          <div className="mt-3 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Regulatory significance
+          </div>
+          <p className="text-xs leading-relaxed text-foreground/80">
+            {interpretation.regulatory}
+          </p>
+          {interpretation.discriminator && (
+            <>
+              <div className="mt-3 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Key discriminator
+              </div>
+              <p className="text-xs leading-relaxed text-foreground/80">
+                {interpretation.discriminator}
+              </p>
+            </>
           )}
+        </CollapsiblePane>
+      )}
+
+      {/* Pane: RELATED VIEWS — navigation links */}
+      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <div className="space-y-1 text-[11px]">
+          <a href="#" className="block text-primary hover:underline"
+             onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`); }}>
+            View dose-response &#x2192;
+          </a>
+          <a href="#" className="block text-primary hover:underline"
+             onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`); }}>
+            View histopathology &#x2192;
+          </a>
+          <a href="#" className="block text-primary hover:underline"
+             onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`); }}>
+            View NOAEL decision &#x2192;
+          </a>
+          <a href="#" className="block text-primary hover:underline"
+             onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/validation`); }}>
+            View validation &#x2192;
+          </a>
+          <a href="#" className="block text-primary hover:underline"
+             onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`); }}>
+            View study summary &#x2192;
+          </a>
         </div>
       </CollapsiblePane>
     </div>
@@ -925,7 +895,7 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
     return (
       <div className="flex items-center gap-1.5 text-xs">
         <span className="shrink-0 text-green-600">{"\u2713"}</span>
-        <span className="min-w-0 flex-1 truncate">{entry.label}{entry.sex && <span className="text-[9px] text-muted-foreground"> ({entry.sex})</span>}</span>
+        <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}{entry.sex && <span className="text-[9px] text-muted-foreground"> ({entry.sex})</span>}</span>
         <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
           {entry.domain}
         </span>
@@ -953,7 +923,7 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
     return (
       <div className="flex items-center gap-1.5 text-xs text-amber-600">
         <span className="shrink-0">{"\u2298"}</span>
-        <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+        <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}</span>
         <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
           {entry.domain}
         </span>
@@ -966,7 +936,7 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
     return (
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <span className="shrink-0">{"\u2014"}</span>
-        <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+        <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}</span>
         <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
           {entry.domain}
         </span>
@@ -979,7 +949,7 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
   return (
     <div className="flex items-center gap-1.5 text-xs text-muted-foreground/40">
       <span className="shrink-0">{"\u2717"}</span>
-      <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+      <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}</span>
       <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
         {entry.domain}
       </span>
@@ -1112,115 +1082,9 @@ function DifferentialContent({
   );
 }
 
-/** Member endpoint row — duplicated from OrganContextPanel (small, tightly coupled) */
-function MemberEndpointRow({
-  endpoint,
-  matchedSexes,
-  matchedDirection,
-  otherSyndromes,
-  onClick,
-}: {
-  endpoint: EndpointSummary;
-  matchedSexes?: string[];
-  matchedDirection?: string;
-  otherSyndromes?: string[];
-  onClick: () => void;
-}) {
-  // When matchedSexes is available and endpoint has bySex data, use sex-specific stats
-  // This avoids showing aggregate UP stats when the syndrome matched on a DOWN sex
-  const resolvedStats = useMemo(() => {
-    if (matchedSexes && matchedSexes.length > 0 && endpoint.bySex) {
-      // Find the sex-specific data for the matched sexes
-      for (const sex of matchedSexes) {
-        const sexData = endpoint.bySex.get(sex);
-        if (sexData) {
-          return {
-            direction: sexData.direction,
-            maxEffectSize: sexData.maxEffectSize,
-            minPValue: sexData.minPValue,
-            worstSeverity: sexData.worstSeverity,
-          };
-        }
-      }
-    }
-    return {
-      direction: endpoint.direction,
-      maxEffectSize: endpoint.maxEffectSize,
-      minPValue: endpoint.minPValue,
-      worstSeverity: endpoint.worstSeverity,
-    };
-  }, [endpoint, matchedSexes]);
-
-  const dirSymbol = getDirectionSymbol(resolvedStats.direction);
-  const domainColor = getDomainBadgeColor(endpoint.domain);
-  const sexSuffix = matchedSexes && matchedSexes.length > 0 && matchedSexes.length < 2
-    ? matchedSexes[0]
-    : null;
-
-  // Direction mismatch caveat: displayed stats contradict syndrome's expected direction
-  const directionCaveat = useMemo(() => {
-    if (!matchedDirection || matchedDirection === "any") return null;
-    const resolvedDir = resolvedStats.direction;
-    if (!resolvedDir) return null;
-    const normalizedMatch = matchedDirection.toLowerCase();
-    const normalizedResolved = resolvedDir.toLowerCase();
-    if (normalizedMatch === normalizedResolved) return null;
-    // Mismatch: display shows UP but syndrome expected DOWN (or vice versa)
-    const matchSymbol = normalizedMatch === "down" ? "\u2193" : normalizedMatch === "up" ? "\u2191" : matchedDirection;
-    const sexLabel = matchedSexes && matchedSexes.length === 1 ? ` in ${matchedSexes[0]}` : "";
-    return `(matched ${matchSymbol}${sexLabel})`;
-  }, [matchedDirection, resolvedStats.direction, matchedSexes]);
-
-  return (
-    <button
-      className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-xs hover:bg-accent/50 transition-colors"
-      onClick={onClick}
-    >
-      <span className={`shrink-0 text-[9px] font-semibold ${domainColor.text}`}>
-        {endpoint.domain.toUpperCase()}
-      </span>
-      <span className="min-w-0 flex-1 truncate" title={endpoint.endpoint_label}>
-        {endpoint.endpoint_label}
-        {sexSuffix && <span className="text-[9px] text-muted-foreground"> ({sexSuffix})</span>}
-      </span>
-      <span className="shrink-0 text-muted-foreground">{dirSymbol}</span>
-      {directionCaveat && (
-        <span className="shrink-0 text-[9px] text-amber-600">{directionCaveat}</span>
-      )}
-      {resolvedStats.maxEffectSize != null && (
-        <span
-          className="shrink-0 font-mono text-[10px] text-muted-foreground"
-          title="Cohen's d — standardized effect size at the most affected dose-sex group. Negative = decrease, positive = increase."
-        >
-          d={formatEffectSize(resolvedStats.maxEffectSize)}
-        </span>
-      )}
-      {resolvedStats.minPValue != null && (
-        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-          {formatPValueWithPrefix(resolvedStats.minPValue)}
-        </span>
-      )}
-      <SeverityDot severity={resolvedStats.worstSeverity} />
-      {otherSyndromes && otherSyndromes.length > 0 && (
-        <span className="shrink-0 text-[9px] text-muted-foreground">
-          +{otherSyndromes.join(",")}
-        </span>
-      )}
-    </button>
-  );
-}
-
-function SeverityDot({ severity }: { severity: "adverse" | "warning" | "normal" }) {
-  const color =
-    severity === "adverse" ? "bg-red-500" :
-    severity === "warning" ? "bg-amber-500" :
-    "bg-gray-400";
-  return <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${color}`} />;
-}
-
 // ─── Interpretation layer sub-components ────────────────────
 
-/** Mechanism certainty badge with icon + color */
+/** Mechanism certainty badge with icon + color + tooltip */
 function CertaintyBadge({ certainty }: { certainty: SyndromeInterpretation["mechanismCertainty"] }) {
   const label =
     certainty === "mechanism_confirmed" ? "CONFIRMED"
@@ -1234,9 +1098,18 @@ function CertaintyBadge({ certainty }: { certainty: SyndromeInterpretation["mech
     certainty === "mechanism_confirmed" ? "\u2713"
     : certainty === "mechanism_uncertain" ? "?"
     : "\u2014";
+  const tooltip =
+    certainty === "mechanism_confirmed"
+      ? "Supporting findings confirm this specific mechanism over alternatives"
+      : certainty === "mechanism_uncertain"
+        ? "Required findings present but some findings argue against, or key tests were not measured"
+        : "Statistical pattern detected but no mechanism-specific findings available";
 
   return (
-    <span className={`rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium ${colorClass}`}>
+    <span
+      className={`rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium ${colorClass}`}
+      title={tooltip}
+    >
       {icon} {label}
     </span>
   );
@@ -1438,14 +1311,34 @@ function MortalityContextPane({ mortality }: { mortality: MortalityContext }) {
 function FoodConsumptionPane({
   context,
   rawData,
+  doseGroups,
 }: {
   context: FoodConsumptionContext;
   rawData?: import("@/lib/syndrome-interpretation").FoodConsumptionSummaryResponse;
+  doseGroups?: DoseGroup[];
 }) {
   // Find highest-dose entries with reduced FE for the mini summary
   const reducedEntries = rawData?.periods?.flatMap((p) =>
     p.by_dose_sex.filter((e) => e.food_efficiency_reduced)
   ) ?? [];
+
+  // Replace generic "at high dose" with actual dose label
+  const narrative = useMemo(() => {
+    if (!doseGroups?.length) return context.fwNarrative;
+    const maxLevel = Math.max(...doseGroups.map((dg) => dg.dose_level));
+    const highDose = doseGroups.find((dg) => dg.dose_level === maxLevel);
+    if (!highDose?.dose_value || !highDose.dose_unit) return context.fwNarrative;
+    const doseLabel = `at ${highDose.dose_value} ${highDose.dose_unit}`;
+    return context.fwNarrative.replace(/at high dose/gi, doseLabel);
+  }, [context.fwNarrative, doseGroups]);
+
+  // Replace generic "Dose N" with actual dose labels in food efficiency entries
+  const doseLabel = (level: number): string => {
+    if (!doseGroups?.length) return `Dose ${level}`;
+    const dg = doseGroups.find((d) => d.dose_level === level);
+    if (!dg?.dose_value || !dg.dose_unit) return `Dose ${level}`;
+    return `${dg.dose_value} ${dg.dose_unit}`;
+  };
 
   return (
     <div>
@@ -1456,7 +1349,7 @@ function FoodConsumptionPane({
         </span>
       </div>
       <p className="text-xs leading-relaxed text-foreground/80">
-        {context.fwNarrative}
+        {narrative}
       </p>
 
       {/* Food efficiency by dose (mini summary) */}
@@ -1469,7 +1362,7 @@ function FoodConsumptionPane({
             {reducedEntries.map((e, i) => (
               <div key={i} className="flex items-center gap-1.5 text-xs">
                 <span className="shrink-0 text-muted-foreground">
-                  Dose {e.dose_level} ({e.sex})
+                  {doseLabel(e.dose_level)} ({e.sex})
                 </span>
                 <span className="text-foreground">
                   FE={e.mean_food_efficiency.toFixed(2)}
@@ -1534,7 +1427,7 @@ function RecoveryPane({ recovery }: { recovery: SyndromeInterpretation["recovery
         <div className="mt-2 space-y-0.5">
           {recovery.endpoints.map((ep, i) => (
             <div key={i} className="flex items-center gap-1.5 text-xs">
-              <span className="min-w-0 flex-1 truncate text-foreground">
+              <span className="min-w-0 flex-1 truncate text-foreground" title={`${ep.label}${ep.sex !== "Both" ? ` (${ep.sex})` : ""}`}>
                 {ep.label}{ep.sex !== "Both" && ` (${ep.sex})`}
               </span>
               <span className="shrink-0 text-muted-foreground">
