@@ -27,7 +27,7 @@ SEND Data Browser — a web app for exploring pre-clinical regulatory study data
 ```bash
 # Start dev server (set OPENBLAS_NUM_THREADS=1 to avoid pandas import hang)
 # Use PowerShell: $env:OPENBLAS_NUM_THREADS=1
-cd C:/pg/pcc/backend && C:/pg/pcc/backend/venv/Scripts/uvicorn.exe main:app --reload --port 8000
+cd C:/pg/pcc/backend && C:/pg/pcc/backend/venv/Scripts/uvicorn.exe main:app --reload --port 8000 --reload-exclude ".venv-core" --reload-exclude "_core_engine"
 
 # Install dependencies
 C:/pg/pcc/backend/venv/Scripts/pip.exe install -r C:/pg/pcc/backend/requirements.txt
@@ -50,6 +50,7 @@ cd C:/pg/pcc/frontend && npm test         # Vitest pipeline tests (48 assertions
 - Always use forward slashes in bash commands (`C:/pg/pcc/...` not `C:\pg\pcc\...`)
 - Run Python/pip via full venv path: `C:/pg/pcc/backend/venv/Scripts/python.exe`
 - When starting backend in PowerShell, set `$env:OPENBLAS_NUM_THREADS = 1` first
+- **Never `pip install` while the dev server is running.** The `--reload` watcher will restart mid-install and corrupt the venv's DLL state, hanging pandas on next import. Stop the server first, install, then restart.
 
 ## Hard Process Rules
 
