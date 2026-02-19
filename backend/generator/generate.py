@@ -136,7 +136,9 @@ def generate(study_id: str):
 
     # Phase 1e: Food consumption summary (cross-domain FW + BW food efficiency)
     print("Phase 1e: Computing food consumption summary...")
-    food_summary = build_food_consumption_summary_with_subjects(findings, study)
+    food_summary = build_food_consumption_summary_with_subjects(
+        findings, study, early_death_subjects=early_death_subjects,
+    )
     _write_json(out_dir / "food_consumption_summary.json", food_summary)
     if food_summary.get("available"):
         n_periods = len(food_summary.get("periods", []))

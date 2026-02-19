@@ -222,6 +222,8 @@ export interface FoodConsumptionSummaryResponse {
     start_day: number;
     end_day: number;
     days: number;
+    epoch?: string;
+    label?: string;
     by_dose_sex: {
       dose_level: number;
       sex: string;

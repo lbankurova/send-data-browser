@@ -108,15 +108,9 @@ export function getDirectionSymbol(direction: string | null): string {
   }
 }
 
-export function getDirectionColor(direction: string | null): string {
-  switch (direction) {
-    case "up":
-      return "text-red-500";
-    case "down":
-      return "text-blue-500";
-    default:
-      return "text-muted-foreground";
-  }
+export function getDirectionColor(_direction: string | null): string {
+  // Direction arrows are always neutral — the symbol (↑/↓) communicates direction.
+  return "text-muted-foreground";
 }
 
 /** Severity heat color scale: pale yellow → deep red per spec §12.3 */

@@ -1395,91 +1395,169 @@ function FoodConsumptionPane({
   rawData?: import("@/lib/syndrome-interpretation").FoodConsumptionSummaryResponse;
   doseGroups?: DoseGroup[];
 }) {
-  // Find highest-dose entries with reduced FE for the mini summary
-  const reducedEntries = rawData?.periods?.flatMap((p) =>
-    p.by_dose_sex.filter((e) => e.food_efficiency_reduced)
-  ) ?? [];
-
   // Replace generic "at high dose" with actual dose label
   const narrative = useMemo(() => {
     if (!doseGroups?.length) return context.fwNarrative;
     const maxLevel = Math.max(...doseGroups.map((dg) => dg.dose_level));
     const highDose = doseGroups.find((dg) => dg.dose_level === maxLevel);
     if (!highDose?.dose_value || !highDose.dose_unit) return context.fwNarrative;
-    const doseLabel = `at ${highDose.dose_value} ${highDose.dose_unit}`;
-    return context.fwNarrative.replace(/at high dose/gi, doseLabel);
+    const label = `at ${highDose.dose_value} ${highDose.dose_unit}`;
+    return context.fwNarrative.replace(/at high dose/gi, label);
   }, [context.fwNarrative, doseGroups]);
 
-  // Replace generic "Dose N" with actual dose labels in food efficiency entries
-  const doseLabel = (level: number): string => {
+  const getDoseLabel = (level: number): string => {
+    if (level === 0) return "Control";
     if (!doseGroups?.length) return `Dose ${level}`;
     const dg = doseGroups.find((d) => d.dose_level === level);
     if (!dg?.dose_value || !dg.dose_unit) return `Dose ${level}`;
     return `${dg.dose_value} ${dg.dose_unit}`;
   };
 
+  // Build rich display data per period: all dose groups with pct change, sex comparison
+  const periodData = useMemo(() => {
+    if (!rawData?.periods) return [];
+    return rawData.periods.map((p) => {
+      const entries = p.by_dose_sex;
+      const sexes = [...new Set(entries.map((e) => e.sex))].sort();
+      const doseLevels = [...new Set(entries.filter((e) => e.dose_level > 0).map((e) => e.dose_level))].sort((a, b) => a - b);
+
+      // Lookup: "dose_sex" -> entry
+      const lookup = new Map(entries.map((e) => [`${e.dose_level}_${e.sex}`, e]));
+
+      // Build rows: one per dose level, with per-sex data
+      const doseRows = doseLevels.map((dose) => {
+        const sexData = sexes.map((sex) => {
+          const e = lookup.get(`${dose}_${sex}`);
+          if (!e) return { sex, fe: null, ctrl: null, pct: null, reduced: false, pSig: "", pVal: null as number | null };
+          const ctrl = e.food_efficiency_control;
+          const pct = ctrl && ctrl > 0 ? ((e.mean_food_efficiency - ctrl) / ctrl) * 100 : null;
+          const pv = e.fe_p_value;
+          const pSig = pv == null ? "" : pv < 0.001 ? "***" : pv < 0.01 ? "**" : pv < 0.05 ? "*" : "";
+          return { sex, fe: e.mean_food_efficiency, ctrl, pct: pct != null ? Math.round(pct) : null, reduced: e.food_efficiency_reduced ?? false, pSig, pVal: pv };
+        });
+        return { dose, sexData, anyReduced: sexData.some((s) => s.reduced) };
+      });
+
+      const reducedRows = doseRows.filter((r) => r.anyReduced);
+
+      return {
+        label: p.label,
+        startDay: p.start_day,
+        endDay: p.end_day,
+        doseRows,
+        hasReduced: reducedRows.length > 0,
+      };
+    });
+  }, [rawData]);
+
   return (
     <div>
+      {/* Assessment badge + narrative */}
       <div className="mb-1.5 flex items-center gap-2">
         <span className="text-xs text-muted-foreground">Assessment:</span>
         <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
           {context.bwFwAssessment.replace(/_/g, " ")}
         </span>
       </div>
-      <p className="text-xs leading-relaxed text-foreground/80">
-        {narrative}
-      </p>
+      <p className="text-xs leading-relaxed text-foreground/80">{narrative}</p>
 
-      {/* Food efficiency by dose (mini summary) */}
-      {reducedEntries.length > 0 && (
+      {/* Recovery — elevated position */}
+      {rawData?.recovery?.available && (
         <div className="mt-2">
-          <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Food efficiency by dose
+          <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Recovery</div>
+          <div className="mt-0.5 flex gap-4 text-xs">
+            <div className="flex items-center gap-1">
+              <span className={rawData.recovery.fw_recovered ? "text-emerald-600" : "text-amber-600"}>
+                {rawData.recovery.fw_recovered ? "\u2713" : "\u2715"}
+              </span>
+              <span className="text-muted-foreground">FW:</span>
+              <span className={rawData.recovery.fw_recovered ? "text-foreground" : "text-foreground font-medium"}>
+                {rawData.recovery.fw_recovered ? "recovered" : "not recovered"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className={rawData.recovery.bw_recovered ? "text-emerald-600" : "text-amber-600"}>
+                {rawData.recovery.bw_recovered ? "\u2713" : "\u2715"}
+              </span>
+              <span className="text-muted-foreground">BW:</span>
+              <span className={rawData.recovery.bw_recovered ? "text-foreground" : "text-foreground font-medium"}>
+                {rawData.recovery.bw_recovered ? "recovered" : "not recovered"}
+              </span>
+            </div>
           </div>
-          <div className="mt-1 space-y-0.5">
-            {reducedEntries.map((e, i) => (
-              <div key={i} className="flex items-center gap-1.5 text-xs">
-                <span className="shrink-0 text-muted-foreground">
-                  {doseLabel(e.dose_level)} ({e.sex})
-                </span>
-                <span className="text-foreground">
-                  FE={e.mean_food_efficiency.toFixed(2)}
-                </span>
-                {e.food_efficiency_control != null && (
-                  <span className="text-muted-foreground">
-                    vs {e.food_efficiency_control.toFixed(2)} control
-                  </span>
-                )}
-                {e.fe_p_value != null && (
-                  <span className="font-mono text-[10px] text-muted-foreground">
-                    p={formatPValue(e.fe_p_value)}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+          <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">
+            {rawData.recovery.interpretation}
+          </p>
         </div>
       )}
 
-      {/* Recovery section */}
-      {rawData?.recovery?.available && (
-        <div className="mt-2">
+      {/* Food efficiency by dose — dose-response across all groups, grouped by period */}
+      {periodData.some((p) => p.hasReduced) && (
+        <div className="mt-2.5">
           <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Recovery
+            Food efficiency by dose
           </div>
-          <div className="mt-1 flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">FW:</span>
-            <span className={rawData.recovery.fw_recovered ? "text-foreground" : "text-foreground font-medium"}>
-              {rawData.recovery.fw_recovered ? "recovered" : "not recovered"}
-            </span>
-            <span className="text-muted-foreground">BW:</span>
-            <span className={rawData.recovery.bw_recovered ? "text-foreground" : "text-foreground font-medium"}>
-              {rawData.recovery.bw_recovered ? "recovered" : "not recovered"}
-            </span>
+          <div className="mt-1.5 space-y-2.5">
+            {periodData.filter((p) => p.hasReduced).map((period, pi) => (
+              <div key={pi} className="border-l-2 border-muted-foreground/25 pl-2">
+                {/* Period label — elevated hierarchy */}
+                <div className="text-[10px] font-medium text-muted-foreground mb-1">
+                  {period.label ?? `Days ${period.startDay}\u2013${period.endDay}`}
+                </div>
+
+                {/* Dose-response: all groups, reduced ones get full detail */}
+                <div className="space-y-0.5">
+                  {period.doseRows.map(({ dose, sexData, anyReduced }) =>
+                    anyReduced ? (
+                      /* Reduced group: full detail with FE values + pct */
+                      <div key={dose} className="mt-0.5">
+                        <div className="text-[10px] font-medium text-foreground">{getDoseLabel(dose)}</div>
+                        {sexData.map((s) =>
+                          s.fe != null ? (
+                            <div key={s.sex} className="flex items-baseline gap-1 ml-2 text-[10px] leading-snug">
+                              <span className="w-3 shrink-0 text-muted-foreground">{s.sex}</span>
+                              <span className="text-foreground">{s.fe.toFixed(2)}</span>
+                              {s.ctrl != null && (
+                                <span className="text-muted-foreground">vs {s.ctrl.toFixed(2)} ctrl</span>
+                              )}
+                              {s.pct != null && (
+                                <span className="font-medium text-foreground">
+                                  ({s.pct > 0 ? "+" : ""}{s.pct}%)
+                                </span>
+                              )}
+                              {s.pSig ? (
+                                <span className="text-muted-foreground/50 text-[9px]">{s.pSig}</span>
+                              ) : s.pVal != null && s.pVal < 0.10 ? (
+                                <span className="font-mono text-[9px] text-muted-foreground/60">p={s.pVal.toFixed(3)}</span>
+                              ) : null}
+                            </div>
+                          ) : null,
+                        )}
+                      </div>
+                    ) : (
+                      /* Non-reduced: compact dose-response line */
+                      <div key={dose} className="flex items-center gap-1 text-[10px] text-muted-foreground/60 leading-snug">
+                        <span className="shrink-0">{getDoseLabel(dose)}</span>
+                        {sexData.map((s) => (
+                          <span key={s.sex}>
+                            {s.sex} {s.pct != null ? `${s.pct > 0 ? "+" : ""}${s.pct}%` : "\u2014"}
+                          </span>
+                        ))}
+                        {sexData.some((s) => s.pSig) && (
+                          <span className="text-muted-foreground/40">{sexData.find((s) => s.pSig)?.pSig}</span>
+                        )}
+                        {!sexData.some((s) => s.pSig) && sexData.some((s) => s.pVal != null && s.pVal < 0.10) && (
+                          <span className="font-mono text-[9px] text-muted-foreground/40">
+                            p={sexData.find((s) => s.pVal != null && s.pVal < 0.10)?.pVal?.toFixed(3)}
+                          </span>
+                        )}
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">
-            {rawData.recovery.interpretation}
-          </p>
         </div>
       )}
     </div>

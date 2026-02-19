@@ -6,6 +6,7 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect, forwardRef } from "react";
+import { useSessionState } from "@/hooks/useSessionState";
 import {
   ChevronDown,
   ChevronRight,
@@ -48,7 +49,7 @@ import type {
 import { deriveOrganCoherence } from "@/lib/derive-summaries";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor, getClinicalTierBadgeClasses } from "@/lib/lab-clinical-catalog";
-import { formatPValue, titleCase, getDomainBadgeColor, getDirectionSymbol } from "@/lib/severity-colors";
+import { formatPValue, titleCase, getDirectionSymbol } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
@@ -106,20 +107,20 @@ export function FindingsRail({
   const { data: rawData, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FINDINGS_FILTERS);
 
   // ── Local state ────────────────────────────────────────
-  const [grouping, setGrouping] = useState<GroupingMode>("organ");
+  // Grouping & sort persist across view navigations (user preference)
+  const [grouping, setGrouping] = useSessionState<GroupingMode>("pcc.findings.rail.grouping", "syndrome");
+  const [sortMode, setSortMode] = useSessionState<SortMode>("pcc.findings.rail.sort", "signal");
+  // Filters & expanded state are study-specific — reset on study change
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [railFilters, setRailFilters] = useState<RailFilters>(EMPTY_RAIL_FILTERS);
-  const [sortMode, setSortMode] = useState<SortMode>("signal");
 
-  // Reset local state on study change
+  // Reset study-specific state on study change (grouping/sort persist)
   const prevStudyRef = useRef(studyId);
   useEffect(() => {
     if (studyId !== prevStudyRef.current) {
       prevStudyRef.current = studyId;
-      setGrouping("organ");
       setExpanded(new Set());
       setRailFilters(EMPTY_RAIL_FILTERS);
-      setSortMode("signal");
     }
   }, [studyId]);
 
@@ -404,17 +405,11 @@ export function FindingsRail({
   }, [onGroupScopeChange, onEndpointSelect, onGroupingChange]);
 
   const handleCardSelect = useCallback((card: GroupCard) => {
-    const isScopedToThis = activeGroupScope?.value === card.key;
-    if (isScopedToThis) {
-      // Already scoped → clear scope (deselect)
-      onGroupScopeChange?.(null);
-    } else {
-      // Apply scope to this group
-      onGroupScopeChange?.({ type: grouping, value: card.key });
-      // Auto-expand selected group so endpoints are visible
-      setExpanded((prev) => new Set(prev).add(card.key));
-    }
-  }, [activeGroupScope, grouping, onGroupScopeChange]);
+    // Always scope to clicked group (no toggle-off)
+    onGroupScopeChange?.({ type: grouping, value: card.key });
+    // Auto-expand selected group so endpoints are visible
+    setExpanded((prev) => new Set(prev).add(card.key));
+  }, [grouping, onGroupScopeChange]);
 
   const handleCardToggleExpand = useCallback((card: GroupCard) => {
     setExpanded((prev) => {
@@ -426,12 +421,9 @@ export function FindingsRail({
   }, []);
 
   const handleEndpointClick = useCallback((endpointLabel: string) => {
-    if (activeEndpoint === endpointLabel) {
-      onEndpointSelect?.(null);
-    } else {
-      onEndpointSelect?.(endpointLabel);
-    }
-  }, [activeEndpoint, onEndpointSelect]);
+    // Always select (no toggle-off)
+    onEndpointSelect?.(endpointLabel);
+  }, [onEndpointSelect]);
 
   // ── Loading / Error / Empty states ─────────────────────
   if (isLoading) {
@@ -921,10 +913,9 @@ function CardHeader({
 function CardLabel({ grouping, value, syndromeLabel }: { grouping: GroupingMode; value: string; syndromeLabel?: string }) {
   if (grouping === "domain") {
     const domainCode = value.toUpperCase();
-    const color = getDomainBadgeColor(domainCode);
     return (
       <span className="flex min-w-0 items-center gap-1.5 truncate font-semibold">
-        <span className={cn("text-[9px] font-semibold shrink-0", color.text)}>
+        <span className="text-[9px] font-semibold shrink-0 text-muted-foreground">
           {domainCode}
         </span>
         <span className="truncate" title={getDomainFullLabel(domainCode)}>{getDomainFullLabel(domainCode)}</span>

@@ -6,7 +6,7 @@ import pandas as pd
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
-    welch_t_test, cohens_d, trend_test, bonferroni_correct,
+    dunnett_pairwise, cohens_d, trend_test,
 )
 
 
@@ -104,28 +104,14 @@ def compute_lb_findings(
             if dose_level == 0:
                 control_values = vals
 
-        # Pairwise tests (each dose vs control)
+        # REM-28: Dunnett's test (each dose vs control, FWER-controlled)
         pairwise = []
-        raw_p_values = []
         if control_values is not None and len(control_values) >= 2:
-            for dose_level in sorted(grp["dose_level"].unique()):
-                if dose_level == 0:
-                    continue
-                treat_vals = grp[grp["dose_level"] == dose_level]["value"].dropna().values
-                result = welch_t_test(treat_vals, control_values)
-                d = cohens_d(treat_vals, control_values)
-                raw_p_values.append(result["p_value"])
-                pairwise.append({
-                    "dose_level": int(dose_level),
-                    "p_value": result["p_value"],
-                    "statistic": result["statistic"],
-                    "cohens_d": round(d, 4) if d is not None else None,
-                })
-
-        # Bonferroni correction
-        corrected = bonferroni_correct(raw_p_values)
-        for i, pw in enumerate(pairwise):
-            pw["p_value_adj"] = round(corrected[i], 6) if corrected[i] is not None else None
+            treated = [
+                (int(dl), grp[grp["dose_level"] == dl]["value"].dropna().values)
+                for dl in sorted(grp["dose_level"].unique()) if dl != 0
+            ]
+            pairwise = dunnett_pairwise(control_values, treated)
 
         # Trend test
         trend_result = trend_test(dose_groups_values) if len(dose_groups_values) >= 2 else {"statistic": None, "p_value": None}

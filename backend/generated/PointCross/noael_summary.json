@@ -7,10 +7,11 @@
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
     "loael_label": "Group 2,2 mg/kg PCDRUG",
-    "n_adverse_at_loael": 3,
+    "n_adverse_at_loael": 5,
     "adverse_domains_at_loael": [
       "LB",
-      "MI"
+      "MI",
+      "OM"
     ],
     "noael_confidence": 0.8,
     "noael_derivation": {
@@ -19,16 +20,28 @@
       "loael_label": "Group 2,2 mg/kg PCDRUG",
       "adverse_findings_at_loael": [
         {
+          "finding": "Large Unstained Cells",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01107
+        },
+        {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00026
+          "p_value": 0.00052
         },
         {
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01772
+          "p_value": 0.00159
+        },
+        {
+          "finding": "TESTIS (WEIGHT)",
+          "specimen": "TESTIS",
+          "domain": "OM",
+          "p_value": 0.03831
         },
         {
           "finding": "VACUOLIZATION",
@@ -37,7 +50,7 @@
           "p_value": 0.01772
         }
       ],
-      "n_adverse_at_loael": 3,
+      "n_adverse_at_loael": 5,
       "confidence": 0.8,
       "confidence_penalties": []
     },
@@ -57,11 +70,11 @@
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
     "loael_label": "Group 2,2 mg/kg PCDRUG",
-    "n_adverse_at_loael": 6,
+    "n_adverse_at_loael": 5,
     "adverse_domains_at_loael": [
+      "BW",
       "LB",
-      "MI",
-      "OM"
+      "MI"
     ],
     "noael_confidence": 0.8,
     "noael_derivation": {
@@ -73,31 +86,25 @@
           "finding": "Glucose",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01586
+          "p_value": 0.00426
         },
         {
-          "finding": "Prothrombin Time",
+          "finding": "Potassium",
           "specimen": null,
           "domain": "LB",
-          "p_value": 1e-05
+          "p_value": 0.03955
         },
         {
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00321
+          "p_value": 0.00711
         },
         {
-          "finding": "GLAND, PITUITARY (WEIGHT)",
-          "specimen": "GLAND, PITUITARY",
-          "domain": "OM",
-          "p_value": 0.04312
-        },
-        {
-          "finding": "SPLEEN (WEIGHT)",
-          "specimen": "SPLEEN",
-          "domain": "OM",
-          "p_value": 0.01797
+          "finding": "Body Weight",
+          "specimen": null,
+          "domain": "BW",
+          "p_value": 0.03411
         },
         {
           "finding": "VACUOLIZATION",
@@ -106,7 +113,7 @@
           "p_value": 0.01772
         }
       ],
-      "n_adverse_at_loael": 6,
+      "n_adverse_at_loael": 5,
       "confidence": 0.8,
       "confidence_penalties": []
     },
@@ -126,8 +133,9 @@
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
     "loael_label": "Group 2,2 mg/kg PCDRUG",
-    "n_adverse_at_loael": 9,
+    "n_adverse_at_loael": 10,
     "adverse_domains_at_loael": [
+      "BW",
       "LB",
       "MI",
       "OM"
@@ -142,43 +150,49 @@
           "finding": "Glucose",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01586
+          "p_value": 0.00426
+        },
+        {
+          "finding": "Potassium",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.03955
+        },
+        {
+          "finding": "Large Unstained Cells",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01107
         },
         {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00026
-        },
-        {
-          "finding": "Prothrombin Time",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 1e-05
+          "p_value": 0.00052
         },
         {
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00321
+          "p_value": 0.00711
         },
         {
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01772
+          "p_value": 0.00159
         },
         {
-          "finding": "GLAND, PITUITARY (WEIGHT)",
-          "specimen": "GLAND, PITUITARY",
-          "domain": "OM",
-          "p_value": 0.04312
+          "finding": "Body Weight",
+          "specimen": null,
+          "domain": "BW",
+          "p_value": 0.03411
         },
         {
-          "finding": "SPLEEN (WEIGHT)",
-          "specimen": "SPLEEN",
+          "finding": "TESTIS (WEIGHT)",
+          "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.01797
+          "p_value": 0.03831
         },
         {
           "finding": "VACUOLIZATION",
@@ -193,7 +207,7 @@
           "p_value": 0.01772
         }
       ],
-      "n_adverse_at_loael": 9,
+      "n_adverse_at_loael": 10,
       "confidence": 0.8,
       "confidence_penalties": []
     },
