@@ -139,16 +139,18 @@ describe("syndrome interpretation layer", () => {
 
   // ── Component 1: Certainty ──
 
-  test("XS04 certainty is mechanism_uncertain when RETIC is up", () => {
+  test("XS04 certainty is pattern_only (single-domain cap, REM-12)", () => {
     const result = interp(xs04);
-    expect(result.certainty).toBe("mechanism_uncertain");
-    // Verify RETIC is strong argues_against — hits strongAgainst gate, not leniency branch
+    // REM-12: XS04 with single domain (LB only) is capped at pattern_only
+    // regardless of discriminator evidence. The strongAgainst gate (RETIC)
+    // would have produced mechanism_uncertain, but the single-domain cap
+    // overrides it to pattern_only since LB alone cannot confirm mechanism.
+    expect(result.certainty).toBe("pattern_only");
+    // RETIC is still strong argues_against in discriminator evidence
     const retic = result.discriminatingEvidence.find((e) => e.endpoint === "RETIC");
     expect(retic).toBeDefined();
     expect(retic!.status).toBe("argues_against");
     expect(retic!.weight).toBe("strong");
-    // RETIC being strong ensures assessCertainty hits the strongAgainst.length > 0 gate,
-    // bypassing the strong-support + moderate-only-against leniency branch entirely.
   });
 
   test("XS05 certainty is mechanism_confirmed when RETIC is up and spleen weight is up", () => {
@@ -420,7 +422,8 @@ describe("syndrome interpretation layer", () => {
   test("dual badges: XS04 has pattern confidence from detection + mechanism certainty", () => {
     const result = interp(xs04);
     expect(result.patternConfidence).toBe(xs04.confidence);
-    expect(result.mechanismCertainty).toBe("mechanism_uncertain");
+    // REM-12: single-domain cap overrides to pattern_only
+    expect(result.mechanismCertainty).toBe("pattern_only");
   });
 
   test("narrative is non-empty", () => {

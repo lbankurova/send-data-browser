@@ -9,7 +9,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.945112,
-    "effect_size": -0.4622,
+    "effect_size": -0.4427,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -24,7 +24,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.098571,
-    "effect_size": -1.048,
+    "effect_size": -1.0037,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -39,7 +39,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 6.1e-05,
-    "effect_size": -2.5768,
+    "effect_size": -2.4679,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -54,7 +54,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.1407,
+    "effect_size": -0.1348,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -69,7 +69,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.031852,
-    "effect_size": -1.2895,
+    "effect_size": -1.235,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -84,7 +84,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.002835,
-    "effect_size": -1.7672,
+    "effect_size": -1.6925,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -99,7 +99,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.082521,
-    "effect_size": 1.0924,
+    "effect_size": 1.0435,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -114,7 +114,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.044646,
-    "effect_size": 1.2438,
+    "effect_size": 1.1881,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -129,7 +129,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.0686,
+    "effect_size": 0.0654,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -144,7 +144,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.171444,
-    "effect_size": -0.9158,
+    "effect_size": -0.8771,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -159,7 +159,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.258123,
-    "effect_size": 0.8198,
+    "effect_size": 0.7851,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -174,7 +174,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.2e-05,
-    "effect_size": 2.9353,
+    "effect_size": 2.8113,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -189,7 +189,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.33851,
-    "effect_size": 0.7546,
+    "effect_size": 0.7208,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -204,7 +204,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.005812,
-    "effect_size": 1.6654,
+    "effect_size": 1.5908,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -219,7 +219,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.018468,
-    "effect_size": 1.588,
+    "effect_size": 1.5123,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -234,7 +234,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.415337,
-    "effect_size": -0.6943,
+    "effect_size": -0.665,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -249,7 +249,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.010045,
-    "effect_size": 1.5115,
+    "effect_size": 1.4477,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -264,7 +264,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000291,
-    "effect_size": 2.2289,
+    "effect_size": 2.1348,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -279,7 +279,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.3986,
+    "effect_size": -0.3807,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -294,7 +294,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.760295,
-    "effect_size": -0.5444,
+    "effect_size": -0.52,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -309,7 +309,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.114082,
-    "effect_size": 1.1395,
+    "effect_size": 1.0852,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -324,7 +324,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.1993,
+    "effect_size": 0.1908,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -339,7 +339,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.2e-05,
-    "effect_size": 2.9176,
+    "effect_size": 2.7943,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -354,7 +354,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1e-06,
-    "effect_size": 3.9851,
+    "effect_size": 3.8167,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -369,7 +369,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.0956,
+    "effect_size": -0.0913,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -384,7 +384,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.004106,
-    "effect_size": 1.8139,
+    "effect_size": 1.7327,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -399,7 +399,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.01528,
-    "effect_size": 1.6729,
+    "effect_size": 1.5933,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -414,7 +414,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.0673,
+    "effect_size": 0.0645,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -429,7 +429,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000853,
-    "effect_size": 2.174,
+    "effect_size": 2.0821,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -444,7 +444,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 9e-06,
-    "effect_size": 3.706,
+    "effect_size": 3.5494,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -459,7 +459,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.3517,
+    "effect_size": -0.3349,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -474,7 +474,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.061081,
-    "effect_size": -1.2265,
+    "effect_size": -1.1715,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -489,54 +489,9 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.129248,
-    "effect_size": -1.036,
+    "effect_size": -0.9867,
     "direction": "down",
     "severity": "adverse",
-    "treatment_related": false
-  },
-  {
-    "organ_system": "electrolyte",
-    "organ_name": "General",
-    "endpoint_label": "Calcium",
-    "domain": "LB",
-    "test_code": "CA",
-    "dose_level": 1,
-    "dose_label": "Group 2,2 mg/kg PCDRUG",
-    "sex": "M",
-    "p_value": 0.834154,
-    "effect_size": -0.5038,
-    "direction": "down",
-    "severity": "warning",
-    "treatment_related": false
-  },
-  {
-    "organ_system": "electrolyte",
-    "organ_name": "General",
-    "endpoint_label": "Calcium",
-    "domain": "LB",
-    "test_code": "CA",
-    "dose_level": 2,
-    "dose_label": "Group 3,20 mg/kg PCDRUG",
-    "sex": "M",
-    "p_value": 0.121263,
-    "effect_size": -1.0041,
-    "direction": "down",
-    "severity": "warning",
-    "treatment_related": false
-  },
-  {
-    "organ_system": "electrolyte",
-    "organ_name": "General",
-    "endpoint_label": "Calcium",
-    "domain": "LB",
-    "test_code": "CA",
-    "dose_level": 3,
-    "dose_label": "Group 4,200 mg/kg PCDRUG",
-    "sex": "M",
-    "p_value": 0.802845,
-    "effect_size": -0.5447,
-    "direction": "down",
-    "severity": "warning",
     "treatment_related": false
   },
   {
@@ -549,7 +504,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.681008,
-    "effect_size": 0.5597,
+    "effect_size": 0.536,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -564,7 +519,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.2788,
+    "effect_size": 0.267,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -579,7 +534,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.051481,
-    "effect_size": -1.1961,
+    "effect_size": -1.1455,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -594,7 +549,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.0091,
+    "effect_size": 0.0087,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -609,7 +564,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.686831,
-    "effect_size": 0.5617,
+    "effect_size": 0.5366,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -624,7 +579,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.045879,
-    "effect_size": 1.3433,
+    "effect_size": 1.2793,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -639,7 +594,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.326428,
-    "effect_size": -0.7623,
+    "effect_size": -0.7301,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -654,7 +609,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.023357,
-    "effect_size": -1.3563,
+    "effect_size": -1.299,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -669,7 +624,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.190731,
-    "effect_size": -0.8998,
+    "effect_size": -0.8618,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -684,7 +639,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.874745,
-    "effect_size": 0.4888,
+    "effect_size": 0.4669,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -699,7 +654,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.2295,
+    "effect_size": 0.2193,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -714,7 +669,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.007481,
-    "effect_size": 1.7835,
+    "effect_size": 1.6985,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -729,7 +684,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.2619,
+    "effect_size": -0.2509,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -744,7 +699,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.621693,
-    "effect_size": 0.5937,
+    "effect_size": 0.5686,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -759,7 +714,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.092457,
-    "effect_size": 1.0529,
+    "effect_size": 1.0084,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -774,7 +729,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.2742,
+    "effect_size": -0.2626,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -789,7 +744,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.635287,
-    "effect_size": 0.5843,
+    "effect_size": 0.5596,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -804,7 +759,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.176207,
-    "effect_size": 0.9037,
+    "effect_size": 0.8655,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -819,7 +774,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.752173,
-    "effect_size": -0.5656,
+    "effect_size": -0.5387,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -834,7 +789,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.004653,
-    "effect_size": -1.7213,
+    "effect_size": -1.6442,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -849,7 +804,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.272229,
-    "effect_size": -0.8572,
+    "effect_size": -0.8164,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -864,7 +819,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.01586,
-    "effect_size": 1.4498,
+    "effect_size": 1.3885,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -879,7 +834,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.729776,
-    "effect_size": 0.5408,
+    "effect_size": 0.5179,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -894,7 +849,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.0555,
+    "effect_size": 0.0531,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -909,7 +864,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.615148,
-    "effect_size": -0.6021,
+    "effect_size": -0.5766,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -924,7 +879,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.968811,
-    "effect_size": -0.4644,
+    "effect_size": -0.4447,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -939,7 +894,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.0,
-    "effect_size": -4.5971,
+    "effect_size": -4.4029,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -954,7 +909,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.0658,
+    "effect_size": -0.0627,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -969,7 +924,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.3435,
+    "effect_size": -0.3281,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -984,7 +939,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.005113,
-    "effect_size": -1.783,
+    "effect_size": -1.6981,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -999,7 +954,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.2925,
+    "effect_size": -0.2802,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1014,7 +969,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.755577,
-    "effect_size": -0.5305,
+    "effect_size": -0.5081,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1029,7 +984,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 4.3e-05,
-    "effect_size": -2.6426,
+    "effect_size": -2.531,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1044,7 +999,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.0194,
+    "effect_size": 0.0185,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -1059,7 +1014,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.1999,
+    "effect_size": -0.1909,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -1074,7 +1029,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.05591,
-    "effect_size": -1.2343,
+    "effect_size": -1.1755,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -1089,7 +1044,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.113129,
-    "effect_size": 1.0193,
+    "effect_size": 0.9762,
     "direction": "up",
     "severity": "warning",
     "treatment_related": false
@@ -1104,7 +1059,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.071067,
-    "effect_size": 1.1052,
+    "effect_size": 1.0585,
     "direction": "up",
     "severity": "warning",
     "treatment_related": false
@@ -1119,7 +1074,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.439157,
-    "effect_size": 0.6791,
+    "effect_size": 0.6504,
     "direction": "up",
     "severity": "warning",
     "treatment_related": false
@@ -1134,7 +1089,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.113315,
-    "effect_size": 1.02,
+    "effect_size": 0.9743,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1149,7 +1104,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.2731,
+    "effect_size": -0.2608,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1164,7 +1119,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.394111,
-    "effect_size": -0.751,
+    "effect_size": -0.7152,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1194,7 +1149,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.613239,
-    "effect_size": 1.6953,
+    "effect_size": 1.4276,
     "direction": "up",
     "severity": "warning",
     "treatment_related": false
@@ -1224,7 +1179,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.073754,
-    "effect_size": -1.2257,
+    "effect_size": -1.1673,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1239,7 +1194,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.208795,
-    "effect_size": -0.9367,
+    "effect_size": -0.8948,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1254,7 +1209,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.032056,
-    "effect_size": -1.4552,
+    "effect_size": -1.3859,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1269,7 +1224,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.766993,
-    "effect_size": 0.5256,
+    "effect_size": 0.5034,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -1284,7 +1239,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.02853,
-    "effect_size": 1.3623,
+    "effect_size": 1.3047,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -1299,7 +1254,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.026769,
-    "effect_size": 1.41,
+    "effect_size": 1.3504,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -1314,7 +1269,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.159826,
-    "effect_size": -0.9865,
+    "effect_size": -0.9395,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1329,7 +1284,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.09409,
-    "effect_size": -1.1228,
+    "effect_size": -1.0725,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1344,7 +1299,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.032278,
-    "effect_size": -1.3754,
+    "effect_size": -1.3099,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1359,7 +1314,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.3361,
+    "effect_size": -0.3219,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1374,7 +1329,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.11619,
-    "effect_size": -1.0083,
+    "effect_size": -0.9657,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1389,7 +1344,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000964,
-    "effect_size": -1.9828,
+    "effect_size": -1.899,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1404,7 +1359,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.833214,
-    "effect_size": -0.5007,
+    "effect_size": -0.4796,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1419,7 +1374,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.107286,
-    "effect_size": -1.017,
+    "effect_size": -0.974,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1434,7 +1389,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.001932,
-    "effect_size": -1.8503,
+    "effect_size": -1.7722,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1449,7 +1404,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.09411,
-    "effect_size": -1.1371,
+    "effect_size": -1.083,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -1464,7 +1419,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.2954,
+    "effect_size": -0.2822,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -1479,7 +1434,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.726989,
-    "effect_size": 0.5741,
+    "effect_size": 0.5467,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -1494,7 +1449,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.2511,
+    "effect_size": -0.2405,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -1509,7 +1464,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.227658,
-    "effect_size": 0.8668,
+    "effect_size": 0.8301,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -1524,7 +1479,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.024798,
-    "effect_size": 1.3319,
+    "effect_size": 1.2756,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -1539,7 +1494,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.634908,
-    "effect_size": 0.5907,
+    "effect_size": 0.5657,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -1554,7 +1509,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.046086,
-    "effect_size": 1.2021,
+    "effect_size": 1.1513,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -1569,7 +1524,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.001287,
-    "effect_size": 2.0363,
+    "effect_size": 1.9502,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -1584,7 +1539,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.000262,
-    "effect_size": -2.4523,
+    "effect_size": -2.3355,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1599,7 +1554,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.000276,
-    "effect_size": -2.3391,
+    "effect_size": -2.2343,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1614,7 +1569,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.008095,
-    "effect_size": -1.7572,
+    "effect_size": -1.6735,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1627,54 +1582,9 @@
     "test_code": "PH",
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
-    "sex": "F",
-    "p_value": 0.294232,
-    "effect_size": -0.787,
-    "direction": "down",
-    "severity": "warning",
-    "treatment_related": false
-  },
-  {
-    "organ_system": "renal",
-    "organ_name": "Kidney",
-    "endpoint_label": "pH",
-    "domain": "LB",
-    "test_code": "PH",
-    "dose_level": 2,
-    "dose_label": "Group 3,20 mg/kg PCDRUG",
-    "sex": "F",
-    "p_value": 0.980373,
-    "effect_size": -0.4509,
-    "direction": "down",
-    "severity": "warning",
-    "treatment_related": false
-  },
-  {
-    "organ_system": "renal",
-    "organ_name": "Kidney",
-    "endpoint_label": "pH",
-    "domain": "LB",
-    "test_code": "PH",
-    "dose_level": 3,
-    "dose_label": "Group 4,200 mg/kg PCDRUG",
-    "sex": "F",
-    "p_value": 0.123457,
-    "effect_size": -1.0349,
-    "direction": "down",
-    "severity": "warning",
-    "treatment_related": false
-  },
-  {
-    "organ_system": "renal",
-    "organ_name": "Kidney",
-    "endpoint_label": "pH",
-    "domain": "LB",
-    "test_code": "PH",
-    "dose_level": 1,
-    "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.2104,
+    "effect_size": 0.201,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1689,7 +1599,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.149056,
-    "effect_size": 0.9559,
+    "effect_size": 0.9131,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1704,7 +1614,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.108065,
-    "effect_size": 1.1169,
+    "effect_size": 1.0637,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1719,7 +1629,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.415537,
-    "effect_size": 0.6963,
+    "effect_size": 0.6669,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1734,7 +1644,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.057694,
-    "effect_size": 1.1566,
+    "effect_size": 1.1078,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1749,7 +1659,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.077046,
-    "effect_size": 1.0961,
+    "effect_size": 1.0498,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1764,7 +1674,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.137108,
-    "effect_size": -1.0019,
+    "effect_size": -0.957,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1779,7 +1689,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.143341,
-    "effect_size": -0.9991,
+    "effect_size": -0.9544,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1794,7 +1704,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.002785,
-    "effect_size": -1.9366,
+    "effect_size": -1.8444,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1809,7 +1719,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.730279,
-    "effect_size": -0.5438,
+    "effect_size": -0.5195,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1824,7 +1734,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.0529,
+    "effect_size": 0.0506,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1839,7 +1749,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.091284,
-    "effect_size": 1.063,
+    "effect_size": 1.0181,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -1854,7 +1764,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.2e-05,
-    "effect_size": -2.9394,
+    "effect_size": -2.8152,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1869,7 +1779,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.303467,
-    "effect_size": 0.8131,
+    "effect_size": 0.7788,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1884,7 +1794,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.00033,
-    "effect_size": 2.8174,
+    "effect_size": 2.6984,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1899,7 +1809,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.0792,
+    "effect_size": 0.0758,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -1914,7 +1824,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.896044,
-    "effect_size": 0.487,
+    "effect_size": 0.4664,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -1929,7 +1839,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.102861,
-    "effect_size": -1.0616,
+    "effect_size": -1.0168,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -1944,7 +1854,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.265973,
-    "effect_size": 0.8996,
+    "effect_size": 0.8567,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1959,7 +1869,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.0029,
+    "effect_size": 0.0028,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1974,7 +1884,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.039944,
-    "effect_size": -1.4269,
+    "effect_size": -1.359,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -1989,7 +1899,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.057659,
-    "effect_size": 1.1712,
+    "effect_size": 1.1217,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -2004,7 +1914,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.01823,
-    "effect_size": 1.4942,
+    "effect_size": 1.4311,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -2019,7 +1929,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.2081,
+    "effect_size": 0.1993,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -2034,7 +1944,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.003213,
-    "effect_size": 1.762,
+    "effect_size": 1.6875,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -2049,7 +1959,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.024078,
-    "effect_size": 1.3915,
+    "effect_size": 1.3327,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -2064,7 +1974,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.1036,
+    "effect_size": -0.0993,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -2079,7 +1989,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.677888,
-    "effect_size": -0.5697,
+    "effect_size": -0.5442,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2094,7 +2004,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.015265,
-    "effect_size": -1.4665,
+    "effect_size": -1.4008,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2109,7 +2019,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.360782,
-    "effect_size": -0.7752,
+    "effect_size": -0.7382,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2124,7 +2034,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.156,
+    "effect_size": 0.1494,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -2139,7 +2049,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.3191,
+    "effect_size": 0.3056,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -2154,7 +2064,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.092478,
-    "effect_size": 1.0496,
+    "effect_size": 1.0052,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -2169,7 +2079,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.525971,
-    "effect_size": -0.6606,
+    "effect_size": -0.6311,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -2184,7 +2094,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.111236,
-    "effect_size": -1.1315,
+    "effect_size": -1.0809,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -2199,7 +2109,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.179146,
-    "effect_size": -0.9608,
+    "effect_size": -0.9151,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -2214,7 +2124,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.589651,
-    "effect_size": 0.6094,
+    "effect_size": 0.5836,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -2229,7 +2139,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.006267,
-    "effect_size": 1.7062,
+    "effect_size": 1.6341,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -2244,7 +2154,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.007025,
-    "effect_size": 1.7403,
+    "effect_size": 1.6668,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -2259,7 +2169,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.017719,
-    "effect_size": -1.6187,
+    "effect_size": -1.5416,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2274,7 +2184,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.042457,
-    "effect_size": -1.3043,
+    "effect_size": -1.2459,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2289,7 +2199,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.003202,
-    "effect_size": -2.0831,
+    "effect_size": -1.9839,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2304,7 +2214,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.991573,
-    "effect_size": -0.4473,
+    "effect_size": -0.4284,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2319,7 +2229,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.729568,
-    "effect_size": -0.541,
+    "effect_size": -0.5181,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2334,7 +2244,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000134,
-    "effect_size": -2.7377,
+    "effect_size": -2.622,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2349,7 +2259,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.3643,
+    "effect_size": 0.3489,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2364,7 +2274,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.2566,
+    "effect_size": -0.2457,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2379,7 +2289,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.3e-05,
-    "effect_size": -3.31,
+    "effect_size": -3.1701,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2394,7 +2304,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.056432,
-    "effect_size": -1.1783,
+    "effect_size": -1.1285,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2409,7 +2319,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.231058,
-    "effect_size": -0.8388,
+    "effect_size": -0.8034,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2424,7 +2334,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.0,
-    "effect_size": -4.7057,
+    "effect_size": -4.5069,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2439,7 +2349,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.0839,
+    "effect_size": 0.0804,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2454,7 +2364,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.2303,
+    "effect_size": -0.2206,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2469,7 +2379,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.0,
-    "effect_size": -8.1478,
+    "effect_size": -7.8036,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2484,7 +2394,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.0925,
+    "effect_size": -0.0886,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2499,7 +2409,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.152,
+    "effect_size": -0.1456,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2514,7 +2424,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 4e-06,
-    "effect_size": -3.2279,
+    "effect_size": -3.0915,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2529,7 +2439,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.684694,
-    "effect_size": 0.558,
+    "effect_size": 0.5345,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2544,7 +2454,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.431445,
-    "effect_size": -0.6861,
+    "effect_size": -0.6571,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2559,7 +2469,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.0,
-    "effect_size": -5.0487,
+    "effect_size": -4.8353,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2574,7 +2484,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.2774,
+    "effect_size": 0.2657,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2589,7 +2499,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.127,
+    "effect_size": 0.1217,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2604,7 +2514,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1e-06,
-    "effect_size": -3.4215,
+    "effect_size": -3.277,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2619,7 +2529,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.0896,
+    "effect_size": -0.0858,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2634,7 +2544,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.323358,
-    "effect_size": -0.7592,
+    "effect_size": -0.7271,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2649,7 +2559,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.0,
-    "effect_size": -3.8619,
+    "effect_size": -3.6987,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2664,7 +2574,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.2944,
+    "effect_size": 0.282,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2679,7 +2589,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.3314,
+    "effect_size": 0.3174,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2694,7 +2604,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 3.7e-05,
-    "effect_size": -2.6832,
+    "effect_size": -2.5698,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2709,7 +2619,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.3328,
+    "effect_size": 0.3179,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2724,7 +2634,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.2241,
+    "effect_size": 0.2141,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2739,7 +2649,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.000556,
-    "effect_size": -2.4813,
+    "effect_size": -2.3702,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2754,7 +2664,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.221906,
-    "effect_size": -0.849,
+    "effect_size": -0.8131,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2769,7 +2679,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.139582,
-    "effect_size": -0.9616,
+    "effect_size": -0.9209,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2784,7 +2694,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 9.1e-05,
-    "effect_size": -2.5859,
+    "effect_size": -2.4767,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2799,7 +2709,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.155431,
-    "effect_size": -0.9501,
+    "effect_size": -0.9076,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2814,7 +2724,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.29169,
-    "effect_size": -0.7921,
+    "effect_size": -0.7566,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2829,7 +2739,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.0,
-    "effect_size": -3.9683,
+    "effect_size": -3.7906,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2844,7 +2754,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.1699,
+    "effect_size": 0.1627,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2859,7 +2769,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.368,
+    "effect_size": 0.3525,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2874,7 +2784,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 9.5e-05,
-    "effect_size": -2.4633,
+    "effect_size": -2.3592,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2889,7 +2799,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.4061,
+    "effect_size": -0.3879,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2904,7 +2814,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.2513,
+    "effect_size": -0.2401,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2919,7 +2829,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.000322,
-    "effect_size": -2.6327,
+    "effect_size": -2.5148,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2934,7 +2844,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.0116,
+    "effect_size": 0.0111,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2949,7 +2859,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.2297,
+    "effect_size": 0.22,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2964,7 +2874,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000325,
-    "effect_size": -2.2835,
+    "effect_size": -2.1871,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2979,7 +2889,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.2752,
+    "effect_size": 0.2628,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -2994,7 +2904,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.0357,
+    "effect_size": -0.0341,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3009,7 +2919,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 8e-06,
-    "effect_size": -3.3597,
+    "effect_size": -3.2093,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3024,7 +2934,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.335685,
-    "effect_size": 0.7476,
+    "effect_size": 0.716,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3039,7 +2949,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.2445,
+    "effect_size": 0.2341,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3054,7 +2964,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000409,
-    "effect_size": -2.1687,
+    "effect_size": -2.0771,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3084,7 +2994,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.3106,
+    "effect_size": -0.2967,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3099,7 +3009,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 3e-06,
-    "effect_size": -3.4838,
+    "effect_size": -3.3278,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3114,7 +3024,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.1761,
+    "effect_size": 0.1686,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3129,7 +3039,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.3288,
+    "effect_size": 0.3149,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3144,7 +3054,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000693,
-    "effect_size": -2.0506,
+    "effect_size": -1.964,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3159,7 +3069,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.971453,
-    "effect_size": 0.4838,
+    "effect_size": 0.4621,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -3174,7 +3084,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.751869,
-    "effect_size": -0.5538,
+    "effect_size": -0.529,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -3189,7 +3099,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.071549,
-    "effect_size": -1.1877,
+    "effect_size": -1.1346,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -3204,7 +3114,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.2268,
+    "effect_size": 0.2172,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3219,7 +3129,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.766663,
-    "effect_size": 0.5257,
+    "effect_size": 0.5035,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3234,7 +3144,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000358,
-    "effect_size": -2.2415,
+    "effect_size": -2.1467,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3249,7 +3159,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.1637,
+    "effect_size": -0.1564,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3264,7 +3174,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.3551,
+    "effect_size": -0.3392,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3279,7 +3189,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1e-06,
-    "effect_size": -4.1648,
+    "effect_size": -3.9784,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3294,7 +3204,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.2017,
+    "effect_size": 0.1932,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3309,7 +3219,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.2323,
+    "effect_size": 0.2224,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3324,7 +3234,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000408,
-    "effect_size": -2.1714,
+    "effect_size": -2.0796,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3339,7 +3249,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.2264,
+    "effect_size": -0.2162,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3354,7 +3264,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.302,
+    "effect_size": -0.2885,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3369,7 +3279,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.6e-05,
-    "effect_size": -3.6165,
+    "effect_size": -3.4545,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3384,7 +3294,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.2582,
+    "effect_size": 0.2473,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3399,7 +3309,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.1368,
+    "effect_size": 0.131,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3414,7 +3324,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 9e-06,
-    "effect_size": -3.096,
+    "effect_size": -2.9651,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3429,7 +3339,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.336357,
-    "effect_size": 0.8195,
+    "effect_size": 0.7828,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3444,7 +3354,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.988779,
-    "effect_size": -0.469,
+    "effect_size": -0.448,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3459,7 +3369,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 2.6e-05,
-    "effect_size": -3.2855,
+    "effect_size": -3.1291,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3474,7 +3384,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.412349,
-    "effect_size": -0.6952,
+    "effect_size": -0.6659,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3489,7 +3399,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.011222,
-    "effect_size": 1.7115,
+    "effect_size": 1.6392,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3504,7 +3414,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.002713,
-    "effect_size": 2.1161,
+    "effect_size": 2.0266,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3519,7 +3429,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.542185,
-    "effect_size": -0.6248,
+    "effect_size": -0.5984,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3534,7 +3444,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.926572,
-    "effect_size": -0.4705,
+    "effect_size": -0.4506,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3549,7 +3459,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.013737,
-    "effect_size": -1.4809,
+    "effect_size": -1.4184,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3564,7 +3474,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.0026,
+    "effect_size": -0.0025,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3579,7 +3489,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.026193,
-    "effect_size": 1.3796,
+    "effect_size": 1.3213,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3594,55 +3504,10 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.003823,
-    "effect_size": 1.758,
+    "effect_size": 1.6837,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
-  },
-  {
-    "organ_system": "general",
-    "organ_name": "Gland, Adrenal",
-    "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
-    "domain": "OM",
-    "test_code": "WEIGHT",
-    "dose_level": 1,
-    "dose_label": "Group 2,2 mg/kg PCDRUG",
-    "sex": "M",
-    "p_value": 0.100596,
-    "effect_size": -1.0294,
-    "direction": "down",
-    "severity": "warning",
-    "treatment_related": false
-  },
-  {
-    "organ_system": "general",
-    "organ_name": "Gland, Adrenal",
-    "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
-    "domain": "OM",
-    "test_code": "WEIGHT",
-    "dose_level": 2,
-    "dose_label": "Group 3,20 mg/kg PCDRUG",
-    "sex": "M",
-    "p_value": 0.569557,
-    "effect_size": -0.6107,
-    "direction": "down",
-    "severity": "warning",
-    "treatment_related": false
-  },
-  {
-    "organ_system": "general",
-    "organ_name": "Gland, Adrenal",
-    "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
-    "domain": "OM",
-    "test_code": "WEIGHT",
-    "dose_level": 3,
-    "dose_label": "Group 4,200 mg/kg PCDRUG",
-    "sex": "M",
-    "p_value": 1.0,
-    "effect_size": 0.3016,
-    "direction": "down",
-    "severity": "warning",
-    "treatment_related": false
   },
   {
     "organ_system": "general",
@@ -3654,7 +3519,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.043119,
-    "effect_size": -1.216,
+    "effect_size": -1.1647,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3669,7 +3534,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.078389,
-    "effect_size": 1.1559,
+    "effect_size": 1.1071,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3684,7 +3549,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.032603,
-    "effect_size": 1.3576,
+    "effect_size": 1.3002,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3699,7 +3564,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.3021,
+    "effect_size": -0.2893,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3714,7 +3579,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.317,
+    "effect_size": 0.3036,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3729,7 +3594,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.021947,
-    "effect_size": 1.3518,
+    "effect_size": 1.2947,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3744,7 +3609,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.101,
+    "effect_size": -0.0967,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3759,7 +3624,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000892,
-    "effect_size": 2.2482,
+    "effect_size": 2.1532,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3774,7 +3639,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.016579,
-    "effect_size": 1.5299,
+    "effect_size": 1.4652,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3789,7 +3654,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.56956,
-    "effect_size": -0.625,
+    "effect_size": -0.5986,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -3804,7 +3669,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.399236,
-    "effect_size": -0.7286,
+    "effect_size": -0.6978,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -3819,7 +3684,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.514128,
-    "effect_size": -0.6378,
+    "effect_size": -0.6108,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -3834,7 +3699,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.059244,
-    "effect_size": -1.1483,
+    "effect_size": -1.0998,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3849,7 +3714,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.040997,
-    "effect_size": 1.3438,
+    "effect_size": 1.2871,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3864,7 +3729,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.021433,
-    "effect_size": 1.4805,
+    "effect_size": 1.418,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3879,7 +3744,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.216572,
-    "effect_size": -0.8782,
+    "effect_size": -0.841,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3894,7 +3759,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.184236,
-    "effect_size": -0.8992,
+    "effect_size": -0.8612,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3909,7 +3774,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 2.8e-05,
-    "effect_size": -2.7217,
+    "effect_size": -2.6067,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3924,7 +3789,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.651919,
-    "effect_size": -0.5725,
+    "effect_size": -0.5483,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3939,7 +3804,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.034415,
-    "effect_size": 1.3777,
+    "effect_size": 1.3195,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3954,7 +3819,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.00021,
-    "effect_size": 2.7265,
+    "effect_size": 2.6113,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -3969,7 +3834,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.4164,
+    "effect_size": -0.3988,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3984,7 +3849,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.2857,
+    "effect_size": -0.2736,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -3999,7 +3864,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.000398,
-    "effect_size": -2.222,
+    "effect_size": -2.1281,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -4014,7 +3879,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.3651,
+    "effect_size": 0.3497,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -4029,7 +3894,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.474016,
-    "effect_size": 0.6729,
+    "effect_size": 0.6444,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -4044,7 +3909,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.000997,
-    "effect_size": 2.3553,
+    "effect_size": 2.2558,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -4059,7 +3924,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": -0.3398,
+    "effect_size": -0.3254,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -4074,7 +3939,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.145771,
-    "effect_size": 0.9799,
+    "effect_size": 0.9385,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -4089,7 +3954,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.069672,
-    "effect_size": 1.1383,
+    "effect_size": 1.0902,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": false
@@ -4104,7 +3969,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.017967,
-    "effect_size": -1.4553,
+    "effect_size": -1.3938,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -4119,7 +3984,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.024684,
-    "effect_size": 1.4843,
+    "effect_size": 1.4216,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -4134,7 +3999,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.130708,
-    "effect_size": 1.0372,
+    "effect_size": 0.9934,
     "direction": "up",
     "severity": "adverse",
     "treatment_related": true
@@ -4149,7 +4014,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.13562,
-    "effect_size": -0.9634,
+    "effect_size": -0.9227,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -4164,7 +4029,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": 0.042,
+    "effect_size": 0.0402,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -4179,7 +4044,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.010513,
-    "effect_size": -1.7478,
+    "effect_size": -1.674,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -4194,7 +4059,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.067786,
-    "effect_size": -1.1162,
+    "effect_size": -1.069,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -4209,7 +4074,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 0.145482,
-    "effect_size": 0.9745,
+    "effect_size": 0.9333,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -4224,7 +4089,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.1478,
+    "effect_size": 0.1416,
     "direction": "down",
     "severity": "warning",
     "treatment_related": false
@@ -5364,7 +5229,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.3033,
+    "effect_size": -0.2897,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -5379,7 +5244,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.445,
+    "effect_size": -0.4251,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -5394,7 +5259,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.103885,
-    "effect_size": -1.0895,
+    "effect_size": -1.0376,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": false
@@ -5409,7 +5274,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.1147,
+    "effect_size": 0.1124,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -5424,7 +5289,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 1.0,
-    "effect_size": 0.0244,
+    "effect_size": 0.0239,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -5439,7 +5304,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
     "p_value": 4e-06,
-    "effect_size": -1.8201,
+    "effect_size": -1.7839,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -5454,7 +5319,7 @@
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.670259,
-    "effect_size": 0.3966,
+    "effect_size": 0.3885,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -5469,7 +5334,7 @@
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 1.0,
-    "effect_size": -0.3069,
+    "effect_size": -0.3007,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true
@@ -5484,7 +5349,7 @@
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
     "p_value": 0.0,
-    "effect_size": -2.7291,
+    "effect_size": -2.6734,
     "direction": "down",
     "severity": "adverse",
     "treatment_related": true

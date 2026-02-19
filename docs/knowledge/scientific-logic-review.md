@@ -2,7 +2,7 @@
 
 **Generated:** 2026-02-19  
 **Study:** PointCross (RAT, SPRAGUE-DAWLEY, ORAL GAVAGE, 13-week subchronic)  
-**Pipeline:** 62 endpoint summaries → 8 detected syndromes (XS01, XS04, XS05, XS08, XS09, XS10, XS03, XS07)
+**Pipeline:** 61 endpoint summaries → 7 detected syndromes (XS01, XS04, XS05, XS08, XS09, XS03, XS07)
 
 ---
 
@@ -100,13 +100,13 @@ The system defines 10 cross-domain syndrome patterns (XS01–XS10). Each pattern
 
 | Term | Domain | Direction | Tag |
 |------|--------|-----------|-----|
-| BUN ↑ | LB | up | BUN |
 | CREAT ↑ | LB | up | CREAT |
 
 **Supporting evidence:**
 
 | Term | Domain | Direction |
 |------|--------|-----------|
+| BUN ↑ | LB | up |
 | Kidney weight | OM | any |
 | SPGRAV ↓ | LB | down |
 | Kidney tubular degeneration | MI | any |
@@ -174,6 +174,7 @@ The system defines 10 cross-domain syndrome patterns (XS01–XS10). Each pattern
 | BILI ↑ | LB | up |
 | Spleen weight ↑ | OM | up |
 | Spleen extramedullary hematopoiesis | MI | any |
+| Spleen pigmentation | MI | any |
 | HAPTO ↓ | LB | down |
 
 **► Review questions:**
@@ -246,7 +247,7 @@ The system defines 10 cross-domain syndrome patterns (XS01–XS10). Each pattern
 
 **Clinical description:** Non-specific physiological stress response (distress), often secondary to excessive toxicity or palatability issues. Key markers: adrenal hypertrophy, thymic atrophy, body weight loss, corticosterone elevation. Must be distinguished from direct organ toxicity — stress response findings alone should not drive NOAEL.
 
-**Required logic:** ANY one required term triggers detection  
+**Required logic:** Compound: `ADRENAL_WT AND (BW OR THYMUS_WT OR LYMPH)`  
 **Minimum domains:** 2
 
 **Required evidence:**
@@ -254,15 +255,15 @@ The system defines 10 cross-domain syndrome patterns (XS01–XS10). Each pattern
 | Term | Domain | Direction | Tag |
 |------|--------|-----------|-----|
 | Adrenal weight ↑ | OM | up | ADRENAL_WT |
+| Thymus weight ↓ | OM | down | THYMUS_WT |
+| LYMPH ↓ | LB | down | LYMPH |
+| Body Weight ↓ | BW | down | BW |
 
 **Supporting evidence:**
 
 | Term | Domain | Direction |
 |------|--------|-----------|
 | CORT ↑ | LB | up |
-| Thymus weight ↓ | OM | down |
-| LYMPH ↓ | LB | down |
-| Body Weight ↓ | BW | down |
 
 **► Review questions:**
 
@@ -351,7 +352,7 @@ Classifies each syndrome into one of three certainty levels:
 
 ## B.2: Treatment-Relatedness (ECETOC A-Factors)
 
-Scores treatment-relatedness using weighted factors adapted from ECETOC Technical Report No. 138:
+Scores treatment-relatedness using weighted factors adapted from ECETOC Technical Report No. 85 (2002):
 
 | Factor | Scoring | Weight |
 |--------|---------|--------|
@@ -496,7 +497,7 @@ This section shows the system's actual output for each syndrome detected in the 
 **Species:** RAT (SPRAGUE-DAWLEY)  
 **Route:** ORAL GAVAGE  
 **Duration:** 13 weeks (subchronic)  
-**Detected syndromes:** XS01 (Hepatocellular injury), XS04 (Myelosuppression), XS05 (Hemolytic anemia), XS08 (Stress response), XS09 (Target organ wasting), XS10 (Cardiovascular), XS03 (Nephrotoxicity), XS07 (Immunotoxicity)
+**Detected syndromes:** XS01 (Hepatocellular injury), XS04 (Myelosuppression), XS05 (Hemolytic anemia), XS08 (Stress response), XS09 (Target organ wasting), XS03 (Nephrotoxicity), XS07 (Immunotoxicity)
 
 ## XS01: Hepatocellular injury
 
@@ -507,13 +508,13 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
-| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (d) | p-value | Fold Change | Pattern |
+| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | ALT ↑ | ✓ matched | Alanine Aminotransferase | LB | ↑ | +2.23 | 0.0003 | 1.25× | non_monotonic |
-| **R** | AST ↑ | ✓ matched | Aspartate Aminotransferase | LB | ↑ | +3.99 | <0.0001 | 1.56× | threshold_increase |
+| **R** | ALT ↑ | ✓ matched | Alanine Aminotransferase | LB | ↑ | +2.13 | 0.0003 | 1.25× | non_monotonic |
+| **R** | AST ↑ | ✓ matched | Aspartate Aminotransferase | LB | ↑ | +3.82 | <0.0001 | 1.56× | threshold_increase |
 | S | SDH ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
 | S | BILI ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
-| S | Liver weight | ✓ matched | LIVER — LIVER (WEIGHT) | OM | ↑ | +2.36 | 0.0010 | 1.90× | threshold_increase |
+| S | Liver weight | ✓ matched | LIVER — LIVER (WEIGHT) | OM | ↑ | +2.26 | 0.0010 | 1.90× | threshold_increase |
 | S | Liver necrosis | — not measured | — | MI | — | n/a | n/a | n/a | — |
 | S | Liver hypertrophy | ✓ matched | LIVER — HYPERTROPHY | MI | ↑ | n/a | 0.003 | n/a | threshold_increase |
 
@@ -561,16 +562,16 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
-| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (d) | p-value | Fold Change | Pattern |
+| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | NEUT ↓ | ✓ matched | Neutrophils | LB | ↓ | -2.45 | 0.0003 | 0.66× | threshold_decrease |
-| **R** | PLAT ↓ | ○ not sig | Platelets | LB | ↑ | +1.06 | 0.091 | 1.13× | non_monotonic |
-| **R** | RBC ↓ | ✓ matched | Erythrocytes | LB | ↓ | -1.43 | 0.040 | 0.97× | non_monotonic |
-| **R** | HGB ↓ | ✓ matched | Hemoglobin | LB | ↓ | -2.64 | <0.0001 | 0.91× | threshold_decrease |
+| **R** | NEUT ↓ | ✓ matched | Neutrophils | LB | ↓ | -2.34 | 0.0003 | 0.66× | threshold_decrease |
+| **R** | PLAT ↓ | ○ not sig | Platelets | LB | ↑ | +1.02 | 0.091 | 1.13× | non_monotonic |
+| **R** | RBC ↓ | ✓ matched | Erythrocytes | LB | ↓ | -1.36 | 0.040 | 0.97× | non_monotonic |
+| **R** | HGB ↓ | ✓ matched | Hemoglobin | LB | ↓ | -2.53 | <0.0001 | 0.91× | threshold_decrease |
 | S | Bone marrow hypocellularity | — not measured | — | MI | — | n/a | n/a | n/a | — |
-| S | RETIC ↓ | ⚠ opposite | Reticulocytes | LB | ↑ | +1.76 | 0.003 | 1.44× | non_monotonic |
+| S | RETIC ↓ | ⚠ opposite | Reticulocytes | LB | ↑ | +1.69 | 0.003 | 1.44× | non_monotonic |
 | S | Spleen atrophy | — not measured | — | MI | — | n/a | n/a | n/a | — |
-| S | Spleen weight ↓ | ⚠ opposite | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.48 | 0.018 | 1.43× | threshold_increase |
+| S | Spleen weight ↓ | ⚠ opposite | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.42 | 0.018 | 1.43× | threshold_increase |
 
 > ⚠ **2 opposite-direction match(es)** — endpoints matching term identity but in the wrong direction.
 
@@ -580,10 +581,10 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Component | Result | Detail |
 |-----------|--------|--------|
-| Certainty | `mechanism_uncertain` | Required findings met. But RETIC argues against this specific mechanism. Consider differential (XS05 (Hemolytic anemia)). |
+| Certainty | `pattern_only` | Required findings met. But RETIC argues against this specific mechanism. Consider differential (XS05 (Hemolytic anemia)). Capped at pattern_only: single-domain detection (LB only) cannot confirm mechanism. |
 | Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: isolated, significance: significant |
 | Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S3_Adverse` | — |
+| Severity | `S2_Concern` | — |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `high` | SOC: blood and lymphatic system disorders, LR+: 3.5 |
 
@@ -623,13 +624,14 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
-| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (d) | p-value | Fold Change | Pattern |
+| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | RBC ↓ | ✓ matched | Erythrocytes | LB | ↓ | -1.43 | 0.040 | 0.97× | non_monotonic |
-| **R** | RETIC ↑ | ✓ matched | Reticulocytes | LB | ↑ | +1.76 | 0.003 | 1.44× | non_monotonic |
+| **R** | RBC ↓ | ✓ matched | Erythrocytes | LB | ↓ | -1.36 | 0.040 | 0.97× | non_monotonic |
+| **R** | RETIC ↑ | ✓ matched | Reticulocytes | LB | ↑ | +1.69 | 0.003 | 1.44× | non_monotonic |
 | S | BILI ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
-| S | Spleen weight ↑ | ✓ matched | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.48 | 0.018 | 1.43× | threshold_increase |
-| S | Spleen extramedullary hematopoiesis | ✓ matched | SPLEEN — PIGMENTATION | MI | ↑ | n/a | 0.211 | n/a | threshold_increase |
+| S | Spleen weight ↑ | ✓ matched | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.42 | 0.018 | 1.43× | threshold_increase |
+| S | Spleen extramedullary hematopoiesis | — not measured | — | MI | — | n/a | n/a | n/a | — |
+| S | Spleen pigmentation | ✓ matched | SPLEEN — PIGMENTATION | MI | ↑ | n/a | 0.211 | n/a | threshold_increase |
 | S | HAPTO ↓ | — not measured | — | LB | — | n/a | n/a | n/a | — |
 
 ### Interpretation
@@ -669,22 +671,28 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ## XS08: Stress response
 
-**Confidence:** MODERATE  
+**Confidence:** LOW  
 **Domains covered:** BW, LB, OM  
 **Sexes:** F, M  
-**Required logic met:** Yes (1/1 required terms, logic: ADRENAL_WT)
+**Required logic met:** Yes (3/4 required terms, logic: ADRENAL_WT + (BW or THYMUS_WT or LYMPH))
 
 ### Term-by-Term Match Evidence
 
-| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (d) | p-value | Fold Change | Pattern |
+| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | Adrenal weight ↑ | ✓ matched | GLAND, ADRENAL — GLAND, ADRENAL (WEIGHT) | OM | ↑ | +1.76 | 0.004 | 1.42× | threshold_increase |
+| **R** | Adrenal weight ↑ | ✓ matched | GLAND, ADRENAL — GLAND, ADRENAL (WEIGHT) | OM | ↑ | +1.68 | 0.004 | 1.42× | threshold_increase |
+| **R** | Thymus weight ↓ | ✓ matched | THYMUS — THYMUS (WEIGHT) | OM | ↓ | -1.07 | 0.068 | 1.44× | non_monotonic |
+| **R** | LYMPH ↓ | ⚠ opposite | Lymphocytes | LB | ↑ | +1.35 | 0.027 | 1.71× | threshold_increase |
+| **R** | Body Weight ↓ | ✓ matched | Body Weight | BW | ↓ | -7.80 | <0.0001 | 0.80× | threshold_decrease |
 | S | CORT ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
-| S | Thymus weight ↓ | ✓ matched | THYMUS — THYMUS (WEIGHT) | OM | ↓ | -1.12 | 0.068 | 1.44× | non_monotonic |
-| S | LYMPH ↓ | ⚠ opposite | Lymphocytes | LB | ↑ | +1.41 | 0.027 | 1.71× | threshold_increase |
-| S | Body Weight ↓ | ✓ matched | Body Weight | BW | ↓ | -8.15 | <0.0001 | 0.80× | threshold_decrease |
 
 > ⚠ **1 opposite-direction match(es)** — endpoints matching term identity but in the wrong direction.
+
+**Directional gate:**
+- gate_fired: true
+- action: weak_against
+- certainty_cap: mechanism_uncertain
+- reason: LYMPH ↑ contradicts expected ↓ for XS08.
 
 ### Interpretation
 
@@ -723,11 +731,11 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
-| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (d) | p-value | Fold Change | Pattern |
+| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | Body Weight ↓ | ✓ matched | Body Weight | BW | ↓ | -8.15 | <0.0001 | 0.80× | threshold_decrease |
+| **R** | Body Weight ↓ | ✓ matched | Body Weight | BW | ↓ | -7.80 | <0.0001 | 0.80× | threshold_decrease |
 | S | Food Consumption ↓ | — not measured | — | BW | — | n/a | n/a | n/a | — |
-| S | Organ weight ↓ | ✓ matched | HEART — HEART (WEIGHT) | OM | ↓ | -2.72 | <0.0001 | 0.68× | threshold_decrease |
+| S | Organ weight ↓ | ✓ matched | HEART — HEART (WEIGHT) | OM | ↓ | -2.61 | <0.0001 | 0.68× | threshold_decrease |
 | S | Any atrophy | ✓ matched | GLAND, MAMMARY — ATROPHY | MI | ↑ | n/a | 0.061 | n/a | threshold_increase |
 
 ### Interpretation
@@ -749,73 +757,20 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ---
 
-## XS10: Cardiovascular
-
-**Confidence:** MODERATE  
-**Domains covered:** EG, MI, OM  
-**Sexes:** F, M  
-**Required logic met:** Yes (1/4 required terms, logic: QTC or PR or RR or HR)
-
-### Term-by-Term Match Evidence
-
-| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (d) | p-value | Fold Change | Pattern |
-|------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | QTCBAG | — not measured | — | EG | — | n/a | n/a | n/a | — |
-| **R** | PRAG | — not measured | — | EG | — | n/a | n/a | n/a | — |
-| **R** | RRAG | ✓ matched | RR Interval, Aggregate | EG | ↓ | -1.09 | 0.104 | 0.80× | threshold_decrease |
-| **R** | HR | — not measured | — | VS | — | n/a | n/a | n/a | — |
-| S | Heart weight ↑ | ⚠ opposite | HEART — HEART (WEIGHT) | OM | ↓ | -2.72 | <0.0001 | 0.68× | threshold_decrease |
-| S | Heart cardiomyopathy | ✓ matched | HEART — INFLAMMATION | MI | ↑ | n/a | 0.250 | n/a | threshold_increase |
-| S | CTNI ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
-
-> ⚠ **1 opposite-direction match(es)** — endpoints matching term identity but in the wrong direction.
-
-**Missing domains:** LB, VS
-
-### Interpretation
-
-| Component | Result | Detail |
-|-----------|--------|--------|
-| Certainty | `mechanism_uncertain` | Required findings met. But HEART_WT argue against. Consider differential (functional (rate change) vs structural cardiovascular toxicity). |
-| Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: concordant, significance: significant |
-| Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S3_Adverse` | — |
-| Recovery | `not_examined` | Recovery not examined in this study. |
-| Translational | `low` | SOC: cardiac disorders, LR+: 2.5 |
-
-**Discriminating findings:**
-
-| Endpoint | Expected | Actual | Status | Weight |
-|----------|----------|--------|--------|--------|
-| QTCBAG | ↑ | — | not_available | strong |
-| HEART::CARDIOMYOPATHY | ↑ | — | not_available | strong |
-| HEART_WT | ↑ | ↓ | argues_against | moderate |
-| CTNI | ↑ | — | not_available | strong |
-
-> **Anomaly summary:** 1 anomaly marker(s) detected in this syndrome. Review marked items (⚠) above.
-
-**► Syndrome-specific review questions:**
-
-- [ ] Given that rodent QTc has limited translational value, should cardiac functional parameters (HR, ECG) receive reduced weight in rodent studies?
-- [ ] Should troponin levels be included as a sensitive marker for cardiomyocyte injury?
-- [ ] How should the system handle species-specific differences in cardiovascular susceptibility (e.g., rat vs. dog)?
-
----
-
 ## XS03: Nephrotoxicity
 
 **Confidence:** MODERATE  
 **Domains covered:** LB, OM  
 **Sexes:** M  
-**Required logic met:** Yes (1/2 required terms, logic: BUN or CREAT)
+**Required logic met:** Yes (1/1 required terms, logic: CREAT)
 
 ### Term-by-Term Match Evidence
 
-| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (d) | p-value | Fold Change | Pattern |
+| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | BUN ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
-| **R** | CREAT ↑ | ✓ matched | Creatinine | LB | ↑ | +1.78 | 0.007 | 1.25× | threshold_increase |
-| S | Kidney weight | ✓ matched | KIDNEY — KIDNEY (WEIGHT) | OM | ↑ | +2.73 | 0.0002 | 1.53× | threshold_increase |
+| **R** | CREAT ↑ | ✓ matched | Creatinine | LB | ↑ | +1.70 | 0.007 | 1.25× | threshold_increase |
+| S | BUN ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
+| S | Kidney weight | ✓ matched | KIDNEY — KIDNEY (WEIGHT) | OM | ↑ | +2.61 | 0.0002 | 1.53× | threshold_increase |
 | S | SPGRAV ↓ | — not measured | — | LB | — | n/a | n/a | n/a | — |
 | S | Kidney tubular degeneration | — not measured | — | MI | — | n/a | n/a | n/a | — |
 
@@ -825,7 +780,7 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Component | Result | Detail |
 |-----------|--------|--------|
-| Certainty | `mechanism_confirmed` | Required findings met. Moderate supporting evidence from KIDNEY_WT. No contradicting evidence. |
+| Certainty | `mechanism_uncertain` | Required findings met. Moderate supporting evidence from KIDNEY_WT. No contradicting evidence. Capped at mechanism_uncertain: confirmatory domain MI not available in study data. |
 | Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: concordant, significance: significant |
 | Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
 | Severity | `S3_Adverse` | — |
@@ -858,12 +813,12 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
-| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (d) | p-value | Fold Change | Pattern |
+| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | WBC ↓ | ✓ matched | Leukocytes | LB | ↓ | -2.08 | 0.003 | 0.59× | threshold_decrease |
-| **R** | LYMPH ↓ | ⚠ opposite | Lymphocytes | LB | ↑ | +1.41 | 0.027 | 1.71× | threshold_increase |
-| S | Spleen weight ↓ | ⚠ opposite | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.48 | 0.018 | 1.43× | threshold_increase |
-| S | Thymus weight ↓ | ✓ matched | THYMUS — THYMUS (WEIGHT) | OM | ↓ | -1.12 | 0.068 | 1.44× | non_monotonic |
+| **R** | WBC ↓ | ✓ matched | Leukocytes | LB | ↓ | -1.98 | 0.003 | 0.59× | threshold_decrease |
+| **R** | LYMPH ↓ | ⚠ opposite | Lymphocytes | LB | ↑ | +1.35 | 0.027 | 1.71× | threshold_increase |
+| S | Spleen weight ↓ | ⚠ opposite | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.42 | 0.018 | 1.43× | threshold_increase |
+| S | Thymus weight ↓ | ✓ matched | THYMUS — THYMUS (WEIGHT) | OM | ↓ | -1.07 | 0.068 | 1.44× | non_monotonic |
 | S | Spleen lymphoid depletion | — not measured | — | MI | — | n/a | n/a | n/a | — |
 
 > ⚠ **2 opposite-direction match(es)** — endpoints matching term identity but in the wrong direction.
@@ -882,7 +837,7 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met. No discriminating evidence defined for this syndrome. |
 | Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: concordant, significance: significant |
-| Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
+| Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=marked, precursor=false |
 | Severity | `S3_Adverse` | — |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `low` | SOC: immune system disorders, LR+: 2.5 |

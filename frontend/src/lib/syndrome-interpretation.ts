@@ -1202,6 +1202,45 @@ export function assessCertainty(
     }
   }
 
+  // REM-12: Single-domain certainty cap for XS04/XS05
+  // These syndromes can fire with minDomains=1 (LB only), but single-domain
+  // detection cannot confirm mechanism — requires MI or OM corroboration
+  const SINGLE_DOMAIN_CAP_SYNDROMES = new Set(["XS04", "XS05"]);
+  if (SINGLE_DOMAIN_CAP_SYNDROMES.has(syndrome.id) && syndrome.domainsCovered.length === 1) {
+    const CERTAINTY_ORDER: Record<SyndromeCertainty, number> = {
+      pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
+    };
+    if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER["pattern_only" as SyndromeCertainty]) {
+      certainty = "pattern_only";
+      rationale += ` Capped at pattern_only: single-domain detection (${syndrome.domainsCovered[0]} only) cannot confirm mechanism.`;
+    }
+  }
+
+  // REM-15: Data sufficiency gate — cap certainty when confirmatory domains are missing
+  const DATA_SUFFICIENCY: Record<string, { domain: string; role: "confirmatory" | "supporting" }[]> = {
+    XS01: [{ domain: "MI", role: "confirmatory" }],
+    XS03: [{ domain: "MI", role: "confirmatory" }],
+    XS04: [{ domain: "MI", role: "confirmatory" }],
+    XS07: [{ domain: "MI", role: "confirmatory" }],
+    XS10: [{ domain: "LB", role: "supporting" }],
+  };
+  const suffReqs = DATA_SUFFICIENCY[syndrome.id];
+  if (suffReqs) {
+    const coveredDomains = new Set(syndrome.domainsCovered);
+    for (const req of suffReqs) {
+      if (!coveredDomains.has(req.domain)) {
+        const CERTAINTY_ORDER: Record<SyndromeCertainty, number> = {
+          pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
+        };
+        const maxCert: SyndromeCertainty = req.role === "confirmatory" ? "mechanism_uncertain" : "mechanism_uncertain";
+        if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER[maxCert]) {
+          certainty = maxCert;
+          rationale += ` Capped at ${maxCert}: ${req.role} domain ${req.domain} not available in study data.`;
+        }
+      }
+    }
+  }
+
   return { certainty, evidence, rationale };
 }
 

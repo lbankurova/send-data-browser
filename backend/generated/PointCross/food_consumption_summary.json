@@ -50,7 +50,7 @@
           "food_efficiency_control": 0.4681,
           "food_efficiency_reduced": false,
           "fe_p_value": 0.204818,
-          "fe_cohens_d": 0.5914,
+          "fe_cohens_d": 0.5664,
           "fw_pct_change": -9.8,
           "bw_pct_change": 5.0
         },
@@ -65,7 +65,7 @@
           "food_efficiency_control": 1.0715,
           "food_efficiency_reduced": false,
           "fe_p_value": 0.894707,
-          "fe_cohens_d": -0.06,
+          "fe_cohens_d": -0.0575,
           "fw_pct_change": 3.3,
           "bw_pct_change": 2.0
         },
@@ -80,7 +80,7 @@
           "food_efficiency_control": 0.4681,
           "food_efficiency_reduced": false,
           "fe_p_value": 0.765074,
-          "fe_cohens_d": 0.1364,
+          "fe_cohens_d": 0.1306,
           "fw_pct_change": -2.8,
           "bw_pct_change": 0.0
         },
@@ -95,7 +95,7 @@
           "food_efficiency_control": 1.0715,
           "food_efficiency_reduced": false,
           "fe_p_value": 0.19015,
-          "fe_cohens_d": -0.6109,
+          "fe_cohens_d": -0.5851,
           "fw_pct_change": 2.7,
           "bw_pct_change": -8.9
         },
@@ -110,7 +110,7 @@
           "food_efficiency_control": 0.4681,
           "food_efficiency_reduced": true,
           "fe_p_value": 3e-06,
-          "fe_cohens_d": -3.1161,
+          "fe_cohens_d": -2.9844,
           "fw_pct_change": -6.2,
           "bw_pct_change": -93.4
         },
@@ -125,7 +125,7 @@
           "food_efficiency_control": 1.0715,
           "food_efficiency_reduced": true,
           "fe_p_value": 3e-06,
-          "fe_cohens_d": -2.9715,
+          "fe_cohens_d": -2.8459,
           "fw_pct_change": 1.4,
           "bw_pct_change": -60.8
         }
@@ -199,7 +199,7 @@
           "food_efficiency_control": 0.2936,
           "food_efficiency_reduced": false,
           "fe_p_value": 0.443273,
-          "fe_cohens_d": -0.351,
+          "fe_cohens_d": -0.3361,
           "fw_pct_change": 12.5,
           "bw_pct_change": 5.0
         },
@@ -214,7 +214,7 @@
           "food_efficiency_control": 0.4006,
           "food_efficiency_reduced": false,
           "fe_p_value": 0.059905,
-          "fe_cohens_d": 0.9209,
+          "fe_cohens_d": 0.8797,
           "fw_pct_change": 0.4,
           "bw_pct_change": 14.4
         },
@@ -229,7 +229,7 @@
           "food_efficiency_control": 0.2936,
           "food_efficiency_reduced": false,
           "fe_p_value": 0.810336,
-          "fe_cohens_d": 0.109,
+          "fe_cohens_d": 0.1044,
           "fw_pct_change": -3.2,
           "bw_pct_change": 1.7
         },
@@ -244,7 +244,7 @@
           "food_efficiency_control": 0.4006,
           "food_efficiency_reduced": false,
           "fe_p_value": 0.857776,
-          "fe_cohens_d": -0.0826,
+          "fe_cohens_d": -0.0789,
           "fw_pct_change": -3.1,
           "bw_pct_change": -6.5
         },
@@ -259,7 +259,7 @@
           "food_efficiency_control": 0.2936,
           "food_efficiency_reduced": true,
           "fe_p_value": 0.000284,
-          "fe_cohens_d": -2.1515,
+          "fe_cohens_d": -2.0606,
           "fw_pct_change": -4.3,
           "bw_pct_change": -55.2
         },
@@ -274,7 +274,7 @@
           "food_efficiency_control": 0.4006,
           "food_efficiency_reduced": true,
           "fe_p_value": 2e-06,
-          "fe_cohens_d": -3.5712,
+          "fe_cohens_d": -3.4011,
           "fw_pct_change": -4.9,
           "bw_pct_change": -53.8
         }

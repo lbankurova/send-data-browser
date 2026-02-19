@@ -108,6 +108,11 @@ function readPacketMd(): string {
 // ---------------------------------------------------------------------------
 
 function splitSyndromeSections(md: string): SyndromeSection[] {
+  // Only parse Part D (Worked Examples) — Part A has definition-only sections
+  // for ALL syndromes (including non-detected ones like XS10).
+  const partDStart = md.indexOf("# Part D:");
+  const workedMd = partDStart >= 0 ? md.slice(partDStart) : md;
+
   const re = /^## (XS\d{2}):\s*(.+)$/gm;
   const matches: Array<{
     id: string;
@@ -117,32 +122,21 @@ function splitSyndromeSections(md: string): SyndromeSection[] {
   }> = [];
 
   let m: RegExpExecArray | null;
-  while ((m = re.exec(md)) !== null) {
+  while ((m = re.exec(workedMd)) !== null) {
     matches.push({
       id: m[1],
       title: m[2].trim(),
       start: m.index,
-      end: md.length,
+      end: workedMd.length,
     });
   }
   for (let i = 0; i < matches.length - 1; i++)
     matches[i].end = matches[i + 1].start;
 
-  const all = matches.map(({ id, title, start, end }) => {
-    const chunk = md.slice(start, end);
+  return matches.map(({ id, title, start, end }) => {
+    const chunk = workedMd.slice(start, end);
     return parseSyndromeSection(id, title, chunk);
   });
-
-  // Deduplicate: keep the section with evidence rows (Part D worked examples)
-  // over definition sections (Part B) when both exist for the same syndrome ID.
-  const byId = new Map<string, SyndromeSection>();
-  for (const s of all) {
-    const existing = byId.get(s.id);
-    if (!existing || s.evidenceRows.length > (existing.evidenceRows.length)) {
-      byId.set(s.id, s);
-    }
-  }
-  return [...byId.values()];
 }
 
 function parseSyndromeSection(
@@ -189,7 +183,7 @@ function parseSyndromeSection(
 
   // Parse evidence table
   const evidenceHeaderIdx = chunk.indexOf(
-    "| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (d) | p-value | Fold Change | Pattern |",
+    "| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |",
   );
   if (evidenceHeaderIdx >= 0) {
     const tableChunk = chunk.slice(evidenceHeaderIdx);
@@ -653,7 +647,6 @@ describe("Review packet scientific invariants", () => {
       "XS05",
       "XS08",
       "XS09",
-      "XS10",
       "XS03",
       "XS07",
     ]) {
@@ -738,18 +731,19 @@ describe("Review packet scientific invariants", () => {
     ).toBe(true);
   });
 
-  test("REM-12: XS04 single-domain + missing domains flagged", () => {
+  test("REM-12: XS04 single-domain certainty correctly capped (fixed)", () => {
+    // REM-12: XS04 single-domain cap now applies in code — certainty is pattern_only,
+    // so the validator invariant L no longer fires for mechanism_confirmed
     const xs04Section = sections.find((s) => s.id === "XS04");
     if (xs04Section && (xs04Section.domainsCovered ?? []).length === 1) {
-      expect(hasIssue(issues, "SINGLE_DOMAIN_CERTAINTY_CAP", "XS04")).toBe(
-        true,
-      );
+      expect(hasIssue(issues, "SINGLE_DOMAIN_CERTAINTY_CAP", "XS04")).toBe(false);
     }
   });
 
-  // REM-15: certainty overconfidence
-  test("REM-15: XS03 mechanism_confirmed with MI missing flagged", () => {
-    expect(hasIssue(issues, "CERTAINTY_OVERCONFIDENT", "XS03")).toBe(true);
+  // REM-15: certainty overconfidence — fixed by data sufficiency gate
+  test("REM-15: XS03 certainty correctly capped when MI missing (fixed)", () => {
+    // Data sufficiency gate caps XS03 at mechanism_uncertain when MI is missing
+    expect(hasIssue(issues, "CERTAINTY_OVERCONFIDENT", "XS03")).toBe(false);
   });
 
   // XS04/XS05 conflict
@@ -759,10 +753,9 @@ describe("Review packet scientific invariants", () => {
     ).toBe(true);
   });
 
-  // XS10 missing domains
-  test("XS10 missing LB/VS domain warning", () => {
-    expect(hasIssue(issues, "MISSING_DOMAIN_WARNING_EXPECTED", "XS10")).toBe(
-      true,
-    );
+  // XS10: removed by REM-12 significance gate, no longer in packet
+  test("XS10 not detected (REM-12 significance gate)", () => {
+    const xs10Section = sections.find((s) => s.id === "XS10");
+    expect(xs10Section).toBeUndefined();
   });
 });

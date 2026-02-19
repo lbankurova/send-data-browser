@@ -194,19 +194,19 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 ---
 
-### STAT-12 — Cohen's d Effect Size
+### STAT-12 — Hedges' g Effect Size (bias-corrected)
 
-**Purpose:** Standardized measure of the difference between two group means, in units of pooled standard deviation.
+**Purpose:** Standardized measure of the difference between two group means, in units of pooled standard deviation, with small-sample bias correction.
 
-**Implementation:** `cohens_d(group1, group2)` — backend `statistics.py:96`.
+**Implementation:** `cohens_d(group1, group2)` — backend `statistics.py:96`. Function name retained for backwards compatibility; JSON field remains `cohens_d`. The computation applies Hedges' correction factor `J = 1 - 3/(4*df - 1)` where `df = n1 + n2 - 2`.
 
-**Parameters:** Pooled SD uses Bessel's correction (`ddof=1`). Minimum n=2 per group. Returns `None` if pooled SD = 0 (constant values). Formula: `d = (mean1 - mean2) / SD_pooled`, where `SD_pooled = sqrt(((n1-1)*var1 + (n2-1)*var2) / (n1 + n2 - 2))`.
+**Parameters:** Pooled SD uses Bessel's correction (`ddof=1`). Minimum n=2 per group. Returns `None` if pooled SD = 0 (constant values). Formula: `g = d * J`, where `d = (mean1 - mean2) / SD_pooled`, `SD_pooled = sqrt(((n1-1)*var1 + (n2-1)*var2) / (n1 + n2 - 2))`, and `J = 1 - 3/(4*df - 1)`.
 
-**Why this method:** Cohen's d is the most widely used standardized effect size. Pooled SD accounts for unequal sample sizes (common: control n=10, treated n=5). Sign indicates direction (positive = group1 higher).
+**Why this method:** Hedges' g corrects the upward bias in Cohen's d that occurs with small sample sizes (n < 20), which are typical in preclinical studies (control n=10, treated n=5). The correction factor J approaches 1.0 as sample size increases, so there is no penalty for larger studies. REM-05 identified this as a P1 scientific issue.
 
-**Alternatives considered:** Glass's delta (uses only control SD — biased when treatment changes variance). Hedges' g (small-sample correction, negligible at n > 10).
+**Alternatives considered:** Uncorrected Cohen's d (biased high for small n, previously used). Glass's delta (uses only control SD — biased when treatment changes variance).
 
-**Consumers:** All continuous pairwise comparisons (LB, BW, OM, FW). Max |d| feeds severity classification (CLASS-01) and signal scoring (METRIC-01). Thresholds used across the system: 0.5 (meaningful), 0.8 (strong), 1.0 (very strong), 2.0 (extreme).
+**Consumers:** All continuous pairwise comparisons (LB, BW, OM, FW). Max |g| feeds severity classification (CLASS-01) and signal scoring (METRIC-01). Thresholds used across the system: 0.5 (meaningful), 0.8 (strong), 1.0 (very strong), 2.0 (extreme). Review packet column header: "Effect Size (g)".
 
 ---
 
@@ -1198,13 +1198,13 @@ Overall: >= 3 → "treatment_related"; >= 1.5 → "possibly_related"; < 1.5 → 
 
 ---
 
-### METRIC-10 — ECETOC Adversity Magnitude (Cohen's d)
+### METRIC-10 — ECETOC Adversity Magnitude (Hedges' g)
 
-**Purpose:** Map Cohen's d effect size to toxicological severity grades for ECETOC B-factor adversity assessment.
+**Purpose:** Map Hedges' g effect size to toxicological severity grades for ECETOC B-factor adversity assessment.
 
 **Implementation:** `deriveMagnitudeLevel(syndrome, allEndpoints)` — frontend `syndrome-interpretation.ts:2137`.
 
-**Parameters:** `maxD = max |Cohen's d|` across all matched endpoints.
+**Parameters:** `maxG = max |Hedges' g|` across all matched endpoints.
 
 | Magnitude | Threshold |
 |-----------|-----------|

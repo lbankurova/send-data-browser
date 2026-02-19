@@ -326,7 +326,7 @@ function generateReviewDocument(): string {
   // B.2 Treatment-relatedness
   lines.push("## B.2: Treatment-Relatedness (ECETOC A-Factors)");
   lines.push("");
-  lines.push("Scores treatment-relatedness using weighted factors adapted from ECETOC Technical Report No. 138:");
+  lines.push("Scores treatment-relatedness using weighted factors adapted from ECETOC Technical Report No. 85 (2002):");
   lines.push("");
   lines.push("| Factor | Scoring | Weight |");
   lines.push("|--------|---------|--------|");
@@ -514,7 +514,7 @@ function generateReviewDocument(): string {
     // Term-by-term evidence table
     lines.push("### Term-by-Term Match Evidence");
     lines.push("");
-    lines.push("| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (d) | p-value | Fold Change | Pattern |");
+    lines.push("| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |");
     lines.push("|------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|");
 
     const allEntries = [...termReport.requiredEntries, ...termReport.supportingEntries];
