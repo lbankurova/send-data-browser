@@ -13,7 +13,7 @@ import type { EndpointSummary } from "@/lib/derive-summaries";
 // ─── Types ─────────────────────────────────────────────────
 
 /** Structured term match definition — replaces substring matching. */
-interface SyndromeTermMatch {
+export interface SyndromeTermMatch {
   /** LBTESTCD values for LB domain matching (OR logic) */
   testCodes?: string[];
   /** Exact match after normalization (OR logic) */
@@ -39,12 +39,12 @@ interface SyndromeTermMatch {
 }
 
 /** Compound required logic for syndrome definitions. */
-type RequiredLogic =
+export type RequiredLogic =
   | { type: "any" }                           // >=1 required term matches
   | { type: "all" }                           // ALL required terms must match
   | { type: "compound"; expression: string }; // custom: "ALP AND (GGT OR 5NT)"
 
-interface SyndromeDefinition {
+export interface SyndromeDefinition {
   id: string;
   name: string;
   requiredLogic: RequiredLogic;
@@ -631,7 +631,8 @@ const XS10_TERMS: SyndromeTermMatch[] = [
 
 // ─── Syndrome definitions ─────────────────────────────────
 
-const SYNDROME_DEFINITIONS: SyndromeDefinition[] = [
+/** @internal Exported for reference generator. */
+export const SYNDROME_DEFINITIONS: SyndromeDefinition[] = [
   {
     id: "XS01",
     name: "Hepatocellular injury",
@@ -944,7 +945,8 @@ function deduplicateSyndromes(syndromes: CrossDomainSyndrome[]): CrossDomainSynd
 
 // ─── REM-09: Directional gate definitions ─────────────────
 
-const DIRECTIONAL_GATES: Record<string, DirectionalGateConfig[]> = {
+/** @internal Exported for reference generator. */
+export const DIRECTIONAL_GATES: Record<string, DirectionalGateConfig[]> = {
   XS04: [
     {
       term: "RETIC", expectedDirection: "down", action: "reject",
@@ -1271,7 +1273,7 @@ export function getSyndromeNearMissInfo(
 
 // ─── REM-27: Magnitude floors per endpoint class ──────────
 
-interface MagnitudeFloor {
+export interface MagnitudeFloor {
   /** Minimum |Hedges' g| to qualify as biologically meaningful */
   minG: number;
   /** Minimum |fold change - 1| to qualify (e.g. 0.10 = 10% change) */
@@ -1283,7 +1285,8 @@ interface MagnitudeFloor {
  * v0.2.0: Split hematology into 5 subclasses, literature-backed thresholds.
  * Source: magnitude-floors-config.json + magnitude-floors-research-summary.md
  */
-const ENDPOINT_CLASS_FLOORS: { class: string; floor: MagnitudeFloor; testCodes: string[] }[] = [
+/** @internal Exported for reference generator. */
+export const ENDPOINT_CLASS_FLOORS: { class: string; floor: MagnitudeFloor; testCodes: string[] }[] = [
   // Hematology — erythroid (de Kort & Weber 2020: ≤10% = no histopath effect)
   { class: "hematology_erythroid",      floor: { minG: 0.8, minFcDelta: 0.10 }, testCodes: ["RBC", "HGB", "HB", "HCT"] },
   // Hematology — primary leukocytes (moderate CV ~15-25%)

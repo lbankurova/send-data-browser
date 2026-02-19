@@ -681,7 +681,8 @@ const XS10_DISCRIMINATORS: SyndromeDiscriminators = {
   ],
 };
 
-const DISCRIMINATOR_REGISTRY: Record<string, SyndromeDiscriminators> = {
+/** @internal Exported for reference generator. */
+export const DISCRIMINATOR_REGISTRY: Record<string, SyndromeDiscriminators> = {
   XS01: XS01_DISCRIMINATORS,
   XS02: XS02_DISCRIMINATORS,
   XS03: XS03_DISCRIMINATORS,
@@ -694,7 +695,8 @@ const DISCRIMINATOR_REGISTRY: Record<string, SyndromeDiscriminators> = {
 
 // ─── CL clinical observation correlates (Phase C) ──────────
 
-const SYNDROME_CL_CORRELATES: Record<string, {
+/** @internal Exported for reference generator. */
+export const SYNDROME_CL_CORRELATES: Record<string, {
   expectedObservations: string[];
   tier: (1 | 2 | 3)[];
 }> = {
