@@ -586,6 +586,42 @@ Each mapping entry provides: `normalizedTerm`, `category` (FindingNature), `inha
 
 ---
 
+### METH-24 — Stress Confound Detection (REM-10)
+
+**Purpose:** Detect when XS07 (immunotoxicity) or XS04 (myelosuppression) evidence overlaps entirely with non-specific stress response endpoints, suggesting the finding may be secondary to stress (XS08) rather than direct organ toxicity.
+
+**Implementation:** `isStressEndpoint()` + stress confound check in `computeAdversity()` — frontend `syndrome-interpretation.ts`.
+
+**Parameters:** Stress endpoint set: Lymphocytes, Leukocytes, Body Weight, and OM endpoints with thymus/spleen/adrenal specimen. When XS08 is co-detected and all matched endpoints of XS07/XS04 are in this set → `stressConfound = true`. Effects: adversity → `equivocal`, certainty downgraded by one level.
+
+**Why this method:** Per Everds et al. (2013) and ICH S8, immune changes at doses with concurrent general toxicity should be attributed to stress unless specific immunotoxicity evidence exists (functional assays, lymphoid depletion histopathology, dose-dissociation from stress markers).
+
+---
+
+### METH-25 — Adaptive Response Pattern (REM-16)
+
+**Purpose:** Detect when XS01 (hepatocellular injury) findings represent enzyme induction (adaptive, non-adverse) rather than hepatotoxicity.
+
+**Implementation:** `checkAdaptivePattern()` — frontend `syndrome-interpretation.ts`.
+
+**Parameters:** Adaptive pattern requires ALL of: (a) liver weight ↑ in matched OM endpoints, (b) hypertrophy present in matched MI endpoints or histopath data, (c) NO necrosis/degeneration in liver MI, (d) ALT/AST fold change < 5×. When matched: adversity → `equivocal`.
+
+**Why this method:** Enzyme induction (CYP upregulation) causes liver weight increase and hepatocyte hypertrophy as an adaptive physiological response. Without necrosis/degeneration and with modest ALT/AST elevation (< 5×), this is typically non-adverse. The 5× threshold follows DILI expert guidance.
+
+---
+
+### METH-26 — Species-Specific Preferred Biomarkers (REM-11)
+
+**Purpose:** Annotate when species-specific superior biomarkers are available or absent, improving interpretive context.
+
+**Implementation:** `checkSpeciesPreferredMarkers()` — frontend `syndrome-interpretation.ts`. Config: `SPECIES_PREFERRED_MARKERS` record (rat-only for now).
+
+**Parameters:** Per-syndrome preferred markers by species: XS01 (GLDH, SDH), XS02 (bile acids), XS03 (KIM-1, clusterin, urinary albumin), XS10 (cTnI, cTnT). When present → narrative annotation of improved specificity. When absent → narrative annotation noting potential improvement. No certainty penalty for absence.
+
+**Why this method:** Standard clinical pathology panels may not include the most species-appropriate biomarkers (e.g., GLDH is liver-specific in rats whereas ALT has muscle/RBC sources). The preferred-if-present model adds interpretive context without penalizing studies that use standard panels.
+
+---
+
 ## Classification Algorithms (CLASS)
 
 ### CLASS-01 — Severity Classification

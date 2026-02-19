@@ -503,7 +503,7 @@ const XS06_TERMS: SyndromeTermMatch[] = [
 ];
 
 const XS07_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED ===
+  // === REQUIRED (REM-14: ANY of WBC↓, LYMPH↓, THYMUS_WT↓ per ICH S8) ===
   {
     testCodes: ["WBC"],
     canonicalLabels: ["white blood cells", "white blood cell count", "leukocytes"],
@@ -514,13 +514,15 @@ const XS07_TERMS: SyndromeTermMatch[] = [
     canonicalLabels: ["lymphocytes", "lymphocyte count"],
     domain: "LB", direction: "down", role: "required", tag: "LYMPH",
   },
+  // REM-14: Thymus weight raised to required — most sensitive indicator
+  // of immunosuppression (Pearse 2006). Still uses ANY logic with WBC/LYMPH.
+  {
+    organWeightTerms: { specimen: ["thymus"] },
+    domain: "OM", direction: "down", role: "required", tag: "THYMUS_WT",
+  },
   // === SUPPORTING ===
   {
     organWeightTerms: { specimen: ["spleen"] },
-    domain: "OM", direction: "down", role: "supporting",
-  },
-  {
-    organWeightTerms: { specimen: ["thymus"] },
     domain: "OM", direction: "down", role: "supporting",
   },
   {

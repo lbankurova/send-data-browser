@@ -116,6 +116,7 @@ function interp(
     tumors: TumorFinding[];
     food: FoodConsumptionSummaryResponse;
     mortalityNoaelCap: number | null;
+    allDetectedSyndromeIds: string[];
   }>,
 ) {
   return interpretSyndrome(
@@ -130,6 +131,7 @@ function interp(
     overrides?.cl ?? [],
     overrides?.context ?? defaultContext,
     overrides?.mortalityNoaelCap,
+    overrides?.allDetectedSyndromeIds,
   );
 }
 
@@ -842,18 +844,18 @@ describe("computeAdversity", () => {
   const secondaryFood = { available: true, bwFwAssessment: "secondary_to_food" as const, foodEfficiencyReduced: true, temporalOnset: "fw_first" as const, fwNarrative: "BW loss secondary." };
 
   test("precursorToWorse wired to tumorContext.progressionDetected", () => {
-    const result = computeAdversity(xs01, endpoints, noRecovery, "mechanism_confirmed", withProgression, noFood);
+    const result = computeAdversity(xs01, endpoints, noRecovery, "mechanism_confirmed", withProgression, noFood, [], []);
     expect(result.precursorToWorse).toBe(true);
     expect(result.overall).toBe("adverse");
   });
 
   test("secondaryToOther wired to food consumption", () => {
-    const result = computeAdversity(xs01, endpoints, noRecovery, "mechanism_uncertain", noTumors, secondaryFood);
+    const result = computeAdversity(xs01, endpoints, noRecovery, "mechanism_uncertain", noTumors, secondaryFood, [], []);
     expect(result.secondaryToOther).toBe(true);
   });
 
   test("magnitudeLevel derives from endpoint effect sizes", () => {
-    const result = computeAdversity(xs05, endpoints, noRecovery, "mechanism_confirmed", noTumors, noFood);
+    const result = computeAdversity(xs05, endpoints, noRecovery, "mechanism_confirmed", noTumors, noFood, [], []);
     // PointCross XS05 endpoints should have measurable effect sizes
     expect(["minimal", "mild", "moderate", "marked", "severe"]).toContain(result.magnitudeLevel);
     expect(result.magnitudeLevel).not.toBe("moderate"); // should actually compute, not be hardcoded
@@ -862,14 +864,14 @@ describe("computeAdversity", () => {
   test("recovered + mild magnitude → non_adverse", () => {
     // Use xs01 which should have moderate+ effects, so create fake low-effect syndrome
     const lowEffect = { ...xs01, matchedEndpoints: [] }; // no matched endpoints → minimal magnitude
-    const result = computeAdversity(lowEffect, endpoints, recovered, "mechanism_uncertain", noTumors, noFood);
+    const result = computeAdversity(lowEffect, endpoints, recovered, "mechanism_uncertain", noTumors, noFood, [], []);
     expect(result.reversible).toBe(true);
     expect(result.magnitudeLevel).toBe("minimal");
     expect(result.overall).toBe("non_adverse");
   });
 
   test("mechanism_confirmed + cross-domain → adverse", () => {
-    const result = computeAdversity(xs05, endpoints, noRecovery, "mechanism_confirmed", noTumors, noFood);
+    const result = computeAdversity(xs05, endpoints, noRecovery, "mechanism_confirmed", noTumors, noFood, [], []);
     expect(result.crossDomainSupport).toBe(true);
     expect(result.overall).toBe("adverse");
   });
@@ -1443,7 +1445,7 @@ describe("XS09 syndrome interpretation bugs", () => {
     const recovery = { status: "partial" as const, endpoints: [], summary: "Partial." };
     const noTumors = { tumorsPresent: false, tumorSummaries: [], progressionDetected: false, interpretation: "" };
     const noFood = { available: false, bwFwAssessment: "not_applicable" as const, foodEfficiencyReduced: null, temporalOnset: null, fwNarrative: "" };
-    const result = computeAdversity(xs01, endpoints, recovery, "mechanism_uncertain", noTumors, noFood);
+    const result = computeAdversity(xs01, endpoints, recovery, "mechanism_uncertain", noTumors, noFood, [], []);
     expect(result.reversible).toBe(false);
   });
 
