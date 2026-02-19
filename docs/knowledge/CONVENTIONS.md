@@ -1,74 +1,88 @@
 # Knowledge Reference Conventions
 
-Specs reference knowledge files. Knowledge files never reference specs.
+Code references knowledge files. Knowledge files never reference code.
 
 ```
 docs/knowledge/dependencies.md   — external standards, datasets, references (stable IDs)
 docs/knowledge/methods.md        — statistical tests, algorithms, scoring formulas (stable IDs)
 ```
 
-## Frontmatter Schema
+## Tagging Convention
 
-Every spec in `docs/incoming/` and `docs/views/` carries a YAML block:
+Two comment tags mark where code depends on knowledge entries:
 
-```yaml
----
-depends-on: [SENDIG-3.1, CDISC-CT, HCD-CRL]
-methods: [STAT-07, CLASS-01, METRIC-01]
-status: active
-replaces: [old-spec-name.md]
-blocked-by: [HCD-CRL]
----
+```
+// @depends <ID> — <reason>
+// @method <ID> — <reason>
 ```
 
-| Field | Type | Required | Values |
-|-------|------|----------|--------|
-| `depends-on` | list of IDs | yes | IDs from `dependencies.md` |
-| `methods` | list of IDs | yes | IDs from `methods.md` |
-| `status` | enum | yes | `active` \| `implemented` \| `archived` \| `blocked` |
-| `replaces` | list of filenames | no | Spec files this one supersedes |
-| `blocked-by` | list of IDs | no | Dependency IDs that are stubbed or unavailable |
+- `@depends` — code that depends on an external standard, dataset, or reference
+- `@method` — code that implements a scientific method
+- IDs come from `dependencies.md` and `methods.md` respectively
+- Tags go on the line above or inline with the code they describe
+- The reason after the em dash explains *why* this code needs this entry
 
-Empty lists are fine: `depends-on: []` means the spec has no external dependencies.
+### Examples
 
-## Status Values
+```typescript
+// @depends SENDIG-3.1 — DSDECOD controlled vocabulary
+const DISPOSITION_CATEGORIES = ["TERMINAL SACRIFICE", "FOUND DEAD", ...];
 
-- **active** — spec is current, not yet fully implemented
-- **implemented** — spec has been built and committed
-- **archived** — superseded or abandoned (moved to `archive/`)
-- **blocked** — cannot proceed until `blocked-by` entries are resolved
+// @method STAT-05 — Cochran-Armitage trend test for incidence data
+const trendP = cochranArmitage(incidenceByDose);
 
-## Common Queries
+// @depends LIU-FAN-2026 — hand-seeded, replace when supplementary drops
+const SOC_LR_PLUS: Record<string, number> = { ... };
+
+// @method CLASS-19 — finding nature classification
+const nature = classifyFindingNature(findingName, maxSeverity);
+
+function computeSignalScore(  // @method METRIC-01 — 4-component weighted signal score
+  pValue: number, trendP: number, effectSize: number, pattern: string
+) { ... }
+```
+
+### Stubbed Dependencies
+
+When a dependency is hand-seeded or unavailable, say so in the tag:
+
+```typescript
+// @depends HCD-CRL — stubbed, no API yet
+const HISTORICAL_CONTROLS: Record<string, number> = {};
+```
+
+## Queries
 
 ```bash
-# What specs depend on SENDIG 3.1?
-grep -r "SENDIG-3.1" docs/incoming/ docs/views/
+# What code depends on SENDIG 3.1?
+grep -r "@depends SENDIG-3.1" backend/ frontend/src/
 
-# What specs use Dunnett's test?
-grep -r "STAT-07" docs/incoming/ docs/views/
+# What implements Dunnett's test?
+grep -r "@method STAT-07" backend/ frontend/src/
 
-# What's blocked on historical control data?
-grep -r "blocked-by:.*HCD" docs/incoming/
+# What's stubbed or hand-seeded?
+grep -r "@depends.*stubbed\|@depends.*hand-seeded" backend/ frontend/src/
 
-# All blocked specs
-grep -rl "status: blocked" docs/incoming/
+# All code using any statistical test
+grep -r "@method STAT-" backend/ frontend/src/
 
-# What references a specific method?
-grep -r "METRIC-09" docs/incoming/ docs/views/
+# Everything referencing a specific scoring formula
+grep -r "@method METRIC-01" backend/ frontend/src/
 ```
 
 ## Rules
 
-1. **One-way dependency.** Specs reference knowledge files via stable IDs.
-   Knowledge files never reference spec filenames. This means renaming,
-   archiving, or deleting a spec requires zero changes to knowledge files.
+1. **One-way dependency.** Code references knowledge files via stable IDs.
+   Knowledge files never reference source files, specs, or filenames.
+   Specs are not tagged — they are disposable. Code is the source of
+   truth for what depends on what.
 
-2. **Add before tagging.** If a spec references an external standard, dataset,
-   or method that doesn't have an ID yet, add the entry to `dependencies.md`
-   or `methods.md` first, then tag the spec with the new ID.
+2. **Add before tagging.** If code depends on a standard, dataset, or method
+   that doesn't have an ID yet, add the entry to `dependencies.md` or
+   `methods.md` first, then tag the code.
 
 3. **IDs are stable.** Once assigned, an ID is never reassigned to a different
    entry. Deleted entries leave their ID permanently retired.
 
-4. **Grep is the query engine.** No index file, no database. The frontmatter
-   is plain text; grep answers every cross-reference question.
+4. **Grep is the query engine.** No index file, no database. Comment tags
+   are plain text; grep answers every cross-reference question.
