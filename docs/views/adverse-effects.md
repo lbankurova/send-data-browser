@@ -247,6 +247,56 @@ All panes (except Verdict) use the `CollapsiblePane` component:
 - Panes are separated by `border-b` (last pane has `last:border-b-0`)
 - Panes respond to expand-all / collapse-all via generation counter (`expandAll` / `collapseAll` props)
 
+### Syndrome Selected (`SyndromeContextPanel`)
+
+Shown when `selectedGroupType === "syndrome"`. Displays cross-domain syndrome interpretation.
+
+**Component:** `SyndromeContextPanel` (`panes/SyndromeContextPanel.tsx`)
+
+#### Header
+- `sticky top-0 z-10 border-b bg-background px-4 py-3`
+- Syndrome name: `text-sm font-semibold`
+- CollapseAllButtons (right side, no close button)
+- Subtitle: `{syndromeId} · {N} endpoints · {N} domains · Detected in: {sexes}`
+- Dual badges: Pattern confidence + Mechanism certainty (neutral gray badges per design system)
+- `CertaintyBadge` has tooltip explaining what CONFIRMED/UNCERTAIN/PATTERN ONLY means
+
+#### Verdict card (always visible, not in CollapsiblePane)
+`border-b px-4 py-3` container with 2×2 grid:
+
+| Cell | Content |
+|------|---------|
+| Confidence | Neutral gray badge with detection confidence (HIGH/MODERATE/LOW) |
+| Recovery | Text: recovery status (recovered, partial, not recovered, not examined, mixed) |
+| NOAEL impact | Text: "Capped at dose level N" or "No mortality impact" |
+| Mechanism | `CertaintyBadge` with tooltip |
+
+- When mechanism is UNCERTAIN: key discriminator text from `SYNDROME_INTERPRETATIONS` is surfaced as a paragraph below the grid (`text-[10px] text-foreground/70`)
+- Conditional mortality callout: shown when `treatmentRelatedDeaths > 0`, `bg-muted/30` with warning icon and death count
+
+#### Pane order (top to bottom)
+
+| # | Pane | Default | Condition |
+|---|------|---------|-----------|
+| 1 | Certainty assessment | open | `discriminatingEvidence.length > 0` |
+| 2 | Evidence summary | open | always |
+| 3 | Differential | open | syndrome has a differential pair (XS01↔XS02, XS04↔XS05, XS07↔XS08, XS08↔XS09) |
+| 4 | Histopathology context | closed | `histopathContext.length > 0` |
+| 5 | Clinical observations | closed | `clinicalObservationSupport.assessment !== "no_cl_data"` |
+| 6 | Recovery | closed | `syndromeInterp` available |
+| 7 | Mortality context | closed | `treatmentRelatedDeaths > 0` |
+| 8 | Food consumption | closed | `available && bwFwAssessment !== "not_applicable"` |
+| 9 | ECETOC assessment | closed | `syndromeInterp && detected` |
+| 10 | Translational confidence | closed | `tier !== "insufficient_data"` |
+| 11 | Interpretation | closed | syndrome has authored interpretation text |
+| 12 | Related views | closed | always |
+
+**Food consumption pane:** Narrative replaces generic "at high dose" with actual dose label from `dose_groups` (e.g., "at 200 mg/kg"). Food efficiency entries show actual dose labels.
+
+**Related views pane:** 5 navigation links (dose-response, histopathology, NOAEL decision, validation, study summary). Same pattern as endpoint context panel Related Views.
+
+**Removed panes:** Member Endpoints (redundant with rail), Study Design (generic species/strain/route caveats).
+
 ---
 
 ## State Management

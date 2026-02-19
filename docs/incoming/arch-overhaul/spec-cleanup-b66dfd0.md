@@ -21,6 +21,7 @@
 *Updated 2026-02-18: MDI-8, SIL-3, SIL-5, SIL-8 resolved (51c0949). ECGInterpretation, humanNonRelevance, CL wiring, interp tests.*
 *Updated 2026-02-18: BTM-1/2/3 resolved. Confidence capping on opposite-direction matches + 9 term status tests.*
 *Updated 2026-02-18: SIL-6 resolved. XS10 cardiovascular syndrome — detection rule, discriminators, CL correlates, ECG study design notes, context panel.*
+*Updated 2026-02-18: SyndromeContextPanel improvements (362bb73) — verdict card, redundancy cleanup (removed Member Endpoints + Study Design panes), CertaintyBadge tooltips, food consumption dose labels, key discriminator surfaced in verdict card. Source: `docs/incoming/arch-overhaul/syndrome-context-panel.md` (partially implemented, most proposals rejected as already-implemented or design-system violations).*
 *Updated 2026-02-18: TC-1–7 resolved (5a89603, f44a5d6). Translational confidence scoring — types, SOC/PT lookup, MedDRA v3.0 dictionary, UI pane, 15 tests.*
 *Updated 2026-02-18: F-1, DR-1, S3 resolved (e4e6ca5). Rail card header split — chevron for expand/collapse, label area for scope selection.*
 *Updated 2026-02-18: MDI-6 reclassified — XS10/ECGInterp/CL already done (SIL-5/6, MDI-8), SC baseline N/A (PointCross has no numeric SC data). Remaining: OM-MI organ weight header strip (Medium→Low).*
