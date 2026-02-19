@@ -176,7 +176,12 @@ function hasDown(ctx: RuleContext, canonical: string): boolean {
 }
 
 function foldAbove(ctx: RuleContext, canonical: string, threshold: number): boolean {
-  return (ctx.foldChanges.get(canonical) ?? 0) >= threshold;
+  // REM-01B: fold changes are now directional (< 1.0 for decreases).
+  // For threshold comparison, use absolute deviation from 1.0 mapped back to ratio.
+  // E.g., threshold 2 means ≥2× control. For FC=0.4 (decrease), |1/0.4|=2.5 → meets threshold.
+  const fc = ctx.foldChanges.get(canonical) ?? 0;
+  const magnitude = fc > 0 && fc < 1.0 ? 1.0 / fc : fc;
+  return magnitude >= threshold;
 }
 
 function countPresent(ctx: RuleContext, canonicals: string[]): number {
@@ -213,8 +218,10 @@ export function evaluateThreshold(rule: LabRule, ctx: RuleContext): boolean {
     const dir = ctx.endpointDirection.get(param.canonical);
     const dirMatch = param.direction === "increase" ? dir === "up" : dir === "down";
     if (!dirMatch) continue;
-    if (threshold.comparison === "gte" && fc >= threshold.value) return true;
-    if (threshold.comparison === "lte" && fc <= threshold.value) return true;
+    // REM-01: fold changes are directional. For threshold comparison, use magnitude.
+    const magnitude = fc > 0 && fc < 1.0 ? 1.0 / fc : fc;
+    if (threshold.comparison === "gte" && magnitude >= threshold.value) return true;
+    if (threshold.comparison === "lte" && magnitude <= threshold.value) return true;
   }
   return false;
 }
@@ -908,13 +915,20 @@ export function getRuleDefinition(ruleId: string): {
 }
 
 /** Describe a rule's threshold for a given canonical parameter in human-readable form.
- *  E.g., ">5× control → S3" */
+ *  REM-04: Decrease rules now show reciprocal notation (e.g., ≤0.50× control = ≥50% decrease). */
 export function describeThreshold(ruleId: string, canonical: string): string | null {
   const rule = LAB_RULES.find((r) => r.id === ruleId);
   if (!rule?.thresholds?.[canonical]) return null;
   const t = rule.thresholds[canonical];
-  const op = t.comparison === "gte" ? "\u2265" : "\u2264";
   const sevLabel = SEVERITY_LABELS[rule.severity] ?? rule.severity;
+  // Check if this parameter is a decrease rule
+  const param = rule.parameters.find((p) => p.canonical === canonical);
+  if (param?.direction === "decrease") {
+    const reciprocal = (1 / t.value).toFixed(2);
+    const pctDecrease = Math.round((1 - 1 / t.value) * 100);
+    return `\u2264${reciprocal}\u00d7 control (\u2265${pctDecrease}% decrease) \u2192 ${rule.severity} ${sevLabel}`;
+  }
+  const op = t.comparison === "gte" ? "\u2265" : "\u2264";
   return `${op}${t.value}\u00d7 control \u2192 ${rule.severity} ${sevLabel}`;
 }
 
