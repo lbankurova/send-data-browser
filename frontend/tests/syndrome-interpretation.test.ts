@@ -160,11 +160,13 @@ describe("syndrome interpretation layer", () => {
     expect(result.certainty).toBe("mechanism_confirmed");
   });
 
-  test("XS01 certainty is mechanism_uncertain — ALP significantly elevated argues against pure hepatocellular", () => {
+  test("XS01 certainty is mechanism_uncertain — ALP argues against, watchlist tier + MI upgrade (PATCH-01/04)", () => {
     const result = interp(xs01);
     // ALP is genuinely significant and UP in PointCross, which argues against
-    // pure hepatocellular injury (strong weight). Necrosis supports, but the
-    // strong contradicting evidence prevents confirmation.
+    // pure hepatocellular injury (strong weight) → mechanism_uncertain baseline.
+    // v0.3.0 PATCH-01: PointCross liver enzyme FCs are ~1.5× (watchlist tier)
+    // → capped to pattern_only. PATCH-04: MI present (UE-04, score 1.0) lifts
+    // one level to mechanism_uncertain. Clamp at preCertainty (mechanism_uncertain).
     expect(result.certainty).toBe("mechanism_uncertain");
   });
 
@@ -257,8 +259,9 @@ describe("syndrome interpretation layer", () => {
     expect(result.status).toBe("supports");
   });
 
-  test("evaluateDiscriminator returns not_available when direction opposes and p > 0.05", () => {
-    // Endpoint found, wrong direction, not significant → not_available
+  test("evaluateDiscriminator returns argues_against when direction opposes and endpoint significant", () => {
+    // REM-28: With Dunnett's test, THYMUS_WT is now significant (p=0.047).
+    // Wrong direction + significant → argues_against (not not_available).
     const disc: SyndromeDiscriminators["findings"][0] = {
       endpoint: "THYMUS_WT",
       expectedDirection: "up", // opposite to actual "down"
@@ -267,7 +270,7 @@ describe("syndrome interpretation layer", () => {
       rationale: "test",
     };
     const result = evaluateDiscriminator(disc, endpoints, []);
-    expect(result.status).toBe("not_available");
+    expect(result.status).toBe("argues_against");
   });
 
   test("evaluateDiscriminator returns not_available when specimen not examined", () => {

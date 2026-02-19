@@ -691,6 +691,13 @@ function generateReviewDocument(): string {
     lines.push("| Component | Result | Detail |");
     lines.push("|-----------|--------|--------|");
     lines.push(`| Certainty | \`${interp.certainty}\` | ${interp.certaintyRationale} |`);
+    // v0.3.0 PATCH-04: Upgrade evidence row (conditional — only for XS01 with enzyme tier cap)
+    if (interp.upgradeEvidence) {
+      const ue = interp.upgradeEvidence;
+      const metItems = ue.items.filter((i: { met: boolean }) => i.met);
+      const metIds = metItems.map((i: { id: string }) => i.id).join(", ");
+      lines.push(`| Enzyme tier | \`${ue.tier}\` → \`${ue.finalCertainty}\` | Score ${ue.totalScore.toFixed(1)}, lifted ${ue.levelsLifted} level(s). Met: ${metIds || "none"} |`);
+    }
     const trScore = relatedness.reasoning.reduce((s: number, r: { score: number }) => s + r.score, 0);
     lines.push(`| Treatment-relatedness | \`${interp.treatmentRelatedness.overall}\` | score ${trScore.toFixed(1)}: ${relatedness.reasoning.map((r: { factor: string; value: string; score: number }) => `${r.factor}=${r.value}[${r.score}]`).join(", ")} |`);
     const advParts = [
