@@ -842,7 +842,7 @@ function checkFindingWithProxies(
 ): { found: boolean; direct: boolean; proxyMatch?: HistopathObservation } {
   // Direct match first
   const direct = observations.find((o) =>
-    o.finding.toUpperCase().includes(expectedFinding.toUpperCase()),
+    (o.finding ?? "").toUpperCase().includes(expectedFinding.toUpperCase()),
   );
   if (direct) return { found: true, direct: true };
 
@@ -1033,7 +1033,7 @@ export function evaluateDiscriminator(
   // Histopath finding (SPECIMEN::FINDING)
   const [specimen, finding] = disc.endpoint.split("::");
   const specimenRows = histopathData.filter((r) =>
-    r.specimen.toUpperCase().includes(specimen.toUpperCase()),
+    (r.specimen ?? "").toUpperCase().includes(specimen.toUpperCase()),
   );
 
   if (specimenRows.length === 0) {
@@ -1050,12 +1050,12 @@ export function evaluateDiscriminator(
 
   // Specimen examined — check for finding
   const findingRows = specimenRows.filter((r) =>
-    r.finding.toUpperCase().includes(finding.toUpperCase()),
+    (r.finding ?? "").toUpperCase().includes(finding.toUpperCase()),
   );
 
   if (findingRows.length === 0) {
     // No direct finding — try proxy matching before giving up
-    const allFindings = [...new Set(specimenRows.map((r) => r.finding))];
+    const allFindings = [...new Set(specimenRows.map((r) => r.finding ?? ""))].filter(Boolean);
     const observations: HistopathObservation[] = allFindings.map((f) => {
       const rows = specimenRows.filter((r) => r.finding === f);
       const maxInc = Math.max(...rows.map((r) => (r.n > 0 ? r.affected / r.n : 0)));
@@ -1236,7 +1236,7 @@ export function crossReferenceHistopath(
 
   for (const specimen of specimens) {
     const specimenRows = histopathData.filter((r) =>
-      r.specimen.toUpperCase().includes(specimen),
+      (r.specimen ?? "").toUpperCase().includes(specimen),
     );
 
     const expectedFindings = getExpectedFindings(discriminators, specimen);
@@ -1253,7 +1253,7 @@ export function crossReferenceHistopath(
     }
 
     // Catalog all findings for this specimen
-    const findingNames = [...new Set(specimenRows.map((r) => r.finding))];
+    const findingNames = [...new Set(specimenRows.map((r) => r.finding ?? ""))].filter(Boolean);
     const differentialExpected = getDifferentialExpected(
       discriminators,
       specimen,

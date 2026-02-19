@@ -11,7 +11,6 @@ import {
   interpretSyndrome,
   evaluateDiscriminator,
   assessCertainty,
-  crossReferenceHistopath,
   assessSyndromeRecovery,
   assessClinicalObservationSupport,
   assembleStudyDesignNotes,
@@ -1562,5 +1561,85 @@ describe("XS09 syndrome interpretation bugs", () => {
   test("Issue #4: no NOAEL cap → capRelevant false (vacuously)", () => {
     const result = interp(xs01, { mortality: [] });
     expect(result.mortalityContext.mortalityNoaelCapRelevant).toBe(false);
+  });
+});
+
+// ─── Null Safety: specimen/finding can be null in real data ────
+
+describe("null safety: null specimen/finding in histopath data", () => {
+  // Real-world data can have null specimen or finding despite TypeScript declaring string.
+  // This is a known data nullability issue (see CLAUDE.md). These tests ensure no crashes.
+
+  const nullSpecimenRow = makeLesionRow({
+    specimen: null as unknown as string,
+    finding: "NECROSIS",
+    dose_level: 3,
+    affected: 2,
+    n: 10,
+  });
+
+  const nullFindingRow = makeLesionRow({
+    specimen: "LIVER",
+    finding: null as unknown as string,
+    dose_level: 3,
+    affected: 3,
+    n: 10,
+  });
+
+  const nullBothRow = makeLesionRow({
+    specimen: null as unknown as string,
+    finding: null as unknown as string,
+    dose_level: 2,
+    affected: 1,
+    n: 10,
+  });
+
+  const histopathWithNulls = [
+    ...histopath,
+    nullSpecimenRow,
+    nullFindingRow,
+    nullBothRow,
+  ];
+
+  test("evaluateDiscriminator does not crash on null specimen/finding", () => {
+    const disc: SyndromeDiscriminators["findings"][0] = {
+      endpoint: "LIVER::NECROSIS",
+      expectedDirection: "up",
+      source: "MI",
+      weight: "strong",
+      rationale: "test",
+    };
+    // Should not throw — null guarded with ?? ""
+    const result = evaluateDiscriminator(disc, endpoints, histopathWithNulls);
+    expect(result.endpoint).toBe("LIVER::NECROSIS");
+    expect(["supports", "argues_against", "not_available"]).toContain(result.status);
+  });
+
+  test("crossReferenceHistopath does not crash on null specimen/finding", () => {
+    // crossReferenceHistopath is called internally by interpretSyndrome.
+    // Test via interp() which passes proper discriminators.
+    const result = interp(xs01, { histopath: histopathWithNulls });
+    expect(Array.isArray(result.histopathContext)).toBe(true);
+    // Liver should still be found from the non-null rows
+    const liverRef = result.histopathContext.find((r) => r.specimen.includes("LIVER"));
+    expect(liverRef).toBeDefined();
+  });
+
+  test("interpretSyndrome end-to-end does not crash with null histopath fields", () => {
+    // Full pipeline with null-containing data — should not throw
+    const result = interp(xs01, { histopath: histopathWithNulls });
+    expect(result.certainty).toBeDefined();
+    expect(result.histopathContext).toBeDefined();
+    expect(result.narrative.length).toBeGreaterThan(0);
+  });
+
+  test("histopath data with only null rows does not crash", () => {
+    const onlyNulls = [nullSpecimenRow, nullFindingRow, nullBothRow];
+    const result = interp(xs01, { histopath: onlyNulls });
+    expect(result.certainty).toBeDefined();
+    // With no valid specimen matches, histopath context entries should have valid assessments
+    for (const ref of result.histopathContext) {
+      expect(["supports", "argues_against", "not_examined", "inconclusive"]).toContain(ref.assessment);
+    }
   });
 });
