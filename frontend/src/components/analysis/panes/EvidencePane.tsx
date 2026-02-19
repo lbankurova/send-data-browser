@@ -206,7 +206,7 @@ function buildClinicalSection(
 }
 
 function PerSexCard({ entry, canonical }: { entry: PerSexEntry; canonical: string | null }) {
-  const sexSymbol = entry.sex === "M" ? "\u2642" : "\u2640";
+  const sexSymbol = entry.sex;
   const { match, sexData } = entry;
 
   if (match) {

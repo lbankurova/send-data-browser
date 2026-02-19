@@ -224,16 +224,31 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   );
 
   // Member endpoints — the detected syndrome's matched endpoints enriched with EndpointSummary data
-  const memberEndpoints = useMemo<EndpointSummary[]>(() => {
+  // Deduplicate by endpoint_label (per-sex detection can produce multiple entries with the same label)
+  // and collect which sexes matched for each endpoint
+  const memberEndpoints = useMemo<{ endpoint: EndpointSummary; matchedSexes: string[] }[]>(() => {
     if (!detected) return [];
-    const results: EndpointSummary[] = [];
+    const byLabel = new Map<string, { endpoint: EndpointSummary; matchedSexes: string[] }>();
     for (const m of detected.matchedEndpoints) {
-      const epSummary = allEndpoints.find((ep) => ep.endpoint_label === m.endpoint_label);
-      if (epSummary) results.push(epSummary);
+      const existing = byLabel.get(m.endpoint_label);
+      if (existing) {
+        if (m.sex && !existing.matchedSexes.includes(m.sex)) {
+          existing.matchedSexes.push(m.sex);
+        }
+      } else {
+        const epSummary = allEndpoints.find((ep) => ep.endpoint_label === m.endpoint_label);
+        if (epSummary) {
+          byLabel.set(m.endpoint_label, {
+            endpoint: epSummary,
+            matchedSexes: m.sex ? [m.sex] : [],
+          });
+        }
+      }
     }
+    const results = [...byLabel.values()];
     results.sort((a, b) => {
-      const sa = analytics.signalScores.get(a.endpoint_label) ?? 0;
-      const sb = analytics.signalScores.get(b.endpoint_label) ?? 0;
+      const sa = analytics.signalScores.get(a.endpoint.endpoint_label) ?? 0;
+      const sb = analytics.signalScores.get(b.endpoint.endpoint_label) ?? 0;
       return sb - sa;
     });
     return results;
@@ -242,7 +257,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   // Multi-syndrome membership: which other syndromes share endpoints
   const otherSyndromeMembership = useMemo(() => {
     const map = new Map<string, string[]>();
-    for (const ep of memberEndpoints) {
+    for (const { endpoint: ep } of memberEndpoints) {
       const others = analytics.syndromes
         .filter((s) => s.id !== syndromeId && s.matchedEndpoints.some((m) => m.endpoint_label === ep.endpoint_label))
         .map((s) => s.id);
@@ -406,8 +421,8 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
           {syndromeId} · {endpointCount} endpoint{endpointCount !== 1 ? "s" : ""} · {domainCount} domain{domainCount !== 1 ? "s" : ""}
           {detected?.sexes && detected.sexes.length > 0 && (
             <> · Detected in: {detected.sexes.length === 1
-              ? `${detected.sexes[0] === "M" ? "\u2642" : "\u2640"} ${detected.sexes[0]} only`
-              : detected.sexes.map(s => `${s === "M" ? "\u2642" : "\u2640"} ${s}`).join(", ")}</>
+              ? `${detected.sexes[0]} only`
+              : detected.sexes.join(", ")}</>
           )}
         </p>
         {/* Dual badges: Pattern confidence + Mechanism certainty */}
@@ -466,6 +481,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
             allEndpoints={allEndpoints}
             rawFindings={rawData?.findings}
             doseGroups={rawData?.dose_groups}
+            foodConsumptionContext={syndromeInterp?.foodConsumptionContext}
           />
         ) : (
           <p className="text-xs text-muted-foreground">No evidence data available.</p>
@@ -556,10 +572,11 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       {/* Pane 4: MEMBER ENDPOINTS */}
       <CollapsiblePane title="Member endpoints" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-0.5">
-          {memberEndpoints.map((ep) => (
+          {memberEndpoints.map(({ endpoint: ep, matchedSexes }) => (
             <MemberEndpointRow
               key={ep.endpoint_label}
               endpoint={ep}
+              matchedSexes={matchedSexes}
               otherSyndromes={otherSyndromeMembership.get(ep.endpoint_label)}
               onClick={() => handleEndpointClick(ep.endpoint_label)}
             />
@@ -577,13 +594,14 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
 
 /** Evidence Summary pane content */
 function EvidenceSummaryContent({
-  report,
+  report: rawReport,
   confidence,
   labMatches,
   syndromeId,
   allEndpoints,
   rawFindings,
   doseGroups,
+  foodConsumptionContext,
 }: {
   report: NonNullable<ReturnType<typeof getSyndromeTermReport>>;
   confidence: "HIGH" | "MODERATE" | "LOW";
@@ -592,7 +610,24 @@ function EvidenceSummaryContent({
   allEndpoints: EndpointSummary[];
   rawFindings?: UnifiedFinding[];
   doseGroups?: DoseGroup[];
+  foodConsumptionContext?: FoodConsumptionContext;
 }) {
+  // Override "not_measured" entries for food consumption when API says data is available
+  const report = useMemo(() => {
+    if (!foodConsumptionContext?.available) return rawReport;
+    const foodPattern = /food\s*consumption|food\s*intake/i;
+    const overrideEntry = (entry: TermReportEntry): TermReportEntry => {
+      if (entry.status === "not_measured" && foodPattern.test(entry.label)) {
+        return { ...entry, status: "matched" };
+      }
+      return entry;
+    };
+    return {
+      ...rawReport,
+      supportingEntries: rawReport.supportingEntries.map(overrideEntry),
+      requiredEntries: rawReport.requiredEntries.map(overrideEntry),
+    };
+  }, [rawReport, foodConsumptionContext]);
   const isHepatic = syndromeId === "XS01" || syndromeId === "XS02";
 
   // Cap confidence based on opposite (counter-evidence) count
@@ -1078,15 +1113,45 @@ function DifferentialContent({
 /** Member endpoint row — duplicated from OrganContextPanel (small, tightly coupled) */
 function MemberEndpointRow({
   endpoint,
+  matchedSexes,
   otherSyndromes,
   onClick,
 }: {
   endpoint: EndpointSummary;
+  matchedSexes?: string[];
   otherSyndromes?: string[];
   onClick: () => void;
 }) {
-  const dirSymbol = getDirectionSymbol(endpoint.direction);
+  // When matchedSexes is available and endpoint has bySex data, use sex-specific stats
+  // This avoids showing aggregate UP stats when the syndrome matched on a DOWN sex
+  const resolvedStats = useMemo(() => {
+    if (matchedSexes && matchedSexes.length > 0 && endpoint.bySex) {
+      // Find the sex-specific data for the matched sexes
+      for (const sex of matchedSexes) {
+        const sexData = endpoint.bySex.get(sex);
+        if (sexData) {
+          return {
+            direction: sexData.direction,
+            maxEffectSize: sexData.maxEffectSize,
+            minPValue: sexData.minPValue,
+            worstSeverity: sexData.worstSeverity,
+          };
+        }
+      }
+    }
+    return {
+      direction: endpoint.direction,
+      maxEffectSize: endpoint.maxEffectSize,
+      minPValue: endpoint.minPValue,
+      worstSeverity: endpoint.worstSeverity,
+    };
+  }, [endpoint, matchedSexes]);
+
+  const dirSymbol = getDirectionSymbol(resolvedStats.direction);
   const domainColor = getDomainBadgeColor(endpoint.domain);
+  const sexSuffix = matchedSexes && matchedSexes.length > 0 && matchedSexes.length < 2
+    ? matchedSexes[0]
+    : null;
 
   return (
     <button
@@ -1098,19 +1163,20 @@ function MemberEndpointRow({
       </span>
       <span className="min-w-0 flex-1 truncate" title={endpoint.endpoint_label}>
         {endpoint.endpoint_label}
+        {sexSuffix && <span className="text-[9px] text-muted-foreground"> ({sexSuffix})</span>}
       </span>
       <span className="shrink-0 text-muted-foreground">{dirSymbol}</span>
-      {endpoint.maxEffectSize != null && (
+      {resolvedStats.maxEffectSize != null && (
         <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-          |d|={formatEffectSize(endpoint.maxEffectSize)}
+          |d|={formatEffectSize(resolvedStats.maxEffectSize)}
         </span>
       )}
-      {endpoint.minPValue != null && (
+      {resolvedStats.minPValue != null && (
         <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-          {formatPValueWithPrefix(endpoint.minPValue)}
+          {formatPValueWithPrefix(resolvedStats.minPValue)}
         </span>
       )}
-      <SeverityDot severity={endpoint.worstSeverity} />
+      <SeverityDot severity={resolvedStats.worstSeverity} />
       {otherSyndromes && otherSyndromes.length > 0 && (
         <span className="shrink-0 text-[9px] text-muted-foreground">
           +{otherSyndromes.join(",")}
@@ -1323,7 +1389,7 @@ function MortalityContextPane({ mortality }: { mortality: MortalityContext }) {
           {mortality.deathDetails.map((d, i) => (
             <div key={i} className="flex items-center gap-1.5 text-xs">
               <span className="shrink-0 font-mono text-muted-foreground">{d.animalId}</span>
-              <span className="shrink-0 text-muted-foreground">dose {d.doseGroup}</span>
+              <span className="shrink-0 text-muted-foreground">{d.doseLabel ?? `dose ${d.doseGroup}`}</span>
               <span className="shrink-0 text-muted-foreground">day {d.dispositionDay}</span>
               {d.causeOfDeath && (
                 <span className="min-w-0 flex-1 truncate text-foreground/80" title={d.causeOfDeath}>
