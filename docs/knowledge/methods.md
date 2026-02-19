@@ -568,6 +568,22 @@ Returns array of keys in priority order (first match wins).
 
 **Alternatives considered:** Unified scoring (requires normalizing lab significance and histopath incidence to a common scale — possible but adds complexity without clear benefit for this binary support/against decision).
 
+### METH-23 — Finding Term Normalization
+
+**Purpose:** Map raw histopathology/macroscopic finding text to INHAND-aligned categories with reversibility profiles.
+
+**Implementation:** `normalizeFinding(rawTerm)` — frontend `finding-term-map.ts:625`. Curated mapping table in same file at line 35.
+
+**Parameters:** Two-pass lookup:
+- **Pass 1 (Exact):** Lowercase-normalize the raw term and match against `FINDING_TERM_MAP` keys (O(1) hash lookup). Keys are curated against SEND Terminology 2017-03-31.
+- **Pass 2 (Synonym):** Scan `SYNONYM_INDEX` (pre-indexed from `commonSynonyms` arrays in the mapping table). Returns the parent mapping.
+
+Each mapping entry provides: `normalizedTerm`, `category` (FindingNature), `inhandClass`, and `reversibility` profile (`weeksLow`, `weeksHigh`, `qualifier`).
+
+**Why this method:** SEND histopathology terms are not standardized across studies — the same lesion may be recorded as "hepatocellular hypertrophy", "hypertrophy, hepatocellular", or "Hepatocyte hypertrophy". A curated dictionary with synonym support normalizes these variants to INHAND-aligned categories, enabling consistent nature classification (CLASS-19) and cross-study comparison.
+
+**Alternatives considered:** Fuzzy string matching (risk of false positives — "fibrosis" vs "fibroplasia" are distinct findings). NLP-based entity recognition (overkill for a controlled vocabulary of ~100 terms).
+
 ---
 
 ## Classification Algorithms (CLASS)
@@ -943,6 +959,38 @@ Suppressions (METH-12): R01 → suppress R07; R04 → suppress R01, R03.
 **Why this method:** Rule-based signal detection provides transparent, auditable results. Each rule maps to a specific toxicological concept. The suppression hierarchy eliminates redundancy.
 
 **Alternatives considered:** Machine learning signal detection (not interpretable enough for regulatory use). Continuous scoring only (loses the "what does this mean?" narrative that rules provide).
+
+### CLASS-19 — Finding Nature Classification
+
+**Purpose:** Classify histopathology findings into biological nature categories (adaptive, degenerative, proliferative, inflammatory, depositional, vascular) with expected reversibility and typical recovery timelines.
+
+**Implementation:** `classifyFindingNature(findingName, maxSeverity?)` — frontend `finding-nature.ts:140`. Uses `normalizeFinding()` (METH-23) as primary lookup, falls back to keyword substring table at line 47.
+
+**Parameters:**
+- **Two-pass resolution:** (1) CT-normalized lookup via METH-23. If found, map `reversibility.qualifier` to expected_reversibility tier (expected→high, unlikely→low, none→none, unknown→moderate). (2) If no CT match, scan 40+ keyword entries ordered by longest-match priority; proliferative checked first (neoplastic = irreversible, highest priority).
+- **Severity modulation:** When `maxSeverity` is provided, `modulateBySeverity()` adjusts the expected recovery timeline — higher severity grades extend recovery weeks and may downgrade reversibility expectations. The modulation matrix is indexed by `[nature][severityBand]`.
+- **Explicit unknown:** If neither CT nor keyword matches, returns `nature: "unknown"` with `expected_reversibility: "moderate"` (conservative default).
+
+**Why this method:** Pathologists mentally classify findings by biological nature to predict reversibility — adaptive changes (hypertrophy, hyperplasia) are expected to reverse; degenerative changes (fibrosis, necrosis) may not. Automating this classification enables the recovery assessment engine (CLASS-10, CLASS-20) to set appropriate expectations per finding.
+
+**Alternatives considered:** Asking the pathologist to manually classify (defeats the "system computes what it can" principle). Using INHAND classification directly (INHAND terms don't carry reversibility information).
+
+### CLASS-20 — Recovery Classification (Interpretive Layer)
+
+**Purpose:** Transform mechanical recovery verdicts (CLASS-10) into pathologist-meaningful interpretive categories with confidence grading, rationale, and recommended actions.
+
+**Implementation:** `classifyRecovery(assessment, context)` — frontend `recovery-classification.ts:140`. Consumes `RecoveryAssessment` from `recovery-assessment.ts` (CLASS-10).
+
+**Parameters:**
+- **7 classification types:** `EXPECTED_REVERSIBILITY`, `INCOMPLETE_RECOVERY`, `ASSESSMENT_LIMITED_BY_DURATION`, `DELAYED_ONSET_POSSIBLE`, `INCIDENTAL_RECOVERY_SIGNAL`, `PATTERN_ANOMALY`, `UNCLASSIFIABLE`.
+- **Priority order (most concerning first):** PATTERN_ANOMALY (0) > DELAYED_ONSET (1) > INCOMPLETE_RECOVERY (2) > ASSESSMENT_LIMITED (3) > EXPECTED_REVERSIBILITY (4) > INCIDENTAL (5) > UNCLASSIFIABLE (6).
+- **Guard verdicts short-circuit:** If the mechanical verdict is `not_examined`, `insufficient_n`, `low_power`, `anomaly`, or `no_data`, classification returns `UNCLASSIFIABLE` with a specific rationale.
+- **Context inputs:** `isAdverse`, `doseConsistency` (Weak/Moderate/Strong/NonMonotonic), `doseResponsePValue`, `clinicalClass` (Sentinel/HighConcern/etc.), `signalClass`, `findingNature` (from CLASS-19). Future nullable inputs: `historicalControlIncidence`, `crossDomainCorroboration`, `recoveryPeriodDays`.
+- **Confidence model:** Starts at Low/Moderate/High based on classification certainty. Boosted one tier by strong dose consistency, available clinical class, or finding nature match. Degraded when inputs are missing.
+
+**Why this method:** The mechanical verdict ("reversed", "persistent") answers "what do the numbers show?" — appropriate for data surfaces. The interpretive classification answers "what does this mean for the safety assessment?" — appropriate for insights and regulatory surfaces. Separating these layers keeps data presentation neutral while providing pathologist-meaningful interpretation.
+
+**Alternatives considered:** Combining both layers in one function (violates the data-layer vs. interpretation-layer architectural separation). Using only the mechanical verdict everywhere (loses the interpretive context pathologists need for regulatory reports).
 
 ---
 
