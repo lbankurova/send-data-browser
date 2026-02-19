@@ -385,6 +385,13 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
           });
           if (worst.mean != null) {
             ep.worstTreatedStats = { n: worst.n, mean: worst.mean, sd: worst.sd ?? 0, doseLevel: worst.dose_level };
+            // REM-01: Override fold change with direction-aligned ratio from group stats
+            // Backend max_fold_change picks the dose with largest absolute deviation regardless of direction,
+            // which can return >1.0 for a ↓ endpoint if a different dose shows a larger increase.
+            // Use the direction-aligned worst treated dose's ratio to control instead.
+            if (ctrl.mean !== 0) {
+              ep.maxFoldChange = Math.round((worst.mean / ctrl.mean) * 100) / 100;
+            }
           }
         }
       }
