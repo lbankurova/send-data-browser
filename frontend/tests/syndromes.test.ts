@@ -66,38 +66,11 @@ describe("detectCrossDomainSyndromes — PointCross golden dataset", () => {
   });
 
   // ── XS10 Cardiovascular ──
+  // REM-12: XS10 significance gate requires p < 0.05 on a matched required endpoint.
+  // In PointCross, RRAG has p=0.104 (not significant), so XS10 is correctly filtered out.
 
-  test("XS10 Cardiovascular is detected", () => {
-    expect(byId.has("XS10")).toBe(true);
-  });
-
-  test("XS10 has requiredMet = true (RRAG adverse)", () => {
-    expect(byId.get("XS10")?.requiredMet).toBe(true);
-  });
-
-  test("XS10 covers EG domain", () => {
-    const domains = byId.get("XS10")?.domainsCovered ?? [];
-    expect(domains).toContain("EG");
-  });
-
-  test("XS10 includes RR Interval as matched endpoint", () => {
-    const matched = byId.get("XS10")?.matchedEndpoints ?? [];
-    expect(matched.some((m) => m.endpoint_label.includes("RR Interval"))).toBe(true);
-  });
-
-  test("XS10 confidence is consistent with its evidence strength", () => {
-    const xs10 = byId.get("XS10")!;
-    expect(["HIGH", "MODERATE", "LOW"]).toContain(xs10.confidence);
-    // XS10 with requiredMet + ≥2 domains should be MODERATE or better (unless opposites)
-    if (xs10.domainsCovered.length >= 2 && xs10.requiredMet) {
-      if (xs10.confidence === "LOW") {
-        const report = getSyndromeTermReport("XS10", endpoints);
-        expect(
-          report!.oppositeCount,
-          "XS10 is LOW with requiredMet and ≥2 domains — needs ≥2 opposites",
-        ).toBeGreaterThanOrEqual(2);
-      }
-    }
+  test("XS10 Cardiovascular is NOT detected (REM-12 significance gate)", () => {
+    expect(byId.has("XS10")).toBe(false);
   });
 });
 

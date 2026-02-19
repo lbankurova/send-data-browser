@@ -68,10 +68,11 @@ function allEntries(report: SyndromeTermReport): TermReportEntry[] {
 // ─── Test 1: Term-endpoint direction coherence ───────────────
 
 describe("Test 1: Term-endpoint direction coherence", () => {
-  // Known bugs: XS07 (Lymphocytes), XS08 (unknown — see trace), XS10 (Heart weight)
-  // These syndromes admit opposite-direction endpoints into matchedEndpoints.
-  // When the detection logic is fixed, remove from this set and the test will enforce correctness.
-  const KNOWN_OPPOSITE_IN_MATCHED = new Set(["XS07", "XS08", "XS10"]);
+  // Known bugs: XS07 (Lymphocytes), XS08 (Lymphocytes sex-divergent: ↓ males, ↑ females).
+  // Per-sex detection matches male LYMPH ↓, but aggregate term report sees ↑ → "opposite."
+  // When sex-aware term reporting is implemented, remove from KNOWN set.
+  // REM-12: XS10 removed by significance gate (no longer detected).
+  const KNOWN_OPPOSITE_IN_MATCHED = new Set(["XS07", "XS08"]);
 
   test.each(syndromes.map((s) => [s.id, s] as const))(
     "%s — opposite-direction endpoints must not appear in matchedEndpoints",

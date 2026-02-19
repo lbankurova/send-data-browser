@@ -1,7 +1,7 @@
 [
   {
     "organ_system": "general",
-    "evidence_score": 1.35,
+    "evidence_score": 1.347,
     "n_endpoints": 61,
     "n_domains": 8,
     "domains": [
@@ -22,7 +22,7 @@
   },
   {
     "organ_system": "neurological",
-    "evidence_score": 0.566,
+    "evidence_score": 0.562,
     "n_endpoints": 2,
     "n_domains": 1,
     "domains": [
@@ -36,7 +36,7 @@
   },
   {
     "organ_system": "hematologic",
-    "evidence_score": 0.541,
+    "evidence_score": 0.535,
     "n_endpoints": 65,
     "n_domains": 4,
     "domains": [
@@ -53,7 +53,7 @@
   },
   {
     "organ_system": "hepatic",
-    "evidence_score": 0.531,
+    "evidence_score": 0.528,
     "n_endpoints": 39,
     "n_domains": 5,
     "domains": [
@@ -71,7 +71,7 @@
   },
   {
     "organ_system": "renal",
-    "evidence_score": 0.482,
+    "evidence_score": 0.479,
     "n_endpoints": 32,
     "n_domains": 4,
     "domains": [
@@ -88,7 +88,7 @@
   },
   {
     "organ_system": "cardiovascular",
-    "evidence_score": 0.416,
+    "evidence_score": 0.412,
     "n_endpoints": 12,
     "n_domains": 4,
     "domains": [
@@ -148,13 +148,13 @@
   },
   {
     "organ_system": "metabolic",
-    "evidence_score": 0.278,
+    "evidence_score": 0.269,
     "n_endpoints": 8,
     "n_domains": 1,
     "domains": [
       "LB"
     ],
-    "max_signal_score": 0.408,
+    "max_signal_score": 0.4,
     "n_significant": 2,
     "n_treatment_related": 1,
     "target_organ_flag": false,
@@ -162,13 +162,13 @@
   },
   {
     "organ_system": "electrolyte",
-    "evidence_score": 0.255,
+    "evidence_score": 0.25,
     "n_endpoints": 8,
     "n_domains": 1,
     "domains": [
       "LB"
     ],
-    "max_signal_score": 0.476,
+    "max_signal_score": 0.467,
     "n_significant": 1,
     "n_treatment_related": 1,
     "target_organ_flag": false,
@@ -176,7 +176,7 @@
   },
   {
     "organ_system": "reproductive",
-    "evidence_score": 0.198,
+    "evidence_score": 0.196,
     "n_endpoints": 14,
     "n_domains": 4,
     "domains": [
@@ -185,7 +185,7 @@
       "OM",
       "TF"
     ],
-    "max_signal_score": 0.554,
+    "max_signal_score": 0.545,
     "n_significant": 1,
     "n_treatment_related": 1,
     "target_organ_flag": false,
