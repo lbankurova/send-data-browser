@@ -823,13 +823,14 @@ describe("computeTreatmentRelatedness", () => {
       confidence: "LOW" as const,
       domainsCovered: ["LB"],
     };
-    // Use flat endpoints so dose-response evaluates to absent
-    const flatEndpoints = endpoints.map((ep) => ({ ...ep, pattern: "flat" }));
+    // Use flat endpoints with non-significant p-values so dose-response evaluates to absent
+    // REM-07: must also nullify p-values, since OR logic can fire on pairwise p < 0.01 + |g| >= 0.8
+    const flatEndpoints = endpoints.map((ep) => ({ ...ep, pattern: "flat", minPValue: 0.5, maxEffectSize: 0.1 }));
     const result = computeTreatmentRelatedness(weak, flatEndpoints, noClSupport);
     expect(result.doseResponse).toBe("absent");
     expect(result.crossEndpoint).toBe("isolated");
-    // With significant p-values from matched endpoints, gets 1 factor → possibly_related
-    expect(["possibly_related", "not_related"]).toContain(result.overall);
+    // No significant p-values → not_related
+    expect(result.overall).toBe("not_related");
   });
 });
 
@@ -959,9 +960,9 @@ describe("narrative assembly", () => {
 
   test("treatment-relatedness factors appear in narrative parenthetical", () => {
     const result = interp(xs05);
-    // Data-driven → "strong dose-response" + concordant + significant
-    expect(result.narrative).toMatch(/dose-response/);
-    expect(result.narrative).toMatch(/concordant across/);
+    // REM-17: narrative now uses factor-by-factor TR reasoning trace
+    expect(result.narrative).toMatch(/A-1 Dose-response: strong/);
+    expect(result.narrative).toMatch(/A-2 Cross-endpoint concordance: concordant/);
   });
 });
 
@@ -1155,9 +1156,9 @@ describe("translational confidence", () => {
     const ptMatches = [{ lrPlus: 112.7 }];
     const tier = assignTranslationalTier("RAT", "metabolism and nutrition disorders", ptMatches);
     expect(tier).toBe("high");
-    // Verify SOC alone would give low
+    // Verify SOC alone would give moderate (REM-22: SOC moderate bin lowered from 3.0 to 2.0; rat metabolism = 2.5)
     const tierSocOnly = assignTranslationalTier("RAT", "metabolism and nutrition disorders", []);
-    expect(tierSocOnly).toBe("low");
+    expect(tierSocOnly).toBe("moderate");
   });
 
   // TC-07: absence caveat
@@ -1231,14 +1232,15 @@ describe("translational confidence", () => {
   });
 
   // TC-12b: XS07 with no matched endpoints falls back to SOC
-  test("TC-12b: XS07 empty endpoints → SOC fallback (rat immune = 2.5 → low)", () => {
+  // REM-22: SOC moderate bin lowered from 3.0 to 2.0; rat immune = 2.5 → now moderate
+  test("TC-12b: XS07 empty endpoints → SOC fallback (rat immune = 2.5 → moderate)", () => {
     const xs07Empty = {
       id: "XS07", name: "Immunotoxicity",
       matchedEndpoints: [], requiredMet: true,
       domainsCovered: ["LB"], confidence: "LOW" as const, supportScore: 1, sexes: [],
     };
     const result = assessTranslationalConfidence(xs07Empty, "RAT", false);
-    expect(result.tier).toBe("low");
+    expect(result.tier).toBe("moderate");
     expect(result.socLRPlus).toBe(2.5);
   });
 
@@ -1495,8 +1497,9 @@ describe("XS09 syndrome interpretation bugs", () => {
 
   test("Issue #3: all flat patterns → doseResponse 'absent'", () => {
     if (!xs09) return;
-    // Create fake endpoints where all patterns are flat
-    const flatEndpoints = endpoints.map((ep) => ({ ...ep, pattern: "flat" }));
+    // Create fake endpoints where all patterns are flat and p-values non-significant
+    // REM-07: must also nullify p-values, since OR logic can fire on pairwise p < 0.01 + |g| >= 0.8
+    const flatEndpoints = endpoints.map((ep) => ({ ...ep, pattern: "flat", minPValue: 0.5, maxEffectSize: 0.1 }));
     const result = computeTreatmentRelatedness(xs09, flatEndpoints, { correlatingObservations: [], assessment: "no_cl_data" });
     expect(result.doseResponse).toBe("absent");
   });

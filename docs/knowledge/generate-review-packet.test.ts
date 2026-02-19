@@ -603,9 +603,11 @@ function generateReviewDocument(): string {
     lines.push("| Component | Result | Detail |");
     lines.push("|-----------|--------|--------|");
     lines.push(`| Certainty | \`${interp.certainty}\` | ${interp.certaintyRationale} |`);
-    lines.push(`| Treatment-relatedness | \`${interp.treatmentRelatedness.overall}\` | dose-response: ${relatedness.doseResponse}, concordance: ${relatedness.crossEndpoint}, significance: ${relatedness.statisticalSignificance} |`);
+    const trScore = relatedness.reasoning.reduce((s: number, r: { score: number }) => s + r.score, 0);
+    lines.push(`| Treatment-relatedness | \`${interp.treatmentRelatedness.overall}\` | score ${trScore.toFixed(1)}: ${relatedness.reasoning.map((r: { factor: string; value: string; score: number }) => `${r.factor}=${r.value}[${r.score}]`).join(", ")} |`);
     lines.push(`| Adversity | \`${interp.adversity.overall}\` | adaptive=${interp.adversity.adaptive}, reversible=${interp.adversity.reversible ?? "unknown"}, magnitude=${interp.adversity.magnitudeLevel}, precursor=${interp.adversity.precursorToWorse} |`);
-    lines.push(`| Severity | \`${interp.overallSeverity}\` | — |`);
+    const histoGradeStr = interp.histopathSeverityGrade ?? "n/a";
+    lines.push(`| Severity | \`${interp.overallSeverity}\` | histopath grade: ${histoGradeStr} |`);
     lines.push(`| Recovery | \`${interp.recovery.status}\` | ${interp.recovery.summary || "No recovery data available"} |`);
     lines.push(`| Translational | \`${interp.translationalConfidence.tier}\` | SOC: ${interp.translationalConfidence.primarySOC || "—"}, LR+: ${interp.translationalConfidence.socLRPlus ?? "n/a"} |`);
     lines.push("");
@@ -618,6 +620,18 @@ function generateReviewDocument(): string {
       lines.push("|----------|-----|---------|");
       for (const ep of interp.translationalConfidence.endpointLRPlus) {
         lines.push(`| ${ep.endpoint} | ${ep.lrPlus.toFixed(1)} | ${ep.species} |`);
+      }
+      lines.push("");
+    }
+
+    // REM-17: TR factor-by-factor reasoning detail
+    if (relatedness.reasoning && relatedness.reasoning.length > 0) {
+      lines.push("**Treatment-relatedness reasoning (REM-17):**");
+      lines.push("");
+      lines.push("| Factor | Value | Score | Detail |");
+      lines.push("|--------|-------|-------|--------|");
+      for (const r of relatedness.reasoning as Array<{ factor: string; value: string; score: number; detail: string }>) {
+        lines.push(`| ${r.factor} | ${r.value} | ${r.score} | ${r.detail} |`);
       }
       lines.push("");
     }

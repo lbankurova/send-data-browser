@@ -440,8 +440,8 @@ The system uses 33 rules to classify individual lab parameter changes. Each rule
 | L04 | Bilirubin elevation (isolated) | S1 | TBILI increase (required) | — | Clinical practice |
 | L05 | Hepatocellular panel coverage (QC) | S1 | ALT increase (supporting); AST increase (supporting); SDH increase (supporting); GDH increase (supporting) | — | Best practice |
 | L06 | Cholestatic panel coverage (QC) | S1 | ALP increase (supporting); GGT increase (supporting); 5NT increase (supporting); TBILI increase (supporting) | — | Best practice |
-| L07 | Hy's Law pattern | S4 | ALT increase (required); TBILI increase (required); ALP increase (supporting) | — | FDA Hy's Law guidance |
-| L08 | Hy's Law-like animal pattern | S3 | ALT increase (required); TBILI increase (required) | — | Nonclinical adaptation |
+| L07 | Concurrent transaminase + bilirubin elevation (adapted from clinical Hy's Law) | S4 | ALT increase (required); TBILI increase (required); ALP increase (supporting) | — | Adapted from FDA Hy's Law guidance (clinical concept) |
+| L08 | Concurrent transaminase + bilirubin elevation (nonclinical adaptation) | S3 | ALT increase (required); TBILI increase (required) | — | Adapted from clinical Hy's Law concept |
 | L09 | Excess ALT frequency (program flag) | S3 | ALT increase (required) | — | Program monitoring |
 | L10 | R-ratio classification | S2 | ALT increase (required); ALP increase (supporting) | — | R-ratio hepatic phenotype |
 | L11 | ALP in cholestasis (note) | S1 | ALP increase (required) | — | Clinical practice |
@@ -523,9 +523,9 @@ This section shows the system's actual output for each syndrome detected in the 
 | Component | Result | Detail |
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met. But ALP argues against this specific mechanism. Consider differential (XS02 (Cholestatic injury)). Adaptive pattern: liver weight increase + hypertrophy without necrosis/degeneration suggests enzyme induction (non-adverse). ALT/AST fold change < 5×. |
-| Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: concordant, significance: significant |
+| Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
 | Adversity | `equivocal` | adaptive=true, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S2_Concern` | — |
+| Severity | `S2_Concern` | histopath grade: n/a |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `low` | SOC: hepatobiliary disorders, LR+: 3.5 |
 
@@ -534,6 +534,16 @@ This section shows the system's actual output for each syndrome detected in the 
 | Endpoint | LR+ | Species |
 |----------|-----|---------|
 | hepatotoxicity | 2.2 | all |
+
+**Treatment-relatedness reasoning (REM-17):**
+
+| Factor | Value | Score | Detail |
+|--------|-------|-------|--------|
+| A-1 Dose-response | strong | 2 | Strong pattern in ≥1 matched endpoint (p < 0.1 or pairwise p < 0.01 with |g| ≥ 0.8) |
+| A-2 Cross-endpoint concordance | concordant | 1 | Concordant across LB, MI, OM (3 domains) |
+| A-3 HCD comparison | no_hcd | 0 | Historical control data not available |
+| A-6 Statistical significance | significant | 1 | Min p-value: 0.0000 → significant |
+| A-7 Clinical observation support | no | 0 | No supporting clinical observations |
 
 **Discriminating findings:**
 
@@ -582,9 +592,9 @@ This section shows the system's actual output for each syndrome detected in the 
 | Component | Result | Detail |
 |-----------|--------|--------|
 | Certainty | `pattern_only` | Required findings met. But RETIC argues against this specific mechanism. Consider differential (XS05 (Hemolytic anemia)). Capped at pattern_only: single-domain detection (LB only) cannot confirm mechanism. |
-| Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: isolated, significance: significant |
+| Treatment-relatedness | `treatment_related` | score 3.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=isolated[0], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
 | Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S2_Concern` | — |
+| Severity | `S2_Concern` | histopath grade: n/a |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `high` | SOC: blood and lymphatic system disorders, LR+: 3.5 |
 
@@ -594,6 +604,16 @@ This section shows the system's actual output for each syndrome detected in the 
 |----------|-----|---------|
 | anemia | 10.1 | all |
 | neutropenia | 16.1 | all |
+
+**Treatment-relatedness reasoning (REM-17):**
+
+| Factor | Value | Score | Detail |
+|--------|-------|-------|--------|
+| A-1 Dose-response | strong | 2 | Strong pattern in ≥1 matched endpoint (p < 0.1 or pairwise p < 0.01 with |g| ≥ 0.8) |
+| A-2 Cross-endpoint concordance | isolated | 0 | Isolated to single domain |
+| A-3 HCD comparison | no_hcd | 0 | Historical control data not available |
+| A-6 Statistical significance | significant | 1 | Min p-value: 0.0000 → significant |
+| A-7 Clinical observation support | no | 0 | No supporting clinical observations |
 
 **Discriminating findings:**
 
@@ -639,9 +659,9 @@ This section shows the system's actual output for each syndrome detected in the 
 | Component | Result | Detail |
 |-----------|--------|--------|
 | Certainty | `mechanism_confirmed` | Required findings met. RETIC confirms this mechanism. No contradicting evidence. |
-| Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: concordant, significance: significant |
+| Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
 | Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=marked, precursor=false |
-| Severity | `S3_Adverse` | — |
+| Severity | `S3_Adverse` | histopath grade: n/a |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `high` | SOC: blood and lymphatic system disorders, LR+: 3.5 |
 
@@ -650,6 +670,16 @@ This section shows the system's actual output for each syndrome detected in the 
 | Endpoint | LR+ | Species |
 |----------|-----|---------|
 | anemia | 10.1 | all |
+
+**Treatment-relatedness reasoning (REM-17):**
+
+| Factor | Value | Score | Detail |
+|--------|-------|-------|--------|
+| A-1 Dose-response | strong | 2 | Strong pattern in ≥1 matched endpoint (p < 0.1 or pairwise p < 0.01 with |g| ≥ 0.8) |
+| A-2 Cross-endpoint concordance | concordant | 1 | Concordant across LB, MI, OM (3 domains) |
+| A-3 HCD comparison | no_hcd | 0 | Historical control data not available |
+| A-6 Statistical significance | significant | 1 | Min p-value: 0.0032 → significant |
+| A-7 Clinical observation support | no | 0 | No supporting clinical observations |
 
 **Discriminating findings:**
 
@@ -699,11 +729,21 @@ This section shows the system's actual output for each syndrome detected in the 
 | Component | Result | Detail |
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met but no discriminating evidence available. Cannot confirm specific mechanism. |
-| Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: concordant, significance: significant |
+| Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
 | Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S3_Adverse` | — |
+| Severity | `S3_Adverse` | histopath grade: n/a |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `insufficient_data` | SOC: —, LR+: n/a |
+
+**Treatment-relatedness reasoning (REM-17):**
+
+| Factor | Value | Score | Detail |
+|--------|-------|-------|--------|
+| A-1 Dose-response | strong | 2 | Strong pattern in ≥1 matched endpoint (p < 0.1 or pairwise p < 0.01 with |g| ≥ 0.8) |
+| A-2 Cross-endpoint concordance | concordant | 1 | Concordant across BW, LB, OM (3 domains) |
+| A-3 HCD comparison | no_hcd | 0 | Historical control data not available |
+| A-6 Statistical significance | significant | 1 | Min p-value: 0.0000 → significant |
+| A-7 Clinical observation support | no | 0 | No supporting clinical observations |
 
 **Discriminating findings:**
 
@@ -743,11 +783,21 @@ This section shows the system's actual output for each syndrome detected in the 
 | Component | Result | Detail |
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met. No discriminating evidence defined for this syndrome. |
-| Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: concordant, significance: significant |
+| Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
 | Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S3_Adverse` | — |
+| Severity | `S3_Adverse` | histopath grade: n/a |
 | Recovery | `not_examined` | Recovery not examined in this study. |
-| Translational | `low` | SOC: metabolism and nutrition disorders, LR+: 2.5 |
+| Translational | `moderate` | SOC: metabolism and nutrition disorders, LR+: 2.5 |
+
+**Treatment-relatedness reasoning (REM-17):**
+
+| Factor | Value | Score | Detail |
+|--------|-------|-------|--------|
+| A-1 Dose-response | strong | 2 | Strong pattern in ≥1 matched endpoint (p < 0.1 or pairwise p < 0.01 with |g| ≥ 0.8) |
+| A-2 Cross-endpoint concordance | concordant | 1 | Concordant across BW, MI, OM (3 domains) |
+| A-3 HCD comparison | no_hcd | 0 | Historical control data not available |
+| A-6 Statistical significance | significant | 1 | Min p-value: 0.0000 → significant |
+| A-7 Clinical observation support | no | 0 | No supporting clinical observations |
 
 **► Syndrome-specific review questions:**
 
@@ -781,11 +831,21 @@ This section shows the system's actual output for each syndrome detected in the 
 | Component | Result | Detail |
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met. Moderate supporting evidence from KIDNEY_WT. No contradicting evidence. Capped at mechanism_uncertain: confirmatory domain MI not available in study data. |
-| Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: concordant, significance: significant |
+| Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
 | Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S3_Adverse` | — |
+| Severity | `S3_Adverse` | histopath grade: n/a |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `moderate` | SOC: renal and urinary disorders, LR+: 4 |
+
+**Treatment-relatedness reasoning (REM-17):**
+
+| Factor | Value | Score | Detail |
+|--------|-------|-------|--------|
+| A-1 Dose-response | strong | 2 | Strong pattern in ≥1 matched endpoint (p < 0.1 or pairwise p < 0.01 with |g| ≥ 0.8) |
+| A-2 Cross-endpoint concordance | concordant | 1 | Concordant across LB, OM (2 domains) |
+| A-3 HCD comparison | no_hcd | 0 | Historical control data not available |
+| A-6 Statistical significance | significant | 1 | Min p-value: 0.0002 → significant |
+| A-7 Clinical observation support | no | 0 | No supporting clinical observations |
 
 **Discriminating findings:**
 
@@ -836,11 +896,21 @@ This section shows the system's actual output for each syndrome detected in the 
 | Component | Result | Detail |
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met. No discriminating evidence defined for this syndrome. |
-| Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: concordant, significance: significant |
+| Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
 | Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=marked, precursor=false |
-| Severity | `S3_Adverse` | — |
+| Severity | `S3_Adverse` | histopath grade: n/a |
 | Recovery | `not_examined` | Recovery not examined in this study. |
-| Translational | `low` | SOC: immune system disorders, LR+: 2.5 |
+| Translational | `moderate` | SOC: immune system disorders, LR+: 2.5 |
+
+**Treatment-relatedness reasoning (REM-17):**
+
+| Factor | Value | Score | Detail |
+|--------|-------|-------|--------|
+| A-1 Dose-response | strong | 2 | Strong pattern in ≥1 matched endpoint (p < 0.1 or pairwise p < 0.01 with |g| ≥ 0.8) |
+| A-2 Cross-endpoint concordance | concordant | 1 | Concordant across LB, OM (2 domains) |
+| A-3 HCD comparison | no_hcd | 0 | Historical control data not available |
+| A-6 Statistical significance | significant | 1 | Min p-value: 0.0032 → significant |
+| A-7 Clinical observation support | no | 0 | No supporting clinical observations |
 
 > **Anomaly summary:** 2 anomaly marker(s) detected in this syndrome. Review marked items (⚠) above.
 

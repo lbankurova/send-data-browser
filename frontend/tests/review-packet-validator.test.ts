@@ -412,14 +412,14 @@ function validatePacket(
 
   // Invariant E: translational tier must match LR+ bins
   // Fixed bins matching actual code in syndrome-interpretation.ts:
-  //   SOC level: high ≥ 5, moderate ≥ 3
+  //   SOC level: high ≥ 5, moderate ≥ 2 (REM-22: lowered from 3)
   //   (PT level: high ≥ 10, moderate ≥ 3 — but validator sees SOC LR+)
   for (const s of sections) {
     const tier = s.interpretation.translationalTier;
     const lr = s.interpretation.translationalLRPlus;
     if (!tier || lr == null) continue;
 
-    const expected = lr >= 5 ? "high" : lr >= 3 ? "moderate" : "low";
+    const expected = lr >= 5 ? "high" : lr >= 2 ? "moderate" : "low";
 
     if (tier !== "insufficient_data" && tier !== expected) {
       issues.push({
@@ -685,7 +685,7 @@ describe("Review packet scientific invariants", () => {
     expect(hasIssue(issues, "SEVERITY_CASCADE_MISMATCH", "XS01")).toBe(false);
   });
 
-  // REM-03: translational tier bins — validator now uses correct SOC bins (≥5 high, ≥3 moderate).
+  // REM-03/REM-22: translational tier bins — validator now uses correct SOC bins (≥5 high, ≥2 moderate).
   // However, tier can be driven by endpoint-level LR+ (different bins: ≥10 high, ≥3 moderate)
   // while the displayed LR+ is SOC-level. The validator compares displayed SOC LR+ against
   // SOC bins, but some syndromes (XS04, XS05) use endpoint-level LR+ for tier assignment.
