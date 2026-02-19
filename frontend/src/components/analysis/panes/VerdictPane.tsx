@@ -288,7 +288,7 @@ export function VerdictPane({
 
   // Clinical verdict line
   const sexAnnotation = clinicalMatch?.sex
-    ? ` \u00b7 ${clinicalMatch.sex === "M" ? "\u2642" : "\u2640"} ${clinicalMatch.sex}`
+    ? ` \u00b7 ${clinicalMatch.sex}`
     : "";
   const clinicalLineText = clinicalMatch
     ? `${clinicalMatch.severity} ${clinicalMatch.severityLabel} \u00b7 Rule ${clinicalMatch.ruleId}${sexAnnotation} \u00b7 ${getRuleSourceShortLabel(clinicalMatch.source)}`
@@ -337,11 +337,10 @@ export function VerdictPane({
       {noaelBySex && noaelBySex.size >= 2 && (
         <div className="mt-0.5 flex flex-wrap gap-x-3 text-[10px] text-muted-foreground">
           {[...noaelBySex.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([sex, n]) => {
-            const symbol = sex === "M" ? "\u2642" : "\u2640";
             const doseStr = n.doseValue != null
               ? `${n.doseValue} ${n.doseUnit ?? "mg/kg"}`
               : n.tier === "below-lowest" ? "< lowest dose" : "n/a";
-            return <span key={sex}>{symbol} {sex}: NOAEL {doseStr}</span>;
+            return <span key={sex}>{sex}: NOAEL {doseStr}</span>;
           })}
         </div>
       )}

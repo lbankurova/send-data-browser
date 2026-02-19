@@ -1050,7 +1050,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
             if (new Set(patterns).size > 1) {
               return [...bySex.entries()].map(([sex, s]) => (
                 <span key={sex}>
-                  {sex === "M" ? "♂" : "♀"} {shortPatternLabel(s.pattern)} {getDirectionSymbol(s.direction)}
+                  {sex} {shortPatternLabel(s.pattern)} {getDirectionSymbol(s.direction)}
                 </span>
               ));
             }
