@@ -753,6 +753,22 @@ describe("Review packet scientific invariants", () => {
     ).toBe(true);
   });
 
+  // REM-06: statistical methods documented in packet
+  test("REM-06: B.6 statistical methods section exists", () => {
+    expect(md).toContain("## B.6: Statistical Methods");
+    expect(md).toContain("Welch's t-test");
+    expect(md).toContain("Hedges' g");
+    expect(md).toContain("Fisher's exact");
+    expect(md).toContain("Jonckheere-Terpstra");
+  });
+
+  test("REM-06: term evidence tables have column key footnote", () => {
+    // Every syndrome's term evidence table should reference §B.6
+    const columnKeyMatches = md.match(/Column key:.*See §B\.6/g) ?? [];
+    // Should appear once per syndrome (7 syndromes in PointCross)
+    expect(columnKeyMatches.length).toBeGreaterThanOrEqual(sections.length);
+  });
+
   // XS10: removed by REM-12 significance gate, no longer in packet
   test("XS10 not detected (REM-12 significance gate)", () => {
     const xs10Section = sections.find((s) => s.id === "XS10");
