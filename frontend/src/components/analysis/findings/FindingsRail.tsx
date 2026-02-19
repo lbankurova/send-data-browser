@@ -403,36 +403,27 @@ export function FindingsRail({
     onGroupingChange?.(mode);
   }, [onGroupScopeChange, onEndpointSelect, onGroupingChange]);
 
-  const handleCardClick = useCallback((card: GroupCard) => {
-    const isExpanded = expanded.has(card.key);
+  const handleCardSelect = useCallback((card: GroupCard) => {
     const isScopedToThis = activeGroupScope?.value === card.key;
-
-    if (!isExpanded && !activeGroupScope) {
-      // State 1: Collapsed, no filter → Expand + apply scope
-      setExpanded((prev) => new Set(prev).add(card.key));
-      onGroupScopeChange?.({ type: grouping, value: card.key });
-    } else if (isExpanded && isScopedToThis) {
-      // State 2: Expanded + scoped same → Collapse + clear scope
-      setExpanded((prev) => { const n = new Set(prev); n.delete(card.key); return n; });
+    if (isScopedToThis) {
+      // Already scoped → clear scope (deselect)
       onGroupScopeChange?.(null);
-    } else if (isExpanded && !isScopedToThis) {
-      // State 3: Expanded, not scoped (or different group) → Apply scope (stay expanded)
-      // Also collapse previously scoped card if different
-      if (activeGroupScope) {
-        setExpanded((prev) => { const n = new Set(prev); n.delete(activeGroupScope.value); n.add(card.key); return n; });
-      }
-      onGroupScopeChange?.({ type: grouping, value: card.key });
     } else {
-      // State 4: Collapsed, different group scoped → Collapse old, expand this, apply new scope
-      setExpanded((prev) => {
-        const n = new Set(prev);
-        if (activeGroupScope) n.delete(activeGroupScope.value);
-        n.add(card.key);
-        return n;
-      });
+      // Apply scope to this group
       onGroupScopeChange?.({ type: grouping, value: card.key });
+      // Auto-expand selected group so endpoints are visible
+      setExpanded((prev) => new Set(prev).add(card.key));
     }
-  }, [expanded, activeGroupScope, grouping, onGroupScopeChange]);
+  }, [activeGroupScope, grouping, onGroupScopeChange]);
+
+  const handleCardToggleExpand = useCallback((card: GroupCard) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(card.key)) next.delete(card.key);
+      else next.add(card.key);
+      return next;
+    });
+  }, []);
 
   const handleEndpointClick = useCallback((endpointLabel: string) => {
     if (activeEndpoint === endpointLabel) {
@@ -549,7 +540,8 @@ export function FindingsRail({
               activeEndpoint={activeEndpoint}
               unfilteredTotal={unfilteredGroupTotals.get(card.key) ?? card.totalEndpoints}
               showFilteredCount={railIsFiltered}
-              onHeaderClick={() => handleCardClick(card)}
+              onHeaderSelect={() => handleCardSelect(card)}
+              onToggleExpand={() => handleCardToggleExpand(card)}
               onEndpointClick={handleEndpointClick}
               registerEndpointRef={registerEndpointRef}
               multiSyndromeIndex={grouping === "syndrome" ? multiSyndromeIndex : undefined}
@@ -802,7 +794,8 @@ function CardSection({
   activeEndpoint,
   unfilteredTotal,
   showFilteredCount,
-  onHeaderClick,
+  onHeaderSelect,
+  onToggleExpand,
   onEndpointClick,
   registerEndpointRef,
   multiSyndromeIndex,
@@ -818,7 +811,8 @@ function CardSection({
   activeEndpoint: string | null;
   unfilteredTotal: number;
   showFilteredCount: boolean;
-  onHeaderClick: () => void;
+  onHeaderSelect: () => void;
+  onToggleExpand: () => void;
   onEndpointClick: (label: string) => void;
   registerEndpointRef: (label: string, el: HTMLElement | null) => void;
   multiSyndromeIndex?: Map<string, string[]>;
@@ -836,7 +830,8 @@ function CardSection({
         isScoped={isScoped}
         unfilteredTotal={unfilteredTotal}
         showFilteredCount={showFilteredCount}
-        onClick={onHeaderClick}
+        onSelect={onHeaderSelect}
+        onToggleExpand={onToggleExpand}
       />
       {isExpanded && (
         <div>
@@ -874,7 +869,8 @@ function CardHeader({
   isScoped,
   unfilteredTotal,
   showFilteredCount,
-  onClick,
+  onSelect,
+  onToggleExpand,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -882,22 +878,24 @@ function CardHeader({
   isScoped: boolean;
   unfilteredTotal: number;
   showFilteredCount: boolean;
-  onClick: () => void;
+  onSelect: () => void;
+  onToggleExpand: () => void;
 }) {
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
 
   return (
-    <button
+    <div
       className={cn(
         "flex w-full items-center gap-2 px-3 py-1.5 text-xs cursor-pointer transition-colors",
         isScoped
           ? "border-l-2 border-primary bg-accent/50"
           : "hover:bg-accent/30",
       )}
-      onClick={onClick}
-      aria-expanded={isExpanded}
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
-      <Chevron className="h-3 w-3 shrink-0 text-muted-foreground" />
       <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} />
       <span className="ml-auto font-mono text-[10px] text-muted-foreground">
         {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
@@ -906,7 +904,15 @@ function CardHeader({
       <span className="font-mono text-[10px] text-muted-foreground">
         {card.trCount}
       </span>
-    </button>
+      <button
+        className="ml-1 shrink-0 rounded p-0.5 hover:bg-accent/60 transition-colors"
+        onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
+        aria-expanded={isExpanded}
+        aria-label={isExpanded ? "Collapse group" : "Expand group"}
+      >
+        <Chevron className="h-3 w-3 text-muted-foreground" />
+      </button>
+    </div>
   );
 }
 
