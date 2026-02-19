@@ -36,7 +36,7 @@ export interface QuadrantPoint {
   coherenceSize?: number;       // 7 for 3+ domain organs
   syndromeId?: string;          // syndrome ID if endpoint is matched
   syndromeName?: string;        // for tooltip line
-  clinicalSeverity?: string;    // "S3" | "S4" → diamond shape
+  clinicalSeverity?: string;    // "S2" | "S3" | "S4" → diamond shape
   clinicalRuleId?: string;      // e.g. "L02"
   clinicalSeverityLabel?: string; // e.g. "Adverse"
   clinicalFoldChange?: number;  // e.g. 4.2
@@ -77,7 +77,7 @@ export function prepareQuadrantPoints(
   if (labMatches) {
     const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
     for (const match of labMatches) {
-      if (sevOrder[match.severity] >= 3) { // Only S3/S4 get diamond
+      if (sevOrder[match.severity] >= 2) { // S2+ get diamond (matches rail badge threshold)
         for (const epLabel of match.matchedEndpoints) {
           const tc = testCodeByLabel.get(epLabel.toLowerCase());
           const canonical = resolveCanonical(epLabel, tc);
@@ -145,7 +145,7 @@ export function buildFindingsQuadrantOption(
   const data = points.map((pt) => {
     const isSelected = pt.endpoint_label === selectedEndpoint;
     const isAdverse = pt.worstSeverity === "adverse";
-    const isClinical = pt.clinicalSeverity === "S3" || pt.clinicalSeverity === "S4";
+    const isClinical = pt.clinicalSeverity === "S2" || pt.clinicalSeverity === "S3" || pt.clinicalSeverity === "S4";
     const hasExclusion = pt.hasEarlyDeathExclusion === true;
     const isOutOfScope = scopeFilter != null &&
       pt.organ_system !== scopeFilter &&
@@ -159,7 +159,7 @@ export function buildFindingsQuadrantOption(
     if (isClinical) symbolSize = 7;
     if (isSelected) symbolSize = 10;
 
-    // Symbol shape: clinical S3/S4 get diamond (persists in all states)
+    // Symbol shape: clinical S2+ get diamond (persists in all states)
     const symbol = isClinical ? "diamond" : "circle";
 
     // NOAEL tint: warm rose for low-NOAEL dots (below-lowest or at-lowest)

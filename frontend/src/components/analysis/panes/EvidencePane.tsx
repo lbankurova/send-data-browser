@@ -210,7 +210,12 @@ function PerSexCard({ entry, canonical }: { entry: PerSexEntry; canonical: strin
   const { match, sexData } = entry;
 
   if (match) {
-    const fc = canonical ? match.foldChanges[canonical] : null;
+    // Prefer per-sex endpoint fold change (specific to this sex) over rule context fold change
+    // (which aggregates across sexes when sexes don't disagree on direction)
+    const ruleFc = canonical ? match.foldChanges[canonical] : null;
+    const fc = (sexData?.maxFoldChange != null && sexData.maxFoldChange > 0)
+      ? sexData.maxFoldChange
+      : ruleFc;
     const thresholdDesc = canonical ? describeThreshold(match.ruleId, canonical) : null;
     return (
       <div className={`rounded p-2 ${getClinicalTierCardBorderClass(match.severity)} ${getClinicalTierCardBgClass(match.severity)}`}>

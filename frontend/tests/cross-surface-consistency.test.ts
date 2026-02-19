@@ -133,4 +133,62 @@ describe("cross-surface consistency", () => {
       }
     }
   });
+
+  // ── Rail badge ↔ chart diamond consistency ──
+
+  test("S2+ clinical badge in rail implies diamond-eligible in chart", () => {
+    // The rail shows clinical badges for S2+ endpoints.
+    // The chart renders diamonds for S2+ endpoints.
+    // Both use evaluateLabRules output — verify the threshold is consistent.
+    const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
+    const RAIL_THRESHOLD = 2; // S2+
+    const CHART_THRESHOLD = 2; // S2+ (must match rail)
+
+    // Collect endpoints with S2+ from matches (rail badges)
+    const railBadgedEndpoints = new Set<string>();
+    for (const match of matches) {
+      if ((sevOrder[match.severity] ?? 0) >= RAIL_THRESHOLD) {
+        for (const ep of match.matchedEndpoints) railBadgedEndpoints.add(ep);
+      }
+    }
+
+    // Collect endpoints that would get diamonds in the chart (S2+ in clinicalIndex)
+    const chartDiamondEndpoints = new Set<string>();
+    for (const match of matches) {
+      if ((sevOrder[match.severity] ?? 0) >= CHART_THRESHOLD) {
+        for (const epLabel of match.matchedEndpoints) {
+          const tc = endpoints.find(e => e.endpoint_label === epLabel)?.testCode;
+          const canonical = resolveCanonical(epLabel, tc);
+          if (canonical) chartDiamondEndpoints.add(epLabel);
+        }
+      }
+    }
+
+    // Every rail-badged endpoint must also be chart-diamond-eligible
+    for (const ep of railBadgedEndpoints) {
+      expect(
+        chartDiamondEndpoints.has(ep),
+        `"${ep}" has rail badge (S2+) but would NOT get diamond in chart`,
+      ).toBe(true);
+    }
+  });
+
+  // ── Fold change non-zero for matching endpoints ──
+
+  test("per-sex fold changes are non-zero for endpoints with non-null maxFoldChange", () => {
+    for (const match of matches) {
+      if (!match.sex) continue;
+      for (const [canonical, fc] of Object.entries(match.foldChanges)) {
+        // Find any endpoint that resolves to this canonical
+        const ep = endpoints.find(e => resolveCanonical(e.endpoint_label, e.testCode) === canonical);
+        if (!ep) continue;
+        if (ep.maxFoldChange != null && ep.maxFoldChange > 0) {
+          expect(
+            fc,
+            `Rule ${match.ruleId} sex=${match.sex}: ${canonical} fold change is ${fc} but endpoint has maxFoldChange=${ep.maxFoldChange}`,
+          ).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
 });
