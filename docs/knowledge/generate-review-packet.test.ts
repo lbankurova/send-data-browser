@@ -408,16 +408,16 @@ function generateReviewDocument(): string {
   lines.push("");
   lines.push("| Domain | Endpoint type | Pairwise test | Trend test | Effect size |");
   lines.push("|--------|--------------|---------------|------------|-------------|");
-  lines.push("| LB, BW, OM, EG, VS | Continuous | Welch's t-test (unequal variance) | Jonckheere-Terpstra (Spearman rank proxy) | Hedges' g (bias-corrected) |");
+  lines.push("| LB, BW, OM, EG, VS | Continuous | Dunnett's test (FWER-controlled, REM-28) | Jonckheere-Terpstra (REM-29) | Hedges' g (bias-corrected) |");
   lines.push("| MI, MA, TF | Incidence (binary) | Fisher's exact test (2×2) | Cochran-Armitage trend | — |");
   lines.push("| CL, DS | Incidence (event) | Fisher's exact test (2×2) | — | — |");
   lines.push("");
   lines.push("### Key Method Details");
   lines.push("");
   lines.push("- **Effect size** column (`Effect Size (g)`) uses Hedges' g with small-sample correction: g = d × (1 − 3/(4·df − 1)), where d = Cohen's d from pooled SD.");
-  lines.push("- **P-values** for continuous endpoints are Bonferroni-corrected across dose groups. Incidence p-values are NOT corrected (Fisher's exact is inherently conservative with small counts).");
+  lines.push("- **P-values** for continuous endpoints use Dunnett's test (FWER-controlled; REM-28), replacing the previous Welch's t + Bonferroni. Incidence p-values are NOT corrected (Fisher's exact is inherently conservative with small counts).");
   lines.push("- **Dose-response pattern** is classified via step-wise noise-tolerant analysis: 0.5× pooled SD equivalence band for continuous endpoints (STAT-11 binomial tolerance for incidence).");
-  lines.push("- **Trend p-value** uses Spearman rank correlation as a proxy for the Jonckheere-Terpstra test (both are rank-order-based; Spearman is available in scipy).");
+  lines.push("- **Trend p-value** uses the Jonckheere-Terpstra test (REM-29): sums Mann-Whitney U counts across all ordered dose-group pairs, with normal approximation for p-value. Replaces the previous Spearman rank proxy.");
   lines.push("");
   lines.push("### Limitations");
   lines.push("");
@@ -511,7 +511,37 @@ function generateReviewDocument(): string {
   lines.push(`**Species:** ${defaultContext.species} (${defaultContext.strain})  `);
   lines.push(`**Route:** ${defaultContext.route}  `);
   lines.push(`**Duration:** ${defaultContext.dosingDurationWeeks} weeks (${defaultContext.studyType.toLowerCase()})  `);
-  lines.push(`**Detected syndromes:** ${syndromes.map(s => `${s.id} (${s.name})`).join(", ")}`);
+
+  // REM-23: Tiered detection classification
+  // detected = passes required logic AND no reject/strong_against gate
+  // candidate = passes required logic BUT ruled_out or strong_against by gate
+  // not_evaluated = not detected because required domain/endpoint absent from study
+  const allSyndromeIds = ["XS01", "XS02", "XS03", "XS04", "XS05", "XS06", "XS07", "XS08", "XS09", "XS10"];
+  const detectedIds = new Set(syndromes.map(s => s.id));
+
+  const detectedSyndromes: typeof syndromes = [];
+  const candidateSyndromes: typeof syndromes = [];
+  for (const s of syndromes) {
+    const gate = s.directionalGate;
+    if (gate?.gateFired && (gate.action === "reject" || gate.action === "strong_against")) {
+      candidateSyndromes.push(s);
+    } else {
+      detectedSyndromes.push(s);
+    }
+  }
+  const notEvaluatedIds = allSyndromeIds.filter(id => !detectedIds.has(id));
+
+  const fmtSynList = (list: typeof syndromes) => list.map(s => `${s.id} (${s.name})`).join(", ") || "none";
+  const fmtIdList = (ids: string[]) => {
+    return ids.map(id => {
+      const def = getSyndromeDefinition(id);
+      return def ? `${id} (${def.name})` : id;
+    }).join(", ") || "none";
+  };
+
+  lines.push(`**Detected syndromes:** ${fmtSynList(detectedSyndromes)}  `);
+  lines.push(`**Differential diagnoses (pattern detected, mechanism contradicted):** ${fmtSynList(candidateSyndromes)}  `);
+  lines.push(`**Not evaluated (insufficient data):** ${fmtIdList(notEvaluatedIds)}`);
   lines.push("");
 
   for (const syndrome of syndromes) {
@@ -536,18 +566,32 @@ function generateReviewDocument(): string {
       syndromes.map(s => s.id), // REM-10: pass all detected syndrome IDs for stress confound check
     );
 
-    lines.push(`## ${syndrome.id}: ${syndrome.name}`);
+    // REM-23: Badge based on detection tier
+    const isCandidate = candidateSyndromes.some(c => c.id === syndrome.id);
+    const tierBadge = isCandidate ? " [DIFFERENTIAL]" : " [DETECTED]";
+    lines.push(`## ${syndrome.id}: ${syndrome.name}${tierBadge}`);
     lines.push("");
     lines.push(`**Confidence:** ${syndrome.confidence}  `);
     lines.push(`**Domains covered:** ${syndrome.domainsCovered.join(", ")}  `);
     lines.push(`**Sexes:** ${syndrome.sexes.join(", ") || "combined"}  `);
-    lines.push(`**Required logic met:** ${syndrome.requiredMet ? "Yes" : "No"} (${termReport.requiredMetCount}/${termReport.requiredTotal} required terms, logic: ${termReport.requiredLogicText})`);
+    // REM-25: Annotate if any required terms were met by trend only
+    const trendNote = termReport.requiredTrendCount > 0
+      ? `, ${termReport.requiredTrendCount} by trend`
+      : "";
+    lines.push(`**Required logic met:** ${syndrome.requiredMet ? "Yes" : "No"} (${termReport.requiredMetCount}/${termReport.requiredTotal} required terms${trendNote}, logic: ${termReport.requiredLogicText})`);
+    // REM-26: Show satisfied clause for compound expressions
+    if (termReport.satisfiedClause) {
+      const promotedNote = termReport.promotedSupportingTags.length > 0
+        ? ` (${termReport.promotedSupportingTags.join(", ")} promoted S→R)`
+        : "";
+      lines.push(`**Satisfied clause:** ${termReport.satisfiedClause}${promotedNote}`);
+    }
     lines.push("");
 
     // Term-by-term evidence table
     lines.push("### Term-by-Term Match Evidence");
     lines.push("");
-    lines.push("> Column key: **g** = Hedges' g (Welch's t pairwise); **p** = Bonferroni-adjusted (continuous) or Fisher's exact (incidence); **FC** = treated/control ratio. See §B.6.");
+    lines.push("> Column key: **g** = Hedges' g (Dunnett's pairwise, REM-28); **p** = Dunnett-adjusted (continuous) or Fisher's exact (incidence); **FC** = treated/control ratio. See §B.6.");
     lines.push("");
     lines.push("| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |");
     lines.push("|------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|");
@@ -557,8 +601,12 @@ function generateReviewDocument(): string {
 
     for (const entry of allEntries) {
       const ep = entry.matchedEndpoint ? epIndex.get(entry.matchedEndpoint) : null;
-      const role = entry.role === "required" ? "**R**" : "S";
+      // REM-26: Mark promoted supporting terms as S→R
+      const isPromoted = entry.role === "supporting" && entry.tag != null &&
+        termReport.promotedSupportingTags.includes(entry.tag);
+      const role = entry.role === "required" ? "**R**" : isPromoted ? "S→R" : "S";
       const status = entry.status === "matched" ? "✓ matched"
+        : entry.status === "trend" ? "△ trend"
         : entry.status === "opposite" ? "⚠ opposite"
         : entry.status === "not_significant" ? "○ not sig"
         : "— not measured";
@@ -573,6 +621,11 @@ function generateReviewDocument(): string {
       const pattern = ep?.pattern ?? "—";
 
       lines.push(`| ${role} | ${entry.label} | ${status} | ${entry.matchedEndpoint ?? "—"} | ${entry.domain} | ${dir} | ${effectSigned} | ${pVal} | ${fold} | ${pattern} |`);
+
+      // REM-27: Annotate magnitude floor blocks
+      if (entry.magnitudeFloorNote) {
+        lines.push(`      ⚙ Below magnitude floor: ${entry.magnitudeFloorNote}`);
+      }
 
       // Check for anomalies
       if (entry.status === "opposite") {

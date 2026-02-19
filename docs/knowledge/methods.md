@@ -60,19 +60,21 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 ---
 
-### STAT-04 — Jonckheere-Terpstra Trend Test (Spearman Approximation)
+### STAT-04 — Jonckheere-Terpstra Trend Test
 
 **Purpose:** Test for monotonic dose-response trend across ordered dose groups for continuous endpoints.
 
-**Implementation:** `scipy.stats.spearmanr(dose_levels, values)` — backend `statistics.py:46`. Also called as `_jonckheere_terpstra_p()` in `domain_stats.py:75` (identical logic).
+**Implementation:** `trend_test(groups)` — backend `statistics.py:46`. Computes the JT statistic (sum of Mann-Whitney U counts across all ordered dose-group pairs) with normal approximation for the p-value. Also called via `_jonckheere_terpstra_p()` in `domain_stats.py:75` (delegates to same function).
 
-**Parameters:** Each observation paired with its ordinal dose level index (0, 1, 2, ...). Minimum 4 total non-NaN values across all groups. NaN values dropped per group before flattening.
+**Parameters:** Input: list of numpy arrays, one per dose group (ordered low to high). NaN values dropped per group. Minimum 2 groups and 4 total observations. Returns standardized Z and two-sided p-value.
 
-**Why this method:** True Jonckheere-Terpstra test is not available in scipy. Spearman rank correlation is a computationally simpler proxy that captures monotonic trend direction and significance. Adequate for continuous endpoints where dose order matters.
+**Algorithm:** J = Σ_{i<j} U_{ij} where U_{ij} counts pairs (a,b) with a ∈ group_i, b ∈ group_j where b > a (ties count 0.5). H0 moments: E(J) = (N² − Σn_i²)/4, Var(J) = [N²(2N+3) − Σn_i²(2n_i+3)]/72. Z = (J − E(J))/√Var(J).
 
-**Alternatives considered:** True JT test (not in scipy without custom implementation). Cuzick's trend test (requires equal spacing assumption). Linear regression slope test (sensitive to outliers).
+**Why this method:** REM-29. The JT test is the standard nonparametric trend test for ordered independent groups in toxicology (Jonckheere 1954, Terpstra 1952). Directly tests for ordered alternatives without assuming equal spacing or normality. Replaces the previous Spearman rank correlation proxy (which was a reasonable approximation but not the standard method).
 
-**Consumers:** LB (`findings_lb.py:131`), BW (`findings_bw.py:118`), OM, FW (`domain_stats.py:369`). Not used for incidence domains (use STAT-05 instead).
+**Alternatives considered:** Spearman rank proxy (previous implementation — simpler but not the standard method). Cuzick's trend test (requires equal spacing). Williams' test (parametric, optimal for monotonic dose-response but requires normality).
+
+**Consumers:** LB (`findings_lb.py`), BW (`findings_bw.py`), OM, EG, VS, BG, FW (`domain_stats.py`). Not used for incidence domains (use STAT-05 instead).
 
 ---
 
@@ -154,7 +156,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Alternatives considered:** Pearson correlation (assumes normality and linearity). Kendall's tau (similar information, less familiar in tox literature).
 
-**Consumers:** Used internally by STAT-04 (Jonckheere-Terpstra approximation). `severity_trend()` reserved for future severity-specific analysis.
+**Consumers:** `severity_trend()` used for histopathology severity-dose analysis. No longer used by STAT-04 (REM-29 replaced Spearman proxy with proper JT).
 
 ---
 
@@ -216,22 +218,21 @@ This table documents which statistical test is applied to each endpoint type in 
 
 | Domain | Endpoint type | Pairwise test | Trend test | Effect size | Post-hoc | Notes |
 |--------|--------------|---------------|------------|-------------|----------|-------|
-| LB | Continuous (ALT, AST, etc.) | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | STAT-07 Dunnett (supplementary) | Primary: pairwise t + trend |
-| BW | Body weight | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | — | Percent change from baseline (METH-02) |
-| OM | Organ weights (relative) | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | — | Organ-to-body ratio (METH-03) |
-| FW | Food/water consumption | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | — | |
+| LB | Continuous (ALT, AST, etc.) | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | Primary: Dunnett + JT trend |
+| BW | Body weight | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | Percent change from baseline (METH-02) |
+| OM | Organ weights (relative) | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | Organ-to-body ratio (METH-03) |
+| FW | Food/water consumption | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | |
 | MI | Histopath incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | No effect size for binary data |
 | MI | Histopath severity (ordinal) | STAT-02 Mann-Whitney U† | — | — | — | †Reserved, not in active pipeline |
 | MA | Macroscopic incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
 | CL | Clinical signs incidence | STAT-03 Fisher's exact | — | — | — | No trend test (signs are event-based) |
 | TF | Tumor findings incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
 | DS | Death/sacrifice | STAT-03 Fisher's exact | — | — | — | |
-| EG | ECG continuous | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | — | |
-| VS | Vital signs continuous | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | — | |
+| EG | ECG continuous | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | |
+| VS | Vital signs continuous | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | |
 
 **Limitations documented (REM-06):**
-- Williams' test (optimal for monotonic dose-response) and Steel's test (nonparametric many-to-one) are not implemented. JT/Spearman proxy (STAT-04) provides a rank-correlation-based trend alternative.
-- Dunnett's test (STAT-07) is computed and stored but not used in the primary classification logic. It provides supplementary evidence.
+- Williams' test (optimal for monotonic dose-response) and Steel's test (nonparametric many-to-one) are not implemented. Dunnett's (STAT-07, REM-28) handles the pairwise many-to-one case; JT (STAT-04, REM-29) handles the trend case.
 - MI severity grading uses numerical avg_severity (1–5 scale) but no formal ordinal statistical test is applied to the grades in the active pipeline.
 - No multiplicity correction is applied within domains for incidence tests (see STAT-03 design note).
 
@@ -696,6 +697,45 @@ When a confirmatory domain is missing, certainty cannot exceed `pattern_only`. W
 **Why this method:** Without MI confirmation, lab-only findings cannot be attributed to a specific organ-level mechanism. The data sufficiency gate prevents false confidence in syndrome interpretations where corroborating evidence is physically absent from the study. This is more nuanced than blocking detection entirely (which would silence the tool for studies with incomplete domain coverage).
 
 **Deferred extension (REM-20 full scope):** Compound-class contextual warnings — comparing the current study's findings against a database of known class effects for the compound's pharmacological class. Requires an external reference database of compound-class-to-expected-findings mappings, which is not currently available. When available, this would allow warnings like "XS01 detected but compound class (NSAID) has known hepatotoxicity — consider class effect." See TODO GAP-16.
+
+### METH-30 — Magnitude Floor per Endpoint Class (REM-27)
+
+**Purpose:** Prevent statistically significant but biologically trivial findings from qualifying as syndrome matches. A finding must exceed both statistical threshold AND magnitude floor.
+
+**Implementation:** `checkMagnitudeFloor(ep, domain, allEndpoints)` — frontend `cross-domain-syndromes.ts`. Pre-built lookup from `ENDPOINT_CLASS_FLOORS` config (test code → `{ minG, minFcDelta }`).
+
+**Algorithm:** For a significant finding (p < 0.05), check if `|g| >= minG` OR `|FC-1| >= minFcDelta`. Either criterion is sufficient to pass the floor. If both fail, the finding is reclassified as "not_significant" despite statistical significance.
+
+**Endpoint class floors (v0.2.0, literature-backed):**
+
+| Class | Min |g| | Min |FC-1| | Test codes |
+|-------|---------|------------|------------|
+| Erythroid | 0.8 | 0.10 | RBC, HGB, HB, HCT |
+| Leukocyte (primary) | 0.8 | 0.15 | WBC, NEUT, ANC, LYMPH, LYM |
+| Leukocyte (rare) | 0.8 | 0.30 | MONO, EOS, BASO (+ concordance) |
+| RBC indices | 1.0 | 0.05 | MCV, MCH, MCHC, RDW |
+| Platelets | 0.8 | 0.15 | PLAT, PLT |
+| Reticulocytes | 0.8 | 0.25 (0.15 override) | RETIC, RET, RETI |
+| Coagulation | 0.8 | 0.15 | PT, APTT, INR, FIB, FIBRINO |
+| Liver enzymes | 0.5 | 0.50 | ALT, AST, ALP, GGT, SDH, GLDH, 5NT, LDH |
+| Renal markers | 0.5 | 0.20 | BUN, UREA, CREAT, CREA |
+| Clinical chemistry | 0.5 | 0.25 | GLUC, CHOL, BILI, TRIG, ALB, TP, etc. |
+| Electrolytes | 0.8 | 0.10 | SODIUM, NA, K, CA, PHOS, CL, MG |
+| Body weight | 0.5 | 0.05 | BW, BWGAIN |
+| Food consumption | 0.5 | 0.10 | FOOD, FC |
+| Organ weights (general) | 0.8 | 0.10 | liver, kidney, heart, spleen, lung, brain |
+| Organ weights (reproductive) | 0.8 | 0.05 | testis, epididymis, ovary, uterus, prostate |
+| Organ weights (immune) | 0.8 | 0.10 | thymus, adrenal |
+
+**Advanced features (v0.2.0):**
+
+1. **RETIC conditional override:** Floor relaxes from 25% to 15% when concordant anemia present (≥2 of RBC/HGB/HCT decreased, each meeting erythroid floor). `hasConcordantAnemia()` in `cross-domain-syndromes.ts`.
+2. **Rare leukocyte concordance:** MONO/EOS/BASO require ≥1 primary leukocyte (WBC/NEUT/LYMPH) shifting same direction to be treated as meaningful. `hasLeukocyteConcordance()` in `cross-domain-syndromes.ts`. Per de Kort & Weber 2020.
+3. **Liver enzyme certainty cap:** Single liver enzyme at ≥1.5x cannot drive XS01 certainty above `pattern_only`. Upgrade paths: MI hepatocellular injury, ≥2 coherent liver enzymes, liver weight increase. `applyCertaintyCaps()` in `syndrome-interpretation.ts`. Per Ramaiah 2017.
+
+**Important:** Magnitude floors do NOT apply to "opposite" status classification — an opposite-direction finding is still flagged regardless of magnitude, because the direction itself is informative.
+
+**Consumers:** `getSyndromeTermReport()` in `cross-domain-syndromes.ts`. `applyCertaintyCaps()` in `syndrome-interpretation.ts`. Validator invariant Q (`MAGNITUDE_FLOOR_BYPASS`).
 
 ---
 
