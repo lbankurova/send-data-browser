@@ -73,7 +73,7 @@ def init_validation(studies: dict):
     # Auto-run validation so results are always cached on startup
     for study_id, study in studies.items():
         try:
-            results = _engine.validate(study)
+            results = _engine.validate(study, skip_core=True)
             _engine.save_results(study_id, results)
             logger.info(
                 "Validated %s: %d issues (%.1fs)",
