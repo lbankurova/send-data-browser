@@ -134,6 +134,57 @@ describe("cross-surface consistency", () => {
     }
   });
 
+  // ── Interpretation layer structural invariants ──
+
+  test("syndrome member endpoints have unique labels per sex", () => {
+    for (const syndrome of syndromes) {
+      // Group by sex — same endpoint can appear once per sex (M, F, or null/aggregate)
+      const bySex = new Map<string, string[]>();
+      for (const ep of syndrome.matchedEndpoints) {
+        const key = ep.sex ?? "aggregate";
+        const list = bySex.get(key) ?? [];
+        list.push(ep.endpoint_label);
+        bySex.set(key, list);
+      }
+      for (const [sex, labels] of bySex) {
+        const unique = new Set(labels);
+        expect(
+          unique.size,
+          `Syndrome ${syndrome.id} sex=${sex} has duplicate endpoint labels: ${labels.filter((l, i) => labels.indexOf(l) !== i).join(", ")}`,
+        ).toBe(labels.length);
+      }
+    }
+  });
+
+  test("per-sex syndrome matches reference a valid sex", () => {
+    for (const syndrome of syndromes) {
+      for (const sex of syndrome.sexes) {
+        expect(
+          ["M", "F"],
+          `Syndrome ${syndrome.id} has invalid sex value "${sex}"`,
+        ).toContain(sex);
+      }
+    }
+  });
+
+  test("syndrome confidence is valid", () => {
+    for (const syndrome of syndromes) {
+      expect(
+        ["HIGH", "MODERATE", "LOW"],
+        `Syndrome ${syndrome.id} has invalid confidence "${syndrome.confidence}"`,
+      ).toContain(syndrome.confidence);
+    }
+  });
+
+  test("syndrome domainsCovered is non-empty", () => {
+    for (const syndrome of syndromes) {
+      expect(
+        syndrome.domainsCovered.length,
+        `Syndrome ${syndrome.id} has empty domainsCovered`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
   // ── Rail badge ↔ chart diamond consistency ──
 
   test("S2+ clinical badge in rail implies diamond-eligible in chart", () => {
