@@ -129,4 +129,78 @@ describe("deriveEndpointSummaries — structural invariants", () => {
       }
     }
   });
+
+  // ── Direction-aligned fold change (cross-sex fix) ──
+
+  test("fold change < 1.0 for ↓ endpoints with group stats", () => {
+    // Endpoints with direction="down" and controlStats/worstTreatedStats should
+    // have FC < 1.0 (treated mean < control mean). This verifies the cross-sex
+    // alignment fix — previously some ↓ endpoints showed FC > 1.0 because
+    // group stats came from a different sex than the one that set direction.
+    for (const ep of summaries) {
+      if (ep.direction !== "down" || ep.maxFoldChange == null) continue;
+      if (!ep.controlStats || !ep.worstTreatedStats) continue;
+      expect(
+        ep.maxFoldChange,
+        `${ep.endpoint_label} (↓) has FC=${ep.maxFoldChange} — should be < 1.0`,
+      ).toBeLessThan(1.0);
+    }
+  });
+
+  test("fold change > 1.0 for ↑ endpoints with group stats", () => {
+    for (const ep of summaries) {
+      if (ep.direction !== "up" || ep.maxFoldChange == null) continue;
+      if (!ep.controlStats || !ep.worstTreatedStats) continue;
+      expect(
+        ep.maxFoldChange,
+        `${ep.endpoint_label} (↑) has FC=${ep.maxFoldChange} — should be > 1.0`,
+      ).toBeGreaterThan(1.0);
+    }
+  });
+
+  // ── Per-organ group stats uniqueness ──
+
+  test("different OM organs have different control group stats", () => {
+    const omEndpoints = summaries.filter(
+      (ep) => ep.domain === "OM" && ep.controlStats != null,
+    );
+    // Group by control mean to find sharing
+    const byMean = new Map<number, string[]>();
+    for (const ep of omEndpoints) {
+      const mean = ep.controlStats!.mean;
+      const key = Math.round(mean * 10000); // group by rounded value
+      if (!byMean.has(key)) byMean.set(key, []);
+      byMean.get(key)!.push(ep.endpoint_label);
+    }
+    // No more than 1 organ should share the same control mean
+    // (different organs have genuinely different weights)
+    for (const [, labels] of byMean) {
+      expect(
+        labels.length,
+        `OM organs sharing control mean: ${labels.join(", ")}`,
+      ).toBeLessThanOrEqual(1);
+    }
+  });
+
+  // ── Cross-sex groupStats alignment ──
+
+  test("groupStats control mean aligns with direction (cross-sex coherence)", () => {
+    // For multi-sex endpoints where direction is set, the worstTreatedStats
+    // should deviate from control in the direction's expected way.
+    for (const ep of summaries) {
+      if (!ep.controlStats || !ep.worstTreatedStats || ep.direction == null) continue;
+      const dev = ep.worstTreatedStats.mean - ep.controlStats.mean;
+      if (ep.direction === "down") {
+        expect(
+          dev,
+          `${ep.endpoint_label} (↓) worst treated should be below control`,
+        ).toBeLessThan(0);
+      } else if (ep.direction === "up") {
+        expect(
+          dev,
+          `${ep.endpoint_label} (↑) worst treated should be above control`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
 });
