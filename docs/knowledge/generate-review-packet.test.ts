@@ -399,6 +399,34 @@ function generateReviewDocument(): string {
   lines.push("**Data source:** SOC-level and endpoint-level LR+ from published preclinical-to-clinical concordance studies (Bailey et al., Olson et al.).");
   lines.push("");
 
+  // B.6 Statistical methods (REM-06)
+  lines.push("## B.6: Statistical Methods (REM-06)");
+  lines.push("");
+  lines.push("All p-values and effect sizes in this document are computed by the backend analysis engine. Method documentation: `docs/knowledge/methods.md`.");
+  lines.push("");
+  lines.push("### Test Assignment by Endpoint Type");
+  lines.push("");
+  lines.push("| Domain | Endpoint type | Pairwise test | Trend test | Effect size |");
+  lines.push("|--------|--------------|---------------|------------|-------------|");
+  lines.push("| LB, BW, OM, EG, VS | Continuous | Welch's t-test (unequal variance) | Jonckheere-Terpstra (Spearman rank proxy) | Hedges' g (bias-corrected) |");
+  lines.push("| MI, MA, TF | Incidence (binary) | Fisher's exact test (2×2) | Cochran-Armitage trend | — |");
+  lines.push("| CL, DS | Incidence (event) | Fisher's exact test (2×2) | — | — |");
+  lines.push("");
+  lines.push("### Key Method Details");
+  lines.push("");
+  lines.push("- **Effect size** column (`Effect Size (g)`) uses Hedges' g with small-sample correction: g = d × (1 − 3/(4·df − 1)), where d = Cohen's d from pooled SD.");
+  lines.push("- **P-values** for continuous endpoints are Bonferroni-corrected across dose groups. Incidence p-values are NOT corrected (Fisher's exact is inherently conservative with small counts).");
+  lines.push("- **Dose-response pattern** is classified via step-wise noise-tolerant analysis: 0.5× pooled SD equivalence band for continuous endpoints (STAT-11 binomial tolerance for incidence).");
+  lines.push("- **Trend p-value** uses Spearman rank correlation as a proxy for the Jonckheere-Terpstra test (both are rank-order-based; Spearman is available in scipy).");
+  lines.push("");
+  lines.push("### Limitations");
+  lines.push("");
+  lines.push("- Williams' test (optimal for monotonic dose-response) and Steel's test (nonparametric many-to-one) are not implemented.");
+  lines.push("- Dunnett's test is computed but not used in classification logic (supplementary evidence only).");
+  lines.push("- MI severity grades (1–5) have no formal ordinal test applied in the active pipeline.");
+  lines.push("- No multiplicity correction within domains for incidence tests.");
+  lines.push("");
+
   // B review questions
   lines.push("**► Review questions for interpretation framework:**");
   lines.push("");
@@ -518,6 +546,8 @@ function generateReviewDocument(): string {
 
     // Term-by-term evidence table
     lines.push("### Term-by-Term Match Evidence");
+    lines.push("");
+    lines.push("> Column key: **g** = Hedges' g (Welch's t pairwise); **p** = Bonferroni-adjusted (continuous) or Fisher's exact (incidence); **FC** = treated/control ratio. See §B.6.");
     lines.push("");
     lines.push("| Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |");
     lines.push("|------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|");
