@@ -433,12 +433,14 @@ describe("syndrome interpretation layer", () => {
     expect(result.narrative.length).toBeGreaterThan(50);
   });
 
-  test("syndromes without discriminators get uncertain certainty", () => {
-    // XS07 (Immunotoxicity) has no discriminators defined
+  test("syndromes without discriminators get capped certainty", () => {
+    // XS07 (Immunotoxicity) has no discriminators defined.
+    // REM-15: Data sufficiency gate caps certainty to pattern_only when MI domain is absent.
     const xs07 = byId.get("XS07");
     if (xs07) {
       const result = interp(xs07);
-      expect(result.certainty).toBe(xs07.requiredMet ? "mechanism_uncertain" : "pattern_only");
+      // MI not in fixture → data sufficiency cap to pattern_only regardless of requiredMet
+      expect(result.certainty).toBe("pattern_only");
     }
   });
 
