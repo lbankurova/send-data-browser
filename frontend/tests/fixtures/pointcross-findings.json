@@ -12381,60 +12381,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 1.9161,
+        "sd": 0.1001,
+        "median": 1.898,
+        "mean_relative": 0.538
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 1.8459,
+        "sd": 0.1019,
+        "median": 1.874,
+        "mean_relative": 0.5106
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 2.7463,
+        "sd": 0.6787,
+        "median": 2.7987,
+        "mean_relative": 0.7697
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 2.7682,
+        "sd": 0.5606,
+        "median": 2.8419,
+        "mean_relative": 0.9489
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.13744954498094292,
+        "statistic": -1.5546153775455769,
+        "cohens_d": -0.6659,
+        "p_value_adj": 0.412349
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.0037407943894712872,
+        "statistic": 3.8270283355091883,
+        "cohens_d": 1.6392,
+        "p_value_adj": 0.011222
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.000904308673419124,
+        "statistic": 4.731641516185316,
+        "cohens_d": 2.0266,
+        "p_value_adj": 0.002713
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -12459,60 +12459,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 1.9161,
+        "sd": 0.1001,
+        "median": 1.898,
+        "mean_relative": 0.538
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 1.8459,
+        "sd": 0.1019,
+        "median": 1.874,
+        "mean_relative": 0.5106
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 2.7463,
+        "sd": 0.6787,
+        "median": 2.7987,
+        "mean_relative": 0.7697
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 2.7682,
+        "sd": 0.5606,
+        "median": 2.8419,
+        "mean_relative": 0.9489
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.13744954498094292,
+        "statistic": -1.5546153775455769,
+        "cohens_d": -0.6659,
+        "p_value_adj": 0.412349
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.0037407943894712872,
+        "statistic": 3.8270283355091883,
+        "cohens_d": 1.6392,
+        "p_value_adj": 0.011222
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.000904308673419124,
+        "statistic": 4.731641516185316,
+        "cohens_d": 2.0266,
+        "p_value_adj": 0.002713
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -12537,60 +12537,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 1.9161,
+        "sd": 0.1001,
+        "median": 1.898,
+        "mean_relative": 0.538
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 1.8459,
+        "sd": 0.1019,
+        "median": 1.874,
+        "mean_relative": 0.5106
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 2.7463,
+        "sd": 0.6787,
+        "median": 2.7987,
+        "mean_relative": 0.7697
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 2.7682,
+        "sd": 0.5606,
+        "median": 2.8419,
+        "mean_relative": 0.9489
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.13744954498094292,
+        "statistic": -1.5546153775455769,
+        "cohens_d": -0.6659,
+        "p_value_adj": 0.412349
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.0037407943894712872,
+        "statistic": 3.8270283355091883,
+        "cohens_d": 1.6392,
+        "p_value_adj": 0.011222
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.000904308673419124,
+        "statistic": 4.731641516185316,
+        "cohens_d": 2.0266,
+        "p_value_adj": 0.002713
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -12615,60 +12615,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 2.161,
+        "sd": 0.09,
+        "median": 2.1265,
+        "mean_relative": 0.4166
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 2.0874,
+        "sd": 0.1186,
+        "median": 2.1374,
+        "mean_relative": 0.3839
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 2.1175,
+        "sd": 0.0584,
+        "median": 2.1315,
+        "mean_relative": 0.4197
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 1.9833,
+        "sd": 0.1444,
+        "median": 2.0369,
+        "mean_relative": 0.4728
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.14401553801556885,
+        "statistic": -1.5335218404429891,
+        "cohens_d": -0.6631,
+        "p_value_adj": 0.432047
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
-        "p_value_adj": 1.0
+        "p_value": 0.23743669934090134,
+        "statistic": -1.2363376553406418,
+        "cohens_d": -0.5551,
+        "p_value_adj": 0.71231
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.0076708925099124164,
+        "statistic": -3.1333546995389443,
+        "cohens_d": -1.4067,
+        "p_value_adj": 0.023013
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -12693,60 +12693,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 2.161,
+        "sd": 0.09,
+        "median": 2.1265,
+        "mean_relative": 0.4166
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 2.0874,
+        "sd": 0.1186,
+        "median": 2.1374,
+        "mean_relative": 0.3839
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 2.1175,
+        "sd": 0.0584,
+        "median": 2.1315,
+        "mean_relative": 0.4197
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 1.9833,
+        "sd": 0.1444,
+        "median": 2.0369,
+        "mean_relative": 0.4728
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.14401553801556885,
+        "statistic": -1.5335218404429891,
+        "cohens_d": -0.6631,
+        "p_value_adj": 0.432047
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
-        "p_value_adj": 1.0
+        "p_value": 0.23743669934090134,
+        "statistic": -1.2363376553406418,
+        "cohens_d": -0.5551,
+        "p_value_adj": 0.71231
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.0076708925099124164,
+        "statistic": -3.1333546995389443,
+        "cohens_d": -1.4067,
+        "p_value_adj": 0.023013
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -12771,60 +12771,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 2.161,
+        "sd": 0.09,
+        "median": 2.1265,
+        "mean_relative": 0.4166
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 2.0874,
+        "sd": 0.1186,
+        "median": 2.1374,
+        "mean_relative": 0.3839
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 2.1175,
+        "sd": 0.0584,
+        "median": 2.1315,
+        "mean_relative": 0.4197
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 1.9833,
+        "sd": 0.1444,
+        "median": 2.0369,
+        "mean_relative": 0.4728
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.14401553801556885,
+        "statistic": -1.5335218404429891,
+        "cohens_d": -0.6631,
+        "p_value_adj": 0.432047
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
-        "p_value_adj": 1.0
+        "p_value": 0.23743669934090134,
+        "statistic": -1.2363376553406418,
+        "cohens_d": -0.5551,
+        "p_value_adj": 0.71231
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.0076708925099124164,
+        "statistic": -3.1333546995389443,
+        "cohens_d": -1.4067,
+        "p_value_adj": 0.023013
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -12849,60 +12849,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.0858,
+        "sd": 0.0158,
+        "median": 0.0796,
+        "mean_relative": 0.024
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.0858,
+        "sd": 0.0148,
+        "median": 0.0859,
+        "mean_relative": 0.0236
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.1214,
+        "sd": 0.0329,
+        "median": 0.1284,
+        "mean_relative": 0.0343
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.122,
+        "sd": 0.0244,
+        "median": 0.127,
+        "mean_relative": 0.0422
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.9954015009512986,
+        "statistic": -0.005844312328723547,
+        "cohens_d": -0.0025,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.008730902564043137,
+        "statistic": 3.084778910314132,
+        "cohens_d": 1.3213,
+        "p_value_adj": 0.026193
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.0012743133711859344,
+        "statistic": 3.9309112554328784,
+        "cohens_d": 1.6837,
+        "p_value_adj": 0.003823
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -12927,60 +12927,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.0858,
+        "sd": 0.0158,
+        "median": 0.0796,
+        "mean_relative": 0.024
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.0858,
+        "sd": 0.0148,
+        "median": 0.0859,
+        "mean_relative": 0.0236
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.1214,
+        "sd": 0.0329,
+        "median": 0.1284,
+        "mean_relative": 0.0343
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.122,
+        "sd": 0.0244,
+        "median": 0.127,
+        "mean_relative": 0.0422
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.9954015009512986,
+        "statistic": -0.005844312328723547,
+        "cohens_d": -0.0025,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.008730902564043137,
+        "statistic": 3.084778910314132,
+        "cohens_d": 1.3213,
+        "p_value_adj": 0.026193
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.0012743133711859344,
+        "statistic": 3.9309112554328784,
+        "cohens_d": 1.6837,
+        "p_value_adj": 0.003823
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -13005,60 +13005,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.0858,
+        "sd": 0.0158,
+        "median": 0.0796,
+        "mean_relative": 0.024
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.0858,
+        "sd": 0.0148,
+        "median": 0.0859,
+        "mean_relative": 0.0236
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.1214,
+        "sd": 0.0329,
+        "median": 0.1284,
+        "mean_relative": 0.0343
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.122,
+        "sd": 0.0244,
+        "median": 0.127,
+        "mean_relative": 0.0422
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.9954015009512986,
+        "statistic": -0.005844312328723547,
+        "cohens_d": -0.0025,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.008730902564043137,
+        "statistic": 3.084778910314132,
+        "cohens_d": 1.3213,
+        "p_value_adj": 0.026193
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.0012743133711859344,
+        "statistic": 3.9309112554328784,
+        "cohens_d": 1.6837,
+        "p_value_adj": 0.003823
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -13083,60 +13083,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.0163,
+        "sd": 0.0021,
+        "median": 0.0159,
+        "mean_relative": 0.0046
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.0135,
+        "sd": 0.0026,
+        "median": 0.0124,
+        "mean_relative": 0.0037
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.0226,
+        "sd": 0.0073,
+        "median": 0.0183,
+        "mean_relative": 0.0064
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.0223,
+        "sd": 0.0058,
+        "median": 0.0219,
+        "mean_relative": 0.0077
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.014373020078972829,
+        "statistic": -2.7191483419229696,
+        "cohens_d": -1.1647,
+        "p_value_adj": 0.043119
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.02612964110243327,
+        "statistic": 2.5847323025236877,
+        "cohens_d": 1.1071,
+        "p_value_adj": 0.078389
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.010867736409083084,
+        "statistic": 3.035614630441106,
+        "cohens_d": 1.3002,
+        "p_value_adj": 0.032603
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -13161,60 +13161,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.0163,
+        "sd": 0.0021,
+        "median": 0.0159,
+        "mean_relative": 0.0046
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.0135,
+        "sd": 0.0026,
+        "median": 0.0124,
+        "mean_relative": 0.0037
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.0226,
+        "sd": 0.0073,
+        "median": 0.0183,
+        "mean_relative": 0.0064
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.0223,
+        "sd": 0.0058,
+        "median": 0.0219,
+        "mean_relative": 0.0077
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.014373020078972829,
+        "statistic": -2.7191483419229696,
+        "cohens_d": -1.1647,
+        "p_value_adj": 0.043119
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.02612964110243327,
+        "statistic": 2.5847323025236877,
+        "cohens_d": 1.1071,
+        "p_value_adj": 0.078389
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.010867736409083084,
+        "statistic": 3.035614630441106,
+        "cohens_d": 1.3002,
+        "p_value_adj": 0.032603
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -13239,60 +13239,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.0163,
+        "sd": 0.0021,
+        "median": 0.0159,
+        "mean_relative": 0.0046
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.0135,
+        "sd": 0.0026,
+        "median": 0.0124,
+        "mean_relative": 0.0037
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.0226,
+        "sd": 0.0073,
+        "median": 0.0183,
+        "mean_relative": 0.0064
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.0223,
+        "sd": 0.0058,
+        "median": 0.0219,
+        "mean_relative": 0.0077
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.014373020078972829,
+        "statistic": -2.7191483419229696,
+        "cohens_d": -1.1647,
+        "p_value_adj": 0.043119
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.02612964110243327,
+        "statistic": 2.5847323025236877,
+        "cohens_d": 1.1071,
+        "p_value_adj": 0.078389
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.010867736409083084,
+        "statistic": 3.035614630441106,
+        "cohens_d": 1.3002,
+        "p_value_adj": 0.032603
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -13317,57 +13317,57 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 0.0147,
+        "sd": 0.0029,
+        "median": 0.0151,
+        "mean_relative": 0.0028
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 0.014,
+        "sd": 0.0015,
+        "median": 0.0139,
+        "mean_relative": 0.0026
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 0.0155,
+        "sd": 0.002,
+        "median": 0.0155,
+        "mean_relative": 0.0031
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 0.0182,
+        "sd": 0.0029,
+        "median": 0.0179,
+        "mean_relative": 0.0044
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
+        "p_value": 0.555088110205938,
+        "statistic": -0.6074386666831104,
+        "cohens_d": -0.2752,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
+        "p_value": 0.5141157241725371,
+        "statistic": 0.6690025913694692,
+        "cohens_d": 0.299,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.017654864547475557,
+        "statistic": 2.644821022116215,
+        "cohens_d": 1.1874,
+        "p_value_adj": 0.052965
       }
     ],
     "scheduled_direction": "up",
@@ -13395,57 +13395,57 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 0.0147,
+        "sd": 0.0029,
+        "median": 0.0151,
+        "mean_relative": 0.0028
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 0.014,
+        "sd": 0.0015,
+        "median": 0.0139,
+        "mean_relative": 0.0026
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 0.0155,
+        "sd": 0.002,
+        "median": 0.0155,
+        "mean_relative": 0.0031
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 0.0182,
+        "sd": 0.0029,
+        "median": 0.0179,
+        "mean_relative": 0.0044
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
+        "p_value": 0.555088110205938,
+        "statistic": -0.6074386666831104,
+        "cohens_d": -0.2752,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
+        "p_value": 0.5141157241725371,
+        "statistic": 0.6690025913694692,
+        "cohens_d": 0.299,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.017654864547475557,
+        "statistic": 2.644821022116215,
+        "cohens_d": 1.1874,
+        "p_value_adj": 0.052965
       }
     ],
     "scheduled_direction": "up",
@@ -13473,57 +13473,57 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 0.0147,
+        "sd": 0.0029,
+        "median": 0.0151,
+        "mean_relative": 0.0028
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 0.014,
+        "sd": 0.0015,
+        "median": 0.0139,
+        "mean_relative": 0.0026
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 0.0155,
+        "sd": 0.002,
+        "median": 0.0155,
+        "mean_relative": 0.0031
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 0.0182,
+        "sd": 0.0029,
+        "median": 0.0179,
+        "mean_relative": 0.0044
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
+        "p_value": 0.555088110205938,
+        "statistic": -0.6074386666831104,
+        "cohens_d": -0.2752,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
+        "p_value": 0.5141157241725371,
+        "statistic": 0.6690025913694692,
+        "cohens_d": 0.299,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.017654864547475557,
+        "statistic": 2.644821022116215,
+        "cohens_d": 1.1874,
+        "p_value_adj": 0.052965
       }
     ],
     "scheduled_direction": "up",
@@ -13551,60 +13551,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.0206,
+        "sd": 0.0029,
+        "median": 0.0212,
+        "mean_relative": 0.0058
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.0202,
+        "sd": 0.0053,
+        "median": 0.0219,
+        "mean_relative": 0.0056
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.0325,
+        "sd": 0.0069,
+        "median": 0.032,
+        "mean_relative": 0.0091
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.0298,
+        "sd": 0.008,
+        "median": 0.0279,
+        "mean_relative": 0.0102
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.8246800106135169,
+        "statistic": -0.225776833760196,
+        "cohens_d": -0.0967,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.00029729023584573706,
+        "statistic": 5.027096909646084,
+        "cohens_d": 2.1532,
+        "p_value_adj": 0.000892
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.00552616720255963,
+        "statistic": 3.4208579244683444,
+        "cohens_d": 1.4652,
+        "p_value_adj": 0.016579
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -13629,60 +13629,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.0206,
+        "sd": 0.0029,
+        "median": 0.0212,
+        "mean_relative": 0.0058
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.0202,
+        "sd": 0.0053,
+        "median": 0.0219,
+        "mean_relative": 0.0056
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.0325,
+        "sd": 0.0069,
+        "median": 0.032,
+        "mean_relative": 0.0091
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.0298,
+        "sd": 0.008,
+        "median": 0.0279,
+        "mean_relative": 0.0102
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.8246800106135169,
+        "statistic": -0.225776833760196,
+        "cohens_d": -0.0967,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.00029729023584573706,
+        "statistic": 5.027096909646084,
+        "cohens_d": 2.1532,
+        "p_value_adj": 0.000892
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.00552616720255963,
+        "statistic": 3.4208579244683444,
+        "cohens_d": 1.4652,
+        "p_value_adj": 0.016579
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -13707,60 +13707,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.0206,
+        "sd": 0.0029,
+        "median": 0.0212,
+        "mean_relative": 0.0058
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.0202,
+        "sd": 0.0053,
+        "median": 0.0219,
+        "mean_relative": 0.0056
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.0325,
+        "sd": 0.0069,
+        "median": 0.032,
+        "mean_relative": 0.0091
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.0298,
+        "sd": 0.008,
+        "median": 0.0279,
+        "mean_relative": 0.0102
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.8246800106135169,
+        "statistic": -0.225776833760196,
+        "cohens_d": -0.0967,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.00029729023584573706,
+        "statistic": 5.027096909646084,
+        "cohens_d": 2.1532,
+        "p_value_adj": 0.000892
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.00552616720255963,
+        "statistic": 3.4208579244683444,
+        "cohens_d": 1.4652,
+        "p_value_adj": 0.016579
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -13785,60 +13785,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 0.0294,
+        "sd": 0.0106,
+        "median": 0.0269,
+        "mean_relative": 0.0056
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 0.0245,
+        "sd": 0.0034,
+        "median": 0.0244,
+        "mean_relative": 0.0045
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 0.0238,
+        "sd": 0.0028,
+        "median": 0.0229,
+        "mean_relative": 0.0047
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 0.0229,
+        "sd": 0.009,
+        "median": 0.0193,
+        "mean_relative": 0.0054
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.21327640255861746,
+        "statistic": -1.3347967161999856,
+        "cohens_d": -0.6133,
+        "p_value_adj": 0.639829
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
-        "p_value_adj": 1.0
+        "p_value": 0.15743587534549794,
+        "statistic": -1.541648216501527,
+        "cohens_d": -0.7102,
+        "p_value_adj": 0.472308
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.17807485264693385,
+        "statistic": -1.4103395318068823,
+        "cohens_d": -0.6332,
+        "p_value_adj": 0.534225
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -13863,60 +13863,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 0.0294,
+        "sd": 0.0106,
+        "median": 0.0269,
+        "mean_relative": 0.0056
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 0.0245,
+        "sd": 0.0034,
+        "median": 0.0244,
+        "mean_relative": 0.0045
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 0.0238,
+        "sd": 0.0028,
+        "median": 0.0229,
+        "mean_relative": 0.0047
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 0.0229,
+        "sd": 0.009,
+        "median": 0.0193,
+        "mean_relative": 0.0054
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.21327640255861746,
+        "statistic": -1.3347967161999856,
+        "cohens_d": -0.6133,
+        "p_value_adj": 0.639829
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
-        "p_value_adj": 1.0
+        "p_value": 0.15743587534549794,
+        "statistic": -1.541648216501527,
+        "cohens_d": -0.7102,
+        "p_value_adj": 0.472308
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.17807485264693385,
+        "statistic": -1.4103395318068823,
+        "cohens_d": -0.6332,
+        "p_value_adj": 0.534225
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -13941,60 +13941,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 0.0294,
+        "sd": 0.0106,
+        "median": 0.0269,
+        "mean_relative": 0.0056
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 0.0245,
+        "sd": 0.0034,
+        "median": 0.0244,
+        "mean_relative": 0.0045
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 0.0238,
+        "sd": 0.0028,
+        "median": 0.0229,
+        "mean_relative": 0.0047
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 0.0229,
+        "sd": 0.009,
+        "median": 0.0193,
+        "mean_relative": 0.0054
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.21327640255861746,
+        "statistic": -1.3347967161999856,
+        "cohens_d": -0.6133,
+        "p_value_adj": 0.639829
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
-        "p_value_adj": 1.0
+        "p_value": 0.15743587534549794,
+        "statistic": -1.541648216501527,
+        "cohens_d": -0.7102,
+        "p_value_adj": 0.472308
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.17807485264693385,
+        "statistic": -1.4103395318068823,
+        "cohens_d": -0.6332,
+        "p_value_adj": 0.534225
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -14019,60 +14019,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.8852,
+        "sd": 0.089,
+        "median": 0.8502,
+        "mean_relative": 0.2488
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.7714,
+        "sd": 0.1082,
+        "median": 0.7449,
+        "mean_relative": 0.2133
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 1.3206,
+        "sd": 0.4495,
+        "median": 1.3218,
+        "mean_relative": 0.3676
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 1.1955,
+        "sd": 0.2827,
+        "median": 1.1097,
+        "mean_relative": 0.4107
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.019748149551596393,
+        "statistic": -2.5677512263868576,
+        "cohens_d": -1.0998,
+        "p_value_adj": 0.059244
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.013665827943599117,
+        "statistic": 3.0049008065156753,
+        "cohens_d": 1.2871,
+        "p_value_adj": 0.040997
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.007144479396831705,
+        "statistic": 3.3105392190397933,
+        "cohens_d": 1.418,
+        "p_value_adj": 0.021433
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -14097,60 +14097,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.8852,
+        "sd": 0.089,
+        "median": 0.8502,
+        "mean_relative": 0.2488
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.7714,
+        "sd": 0.1082,
+        "median": 0.7449,
+        "mean_relative": 0.2133
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 1.3206,
+        "sd": 0.4495,
+        "median": 1.3218,
+        "mean_relative": 0.3676
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 1.1955,
+        "sd": 0.2827,
+        "median": 1.1097,
+        "mean_relative": 0.4107
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.019748149551596393,
+        "statistic": -2.5677512263868576,
+        "cohens_d": -1.0998,
+        "p_value_adj": 0.059244
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.013665827943599117,
+        "statistic": 3.0049008065156753,
+        "cohens_d": 1.2871,
+        "p_value_adj": 0.040997
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.007144479396831705,
+        "statistic": 3.3105392190397933,
+        "cohens_d": 1.418,
+        "p_value_adj": 0.021433
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -14175,60 +14175,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.8852,
+        "sd": 0.089,
+        "median": 0.8502,
+        "mean_relative": 0.2488
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.7714,
+        "sd": 0.1082,
+        "median": 0.7449,
+        "mean_relative": 0.2133
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 1.3206,
+        "sd": 0.4495,
+        "median": 1.3218,
+        "mean_relative": 0.3676
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 1.1955,
+        "sd": 0.2827,
+        "median": 1.1097,
+        "mean_relative": 0.4107
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.019748149551596393,
+        "statistic": -2.5677512263868576,
+        "cohens_d": -1.0998,
+        "p_value_adj": 0.059244
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.013665827943599117,
+        "statistic": 3.0049008065156753,
+        "cohens_d": 1.2871,
+        "p_value_adj": 0.040997
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.007144479396831705,
+        "statistic": 3.3105392190397933,
+        "cohens_d": 1.418,
+        "p_value_adj": 0.021433
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -14253,60 +14253,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 1.4629,
+        "sd": 0.1721,
+        "median": 1.4671,
+        "mean_relative": 0.2824
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 1.3323,
+        "sd": 0.0763,
+        "median": 1.3225,
+        "mean_relative": 0.2447
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 1.3163,
+        "sd": 0.1185,
+        "median": 1.3535,
+        "mean_relative": 0.2619
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 0.9885,
+        "sd": 0.1829,
+        "median": 0.9636,
+        "mean_relative": 0.2347
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.060356954699766485,
+        "statistic": -2.097563909701981,
+        "cohens_d": -0.9558,
+        "p_value_adj": 0.181071
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
-        "p_value_adj": 1.0
+        "p_value": 0.050445984271646184,
+        "statistic": -2.1398118307097183,
+        "cohens_d": -0.958,
+        "p_value_adj": 0.151338
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 3.547955511210308e-05,
+        "statistic": -5.667332682802359,
+        "cohens_d": -2.5444,
+        "p_value_adj": 0.000106
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -14331,60 +14331,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 1.4629,
+        "sd": 0.1721,
+        "median": 1.4671,
+        "mean_relative": 0.2824
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 1.3323,
+        "sd": 0.0763,
+        "median": 1.3225,
+        "mean_relative": 0.2447
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 1.3163,
+        "sd": 0.1185,
+        "median": 1.3535,
+        "mean_relative": 0.2619
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 0.9885,
+        "sd": 0.1829,
+        "median": 0.9636,
+        "mean_relative": 0.2347
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.060356954699766485,
+        "statistic": -2.097563909701981,
+        "cohens_d": -0.9558,
+        "p_value_adj": 0.181071
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
-        "p_value_adj": 1.0
+        "p_value": 0.050445984271646184,
+        "statistic": -2.1398118307097183,
+        "cohens_d": -0.958,
+        "p_value_adj": 0.151338
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 3.547955511210308e-05,
+        "statistic": -5.667332682802359,
+        "cohens_d": -2.5444,
+        "p_value_adj": 0.000106
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -14409,60 +14409,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 1.4629,
+        "sd": 0.1721,
+        "median": 1.4671,
+        "mean_relative": 0.2824
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 1.3323,
+        "sd": 0.0763,
+        "median": 1.3225,
+        "mean_relative": 0.2447
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 1.3163,
+        "sd": 0.1185,
+        "median": 1.3535,
+        "mean_relative": 0.2619
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 0.9885,
+        "sd": 0.1829,
+        "median": 0.9636,
+        "mean_relative": 0.2347
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.060356954699766485,
+        "statistic": -2.097563909701981,
+        "cohens_d": -0.9558,
+        "p_value_adj": 0.181071
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
-        "p_value_adj": 1.0
+        "p_value": 0.050445984271646184,
+        "statistic": -2.1398118307097183,
+        "cohens_d": -0.958,
+        "p_value_adj": 0.151338
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 3.547955511210308e-05,
+        "statistic": -5.667332682802359,
+        "cohens_d": -2.5444,
+        "p_value_adj": 0.000106
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -14487,60 +14487,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 1.8023,
+        "sd": 0.1668,
+        "median": 1.7939,
+        "mean_relative": 0.5058
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 1.7146,
+        "sd": 0.1385,
+        "median": 1.743,
+        "mean_relative": 0.4746
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 2.4722,
+        "sd": 0.6671,
+        "median": 2.3665,
+        "mean_relative": 0.6945
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 2.7562,
+        "sd": 0.4658,
+        "median": 2.9492,
+        "mean_relative": 0.9516
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.21730641802805434,
+        "statistic": -1.2800853490782138,
+        "cohens_d": -0.5483,
+        "p_value_adj": 0.651919
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.011471816984510476,
+        "statistic": 3.0806407722525257,
+        "cohens_d": 1.3195,
+        "p_value_adj": 0.034415
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 7.010974413807004e-05,
+        "statistic": 6.09668998678431,
+        "cohens_d": 2.6113,
+        "p_value_adj": 0.00021
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -14565,60 +14565,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 1.8023,
+        "sd": 0.1668,
+        "median": 1.7939,
+        "mean_relative": 0.5058
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 1.7146,
+        "sd": 0.1385,
+        "median": 1.743,
+        "mean_relative": 0.4746
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 2.4722,
+        "sd": 0.6671,
+        "median": 2.3665,
+        "mean_relative": 0.6945
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 2.7562,
+        "sd": 0.4658,
+        "median": 2.9492,
+        "mean_relative": 0.9516
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.21730641802805434,
+        "statistic": -1.2800853490782138,
+        "cohens_d": -0.5483,
+        "p_value_adj": 0.651919
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.011471816984510476,
+        "statistic": 3.0806407722525257,
+        "cohens_d": 1.3195,
+        "p_value_adj": 0.034415
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 7.010974413807004e-05,
+        "statistic": 6.09668998678431,
+        "cohens_d": 2.6113,
+        "p_value_adj": 0.00021
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -14643,60 +14643,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 1.8023,
+        "sd": 0.1668,
+        "median": 1.7939,
+        "mean_relative": 0.5058
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 1.7146,
+        "sd": 0.1385,
+        "median": 1.743,
+        "mean_relative": 0.4746
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 2.4722,
+        "sd": 0.6671,
+        "median": 2.3665,
+        "mean_relative": 0.6945
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 2.7562,
+        "sd": 0.4658,
+        "median": 2.9492,
+        "mean_relative": 0.9516
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.21730641802805434,
+        "statistic": -1.2800853490782138,
+        "cohens_d": -0.5483,
+        "p_value_adj": 0.651919
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.011471816984510476,
+        "statistic": 3.0806407722525257,
+        "cohens_d": 1.3195,
+        "p_value_adj": 0.034415
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 7.010974413807004e-05,
+        "statistic": 6.09668998678431,
+        "cohens_d": 2.6113,
+        "p_value_adj": 0.00021
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -14721,60 +14721,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 2.9246,
+        "sd": 0.5312,
+        "median": 2.8,
+        "mean_relative": 0.5666
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 2.7832,
+        "sd": 0.2695,
+        "median": 2.8445,
+        "mean_relative": 0.5111
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 2.8378,
+        "sd": 0.2547,
+        "median": 2.7682,
+        "mean_relative": 0.5627
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 1.9651,
+        "sd": 0.3842,
+        "median": 1.8311,
+        "mean_relative": 0.4663
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
+        "p_value": 0.4861061095828846,
+        "statistic": -0.7194829202904999,
+        "cohens_d": -0.3264,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
+        "p_value": 0.6638174981896964,
+        "statistic": -0.4463709367721513,
+        "cohens_d": -0.2029,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.0005620792220435451,
+        "statistic": -4.3908476469062085,
+        "cohens_d": -1.9713,
+        "p_value_adj": 0.001686
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -14799,60 +14799,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 2.9246,
+        "sd": 0.5312,
+        "median": 2.8,
+        "mean_relative": 0.5666
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 2.7832,
+        "sd": 0.2695,
+        "median": 2.8445,
+        "mean_relative": 0.5111
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 2.8378,
+        "sd": 0.2547,
+        "median": 2.7682,
+        "mean_relative": 0.5627
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 1.9651,
+        "sd": 0.3842,
+        "median": 1.8311,
+        "mean_relative": 0.4663
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
+        "p_value": 0.4861061095828846,
+        "statistic": -0.7194829202904999,
+        "cohens_d": -0.3264,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
+        "p_value": 0.6638174981896964,
+        "statistic": -0.4463709367721513,
+        "cohens_d": -0.2029,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.0005620792220435451,
+        "statistic": -4.3908476469062085,
+        "cohens_d": -1.9713,
+        "p_value_adj": 0.001686
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -14877,60 +14877,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 2.9246,
+        "sd": 0.5312,
+        "median": 2.8,
+        "mean_relative": 0.5666
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 2.7832,
+        "sd": 0.2695,
+        "median": 2.8445,
+        "mean_relative": 0.5111
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 2.8378,
+        "sd": 0.2547,
+        "median": 2.7682,
+        "mean_relative": 0.5627
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 1.9651,
+        "sd": 0.3842,
+        "median": 1.8311,
+        "mean_relative": 0.4663
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
+        "p_value": 0.4861061095828846,
+        "statistic": -0.7194829202904999,
+        "cohens_d": -0.3264,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
+        "p_value": 0.6638174981896964,
+        "statistic": -0.4463709367721513,
+        "cohens_d": -0.2029,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.0005620792220435451,
+        "statistic": -4.3908476469062085,
+        "cohens_d": -1.9713,
+        "p_value_adj": 0.001686
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -14955,60 +14955,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 6.8847,
+        "sd": 0.9639,
+        "median": 6.858,
+        "mean_relative": 1.934
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 7.2044,
+        "sd": 0.7775,
+        "median": 7.1301,
+        "mean_relative": 1.9926
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 8.0591,
+        "sd": 2.2723,
+        "median": 7.503,
+        "mean_relative": 2.2419
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 13.092,
+        "sd": 3.6003,
+        "median": 13.5328,
+        "mean_relative": 4.4757
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.42544335020607116,
+        "statistic": 0.8163516645308997,
+        "cohens_d": 0.3497,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.15800521309267587,
+        "statistic": 1.5045708951279486,
+        "cohens_d": 0.6444,
+        "p_value_adj": 0.474016
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.0003322854374973468,
+        "statistic": 5.266653178355912,
+        "cohens_d": 2.2558,
+        "p_value_adj": 0.000997
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -15033,60 +15033,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 6.8847,
+        "sd": 0.9639,
+        "median": 6.858,
+        "mean_relative": 1.934
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 7.2044,
+        "sd": 0.7775,
+        "median": 7.1301,
+        "mean_relative": 1.9926
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 8.0591,
+        "sd": 2.2723,
+        "median": 7.503,
+        "mean_relative": 2.2419
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 13.092,
+        "sd": 3.6003,
+        "median": 13.5328,
+        "mean_relative": 4.4757
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.42544335020607116,
+        "statistic": 0.8163516645308997,
+        "cohens_d": 0.3497,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.15800521309267587,
+        "statistic": 1.5045708951279486,
+        "cohens_d": 0.6444,
+        "p_value_adj": 0.474016
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.0003322854374973468,
+        "statistic": 5.266653178355912,
+        "cohens_d": 2.2558,
+        "p_value_adj": 0.000997
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -15111,60 +15111,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 6.8847,
+        "sd": 0.9639,
+        "median": 6.858,
+        "mean_relative": 1.934
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 7.2044,
+        "sd": 0.7775,
+        "median": 7.1301,
+        "mean_relative": 1.9926
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 8.0591,
+        "sd": 2.2723,
+        "median": 7.503,
+        "mean_relative": 2.2419
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 13.092,
+        "sd": 3.6003,
+        "median": 13.5328,
+        "mean_relative": 4.4757
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.42544335020607116,
+        "statistic": 0.8163516645308997,
+        "cohens_d": 0.3497,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.15800521309267587,
+        "statistic": 1.5045708951279486,
+        "cohens_d": 0.6444,
+        "p_value_adj": 0.474016
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.0003322854374973468,
+        "statistic": 5.266653178355912,
+        "cohens_d": 2.2558,
+        "p_value_adj": 0.000997
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -15189,60 +15189,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.123,
+        "sd": 0.0263,
+        "median": 0.1232,
+        "mean_relative": 0.0344
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.1153,
+        "sd": 0.018,
+        "median": 0.1098,
+        "mean_relative": 0.0319
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.1695,
+        "sd": 0.0617,
+        "median": 0.1657,
+        "mean_relative": 0.0478
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.1665,
+        "sd": 0.0472,
+        "median": 0.1606,
+        "mean_relative": 0.0578
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.45851080555942364,
+        "statistic": -0.7597962637171415,
+        "cohens_d": -0.3254,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.048590213596713706,
+        "statistic": 2.191214576728809,
+        "cohens_d": 0.9385,
+        "p_value_adj": 0.145771
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.023224125707288677,
+        "statistic": 2.5452516498480118,
+        "cohens_d": 1.0902,
+        "p_value_adj": 0.069672
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -15267,60 +15267,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.123,
+        "sd": 0.0263,
+        "median": 0.1232,
+        "mean_relative": 0.0344
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.1153,
+        "sd": 0.018,
+        "median": 0.1098,
+        "mean_relative": 0.0319
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.1695,
+        "sd": 0.0617,
+        "median": 0.1657,
+        "mean_relative": 0.0478
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.1665,
+        "sd": 0.0472,
+        "median": 0.1606,
+        "mean_relative": 0.0578
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.45851080555942364,
+        "statistic": -0.7597962637171415,
+        "cohens_d": -0.3254,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.048590213596713706,
+        "statistic": 2.191214576728809,
+        "cohens_d": 0.9385,
+        "p_value_adj": 0.145771
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.023224125707288677,
+        "statistic": 2.5452516498480118,
+        "cohens_d": 1.0902,
+        "p_value_adj": 0.069672
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -15345,60 +15345,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.123,
+        "sd": 0.0263,
+        "median": 0.1232,
+        "mean_relative": 0.0344
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.1153,
+        "sd": 0.018,
+        "median": 0.1098,
+        "mean_relative": 0.0319
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.1695,
+        "sd": 0.0617,
+        "median": 0.1657,
+        "mean_relative": 0.0478
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.1665,
+        "sd": 0.0472,
+        "median": 0.1606,
+        "mean_relative": 0.0578
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.45851080555942364,
+        "statistic": -0.7597962637171415,
+        "cohens_d": -0.3254,
+        "p_value_adj": 1.0
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.048590213596713706,
+        "statistic": 2.191214576728809,
+        "cohens_d": 0.9385,
+        "p_value_adj": 0.145771
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.023224125707288677,
+        "statistic": 2.5452516498480118,
+        "cohens_d": 1.0902,
+        "p_value_adj": 0.069672
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -15423,60 +15423,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.5456,
+        "sd": 0.039,
+        "median": 0.5427,
+        "mean_relative": 0.1532
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.4587,
+        "sd": 0.0749,
+        "median": 0.457,
+        "mean_relative": 0.127
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.7782,
+        "sd": 0.2182,
+        "median": 0.7493,
+        "mean_relative": 0.2192
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.6927,
+        "sd": 0.1968,
+        "median": 0.7416,
+        "mean_relative": 0.237
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.005989149643040455,
+        "statistic": -3.2541665206837105,
+        "cohens_d": -1.3938,
+        "p_value_adj": 0.017967
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.008228076848391398,
+        "statistic": 3.319091509904033,
+        "cohens_d": 1.4216,
+        "p_value_adj": 0.024684
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.043569494520015295,
+        "statistic": 2.3191995445913247,
+        "cohens_d": 0.9934,
+        "p_value_adj": 0.130708
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -15501,60 +15501,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.5456,
+        "sd": 0.039,
+        "median": 0.5427,
+        "mean_relative": 0.1532
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.4587,
+        "sd": 0.0749,
+        "median": 0.457,
+        "mean_relative": 0.127
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.7782,
+        "sd": 0.2182,
+        "median": 0.7493,
+        "mean_relative": 0.2192
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.6927,
+        "sd": 0.1968,
+        "median": 0.7416,
+        "mean_relative": 0.237
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.005989149643040455,
+        "statistic": -3.2541665206837105,
+        "cohens_d": -1.3938,
+        "p_value_adj": 0.017967
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.008228076848391398,
+        "statistic": 3.319091509904033,
+        "cohens_d": 1.4216,
+        "p_value_adj": 0.024684
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.043569494520015295,
+        "statistic": 2.3191995445913247,
+        "cohens_d": 0.9934,
+        "p_value_adj": 0.130708
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -15579,60 +15579,60 @@
       {
         "dose_level": 0,
         "n": 10,
-        "mean": 0.4144,
-        "sd": 0.1134,
-        "median": 0.3926,
-        "mean_relative": 0.1169
+        "mean": 0.5456,
+        "sd": 0.039,
+        "median": 0.5427,
+        "mean_relative": 0.1532
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.2933,
-        "sd": 0.1034,
-        "median": 0.3068,
-        "mean_relative": 0.0808
+        "mean": 0.4587,
+        "sd": 0.0749,
+        "median": 0.457,
+        "mean_relative": 0.127
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.596,
-        "sd": 0.238,
-        "median": 0.5974,
-        "mean_relative": 0.1679
+        "mean": 0.7782,
+        "sd": 0.2182,
+        "median": 0.7493,
+        "mean_relative": 0.2192
       },
       {
         "dose_level": 3,
         "n": 10,
-        "mean": 0.4352,
-        "sd": 0.1641,
-        "median": 0.4242,
-        "mean_relative": 0.1494
+        "mean": 0.6927,
+        "sd": 0.1968,
+        "median": 0.7416,
+        "mean_relative": 0.237
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.022595422659719443,
-        "statistic": -2.495809027636367,
-        "cohens_d": -1.069,
-        "p_value_adj": 0.067786
+        "p_value": 0.005989149643040455,
+        "statistic": -3.2541665206837105,
+        "cohens_d": -1.3938,
+        "p_value_adj": 0.017967
       },
       {
         "dose_level": 2,
-        "p_value": 0.04849391839166386,
-        "statistic": 2.179021551705662,
-        "cohens_d": 0.9333,
-        "p_value_adj": 0.145482
+        "p_value": 0.008228076848391398,
+        "statistic": 3.319091509904033,
+        "cohens_d": 1.4216,
+        "p_value_adj": 0.024684
       },
       {
         "dose_level": 3,
-        "p_value": 0.7453175834966894,
-        "statistic": 0.3304904211428832,
-        "cohens_d": 0.1416,
-        "p_value_adj": 1.0
+        "p_value": 0.043569494520015295,
+        "statistic": 2.3191995445913247,
+        "cohens_d": 0.9934,
+        "p_value_adj": 0.130708
       }
     ],
-    "scheduled_direction": "down",
+    "scheduled_direction": "up",
     "n_excluded": 2
   },
   {
@@ -15657,60 +15657,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 3.4612,
+        "sd": 0.26,
+        "median": 3.5568,
+        "mean_relative": 0.6674
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 3.2377,
+        "sd": 0.2777,
+        "median": 3.2397,
+        "mean_relative": 0.5952
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 3.5342,
+        "sd": 0.2656,
+        "median": 3.5032,
+        "mean_relative": 0.7002
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 3.1333,
+        "sd": 0.0218,
+        "median": 3.1335,
+        "mean_relative": 0.7469
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.08780997241811155,
+        "statistic": -1.8114721867665307,
+        "cohens_d": -0.7921,
+        "p_value_adj": 0.26343
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
+        "p_value": 0.5537355014685927,
+        "statistic": 0.6042284281369439,
+        "cohens_d": 0.2649,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.005323664841446014,
+        "statistic": -3.770555054544945,
+        "cohens_d": -1.6928,
+        "p_value_adj": 0.015971
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -15735,60 +15735,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 3.4612,
+        "sd": 0.26,
+        "median": 3.5568,
+        "mean_relative": 0.6674
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 3.2377,
+        "sd": 0.2777,
+        "median": 3.2397,
+        "mean_relative": 0.5952
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 3.5342,
+        "sd": 0.2656,
+        "median": 3.5032,
+        "mean_relative": 0.7002
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 3.1333,
+        "sd": 0.0218,
+        "median": 3.1335,
+        "mean_relative": 0.7469
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.08780997241811155,
+        "statistic": -1.8114721867665307,
+        "cohens_d": -0.7921,
+        "p_value_adj": 0.26343
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
+        "p_value": 0.5537355014685927,
+        "statistic": 0.6042284281369439,
+        "cohens_d": 0.2649,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.005323664841446014,
+        "statistic": -3.770555054544945,
+        "cohens_d": -1.6928,
+        "p_value_adj": 0.015971
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {
@@ -15813,60 +15813,60 @@
       {
         "dose_level": 0,
         "n": 9,
-        "mean": 0.3872,
-        "sd": 0.1333,
-        "median": 0.374,
-        "mean_relative": 0.075
+        "mean": 3.4612,
+        "sd": 0.26,
+        "median": 3.5568,
+        "mean_relative": 0.6674
       },
       {
         "dose_level": 1,
         "n": 10,
-        "mean": 0.3635,
-        "sd": 0.0817,
-        "median": 0.3503,
-        "mean_relative": 0.0667
+        "mean": 3.2377,
+        "sd": 0.2777,
+        "median": 3.2397,
+        "mean_relative": 0.5952
       },
       {
         "dose_level": 2,
         "n": 10,
-        "mean": 0.3646,
-        "sd": 0.0667,
-        "median": 0.3438,
-        "mean_relative": 0.0726
+        "mean": 3.5342,
+        "sd": 0.2656,
+        "median": 3.5032,
+        "mean_relative": 0.7002
       },
       {
         "dose_level": 3,
         "n": 9,
-        "mean": 0.4992,
-        "sd": 0.1491,
-        "median": 0.4547,
-        "mean_relative": 0.1188
+        "mean": 3.1333,
+        "sd": 0.0218,
+        "median": 3.1335,
+        "mean_relative": 0.7469
       }
     ],
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.6517225101948156,
-        "statistic": -0.46199269549084926,
-        "cohens_d": -0.208,
-        "p_value_adj": 1.0
+        "p_value": 0.08780997241811155,
+        "statistic": -1.8114721867665307,
+        "cohens_d": -0.7921,
+        "p_value_adj": 0.26343
       },
       {
         "dose_level": 2,
-        "p_value": 0.6536592646169458,
-        "statistic": -0.4606317765288281,
-        "cohens_d": -0.2091,
+        "p_value": 0.5537355014685927,
+        "statistic": 0.6042284281369439,
+        "cohens_d": 0.2649,
         "p_value_adj": 1.0
       },
       {
         "dose_level": 3,
-        "p_value": 0.11275354159096297,
-        "statistic": 1.6792885533866122,
-        "cohens_d": 0.7539,
-        "p_value_adj": 0.338261
+        "p_value": 0.005323664841446014,
+        "statistic": -3.770555054544945,
+        "cohens_d": -1.6928,
+        "p_value_adj": 0.015971
       }
     ],
-    "scheduled_direction": "up",
+    "scheduled_direction": "down",
     "n_excluded": 2
   },
   {

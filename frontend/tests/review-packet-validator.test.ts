@@ -667,11 +667,11 @@ describe("Review packet scientific invariants", () => {
     expect(hasIssue(issues, "NOT_MEASURED_STATUS_MISSING")).toBe(false);
   });
 
-  // REM-01: directionality — fixes landed
-  test("REM-01: non-monotonic endpoints may have fold vs direction mismatch (data, not bug)", () => {
-    // FOLD_DIR_MISMATCH can still fire for non-monotonic patterns where the worst-case
-    // dose group goes opposite to the overall direction (e.g., thymus weight). This is valid data.
-    expect(issuesByCode(issues, "FOLD_DIR_MISMATCH").length).toBeGreaterThan(0);
+  // REM-01: directionality — fixes landed (backend per-organ stats + cross-sex alignment)
+  test("REM-01: fold change direction matches endpoint direction (fixed)", () => {
+    // Previously fired for cross-sex misalignment (direction from one sex, group stats from another)
+    // and shared OM control stats. Both root causes fixed.
+    expect(issuesByCode(issues, "FOLD_DIR_MISMATCH").length).toBe(0);
   });
 
   test("REM-01: effect size sign matches direction (fixed)", () => {

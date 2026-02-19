@@ -142,32 +142,34 @@ def compute_all_findings(
 
     # Pass 2 — scheduled-only stats for terminal + LB domains
     if excluded_set:
-        # Build a lookup: (domain, test_code, sex, day) → scheduled findings
+        # Build a lookup: key → scheduled findings
+        # Specimen-based domains (MI, MA, OM, TF) need specimen in the key
+        # because they share test_code (e.g., all OM endpoints have test_code="WEIGHT")
         scheduled_findings_map: dict[tuple, dict] = {}
 
+        def _sched_key(f: dict) -> tuple:
+            if f["domain"] in TERMINAL_DOMAINS:
+                return (f["domain"], f["test_code"], f["sex"], f.get("specimen"), f.get("day"))
+            return (f["domain"], f["test_code"], f["sex"], f.get("day"))
+
         for sched_f in compute_mi_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
+            scheduled_findings_map[_sched_key(sched_f)] = sched_f
 
         for sched_f in compute_ma_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
+            scheduled_findings_map[_sched_key(sched_f)] = sched_f
 
         for sched_f in compute_om_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
+            scheduled_findings_map[_sched_key(sched_f)] = sched_f
 
         for sched_f in compute_tf_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
+            scheduled_findings_map[_sched_key(sched_f)] = sched_f
 
         for sched_f in compute_lb_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
+            scheduled_findings_map[_sched_key(sched_f)] = sched_f
 
         # Merge scheduled stats into all_findings
         for finding in all_findings:
-            key = (finding["domain"], finding["test_code"], finding["sex"], finding.get("day"))
+            key = _sched_key(finding)
             sched = scheduled_findings_map.get(key)
             if sched:
                 finding["scheduled_group_stats"] = sched["group_stats"]
