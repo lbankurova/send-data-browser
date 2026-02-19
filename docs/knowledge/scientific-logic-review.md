@@ -226,13 +226,13 @@ The system defines 10 cross-domain syndrome patterns (XS01–XS10). Each pattern
 |------|--------|-----------|-----|
 | WBC ↓ | LB | down | WBC |
 | LYMPH ↓ | LB | down | LYMPH |
+| Thymus weight ↓ | OM | down | THYMUS_WT |
 
 **Supporting evidence:**
 
 | Term | Domain | Direction |
 |------|--------|-----------|
 | Spleen weight ↓ | OM | down |
-| Thymus weight ↓ | OM | down |
 | Spleen lymphoid depletion | MI | any |
 
 **► Review questions:**
@@ -522,10 +522,10 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Component | Result | Detail |
 |-----------|--------|--------|
-| Certainty | `mechanism_uncertain` | Required findings met. But ALP argues against this specific mechanism. Consider differential (XS02 (Cholestatic injury)). |
+| Certainty | `mechanism_uncertain` | Required findings met. But ALP argues against this specific mechanism. Consider differential (XS02 (Cholestatic injury)). Adaptive pattern: liver weight increase + hypertrophy without necrosis/degeneration suggests enzyme induction (non-adverse). ALT/AST fold change < 5×. |
 | Treatment-relatedness | `treatment_related` | dose-response: strong, concordance: concordant, significance: significant |
-| Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S3_Adverse` | — |
+| Adversity | `equivocal` | adaptive=true, reversible=unknown, magnitude=severe, precursor=false |
+| Severity | `S2_Concern` | — |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `low` | SOC: hepatobiliary disorders, LR+: 3.5 |
 
@@ -806,10 +806,10 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ## XS07: Immunotoxicity
 
-**Confidence:** MODERATE  
+**Confidence:** LOW  
 **Domains covered:** LB, OM  
 **Sexes:** M  
-**Required logic met:** Yes (1/2 required terms, logic: WBC or LYMPH)
+**Required logic met:** Yes (2/3 required terms, logic: WBC or LYMPH or THYMUS_WT)
 
 ### Term-by-Term Match Evidence
 
@@ -817,8 +817,8 @@ This section shows the system's actual output for each syndrome detected in the 
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
 | **R** | WBC ↓ | ✓ matched | Leukocytes | LB | ↓ | -1.98 | 0.003 | 0.59× | threshold_decrease |
 | **R** | LYMPH ↓ | ⚠ opposite | Lymphocytes | LB | ↑ | +1.35 | 0.027 | 1.71× | threshold_increase |
+| **R** | Thymus weight ↓ | ✓ matched | THYMUS — THYMUS (WEIGHT) | OM | ↓ | -1.07 | 0.068 | 1.44× | non_monotonic |
 | S | Spleen weight ↓ | ⚠ opposite | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.42 | 0.018 | 1.43× | threshold_increase |
-| S | Thymus weight ↓ | ✓ matched | THYMUS — THYMUS (WEIGHT) | OM | ↓ | -1.07 | 0.068 | 1.44× | non_monotonic |
 | S | Spleen lymphoid depletion | — not measured | — | MI | — | n/a | n/a | n/a | — |
 
 > ⚠ **2 opposite-direction match(es)** — endpoints matching term identity but in the wrong direction.

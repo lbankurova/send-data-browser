@@ -50,6 +50,7 @@ const interpretations: { syndrome: CrossDomainSyndrome; interp: SyndromeInterpre
     syndrome,
     interp: interpretSyndrome(
       syndrome, allEndpoints, [], [], [], [], [], noFoodData, [], genericContext,
+      undefined, syndromes.map((s) => s.id),
     ),
   }));
 

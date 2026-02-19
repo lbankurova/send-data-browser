@@ -322,6 +322,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       clinicalObservations,
       studyContext,
       mortalityRaw?.mortality_noael_cap,
+      analytics.syndromes.map((s) => s.id),
     );
   }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings, foodConsumptionSummary, clinicalObservations, recoveryData]);
 

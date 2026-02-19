@@ -269,6 +269,8 @@ describe("Pipeline Diagnostic Trace", () => {
         noFoodData,
         [], // clinicalObservations
         defaultContext,
+        undefined, // mortalityNoaelCap
+        syndromes.map((s) => s.id), // REM-10: pass all detected syndrome IDs
       );
 
       // Format and log

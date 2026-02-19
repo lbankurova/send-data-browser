@@ -41,7 +41,7 @@
  */
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
-import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
+import type { CrossDomainSyndrome, EndpointMatch } from "@/lib/cross-domain-syndromes";
 import { getSyndromeDefinition } from "@/lib/cross-domain-syndromes";
 import type { LesionSeverityRow } from "@/types/analysis-views";
 import type { StudyContext } from "@/types/study-context";
@@ -281,6 +281,8 @@ export interface TreatmentRelatednessScore {
 
 export interface AdversityAssessment {
   adaptive: boolean;
+  /** REM-10: true when all syndrome evidence overlaps with stress endpoints (XS08) */
+  stressConfound: boolean;
   reversible: boolean | null;
   magnitudeLevel: "minimal" | "mild" | "moderate" | "marked" | "severe";
   crossDomainSupport: boolean;
@@ -1242,6 +1244,83 @@ export function assessCertainty(
   }
 
   return { certainty, evidence, rationale };
+}
+
+// ─── REM-11: Species-specific preferred biomarkers ───────────
+
+/**
+ * Species-specific preferred markers — superior alternatives to standard markers
+ * that improve certainty when present but carry no penalty when absent.
+ * Per O'Brien 2002 (GLDH/SDH for rat), FDA/EMA guidance (KIM-1 for rat nephrotoxicity).
+ */
+const SPECIES_PREFERRED_MARKERS: Record<string, Record<string, {
+  markers: string[];
+  rationale: string;
+}>> = {
+  rat: {
+    XS01: {
+      markers: ["GLDH", "SDH"],
+      rationale: "GLDH/SDH are liver-specific in rats (ALT has muscle/RBC sources).",
+    },
+    XS02: {
+      markers: ["BILE ACIDS", "TBA"],
+      rationale: "GGT is virtually undetectable in healthy rats; bile acids are more sensitive for cholestasis.",
+    },
+    XS03: {
+      markers: ["KIM-1", "CLUSTERIN", "URINARY ALBUMIN"],
+      rationale: "FDA/EMA-qualified urinary biomarkers for rat nephrotoxicity.",
+    },
+    XS10: {
+      markers: ["CTNI", "CTNT", "TROPONIN"],
+      rationale: "Cardiac troponins improve certainty for structural cardiac damage in rats.",
+    },
+  },
+};
+
+/**
+ * Check species-specific preferred markers and return annotations.
+ * Returns { present: matched markers, absent: not-measured markers, narrative }.
+ */
+export function checkSpeciesPreferredMarkers(
+  syndromeId: string,
+  species: string,
+  allEndpoints: EndpointSummary[],
+): {
+  present: string[];
+  absent: string[];
+  narrative: string | null;
+  certaintyBoost: boolean;
+} {
+  const speciesKey = species.toLowerCase();
+  const config = SPECIES_PREFERRED_MARKERS[speciesKey]?.[syndromeId];
+  if (!config) return { present: [], absent: [], narrative: null, certaintyBoost: false };
+
+  const epTestCodes = new Set(allEndpoints.map((ep) => ep.testCode?.toUpperCase()).filter(Boolean));
+  const epLabels = new Set(allEndpoints.map((ep) => ep.endpoint_label.toUpperCase()));
+
+  const present: string[] = [];
+  const absent: string[] = [];
+  for (const marker of config.markers) {
+    if (epTestCodes.has(marker.toUpperCase()) || epLabels.has(marker.toUpperCase())) {
+      present.push(marker);
+    } else {
+      absent.push(marker);
+    }
+  }
+
+  let narrative: string | null = null;
+  if (present.length > 0) {
+    narrative = `Species-specific markers measured: ${present.join(", ")}. ${config.rationale}`;
+  } else if (absent.length > 0) {
+    narrative = `Species-specific markers (${absent.join(", ")}) not measured. ${config.rationale} Certainty may improve if these biomarkers are available.`;
+  }
+
+  return {
+    present,
+    absent,
+    narrative,
+    certaintyBoost: present.length > 0,
+  };
 }
 
 // ─── Component 2: Histopath cross-reference ────────────────
@@ -2278,15 +2357,95 @@ function deriveMagnitudeLevel(
   return "minimal";
 }
 
+// REM-10: Stress endpoint labels — endpoints that are components of the
+// non-specific stress response (Everds 2013, ICH S8). When XS08 is detected
+// and another syndrome's evidence comes entirely from these endpoints,
+// it may be secondary to stress rather than direct organ toxicity.
+const STRESS_ENDPOINT_LABELS = new Set([
+  "lymphocytes", "lymphocyte count",
+  "leukocytes", "white blood cells", "white blood cell count",
+  "body weight",
+]);
+function isStressEndpoint(ep: EndpointMatch): boolean {
+  const label = ep.endpoint_label.toLowerCase();
+  if (STRESS_ENDPOINT_LABELS.has(label)) return true;
+  // Organ weights: thymus, spleen, adrenal
+  if (ep.domain === "OM") {
+    const lbl = label.toLowerCase();
+    if (lbl.includes("thymus") || lbl.includes("spleen") || lbl.includes("adrenal")) return true;
+  }
+  if (ep.domain === "BW") return true;
+  return false;
+}
+
+// REM-16: Adaptive response patterns — organ-specific patterns where
+// findings may represent physiological adaptation rather than toxicity.
+// Liver: enzyme induction = weight↑ + hypertrophy + NO necrosis/degeneration.
+const ADAPTIVE_FOLD_THRESHOLD = 5.0; // ALT/AST ≥5× overrides adaptive classification
+
+function checkAdaptivePattern(
+  syndrome: CrossDomainSyndrome,
+  allEndpoints: EndpointSummary[],
+  histopathData: LesionSeverityRow[],
+): boolean {
+  if (syndrome.id !== "XS01") return false;
+
+  const matchedLabels = new Set(syndrome.matchedEndpoints.map((m) => m.endpoint_label));
+  const matchedEps = allEndpoints.filter((ep) => matchedLabels.has(ep.endpoint_label));
+
+  // Check for liver weight increase (from matched OM endpoints)
+  const hasLiverWeight = matchedEps.some(
+    (ep) => ep.domain === "OM" && ep.specimen?.toLowerCase().includes("liver") && ep.direction === "up",
+  );
+  if (!hasLiverWeight) return false;
+
+  // Check for hypertrophy — from matched MI endpoints OR histopath data
+  const miHypertrophy = matchedEps.some(
+    (ep) => ep.domain === "MI" && ep.finding?.toLowerCase().includes("hypertrophy"),
+  );
+  const histoHypertrophy = histopathData.some(
+    (r) => r.specimen?.toLowerCase().includes("liver") && r.finding?.toLowerCase().includes("hypertrophy"),
+  );
+  if (!miHypertrophy && !histoHypertrophy) return false;
+
+  // Check for necrosis/degeneration — if present in matched endpoints OR histopath, NOT adaptive
+  const miNecrosis = matchedEps.some((ep) => {
+    if (ep.domain !== "MI") return false;
+    const f = ep.finding?.toLowerCase() ?? "";
+    return f.includes("necrosis") || f.includes("degeneration");
+  });
+  const histoNecrosis = histopathData.some((r) => {
+    if (!r.specimen?.toLowerCase().includes("liver")) return false;
+    const f = r.finding?.toLowerCase() ?? "";
+    return f.includes("necrosis") || f.includes("degeneration");
+  });
+  if (miNecrosis || histoNecrosis) return false;
+
+  // Check ALT/AST fold change — if ≥5×, liver injury overrides adaptive
+  const liverEnzymes = matchedEps.filter(
+    (ep) => ep.domain === "LB" && ep.direction === "up" &&
+    (ep.testCode === "ALT" || ep.testCode === "AST" ||
+     ep.endpoint_label.toLowerCase().includes("aminotransferase")),
+  );
+  const maxFold = liverEnzymes.reduce<number>(
+    (max, ep) => Math.max(max, Math.abs(ep.maxFoldChange ?? 1)),
+    1,
+  );
+  if (maxFold >= ADAPTIVE_FOLD_THRESHOLD) return false;
+
+  return true; // Enzyme induction pattern: weight↑ + hypertrophy, no necrosis, ALT/AST < 5×
+}
+
 /**
  * Compute ECETOC B-factor adversity assessment.
  *
- * - B-2 (adaptive): not determinable from current data model → false
+ * - B-2 (adaptive): REM-16 enzyme induction check for XS01
  * - B-3 (reversible): from recovery assessment
  * - B-4 (magnitudeLevel): from matched endpoints' max effect size
  * - B-5 (crossDomainSupport): from domain coverage
  * - B-6 (precursorToWorse): from tumor context progression detection
  * - B-7 (secondaryToOther): from food consumption context
+ * - REM-10: stress confound check when XS08 is co-detected
  */
 export function computeAdversity(
   syndrome: CrossDomainSyndrome,
@@ -2295,6 +2454,8 @@ export function computeAdversity(
   certainty: SyndromeCertainty,
   tumorContext: TumorContext,
   foodConsumptionContext: FoodConsumptionContext,
+  histopathData: LesionSeverityRow[],
+  allDetectedSyndromeIds: string[],
 ): AdversityAssessment {
   const reversible =
     recovery.status === "recovered" ? true
@@ -2311,13 +2472,31 @@ export function computeAdversity(
   const secondaryToOther =
     foodConsumptionContext.bwFwAssessment === "secondary_to_food";
 
+  // REM-16: Check adaptive response pattern (XS01 enzyme induction)
+  const adaptive = checkAdaptivePattern(syndrome, allEndpoints, histopathData);
+
+  // REM-10: Stress confound — when XS08 (stress response) is detected and
+  // XS07/XS04 evidence comes entirely from stress-related endpoints
+  const xs08Detected = allDetectedSyndromeIds.includes("XS08");
+  let stressConfound = false;
+  if (xs08Detected && (syndrome.id === "XS07" || syndrome.id === "XS04")) {
+    const nonStressEvidence = syndrome.matchedEndpoints.filter(
+      (ep) => !isStressEndpoint(ep),
+    );
+    stressConfound = nonStressEvidence.length === 0;
+  }
+
   // Overall adversity decision tree
-  // Adverse if: mechanism confirmed + cross-domain, OR precursor to worse, OR severe magnitude
-  // Non-adverse if: recovered + minimal magnitude + no progression
-  // Equivocal otherwise
+  // Priority: precursor > adaptive > stress confound > mechanism > magnitude > recovery
   let overall: AdversityAssessment["overall"];
   if (precursorToWorse) {
     overall = "adverse";
+  } else if (adaptive) {
+    // REM-16: Adaptive pattern (enzyme induction) → equivocal, not adverse
+    overall = "equivocal";
+  } else if (stressConfound) {
+    // REM-10: Stress confound → equivocal (may be secondary to stress)
+    overall = "equivocal";
   } else if (certainty === "mechanism_confirmed" && crossDomainSupport) {
     overall = "adverse";
   } else if (magnitudeLevel === "severe" || magnitudeLevel === "marked") {
@@ -2333,7 +2512,8 @@ export function computeAdversity(
   }
 
   return {
-    adaptive: false,
+    adaptive,
+    stressConfound,
     reversible,
     magnitudeLevel,
     crossDomainSupport,
@@ -2684,6 +2864,8 @@ export function interpretSyndrome(
   clinicalObservations: ClinicalObservation[],
   studyContext: StudyContext,
   mortalityNoaelCap?: number | null,
+  /** REM-10: IDs of all detected syndromes (for stress confound cross-check) */
+  allDetectedSyndromeIds?: string[],
 ): SyndromeInterpretation {
   const discriminators = DISCRIMINATOR_REGISTRY[syndrome.id];
 
@@ -2767,7 +2949,32 @@ export function interpretSyndrome(
     certaintyResult.certainty,
     tumorContext,
     foodConsumptionContext,
+    histopathData,
+    allDetectedSyndromeIds ?? [],
   );
+
+  // REM-10: Stress confound certainty downgrade — reduce by one level
+  if (adversity.stressConfound) {
+    const CERTAINTY_ORDER: SyndromeCertainty[] = ["pattern_only", "mechanism_uncertain", "mechanism_confirmed"];
+    const idx = CERTAINTY_ORDER.indexOf(certaintyResult.certainty);
+    if (idx > 0) {
+      certaintyResult = {
+        ...certaintyResult,
+        certainty: CERTAINTY_ORDER[idx - 1],
+        rationale: certaintyResult.rationale +
+          ` Downgraded: all evidence overlaps with stress-response endpoints (XS08 co-detected). Direct ${syndrome.name.toLowerCase()} requires additional evidence (functional assay, histopathology, or dose-dissociation from stress markers).`,
+      };
+    }
+  }
+
+  // REM-16: Adaptive pattern narrative annotation
+  if (adversity.adaptive) {
+    certaintyResult = {
+      ...certaintyResult,
+      rationale: certaintyResult.rationale +
+        ` Adaptive pattern: liver weight increase + hypertrophy without necrosis/degeneration suggests enzyme induction (non-adverse). ALT/AST fold change < 5×.`,
+    };
+  }
 
   // ── Step 15b: Severity cascade ──
   const overallSeverity = deriveOverallSeverity(
@@ -2825,6 +3032,16 @@ export function interpretSyndrome(
     narrativeParts.push(note);
   }
 
+  // REM-11: Species-specific preferred marker annotations
+  const speciesMarkers = checkSpeciesPreferredMarkers(
+    syndrome.id,
+    studyContext.species,
+    allEndpoints,
+  );
+  if (speciesMarkers.narrative) {
+    narrativeParts.push(speciesMarkers.narrative);
+  }
+
   // ECETOC assessment summary
   const trLabel = treatmentRelatedness.overall === "treatment_related" ? "YES"
     : treatmentRelatedness.overall === "possibly_related" ? "POSSIBLY" : "NO";
@@ -2842,6 +3059,8 @@ export function interpretSyndrome(
   if (adversity.reversible === true) advFactors.push("reversible");
   if (adversity.reversible === false) advFactors.push("irreversible");
   if (adversity.secondaryToOther) advFactors.push("secondary to food consumption");
+  if (adversity.stressConfound) advFactors.push("potentially secondary to stress (XS08)");
+  if (adversity.adaptive) advFactors.push("adaptive pattern (enzyme induction)");
   if (adversity.crossDomainSupport) advFactors.push("cross-domain support");
 
   narrativeParts.push(
