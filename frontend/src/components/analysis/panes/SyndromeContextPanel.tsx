@@ -226,9 +226,9 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   // Member endpoints — the detected syndrome's matched endpoints enriched with EndpointSummary data
   // Deduplicate by endpoint_label (per-sex detection can produce multiple entries with the same label)
   // and collect which sexes matched for each endpoint
-  const memberEndpoints = useMemo<{ endpoint: EndpointSummary; matchedSexes: string[] }[]>(() => {
+  const memberEndpoints = useMemo<{ endpoint: EndpointSummary; matchedSexes: string[]; matchedDirection: string }[]>(() => {
     if (!detected) return [];
-    const byLabel = new Map<string, { endpoint: EndpointSummary; matchedSexes: string[] }>();
+    const byLabel = new Map<string, { endpoint: EndpointSummary; matchedSexes: string[]; matchedDirection: string }>();
     for (const m of detected.matchedEndpoints) {
       const existing = byLabel.get(m.endpoint_label);
       if (existing) {
@@ -241,6 +241,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
           byLabel.set(m.endpoint_label, {
             endpoint: epSummary,
             matchedSexes: m.sex ? [m.sex] : [],
+            matchedDirection: m.direction,
           });
         }
       }
@@ -572,11 +573,12 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       {/* Pane 4: MEMBER ENDPOINTS */}
       <CollapsiblePane title="Member endpoints" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-0.5">
-          {memberEndpoints.map(({ endpoint: ep, matchedSexes }) => (
+          {memberEndpoints.map(({ endpoint: ep, matchedSexes, matchedDirection }) => (
             <MemberEndpointRow
               key={ep.endpoint_label}
               endpoint={ep}
               matchedSexes={matchedSexes}
+              matchedDirection={matchedDirection}
               otherSyndromes={otherSyndromeMembership.get(ep.endpoint_label)}
               onClick={() => handleEndpointClick(ep.endpoint_label)}
             />
@@ -1114,11 +1116,13 @@ function DifferentialContent({
 function MemberEndpointRow({
   endpoint,
   matchedSexes,
+  matchedDirection,
   otherSyndromes,
   onClick,
 }: {
   endpoint: EndpointSummary;
   matchedSexes?: string[];
+  matchedDirection?: string;
   otherSyndromes?: string[];
   onClick: () => void;
 }) {
@@ -1153,6 +1157,20 @@ function MemberEndpointRow({
     ? matchedSexes[0]
     : null;
 
+  // Direction mismatch caveat: displayed stats contradict syndrome's expected direction
+  const directionCaveat = useMemo(() => {
+    if (!matchedDirection || matchedDirection === "any") return null;
+    const resolvedDir = resolvedStats.direction;
+    if (!resolvedDir) return null;
+    const normalizedMatch = matchedDirection.toLowerCase();
+    const normalizedResolved = resolvedDir.toLowerCase();
+    if (normalizedMatch === normalizedResolved) return null;
+    // Mismatch: display shows UP but syndrome expected DOWN (or vice versa)
+    const matchSymbol = normalizedMatch === "down" ? "\u2193" : normalizedMatch === "up" ? "\u2191" : matchedDirection;
+    const sexLabel = matchedSexes && matchedSexes.length === 1 ? ` in ${matchedSexes[0]}` : "";
+    return `(matched ${matchSymbol}${sexLabel})`;
+  }, [matchedDirection, resolvedStats.direction, matchedSexes]);
+
   return (
     <button
       className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-xs hover:bg-accent/50 transition-colors"
@@ -1166,9 +1184,15 @@ function MemberEndpointRow({
         {sexSuffix && <span className="text-[9px] text-muted-foreground"> ({sexSuffix})</span>}
       </span>
       <span className="shrink-0 text-muted-foreground">{dirSymbol}</span>
+      {directionCaveat && (
+        <span className="shrink-0 text-[9px] text-amber-600">{directionCaveat}</span>
+      )}
       {resolvedStats.maxEffectSize != null && (
-        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-          |d|={formatEffectSize(resolvedStats.maxEffectSize)}
+        <span
+          className="shrink-0 font-mono text-[10px] text-muted-foreground"
+          title="Cohen's d — standardized effect size at the most affected dose-sex group. Negative = decrease, positive = increase."
+        >
+          d={formatEffectSize(resolvedStats.maxEffectSize)}
         </span>
       )}
       {resolvedStats.minPValue != null && (
@@ -1379,6 +1403,12 @@ function MortalityContextPane({ mortality }: { mortality: MortalityContext }) {
           <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
             Dose level {mortality.mortalityNoaelCap}
           </span>
+          {mortality.mortalityNoaelCapRelevant === false && (
+            <span className="text-[9px] text-muted-foreground">(unrelated)</span>
+          )}
+          {mortality.mortalityNoaelCapRelevant === null && (
+            <span className="text-[9px] text-amber-600">(review)</span>
+          )}
         </div>
       )}
       {mortality.deathDetails.length > 0 && (
