@@ -76,6 +76,28 @@ export function getNeutralHeatColor(avgSev: number): { bg: string; text: string 
   return { bg: "transparent", text: "var(--muted-foreground)" };
 }
 
+// ─── Organ weight strip helpers ────────────────────────────
+
+function formatPCompact(p: number | null): string {
+  if (p == null) return "—";
+  if (p < 0.001) return "<.001";
+  if (p < 0.01) return p.toFixed(3).replace(/^0/, "");
+  return p.toFixed(2).replace(/^0/, "");
+}
+
+function getPatternShortLabel(pattern: string): string {
+  const map: Record<string, string> = {
+    monotonic_increase: "dose-dep \u2191",
+    monotonic_decrease: "dose-dep \u2193",
+    threshold_increase: "threshold \u2191",
+    threshold_decrease: "threshold \u2193",
+    non_monotonic: "non-monotonic",
+    inverted_u: "inverted-U",
+    flat: "flat",
+  };
+  return map[pattern] ?? pattern.replace(/_/g, " ");
+}
+
 // ─── Public types ──────────────────────────────────────────
 
 export interface HistopathSelection {
@@ -3716,6 +3738,36 @@ export function HistopathologyView() {
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: studyCtxMain } = useStudyContext(studyId);
 
+  // Organ weight summary for specimen strip (OM domain signals matching selected specimen)
+  const organWeightSummary = useMemo(() => {
+    if (!signalData || !selectedSpecimen) return null;
+    const specimenUpper = selectedSpecimen.toUpperCase();
+    const omEntries = signalData.filter(
+      (r) => r.domain === "OM" && r.organ_name.toUpperCase() === specimenUpper,
+    );
+    if (omEntries.length === 0) return null;
+
+    // Group by sex, pick peak signal per sex
+    const bySex = new Map<string, SignalSummaryRow>();
+    for (const e of omEntries) {
+      const prev = bySex.get(e.sex);
+      if (!prev || e.signal_score > prev.signal_score || (e.signal_score === prev.signal_score && (e.p_value ?? 1) < (prev.p_value ?? 1))) {
+        bySex.set(e.sex, e);
+      }
+    }
+
+    // Overall peak across sexes
+    let peak: SignalSummaryRow | null = null;
+    for (const e of bySex.values()) {
+      if (!peak || e.signal_score > peak.signal_score || (e.signal_score === peak.signal_score && (e.p_value ?? 1) < (peak.p_value ?? 1))) {
+        peak = e;
+      }
+    }
+    if (!peak || peak.signal_score === 0) return null;
+
+    return { peak, bySex };
+  }, [signalData, selectedSpecimen]);
+
   // Syndrome detection (runs once per study, cached via useMemo)
   const syndromeMatches = useMemo(() => {
     if (!lesionData) return [];
@@ -4004,6 +4056,43 @@ export function HistopathologyView() {
                 </span>
               )}
             </div>
+            {/* Organ weight strip (OM domain) */}
+            {organWeightSummary && (() => {
+              const { peak, bySex } = organWeightSummary;
+              const arrow = peak.direction === "up" ? "\u2191" : peak.direction === "down" ? "\u2193" : "";
+              const sexEntries = Array.from(bySex.entries()).sort(([a], [b]) => a.localeCompare(b));
+              const hasBothSexes = sexEntries.length > 1;
+              return (
+                <div className="mt-0.5 flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <DomainLabel domain="OM" />
+                    <span>weight {arrow}</span>
+                  </span>
+                  {hasBothSexes ? (
+                    sexEntries.map(([sex, entry]) => (
+                      <span key={sex} className="inline-flex items-center gap-1">
+                        <span className="font-medium">{sex}:</span>
+                        <span className="font-mono">p={formatPCompact(entry.p_value)}</span>
+                        {entry.effect_size != null && (
+                          <span className="font-mono">d={Math.abs(entry.effect_size).toFixed(1)}</span>
+                        )}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="inline-flex items-center gap-1">
+                      <span className="font-mono">p={formatPCompact(peak.p_value)}</span>
+                      {peak.effect_size != null && (
+                        <span className="font-mono">d={Math.abs(peak.effect_size).toFixed(1)}</span>
+                      )}
+                    </span>
+                  )}
+                  <span className="font-medium">{getPatternShortLabel(peak.dose_response_pattern)}</span>
+                  {peak.treatment_related && (
+                    <span className="rounded border border-border px-1 py-px font-medium">TR</span>
+                  )}
+                </div>
+              );
+            })()}
             {/* Syndrome line */}
             {selectedSummary.pattern.syndrome && (
               <div className="mt-0.5 truncate text-[10px] text-muted-foreground/70" title={`${selectedSummary.pattern.syndrome.syndrome.syndrome_name}: ${selectedSummary.pattern.syndrome.requiredFinding}${selectedSummary.pattern.syndrome.supportingFindings.length > 0 ? ` + ${selectedSummary.pattern.syndrome.supportingFindings.join(", ")}` : ""}`}>

@@ -42,10 +42,10 @@ git diff 4ebfbb9..HEAD --stat
 
 **0 open gaps remaining.** 3 deferred (require architectural changes or are speculative requirements).
 
-**Reference-only documents (not audited as features):**
-- `collapsible-sections-spec.md` — Superseded by adaptive-sections-spec.md
-- `design-system-as-built.md` — Code-derived design system reference
-- `design-system-redline.md` — Design system redline reference
+**Reference-only documents (not audited as features — all archived):**
+- `collapsible-sections-spec.md` — Superseded by adaptive-sections-spec.md (archived earlier)
+- `design-system-as-built.md` — Code-derived design system reference (archived 2026-02-18)
+- `design-system-redline.md` — Design system redline reference (archived 2026-02-18)
 
 ---
 
