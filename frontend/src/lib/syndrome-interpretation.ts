@@ -82,6 +82,26 @@ export type SyndromeCertainty =
   | "mechanism_uncertain"
   | "pattern_only";
 
+export type EnzymeTier = "watchlist" | "concern" | "high";
+
+export interface UpgradeEvidenceItem {
+  id: string;
+  label: string;
+  strength: "strong" | "moderate";
+  score: number;
+  met: boolean;
+  detail: string;
+}
+
+export interface UpgradeEvidenceResult {
+  items: UpgradeEvidenceItem[];
+  totalScore: number;
+  levelsLifted: number;
+  tier: EnzymeTier;
+  cappedCertainty: SyndromeCertainty;
+  finalCertainty: SyndromeCertainty;
+}
+
 export type OverallSeverity =
   | "S0_Death"
   | "carcinogenic"
@@ -388,6 +408,9 @@ export interface SyndromeInterpretation {
     narrative: string | null;
     certaintyBoost: boolean;
   };
+
+  /** v0.3.0 PATCH-04: Upgrade evidence evaluation for liver enzyme tier cap */
+  upgradeEvidence?: UpgradeEvidenceResult | null;
 
   /** Assembled narrative */
   narrative: string;
@@ -1210,6 +1233,7 @@ export function assessCertainty(
   certainty: SyndromeCertainty;
   evidence: DiscriminatingFinding[];
   rationale: string;
+  upgradeEvidence?: UpgradeEvidenceResult | null;
 } {
   const evidence: DiscriminatingFinding[] = [];
   for (const disc of discriminators.findings) {
@@ -1300,20 +1324,247 @@ export function assessCertainty(
     }
   }
 
-  ({ certainty, rationale } = applyCertaintyCaps(syndrome, certainty, rationale));
+  const capsResult = applyCertaintyCaps(syndrome, certainty, rationale, allEndpoints, histopathData);
+  certainty = capsResult.certainty;
+  rationale = capsResult.rationale;
 
-  return { certainty, evidence, rationale };
+  return { certainty, evidence, rationale, upgradeEvidence: capsResult.upgradeEvidence ?? null };
 }
 
 /**
- * Apply all certainty caps (directional gate, single-domain, data sufficiency).
+ * v0.3.0 PATCH-01: Determine the enzyme magnitude tier for XS01 liver enzyme cap.
+ * Cross-references matchedEndpoints (label/domain only) with allEndpoints (has maxFoldChange).
+ * Returns the highest tier reached, or null if no enzyme matched or all FC null.
+ *
+ * Tiers: watchlist (|FC-1|≥0.5, i.e. FC≥1.5×), concern (≥1.0, FC≥2.0×), high (≥2.0, FC≥3.0×).
+ * Per Hall 2012 (<2× = adaptive noise), EMA (2-4× "may raise concern", >3-5× "considered adverse").
+ */
+const LIVER_ENZYME_CODES = new Set([
+  "ALT", "ALAT", "AST", "ASAT", "ALP", "ALKP", "GGT",
+  "SDH", "GLDH", "GDH", "5NT", "LDH",
+]);
+const LIVER_ENZYME_LABELS = new Set([
+  "alanine aminotransferase", "aspartate aminotransferase",
+  "alkaline phosphatase", "gamma-glutamyltransferase",
+  "sorbitol dehydrogenase", "glutamate dehydrogenase",
+  "5-nucleotidase", "lactate dehydrogenase",
+]);
+
+function isLiverEnzyme(endpointLabel: string): boolean {
+  return LIVER_ENZYME_CODES.has(endpointLabel.toUpperCase().trim())
+    || LIVER_ENZYME_LABELS.has(endpointLabel.toLowerCase().trim());
+}
+
+const ENZYME_TIER_THRESHOLDS: { tier: EnzymeTier; minFcDelta: number }[] = [
+  { tier: "high", minFcDelta: 2.0 },
+  { tier: "concern", minFcDelta: 1.0 },
+  { tier: "watchlist", minFcDelta: 0.5 },
+];
+
+export function getEnzymeMagnitudeTier(
+  syndrome: CrossDomainSyndrome,
+  allEndpoints: EndpointSummary[],
+): { tier: EnzymeTier; maxFcDelta: number } | null {
+  // Identify matched liver enzyme labels
+  const matchedEnzymeLabels = new Set<string>();
+  for (const m of syndrome.matchedEndpoints) {
+    if (m.domain === "LB" && isLiverEnzyme(m.endpoint_label)) {
+      matchedEnzymeLabels.add(m.endpoint_label.toLowerCase().trim());
+    }
+  }
+  if (matchedEnzymeLabels.size === 0) return null;
+
+  // Find max |FC-1| among matched enzymes by cross-referencing allEndpoints
+  let maxFcDelta = -1;
+  for (const ep of allEndpoints) {
+    if (ep.domain !== "LB") continue;
+    const label = ep.endpoint_label.toLowerCase().trim();
+    if (!matchedEnzymeLabels.has(label)) continue;
+    if (ep.maxFoldChange == null) continue;
+    const fcDelta = Math.abs(ep.maxFoldChange - 1);
+    if (fcDelta > maxFcDelta) maxFcDelta = fcDelta;
+  }
+
+  if (maxFcDelta < 0) return null; // no FC data
+
+  // Best tier wins
+  for (const { tier, minFcDelta } of ENZYME_TIER_THRESHOLDS) {
+    if (maxFcDelta >= minFcDelta) return { tier, maxFcDelta };
+  }
+  // Below watchlist threshold — no tier
+  return null;
+}
+
+/**
+ * v0.3.0 PATCH-04: Evaluate corroborating evidence that can lift a liver enzyme tier cap.
+ * 7 evaluators (UE-01, UE-03–UE-08; UE-02 skipped — needs longitudinal data).
+ * Strong items score 1.0, moderate items score 0.5.
+ */
+export function evaluateUpgradeEvidence(
+  syndrome: CrossDomainSyndrome,
+  allEndpoints: EndpointSummary[],
+  histopathData?: LesionSeverityRow[],
+): UpgradeEvidenceItem[] {
+  const items: UpgradeEvidenceItem[] = [];
+
+  // Helper: find enzyme endpoints matched in this syndrome
+  const matchedEnzymes = syndrome.matchedEndpoints.filter(
+    (m) => m.domain === "LB" && isLiverEnzyme(m.endpoint_label),
+  );
+  const matchedEnzymeLabels = new Set(matchedEnzymes.map(m => m.endpoint_label.toLowerCase().trim()));
+
+  // Cross-reference matched enzymes with allEndpoints for full data
+  const enzymeData = allEndpoints.filter(
+    ep => ep.domain === "LB" && matchedEnzymeLabels.has(ep.endpoint_label.toLowerCase().trim()),
+  );
+
+  // ── UE-01: Dose-response pattern ──
+  // Strong pattern (linear/monotonic/threshold*) + p < 0.1 for any matched enzyme
+  const strongPatterns: Set<string> = new Set(DOSE_RESPONSE_THRESHOLDS.strongPatterns);
+  const hasDoseResponse = enzymeData.some(
+    ep => ep.pattern != null && strongPatterns.has(ep.pattern) && ep.minPValue != null && ep.minPValue < 0.1,
+  );
+  const drDetail = hasDoseResponse
+    ? enzymeData.filter(ep => ep.pattern && strongPatterns.has(ep.pattern) && ep.minPValue != null && ep.minPValue < 0.1)
+        .map(ep => `${ep.endpoint_label}: ${ep.pattern} (p=${ep.minPValue?.toFixed(4)})`)
+        .join("; ")
+    : "No matched enzyme has strong dose-response pattern with p<0.1";
+  items.push({
+    id: "UE-01", label: "Dose-response", strength: "strong", score: 1.0,
+    met: hasDoseResponse, detail: drDetail,
+  });
+
+  // ── UE-02: Time consistency — SKIP (needs longitudinal LB data not available) ──
+  items.push({
+    id: "UE-02", label: "Time consistency", strength: "strong", score: 1.0,
+    met: false, detail: "Requires longitudinal LB data not available in current pipeline",
+  });
+
+  // ── UE-03: Co-marker coherence ──
+  // ALT FC > AST FC AND ≥1 of BILI↑/SDH↑/GLDH↑ significant
+  const findEnzymeFC = (codes: string[]): number | null => {
+    for (const code of codes) {
+      const ep = allEndpoints.find(e => e.domain === "LB" && e.testCode?.toUpperCase() === code);
+      if (ep?.maxFoldChange != null) return ep.maxFoldChange;
+    }
+    return null;
+  };
+  const altFC = findEnzymeFC(["ALT", "ALAT"]);
+  const astFC = findEnzymeFC(["AST", "ASAT"]);
+  const coMarkerCodes = ["BILI", "TBILI", "SDH", "GLDH", "GDH"];
+  const hasSignificantCoMarker = allEndpoints.some(
+    ep => ep.domain === "LB" && coMarkerCodes.includes(ep.testCode?.toUpperCase() ?? "") &&
+      ep.direction === "up" && ep.minPValue != null && ep.minPValue < 0.05,
+  );
+  const altGtAst = altFC != null && astFC != null && altFC > astFC;
+  const coMarkerMet = altGtAst && hasSignificantCoMarker;
+  items.push({
+    id: "UE-03", label: "Co-marker coherence", strength: "strong", score: 1.0,
+    met: coMarkerMet,
+    detail: coMarkerMet
+      ? `ALT FC ${altFC?.toFixed(2)}× > AST FC ${astFC?.toFixed(2)}× with significant co-marker`
+      : altGtAst ? "ALT > AST but no significant BILI/SDH/GLDH"
+      : altFC == null || astFC == null ? "ALT or AST FC not available"
+      : "AST ≥ ALT (mixed/muscle source pattern)",
+  });
+
+  // ── UE-04: Anatomic pathology ──
+  // MI domain in domainsCovered OR liver lesion in histopathData
+  const hasMI = syndrome.domainsCovered.includes("MI");
+  const hasLiverHistopath = (histopathData ?? []).some(
+    r => /liver/i.test(r.specimen ?? "") && (r.affected > 0),
+  );
+  items.push({
+    id: "UE-04", label: "Anatomic pathology", strength: "strong", score: 1.0,
+    met: hasMI || hasLiverHistopath,
+    detail: hasMI ? "MI domain present in syndrome detection"
+      : hasLiverHistopath ? "Liver lesion(s) in histopathology data"
+      : "No MI domain coverage and no liver histopathology findings",
+  });
+
+  // ── UE-05: Organ weight concordance ──
+  // Liver weight in matchedEndpoints (OM domain)
+  const hasLiverWeight = syndrome.matchedEndpoints.some(
+    m => m.domain === "OM" && /liver/i.test(m.endpoint_label),
+  );
+  items.push({
+    id: "UE-05", label: "Organ weight concordance", strength: "moderate", score: 0.5,
+    met: hasLiverWeight,
+    detail: hasLiverWeight
+      ? "Liver weight change in matched endpoints"
+      : "No liver weight endpoint in syndrome match",
+  });
+
+  // ── UE-06: Functional impairment ──
+  // ≥1 of: ALB↓, PT↑/APTT↑, CHOL/TRIG/GLUC abnormal (p<0.05)
+  const funcCriteria: { codes: string[]; direction: "up" | "down" }[] = [
+    { codes: ["ALB"], direction: "down" },
+    { codes: ["PT", "APTT", "INR"], direction: "up" },
+    { codes: ["CHOL", "TRIG", "GLUC"], direction: "up" },
+    { codes: ["CHOL", "TRIG", "GLUC"], direction: "down" },
+  ];
+  const funcMatches: string[] = [];
+  for (const crit of funcCriteria) {
+    const match = allEndpoints.find(
+      ep => ep.domain === "LB" && crit.codes.includes(ep.testCode?.toUpperCase() ?? "")
+        && ep.direction === crit.direction && ep.minPValue != null && ep.minPValue < 0.05,
+    );
+    if (match) funcMatches.push(`${match.testCode} ${crit.direction === "up" ? "↑" : "↓"}`);
+  }
+  items.push({
+    id: "UE-06", label: "Functional impairment", strength: "moderate", score: 0.5,
+    met: funcMatches.length > 0,
+    detail: funcMatches.length > 0
+      ? `Functional markers: ${funcMatches.join(", ")}`
+      : "No significant ALB↓, PT/APTT↑, or CHOL/TRIG/GLUC abnormality",
+  });
+
+  // ── UE-07: GLDH liver-specific ──
+  // GLDH/GDH/SDH ↑ significant in allEndpoints
+  const liverSpecificCodes = ["GLDH", "GDH", "SDH"];
+  const liverSpecificMatch = allEndpoints.find(
+    ep => ep.domain === "LB" && liverSpecificCodes.includes(ep.testCode?.toUpperCase() ?? "")
+      && ep.direction === "up" && ep.minPValue != null && ep.minPValue < 0.05,
+  );
+  items.push({
+    id: "UE-07", label: "GLDH liver-specific", strength: "moderate", score: 0.5,
+    met: !!liverSpecificMatch,
+    detail: liverSpecificMatch
+      ? `${liverSpecificMatch.testCode} ↑ significant (p=${liverSpecificMatch.minPValue?.toFixed(4)})`
+      : "No significant GLDH/GDH/SDH elevation",
+  });
+
+  // ── UE-08: miR-122 ──
+  // MIR122 testCode ↑ AND ≥1 other UE met (co-requirement: not FDA-qualified as sole basis)
+  const mir122Match = allEndpoints.find(
+    ep => ep.domain === "LB" && (ep.testCode?.toUpperCase() ?? "").includes("MIR122")
+      && ep.direction === "up",
+  );
+  const othersMet = items.filter(i => i.id !== "UE-02" && i.id !== "UE-08" && i.met).length;
+  const mir122Met = !!mir122Match && othersMet >= 1;
+  items.push({
+    id: "UE-08", label: "miR-122", strength: "moderate", score: 0.5,
+    met: mir122Met,
+    detail: mir122Match
+      ? mir122Met ? "miR-122 ↑ with ≥1 other upgrade evidence"
+        : "miR-122 ↑ detected but no other upgrade evidence met (co-requirement)"
+      : "miR-122 not measured",
+  });
+
+  return items;
+}
+
+/**
+ * Apply all certainty caps (directional gate, single-domain, data sufficiency, liver enzyme tiers).
  * Extracted so both the discriminator and no-discriminator paths use the same logic.
  */
 function applyCertaintyCaps(
   syndrome: CrossDomainSyndrome,
   certainty: SyndromeCertainty,
   rationale: string,
-): { certainty: SyndromeCertainty; rationale: string } {
+  allEndpoints: EndpointSummary[],
+  histopathData?: LesionSeverityRow[],
+): { certainty: SyndromeCertainty; rationale: string; upgradeEvidence?: UpgradeEvidenceResult | null } {
   const CERTAINTY_ORDER: Record<SyndromeCertainty, number> = {
     pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
   };
@@ -1359,50 +1610,74 @@ function applyCertaintyCaps(
     }
   }
 
-  // v0.2.0: Liver enzyme certainty cap — single enzyme at 1.5x → max pattern_only
-  // A single liver enzyme meeting the floor cannot drive certainty above pattern_only.
-  // Upgrade paths: (a) MI hepatocellular injury, (b) ≥2 coherent liver enzymes, (c) liver weight increase.
-  // Per Ramaiah 2017: "Most CP biomarkers do not have the potential to be adverse in isolation."
+  // v0.3.0 PATCH-01 + PATCH-04: Tiered liver enzyme certainty cap with upgrade evidence.
+  // Three tiers based on max |FC-1| of matched liver enzymes:
+  //   watchlist (≥0.5, FC≥1.5×) → cap pattern_only
+  //   concern   (≥1.0, FC≥2.0×) → cap mechanism_uncertain
+  //   high      (≥2.0, FC≥3.0×) → no cap
+  // Best tier among matched enzymes wins. Per Hall 2012, EMA guidance.
+  // Upgrade evidence (PATCH-04) can lift caps when corroborating evidence present.
+  let upgradeEvidence: UpgradeEvidenceResult | null = null;
   if (syndrome.id === "XS01") {
-    const LIVER_ENZYME_CODES = new Set([
-      "ALT", "ALAT", "AST", "ASAT", "ALP", "ALKP", "GGT",
-      "SDH", "GLDH", "GDH", "5NT", "LDH",
-    ]);
-    const LIVER_ENZYME_LABELS = new Set([
-      "alanine aminotransferase", "aspartate aminotransferase",
-      "alkaline phosphatase", "gamma-glutamyltransferase",
-      "sorbitol dehydrogenase", "glutamate dehydrogenase",
-      "5-nucleotidase", "lactate dehydrogenase",
-    ]);
+    const tierResult = getEnzymeMagnitudeTier(syndrome, allEndpoints);
+    if (tierResult && tierResult.tier !== "high") {
+      const TIER_CAPS: Record<Exclude<EnzymeTier, "high">, SyndromeCertainty> = {
+        watchlist: "pattern_only",
+        concern: "mechanism_uncertain",
+      };
+      const tierCap = TIER_CAPS[tierResult.tier];
+      const preCertainty = certainty; // before enzyme cap (but after data sufficiency, etc.)
 
-    // Count distinct liver enzymes in matched endpoints
-    const matchedLbEndpoints = syndrome.matchedEndpoints.filter((m) => m.domain === "LB");
-    const matchedEnzymeLabels = new Set<string>();
-    for (const m of matchedLbEndpoints) {
-      const label = m.endpoint_label.toLowerCase().trim();
-      const code = m.endpoint_label.toUpperCase().trim();
-      if (LIVER_ENZYME_CODES.has(code) || LIVER_ENZYME_LABELS.has(label)) {
-        matchedEnzymeLabels.add(label);
+      if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER[tierCap]) {
+        certainty = tierCap;
       }
-    }
+      const cappedCertainty = certainty;
 
-    const hasMI = syndrome.domainsCovered.includes("MI");
-    const hasLiverWeight = syndrome.matchedEndpoints.some(
-      (m) => m.domain === "OM" && /liver/i.test(m.endpoint_label),
-    );
-    const hasMultipleEnzymes = matchedEnzymeLabels.size >= 2;
+      // PATCH-04: Evaluate upgrade evidence and potentially lift the cap
+      const ueItems = evaluateUpgradeEvidence(
+        syndrome, allEndpoints, histopathData,
+      );
+      const totalScore = ueItems.reduce((s, item) => s + (item.met ? item.score : 0), 0);
 
-    // Cap applies only if: single enzyme AND no upgrade paths
-    if (matchedEnzymeLabels.size === 1 && !hasMI && !hasLiverWeight && !hasMultipleEnzymes) {
-      if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER["pattern_only"]) {
-        const enzyme = [...matchedEnzymeLabels][0];
-        certainty = "pattern_only";
-        rationale += ` Capped at pattern_only: single liver enzyme (${enzyme}) cannot confirm hepatotoxicity. Upgrade requires: MI lesion, ≥2 coherent enzymes, or liver weight change.`;
+      // Lift levels: ≥1.0 → lift one, ≥2.0 → lift two
+      let levelsLifted = 0;
+      if (totalScore >= 2.0) levelsLifted = 2;
+      else if (totalScore >= 1.0) levelsLifted = 1;
+
+      // Apply lift (pattern_only → mechanism_uncertain → mechanism_confirmed)
+      const CERTAINTY_LADDER: SyndromeCertainty[] = ["pattern_only", "mechanism_uncertain", "mechanism_confirmed"];
+      let finalCertainty = cappedCertainty;
+      if (levelsLifted > 0) {
+        const currentIdx = CERTAINTY_LADDER.indexOf(cappedCertainty);
+        const liftedIdx = Math.min(currentIdx + levelsLifted, CERTAINTY_LADDER.length - 1);
+        finalCertainty = CERTAINTY_LADDER[liftedIdx];
+        // Clamp: cannot exceed preCertainty (upgrade only reverses enzyme cap, not other caps)
+        if (CERTAINTY_ORDER[finalCertainty] > CERTAINTY_ORDER[preCertainty]) {
+          finalCertainty = preCertainty;
+        }
       }
+      certainty = finalCertainty;
+
+      // Build rationale
+      const metItems = ueItems.filter(i => i.met);
+      if (levelsLifted > 0) {
+        rationale += ` Liver enzyme tier: ${tierResult.tier} (max FC ${(tierResult.maxFcDelta + 1).toFixed(1)}×). Capped at ${cappedCertainty}, lifted ${levelsLifted} level(s) to ${finalCertainty} by upgrade evidence (score ${totalScore.toFixed(1)}: ${metItems.map(i => i.id).join(", ")}).`;
+      } else if (CERTAINTY_ORDER[cappedCertainty] < CERTAINTY_ORDER[preCertainty]) {
+        rationale += ` Liver enzyme tier: ${tierResult.tier} (max FC ${(tierResult.maxFcDelta + 1).toFixed(1)}×). Capped at ${cappedCertainty}. No upgrade evidence met (score ${totalScore.toFixed(1)}).`;
+      }
+
+      upgradeEvidence = {
+        items: ueItems,
+        totalScore,
+        levelsLifted,
+        tier: tierResult.tier,
+        cappedCertainty,
+        finalCertainty: certainty,
+      };
     }
   }
 
-  return { certainty, rationale };
+  return { certainty, rationale, upgradeEvidence };
 }
 
 // ─── REM-11: Species-specific preferred biomarkers ───────────
@@ -3102,6 +3377,7 @@ export function interpretSyndrome(
     certainty: SyndromeCertainty;
     evidence: DiscriminatingFinding[];
     rationale: string;
+    upgradeEvidence?: UpgradeEvidenceResult | null;
   };
 
   if (discriminators) {
@@ -3125,8 +3401,8 @@ export function interpretSyndrome(
         ? `Required findings met. Contradicting evidence from directional gate (${gate.action}): ${gateText}.`
         : `Syndrome detected through supporting evidence only. Contradicting evidence from directional gate (${gate.action}): ${gateText}.`;
     }
-    ({ certainty: cert, rationale: rat } = applyCertaintyCaps(syndrome, cert, rat));
-    certaintyResult = { certainty: cert, evidence: [], rationale: rat };
+    const capsResult2 = applyCertaintyCaps(syndrome, cert, rat, allEndpoints, histopathData);
+    certaintyResult = { certainty: capsResult2.certainty, evidence: [], rationale: capsResult2.rationale, upgradeEvidence: capsResult2.upgradeEvidence ?? null };
   }
 
   // ── Component 2: Histopath cross-reference ──
@@ -3336,6 +3612,7 @@ export function interpretSyndrome(
     certainty: certaintyResult.certainty,
     certaintyRationale: certaintyResult.rationale,
     discriminatingEvidence: certaintyResult.evidence,
+    upgradeEvidence: certaintyResult.upgradeEvidence ?? null,
     histopathContext,
     recovery,
     clinicalObservationSupport: clSupport,
