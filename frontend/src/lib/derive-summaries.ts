@@ -72,6 +72,10 @@ export interface EndpointSummary {
   bySex?: Map<string, SexEndpointSummary>;
   /** True when this endpoint has early-death subjects excluded (terminal domains). */
   hasEarlyDeathExclusion?: boolean;
+  /** REM-05: Group statistics for the control group (dose_level 0) */
+  controlStats?: { n: number; mean: number; sd: number } | null;
+  /** REM-05: Group statistics for the worst treated group (highest |effect size|) */
+  worstTreatedStats?: { n: number; mean: number; sd: number; doseLevel: number } | null;
 }
 
 export interface OrganCoherence {
@@ -207,6 +211,8 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     maxIncidence: number | null;
     maxFoldChange: number | null;
     hasEarlyDeathExclusion: boolean;
+    /** REM-05: Group stats from scheduled sacrifice (first non-null array wins) */
+    groupStats: { dose_level: number; n: number; mean: number | null; sd: number | null; median?: number | null }[] | null;
   }>();
 
   // Per-sex aggregation: label → sex → accumulator
@@ -240,6 +246,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         maxIncidence: null,
         maxFoldChange: null,
         hasEarlyDeathExclusion: false,
+        groupStats: null,
       };
       map.set(row.endpoint_label, entry);
     }
@@ -330,6 +337,10 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
       entry.pattern = row.dose_response_pattern;
     }
+    // REM-05: Collect group stats (first non-null array wins)
+    if (!entry.groupStats && row.scheduled_group_stats && row.scheduled_group_stats.length > 0) {
+      entry.groupStats = row.scheduled_group_stats;
+    }
   }
 
   const summaries: EndpointSummary[] = [];
@@ -352,6 +363,32 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       maxFoldChange: entry.maxFoldChange,
       hasEarlyDeathExclusion: entry.hasEarlyDeathExclusion,
     };
+
+    // REM-05: Derive control and worst-treated group stats (continuous endpoints only)
+    // Worst treated selection aligns with the endpoint's direction:
+    //   ↓ endpoints → lowest mean (largest decrease from control)
+    //   ↑ endpoints → highest mean (largest increase from control)
+    //   ambiguous   → largest absolute deviation from control
+    if (entry.groupStats && entry.groupStats.length > 0) {
+      const ctrl = entry.groupStats.find(g => g.dose_level === 0 && g.mean != null);
+      if (ctrl && ctrl.mean != null) {
+        ep.controlStats = { n: ctrl.n, mean: ctrl.mean, sd: ctrl.sd ?? 0 };
+        const treated = entry.groupStats.filter(g => g.dose_level > 0 && g.mean != null);
+        if (treated.length > 0) {
+          const dir = entry.direction;
+          const worst = treated.reduce((best, g) => {
+            const gDev = (g.mean ?? 0) - ctrl.mean!;
+            const bDev = (best.mean ?? 0) - ctrl.mean!;
+            if (dir === "down") return gDev < bDev ? g : best;       // most negative deviation
+            if (dir === "up") return gDev > bDev ? g : best;         // most positive deviation
+            return Math.abs(gDev) > Math.abs(bDev) ? g : best;       // largest absolute deviation
+          });
+          if (worst.mean != null) {
+            ep.worstTreatedStats = { n: worst.n, mean: worst.mean, sd: worst.sd ?? 0, doseLevel: worst.dose_level };
+          }
+        }
+      }
+    }
 
     // Attach bySex for multi-sex endpoints
     const labelSexes = sexMap.get(label);

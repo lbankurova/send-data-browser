@@ -15,6 +15,7 @@
 import { describe, test, expect } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
+import { TRANSLATIONAL_BINS } from "@/lib/syndrome-interpretation";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -411,15 +412,14 @@ function validatePacket(
   }
 
   // Invariant E: translational tier must match LR+ bins
-  // Fixed bins matching actual code in syndrome-interpretation.ts:
-  //   SOC level: high ≥ 5, moderate ≥ 2 (REM-22: lowered from 3)
-  //   (PT level: high ≥ 10, moderate ≥ 3 — but validator sees SOC LR+)
+  // Bins imported from the source-of-truth constants in syndrome-interpretation.ts
   for (const s of sections) {
     const tier = s.interpretation.translationalTier;
     const lr = s.interpretation.translationalLRPlus;
     if (!tier || lr == null) continue;
 
-    const expected = lr >= 5 ? "high" : lr >= 2 ? "moderate" : "low";
+    const expected = lr >= TRANSLATIONAL_BINS.soc.high ? "high"
+      : lr >= TRANSLATIONAL_BINS.soc.moderate ? "moderate" : "low";
 
     if (tier !== "insufficient_data" && tier !== expected) {
       issues.push({

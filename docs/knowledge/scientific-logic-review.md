@@ -93,7 +93,7 @@ The system defines 10 cross-domain syndrome patterns (XS01–XS10). Each pattern
 
 **Clinical description:** Toxic injury to the kidney, affecting glomerular filtration, tubular reabsorption, or both. Key markers: BUN/creatinine elevation with kidney weight changes and histopathological findings (tubular necrosis, mineralization). Electrolyte disturbances (Na, K, Ca, P) provide supporting evidence.
 
-**Required logic:** ANY one required term triggers detection  
+**Required logic:** Compound: `ANY((CREAT AND BUN), (CREAT AND KIDNEY_WT), (CREAT AND URINE_SG), (CREAT AND MI_KIDNEY))`  
 **Minimum domains:** 2
 
 **Required evidence:**
@@ -101,12 +101,12 @@ The system defines 10 cross-domain syndrome patterns (XS01–XS10). Each pattern
 | Term | Domain | Direction | Tag |
 |------|--------|-----------|-----|
 | CREAT ↑ | LB | up | CREAT |
+| BUN ↑ | LB | up | BUN |
 
 **Supporting evidence:**
 
 | Term | Domain | Direction |
 |------|--------|-----------|
-| BUN ↑ | LB | up |
 | Kidney weight | OM | any |
 | SPGRAV ↓ | LB | down |
 | Kidney tubular degeneration | MI | any |
@@ -356,9 +356,9 @@ Scores treatment-relatedness using weighted factors adapted from ECETOC Technica
 
 | Factor | Scoring | Weight |
 |--------|---------|--------|
-| A-1: Dose-response | `strong` (monotonic+significant), `weak` (trend only), `absent` | Primary |
+| A-1: Dose-response | `strong` (linear/monotonic/threshold/threshold_increase/threshold_decrease pattern + p<0.1, OR p<0.01 + |g|≥0.8), `weak` (any non-flat pattern), `absent` | Primary |
 | A-2: Cross-endpoint concordance | `concordant` (≥2 domains), `isolated` (single domain) | Supporting |
-| A-6: Statistical significance | `significant` (p<0.05 pairwise + trend, or p<0.01, or adverse+monotonic), `borderline`, `not_significant` | Supporting |
+| A-6: Statistical significance | `significant` (min p<0.05 across matched endpoints), `borderline` (min p<0.1), `not_significant` | Supporting |
 | CL: Clinical observation support | `yes`/`no` — correlating clinical signs present | Modifier |
 
 **Overall classification:**
@@ -408,9 +408,9 @@ Estimates how likely the animal findings translate to human risk, using species-
 
 | Tier | LR+ range | Interpretation |
 |------|-----------|----------------|
-| `high` | LR+ ≥ 3.0 | Strong positive predictive value — animal findings reliably predict human toxicity at this SOC/endpoint level |
-| `moderate` | 1.5 ≤ LR+ < 3.0 | Modest predictive value — some concordance but significant false positive rate |
-| `low` | LR+ < 1.5 | Poor predictive value — animal findings at this SOC have limited relevance to human risk |
+| `high` | Endpoint LR+ ≥ 10 or SOC LR+ ≥ 5 | Strong positive predictive value — animal findings reliably predict human toxicity at this SOC/endpoint level |
+| `moderate` | Endpoint LR+ ≥ 3 or SOC LR+ ≥ 2 | Modest predictive value — some concordance but significant false positive rate |
+| `low` | Below moderate thresholds | Poor predictive value — animal findings at this SOC have limited relevance to human risk |
 | `insufficient_data` | No data | LR+ not available for this species/SOC combination |
 
 **Data source:** SOC-level and endpoint-level LR+ from published preclinical-to-clinical concordance studies (Bailey et al., Olson et al.).
@@ -418,7 +418,7 @@ Estimates how likely the animal findings translate to human risk, using species-
 **► Review questions for interpretation framework:**
 
 - [ ] Cohen's d thresholds for adversity magnitude: <0.5=minimal, 0.5–1.0=mild, 1.0–2.0=moderate, 2.0–3.0=marked, ≥3.0=severe. Are these appropriate for preclinical studies with n=5–30 per group?
-- [ ] Treatment-relatedness requires BOTH pairwise p<0.05 AND trend p<0.05 (or adverse+monotonic, or p<0.01). Is this the right stringency for a screening tool?
+- [ ] Treatment-relatedness uses minimum p-value across matched endpoints (p<0.05 = significant). Is this threshold appropriate for a screening tool?
 - [ ] The severity cascade always elevates to S0 (Death) if treatment-related mortality is detected, regardless of other factors. Should there be exceptions (e.g., single early death with ambiguous cause)?
 - [ ] Should translational confidence modify the severity tier, or should it remain an independent annotation?
 - [ ] Is the three-level certainty scale (confirmed/uncertain/pattern_only) sufficient, or should intermediate levels be added?
@@ -524,10 +524,11 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met. But ALP argues against this specific mechanism. Consider differential (XS02 (Cholestatic injury)). Adaptive pattern: liver weight increase + hypertrophy without necrosis/degeneration suggests enzyme induction (non-adverse). ALT/AST fold change < 5×. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `equivocal` | adaptive=true, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S2_Concern` | histopath grade: n/a |
+| Adversity | `equivocal` | adaptive=true, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=mechanism_uncertain, adversity=equivocal |
+| Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
-| Translational | `low` | SOC: hepatobiliary disorders, LR+: 3.5 |
+| Translational | `low` | endpoint LR+: 2.2 (hepatotoxicity); SOC: hepatobiliary disorders |
 
 **Endpoint-level translational evidence:**
 
@@ -553,6 +554,19 @@ This section shows the system's actual output for each syndrome detected in the 
 | GGT | ↓ | — | not_available | moderate |
 | LIVER::NECROSIS | ↑ | — | not_available | strong |
 | LIVER::BILE DUCT HYPERPLASIA | ↓ | — | not_available | strong |
+
+**Species-specific preferred markers (REM-11):**
+
+- ✗ Not measured: GLDH, SDH
+- Species-specific markers (GLDH, SDH) not measured. GLDH/SDH are liver-specific in rats (ALT has muscle/RBC sources). Certainty may improve if these biomarkers are available.
+
+**Group statistics (REM-05):**
+
+| Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
+|----------|---------------------|----------------------------------|
+| Alanine Aminotransferase | n=10, 29.600±3.406 | n=10, 37.000±3.232 (dose 3) |
+| Aspartate Aminotransferase | n=10, 99.400±9.617 | n=10, 154.900±17.188 (dose 3) |
+| LIVER — LIVER (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.596±0.238 (dose 2) |
 
 **► Syndrome-specific review questions:**
 
@@ -585,18 +599,25 @@ This section shows the system's actual output for each syndrome detected in the 
 
 > ⚠ **2 opposite-direction match(es)** — endpoints matching term identity but in the wrong direction.
 
+**Directional gate:**
+- gate_fired: true
+- override_applied: false
+- action: ruled_out
+- reason: RETIC ↑ contradicts expected ↓ for XS04.
+
 **Missing domains:** MI
 
 ### Interpretation
 
 | Component | Result | Detail |
 |-----------|--------|--------|
-| Certainty | `pattern_only` | Required findings met. But RETIC argues against this specific mechanism. Consider differential (XS05 (Hemolytic anemia)). Capped at pattern_only: single-domain detection (LB only) cannot confirm mechanism. |
+| Certainty | `pattern_only` | Required findings met. But RETIC argues against this specific mechanism. Consider differential (XS05 (Hemolytic anemia)). Capped at pattern_only due to directional gate: RETIC ↑ contradicts expected ↓ for XS04. |
 | Treatment-relatedness | `treatment_related` | score 3.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=isolated[0], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S2_Concern` | histopath grade: n/a |
+| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=adverse |
+| Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
-| Translational | `high` | SOC: blood and lymphatic system disorders, LR+: 3.5 |
+| Translational | `high` | endpoint LR+: 16.1 (anemia, neutropenia); SOC: blood and lymphatic system disorders |
 
 **Endpoint-level translational evidence:**
 
@@ -623,6 +644,14 @@ This section shows the system's actual output for each syndrome detected in the 
 | BONE MARROW::HYPOCELLULARITY | ↑ | — | not_available | strong |
 | SPLEEN_WT | ↓ | ↑ | argues_against | moderate |
 | SPLEEN::EXTRAMEDULLARY HEMATOPOIESIS | ↓ | — | not_available | moderate |
+
+**Group statistics (REM-05):**
+
+| Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
+|----------|---------------------|----------------------------------|
+| Neutrophils | n=10, 0.509±0.187 | n=10, 0.720±0.469 (dose 1) |
+| Erythrocytes | n=10, 7.659±0.171 | n=10, 7.349±0.376 (dose 3) |
+| Hemoglobin | n=10, 15.310±0.540 | n=10, 13.950±0.487 (dose 3) |
 
 > **Anomaly summary:** 2 anomaly marker(s) detected in this syndrome. Review marked items (⚠) above.
 
@@ -660,10 +689,11 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `mechanism_confirmed` | Required findings met. RETIC confirms this mechanism. No contradicting evidence. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=marked, precursor=false |
-| Severity | `S3_Adverse` | histopath grade: n/a |
+| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=marked, precursor=false |
+| Regulatory significance | `S3_Adverse` | Cascade: certainty=mechanism_confirmed, adversity=adverse |
+| Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
-| Translational | `high` | SOC: blood and lymphatic system disorders, LR+: 3.5 |
+| Translational | `high` | endpoint LR+: 10.1 (anemia); SOC: blood and lymphatic system disorders |
 
 **Endpoint-level translational evidence:**
 
@@ -688,8 +718,16 @@ This section shows the system's actual output for each syndrome detected in the 
 | RETIC | ↑ | ↑ | supports | strong |
 | BONE MARROW::HYPERCELLULARITY | ↑ | — | not_available | strong |
 | SPLEEN_WT | ↑ | ↑ | supports | moderate |
-| SPLEEN::PIGMENTATION | ↑ | — | not_available | moderate |
+| SPLEEN::PIGMENTATION | ↑ | ↑ | supports | moderate |
 | TBILI | ↑ | — | not_available | moderate |
+
+**Group statistics (REM-05):**
+
+| Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
+|----------|---------------------|----------------------------------|
+| Erythrocytes | n=10, 7.659±0.171 | n=10, 7.349±0.376 (dose 3) |
+| Reticulocytes | n=10, 158.460±32.322 | n=10, 228.570±63.504 (dose 2) |
+| SPLEEN — SPLEEN (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.596±0.238 (dose 2) |
 
 **► Syndrome-specific review questions:**
 
@@ -730,10 +768,11 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met but no discriminating evidence available. Cannot confirm specific mechanism. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S3_Adverse` | histopath grade: n/a |
+| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S3_Adverse` | Cascade: certainty=mechanism_uncertain, adversity=adverse |
+| Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
-| Translational | `insufficient_data` | SOC: —, LR+: n/a |
+| Translational | `insufficient_data` | SOC LR+: n/a; SOC: — |
 
 **Treatment-relatedness reasoning (REM-17):**
 
@@ -751,6 +790,13 @@ This section shows the system's actual output for each syndrome detected in the 
 |----------|----------|--------|--------|--------|
 | GLAND, ADRENAL::HYPERTROPHY | ↑ | — | not_available | strong |
 | THYMUS_WT | ↓ | ↓ | not_available | moderate |
+
+**Group statistics (REM-05):**
+
+| Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
+|----------|---------------------|----------------------------------|
+| GLAND, ADRENAL — GLAND, ADRENAL (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.596±0.238 (dose 2) |
+| THYMUS — THYMUS (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.293±0.103 (dose 1) |
 
 > **Anomaly summary:** 1 anomaly marker(s) detected in this syndrome. Review marked items (⚠) above.
 
@@ -784,10 +830,11 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met. No discriminating evidence defined for this syndrome. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S3_Adverse` | histopath grade: n/a |
+| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S3_Adverse` | Cascade: certainty=mechanism_uncertain, adversity=adverse |
+| Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
-| Translational | `moderate` | SOC: metabolism and nutrition disorders, LR+: 2.5 |
+| Translational | `moderate` | SOC LR+: 2.5; SOC: metabolism and nutrition disorders |
 
 **Treatment-relatedness reasoning (REM-17):**
 
@@ -798,6 +845,12 @@ This section shows the system's actual output for each syndrome detected in the 
 | A-3 HCD comparison | no_hcd | 0 | Historical control data not available |
 | A-6 Statistical significance | significant | 1 | Min p-value: 0.0000 → significant |
 | A-7 Clinical observation support | no | 0 | No supporting clinical observations |
+
+**Group statistics (REM-05):**
+
+| Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
+|----------|---------------------|----------------------------------|
+| HEART — HEART (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.293±0.103 (dose 1) |
 
 **► Syndrome-specific review questions:**
 
@@ -812,14 +865,14 @@ This section shows the system's actual output for each syndrome detected in the 
 **Confidence:** MODERATE  
 **Domains covered:** LB, OM  
 **Sexes:** M  
-**Required logic met:** Yes (1/1 required terms, logic: CREAT)
+**Required logic met:** Yes (1/2 required terms, logic: any of ((CREAT + BUN), (CREAT + KIDNEY_WT), (CREAT + URINE_SG), (CREAT + MI_KIDNEY)))
 
 ### Term-by-Term Match Evidence
 
 | Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
 | **R** | CREAT ↑ | ✓ matched | Creatinine | LB | ↑ | +1.70 | 0.007 | 1.25× | threshold_increase |
-| S | BUN ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
+| **R** | BUN ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
 | S | Kidney weight | ✓ matched | KIDNEY — KIDNEY (WEIGHT) | OM | ↑ | +2.61 | 0.0002 | 1.53× | threshold_increase |
 | S | SPGRAV ↓ | — not measured | — | LB | — | n/a | n/a | n/a | — |
 | S | Kidney tubular degeneration | — not measured | — | MI | — | n/a | n/a | n/a | — |
@@ -830,12 +883,13 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Component | Result | Detail |
 |-----------|--------|--------|
-| Certainty | `mechanism_uncertain` | Required findings met. Moderate supporting evidence from KIDNEY_WT. No contradicting evidence. Capped at mechanism_uncertain: confirmatory domain MI not available in study data. |
+| Certainty | `pattern_only` | Required findings met. Moderate supporting evidence from KIDNEY_WT. No contradicting evidence. Capped at pattern_only: confirmatory domain MI not available in study data. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=severe, precursor=false |
-| Severity | `S3_Adverse` | histopath grade: n/a |
+| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=adverse |
+| Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
-| Translational | `moderate` | SOC: renal and urinary disorders, LR+: 4 |
+| Translational | `moderate` | SOC LR+: 4; SOC: renal and urinary disorders |
 
 **Treatment-relatedness reasoning (REM-17):**
 
@@ -855,6 +909,18 @@ This section shows the system's actual output for each syndrome detected in the 
 | KIDNEY::CAST | ↑ | — | not_available | moderate |
 | KIDNEY_WT | ↑ | ↑ | supports | moderate |
 | URINE_SG | ↓ | — | not_available | moderate |
+
+**Species-specific preferred markers (REM-11):**
+
+- ✗ Not measured: KIM-1, CLUSTERIN, URINARY ALBUMIN
+- Species-specific markers (KIM-1, CLUSTERIN, URINARY ALBUMIN) not measured. FDA/EMA-qualified urinary biomarkers for rat nephrotoxicity. Certainty may improve if these biomarkers are available.
+
+**Group statistics (REM-05):**
+
+| Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
+|----------|---------------------|----------------------------------|
+| Creatinine | n=10, 0.295±0.025 | n=10, 0.269±0.041 (dose 1) |
+| KIDNEY — KIDNEY (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.596±0.238 (dose 2) |
 
 **► Syndrome-specific review questions:**
 
@@ -895,12 +961,13 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Component | Result | Detail |
 |-----------|--------|--------|
-| Certainty | `mechanism_uncertain` | Required findings met. No discriminating evidence defined for this syndrome. |
+| Certainty | `pattern_only` | Required findings met. No discriminating evidence defined for this syndrome. Capped at pattern_only due to directional gate: LYMPH ↑ contradicts expected ↓ for XS07. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, reversible=unknown, magnitude=marked, precursor=false |
-| Severity | `S3_Adverse` | histopath grade: n/a |
+| Adversity | `equivocal` | adaptive=false, stressConfound=true, reversible=unknown, magnitude=marked, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=equivocal |
+| Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
-| Translational | `moderate` | SOC: immune system disorders, LR+: 2.5 |
+| Translational | `moderate` | SOC LR+: 2.5; SOC: immune system disorders |
 
 **Treatment-relatedness reasoning (REM-17):**
 
@@ -911,6 +978,13 @@ This section shows the system's actual output for each syndrome detected in the 
 | A-3 HCD comparison | no_hcd | 0 | Historical control data not available |
 | A-6 Statistical significance | significant | 1 | Min p-value: 0.0032 → significant |
 | A-7 Clinical observation support | no | 0 | No supporting clinical observations |
+
+**Group statistics (REM-05):**
+
+| Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
+|----------|---------------------|----------------------------------|
+| Leukocytes | n=10, 5.455±1.202 | n=10, 6.675±2.564 (dose 1) |
+| THYMUS — THYMUS (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.293±0.103 (dose 1) |
 
 > **Anomaly summary:** 2 anomaly marker(s) detected in this syndrome. Review marked items (⚠) above.
 

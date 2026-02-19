@@ -48,6 +48,33 @@ import type { StudyContext } from "@/types/study-context";
 import type { StudyMortality } from "@/types/mortality";
 import meddraMapping from "@/data/send-to-meddra-v3.json";
 
+// ─── Exported threshold constants (single source of truth) ─────────
+// Used by the code logic AND by the packet generator for documentation.
+
+/** Translational tier LR+ bin thresholds */
+export const TRANSLATIONAL_BINS = {
+  endpoint: { high: 10, moderate: 3 },
+  soc: { high: 5, moderate: 2 },
+} as const;
+
+/** Statistical significance thresholds for treatment-relatedness A-6 factor */
+export const STAT_SIG_THRESHOLDS = {
+  significant: 0.05,
+  borderline: 0.1,
+} as const;
+
+/** Dose-response A-1 factor thresholds */
+export const DOSE_RESPONSE_THRESHOLDS = {
+  /** p-value for borderline significance in strong pattern path */
+  strongPatternP: 0.1,
+  /** p-value for highly significant pairwise alternative path */
+  pairwiseHighP: 0.01,
+  /** minimum |effect size| for pairwise alternative path */
+  pairwiseMinEffect: 0.8,
+  /** Patterns considered "strong" */
+  strongPatterns: ["linear", "monotonic", "threshold", "threshold_increase", "threshold_decrease"],
+} as const;
+
 // ─── Output types ──────────────────────────────────────────
 
 export type SyndromeCertainty =
@@ -353,6 +380,14 @@ export interface SyndromeInterpretation {
 
   // Translational confidence
   translationalConfidence: TranslationalConfidence;
+
+  /** REM-11: Species-specific preferred marker annotations */
+  speciesMarkers: {
+    present: string[];
+    absent: string[];
+    narrative: string | null;
+    certaintyBoost: boolean;
+  };
 
   /** Assembled narrative */
   narrative: string;
@@ -1052,6 +1087,26 @@ export function evaluateDiscriminator(
   );
 
   if (specimenRows.length === 0) {
+    // REM-13: Also check syndrome matchedEndpoints for MI-domain matches
+    // (histopathData may be empty but the cross-domain detector matched via endpoint summaries)
+    const miMatch = allEndpoints.find((ep) =>
+      ep.domain === "MI" &&
+      (ep.specimen ?? "").toUpperCase().includes(specimen.toUpperCase()) &&
+      (ep.finding ?? "").toUpperCase().includes(finding.toUpperCase()),
+    );
+    if (miMatch) {
+      const isPresent = miMatch.direction === disc.expectedDirection ||
+        (miMatch.minPValue != null && miMatch.minPValue < 0.2);
+      return {
+        endpoint: disc.endpoint,
+        description: disc.rationale,
+        expectedDirection: disc.expectedDirection,
+        actualDirection: miMatch.direction === "up" || miMatch.direction === "down" ? miMatch.direction : null,
+        status: isPresent && miMatch.direction === disc.expectedDirection ? "supports" : "not_available",
+        weight: disc.weight,
+        source: disc.source,
+      };
+    }
     return {
       endpoint: disc.endpoint,
       description: disc.rationale,
@@ -1205,12 +1260,27 @@ export function assessCertainty(
         : "Required findings met. Insufficient discriminating evidence to confirm mechanism.";
   }
 
+  ({ certainty, rationale } = applyCertaintyCaps(syndrome, certainty, rationale));
+
+  return { certainty, evidence, rationale };
+}
+
+/**
+ * Apply all certainty caps (directional gate, single-domain, data sufficiency).
+ * Extracted so both the discriminator and no-discriminator paths use the same logic.
+ */
+function applyCertaintyCaps(
+  syndrome: CrossDomainSyndrome,
+  certainty: SyndromeCertainty,
+  rationale: string,
+): { certainty: SyndromeCertainty; rationale: string } {
+  const CERTAINTY_ORDER: Record<SyndromeCertainty, number> = {
+    pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
+  };
+
   // REM-09: Apply directional gate certainty cap
   if (syndrome.directionalGate?.gateFired && syndrome.directionalGate.certaintyCap) {
     const cap = syndrome.directionalGate.certaintyCap;
-    const CERTAINTY_ORDER: Record<SyndromeCertainty, number> = {
-      pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
-    };
     if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER[cap]) {
       certainty = cap;
       rationale += ` Capped at ${cap} due to directional gate: ${syndrome.directionalGate.explanation}`;
@@ -1218,14 +1288,9 @@ export function assessCertainty(
   }
 
   // REM-12: Single-domain certainty cap for XS04/XS05
-  // These syndromes can fire with minDomains=1 (LB only), but single-domain
-  // detection cannot confirm mechanism — requires MI or OM corroboration
   const SINGLE_DOMAIN_CAP_SYNDROMES = new Set(["XS04", "XS05"]);
   if (SINGLE_DOMAIN_CAP_SYNDROMES.has(syndrome.id) && syndrome.domainsCovered.length === 1) {
-    const CERTAINTY_ORDER: Record<SyndromeCertainty, number> = {
-      pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
-    };
-    if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER["pattern_only" as SyndromeCertainty]) {
+    if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER["pattern_only"]) {
       certainty = "pattern_only";
       rationale += ` Capped at pattern_only: single-domain detection (${syndrome.domainsCovered[0]} only) cannot confirm mechanism.`;
     }
@@ -1244,10 +1309,8 @@ export function assessCertainty(
     const coveredDomains = new Set(syndrome.domainsCovered);
     for (const req of suffReqs) {
       if (!coveredDomains.has(req.domain)) {
-        const CERTAINTY_ORDER: Record<SyndromeCertainty, number> = {
-          pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
-        };
-        const maxCert: SyndromeCertainty = req.role === "confirmatory" ? "mechanism_uncertain" : "mechanism_uncertain";
+        // REM-15 fix: confirmatory missing → pattern_only, supporting missing → mechanism_uncertain
+        const maxCert: SyndromeCertainty = req.role === "confirmatory" ? "pattern_only" : "mechanism_uncertain";
         if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER[maxCert]) {
           certainty = maxCert;
           rationale += ` Capped at ${maxCert}: ${req.role} domain ${req.domain} not available in study data.`;
@@ -1256,7 +1319,7 @@ export function assessCertainty(
     }
   }
 
-  return { certainty, evidence, rationale };
+  return { certainty, rationale };
 }
 
 // ─── REM-11: Species-specific preferred biomarkers ───────────
@@ -2285,17 +2348,15 @@ export function computeTreatmentRelatedness(
   const matchedLabelsA1 = new Set(syndrome.matchedEndpoints.map((m) => m.endpoint_label));
   const matchedEpsA1 = allEndpoints.filter((ep) => matchedLabelsA1.has(ep.endpoint_label));
 
-  const STRONG_PATTERNS = new Set([
-    "linear", "monotonic", "threshold", "threshold_increase", "threshold_decrease",
-  ]);
+  const STRONG_PATTERNS = new Set<string>(DOSE_RESPONSE_THRESHOLDS.strongPatterns);
   // REM-07: Relaxed from AND to OR — trend significance (strong pattern)
   // OR pairwise significance, not both required. Matches standard practice
   // (Williams trend primary, Dunnett pairwise complementary; Hothorn 2014).
   const hasStrongPattern = matchedEpsA1.some((ep) =>
     // Primary: strong dose-response pattern with at least borderline p
-    (STRONG_PATTERNS.has(ep.pattern) && ep.minPValue != null && ep.minPValue < 0.1) ||
-    // Alternative: highly significant pairwise (p < 0.01) + meaningful effect
-    (ep.minPValue != null && ep.minPValue < 0.01 && Math.abs(ep.maxEffectSize ?? 0) >= 0.8)
+    (STRONG_PATTERNS.has(ep.pattern) && ep.minPValue != null && ep.minPValue < DOSE_RESPONSE_THRESHOLDS.strongPatternP) ||
+    // Alternative: highly significant pairwise + meaningful effect
+    (ep.minPValue != null && ep.minPValue < DOSE_RESPONSE_THRESHOLDS.pairwiseHighP && Math.abs(ep.maxEffectSize ?? 0) >= DOSE_RESPONSE_THRESHOLDS.pairwiseMinEffect)
   );
   const hasAnyPattern = matchedEpsA1.some((ep) =>
     ep.pattern !== "flat" && ep.pattern !== "insufficient_data"
@@ -2319,9 +2380,9 @@ export function computeTreatmentRelatedness(
   }, null);
 
   const statisticalSignificance: TreatmentRelatednessScore["statisticalSignificance"] =
-    minP != null && minP < 0.05
+    minP != null && minP < STAT_SIG_THRESHOLDS.significant
       ? "significant"
-      : minP != null && minP < 0.1
+      : minP != null && minP < STAT_SIG_THRESHOLDS.borderline
         ? "borderline"
         : "not_significant";
 
@@ -2773,15 +2834,15 @@ export function assignTranslationalTier(
 ): "high" | "moderate" | "low" | "insufficient_data" {
   if (endpointLRPlus.length > 0) {
     const maxLR = Math.max(...endpointLRPlus.map(e => e.lrPlus));
-    if (maxLR >= 10) return "high";
-    if (maxLR >= 3) return "moderate";
+    if (maxLR >= TRANSLATIONAL_BINS.endpoint.high) return "high";
+    if (maxLR >= TRANSLATIONAL_BINS.endpoint.moderate) return "moderate";
     return "low";
   }
   const socLR = lookupSOCLRPlus(species, primarySOC);
   if (socLR === null) return "insufficient_data";
-  if (socLR >= 5) return "high";
+  if (socLR >= TRANSLATIONAL_BINS.soc.high) return "high";
   // REM-22: SOC moderate bin lowered from 3.0 to 2.0 (nonclinical concordance data)
-  if (socLR >= 2) return "moderate";
+  if (socLR >= TRANSLATIONAL_BINS.soc.moderate) return "moderate";
   return "low";
 }
 
@@ -2968,14 +3029,13 @@ export function interpretSyndrome(
       histopathData,
     );
   } else {
-    // No discriminators defined for this syndrome
-    certaintyResult = {
-      certainty: syndrome.requiredMet ? "mechanism_uncertain" : "pattern_only",
-      evidence: [],
-      rationale: syndrome.requiredMet
-        ? "Required findings met. No discriminating evidence defined for this syndrome."
-        : "Syndrome detected through supporting evidence only.",
-    };
+    // No discriminators defined for this syndrome — still apply caps
+    let cert: SyndromeCertainty = syndrome.requiredMet ? "mechanism_uncertain" : "pattern_only";
+    let rat = syndrome.requiredMet
+      ? "Required findings met. No discriminating evidence defined for this syndrome."
+      : "Syndrome detected through supporting evidence only.";
+    ({ certainty: cert, rationale: rat } = applyCertaintyCaps(syndrome, cert, rat));
+    certaintyResult = { certainty: cert, evidence: [], rationale: rat };
   }
 
   // ── Component 2: Histopath cross-reference ──
@@ -3199,6 +3259,7 @@ export function interpretSyndrome(
     overallSeverity,
     histopathSeverityGrade: deriveHistopathSeverityGrade(histopathData),
     translationalConfidence,
+    speciesMarkers,
     narrative: narrativeParts.join(" "),
   };
 }

@@ -164,6 +164,8 @@ export interface AdverseEffectSummaryRow {
   max_fold_change?: number | null;
   /** Number of early-death subjects excluded (terminal domains only) */
   n_excluded?: number;
+  /** REM-05: Per-dose-group statistics (from scheduled sacrifice timepoint) */
+  scheduled_group_stats?: { dose_level: number; n: number; mean: number | null; sd: number | null; median?: number | null }[];
 }
 
 // --- Dose-Response (View 2) ---

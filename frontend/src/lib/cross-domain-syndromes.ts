@@ -351,28 +351,28 @@ const XS02_TERMS: SyndromeTermMatch[] = [
 ];
 
 const XS03_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED (REM-12: CREAT is the only required marker — BUN alone is non-specific) ===
+  // === REQUIRED ===
+  // REM-12: CREAT is always required. BUN is required too but with compound logic:
+  // (CREAT AND BUN) OR (CREAT AND any supporting) — CREAT-alone is insufficient.
   {
     testCodes: ["CREAT", "CREA"],
     canonicalLabels: ["creatinine"],
     domain: "LB", direction: "up", role: "required", tag: "CREAT",
   },
-  // === SUPPORTING ===
-  // REM-12: BUN demoted from required to supporting (pre-renal azotemia is common)
   {
     testCodes: ["BUN", "UREA"],
     canonicalLabels: ["blood urea nitrogen", "urea nitrogen", "urea"],
-    domain: "LB", direction: "up", role: "supporting",
+    domain: "LB", direction: "up", role: "required", tag: "BUN",
   },
-  // === SUPPORTING ===
+  // === SUPPORTING (each tagged for compound expression reference) ===
   {
     organWeightTerms: { specimen: ["kidney"] },
-    domain: "OM", direction: "any", role: "supporting",
+    domain: "OM", direction: "any", role: "supporting", tag: "KIDNEY_WT",
   },
   {
     testCodes: ["SPGRAV", "SG", "UOSMO"],
     canonicalLabels: ["specific gravity", "urine osmolality"],
-    domain: "LB", direction: "down", role: "supporting",
+    domain: "LB", direction: "down", role: "supporting", tag: "URINE_SG",
   },
   {
     specimenTerms: {
@@ -381,7 +381,7 @@ const XS03_TERMS: SyndromeTermMatch[] = [
                 "tubular dilatation", "cast", "casts", "mineralization",
                 "regeneration", "papillary necrosis"],
     },
-    domain: "MI", direction: "any", role: "supporting",
+    domain: "MI", direction: "any", role: "supporting", tag: "MI_KIDNEY",
   },
 ];
 
@@ -419,7 +419,7 @@ const XS04_TERMS: SyndromeTermMatch[] = [
   {
     testCodes: ["RETIC", "RET"],
     canonicalLabels: ["reticulocytes", "reticulocyte count"],
-    domain: "LB", direction: "down", role: "supporting",
+    domain: "LB", direction: "down", role: "supporting", tag: "RETIC",
   },
   {
     specimenTerms: {
@@ -649,7 +649,8 @@ const SYNDROME_DEFINITIONS: SyndromeDefinition[] = [
   {
     id: "XS03",
     name: "Nephrotoxicity",
-    requiredLogic: { type: "any" },
+    // REM-12: CREAT alone insufficient — need BUN corroboration or any supporting marker
+    requiredLogic: { type: "compound", expression: "ANY((CREAT AND BUN), (CREAT AND KIDNEY_WT), (CREAT AND URINE_SG), (CREAT AND MI_KIDNEY))" },
     terms: XS03_TERMS,
     minDomains: 2,
   },
@@ -993,6 +994,7 @@ function detectFromEndpoints(
   for (const syndrome of SYNDROME_DEFINITIONS) {
     const matchedEndpoints: EndpointMatch[] = [];
     const matchedRequiredTags = new Set<string>();
+    const matchedSupportingTags = new Set<string>();
     let supportCount = 0;
 
     const requiredTerms = syndrome.terms.filter((t) => t.role === "required");
@@ -1027,17 +1029,12 @@ function detectFromEndpoints(
       }
     }
 
-    let requiredMet = false;
-    if (syndrome.requiredLogic.type === "all") {
-      requiredMet = allRequiredTags.size > 0 &&
-        [...allRequiredTags].every((tag) => matchedRequiredTags.has(tag));
-    } else {
-      requiredMet = evaluateRequiredLogic(syndrome.requiredLogic, matchedRequiredTags);
-    }
-
+    // Collect supporting term matches BEFORE evaluating requiredMet,
+    // because compound expressions may reference supporting term tags (REM-12: XS03).
     for (const term of supportingTerms) {
       for (const ep of endpoints) {
         if (matchEndpoint(ep, term) && passesSupportingGate(ep)) {
+          if (term.tag) matchedSupportingTags.add(term.tag);
           const alreadyRequired = matchedEndpoints.some(
             (m) => m.endpoint_label === ep.endpoint_label && m.role === "required"
           );
@@ -1060,6 +1057,19 @@ function detectFromEndpoints(
           break;
         }
       }
+    }
+
+    // Evaluate required logic — compound expressions see all matched tags (required + supporting)
+    let requiredMet = false;
+    if (syndrome.requiredLogic.type === "all") {
+      requiredMet = allRequiredTags.size > 0 &&
+        [...allRequiredTags].every((tag) => matchedRequiredTags.has(tag));
+    } else if (syndrome.requiredLogic.type === "compound") {
+      // REM-12: Compound expressions can reference both required and supporting tags
+      const allMatchedTags = new Set([...matchedRequiredTags, ...matchedSupportingTags]);
+      requiredMet = evaluateRequiredLogic(syndrome.requiredLogic, allMatchedTags);
+    } else {
+      requiredMet = evaluateRequiredLogic(syndrome.requiredLogic, matchedRequiredTags);
     }
 
     const domainsCovered = [...new Set(matchedEndpoints.map((m) => m.domain))].sort();

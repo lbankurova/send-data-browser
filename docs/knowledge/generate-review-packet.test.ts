@@ -25,6 +25,9 @@ import {
   interpretSyndrome,
   computeTreatmentRelatedness,
   assessClinicalObservationSupport,
+  TRANSLATIONAL_BINS,
+  STAT_SIG_THRESHOLDS,
+  DOSE_RESPONSE_THRESHOLDS,
 } from "@/lib/syndrome-interpretation";
 import type {
   SyndromeInterpretation,
@@ -330,9 +333,9 @@ function generateReviewDocument(): string {
   lines.push("");
   lines.push("| Factor | Scoring | Weight |");
   lines.push("|--------|---------|--------|");
-  lines.push("| A-1: Dose-response | `strong` (monotonic+significant), `weak` (trend only), `absent` | Primary |");
+  lines.push(`| A-1: Dose-response | \`strong\` (${DOSE_RESPONSE_THRESHOLDS.strongPatterns.join("/")} pattern + p<${DOSE_RESPONSE_THRESHOLDS.strongPatternP}, OR p<${DOSE_RESPONSE_THRESHOLDS.pairwiseHighP} + |g|≥${DOSE_RESPONSE_THRESHOLDS.pairwiseMinEffect}), \`weak\` (any non-flat pattern), \`absent\` | Primary |`);
   lines.push("| A-2: Cross-endpoint concordance | `concordant` (≥2 domains), `isolated` (single domain) | Supporting |");
-  lines.push("| A-6: Statistical significance | `significant` (p<0.05 pairwise + trend, or p<0.01, or adverse+monotonic), `borderline`, `not_significant` | Supporting |");
+  lines.push(`| A-6: Statistical significance | \`significant\` (min p<${STAT_SIG_THRESHOLDS.significant} across matched endpoints), \`borderline\` (min p<${STAT_SIG_THRESHOLDS.borderline}), \`not_significant\` | Supporting |`);
   lines.push("| CL: Clinical observation support | `yes`/`no` — correlating clinical signs present | Modifier |");
   lines.push("");
   lines.push("**Overall classification:**");
@@ -388,9 +391,9 @@ function generateReviewDocument(): string {
   lines.push("");
   lines.push("| Tier | LR+ range | Interpretation |");
   lines.push("|------|-----------|----------------|");
-  lines.push("| `high` | LR+ ≥ 3.0 | Strong positive predictive value — animal findings reliably predict human toxicity at this SOC/endpoint level |");
-  lines.push("| `moderate` | 1.5 ≤ LR+ < 3.0 | Modest predictive value — some concordance but significant false positive rate |");
-  lines.push("| `low` | LR+ < 1.5 | Poor predictive value — animal findings at this SOC have limited relevance to human risk |");
+  lines.push(`| \`high\` | Endpoint LR+ ≥ ${TRANSLATIONAL_BINS.endpoint.high} or SOC LR+ ≥ ${TRANSLATIONAL_BINS.soc.high} | Strong positive predictive value — animal findings reliably predict human toxicity at this SOC/endpoint level |`);
+  lines.push(`| \`moderate\` | Endpoint LR+ ≥ ${TRANSLATIONAL_BINS.endpoint.moderate} or SOC LR+ ≥ ${TRANSLATIONAL_BINS.soc.moderate} | Modest predictive value — some concordance but significant false positive rate |`);
+  lines.push("| `low` | Below moderate thresholds | Poor predictive value — animal findings at this SOC have limited relevance to human risk |");
   lines.push("| `insufficient_data` | No data | LR+ not available for this species/SOC combination |");
   lines.push("");
   lines.push("**Data source:** SOC-level and endpoint-level LR+ from published preclinical-to-clinical concordance studies (Bailey et al., Olson et al.).");
@@ -400,7 +403,7 @@ function generateReviewDocument(): string {
   lines.push("**► Review questions for interpretation framework:**");
   lines.push("");
   lines.push("- [ ] Cohen's d thresholds for adversity magnitude: <0.5=minimal, 0.5–1.0=mild, 1.0–2.0=moderate, 2.0–3.0=marked, ≥3.0=severe. Are these appropriate for preclinical studies with n=5–30 per group?");
-  lines.push("- [ ] Treatment-relatedness requires BOTH pairwise p<0.05 AND trend p<0.05 (or adverse+monotonic, or p<0.01). Is this the right stringency for a screening tool?");
+  lines.push(`- [ ] Treatment-relatedness uses minimum p-value across matched endpoints (p<${STAT_SIG_THRESHOLDS.significant} = significant). Is this threshold appropriate for a screening tool?`);
   lines.push("- [ ] The severity cascade always elevates to S0 (Death) if treatment-related mortality is detected, regardless of other factors. Should there be exceptions (e.g., single early death with ambiguous cause)?");
   lines.push("- [ ] Should translational confidence modify the severity tier, or should it remain an independent annotation?");
   lines.push("- [ ] Is the three-level certainty scale (confirmed/uncertain/pattern_only) sufficient, or should intermediate levels be added?");
@@ -501,6 +504,8 @@ function generateReviewDocument(): string {
       noFoodData,
       [], // clinicalObservations
       defaultContext,
+      undefined, // mortalityNoaelCap
+      syndromes.map(s => s.id), // REM-10: pass all detected syndrome IDs for stress confound check
     );
 
     lines.push(`## ${syndrome.id}: ${syndrome.name}`);
@@ -557,7 +562,7 @@ function generateReviewDocument(): string {
         const isMonotonic = ep.pattern.includes("monotonic") || ep.pattern === "linear";
         if (isMonotonic && ep.maxEffectSize != null && Math.abs(ep.maxEffectSize) > 2.0 && ep.minPValue != null && ep.minPValue < 0.001) {
           lines.push("");
-          lines.push(`> ⚠ **Strength mismatch:** ${ep.endpoint_label} has strong individual evidence (${ep.pattern}, |d|=${Math.abs(ep.maxEffectSize).toFixed(2)}, p=${fmtP(ep.minPValue)}) but overall dose-response rated "weak"`);
+          lines.push(`> ⚠ **Strength mismatch:** ${ep.endpoint_label} has strong individual evidence (${ep.pattern}, |g|=${Math.abs(ep.maxEffectSize).toFixed(2)}, p=${fmtP(ep.minPValue)}) but overall dose-response rated "weak"`);
           anomalyCount++;
         }
       }
@@ -605,11 +610,24 @@ function generateReviewDocument(): string {
     lines.push(`| Certainty | \`${interp.certainty}\` | ${interp.certaintyRationale} |`);
     const trScore = relatedness.reasoning.reduce((s: number, r: { score: number }) => s + r.score, 0);
     lines.push(`| Treatment-relatedness | \`${interp.treatmentRelatedness.overall}\` | score ${trScore.toFixed(1)}: ${relatedness.reasoning.map((r: { factor: string; value: string; score: number }) => `${r.factor}=${r.value}[${r.score}]`).join(", ")} |`);
-    lines.push(`| Adversity | \`${interp.adversity.overall}\` | adaptive=${interp.adversity.adaptive}, reversible=${interp.adversity.reversible ?? "unknown"}, magnitude=${interp.adversity.magnitudeLevel}, precursor=${interp.adversity.precursorToWorse} |`);
+    const advParts = [
+      `adaptive=${interp.adversity.adaptive}`,
+      `stressConfound=${interp.adversity.stressConfound}`,
+      `reversible=${interp.adversity.reversible ?? "unknown"}`,
+      `magnitude=${interp.adversity.magnitudeLevel}`,
+      `precursor=${interp.adversity.precursorToWorse}`,
+    ];
+    lines.push(`| Adversity | \`${interp.adversity.overall}\` | ${advParts.join(", ")} |`);
     const histoGradeStr = interp.histopathSeverityGrade ?? "n/a";
-    lines.push(`| Severity | \`${interp.overallSeverity}\` | histopath grade: ${histoGradeStr} |`);
+    lines.push(`| Regulatory significance | \`${interp.overallSeverity}\` | Cascade: certainty=${interp.certainty}, adversity=${interp.adversity.overall} |`);
+    lines.push(`| Histopathologic severity | \`${histoGradeStr}\` | Max tissue grade from MI data (pathologist's morphologic grading) |`);
     lines.push(`| Recovery | \`${interp.recovery.status}\` | ${interp.recovery.summary || "No recovery data available"} |`);
-    lines.push(`| Translational | \`${interp.translationalConfidence.tier}\` | SOC: ${interp.translationalConfidence.primarySOC || "—"}, LR+: ${interp.translationalConfidence.socLRPlus ?? "n/a"} |`);
+    // REM-03: Show which LR+ drove the tier (endpoint-level preferred over SOC)
+    const tc = interp.translationalConfidence;
+    const tierSource = tc.endpointLRPlus.length > 0
+      ? `endpoint LR+: ${Math.max(...tc.endpointLRPlus.map(e => e.lrPlus)).toFixed(1)} (${tc.endpointLRPlus.map(e => e.endpoint).join(", ")})`
+      : `SOC LR+: ${tc.socLRPlus ?? "n/a"}`;
+    lines.push(`| Translational | \`${tc.tier}\` | ${tierSource}; SOC: ${tc.primarySOC || "—"} |`);
     lines.push("");
 
     // Translational endpoint LR+ if available
@@ -644,6 +662,46 @@ function generateReviewDocument(): string {
       lines.push("|----------|----------|--------|--------|--------|");
       for (const df of interp.discriminatingEvidence) {
         lines.push(`| ${df.endpoint} | ${dirArrow(df.expectedDirection)} | ${dirArrow(df.actualDirection)} | ${df.status} | ${df.weight} |`);
+      }
+      lines.push("");
+    }
+
+    // REM-11: Species-preferred markers
+    if (interp.speciesMarkers && (interp.speciesMarkers.present.length > 0 || interp.speciesMarkers.absent.length > 0)) {
+      lines.push("**Species-specific preferred markers (REM-11):**");
+      lines.push("");
+      if (interp.speciesMarkers.present.length > 0) {
+        lines.push(`- ✓ Measured: ${interp.speciesMarkers.present.join(", ")}`);
+      }
+      if (interp.speciesMarkers.absent.length > 0) {
+        lines.push(`- ✗ Not measured: ${interp.speciesMarkers.absent.join(", ")}`);
+      }
+      if (interp.speciesMarkers.narrative) {
+        lines.push(`- ${interp.speciesMarkers.narrative}`);
+      }
+      lines.push("");
+    }
+
+    // REM-05: Group statistics for matched endpoints
+    const matchedEps = allEntries
+      .filter(e => e.status === "matched" && e.matchedEndpoint)
+      .map(e => epIndex.get(e.matchedEndpoint!))
+      .filter((ep): ep is EndpointSummary => ep != null && ep.controlStats != null);
+    if (matchedEps.length > 0) {
+      lines.push("**Group statistics (REM-05):**");
+      lines.push("");
+      lines.push("| Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |");
+      lines.push("|----------|---------------------|----------------------------------|");
+      for (const ep of matchedEps) {
+        const ctrl = ep.controlStats;
+        const worst = ep.worstTreatedStats;
+        const ctrlStr = ctrl && ctrl.mean != null
+          ? `n=${ctrl.n}, ${ctrl.mean.toFixed(3)}±${(ctrl.sd ?? 0).toFixed(3)}`
+          : "—";
+        const worstStr = worst && worst.mean != null
+          ? `n=${worst.n}, ${worst.mean.toFixed(3)}±${(worst.sd ?? 0).toFixed(3)} (dose ${worst.doseLevel})`
+          : "—";
+        lines.push(`| ${ep.endpoint_label} | ${ctrlStr} | ${worstStr} |`);
       }
       lines.push("");
     }
