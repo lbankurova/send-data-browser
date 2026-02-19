@@ -76,7 +76,9 @@ Before committing changes that alter system or view behavior:
 5. **Update the issue tracker.** Mark resolved items in `docs/incoming/arch-overhaul/spec-cleanup-b66dfd0.md` with strikethrough + commit hash. Update the summary counts and per-view table. This is mandatory for every commit — no exceptions.
 6. **Update knowledge docs when analytical logic changes.** If your commit adds, removes, or modifies a statistical test, algorithmic method, classification algorithm, scoring formula, or external data dependency, update the corresponding entry in `docs/knowledge/methods.md` or `docs/knowledge/dependencies.md`. New method → new entry with stable ID. Changed parameters/thresholds → update the existing entry. Removed method → delete the entry. Skip this step for commits that only touch UI, docs, or tests without changing analytical logic.
 
-**When fixing a data pipeline bug:** Write the failing test FIRST, then apply the fix, then confirm all tests pass. This is non-negotiable for changes to: `derive-summaries.ts`, `lab-clinical-catalog.ts`, `cross-domain-syndromes.ts`, `findings-rail-engine.ts`, classification.py, or any findings_*.py module.
+**When fixing a data pipeline bug:** Write the failing test FIRST, then apply the fix, then confirm all tests pass. This is non-negotiable for changes to: `derive-summaries.ts`, `lab-clinical-catalog.ts`, `cross-domain-syndromes.ts`, `findings-rail-engine.ts`, `syndrome-interpretation.ts`, `SyndromeContextPanel.tsx`, `recovery-classification.ts`, `finding-nature.ts`, `protective-signal.ts`, classification.py, or any findings_*.py module.
+
+**Agent verification boundaries.** Agents verify logic: `npm test`, `npm run build`, grep-based static checks. Agents do NOT verify visuals — no browser access. Never claim visual verification was performed. If a change affects rendering, state explicitly: "Visual verification required by user." This is non-negotiable.
 
 ## Post-Implementation Review Protocol
 
