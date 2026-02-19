@@ -678,6 +678,27 @@ Each mapping entry provides: `normalizedTerm`, `category` (FindingNature), `inha
 
 ---
 
+### METH-29 — Data Sufficiency Gate (REM-15 + REM-20)
+
+**Purpose:** Cap syndrome certainty when confirmatory or supporting domains are absent from the study data, and emit missing-domain warnings in the narrative. REM-20 (explicit missing-domain warnings) was merged into REM-15 as both address the same gap.
+
+**Implementation:** `DATA_SUFFICIENCY` config + pre-check in `assessCertainty()` — frontend `syndrome-interpretation.ts:1234`.
+
+**Parameters:** Per-syndrome domain requirements:
+- XS01: MI (confirmatory) — missing → cap at `pattern_only`
+- XS03: MI (confirmatory), UA (confirmatory) — missing → cap at `mechanism_uncertain`
+- XS04: MI (confirmatory) — missing → cap at `pattern_only`
+- XS07: MI (confirmatory) — missing → cap at `pattern_only`
+- XS10: LB (supporting), VS (supporting) — missing → cap at `mechanism_uncertain`
+
+When a confirmatory domain is missing, certainty cannot exceed `pattern_only`. When a supporting domain is missing, certainty cannot exceed `mechanism_uncertain`. Narrative includes a warning sentence identifying the missing domain.
+
+**Why this method:** Without MI confirmation, lab-only findings cannot be attributed to a specific organ-level mechanism. The data sufficiency gate prevents false confidence in syndrome interpretations where corroborating evidence is physically absent from the study. This is more nuanced than blocking detection entirely (which would silence the tool for studies with incomplete domain coverage).
+
+**Deferred extension (REM-20 full scope):** Compound-class contextual warnings — comparing the current study's findings against a database of known class effects for the compound's pharmacological class. Requires an external reference database of compound-class-to-expected-findings mappings, which is not currently available. When available, this would allow warnings like "XS01 detected but compound class (NSAID) has known hepatotoxicity — consider class effect." See TODO GAP-16.
+
+---
+
 ## Classification Algorithms (CLASS)
 
 ### CLASS-01 — Severity Classification
