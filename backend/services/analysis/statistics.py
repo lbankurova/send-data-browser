@@ -94,7 +94,12 @@ def trend_test_incidence(counts: list[int], totals: list[int]) -> dict:
 
 
 def cohens_d(group1: list | np.ndarray, group2: list | np.ndarray) -> float | None:
-    """Cohen's d effect size (treatment vs control)."""
+    """Hedges' g effect size (bias-corrected Cohen's d for small samples).
+
+    REM-05: Applies Hedges' correction factor J = 1 - 3/(4*df - 1) to
+    reduce upward bias in Cohen's d when sample sizes are small (< 20).
+    The JSON field name is kept as 'cohens_d' for backwards compatibility.
+    """
     a1 = np.array(group1, dtype=float)
     a2 = np.array(group2, dtype=float)
     a1 = a1[~np.isnan(a1)]
@@ -106,7 +111,11 @@ def cohens_d(group1: list | np.ndarray, group2: list | np.ndarray) -> float | No
                          (len(a1) + len(a2) - 2))
     if pooled_std == 0:
         return None
-    return float((np.mean(a1) - np.mean(a2)) / pooled_std)
+    d = float((np.mean(a1) - np.mean(a2)) / pooled_std)
+    # Hedges' correction: J ≈ 1 - 3/(4*df - 1) where df = n1 + n2 - 2
+    df = len(a1) + len(a2) - 2
+    j = 1 - 3 / (4 * df - 1)
+    return d * j
 
 
 def spearman_correlation(x: list | np.ndarray, y: list | np.ndarray) -> dict:

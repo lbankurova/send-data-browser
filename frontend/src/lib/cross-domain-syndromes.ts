@@ -351,16 +351,18 @@ const XS02_TERMS: SyndromeTermMatch[] = [
 ];
 
 const XS03_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED ===
-  {
-    testCodes: ["BUN", "UREA"],
-    canonicalLabels: ["blood urea nitrogen", "urea nitrogen", "urea"],
-    domain: "LB", direction: "up", role: "required", tag: "BUN",
-  },
+  // === REQUIRED (REM-12: CREAT is the only required marker — BUN alone is non-specific) ===
   {
     testCodes: ["CREAT", "CREA"],
     canonicalLabels: ["creatinine"],
     domain: "LB", direction: "up", role: "required", tag: "CREAT",
+  },
+  // === SUPPORTING ===
+  // REM-12: BUN demoted from required to supporting (pre-renal azotemia is common)
+  {
+    testCodes: ["BUN", "UREA"],
+    canonicalLabels: ["blood urea nitrogen", "urea nitrogen", "urea"],
+    domain: "LB", direction: "up", role: "supporting",
   },
   // === SUPPORTING ===
   {
@@ -455,12 +457,19 @@ const XS05_TERMS: SyndromeTermMatch[] = [
     organWeightTerms: { specimen: ["spleen"] },
     domain: "OM", direction: "up", role: "supporting",
   },
+  // REM-13: Split into two distinct terms — EMH and hemosiderin/pigment
+  // are separate diagnostic findings with different mechanistic significance
   {
     specimenTerms: {
       specimen: ["spleen"],
-      finding: ["extramedullary hematopoiesis", "congestion",
-                "pigmentation", "hemosiderin", "hemosiderosis",
-                "increased hematopoiesis"],
+      finding: ["extramedullary hematopoiesis", "increased hematopoiesis", "congestion"],
+    },
+    domain: "MI", direction: "any", role: "supporting",
+  },
+  {
+    specimenTerms: {
+      specimen: ["spleen"],
+      finding: ["pigmentation", "hemosiderin", "hemosiderosis"],
     },
     domain: "MI", direction: "any", role: "supporting",
   },
@@ -525,29 +534,29 @@ const XS07_TERMS: SyndromeTermMatch[] = [
 ];
 
 const XS08_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED ===
+  // === REQUIRED (REM-12: ADRENAL_WT + at least one corroborating finding) ===
   {
     organWeightTerms: { specimen: ["adrenal"] },
     domain: "OM", direction: "up", role: "required", tag: "ADRENAL_WT",
+  },
+  {
+    organWeightTerms: { specimen: ["thymus"] },
+    domain: "OM", direction: "down", role: "required", tag: "THYMUS_WT",
+  },
+  {
+    testCodes: ["LYMPH", "LYM"],
+    canonicalLabels: ["lymphocytes", "lymphocyte count"],
+    domain: "LB", direction: "down", role: "required", tag: "LYMPH",
+  },
+  {
+    canonicalLabels: ["body weight"],
+    domain: "BW", direction: "down", role: "required", tag: "BW",
   },
   // === SUPPORTING ===
   {
     testCodes: ["CORT"],
     canonicalLabels: ["corticosterone", "cortisol"],
     domain: "LB", direction: "up", role: "supporting",
-  },
-  {
-    organWeightTerms: { specimen: ["thymus"] },
-    domain: "OM", direction: "down", role: "supporting",
-  },
-  {
-    testCodes: ["LYMPH", "LYM"],
-    canonicalLabels: ["lymphocytes", "lymphocyte count"],
-    domain: "LB", direction: "down", role: "supporting",
-  },
-  {
-    canonicalLabels: ["body weight"],
-    domain: "BW", direction: "down", role: "supporting",
   },
 ];
 
@@ -673,7 +682,8 @@ const SYNDROME_DEFINITIONS: SyndromeDefinition[] = [
   {
     id: "XS08",
     name: "Stress response",
-    requiredLogic: { type: "any" },
+    // REM-12: Adrenal weight alone is insufficient — need corroborating evidence
+    requiredLogic: { type: "compound", expression: "ADRENAL_WT AND (BW OR THYMUS_WT OR LYMPH)" },
     terms: XS08_TERMS,
     minDomains: 2,
   },
@@ -1123,6 +1133,17 @@ export function detectCrossDomainSyndromes(
 
   results = deduplicateSyndromes(allResults);
   }
+
+  // REM-12: XS10 significance gate — require at least one matched required
+  // endpoint with p < 0.05 to prevent over-detection from borderline findings
+  results = results.filter((s) => {
+    if (s.id !== "XS10") return true;
+    const requiredMatched = s.matchedEndpoints.filter((me) => me.role === "required");
+    return requiredMatched.some((me) => {
+      const ep = endpoints.find((e) => e.endpoint_label === me.endpoint_label);
+      return ep && ep.minPValue != null && ep.minPValue < 0.05;
+    });
+  });
 
   // REM-09: Apply directional gates as post-processing
   return applyDirectionalGates(results, endpoints);
