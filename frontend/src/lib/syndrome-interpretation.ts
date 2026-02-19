@@ -161,6 +161,8 @@ export interface AnimalDisposition {
   treatmentRelated: boolean;
   causeOfDeath?: string;
   excludeFromTerminalStats: boolean;
+  isRecoveryArm?: boolean;
+  doseLabel?: string;
 }
 
 /** Backend-aligned food consumption summary response. */
@@ -224,12 +226,15 @@ export interface MortalityContext {
   doseRelatedMortality: boolean;
   mortalityNarrative: string;
   mortalityNoaelCap: number | null;
+  /** true = deaths match syndrome organs, false = unrelated, null = cannot determine automatically */
+  mortalityNoaelCapRelevant: boolean | null;
   deathDetails: {
     animalId: string;
     doseGroup: number;
     dispositionCode: string;
     dispositionDay: number;
     causeOfDeath?: string;
+    doseLabel?: string;
   }[];
 }
 
@@ -662,6 +667,10 @@ const SYNDROME_CL_CORRELATES: Record<string, {
   XS03: {
     expectedObservations: ["POLYURIA", "POLYDIPSIA"],
     tier: [3, 3],
+  },
+  XS09: {
+    expectedObservations: ["EMACIATION", "THIN", "DECREASED ACTIVITY", "HUNCHED POSTURE"],
+    tier: [2, 3, 3, 3],
   },
   XS10: {
     expectedObservations: ["BRADYCARDIA", "TACHYCARDIA", "ARRHYTHMIA", "DYSPNEA"],
@@ -1333,8 +1342,31 @@ export function assessSyndromeRecovery(
   syndrome: CrossDomainSyndrome,
   recoveryData: RecoveryRow[],
   terminalEndpoints: EndpointSummary[],
+  foodConsumptionData?: FoodConsumptionSummaryResponse,
 ): SyndromeRecoveryAssessment {
   if (recoveryData.length === 0) {
+    // For BW-relevant syndromes, check food consumption recovery data as fallback
+    if (
+      foodConsumptionData?.recovery?.available &&
+      BW_RELEVANT_SYNDROMES.has(syndrome.id)
+    ) {
+      const { fw_recovered, bw_recovered } = foodConsumptionData.recovery;
+      let status: SyndromeRecoveryAssessment["status"];
+      let summary: string;
+      if (fw_recovered && bw_recovered) {
+        status = "recovered";
+        summary = "Food consumption and body weight both recovered.";
+      } else if (!fw_recovered && !bw_recovered) {
+        status = "not_recovered";
+        summary = "Neither food consumption nor body weight recovered.";
+      } else {
+        status = "partial";
+        summary = fw_recovered
+          ? "Food consumption recovered but body weight remained depressed."
+          : "Body weight recovered but food consumption remained depressed.";
+      }
+      return { status, endpoints: [], summary };
+    }
     return {
       status: "not_examined",
       endpoints: [],
@@ -1657,6 +1689,8 @@ export function mapDeathRecordsToDispositions(mortality: StudyMortality): Animal
       treatmentRelated: true,
       causeOfDeath: d.cause ?? undefined,
       excludeFromTerminalStats: true,
+      isRecoveryArm: d.is_recovery,
+      doseLabel: d.dose_label,
     });
   }
   for (const a of mortality.accidentals) {
@@ -1669,6 +1703,8 @@ export function mapDeathRecordsToDispositions(mortality: StudyMortality): Animal
       treatmentRelated: false,
       causeOfDeath: a.cause ?? undefined,
       excludeFromTerminalStats: true,
+      isRecoveryArm: a.is_recovery,
+      doseLabel: a.dose_label,
     });
   }
   return dispositions;
@@ -1692,11 +1728,12 @@ export function assessMortalityContext(
       doseRelatedMortality: false,
       mortalityNarrative: "No mortality data available.",
       mortalityNoaelCap: null,
+      mortalityNoaelCapRelevant: false,
       deathDetails: [],
     };
   }
 
-  const treatmentRelated = mortalityData.filter((d) => d.treatmentRelated);
+  const treatmentRelated = mortalityData.filter((d) => d.treatmentRelated && !d.isRecoveryArm);
   const syndromeOrgans = getSyndromeOrgans(syndrome.id);
 
   // Match cause-of-death against syndrome organs
@@ -1734,8 +1771,24 @@ export function assessMortalityContext(
   if (doseRelated) {
     parts.push("Dose-related mortality pattern detected.");
   }
+  // Determine NOAEL cap relevance
+  let capRelevant: boolean | null = false;
+  if (mortalityNoaelCap == null) {
+    capRelevant = false; // no cap → vacuously irrelevant
+  } else if (syndromeOrgans.length === 0) {
+    capRelevant = null;  // organ-less syndrome → cannot determine automatically
+  } else {
+    capRelevant = deathsInOrgans > 0; // organ-specific → match deaths to organs
+  }
+
   if (mortalityNoaelCap != null) {
-    parts.push(`Mortality caps NOAEL at dose level ${mortalityNoaelCap}.`);
+    if (capRelevant === true) {
+      parts.push(`Mortality caps NOAEL at dose level ${mortalityNoaelCap}.`);
+    } else if (capRelevant === false) {
+      parts.push(`Study-level mortality NOAEL cap (dose level ${mortalityNoaelCap}) — deaths not attributed to this syndrome's target organs.`);
+    } else {
+      parts.push(`Study-level mortality NOAEL cap (dose level ${mortalityNoaelCap}) — relevance to this syndrome cannot be determined automatically. Review death circumstances.`);
+    }
   }
 
   return {
@@ -1744,12 +1797,14 @@ export function assessMortalityContext(
     doseRelatedMortality: doseRelated,
     mortalityNarrative: parts.join(" "),
     mortalityNoaelCap: mortalityNoaelCap ?? null,
+    mortalityNoaelCapRelevant: capRelevant,
     deathDetails: treatmentRelated.map((d) => ({
       animalId: d.animalId,
       doseGroup: d.doseGroup,
       dispositionCode: d.dispositionCode,
       dispositionDay: d.dispositionDay,
       causeOfDeath: d.causeOfDeath,
+      doseLabel: d.doseLabel,
     })),
   };
 }
@@ -1851,14 +1906,22 @@ export function assessTumorContext(
 
   // Filter tumors to organs related to this syndrome
   const syndromeOrgans = getSyndromeOrgans(syndrome.id);
-  const relevantTumors = syndromeOrgans.length > 0
-    ? tumorData.filter((t) => {
-        const tumorOrgan = t.organ.toUpperCase();
-        return syndromeOrgans.some(
-          (so) => tumorOrgan.includes(so) || so.includes(tumorOrgan),
-        );
-      })
-    : tumorData; // No organ mapping → include all tumors for context
+  if (syndromeOrgans.length === 0) {
+    // Syndrome has no organ-specific terms (e.g., XS09 uses specimen: []);
+    // tumor context is not applicable — don't include unrelated tumors
+    return {
+      tumorsPresent: false,
+      tumorSummaries: [],
+      progressionDetected: false,
+      interpretation: "Tumor context not applicable — syndrome has no organ-specific terms.",
+    };
+  }
+  const relevantTumors = tumorData.filter((t) => {
+    const tumorOrgan = t.organ.toUpperCase();
+    return syndromeOrgans.some(
+      (so) => tumorOrgan.includes(so) || so.includes(tumorOrgan),
+    );
+  });
 
   if (relevantTumors.length === 0) {
     return {
@@ -2075,13 +2138,25 @@ export function computeTreatmentRelatedness(
   allEndpoints: EndpointSummary[],
   clSupport: ClinicalObservationSupport,
 ): TreatmentRelatednessScore {
-  // A-1: dose-response strength
+  // A-1: dose-response strength — derived from actual endpoint dose-response patterns
+  const matchedLabelsA1 = new Set(syndrome.matchedEndpoints.map((m) => m.endpoint_label));
+  const matchedEpsA1 = allEndpoints.filter((ep) => matchedLabelsA1.has(ep.endpoint_label));
+
+  const STRONG_PATTERNS = new Set([
+    "linear", "monotonic", "threshold", "threshold_increase", "threshold_decrease",
+  ]);
+  const hasStrongPattern = matchedEpsA1.some((ep) =>
+    STRONG_PATTERNS.has(ep.pattern) &&
+    ep.minPValue != null && ep.minPValue < 0.05
+  );
+  const hasAnyPattern = matchedEpsA1.some((ep) =>
+    ep.pattern !== "flat" && ep.pattern !== "insufficient_data"
+  );
+
   const doseResponse: TreatmentRelatednessScore["doseResponse"] =
-    syndrome.confidence === "HIGH"
-      ? "strong"
-      : syndrome.confidence === "MODERATE"
-        ? "weak"
-        : "absent";
+    hasStrongPattern ? "strong"
+    : hasAnyPattern ? "weak"
+    : "absent";
 
   // A-2: cross-endpoint concordance
   const crossEndpoint: TreatmentRelatednessScore["crossEndpoint"] =
@@ -2173,6 +2248,7 @@ export function computeAdversity(
   const reversible =
     recovery.status === "recovered" ? true
     : recovery.status === "not_recovered" ? false
+    : recovery.status === "partial" ? false
     : null;
 
   const magnitudeLevel = deriveMagnitudeLevel(syndrome, allEndpoints);
@@ -2595,6 +2671,7 @@ export function interpretSyndrome(
     syndrome,
     recoveryData,
     allEndpoints,
+    foodConsumptionData,
   );
 
   // ── Phase C: CL correlation ──
