@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 4 | Spec'd but not implemented |
-| Gap | 10 | 4 | Missing capability, no spec exists |
+| Gap | 11 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **25** | **37** | |
+| **Total open** | **26** | **37** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -182,3 +182,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Files:** `frontend/src/lib/report-generator.ts`
 - **Issue:** Report built before views were fully designed. Needs redesign to reflect current view structure and user workflows.
 - **Status:** Open (blocked on user flow document)
+
+### GAP-16: Compound-class contextual warnings (REM-20 deferred)
+- **Files:** `frontend/src/lib/syndrome-interpretation.ts`
+- **Issue:** REM-20 originally called for explicit missing-domain warnings and compound-class context. The missing-domain warnings were implemented as part of REM-15 (data sufficiency gate, METH-29). The compound-class comparison aspect — warning when a syndrome is detected for a compound whose pharmacological class has known organ-specific effects — requires an external reference database mapping compound classes to expected finding profiles. This database does not currently exist in the system. When available, it would enable contextual warnings like "XS01 detected; compound class (NSAID) has known hepatotoxicity — consider class effect vs. novel finding."
+- **Blocked on:** External compound-class-to-findings reference database
+- **Status:** Open (deferred — no data source available)
+- **Owner hint:** backend-dev (database), frontend-dev (integration into interpretation layer)
