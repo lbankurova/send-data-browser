@@ -74,6 +74,7 @@ Before committing changes that alter system or view behavior:
 3. **Mark MANIFEST.md.** Set "Last validated" to today for any spec you updated. If you can't update the spec, mark it `STALE — <reason>` in MANIFEST.
 4. **Check `docs/incoming/`** for feature specs that conflict with your changes. If a conflict exists, ask the user before committing.
 5. **Update the issue tracker.** Mark resolved items in `docs/incoming/arch-overhaul/spec-cleanup-b66dfd0.md` with strikethrough + commit hash. Update the summary counts and per-view table. This is mandatory for every commit — no exceptions.
+6. **Update knowledge docs when analytical logic changes.** If your commit adds, removes, or modifies a statistical test, algorithmic method, classification algorithm, scoring formula, or external data dependency, update the corresponding entry in `docs/knowledge/methods.md` or `docs/knowledge/dependencies.md`. New method → new entry with stable ID. Changed parameters/thresholds → update the existing entry. Removed method → delete the entry. Skip this step for commits that only touch UI, docs, or tests without changing analytical logic.
 
 **When fixing a data pipeline bug:** Write the failing test FIRST, then apply the fix, then confirm all tests pass. This is non-negotiable for changes to: `derive-summaries.ts`, `lab-clinical-catalog.ts`, `cross-domain-syndromes.ts`, `findings-rail-engine.ts`, classification.py, or any findings_*.py module.
 
