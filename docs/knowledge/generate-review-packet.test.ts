@@ -378,7 +378,7 @@ function generateReviewDocument(): string {
   lines.push("| S0 | Death | Treatment-related mortality detected |");
   lines.push("| — | Carcinogenic | Tumor progression sequence detected |");
   lines.push("| — | Proliferative | Tumors present (no progression) |");
-  lines.push("| S4 | Critical | Adversity=adverse + magnitude≥marked + mechanism_confirmed |");
+  lines.push("| S4 | Critical | Treatment-related mortality (non-syndrome organs) |");
   lines.push("| S3 | Adverse | Adversity=adverse + mechanism_confirmed or mechanism_uncertain |");
   lines.push("| S2 | Concern | Adversity=equivocal OR pattern_only with adverse signals |");
   lines.push("| S1 | Monitor | Non-adverse, minimal magnitude, or insufficient evidence |");

@@ -1057,6 +1057,20 @@ export function evaluateDiscriminator(
           source: disc.source,
         };
       }
+      // Endpoint measured and direction matches expected → weak support even without
+      // statistical significance. Organ weights often have lower power; the directional
+      // signal is still biologically informative for discriminator evaluation.
+      if (actualDir === disc.expectedDirection) {
+        return {
+          endpoint: disc.endpoint,
+          description: disc.rationale,
+          expectedDirection: disc.expectedDirection,
+          actualDirection: actualDir,
+          status: "supports",
+          weight: "moderate",
+          source: disc.source,
+        };
+      }
       return {
         endpoint: disc.endpoint,
         description: disc.rationale,
