@@ -13,7 +13,6 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
 import {
-  getDomainBadgeColor,
   getDirectionSymbol,
   formatPValue,
   formatEffectSize,
@@ -25,7 +24,7 @@ import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-sy
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { interpretSyndrome, mapDeathRecordsToDispositions } from "@/lib/syndrome-interpretation";
-import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext, TreatmentRelatednessScore, AdversityAssessment, OverallSeverity, ClinicalObservation, RecoveryRow, TranslationalConfidence } from "@/lib/syndrome-interpretation";
+import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext, TreatmentRelatednessScore, AdversityAssessment, OverallSeverity, ClinicalObservation, RecoveryRow, TranslationalConfidence, UpgradeEvidenceResult } from "@/lib/syndrome-interpretation";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useTumorSummary } from "@/hooks/useTumorSummary";
@@ -388,10 +387,14 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
                   : "No mortality impact"}
               </span>
             </div>
-            {/* Mechanism certainty */}
+            {/* Translational */}
             <div>
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Mechanism</div>
-              <CertaintyBadge certainty={syndromeInterp.mechanismCertainty} />
+              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Translational</div>
+              <span className="text-xs font-medium text-foreground">
+                {syndromeInterp.translationalConfidence.tier === "insufficient_data"
+                  ? "insufficient data"
+                  : syndromeInterp.translationalConfidence.tier}
+              </span>
             </div>
           </div>
           {/* Key discriminator — surfaced when mechanism is uncertain */}
@@ -414,9 +417,20 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       )}
 
       {/* Pane: CERTAINTY ASSESSMENT (Phase A, Component 1) */}
-      {syndromeInterp && syndromeInterp.discriminatingEvidence.length > 0 && (
-        <CollapsiblePane title="Certainty assessment" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <CertaintyAssessmentPane interp={syndromeInterp} />
+      {syndromeInterp && (
+        <CollapsiblePane title="Certainty assessment" defaultOpen={syndromeInterp.discriminatingEvidence.length > 0} expandAll={expandGen} collapseAll={collapseGen}>
+          {syndromeInterp.discriminatingEvidence.length > 0 ? (
+            <CertaintyAssessmentPane interp={syndromeInterp} />
+          ) : (
+            <p className="text-xs text-muted-foreground italic">No certainty-discriminating evidence available.</p>
+          )}
+        </CollapsiblePane>
+      )}
+
+      {/* Pane: UPGRADE EVIDENCE (v0.3.0 PATCH-04) */}
+      {syndromeInterp?.upgradeEvidence && (
+        <CollapsiblePane title="Enzyme tier upgrade evidence" defaultOpen={syndromeInterp.upgradeEvidence.levelsLifted > 0} expandAll={expandGen} collapseAll={collapseGen}>
+          <UpgradeEvidencePane evidence={syndromeInterp.upgradeEvidence} />
         </CollapsiblePane>
       )}
 
@@ -451,16 +465,24 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       )}
 
       {/* Pane: HISTOPATHOLOGY CONTEXT (Phase A, Component 2) */}
-      {syndromeInterp && syndromeInterp.histopathContext.length > 0 && (
-        <CollapsiblePane title="Histopathology context" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <HistopathContextPane crossRefs={syndromeInterp.histopathContext} />
+      {syndromeInterp && (
+        <CollapsiblePane title="Histopathology context" defaultOpen={syndromeInterp.histopathContext.length > 0} expandAll={expandGen} collapseAll={collapseGen}>
+          {syndromeInterp.histopathContext.length > 0 ? (
+            <HistopathContextPane crossRefs={syndromeInterp.histopathContext} />
+          ) : (
+            <p className="text-xs text-muted-foreground italic">No histopathology cross-references for this syndrome.</p>
+          )}
         </CollapsiblePane>
       )}
 
       {/* Pane: CLINICAL OBSERVATIONS (Phase C) */}
-      {syndromeInterp && syndromeInterp.clinicalObservationSupport.assessment !== "no_cl_data" && (
-        <CollapsiblePane title="Clinical observations" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <ClinicalObservationsPane support={syndromeInterp.clinicalObservationSupport} />
+      {syndromeInterp && (
+        <CollapsiblePane title="Clinical observations" defaultOpen={syndromeInterp.clinicalObservationSupport.assessment !== "no_cl_data"} expandAll={expandGen} collapseAll={collapseGen}>
+          {syndromeInterp.clinicalObservationSupport.assessment !== "no_cl_data" ? (
+            <ClinicalObservationsPane support={syndromeInterp.clinicalObservationSupport} />
+          ) : (
+            <p className="text-xs text-muted-foreground italic">No clinical observation data available for this study.</p>
+          )}
         </CollapsiblePane>
       )}
 
@@ -472,21 +494,34 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       )}
 
       {/* Pane: MORTALITY CONTEXT (Phase B) */}
-      {syndromeInterp && syndromeInterp.mortalityContext.treatmentRelatedDeaths > 0 && (
-        <CollapsiblePane title="Mortality context" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <MortalityContextPane mortality={syndromeInterp.mortalityContext} />
+      {syndromeInterp && (
+        <CollapsiblePane title="Mortality context" defaultOpen={syndromeInterp.mortalityContext.treatmentRelatedDeaths > 0} expandAll={expandGen} collapseAll={collapseGen}>
+          {syndromeInterp.mortalityContext.treatmentRelatedDeaths > 0 ? (
+            <MortalityContextPane mortality={syndromeInterp.mortalityContext} />
+          ) : (
+            <p className="text-xs text-muted-foreground italic">No treatment-related mortality detected.</p>
+          )}
         </CollapsiblePane>
       )}
 
       {/* Pane: FOOD CONSUMPTION CONTEXT (Phase B) */}
-      {syndromeInterp && syndromeInterp.foodConsumptionContext.available &&
-        syndromeInterp.foodConsumptionContext.bwFwAssessment !== "not_applicable" && (
-        <CollapsiblePane title="Food consumption" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <FoodConsumptionPane
-            context={syndromeInterp.foodConsumptionContext}
-            rawData={foodConsumptionSummary}
-            doseGroups={rawData?.dose_groups}
-          />
+      {syndromeInterp && (
+        <CollapsiblePane
+          title="Food consumption"
+          defaultOpen={syndromeInterp.foodConsumptionContext.available && syndromeInterp.foodConsumptionContext.bwFwAssessment !== "not_applicable"}
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        >
+          {syndromeInterp.foodConsumptionContext.available &&
+            syndromeInterp.foodConsumptionContext.bwFwAssessment !== "not_applicable" ? (
+            <FoodConsumptionPane
+              context={syndromeInterp.foodConsumptionContext}
+              rawData={foodConsumptionSummary}
+              doseGroups={rawData?.dose_groups}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground italic">Food consumption data not available for this study.</p>
+          )}
         </CollapsiblePane>
       )}
 
@@ -503,9 +538,13 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       )}
 
       {/* Pane: TRANSLATIONAL CONFIDENCE */}
-      {syndromeInterp && syndromeInterp.translationalConfidence.tier !== "insufficient_data" && (
-        <CollapsiblePane title="Translational confidence" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <TranslationalConfidencePane confidence={syndromeInterp.translationalConfidence} />
+      {syndromeInterp && (
+        <CollapsiblePane title="Translational confidence" defaultOpen={syndromeInterp.translationalConfidence.tier !== "insufficient_data"} expandAll={expandGen} collapseAll={collapseGen}>
+          {syndromeInterp.translationalConfidence.tier !== "insufficient_data" ? (
+            <TranslationalConfidencePane confidence={syndromeInterp.translationalConfidence} />
+          ) : (
+            <p className="text-xs text-muted-foreground italic">Insufficient data to assess translational confidence.</p>
+          )}
         </CollapsiblePane>
       )}
 
@@ -617,8 +656,13 @@ function EvidenceSummaryContent({
         <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
           {cappedConfidence}
         </span>
-        {report.oppositeCount > 0 && (
-          <span className="text-[9px] text-amber-600">
+        {cappedConfidence !== confidence && (
+          <span className="text-[9px] text-muted-foreground italic">
+            reduced from {confidence} — {report.oppositeCount} opposing finding{report.oppositeCount !== 1 ? "s" : ""}
+          </span>
+        )}
+        {cappedConfidence === confidence && report.oppositeCount > 0 && (
+          <span className="text-[9px] text-muted-foreground">
             ({report.oppositeCount} argue{report.oppositeCount === 1 ? "s" : ""} against)
           </span>
         )}
@@ -845,19 +889,22 @@ function HysLawAssessment({
 
   const statusColorClass = (status: string) => {
     switch (status) {
-      case "TRIGGERED": return "text-red-600 font-semibold";
-      case "NOT TRIGGERED": return "text-green-600";
+      case "TRIGGERED": return "text-foreground font-semibold";
+      case "NOT TRIGGERED": return "text-muted-foreground";
       case "NOT EVALUATED": return "text-muted-foreground";
-      case "APPROACHING": return "text-amber-600";
+      case "APPROACHING": return "text-foreground font-medium";
       default: return "text-muted-foreground";
     }
   };
 
   return (
     <div className="mt-3 border-t pt-2">
-      <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
         Hy&apos;s Law assessment
       </div>
+      <p className="mb-1.5 text-[9px] text-muted-foreground/60">
+        Triggered: concurrent transaminase + bilirubin elevation (p &lt; 0.05). Approaching: one elevated, other borderline (p &lt; 0.1 or |d| &gt; 0.8).
+      </p>
       <div className="space-y-1.5">
         {ruleStatuses.map((rs) => (
           <div key={rs.ruleId}>
@@ -895,9 +942,9 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
   if (entry.status === "matched") {
     return (
       <div className="flex items-center gap-1.5 text-xs">
-        <span className="shrink-0 text-green-600">{"\u2713"}</span>
+        <span className="shrink-0 text-muted-foreground">{"\u2713"}</span>
         <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}{entry.sex && <span className="text-[9px] text-muted-foreground"> ({entry.sex})</span>}</span>
-        <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
+        <span className={"shrink-0 text-[9px] font-semibold text-muted-foreground"}>
           {entry.domain}
         </span>
         {entry.pValue != null && (
@@ -922,10 +969,10 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
   if (entry.status === "opposite") {
     const dirArrow = entry.foundDirection === "up" ? "\u2191" : entry.foundDirection === "down" ? "\u2193" : "";
     return (
-      <div className="flex items-center gap-1.5 text-xs text-amber-600">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <span className="shrink-0">{"\u2298"}</span>
         <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}</span>
-        <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
+        <span className={"shrink-0 text-[9px] font-semibold text-muted-foreground"}>
           {entry.domain}
         </span>
         <span className="shrink-0 text-[9px] italic">found {dirArrow} (argues against)</span>
@@ -938,7 +985,7 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <span className="shrink-0">{"\u2014"}</span>
         <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}</span>
-        <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
+        <span className={"shrink-0 text-[9px] font-semibold text-muted-foreground"}>
           {entry.domain}
         </span>
         <span className="shrink-0 text-[9px] italic text-muted-foreground">present, not significant</span>
@@ -951,7 +998,7 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
     <div className="flex items-center gap-1.5 text-xs text-muted-foreground/40">
       <span className="shrink-0">{"\u2717"}</span>
       <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}</span>
-      <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(entry.domain).text}`}>
+      <span className={"shrink-0 text-[9px] font-semibold text-muted-foreground"}>
         {entry.domain}
       </span>
       <span className="shrink-0 text-[9px] italic text-muted-foreground">not measured</span>
@@ -1091,10 +1138,7 @@ function CertaintyBadge({ certainty }: { certainty: SyndromeInterpretation["mech
     certainty === "mechanism_confirmed" ? "CONFIRMED"
     : certainty === "mechanism_uncertain" ? "UNCERTAIN"
     : "PATTERN ONLY";
-  const colorClass =
-    certainty === "mechanism_confirmed" ? "text-green-600"
-    : certainty === "mechanism_uncertain" ? "text-amber-600"
-    : "text-muted-foreground";
+  const colorClass = "text-gray-600";
   const icon =
     certainty === "mechanism_confirmed" ? "\u2713"
     : certainty === "mechanism_uncertain" ? "?"
@@ -1132,16 +1176,59 @@ function CertaintyAssessmentPane({ interp }: { interp: SyndromeInterpretation })
   );
 }
 
+/** v0.3.0 PATCH-04: Upgrade evidence pane — shows tier, cap, and individual UE items */
+function UpgradeEvidencePane({ evidence }: { evidence: UpgradeEvidenceResult }) {
+  const metCount = evidence.items.filter(i => i.met).length;
+  return (
+    <div className="space-y-2">
+      {/* Summary */}
+      <div className="flex items-center gap-2 text-xs">
+        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+          {evidence.tier.toUpperCase()}
+        </span>
+        <span className="text-muted-foreground">
+          Capped at {evidence.cappedCertainty.replace(/_/g, " ")}
+          {evidence.levelsLifted > 0
+            ? ` \u2192 lifted ${evidence.levelsLifted} level(s) to ${evidence.finalCertainty.replace(/_/g, " ")}`
+            : ""}
+        </span>
+      </div>
+      <div className="text-[10px] text-muted-foreground">
+        Score {evidence.totalScore.toFixed(1)} ({metCount}/{evidence.items.length} items met)
+      </div>
+
+      {/* Individual items */}
+      <div className="space-y-0.5">
+        {evidence.items.map((item) => (
+          <div key={item.id} className="flex items-start gap-1.5 text-xs">
+            <span className={`shrink-0 ${item.met ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
+              {item.met ? "\u2713" : "\u2014"}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className={item.met ? "text-foreground" : "text-muted-foreground/60"}>
+                {item.id} {item.label}
+              </span>
+              <span className="ml-1 text-muted-foreground/60 text-[10px]">
+                ({item.strength}, {item.score.toFixed(1)})
+              </span>
+              <span className="ml-1 text-[10px] text-muted-foreground/50">
+                {item.detail}
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Single row in discriminating evidence table */
 function DiscriminatingEvidenceRow({ disc }: { disc: DiscriminatingFinding }) {
   const icon =
     disc.status === "supports" ? "\u2713"
     : disc.status === "argues_against" ? "\u2298"
     : "\u2014";
-  const iconColor =
-    disc.status === "supports" ? "text-green-600"
-    : disc.status === "argues_against" ? "text-amber-600"
-    : "text-muted-foreground/40";
+  const iconColor = disc.status === "not_available" ? "text-muted-foreground/40" : "text-muted-foreground";
   const dirArrow = disc.expectedDirection === "up" ? "\u2191" : "\u2193";
   const actualArrow = disc.actualDirection === "up" ? "\u2191" : disc.actualDirection === "down" ? "\u2193" : "";
 
@@ -1194,11 +1281,7 @@ function HistopathContextPane({ crossRefs }: { crossRefs: HistopathCrossRef[] })
                 <div className="mt-0.5 space-y-0.5">
                   {ref.observedFindings.filter(o => o.peakIncidence > 0).map((obs, i) => (
                     <div key={i} className="text-[10px]">
-                      <span className={
-                        obs.relevance === "expected" ? "text-green-600"
-                        : obs.relevance === "unexpected" ? "text-amber-600"
-                        : "text-foreground/70"
-                      }>
+                      <span className="text-foreground">
                         {obs.finding}
                       </span>
                       <span className="ml-1 text-muted-foreground">
@@ -1214,11 +1297,7 @@ function HistopathContextPane({ crossRefs }: { crossRefs: HistopathCrossRef[] })
                 </div>
               )}
               <div className="mt-1 text-[10px] font-medium">
-                <span className={
-                  ref.assessment === "supports" ? "text-green-600"
-                  : ref.assessment === "argues_against" ? "text-amber-600"
-                  : "text-muted-foreground"
-                }>
+                <span className={ref.assessment === "inconclusive" ? "text-muted-foreground" : "text-foreground"}>
                   Assessment: {ref.assessment.replace(/_/g, " ")}
                 </span>
               </div>
@@ -1237,9 +1316,7 @@ function ClinicalObservationsPane({ support }: { support: SyndromeInterpretation
       <div className="mb-1.5 flex items-center gap-2">
         <span className="text-xs text-muted-foreground">Assessment:</span>
         <span className={`text-xs font-medium ${
-          support.assessment === "strengthens" ? "text-green-600"
-          : support.assessment === "weakens" ? "text-amber-600"
-          : "text-muted-foreground"
+          support.assessment === "neutral" ? "text-muted-foreground" : "text-foreground"
         }`}>
           {support.assessment}
         </span>
@@ -1248,7 +1325,7 @@ function ClinicalObservationsPane({ support }: { support: SyndromeInterpretation
         <div className="space-y-0.5">
           {support.correlatingObservations.map((obs, i) => (
             <div key={i} className="flex items-center gap-1.5 text-xs">
-              <span className="shrink-0 text-green-600">{"\u2713"}</span>
+              <span className="shrink-0 text-muted-foreground">{"\u2713"}</span>
               <span className="text-foreground">{obs.observation}</span>
               <span className="text-muted-foreground">
                 {obs.incidenceDoseDependent ? "dose-dependent" : ""}
@@ -1281,7 +1358,7 @@ function MortalityContextPane({ mortality }: { mortality: MortalityContext }) {
             <span className="text-[9px] text-muted-foreground">(unrelated)</span>
           )}
           {mortality.mortalityNoaelCapRelevant === null && (
-            <span className="text-[9px] text-amber-600">(review)</span>
+            <span className="text-[9px] text-muted-foreground italic">(review)</span>
           )}
         </div>
       )}
@@ -1392,11 +1469,11 @@ function FoodConsumptionPane({
           </div>
           <div className="mt-1 flex items-center gap-2 text-xs">
             <span className="text-muted-foreground">FW:</span>
-            <span className={rawData.recovery.fw_recovered ? "text-green-600" : "text-amber-600"}>
+            <span className={rawData.recovery.fw_recovered ? "text-foreground" : "text-foreground font-medium"}>
               {rawData.recovery.fw_recovered ? "recovered" : "not recovered"}
             </span>
             <span className="text-muted-foreground">BW:</span>
-            <span className={rawData.recovery.bw_recovered ? "text-green-600" : "text-amber-600"}>
+            <span className={rawData.recovery.bw_recovered ? "text-foreground" : "text-foreground font-medium"}>
               {rawData.recovery.bw_recovered ? "recovered" : "not recovered"}
             </span>
           </div>
@@ -1415,11 +1492,7 @@ function RecoveryPane({ recovery }: { recovery: SyndromeInterpretation["recovery
     <div>
       <div className="mb-1.5 flex items-center gap-2">
         <span className="text-xs text-muted-foreground">Status:</span>
-        <span className={`rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium ${
-          recovery.status === "recovered" ? "text-green-600"
-          : recovery.status === "not_recovered" ? "text-amber-600"
-          : "text-gray-600"
-        }`}>
+        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
           {recovery.status.replace(/_/g, " ")}
         </span>
       </div>
@@ -1432,18 +1505,14 @@ function RecoveryPane({ recovery }: { recovery: SyndromeInterpretation["recovery
                 {ep.label}{ep.sex !== "Both" && ` (${ep.sex})`}
               </span>
               <span className="shrink-0 text-muted-foreground">
-                terminal |d|={Math.abs(ep.terminalEffect).toFixed(2)}
+                terminal d={Math.abs(ep.terminalEffect).toFixed(2)}
               </span>
               {ep.recoveryEffect != null && (
                 <span className="shrink-0 text-muted-foreground">
-                  recovery |d|={Math.abs(ep.recoveryEffect).toFixed(2)}
+                  recovery d={Math.abs(ep.recoveryEffect).toFixed(2)}
                 </span>
               )}
-              <span className={`shrink-0 text-[9px] font-medium ${
-                ep.status === "recovered" ? "text-green-600"
-                : ep.status === "not_recovered" ? "text-amber-600"
-                : "text-muted-foreground"
-              }`}>
+              <span className="shrink-0 text-[9px] font-medium text-muted-foreground">
                 {ep.status.replace(/_/g, " ")}
               </span>
             </div>

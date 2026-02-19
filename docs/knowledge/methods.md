@@ -731,11 +731,47 @@ When a confirmatory domain is missing, certainty cannot exceed `pattern_only`. W
 
 1. **RETIC conditional override:** Floor relaxes from 25% to 15% when concordant anemia present (≥2 of RBC/HGB/HCT decreased, each meeting erythroid floor). `hasConcordantAnemia()` in `cross-domain-syndromes.ts`.
 2. **Rare leukocyte concordance:** MONO/EOS/BASO require ≥1 primary leukocyte (WBC/NEUT/LYMPH) shifting same direction to be treated as meaningful. `hasLeukocyteConcordance()` in `cross-domain-syndromes.ts`. Per de Kort & Weber 2020.
-3. **Liver enzyme certainty cap:** Single liver enzyme at ≥1.5x cannot drive XS01 certainty above `pattern_only`. Upgrade paths: MI hepatocellular injury, ≥2 coherent liver enzymes, liver weight increase. `applyCertaintyCaps()` in `syndrome-interpretation.ts`. Per Ramaiah 2017.
+3. **Liver enzyme tiered certainty cap (v0.3.0 PATCH-01):** Three-tier cap based on max |FC-1| of matched liver enzymes in XS01:
+   - **watchlist** (|FC-1| ≥ 0.5, FC ≥ 1.5×) → cap `pattern_only`. Per Hall 2012: <2× = adaptive noise.
+   - **concern** (|FC-1| ≥ 1.0, FC ≥ 2.0×) → cap `mechanism_uncertain`. Per EMA: 2-4× "may raise concern."
+   - **high** (|FC-1| ≥ 2.0, FC ≥ 3.0×) → no cap. Per EMA: >3-5× "considered adverse."
+   Best tier among matched enzymes wins. `getEnzymeMagnitudeTier()` + `applyCertaintyCaps()` in `syndrome-interpretation.ts`. Replaces v0.2.0 binary cap (single enzyme → pattern_only with MI/multi-enzyme/liver-weight upgrade paths).
 
 **Important:** Magnitude floors do NOT apply to "opposite" status classification — an opposite-direction finding is still flagged regardless of magnitude, because the direction itself is informative.
 
 **Consumers:** `getSyndromeTermReport()` in `cross-domain-syndromes.ts`. `applyCertaintyCaps()` in `syndrome-interpretation.ts`. Validator invariant Q (`MAGNITUDE_FLOOR_BYPASS`).
+
+---
+
+### METH-31 — Certainty Upgrade Evidence (v0.3.0 PATCH-04)
+
+**Purpose:** Corroborating evidence catalog that can lift METH-30's liver enzyme tier caps. Prevents over-penalization when strong mechanistic support exists beyond enzyme magnitude alone.
+
+**Implementation:** `evaluateUpgradeEvidence(syndrome, allEndpoints, histopathData?)` — frontend `syndrome-interpretation.ts`. Called by `applyCertaintyCaps()` after tier cap is applied.
+
+**Algorithm:** 7 evaluators (UE-01 through UE-08, UE-02 skipped). Each returns `met: boolean` with a strength-weighted score. Total score ≥ 1.0 → lift cap 1 level. ≥ 2.0 → lift 2 levels. Lift clamped at preCertainty (certainty before enzyme tier cap was applied), ensuring upgrade evidence only reverses the enzyme cap, never bypasses other caps like data sufficiency.
+
+**Upgrade evidence catalog:**
+
+| ID | Name | Strength | Score | Criterion |
+|----|------|----------|-------|-----------|
+| UE-01 | Dose-response | strong | 1.0 | Pattern ∈ {linear, monotonic, threshold*} + p < 0.1 for matched enzyme endpoints |
+| UE-02 | Time consistency | — | — | SKIPPED — needs longitudinal LB data not available |
+| UE-03 | Co-marker coherence | strong | 1.0 | ALT FC > AST FC AND ≥1 of BILI↑/SDH↑/GLDH↑ significant |
+| UE-04 | Anatomic pathology | strong | 1.0 | MI domain in domainsCovered OR liver lesion in histopathData |
+| UE-05 | Organ weight concordance | moderate | 0.5 | Liver weight in matchedEndpoints (OM domain) |
+| UE-06 | Functional impairment | moderate | 0.5 | ≥1 of: ALB↓, PT/APTT↑, CHOL/TRIG/GLUC abnormal (p<0.05) |
+| UE-07 | GLDH liver-specific | moderate | 0.5 | GLDH/GDH/SDH ↑ significant in allEndpoints |
+| UE-08 | miR-122 | moderate | 0.5 | MIR122 testCode ↑ AND ≥1 other UE met |
+
+**Key design decisions:**
+- UE-02 always `met: false` — documented as needing longitudinal data. Honest about data limitations.
+- UE-08 requires co-occurrence — miR-122 not FDA-qualified, cannot be sole basis per verification doc.
+- Clamp at preCertainty prevents upgrade evidence from bypassing data sufficiency or directional gate caps.
+
+**References:** Hall 2012 (adaptive thresholds), EMA guidelines (enzyme magnitude interpretation), Ramaiah 2017 (biomarker limitations).
+
+**Consumers:** `applyCertaintyCaps()` in `syndrome-interpretation.ts`. `UpgradeEvidencePane` in `SyndromeContextPanel.tsx`.
 
 ---
 
