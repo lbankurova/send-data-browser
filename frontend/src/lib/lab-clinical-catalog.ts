@@ -289,13 +289,14 @@ const LAB_RULES: LabRule[] = [
     evaluate: (ctx) => countPresent(ctx, ["ALP", "GGT", "5NT", "TBILI"]) < 2,
   },
   {
-    id: "L07", name: "Hy's Law pattern", category: "liver",
+    // REM-18: Renamed from "Hy's Law pattern" — clinical concept adaptation
+    id: "L07", name: "Concurrent transaminase + bilirubin elevation (adapted from clinical Hy's Law)", category: "liver",
     parameters: [
       { canonical: "ALT", direction: "increase", role: "required" },
       { canonical: "TBILI", direction: "increase", role: "required" },
       { canonical: "ALP", direction: "increase", role: "supporting" },
     ],
-    severity: "S4", speciesApplicability: "both", source: "FDA Hy's Law guidance",
+    severity: "S4", speciesApplicability: "both", source: "Adapted from FDA Hy's Law guidance (clinical concept)",
     baselineAware: true,
     evaluate: (ctx) => {
       const altOrAst = hasUp(ctx, "ALT") ? "ALT" : hasUp(ctx, "AST") ? "AST" : null;
@@ -304,12 +305,13 @@ const LAB_RULES: LabRule[] = [
     },
   },
   {
-    id: "L08", name: "Hy's Law-like animal pattern", category: "liver",
+    // REM-18: Renamed from "Hy's Law-like animal pattern" — clinical concept adaptation
+    id: "L08", name: "Concurrent transaminase + bilirubin elevation (nonclinical adaptation)", category: "liver",
     parameters: [
       { canonical: "ALT", direction: "increase", role: "required" },
       { canonical: "TBILI", direction: "increase", role: "required" },
     ],
-    severity: "S3", speciesApplicability: "nonclinical", source: "Nonclinical adaptation",
+    severity: "S3", speciesApplicability: "nonclinical", source: "Adapted from clinical Hy's Law concept",
     baselineAware: true,
     evaluate: (ctx) => {
       const altOrAst = hasUp(ctx, "ALT") ? "ALT" : hasUp(ctx, "AST") ? "AST" : null;

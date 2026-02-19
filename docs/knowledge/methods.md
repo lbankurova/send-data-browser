@@ -210,6 +210,33 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 ---
 
+### STAT-SUMMARY — Statistical Test Assignment by Endpoint Type (REM-06)
+
+This table documents which statistical test is applied to each endpoint type in the analysis pipeline.
+
+| Domain | Endpoint type | Pairwise test | Trend test | Effect size | Post-hoc | Notes |
+|--------|--------------|---------------|------------|-------------|----------|-------|
+| LB | Continuous (ALT, AST, etc.) | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | STAT-07 Dunnett (supplementary) | Primary: pairwise t + trend |
+| BW | Body weight | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | — | Percent change from baseline (METH-02) |
+| OM | Organ weights (relative) | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | — | Organ-to-body ratio (METH-03) |
+| FW | Food/water consumption | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | — | |
+| MI | Histopath incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | No effect size for binary data |
+| MI | Histopath severity (ordinal) | STAT-02 Mann-Whitney U† | — | — | — | †Reserved, not in active pipeline |
+| MA | Macroscopic incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
+| CL | Clinical signs incidence | STAT-03 Fisher's exact | — | — | — | No trend test (signs are event-based) |
+| TF | Tumor findings incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
+| DS | Death/sacrifice | STAT-03 Fisher's exact | — | — | — | |
+| EG | ECG continuous | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | — | |
+| VS | Vital signs continuous | STAT-01 Welch's t | STAT-04 JT (Spearman proxy) | STAT-12 Hedges' g | — | |
+
+**Limitations documented (REM-06):**
+- Williams' test (optimal for monotonic dose-response) and Steel's test (nonparametric many-to-one) are not implemented. JT/Spearman proxy (STAT-04) provides a rank-correlation-based trend alternative.
+- Dunnett's test (STAT-07) is computed and stored but not used in the primary classification logic. It provides supplementary evidence.
+- MI severity grading uses numerical avg_severity (1–5 scale) but no formal ordinal statistical test is applied to the grades in the active pipeline.
+- No multiplicity correction is applied within domains for incidence tests (see STAT-03 design note).
+
+---
+
 ## Algorithmic Methods (METH)
 
 ### METH-01 — Dual-Pass Early-Death Exclusion
@@ -622,6 +649,35 @@ Each mapping entry provides: `normalizedTerm`, `category` (FindingNature), `inha
 
 ---
 
+### METH-27 — Treatment-Relatedness Reasoning Trace (REM-17)
+
+**Purpose:** Provide factor-by-factor transparency for the treatment-relatedness (TR) determination, enabling reviewers to understand exactly which A-factors contributed to the overall verdict and by how much.
+
+**Implementation:** `computeTreatmentRelatedness()` returns a `reasoning: TRReasoningFactor[]` field — frontend `syndrome-interpretation.ts`. Each factor has: `factor` (A-1 through A-7), `value`, `score` (numeric contribution), `detail` (human-readable explanation).
+
+**Parameters:** Five documented factors:
+- A-1 Dose-response: strong=2, weak=1, absent=0 (REM-07: OR logic for pattern + significance)
+- A-2 Cross-endpoint concordance: concordant=1, isolated=0
+- A-3 HCD comparison: always 0 (no historical control data available)
+- A-6 Statistical significance: significant=1, borderline=0.5, not_significant=0
+- A-7 Clinical observation support: yes=1, no=0
+
+**Why this method:** Treatment-relatedness is a composite determination that affects regulatory decisions. Without factor-level visibility, reviewers cannot assess whether the verdict is driven by statistical significance, dose-response, or domain concordance. The reasoning trace enables factor-by-factor challenge and audit.
+
+---
+
+### METH-28 — Histopathologic Severity Grade Extraction (REM-21)
+
+**Purpose:** Extract the maximum histopathologic severity grade from actual MI data (pathologist's tissue grading) as a field separate from the statistical magnitude (METRIC-10) and the regulatory severity tier (CLASS-14).
+
+**Implementation:** `deriveHistopathSeverityGrade(histopathData)` — frontend `syndrome-interpretation.ts`. Returns "none" | "minimal" | "mild" | "moderate" | "marked" | "severe" | null.
+
+**Parameters:** Maps `avg_severity` from MI data (1–5 numerical scale) to named grades: ≥4.5→severe, ≥3.5→marked, ≥2.5→moderate, ≥1.5→mild, >0→minimal, 0→none, empty→null.
+
+**Why this method:** Three distinct severity concepts serve different purposes: (1) histopathologic severity = what the pathologist graded in tissue; (2) statistical magnitude = standardized effect size (Hedges' g); (3) regulatory severity = overall S0–S4 classification incorporating all evidence. Conflating these confuses toxicologic interpretation. Separating them allows reviewers to identify cases where statistical magnitude diverges from histopathologic severity (e.g., a statistically "marked" effect that is histopathologically "mild").
+
+---
+
 ## Classification Algorithms (CLASS)
 
 ### CLASS-01 — Severity Classification
@@ -718,6 +774,8 @@ For incidence data: uses binomial SE-based tolerance (STAT-11) instead of pooled
 **Why this method:** Treatment-relatedness requires converging evidence: statistical significance alone is insufficient (could be chance), dose-response alone is insufficient (could be coincidental trend). The three OR-criteria capture different evidence profiles that are individually compelling.
 
 **Alternatives considered:** Bayesian posterior probability (requires prior distribution for spontaneous rates — not available without historical control database). ECETOC framework (implemented at syndrome level as METRIC-08, not per-endpoint).
+
+**Note:** At the syndrome level, treatment-relatedness uses METRIC-08 (A-factor scoring), which was updated by REM-07 (relaxed dual-significance to OR logic) and REM-17 (factor-by-factor reasoning trace via METH-27).
 
 ---
 
@@ -1197,15 +1255,19 @@ Clinical floor boost: S4=15, S3=8, S2=4, S1=0 (applied at signal level, not conf
 
 **Parameters:** Weighted factor scoring:
 
-| Factor | Strong (+2) | Weak (+1) | Moderate (+0.5) | Absent (0) |
-|--------|------------|-----------|-----------------|------------|
-| A-1 (dose-response) | confidence HIGH | confidence MOD | — | LOW |
-| A-2 (concordance) | domains >= 2 | — | — | isolated |
-| A-4 (HCD) | — | — | — | no_hcd (always) |
-| A-6 (significance) | minP < 0.05 | — | minP < 0.1 | >= 0.1 |
-| CL support | strengthens | — | — | not |
+| Factor | +2 | +1 | +0.5 | 0 |
+|--------|----|----|------|---|
+| A-1 (dose-response) | strong pattern with p < 0.1, OR pairwise p < 0.01 with \|g\| ≥ 0.8 | non-flat pattern | — | flat/insufficient |
+| A-2 (concordance) | — | domains ≥ 2 | — | isolated |
+| A-3 (HCD) | — | — | — | no_hcd (always) |
+| A-6 (significance) | — | minP < 0.05 | minP < 0.1 | ≥ 0.1 |
+| A-7 (CL support) | — | strengthens | — | no |
 
-Overall: >= 3 → "treatment_related"; >= 1.5 → "possibly_related"; < 1.5 → "not_related".
+Overall: ≥ 3 → "treatment_related"; ≥ 1.5 → "possibly_related"; < 1.5 → "not_related".
+
+REM-07 update: A-1 changed from AND logic (strong pattern AND p < 0.05) to OR logic (strong pattern with borderline p, OR highly significant pairwise with meaningful effect). This matches standard practice where either trend significance (Williams) or pairwise significance (Dunnett) is sufficient.
+
+REM-17 update: Each factor now includes a structured reasoning trace (`TRReasoningFactor[]`) with factor name, value, numeric score, and human-readable detail (METH-27).
 
 **Why this method:** ECETOC A-factors are the standard weight-of-evidence framework for treatment-relatedness. Strong dose-response gets the highest weight (+2) because it is the most compelling causal evidence. Cross-domain concordance and statistical significance provide independent confirmation.
 
@@ -1223,10 +1285,10 @@ Overall: >= 3 → "treatment_related"; >= 1.5 → "possibly_related"; < 1.5 → 
 
 **Parameters:** Two-tier lookup (PT preferred over SOC):
 - PT-level: `maxLR >= 10` → "high"; `>= 3` → "moderate"; else "low"
-- SOC-level (fallback): `socLR >= 5` → "high"; `>= 3` → "moderate"; else "low"
+- SOC-level (fallback): `socLR >= 5` → "high"; `>= 2` → "moderate"; else "low"
 - No match → "insufficient_data"
 
-**Why these thresholds:** Likelihood ratio (LR+) > 10 is strong evidence of clinical relevance in diagnostic test theory. The 3 and 5 thresholds provide a three-tier system consistent with the Liu & Fan 2026 data distribution. PT-level thresholds are lower than SOC because PT matches are more specific (10 vs. 5 for "high").
+**Why these thresholds:** Likelihood ratio (LR+) > 10 is strong evidence of clinical relevance in diagnostic test theory. PT-level thresholds use 3 and 10. SOC-level uses 2 and 5 (REM-22: SOC moderate bin lowered from 3.0 to 2.0 to capture SOCs with meaningful but modest concordance, consistent with the Liu & Fan 2026 data distribution where several organ systems cluster around LR+ 2.0-3.0).
 
 **Alternatives considered:** Continuous LR+ display (less actionable than tiers for screening). Sensitivity/specificity separately (LR+ combines both into a single interpretable metric). Negative predictive value (requires disease prevalence, unavailable).
 

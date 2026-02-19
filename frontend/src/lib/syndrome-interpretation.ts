@@ -277,6 +277,15 @@ export interface TreatmentRelatednessScore {
   statisticalSignificance: "significant" | "borderline" | "not_significant";
   clinicalObservationSupport: boolean;
   overall: "treatment_related" | "possibly_related" | "not_related";
+  /** REM-17: Factor-by-factor reasoning trace for transparency. */
+  reasoning: TRReasoningFactor[];
+}
+
+export interface TRReasoningFactor {
+  factor: string;       // e.g. "A-1 Dose-response"
+  value: string;        // e.g. "strong"
+  score: number;        // numeric contribution to total
+  detail: string;       // human-readable explanation
 }
 
 export interface AdversityAssessment {
@@ -337,6 +346,10 @@ export interface SyndromeInterpretation {
 
   // Severity
   overallSeverity: OverallSeverity;
+
+  /** REM-21: Max histopathologic severity grade from MI data (pathologist's grading),
+   *  separate from the regulatory severity tier (S0-S4) and statistical magnitude. */
+  histopathSeverityGrade: "none" | "minimal" | "mild" | "moderate" | "marked" | "severe" | null;
 
   // Translational confidence
   translationalConfidence: TranslationalConfidence;
@@ -2275,9 +2288,14 @@ export function computeTreatmentRelatedness(
   const STRONG_PATTERNS = new Set([
     "linear", "monotonic", "threshold", "threshold_increase", "threshold_decrease",
   ]);
+  // REM-07: Relaxed from AND to OR — trend significance (strong pattern)
+  // OR pairwise significance, not both required. Matches standard practice
+  // (Williams trend primary, Dunnett pairwise complementary; Hothorn 2014).
   const hasStrongPattern = matchedEpsA1.some((ep) =>
-    STRONG_PATTERNS.has(ep.pattern) &&
-    ep.minPValue != null && ep.minPValue < 0.05
+    // Primary: strong dose-response pattern with at least borderline p
+    (STRONG_PATTERNS.has(ep.pattern) && ep.minPValue != null && ep.minPValue < 0.1) ||
+    // Alternative: highly significant pairwise (p < 0.01) + meaningful effect
+    (ep.minPValue != null && ep.minPValue < 0.01 && Math.abs(ep.maxEffectSize ?? 0) >= 0.8)
   );
   const hasAnyPattern = matchedEpsA1.some((ep) =>
     ep.pattern !== "flat" && ep.pattern !== "insufficient_data"
@@ -2322,6 +2340,54 @@ export function computeTreatmentRelatedness(
         ? "possibly_related"
         : "not_related";
 
+  // REM-17: Build factor-by-factor reasoning trace
+  const drScore = doseResponse === "strong" ? 2 : doseResponse === "weak" ? 1 : 0;
+  const ceScore = crossEndpoint === "concordant" ? 1 : 0;
+  const ssScore = statisticalSignificance === "significant" ? 1 : statisticalSignificance === "borderline" ? 0.5 : 0;
+  const clScore = clinicalObs ? 1 : 0;
+  const reasoning: TRReasoningFactor[] = [
+    {
+      factor: "A-1 Dose-response",
+      value: doseResponse,
+      score: drScore,
+      detail: doseResponse === "strong"
+        ? `Strong pattern in ≥1 matched endpoint (p < 0.1 or pairwise p < 0.01 with |g| ≥ 0.8)`
+        : doseResponse === "weak"
+          ? `Non-flat pattern but no endpoint meets strength criteria`
+          : `No dose-response pattern detected`,
+    },
+    {
+      factor: "A-2 Cross-endpoint concordance",
+      value: crossEndpoint,
+      score: ceScore,
+      detail: crossEndpoint === "concordant"
+        ? `Concordant across ${syndrome.domainsCovered.join(", ")} (${syndrome.domainsCovered.length} domains)`
+        : `Isolated to single domain`,
+    },
+    {
+      factor: "A-3 HCD comparison",
+      value: "no_hcd",
+      score: 0,
+      detail: `Historical control data not available`,
+    },
+    {
+      factor: "A-6 Statistical significance",
+      value: statisticalSignificance,
+      score: ssScore,
+      detail: minP != null
+        ? `Min p-value: ${minP.toFixed(4)} → ${statisticalSignificance}`
+        : `No p-values available`,
+    },
+    {
+      factor: "A-7 Clinical observation support",
+      value: clinicalObs ? "yes" : "no",
+      score: clScore,
+      detail: clinicalObs
+        ? `Clinical observations strengthen the signal`
+        : `No supporting clinical observations`,
+    },
+  ];
+
   return {
     doseResponse,
     crossEndpoint,
@@ -2329,6 +2395,7 @@ export function computeTreatmentRelatedness(
     statisticalSignificance,
     clinicalObservationSupport: clinicalObs,
     overall,
+    reasoning,
   };
 }
 
@@ -2355,6 +2422,22 @@ function deriveMagnitudeLevel(
   if (maxD >= 1.0) return "moderate";
   if (maxD >= 0.5) return "mild";
   return "minimal";
+}
+
+/** REM-21: Extract max histopathologic severity grade from actual MI data.
+ *  This is the pathologist's tissue grading, separate from statistical magnitude.
+ *  avg_severity scale: 1=minimal, 2=mild, 3=moderate, 4=marked, 5=severe. */
+function deriveHistopathSeverityGrade(
+  histopathData: LesionSeverityRow[],
+): SyndromeInterpretation["histopathSeverityGrade"] {
+  if (histopathData.length === 0) return null;
+  const maxSev = Math.max(...histopathData.map((r) => r.avg_severity ?? 0));
+  if (maxSev >= 4.5) return "severe";
+  if (maxSev >= 3.5) return "marked";
+  if (maxSev >= 2.5) return "moderate";
+  if (maxSev >= 1.5) return "mild";
+  if (maxSev > 0) return "minimal";
+  return "none";
 }
 
 // REM-10: Stress endpoint labels — endpoints that are components of the
@@ -2697,7 +2780,8 @@ export function assignTranslationalTier(
   const socLR = lookupSOCLRPlus(species, primarySOC);
   if (socLR === null) return "insufficient_data";
   if (socLR >= 5) return "high";
-  if (socLR >= 3) return "moderate";
+  // REM-22: SOC moderate bin lowered from 3.0 to 2.0 (nonclinical concordance data)
+  if (socLR >= 2) return "moderate";
   return "low";
 }
 
@@ -3063,12 +3147,25 @@ export function interpretSyndrome(
   if (adversity.adaptive) advFactors.push("adaptive pattern (enzyme induction)");
   if (adversity.crossDomainSupport) advFactors.push("cross-domain support");
 
+  // REM-17: Factor-by-factor TR reasoning trace
+  const trReasoningDetail = treatmentRelatedness.reasoning
+    .map(r => `${r.factor}: ${r.value} [${r.score}]`)
+    .join("; ");
   narrativeParts.push(
-    `Treatment-related: ${trLabel}${trFactors.length > 0 ? ` (${trFactors.join(", ")})` : ""}.`,
+    `Treatment-related: ${trLabel} (score ${treatmentRelatedness.reasoning.reduce((s, r) => s + r.score, 0).toFixed(1)}/${treatmentRelatedness.reasoning.length}; ${trReasoningDetail}).`,
   );
   narrativeParts.push(
     `Adverse: ${advLabel}${advFactors.length > 0 ? ` (${advFactors.join(", ")})` : ""}.`,
   );
+
+  // REM-21: Histopathologic severity (pathologist's tissue grading, separate from regulatory tier)
+  const histoGrade = deriveHistopathSeverityGrade(histopathData);
+  if (histoGrade && histoGrade !== "none") {
+    narrativeParts.push(
+      `Histopathologic severity: ${histoGrade} (max tissue grade from MI data; ` +
+      `regulatory significance: ${overallSeverity}).`,
+    );
+  }
 
   // ── Step 17: Translational confidence ──
   const hasAbsenceMeaningful = certaintyResult.evidence.some(
@@ -3100,6 +3197,7 @@ export function interpretSyndrome(
     patternConfidence: syndrome.confidence,
     mechanismCertainty: certaintyResult.certainty,
     overallSeverity,
+    histopathSeverityGrade: deriveHistopathSeverityGrade(histopathData),
     translationalConfidence,
     narrative: narrativeParts.join(" "),
   };
