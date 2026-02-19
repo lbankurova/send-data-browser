@@ -911,8 +911,9 @@ describe("deriveOverallSeverity", () => {
     expect(deriveOverallSeverity(baseMortality, noTumors, adverse, "mechanism_confirmed")).toBe("S3_Adverse");
   });
 
-  test("adverse without confirmed mechanism → S2_Concern", () => {
-    expect(deriveOverallSeverity(baseMortality, noTumors, adverse, "mechanism_uncertain")).toBe("S2_Concern");
+  test("adverse with uncertain mechanism → S3_Adverse (REM-02)", () => {
+    // REM-02: mechanism_uncertain + adverse now qualifies for S3, not S2
+    expect(deriveOverallSeverity(baseMortality, noTumors, adverse, "mechanism_uncertain")).toBe("S3_Adverse");
   });
 
   test("non_adverse → S1_Monitor", () => {

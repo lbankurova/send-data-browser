@@ -229,27 +229,32 @@ def classify_dose_response(group_stats: list[dict], data_type: str = "continuous
 
 
 def compute_max_fold_change(group_stats: list[dict]) -> float | None:
-    """Max fold change magnitude (always >= 1) across treated groups vs control.
+    """Directional fold change (treated/control) for the dose with largest |deviation|.
 
-    Returns max(treated/control, control/treated) for the dose group with the
-    largest deviation from control. Returns None for insufficient data or
-    zero control mean.
+    Returns treated_mean / control_mean:
+      > 1.0 for increases (e.g. 1.51×)
+      < 1.0 for decreases (e.g. 0.66×)
+    Returns None for insufficient data or zero control mean.
     """
     if not group_stats or len(group_stats) < 2:
         return None
     control_mean = group_stats[0].get("mean")
     if control_mean is None or abs(control_mean) < 1e-10:
         return None
-    max_fc = 1.0
+    max_dev = 0.0
+    best_ratio: float | None = None
     for gs in group_stats[1:]:
         treated_mean = gs.get("mean")
         if treated_mean is None:
             continue
         ratio = treated_mean / control_mean
-        magnitude = max(ratio, 1.0 / ratio) if ratio > 0 else abs(ratio)
-        if magnitude > max_fc:
-            max_fc = magnitude
-    return round(max_fc, 2) if max_fc > 1.0 else None
+        deviation = abs(ratio - 1.0)
+        if deviation > max_dev:
+            max_dev = deviation
+            best_ratio = ratio
+    if best_ratio is None or max_dev < 1e-10:
+        return None
+    return round(best_ratio, 2)
 
 
 def determine_treatment_related(finding: dict) -> bool:

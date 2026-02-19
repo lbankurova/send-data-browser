@@ -1190,6 +1190,18 @@ export function assessCertainty(
         : "Required findings met. Insufficient discriminating evidence to confirm mechanism.";
   }
 
+  // REM-09: Apply directional gate certainty cap
+  if (syndrome.directionalGate?.gateFired && syndrome.directionalGate.certaintyCap) {
+    const cap = syndrome.directionalGate.certaintyCap;
+    const CERTAINTY_ORDER: Record<SyndromeCertainty, number> = {
+      pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
+    };
+    if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER[cap]) {
+      certainty = cap;
+      rationale += ` Capped at ${cap} due to directional gate: ${syndrome.directionalGate.explanation}`;
+    }
+  }
+
   return { certainty, evidence, rationale };
 }
 
@@ -2318,10 +2330,10 @@ export function deriveOverallSeverity(
   // Treatment-related deaths in non-syndrome organs → S4
   if (mortalityContext.treatmentRelatedDeaths > 0) return "S4_Critical";
 
-  // Mechanism confirmed + adverse → S3
-  if (certainty === "mechanism_confirmed" && adversity.overall === "adverse") return "S3_Adverse";
+  // REM-02: Mechanism confirmed or uncertain + adverse → S3
+  if ((certainty === "mechanism_confirmed" || certainty === "mechanism_uncertain") && adversity.overall === "adverse") return "S3_Adverse";
 
-  // Any adverse signal → S2
+  // Any adverse signal (pattern_only certainty) → S2
   if (adversity.overall === "adverse") return "S2_Concern";
 
   // Non-adverse with confirmed mechanism → S1

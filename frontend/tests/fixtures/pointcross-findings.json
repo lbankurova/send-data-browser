@@ -16,7 +16,7 @@
     "test_code": "ALB",
     "specimen": null,
     "finding": "Albumin",
-    "max_fold_change": 1.22,
+    "max_fold_change": 0.82,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -90,7 +90,7 @@
     "test_code": "ALB",
     "specimen": null,
     "finding": "Albumin",
-    "max_fold_change": 1.22,
+    "max_fold_change": 0.82,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -164,7 +164,7 @@
     "test_code": "ALB",
     "specimen": null,
     "finding": "Albumin",
-    "max_fold_change": 1.22,
+    "max_fold_change": 0.82,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -238,7 +238,7 @@
     "test_code": "ALBGLOB",
     "specimen": null,
     "finding": "Albumin/Globulin",
-    "max_fold_change": 1.27,
+    "max_fold_change": 0.79,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -312,7 +312,7 @@
     "test_code": "ALBGLOB",
     "specimen": null,
     "finding": "Albumin/Globulin",
-    "max_fold_change": 1.27,
+    "max_fold_change": 0.79,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -386,7 +386,7 @@
     "test_code": "ALBGLOB",
     "specimen": null,
     "finding": "Albumin/Globulin",
-    "max_fold_change": 1.27,
+    "max_fold_change": 0.79,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -2236,7 +2236,7 @@
     "test_code": "BASO",
     "specimen": null,
     "finding": "Basophils",
-    "max_fold_change": 2.15,
+    "max_fold_change": 0.47,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -2310,7 +2310,7 @@
     "test_code": "BASO",
     "specimen": null,
     "finding": "Basophils",
-    "max_fold_change": 2.15,
+    "max_fold_change": 0.47,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -2384,7 +2384,7 @@
     "test_code": "BASO",
     "specimen": null,
     "finding": "Basophils",
-    "max_fold_change": 2.15,
+    "max_fold_change": 0.47,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -2458,7 +2458,7 @@
     "test_code": "CA",
     "specimen": null,
     "finding": "Calcium",
-    "max_fold_change": 1.03,
+    "max_fold_change": 0.97,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -2532,7 +2532,7 @@
     "test_code": "CA",
     "specimen": null,
     "finding": "Calcium",
-    "max_fold_change": 1.03,
+    "max_fold_change": 0.97,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -2606,7 +2606,7 @@
     "test_code": "CA",
     "specimen": null,
     "finding": "Calcium",
-    "max_fold_change": 1.03,
+    "max_fold_change": 0.97,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -2680,7 +2680,7 @@
     "test_code": "CHOL",
     "specimen": null,
     "finding": "Cholesterol",
-    "max_fold_change": 1.47,
+    "max_fold_change": 0.68,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -2754,7 +2754,7 @@
     "test_code": "CHOL",
     "specimen": null,
     "finding": "Cholesterol",
-    "max_fold_change": 1.47,
+    "max_fold_change": 0.68,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -2828,7 +2828,7 @@
     "test_code": "CHOL",
     "specimen": null,
     "finding": "Cholesterol",
-    "max_fold_change": 1.47,
+    "max_fold_change": 0.68,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -3124,7 +3124,7 @@
     "test_code": "CREAT",
     "specimen": null,
     "finding": "Creatinine",
-    "max_fold_change": 1.17,
+    "max_fold_change": 0.86,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -3198,7 +3198,7 @@
     "test_code": "CREAT",
     "specimen": null,
     "finding": "Creatinine",
-    "max_fold_change": 1.17,
+    "max_fold_change": 0.86,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -3272,7 +3272,7 @@
     "test_code": "CREAT",
     "specimen": null,
     "finding": "Creatinine",
-    "max_fold_change": 1.17,
+    "max_fold_change": 0.86,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4012,7 +4012,7 @@
     "test_code": "FIBRINO",
     "specimen": null,
     "finding": "Fibrinogen",
-    "max_fold_change": 1.09,
+    "max_fold_change": 0.92,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4086,7 +4086,7 @@
     "test_code": "FIBRINO",
     "specimen": null,
     "finding": "Fibrinogen",
-    "max_fold_change": 1.09,
+    "max_fold_change": 0.92,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4160,7 +4160,7 @@
     "test_code": "FIBRINO",
     "specimen": null,
     "finding": "Fibrinogen",
-    "max_fold_change": 1.09,
+    "max_fold_change": 0.92,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4456,7 +4456,7 @@
     "test_code": "HCT",
     "specimen": null,
     "finding": "Hematocrit",
-    "max_fold_change": 1.1,
+    "max_fold_change": 0.91,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4530,7 +4530,7 @@
     "test_code": "HCT",
     "specimen": null,
     "finding": "Hematocrit",
-    "max_fold_change": 1.1,
+    "max_fold_change": 0.91,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4604,7 +4604,7 @@
     "test_code": "HCT",
     "specimen": null,
     "finding": "Hematocrit",
-    "max_fold_change": 1.1,
+    "max_fold_change": 0.91,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4678,7 +4678,7 @@
     "test_code": "HCT",
     "specimen": null,
     "finding": "Hematocrit",
-    "max_fold_change": 1.05,
+    "max_fold_change": 0.95,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4752,7 +4752,7 @@
     "test_code": "HCT",
     "specimen": null,
     "finding": "Hematocrit",
-    "max_fold_change": 1.05,
+    "max_fold_change": 0.95,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4826,7 +4826,7 @@
     "test_code": "HCT",
     "specimen": null,
     "finding": "Hematocrit",
-    "max_fold_change": 1.05,
+    "max_fold_change": 0.95,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4900,7 +4900,7 @@
     "test_code": "HGB",
     "specimen": null,
     "finding": "Hemoglobin",
-    "max_fold_change": 1.1,
+    "max_fold_change": 0.91,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -4974,7 +4974,7 @@
     "test_code": "HGB",
     "specimen": null,
     "finding": "Hemoglobin",
-    "max_fold_change": 1.1,
+    "max_fold_change": 0.91,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -5048,7 +5048,7 @@
     "test_code": "HGB",
     "specimen": null,
     "finding": "Hemoglobin",
-    "max_fold_change": 1.1,
+    "max_fold_change": 0.91,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -5122,7 +5122,7 @@
     "test_code": "HGB",
     "specimen": null,
     "finding": "Hemoglobin",
-    "max_fold_change": 1.04,
+    "max_fold_change": 0.96,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -5196,7 +5196,7 @@
     "test_code": "HGB",
     "specimen": null,
     "finding": "Hemoglobin",
-    "max_fold_change": 1.04,
+    "max_fold_change": 0.96,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -5270,7 +5270,7 @@
     "test_code": "HGB",
     "specimen": null,
     "finding": "Hemoglobin",
-    "max_fold_change": 1.04,
+    "max_fold_change": 0.96,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6010,7 +6010,7 @@
     "test_code": "LGUNSCE",
     "specimen": null,
     "finding": "Large Unstained Cells",
-    "max_fold_change": 1.9,
+    "max_fold_change": 0.53,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6084,7 +6084,7 @@
     "test_code": "LGUNSCE",
     "specimen": null,
     "finding": "Large Unstained Cells",
-    "max_fold_change": 1.9,
+    "max_fold_change": 0.53,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6158,7 +6158,7 @@
     "test_code": "LGUNSCE",
     "specimen": null,
     "finding": "Large Unstained Cells",
-    "max_fold_change": 1.9,
+    "max_fold_change": 0.53,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6454,7 +6454,7 @@
     "test_code": "LYM",
     "specimen": null,
     "finding": "Lymphocytes",
-    "max_fold_change": 1.53,
+    "max_fold_change": 0.66,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6528,7 +6528,7 @@
     "test_code": "LYM",
     "specimen": null,
     "finding": "Lymphocytes",
-    "max_fold_change": 1.53,
+    "max_fold_change": 0.66,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6602,7 +6602,7 @@
     "test_code": "LYM",
     "specimen": null,
     "finding": "Lymphocytes",
-    "max_fold_change": 1.53,
+    "max_fold_change": 0.66,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6676,7 +6676,7 @@
     "test_code": "MCH",
     "specimen": null,
     "finding": "Ery. Mean Corpuscular Hemoglobin",
-    "max_fold_change": 1.07,
+    "max_fold_change": 0.94,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6750,7 +6750,7 @@
     "test_code": "MCH",
     "specimen": null,
     "finding": "Ery. Mean Corpuscular Hemoglobin",
-    "max_fold_change": 1.07,
+    "max_fold_change": 0.94,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6824,7 +6824,7 @@
     "test_code": "MCH",
     "specimen": null,
     "finding": "Ery. Mean Corpuscular Hemoglobin",
-    "max_fold_change": 1.07,
+    "max_fold_change": 0.94,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6898,7 +6898,7 @@
     "test_code": "MCV",
     "specimen": null,
     "finding": "Ery. Mean Corpuscular Volume",
-    "max_fold_change": 1.06,
+    "max_fold_change": 0.94,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -6972,7 +6972,7 @@
     "test_code": "MCV",
     "specimen": null,
     "finding": "Ery. Mean Corpuscular Volume",
-    "max_fold_change": 1.06,
+    "max_fold_change": 0.94,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -7046,7 +7046,7 @@
     "test_code": "MCV",
     "specimen": null,
     "finding": "Ery. Mean Corpuscular Volume",
-    "max_fold_change": 1.06,
+    "max_fold_change": 0.94,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -7120,7 +7120,7 @@
     "test_code": "MCV",
     "specimen": null,
     "finding": "Ery. Mean Corpuscular Volume",
-    "max_fold_change": 1.03,
+    "max_fold_change": 0.97,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -7194,7 +7194,7 @@
     "test_code": "MCV",
     "specimen": null,
     "finding": "Ery. Mean Corpuscular Volume",
-    "max_fold_change": 1.03,
+    "max_fold_change": 0.97,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -7268,7 +7268,7 @@
     "test_code": "MCV",
     "specimen": null,
     "finding": "Ery. Mean Corpuscular Volume",
-    "max_fold_change": 1.03,
+    "max_fold_change": 0.97,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -7786,7 +7786,7 @@
     "test_code": "NEUT",
     "specimen": null,
     "finding": "Neutrophils",
-    "max_fold_change": 1.51,
+    "max_fold_change": 0.66,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -7860,7 +7860,7 @@
     "test_code": "NEUT",
     "specimen": null,
     "finding": "Neutrophils",
-    "max_fold_change": 1.51,
+    "max_fold_change": 0.66,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -7934,7 +7934,7 @@
     "test_code": "NEUT",
     "specimen": null,
     "finding": "Neutrophils",
-    "max_fold_change": 1.51,
+    "max_fold_change": 0.66,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -8008,7 +8008,7 @@
     "test_code": "PH",
     "specimen": null,
     "finding": "pH",
-    "max_fold_change": 1.1,
+    "max_fold_change": 0.91,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -8082,7 +8082,7 @@
     "test_code": "PH",
     "specimen": null,
     "finding": "pH",
-    "max_fold_change": 1.1,
+    "max_fold_change": 0.91,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -8156,7 +8156,7 @@
     "test_code": "PH",
     "specimen": null,
     "finding": "pH",
-    "max_fold_change": 1.1,
+    "max_fold_change": 0.91,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -8674,7 +8674,7 @@
     "test_code": "PHOS",
     "specimen": null,
     "finding": "Phosphate",
-    "max_fold_change": 1.18,
+    "max_fold_change": 0.85,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -8748,7 +8748,7 @@
     "test_code": "PHOS",
     "specimen": null,
     "finding": "Phosphate",
-    "max_fold_change": 1.18,
+    "max_fold_change": 0.85,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -8822,7 +8822,7 @@
     "test_code": "PHOS",
     "specimen": null,
     "finding": "Phosphate",
-    "max_fold_change": 1.18,
+    "max_fold_change": 0.85,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -9340,7 +9340,7 @@
     "test_code": "RBC",
     "specimen": null,
     "finding": "Erythrocytes",
-    "max_fold_change": 1.04,
+    "max_fold_change": 0.96,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -9414,7 +9414,7 @@
     "test_code": "RBC",
     "specimen": null,
     "finding": "Erythrocytes",
-    "max_fold_change": 1.04,
+    "max_fold_change": 0.96,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -9488,7 +9488,7 @@
     "test_code": "RBC",
     "specimen": null,
     "finding": "Erythrocytes",
-    "max_fold_change": 1.04,
+    "max_fold_change": 0.96,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -9562,7 +9562,7 @@
     "test_code": "RBC",
     "specimen": null,
     "finding": "Erythrocytes",
-    "max_fold_change": 1.04,
+    "max_fold_change": 0.97,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -9636,7 +9636,7 @@
     "test_code": "RBC",
     "specimen": null,
     "finding": "Erythrocytes",
-    "max_fold_change": 1.04,
+    "max_fold_change": 0.97,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -9710,7 +9710,7 @@
     "test_code": "RBC",
     "specimen": null,
     "finding": "Erythrocytes",
-    "max_fold_change": 1.04,
+    "max_fold_change": 0.97,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -10228,7 +10228,7 @@
     "test_code": "SODIUM",
     "specimen": null,
     "finding": "Sodium",
-    "max_fold_change": 1.02,
+    "max_fold_change": 0.98,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -10302,7 +10302,7 @@
     "test_code": "SODIUM",
     "specimen": null,
     "finding": "Sodium",
-    "max_fold_change": 1.02,
+    "max_fold_change": 0.98,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -10376,7 +10376,7 @@
     "test_code": "SODIUM",
     "specimen": null,
     "finding": "Sodium",
-    "max_fold_change": 1.02,
+    "max_fold_change": 0.98,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -10672,7 +10672,7 @@
     "test_code": "TRIG",
     "specimen": null,
     "finding": "Triglycerides",
-    "max_fold_change": 1.38,
+    "max_fold_change": 0.73,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -10746,7 +10746,7 @@
     "test_code": "TRIG",
     "specimen": null,
     "finding": "Triglycerides",
-    "max_fold_change": 1.38,
+    "max_fold_change": 0.73,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -10820,7 +10820,7 @@
     "test_code": "TRIG",
     "specimen": null,
     "finding": "Triglycerides",
-    "max_fold_change": 1.38,
+    "max_fold_change": 0.73,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -11116,7 +11116,7 @@
     "test_code": "WBC",
     "specimen": null,
     "finding": "Leukocytes",
-    "max_fold_change": 1.69,
+    "max_fold_change": 0.59,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -11190,7 +11190,7 @@
     "test_code": "WBC",
     "specimen": null,
     "finding": "Leukocytes",
-    "max_fold_change": 1.69,
+    "max_fold_change": 0.59,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -11264,7 +11264,7 @@
     "test_code": "WBC",
     "specimen": null,
     "finding": "Leukocytes",
-    "max_fold_change": 1.69,
+    "max_fold_change": 0.59,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -11338,7 +11338,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.14
+    "max_fold_change": 0.88
   },
   {
     "endpoint_label": "Body Weight",
@@ -11357,7 +11357,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.14
+    "max_fold_change": 0.88
   },
   {
     "endpoint_label": "Body Weight",
@@ -11376,7 +11376,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.14
+    "max_fold_change": 0.88
   },
   {
     "endpoint_label": "Body Weight",
@@ -11395,7 +11395,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.14
+    "max_fold_change": 0.88
   },
   {
     "endpoint_label": "Body Weight",
@@ -11414,7 +11414,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.14
+    "max_fold_change": 0.88
   },
   {
     "endpoint_label": "Body Weight",
@@ -11433,7 +11433,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.14
+    "max_fold_change": 0.88
   },
   {
     "endpoint_label": "Body Weight",
@@ -11452,7 +11452,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.25
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "Body Weight",
@@ -11471,7 +11471,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.25
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "Body Weight",
@@ -11490,7 +11490,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.25
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "Body Weight",
@@ -11509,7 +11509,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.24
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "Body Weight",
@@ -11528,7 +11528,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.24
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "Body Weight",
@@ -11547,7 +11547,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.24
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "Body Weight",
@@ -11566,7 +11566,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.27
+    "max_fold_change": 0.79
   },
   {
     "endpoint_label": "Body Weight",
@@ -11585,7 +11585,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.27
+    "max_fold_change": 0.79
   },
   {
     "endpoint_label": "Body Weight",
@@ -11604,7 +11604,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.27
+    "max_fold_change": 0.79
   },
   {
     "endpoint_label": "Body Weight",
@@ -11623,7 +11623,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -11642,7 +11642,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -11661,7 +11661,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -11680,7 +11680,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.25
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "Body Weight",
@@ -11699,7 +11699,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.25
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "Body Weight",
@@ -11718,7 +11718,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.25
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "Body Weight",
@@ -11737,7 +11737,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -11756,7 +11756,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -11775,7 +11775,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -11794,7 +11794,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.3
+    "max_fold_change": 0.77
   },
   {
     "endpoint_label": "Body Weight",
@@ -11813,7 +11813,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.3
+    "max_fold_change": 0.77
   },
   {
     "endpoint_label": "Body Weight",
@@ -11832,7 +11832,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.3
+    "max_fold_change": 0.77
   },
   {
     "endpoint_label": "Body Weight",
@@ -11851,7 +11851,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.19
+    "max_fold_change": 0.84
   },
   {
     "endpoint_label": "Body Weight",
@@ -11870,7 +11870,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.19
+    "max_fold_change": 0.84
   },
   {
     "endpoint_label": "Body Weight",
@@ -11889,7 +11889,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.19
+    "max_fold_change": 0.84
   },
   {
     "endpoint_label": "Body Weight",
@@ -11908,7 +11908,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.27
+    "max_fold_change": 0.79
   },
   {
     "endpoint_label": "Body Weight",
@@ -11927,7 +11927,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.27
+    "max_fold_change": 0.79
   },
   {
     "endpoint_label": "Body Weight",
@@ -11946,7 +11946,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.27
+    "max_fold_change": 0.79
   },
   {
     "endpoint_label": "Body Weight",
@@ -11965,7 +11965,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.28
+    "max_fold_change": 0.78
   },
   {
     "endpoint_label": "Body Weight",
@@ -11984,7 +11984,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.28
+    "max_fold_change": 0.78
   },
   {
     "endpoint_label": "Body Weight",
@@ -12003,7 +12003,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.28
+    "max_fold_change": 0.78
   },
   {
     "endpoint_label": "Body Weight",
@@ -12022,7 +12022,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.27
+    "max_fold_change": 0.78
   },
   {
     "endpoint_label": "Body Weight",
@@ -12041,7 +12041,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.27
+    "max_fold_change": 0.78
   },
   {
     "endpoint_label": "Body Weight",
@@ -12060,7 +12060,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.27
+    "max_fold_change": 0.78
   },
   {
     "endpoint_label": "Body Weight",
@@ -12079,7 +12079,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.19
+    "max_fold_change": 0.84
   },
   {
     "endpoint_label": "Body Weight",
@@ -12098,7 +12098,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.19
+    "max_fold_change": 0.84
   },
   {
     "endpoint_label": "Body Weight",
@@ -12117,7 +12117,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.19
+    "max_fold_change": 0.84
   },
   {
     "endpoint_label": "Body Weight",
@@ -12136,7 +12136,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.28
+    "max_fold_change": 0.78
   },
   {
     "endpoint_label": "Body Weight",
@@ -12155,7 +12155,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.28
+    "max_fold_change": 0.78
   },
   {
     "endpoint_label": "Body Weight",
@@ -12174,7 +12174,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.28
+    "max_fold_change": 0.78
   },
   {
     "endpoint_label": "Body Weight",
@@ -12193,7 +12193,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.21
+    "max_fold_change": 0.83
   },
   {
     "endpoint_label": "Body Weight",
@@ -12212,7 +12212,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.21
+    "max_fold_change": 0.83
   },
   {
     "endpoint_label": "Body Weight",
@@ -12231,7 +12231,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.21
+    "max_fold_change": 0.83
   },
   {
     "endpoint_label": "Body Weight",
@@ -12250,7 +12250,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -12269,7 +12269,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -12288,7 +12288,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -12307,7 +12307,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.17
+    "max_fold_change": 0.86
   },
   {
     "endpoint_label": "Body Weight",
@@ -12326,7 +12326,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.17
+    "max_fold_change": 0.86
   },
   {
     "endpoint_label": "Body Weight",
@@ -12345,7 +12345,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.17
+    "max_fold_change": 0.86
   },
   {
     "endpoint_label": "Body Weight",
@@ -12364,7 +12364,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.19
+    "max_fold_change": 0.84
   },
   {
     "endpoint_label": "Body Weight",
@@ -12383,7 +12383,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.19
+    "max_fold_change": 0.84
   },
   {
     "endpoint_label": "Body Weight",
@@ -12402,7 +12402,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.19
+    "max_fold_change": 0.84
   },
   {
     "endpoint_label": "Body Weight",
@@ -12421,7 +12421,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.07
+    "max_fold_change": 0.94
   },
   {
     "endpoint_label": "Body Weight",
@@ -12440,7 +12440,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.07
+    "max_fold_change": 0.94
   },
   {
     "endpoint_label": "Body Weight",
@@ -12459,7 +12459,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.07
+    "max_fold_change": 0.94
   },
   {
     "endpoint_label": "Body Weight",
@@ -12478,7 +12478,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.2
+    "max_fold_change": 0.83
   },
   {
     "endpoint_label": "Body Weight",
@@ -12497,7 +12497,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.2
+    "max_fold_change": 0.83
   },
   {
     "endpoint_label": "Body Weight",
@@ -12516,7 +12516,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.2
+    "max_fold_change": 0.83
   },
   {
     "endpoint_label": "Body Weight",
@@ -12535,7 +12535,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.21
+    "max_fold_change": 0.83
   },
   {
     "endpoint_label": "Body Weight",
@@ -12554,7 +12554,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.21
+    "max_fold_change": 0.83
   },
   {
     "endpoint_label": "Body Weight",
@@ -12573,7 +12573,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.21
+    "max_fold_change": 0.83
   },
   {
     "endpoint_label": "Body Weight",
@@ -12592,7 +12592,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -12611,7 +12611,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -12630,7 +12630,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -12649,7 +12649,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.21
+    "max_fold_change": 0.82
   },
   {
     "endpoint_label": "Body Weight",
@@ -12668,7 +12668,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.21
+    "max_fold_change": 0.82
   },
   {
     "endpoint_label": "Body Weight",
@@ -12687,7 +12687,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.21
+    "max_fold_change": 0.82
   },
   {
     "endpoint_label": "Body Weight",
@@ -12706,7 +12706,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.82
   },
   {
     "endpoint_label": "Body Weight",
@@ -12725,7 +12725,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.82
   },
   {
     "endpoint_label": "Body Weight",
@@ -12744,7 +12744,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.23
+    "max_fold_change": 0.82
   },
   {
     "endpoint_label": "Body Weight",
@@ -12763,7 +12763,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.24
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -12782,7 +12782,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.24
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "Body Weight",
@@ -12801,7 +12801,7 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 1.24
+    "max_fold_change": 0.81
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -13054,7 +13054,7 @@
     "test_code": "WEIGHT",
     "specimen": "BRAIN",
     "finding": "BRAIN (WEIGHT)",
-    "max_fold_change": 1.09,
+    "max_fold_change": 0.92,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -13132,7 +13132,7 @@
     "test_code": "WEIGHT",
     "specimen": "BRAIN",
     "finding": "BRAIN (WEIGHT)",
-    "max_fold_change": 1.09,
+    "max_fold_change": 0.92,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -13210,7 +13210,7 @@
     "test_code": "WEIGHT",
     "specimen": "BRAIN",
     "finding": "BRAIN (WEIGHT)",
-    "max_fold_change": 1.09,
+    "max_fold_change": 0.92,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -13522,7 +13522,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
     "finding": "GLAND, ADRENAL (WEIGHT)",
-    "max_fold_change": 1.12,
+    "max_fold_change": 0.89,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -13600,7 +13600,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
     "finding": "GLAND, ADRENAL (WEIGHT)",
-    "max_fold_change": 1.12,
+    "max_fold_change": 0.89,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -13678,7 +13678,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
     "finding": "GLAND, ADRENAL (WEIGHT)",
-    "max_fold_change": 1.12,
+    "max_fold_change": 0.89,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -14458,7 +14458,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
     "finding": "GLAND, THYROID (WEIGHT)",
-    "max_fold_change": 1.26,
+    "max_fold_change": 0.79,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -14536,7 +14536,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
     "finding": "GLAND, THYROID (WEIGHT)",
-    "max_fold_change": 1.26,
+    "max_fold_change": 0.79,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -14614,7 +14614,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
     "finding": "GLAND, THYROID (WEIGHT)",
-    "max_fold_change": 1.26,
+    "max_fold_change": 0.79,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -14926,7 +14926,7 @@
     "test_code": "WEIGHT",
     "specimen": "HEART",
     "finding": "HEART (WEIGHT)",
-    "max_fold_change": 1.48,
+    "max_fold_change": 0.68,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15004,7 +15004,7 @@
     "test_code": "WEIGHT",
     "specimen": "HEART",
     "finding": "HEART (WEIGHT)",
-    "max_fold_change": 1.48,
+    "max_fold_change": 0.68,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15082,7 +15082,7 @@
     "test_code": "WEIGHT",
     "specimen": "HEART",
     "finding": "HEART (WEIGHT)",
-    "max_fold_change": 1.48,
+    "max_fold_change": 0.68,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15394,7 +15394,7 @@
     "test_code": "WEIGHT",
     "specimen": "KIDNEY",
     "finding": "KIDNEY (WEIGHT)",
-    "max_fold_change": 1.5,
+    "max_fold_change": 0.67,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15472,7 +15472,7 @@
     "test_code": "WEIGHT",
     "specimen": "KIDNEY",
     "finding": "KIDNEY (WEIGHT)",
-    "max_fold_change": 1.5,
+    "max_fold_change": 0.67,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15550,7 +15550,7 @@
     "test_code": "WEIGHT",
     "specimen": "KIDNEY",
     "finding": "KIDNEY (WEIGHT)",
-    "max_fold_change": 1.5,
+    "max_fold_change": 0.67,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -16330,7 +16330,7 @@
     "test_code": "WEIGHT",
     "specimen": "TESTIS",
     "finding": "TESTIS (WEIGHT)",
-    "max_fold_change": 1.12,
+    "max_fold_change": 0.89,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -16408,7 +16408,7 @@
     "test_code": "WEIGHT",
     "specimen": "TESTIS",
     "finding": "TESTIS (WEIGHT)",
-    "max_fold_change": 1.12,
+    "max_fold_change": 0.89,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -16486,7 +16486,7 @@
     "test_code": "WEIGHT",
     "specimen": "TESTIS",
     "finding": "TESTIS (WEIGHT)",
-    "max_fold_change": 1.12,
+    "max_fold_change": 0.89,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -22483,7 +22483,7 @@
     "test_code": "RRAG",
     "specimen": null,
     "finding": "RR Interval, Aggregate",
-    "max_fold_change": 1.24
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "RR Interval, Aggregate",
@@ -22502,7 +22502,7 @@
     "test_code": "RRAG",
     "specimen": null,
     "finding": "RR Interval, Aggregate",
-    "max_fold_change": 1.24
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "RR Interval, Aggregate",
@@ -22521,7 +22521,7 @@
     "test_code": "RRAG",
     "specimen": null,
     "finding": "RR Interval, Aggregate",
-    "max_fold_change": 1.24
+    "max_fold_change": 0.8
   },
   {
     "endpoint_label": "Body Weight Gain",
@@ -22540,7 +22540,7 @@
     "test_code": "BWGAIN",
     "specimen": null,
     "finding": "Body Weight Gain",
-    "max_fold_change": 3.18
+    "max_fold_change": 0.31
   },
   {
     "endpoint_label": "Body Weight Gain",
@@ -22559,7 +22559,7 @@
     "test_code": "BWGAIN",
     "specimen": null,
     "finding": "Body Weight Gain",
-    "max_fold_change": 3.18
+    "max_fold_change": 0.31
   },
   {
     "endpoint_label": "Body Weight Gain",
@@ -22578,7 +22578,7 @@
     "test_code": "BWGAIN",
     "specimen": null,
     "finding": "Body Weight Gain",
-    "max_fold_change": 3.18
+    "max_fold_change": 0.31
   },
   {
     "endpoint_label": "Body Weight Gain",
@@ -22597,7 +22597,7 @@
     "test_code": "BWGAIN",
     "specimen": null,
     "finding": "Body Weight Gain",
-    "max_fold_change": 2.31
+    "max_fold_change": 0.43
   },
   {
     "endpoint_label": "Body Weight Gain",
@@ -22616,7 +22616,7 @@
     "test_code": "BWGAIN",
     "specimen": null,
     "finding": "Body Weight Gain",
-    "max_fold_change": 2.31
+    "max_fold_change": 0.43
   },
   {
     "endpoint_label": "Body Weight Gain",
@@ -22635,6 +22635,6 @@
     "test_code": "BWGAIN",
     "specimen": null,
     "finding": "Body Weight Gain",
-    "max_fold_change": 2.31
+    "max_fold_change": 0.43
   }
 ]

@@ -8,6 +8,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', '../docs/knowledge/**/*.test.ts'],
+    exclude: ['../docs/knowledge/audit-results/**/*.test.ts'],
   },
 })

@@ -62,6 +62,25 @@ export interface EndpointMatch {
   sex?: string | null;
 }
 
+/** REM-09: Directional gate configuration per syndrome. */
+export interface DirectionalGateConfig {
+  term: string;           // tag to check (e.g., "RETIC", "LYMPH")
+  expectedDirection: "up" | "down";
+  action: "reject" | "strong_against" | "weak_against";
+  /** Condition under which reject softens to strong_against */
+  overrideCondition?: string;
+}
+
+/** REM-09: Result of directional gate evaluation. */
+export interface DirectionalGateResult {
+  gateFired: boolean;
+  action: "reject" | "strong_against" | "weak_against" | "none";
+  overrideApplied: boolean;
+  overrideReason?: "direct_lesion" | "timecourse";
+  certaintyCap?: "mechanism_uncertain" | "pattern_only";
+  explanation: string;
+}
+
 export interface CrossDomainSyndrome {
   id: string;
   name: string;
@@ -72,6 +91,8 @@ export interface CrossDomainSyndrome {
   supportScore: number;
   /** Which sexes this syndrome was detected in. Empty = aggregate (both). */
   sexes: string[];
+  /** REM-09: Directional gate evaluation result, if applicable. */
+  directionalGate?: DirectionalGateResult;
 }
 
 // ─── Normalization & parsing helpers ───────────────────────
@@ -851,6 +872,103 @@ function deduplicateSyndromes(syndromes: CrossDomainSyndrome[]): CrossDomainSynd
   return results;
 }
 
+// ─── REM-09: Directional gate definitions ─────────────────
+
+const DIRECTIONAL_GATES: Record<string, DirectionalGateConfig[]> = {
+  XS04: [
+    {
+      term: "RETIC", expectedDirection: "down", action: "reject",
+      overrideCondition: "MI_MARROW_HYPOCELLULARITY",
+    },
+  ],
+  XS07: [
+    { term: "LYMPH", expectedDirection: "down", action: "strong_against" },
+  ],
+  XS08: [
+    { term: "LYMPH", expectedDirection: "down", action: "weak_against" },
+  ],
+};
+
+/**
+ * REM-09: Evaluate directional gates for a detected syndrome.
+ * Checks if any gate-configured term was matched in the opposite direction.
+ */
+function evaluateDirectionalGates(
+  syndromeId: string,
+  endpoints: EndpointSummary[],
+  _hasMarrowHypocellularity: boolean = false,
+): DirectionalGateResult {
+  const gates = DIRECTIONAL_GATES[syndromeId];
+  if (!gates) return { gateFired: false, action: "none", overrideApplied: false, explanation: "" };
+
+  const synDef = SYNDROME_DEFINITIONS.find((s) => s.id === syndromeId);
+  if (!synDef) return { gateFired: false, action: "none", overrideApplied: false, explanation: "" };
+
+  for (const gate of gates) {
+    // Find the term definition in the syndrome
+    const termDef = synDef.terms.find((t) => t.tag === gate.term);
+    if (!termDef) continue;
+
+    // Check if any endpoint matches the term identity but in the opposite direction
+    for (const ep of endpoints) {
+      if (!matchEndpointIdentity(ep, termDef)) continue;
+
+      const isSignificant = ep.minPValue != null && ep.minPValue < 0.05;
+      if (!isSignificant) continue;
+
+      // Check if direction is opposite to expected
+      if (ep.direction && ep.direction !== gate.expectedDirection) {
+        // Gate fires!
+        if (gate.action === "reject" && gate.overrideCondition && _hasMarrowHypocellularity) {
+          // Override: soften reject to strong_against
+          return {
+            gateFired: true,
+            action: "strong_against",
+            overrideApplied: true,
+            overrideReason: "direct_lesion",
+            certaintyCap: "mechanism_uncertain",
+            explanation: `${gate.term} ${ep.direction === "up" ? "↑" : "↓"} contradicts ${syndromeId}; ` +
+              `retained as differential — direct marrow lesion overrides peripheral signal.`,
+          };
+        }
+
+        const cap: "mechanism_uncertain" | "pattern_only" =
+          gate.action === "reject" ? "pattern_only" :
+          gate.action === "strong_against" ? "pattern_only" :
+          "mechanism_uncertain";
+
+        return {
+          gateFired: true,
+          action: gate.action,
+          overrideApplied: false,
+          certaintyCap: cap,
+          explanation: `${gate.term} ${ep.direction === "up" ? "↑" : "↓"} contradicts expected ` +
+            `${gate.expectedDirection === "up" ? "↑" : "↓"} for ${syndromeId}.`,
+        };
+      }
+      break;
+    }
+  }
+
+  return { gateFired: false, action: "none", overrideApplied: false, explanation: "" };
+}
+
+/**
+ * REM-09: Apply directional gates to detected syndromes as post-processing.
+ * Marks syndromes with gate results but does NOT remove them from the array
+ * (removal/certainty-capping happens in the interpretation layer).
+ */
+function applyDirectionalGates(
+  syndromes: CrossDomainSyndrome[],
+  endpoints: EndpointSummary[],
+): CrossDomainSyndrome[] {
+  return syndromes.map((s) => {
+    const gate = evaluateDirectionalGates(s.id, endpoints);
+    if (!gate.gateFired) return s;
+    return { ...s, directionalGate: gate };
+  });
+}
+
 // ─── Main detection function ──────────────────────────────
 
 /** Detect syndromes from a set of endpoints, tagging with sex if provided. */
@@ -984,10 +1102,10 @@ export function detectCrossDomainSyndromes(
   // Check if any endpoint has sex-divergent directions
   const hasDivergent = endpoints.some(ep => hasSexDivergence(ep));
 
+  let results: CrossDomainSyndrome[];
   if (!hasDivergent) {
-    return detectFromEndpoints(endpoints, null);
-  }
-
+    results = detectFromEndpoints(endpoints, null);
+  } else {
   // Collect unique sexes from divergent endpoints
   const allSexes = new Set<string>();
   for (const ep of endpoints) {
@@ -1003,7 +1121,11 @@ export function detectCrossDomainSyndromes(
     allResults.push(...detectFromEndpoints(sexEndpoints, sex));
   }
 
-  return deduplicateSyndromes(allResults);
+  results = deduplicateSyndromes(allResults);
+  }
+
+  // REM-09: Apply directional gates as post-processing
+  return applyDirectionalGates(results, endpoints);
 }
 
 // ─── Near-miss analysis (for Organ Context Panel) ─────────
