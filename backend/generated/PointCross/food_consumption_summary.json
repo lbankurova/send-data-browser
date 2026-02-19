@@ -129,29 +129,9 @@
           "fw_pct_change": 1.4,
           "bw_pct_change": -60.8
         }
-      ]
-    },
-    {
-      "start_day": 1,
-      "end_day": 90,
-      "days": 89,
-      "by_dose_sex": [
-        {
-          "dose_level": 3,
-          "sex": "M",
-          "n": 1,
-          "mean_fw": 5.9,
-          "mean_bw_gain": 79.0,
-          "mean_food_efficiency": 0.1504,
-          "food_efficiency_sd": null,
-          "food_efficiency_control": null,
-          "food_efficiency_reduced": null,
-          "fe_p_value": null,
-          "fe_cohens_d": null,
-          "fw_pct_change": null,
-          "bw_pct_change": null
-        }
-      ]
+      ],
+      "epoch": "treatment",
+      "label": "Treatment \u2014 interim (4 wk)"
     },
     {
       "start_day": 1,
@@ -278,7 +258,9 @@
           "fw_pct_change": -4.9,
           "bw_pct_change": -53.8
         }
-      ]
+      ],
+      "epoch": "treatment",
+      "label": "Treatment \u2014 terminal (13 wk)"
     }
   ],
   "overall_assessment": {

@@ -803,14 +803,10 @@ export function evaluateLabRules(
 // ─── Clinical Tier UI Utilities ─────────────────────────────
 
 /** Tailwind classes for clinical severity badge (background + text + border). */
-export function getClinicalTierBadgeClasses(tier: string): string {
-  switch (tier) {
-    case "S1": return "bg-blue-50 text-blue-700 border-blue-200";
-    case "S2": return "bg-yellow-50 text-yellow-700 border-yellow-200";
-    case "S3": return "bg-amber-50 text-amber-700 border-amber-200";
-    case "S4": return "bg-red-50 text-red-700 border-red-200";
-    default:   return "bg-gray-50 text-gray-700 border-gray-200";
-  }
+export function getClinicalTierBadgeClasses(_tier: string): string {
+  // All clinical tier badges use neutral gray — tier is categorical identity.
+  // The text label (S1/S2/S3/S4) communicates the tier.
+  return "bg-gray-100 text-gray-600 border-gray-200";
 }
 
 /** Tailwind text color class for clinical severity tier. */

@@ -7,6 +7,8 @@ the BW-FW relationship using a 4-way assessment table.
 Pattern follows tumor_summary.py (cross-domain generator module).
 """
 
+import re
+
 import numpy as np
 import pandas as pd
 
@@ -537,6 +539,91 @@ def _get_high_dose_pct(findings: list[dict]) -> float | None:
     return None
 
 
+def _get_epoch_boundaries(study: StudyInfo) -> dict:
+    """Derive epoch day boundaries from SE domain, falling back to TE.
+
+    Returns {treatment_end: int, recovery_start: int | None}.
+    """
+    # Try SE first — per-subject element dates are the most precise source
+    if "se" in study.xpt_files and "dm" in study.xpt_files:
+        try:
+            se_df, _ = read_xpt(study.xpt_files["se"])
+            se_df.columns = [c.upper() for c in se_df.columns]
+            dm_df, _ = read_xpt(study.xpt_files["dm"])
+            dm_df.columns = [c.upper() for c in dm_df.columns]
+
+            if "ETCD" in se_df.columns and "SEENDTC" in se_df.columns:
+                se_m = se_df.merge(dm_df[["USUBJID", "RFSTDTC"]], on="USUBJID", how="left")
+                se_m["SEENDTC_dt"] = pd.to_datetime(se_m["SEENDTC"], errors="coerce")
+                se_m["SESTDTC_dt"] = pd.to_datetime(se_m["SESTDTC"], errors="coerce")
+                se_m["RFSTDTC_dt"] = pd.to_datetime(se_m["RFSTDTC"], errors="coerce")
+                se_m["end_day"] = (se_m["SEENDTC_dt"] - se_m["RFSTDTC_dt"]).dt.days + 1
+                se_m["start_day"] = (se_m["SESTDTC_dt"] - se_m["RFSTDTC_dt"]).dt.days + 1
+
+                trt = se_m[se_m["ETCD"].str.upper().str.startswith("TRT")]
+                rec = se_m[se_m["ETCD"].str.upper() == "REC"]
+
+                treatment_end = int(trt["end_day"].max()) if not trt.empty else None
+                recovery_start = int(rec["start_day"].min()) if not rec.empty else None
+
+                if treatment_end is not None:
+                    return {"treatment_end": treatment_end, "recovery_start": recovery_start}
+        except Exception:
+            pass
+
+    # Fallback: TE domain (planned durations)
+    if "te" in study.xpt_files:
+        try:
+            te_df, _ = read_xpt(study.xpt_files["te"])
+            te_df.columns = [c.upper() for c in te_df.columns]
+            if "ETCD" in te_df.columns and "TEDUR" in te_df.columns:
+                treatment_days = None
+                for _, row in te_df.iterrows():
+                    etcd = str(row.get("ETCD", "")).upper().strip()
+                    dur = str(row.get("TEDUR", "")).strip()
+                    m = re.match(r"P(\d+)([DWMY])", dur)
+                    if not m:
+                        continue
+                    n, unit = int(m.group(1)), m.group(2)
+                    days = {"D": n, "W": n * 7, "M": n * 30, "Y": n * 365}.get(unit)
+                    if days and etcd.startswith("TRT"):
+                        if treatment_days is None or days > treatment_days:
+                            treatment_days = days
+                if treatment_days:
+                    return {"treatment_end": treatment_days, "recovery_start": None}
+        except Exception:
+            pass
+
+    return {"treatment_end": 91, "recovery_start": None}
+
+
+def _label_periods(periods: list[dict], study: StudyInfo) -> None:
+    """Add epoch and label keys to each period dict in-place.
+
+    Uses SE domain for epoch boundaries (treatment_end, recovery_start),
+    falling back to TE durations.
+    """
+    bounds = _get_epoch_boundaries(study)
+    treatment_end = bounds["treatment_end"]
+    recovery_start = bounds.get("recovery_start")
+
+    for p in periods:
+        start_day = p["start_day"]
+        end_day = p["end_day"]
+        days = end_day - start_day
+        weeks = max(round(days / 7), 1)
+
+        if recovery_start and start_day >= recovery_start - 1:
+            p["epoch"] = "recovery"
+            p["label"] = f"Recovery ({weeks} wk)"
+        else:
+            p["epoch"] = "treatment"
+            if end_day < treatment_end * 0.6:
+                p["label"] = f"Treatment \u2014 interim ({weeks} wk)"
+            else:
+                p["label"] = f"Treatment \u2014 terminal ({weeks} wk)"
+
+
 def _compute_recovery(
     fw_findings: list[dict],
     bw_findings: list[dict],
@@ -619,12 +706,18 @@ def _check_recovery_status(rec_df: pd.DataFrame) -> bool:
 
 
 def build_food_consumption_summary_with_subjects(
-    findings: list[dict], study: StudyInfo
+    findings: list[dict],
+    study: StudyInfo,
+    early_death_subjects: dict[str, str] | None = None,
 ) -> dict:
     """Full pipeline version: builds dose groups internally, merges subjects,
     then delegates to build_food_consumption_summary.
 
     This is the entry point called from generate.py.
+
+    When early_death_subjects is provided, those subjects are excluded from
+    period computation so moribund sacrifices don't create spurious
+    single-subject periods.
     """
     from services.analysis.dose_groups import build_dose_groups
 
@@ -666,8 +759,29 @@ def build_food_consumption_summary_with_subjects(
     else:
         fw_food = fw_df.copy()
 
+    # Exclude early-death subjects' truncated-period FW records only.
+    # Moribund sacrifices create anomalous (FWDY, FWENDY) pairs (e.g. (1,90)
+    # instead of the cohort's (1,92)).  Their valid records for standard
+    # periods (e.g. interim (1,29)) are preserved.  BW is untouched — point
+    # measurements are fine for matching any period.
+    if early_death_subjects and "FWDY" in fw_food.columns and "FWENDY" in fw_food.columns:
+        excluded = set(early_death_subjects.keys())
+        pair_counts = fw_food.groupby(["FWDY", "FWENDY"])["USUBJID"].nunique()
+        total_subjects = fw_food["USUBJID"].nunique()
+        threshold = max(3, total_subjects * 0.05)
+        anomalous_pairs = {
+            idx for idx, n in pair_counts.items() if n < threshold
+        }
+        if anomalous_pairs:
+            is_early = fw_food["USUBJID"].isin(excluded)
+            is_anomalous = fw_food[["FWDY", "FWENDY"]].apply(tuple, axis=1).isin(anomalous_pairs)
+            fw_food = fw_food[~(is_early & is_anomalous)].copy()
+
     # Compute periods with merged data
     periods = _compute_periods(fw_food, bw_df)
+
+    # Label periods with epoch names from TE domain
+    _label_periods(periods, study)
 
     # Overall assessment
     overall = _compute_overall_assessment(fw_findings, bw_findings, periods)

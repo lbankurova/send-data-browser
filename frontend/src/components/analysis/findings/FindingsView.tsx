@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Info, Eye } from "lucide-react";
+import { Info, EyeOff } from "lucide-react";
 import { useFindings } from "@/hooks/useFindings";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useTumorSummary } from "@/hooks/useTumorSummary";
@@ -316,7 +316,7 @@ export function FindingsView() {
               {" "}
               <span className="font-medium">{selectedPointData.label}</span>
               {sep}
-              <span className="font-mono">|d|={formatEffectSize(selectedPointData.effectSize)}</span>
+              <span className="font-mono" title="Cohen's d — standardized effect size. Negative = decrease, positive = increase.">d={formatEffectSize(selectedPointData.effectSize)}</span>
               {sep}
               <span className="font-mono">
                 p={formatPValue(selectedPointData.rawP)}
@@ -346,7 +346,7 @@ export function FindingsView() {
             className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground/70"
           >
             <span className="max-w-[80px] truncate">{label}</span>
-            <Eye
+            <EyeOff
               className="h-2.5 w-2.5 shrink-0 cursor-pointer hover:text-foreground"
               onClick={(e) => { e.stopPropagation(); handleRestoreEndpoint(label); }}
             />
@@ -355,7 +355,7 @@ export function FindingsView() {
         {overflow > 0 && (
           <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground/70">
             <span>+{overflow} more</span>
-            <Eye
+            <EyeOff
               className="h-2.5 w-2.5 shrink-0 cursor-pointer hover:text-foreground"
               onClick={(e) => { e.stopPropagation(); setExcludedEndpoints(new Set()); }}
             />
@@ -533,6 +533,7 @@ export function FindingsView() {
           signalScores={signalScoreMap}
           excludedEndpoints={excludedEndpoints}
           onToggleExclude={handleRestoreEndpoint}
+          activeEndpoint={activeEndpoint}
         />
       ) : null}
       </div>

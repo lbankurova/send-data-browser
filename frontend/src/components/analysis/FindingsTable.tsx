@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -36,10 +36,13 @@ interface FindingsTableProps {
   signalScores?: Map<string, number>;
   excludedEndpoints?: Set<string>;
   onToggleExclude?: (label: string) => void;
+  /** Active endpoint label — all rows matching this endpoint get a subtle highlight. */
+  activeEndpoint?: string | null;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint }: FindingsTableProps) {
   const { selectedFindingId, selectFinding } = useFindingSelection();
+  const selectedRowRef = useRef<HTMLTableRowElement | null>(null);
   const { getActiveGroupStats, useScheduledOnly: isScheduledOnly } = useScheduledOnly();
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
@@ -97,7 +100,8 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         const fullLabel = dg.dose_value != null && dg.dose_unit
           ? `${dg.dose_value} ${dg.dose_unit}` : dg.label;
         // Extract unit from first dose group that has one
-        const unit = idx === 0 ? (doseGroups.find((d) => d.dose_unit)?.dose_unit ?? undefined) : undefined;
+        // Show unit label on first non-control dose column, not control
+        const unit = idx === 1 ? (doseGroups.find((d) => d.dose_unit)?.dose_unit ?? undefined) : undefined;
         return col.display({
           id: `dose_${dg.dose_level}`,
           header: () => (
@@ -208,6 +212,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     columnResizeMode: "onChange",
   });
 
+  // Autoscroll selected row into view
+  useEffect(() => {
+    if (selectedRowRef.current) {
+      selectedRowRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [selectedFindingId]);
+
   /** Content-hugging: non-absorber columns shrink to fit; absorber takes the rest.
    *  Manual resize overrides with an explicit width. */
   function colStyle(colId: string) {
@@ -226,7 +237,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold text-muted-foreground hover:bg-accent/50"
+                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={colStyle(header.id)}
                   onDoubleClick={header.column.getToggleSortingHandler()}
                 >
@@ -248,15 +259,19 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         <tbody>
           {table.getRowModel().rows.map((row) => {
             const isSelected = selectedFindingId === row.original.id;
+            const epLabel = row.original.endpoint_label ?? row.original.finding;
+            const isRelated = !isSelected && activeEndpoint != null && epLabel === activeEndpoint;
             return (
               <tr
                 key={row.id}
+                ref={isSelected ? selectedRowRef : undefined}
                 className={cn(
                   "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                  isSelected && "bg-accent font-medium"
+                  isSelected && "bg-accent font-medium",
+                  isRelated && "bg-accent/20",
                 )}
                 data-selected={isSelected || undefined}
-                onClick={() => selectFinding(isSelected ? null : row.original)}
+                onClick={() => selectFinding(row.original)}
               >
                 {row.getVisibleCells().map((cell) => {
                   const isAbsorber = cell.column.id === ABSORBER_ID;

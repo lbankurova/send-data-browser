@@ -32,5 +32,8 @@ docs/incoming/arch-overhaul/lib-audit-results.md
 docs/incoming/arch-overhaul/spec-audit-tracker.md
 docs/views/histopathology-audit*.md
 
+# Knowledge docs (local research, generated references, external docs)
+docs/knowledge/
+
 # Claude Code local settings
 .claude/

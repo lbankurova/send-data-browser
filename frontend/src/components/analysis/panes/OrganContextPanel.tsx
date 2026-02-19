@@ -15,7 +15,6 @@ import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
 import {
   titleCase,
-  getDomainBadgeColor,
   getDirectionSymbol,
   formatPValue,
   formatEffectSize,
@@ -415,7 +414,7 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
         <div className="mb-2 text-xs font-semibold">{convergenceLabel}</div>
         {domainBreakdown.map(({ domain, endpoints, count }) => (
           <div key={domain} className="flex items-start gap-2 py-0.5">
-            <span className={`shrink-0 text-[9px] font-semibold ${getDomainBadgeColor(domain).text}`}>
+            <span className="shrink-0 text-[9px] font-semibold text-muted-foreground">
               {domain.toUpperCase()}
             </span>
             <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={endpoints.join(", ")}>
@@ -614,14 +613,12 @@ function MemberEndpointRow({
   onClick: () => void;
 }) {
   const dirSymbol = getDirectionSymbol(endpoint.direction);
-  const domainColor = getDomainBadgeColor(endpoint.domain);
-
   return (
     <button
       className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-xs hover:bg-accent/50 transition-colors"
       onClick={onClick}
     >
-      <span className={`shrink-0 text-[9px] font-semibold ${domainColor.text}`}>
+      <span className="shrink-0 text-[9px] font-semibold text-muted-foreground">
         {endpoint.domain.toUpperCase()}
       </span>
       <span className="min-w-0 flex-1 truncate" title={endpoint.endpoint_label}>

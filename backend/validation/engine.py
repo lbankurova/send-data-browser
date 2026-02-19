@@ -107,7 +107,7 @@ class ValidationEngine:
                 logger.warning(f"Failed to load {domain_code}: {e}")
         return domains
 
-    def validate(self, study: StudyInfo, *, disabled_rule_ids: set[str] | None = None) -> ValidationResults:
+    def validate(self, study: StudyInfo, *, disabled_rule_ids: set[str] | None = None, skip_core: bool = False) -> ValidationResults:
         """Run all applicable rules against the study's XPT files."""
         start = time.time()
         logger.info(f"Starting validation for {study.study_id}...")
@@ -172,7 +172,7 @@ class ValidationEngine:
 
         # Run CDISC CORE if available
         core_conformance = None
-        if is_core_available():
+        if not skip_core and is_core_available():
             logger.info(f"CORE available, running CORE validation for {study.study_id}...")
             try:
                 # Get SENDIG version from TS
