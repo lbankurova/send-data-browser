@@ -46,6 +46,7 @@ import { getSyndromeDefinition } from "@/lib/cross-domain-syndromes";
 import type { LesionSeverityRow } from "@/types/analysis-views";
 import type { StudyContext } from "@/types/study-context";
 import type { StudyMortality } from "@/types/mortality";
+import meddraMapping from "@/data/send-to-meddra-v3.json";
 
 // ─── Output types ──────────────────────────────────────────
 
@@ -2333,39 +2334,26 @@ export const SYNDROME_SOC_MAP: Record<string, string> = {
   XS10: "cardiac disorders",
 };
 
-/**
- * Maps SEND test codes and endpoint labels to MedDRA Preferred Terms
- * that have concordance data. Used to filter PT matches by what was
- * actually observed in the study. Keys are lowercase.
- *
- * v0: hand-curated from syndrome term dictionaries + KNOWN_PT_CONCORDANCE.
- * Replace with proper CDISC→MedDRA dictionary when available.
- */
-export const SEND_TO_PT: Record<string, string[]> = {
-  // Hepatobiliary (XS01/XS02)
-  "alt": ["hepatic necrosis", "hepatotoxicity"], "alat": ["hepatic necrosis", "hepatotoxicity"],
-  "ast": ["hepatic necrosis", "hepatotoxicity"], "asat": ["hepatic necrosis", "hepatotoxicity"],
-  "alanine aminotransferase": ["hepatic necrosis", "hepatotoxicity"],
-  "aspartate aminotransferase": ["hepatic necrosis", "hepatotoxicity"],
-  "bili": ["cholestasis"], "tbili": ["cholestasis"], "bilirubin": ["cholestasis"], "total bilirubin": ["cholestasis"],
-  "alp": ["cholestasis"], "alkp": ["cholestasis"], "alkaline phosphatase": ["cholestasis"],
-  "ggt": ["cholestasis"], "gamma glutamyltransferase": ["cholestasis"],
-  // MI hepatic findings
-  "necrosis": ["hepatic necrosis"], "hepatocellular necrosis": ["hepatic necrosis"],
-  "single cell necrosis": ["hepatic necrosis"],
-  "cholestasis": ["cholestasis"], "bile plugs": ["cholestasis"],
-  // Hematological (XS04/XS05)
-  "neut": ["neutropenia"], "anc": ["neutropenia"], "neutrophils": ["neutropenia"],
-  "neutrophil count": ["neutropenia"], "absolute neutrophil count": ["neutropenia"],
-  "plat": ["thrombocytopenia"], "plt": ["thrombocytopenia"], "platelets": ["thrombocytopenia"],
-  "platelet count": ["thrombocytopenia"],
-  "rbc": ["anemia"], "erythrocytes": ["anemia"], "erythrocyte count": ["anemia"],
-  "red blood cells": ["anemia"], "red blood cell count": ["anemia"],
-  "hgb": ["anemia"], "hb": ["anemia"], "hemoglobin": ["anemia"],
-  // Immunotoxicity (XS07)
-  "wbc": ["infection"], "white blood cells": ["infection"], "leukocytes": ["infection"],
-  "lymph": ["infection"], "lym": ["infection"], "lymphocytes": ["infection"],
-};
+// ─── MedDRA dictionary index (built from send-to-meddra-v3.json) ──
+
+/** Normalize MedDRA British spelling to American for concordance matching. */
+function normalizePT(pt: string): string {
+  return pt.toLowerCase()
+    .replace(/aemia/g, "emia")    // anaemia → anemia, hypertriglyceridaemia → hypertriglyceridemia
+    .replace(/aemia/g, "emia")    // catch doubles
+    .replace(/oedema/g, "edema")  // oedema → edema
+    .replace(/haem/g, "hem")      // haemolytic → hemolytic
+    .replace(/oestr/g, "estr");   // oestradiol → estradiol
+}
+
+/** MedDRA mapping index: dictionary key → normalized American-spelling PT strings. */
+const MEDDRA_INDEX: Map<string, string[]> = new Map();
+{
+  const mapping = meddraMapping.mapping as Record<string, { direction: string; pts: { pt: string; soc: string }[] }>;
+  for (const [key, entry] of Object.entries(mapping)) {
+    MEDDRA_INDEX.set(key, entry.pts.map(p => normalizePT(p.pt)));
+  }
+}
 
 /** Normalize species strings to concordance lookup keys. */
 export function normalizeSpecies(species: string): string {
@@ -2435,29 +2423,64 @@ function buildTranslationalSummary(
 }
 
 /**
- * Resolve matched endpoints to MedDRA PTs via SEND_TO_PT map.
- * Returns deduplicated PT keys that were actually observed in the syndrome.
+ * Build dictionary lookup keys for an endpoint. Returns keys to try in MEDDRA_INDEX.
+ * Uses structured fields from the full EndpointSummary when available.
  */
-function resolveObservedPTs(syndrome: CrossDomainSyndrome): Set<string> {
-  const pts = new Set<string>();
-  for (const ep of syndrome.matchedEndpoints) {
-    // Try the raw endpoint_label (lowered) — catches test codes and lab names
-    const label = ep.endpoint_label.toLowerCase().trim();
-    // Direct match on full label
-    const direct = SEND_TO_PT[label];
-    if (direct) { for (const pt of direct) pts.add(pt); continue; }
-    // Try splitting "SPECIMEN — FINDING" MI/MA labels
-    const dashIdx = label.indexOf("—");
-    if (dashIdx > -1) {
-      const finding = label.slice(dashIdx + 1).trim();
-      const findingPTs = SEND_TO_PT[finding];
-      if (findingPTs) for (const pt of findingPTs) pts.add(pt);
-      continue;
+function buildDictionaryKeys(ep: EndpointSummary): string[] {
+  const keys: string[] = [];
+  const domain = ep.domain.toUpperCase();
+
+  if (domain === "LB" || domain === "CL") {
+    // LB: primary key is testCode (e.g., "ALT"), fallback to label
+    if (ep.testCode) keys.push(ep.testCode.toUpperCase());
+    // Also try raw label as key (some entries use label-based keys)
+    keys.push(ep.endpoint_label.toUpperCase());
+  } else if (domain === "MI" || domain === "MA") {
+    // MI: key is "MI:FINDING:SPECIMEN" — normalize to upper-case underscored
+    const specimen = (ep.specimen ?? "").toUpperCase().replace(/[\s,]+/g, "_");
+    const finding = (ep.finding ?? "").toUpperCase().replace(/[\s,]+/g, " ");
+    if (specimen && finding) {
+      keys.push(`MI:${finding}:${specimen}`);
+      // Try shorter specimen (e.g., "BONE MARROW, FEMUR" → "BONE_MARROW")
+      const shortSpecimen = specimen.split("_")[0] === "BONE" ? "BONE_MARROW" : specimen.split("_")[0];
+      if (shortSpecimen !== specimen) keys.push(`MI:${finding}:${shortSpecimen}`);
     }
-    // Try matching individual words (catches "Neutrophils" in "Neutrophils (abs)")
-    for (const key of Object.keys(SEND_TO_PT)) {
-      if (label.includes(key) || key.includes(label)) {
-        for (const pt of SEND_TO_PT[key]) pts.add(pt);
+  } else if (domain === "OM") {
+    // OM: key is "OM:WEIGHT:SPECIMEN:UP|DOWN"
+    const specimen = (ep.specimen ?? ep.endpoint_label).toUpperCase().replace(/[\s,]+/g, "_");
+    const dir = ep.direction === "up" ? "UP" : ep.direction === "down" ? "DOWN" : null;
+    if (specimen && dir) {
+      keys.push(`OM:WEIGHT:${specimen}:${dir}`);
+      const shortSpecimen = specimen.split("_")[0] === "BONE" ? "BONE_MARROW" : specimen.split("_")[0];
+      if (shortSpecimen !== specimen) keys.push(`OM:WEIGHT:${shortSpecimen}:${dir}`);
+    }
+  }
+  return keys;
+}
+
+/**
+ * Resolve matched endpoints to MedDRA PTs via the v3.0 dictionary.
+ * Uses structured EndpointSummary fields for precise key building.
+ */
+function resolveObservedPTs(
+  syndrome: CrossDomainSyndrome,
+  allEndpoints: EndpointSummary[],
+): Set<string> {
+  const pts = new Set<string>();
+  // Build index of full EndpointSummary by label for fast lookup
+  const epByLabel = new Map<string, EndpointSummary>();
+  for (const ep of allEndpoints) epByLabel.set(ep.endpoint_label, ep);
+
+  for (const match of syndrome.matchedEndpoints) {
+    const fullEp = epByLabel.get(match.endpoint_label);
+    if (!fullEp) continue;
+
+    const keys = buildDictionaryKeys(fullEp);
+    for (const key of keys) {
+      const ptList = MEDDRA_INDEX.get(key);
+      if (ptList) {
+        for (const pt of ptList) pts.add(pt);
+        break; // first matching key wins
       }
     }
   }
@@ -2466,19 +2489,23 @@ function resolveObservedPTs(syndrome: CrossDomainSyndrome): Set<string> {
 
 /**
  * Assess translational confidence for a detected syndrome.
- * Uses SEND_TO_PT to filter PT matches to actually-observed endpoints.
+ * Uses the v3.0 MedDRA dictionary to resolve observed endpoints to PTs,
+ * then matches against concordance data.
  */
 export function assessTranslationalConfidence(
   syndrome: CrossDomainSyndrome,
   species: string,
   hasAbsenceMeaningful: boolean,
+  allEndpoints?: EndpointSummary[],
 ): TranslationalConfidence {
   const primarySOC = SYNDROME_SOC_MAP[syndrome.id];
   const socLR = lookupSOCLRPlus(species, primarySOC);
   const normalizedSpecies = normalizeSpecies(species);
 
   // Resolve which PTs the syndrome's actual matched endpoints map to
-  const observedPTs = resolveObservedPTs(syndrome);
+  const observedPTs = allEndpoints
+    ? resolveObservedPTs(syndrome, allEndpoints)
+    : new Set<string>(); // no endpoints → SOC fallback only
 
   // Look up concordance data for observed PTs only
   const ptMatches: { endpoint: string; lrPlus: number; species: string }[] = [];
@@ -2703,7 +2730,7 @@ export function interpretSyndrome(
     ),
   );
   const translationalConfidence = assessTranslationalConfidence(
-    syndrome, studyContext.species, hasAbsenceMeaningful,
+    syndrome, studyContext.species, hasAbsenceMeaningful, allEndpoints,
   );
   if (translationalConfidence.tier !== "insufficient_data") {
     narrativeParts.push(translationalConfidence.summary);

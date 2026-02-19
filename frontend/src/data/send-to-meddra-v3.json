@@ -1,0 +1,4940 @@
+{
+  "version": "3.0",
+  "changelog": [
+    "v2.0: Added ~37 new LBTESTCD codes (iron panel, renal biomarkers, cardiac markers, thyroid, hormones, immunology, urinalysis)",
+    "v2.0: Added ~80 new MI histopathology entries (necrosis, hypertrophy, hyperplasia, atrophy, degeneration, inflammation, fibrosis across additional organs; metaplasia, dysplasia, neoplasia, thrombus categories)",
+    "v2.0: Added 12 new OM organ weight entries (thyroid, pituitary, prostate, uterus, epididymis, pancreas)",
+    "v2.0: Fixed electrolyte PTs to include 'Blood' prefix per MedDRA convention (Na, K, Cl, Ca, Phos, Mg)",
+    "v2.0: Fixed 'Phosphate abnormal' to 'Blood phosphorus abnormal' (MedDRA uses 'phosphorus' not 'phosphate')",
+    "v2.0: Fixed 'Inflammation' SOC from 'Immune system disorders' to 'General disorders and administration site conditions'",
+    "v2.0: Fixed 'Hepatic enlargement' to 'Hepatomegaly' (correct MedDRA PT)",
+    "v2.0: Fixed 'Hepatic vacuolation' to 'Hepatocellular vacuolation'",
+    "v2.0: Fixed 'Hepatic degeneration' to 'Hepatocyte degeneration'",
+    "v2.0: Fixed 'Renal tubular apoptosis' to 'Renal tubular necrosis' (not a valid MedDRA PT)",
+    "v2.0: Fixed hormone 'abnormal' PTs to include 'Blood' prefix (Insulin, Cortisol, Thyroxine, TSH)",
+    "v2.0: Resolved 9 duplicate LBTESTCD pairs per CDISC NCI EVS C65047 (removed AMYL/LIP/TBIL/GLB/BAS/Eos/HCO3/CHO/TP)",
+    "v2.0: Removed non-standard LBTESTCD keys (KIDNEY, PLASMA, PHEN, CHOLIN, A_RATIO, TGTP, BILEAC, TGLOB)",
+    "v2.0: Standardized MI key format: removed legacy _ADRENAL suffix keys",
+    "v2.0: Added CRP condition PT as 'Acute phase reaction' (replacing 'Inflammation' with wrong SOC)",
+    "v2.1 (Stage 2): Added 'Liver injury' and 'Cholestatic liver injury' PTs to relevant hepatotoxicity markers",
+    "v2.1 (Stage 2): Fixed LDH mapping (non-organ-specific; now maps to Haemolytic anaemia)",
+    "v2.1 (Stage 2): Fixed globulin acute phase protein PTs to 'Acute phase reaction'",
+    "v2.1 (Stage 2): Fixed MI:INFLAMMATION:BONE_MARROW from Osteomyelitis to Bone marrow inflammation (non-infectious)",
+    "v2.1 (Stage 2): Fixed MI:INFLAMMATION:BRAIN to use non-infectious encephalitis terms",
+    "v2.1 (Stage 2): Fixed all 'Inflammatory cell infiltration' SOC to General disorders",
+    "v2.1 (Stage 2): Added ~80 new MI entries: missing organ×finding combos, INHAND-specific findings (phospholipidosis, EMH, single cell necrosis, hyaline droplets, centrilobular patterns), injection site reactions, skeletal muscle, neoplasia, demyelination/gliosis",
+    "v2.1 (Stage 2): Added ~12 new LBTESTCD codes (SAA, RETPCT, LUC, NLR, UOSM, UCAST, UCRYST, UEPITH, PREALB, BILDIR, BILIND)",
+    "v2.1 (Stage 2): Added OM:WEIGHT:SEMINAL_VESICLE:UP/DOWN",
+    "v2.1 (Stage 2): Made FIB bidirectional (up = acute phase; down = coagulopathy)",
+    "v2.1 (Stage 2): Added _note metadata to complex or uncertain entries",
+    "v3.0 (Stage 3): Standardized all OM Investigation PTs to 'Organ weight increased/decreased' (organ-specific weight PTs may only exist as LLTs)",
+    "v3.0 (Stage 3): Fixed OM:WEIGHT:THYMUS:UP from 'Thymomegaly' to 'Thymic hyperplasia' (validated PT)",
+    "v3.0 (Stage 3): Fixed OM:WEIGHT:PROSTATE:UP from 'Prostatomegaly' to 'Prostate enlarged'",
+    "v3.0 (Stage 3): Fixed OM:WEIGHT:KIDNEY:UP from 'Nephromegaly' to 'Renal hypertrophy'",
+    "v3.0 (Stage 3): Added OM entries for salivary gland and parathyroid gland",
+    "v3.0 (Stage 3): QC pass: deduplicated PTs, validated direction fields, checked MedDRA British spellings, verified key formats"
+  ],
+  "sources": [
+    "CDISC SEND Controlled Terminology (NCI EVS codelist C65047) - release 2025-03-28",
+    "CDISC SEND IG 3.1.1 (endpoint identifiers LBTESTCD; domains LB/MI/OM)",
+    "MedDRA v27.0 (Preferred Terms and Primary SOCs)",
+    "MedDRA Term Selection: Points to Consider (Release 4.22)",
+    "CTCAE v5.0 (NCI Common Terminology Criteria for Adverse Events — MedDRA mappings)",
+    "Liu & Fan 2026 (bioRxiv 10.64898/2026.01.29.702667) translational concordance dataset",
+    "INHAND (International Harmonization of Nomenclature and Diagnostic Criteria for Lesions in Rats and Mice)",
+    "INHAND (International Harmonization of Nomenclature and Diagnostic Criteria) — Hepatobiliary, Urinary, Cardiovascular, Endocrine, GI, Hematolymphoid system publications",
+    "MedDRA Introductory Guide v25.0 (liver injury PT classification guidance)",
+    "CDISC SEND Controlled Terminology 2025-03-28 (NCI EVS - OM domain organ list)"
+  ],
+  "notes": [
+    "VALIDATION CAVEAT: MedDRA is proprietary and the full dictionary is only available to licensed subscribers (MSSO). This mapping was constructed from publicly available fragments — BioPortal, CTCAE v5.0 crosswalks, MedDRA Introductory Guides, pharmacovigilance literature, and MedDRA naming conventions. Common PTs (e.g. Hepatomegaly, Blood glucose increased) are high-confidence (~90%+). The 17 entries flagged with _note metadata are medium/lower confidence (~50-70%) where PTs were inferred from naming patterns rather than confirmed in a licensed browser. Before wiring into production concordance scoring, spot-check all PTs against a licensed MedDRA v27.0 distribution: search each PT string, confirm it exists as a PT (not just an LLT), and verify the primary SOC assignment.",
+    "PT and SOC strings should be validated against your licensed MedDRA v27.0 distribution.",
+    "Lab test keys are SEND LBTESTCD codes per NCI EVS C65047.",
+    "Histopathology keys are MI-qualified as MI:<FINDING>:<ORGAN>.",
+    "Organ weights are OM-qualified as OM:WEIGHT:<ORGAN>:UP|DOWN.",
+    "Entries with '_note' fields contain verification guidance for PTs with medium or lower confidence.",
+    "Novel renal biomarker PTs (KIM1, NGAL, NAG) may only exist in MedDRA v24.0+; verify in licensed browser.",
+    "Electrolyte and hormone Investigation PTs follow MedDRA's 'Blood [analyte] [qualifier]' convention.",
+    "MedDRA uses British/INN spellings throughout (e.g., 'oestradiol', 'haemoglobin', 'anaemia').",
+    "OM Investigation PTs use generic 'Organ weight increased/decreased' — organ-specific weight PTs (e.g. 'Liver weight increased') may only exist as LLTs in MedDRA.",
+    "All terms use MedDRA British/INN spellings: anaemia (not anemia), oedema (not edema), haemorrhage (not hemorrhage), oestradiol (not estradiol)."
+  ],
+  "mapping": {
+    "5NT": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Blood 5'-nucleotidase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Cholestasis",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "A1GLOB": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Alpha-1 globulin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "A2GLOB": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Alpha-2 globulin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "ACTH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood corticotrophin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood corticotrophin decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Cushing's syndrome",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Adrenal insufficiency",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "AGAP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Anion gap increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Metabolic acidosis",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "ALB": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Albumin decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypoalbuminaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "ALDO": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood aldosterone increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood aldosterone decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperaldosteronism",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Hypoaldosteronism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "ALP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Alkaline phosphatase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Cholestasis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Cholestatic liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "ALT": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Alanine aminotransferase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hepatotoxicity",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Drug-induced liver injury",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "AMYLASE": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Amylase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Pancreatitis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "APTT": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Activated partial thromboplastin time prolonged",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Coagulopathy",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Haemorrhage",
+          "soc": "Vascular disorders"
+        }
+      ]
+    },
+    "AST": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Aspartate aminotransferase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hepatocellular injury",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Drug-induced liver injury",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "A_G": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Albumin globulin ratio decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypoalbuminaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "B1GLOB": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Beta-1 globulin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "B2GLOB": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Beta-2 globulin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "BASO": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Basophil count increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Basophil count decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Basophilia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Basophil count abnormal",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "BICARB": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Bicarbonate abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Metabolic acidosis",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Metabolic alkalosis",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "BILDIR": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Bilirubin conjugated increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Cholestasis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Cholestatic liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "BILI": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Blood bilirubin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperbilirubinaemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Jaundice",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "BILIND": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Bilirubin unconjugated increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Haemolytic anaemia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "BNP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Brain natriuretic peptide increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Cardiac failure",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "BUN": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Blood urea increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Azotaemia",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Renal impairment",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "C3": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Complement C3 decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Complement C3 increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypocomplementaemia",
+          "soc": "Immune system disorders"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "C4": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Complement C4 decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Complement C4 increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypocomplementaemia",
+          "soc": "Immune system disorders"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "CA": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood calcium abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypocalcaemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Hypercalcaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "CHE": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Cholinesterase decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hepatic function abnormal",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "CHOL": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Cholesterol increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypercholesterolaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "CK": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Creatine phosphokinase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Myopathy",
+          "soc": "Musculoskeletal and connective tissue disorders"
+        },
+        {
+          "pt": "Rhabdomyolysis",
+          "soc": "Musculoskeletal and connective tissue disorders"
+        }
+      ]
+    },
+    "CKMB": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Creatine phosphokinase MB increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Myocardial injury",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "CL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood chloride abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypochloraemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Hyperchloraemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "CO2": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood carbon dioxide abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Metabolic acidosis",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Metabolic alkalosis",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "CORT": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood cortisol abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Adrenal insufficiency",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Hypercortisolism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "CREAT": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Blood creatinine increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Renal impairment",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Acute kidney injury",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "CRP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "C-reactive protein increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "CRPHS": {
+      "direction": "up",
+      "_note": "Maps to same MedDRA PT as CRP; MedDRA does not distinguish hs-CRP",
+      "pts": [
+        {
+          "pt": "C-reactive protein increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "CYSTC": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Blood cystatin C increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Renal impairment",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "DBIL": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Bilirubin conjugated increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Cholestasis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Cholestatic liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "D_DIMER": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "D-dimer increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Disseminated intravascular coagulation",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "EOS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Eosinophil count increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Eosinophil count decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Eosinophilia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Eosinophil count abnormal",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "ESTR": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood oestradiol increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood oestradiol decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperoestrogenaemia",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Oestrogen deficiency",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "FERR": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Serum ferritin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Serum ferritin decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperferritinaemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Iron deficiency",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "FIB": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Fibrinogen increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Fibrinogen decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypofibrinogenaemia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Haemorrhage",
+          "soc": "Vascular disorders"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "FSH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood follicle stimulating hormone increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood follicle stimulating hormone decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Ovarian failure",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Hypogonadotropic hypogonadism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "FT3": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Free triiodothyronine increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Free triiodothyronine decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperthyroidism",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Hypothyroidism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "FT4": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Free thyroxine increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Free thyroxine decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperthyroidism",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Hypothyroidism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "GAMGLOB": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Gamma globulin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypergammaglobulinaemia",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "GFR": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Glomerular filtration rate decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Renal impairment",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Chronic kidney disease",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "GGT": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Gamma-glutamyltransferase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Cholestasis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Cholestatic liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "GH": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Blood growth hormone increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acromegaly",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "GLDH": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Glutamate dehydrogenase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hepatocellular injury",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "GLOB": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Globulin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypergammaglobulinaemia",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "GLUC": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood glucose increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood glucose decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperglycaemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Hypoglycaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "HAPT": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Haptoglobin decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Haptoglobin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Haemolytic anaemia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "HBA1C": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Glycated haemoglobin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Diabetes mellitus",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "HCT": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Haematocrit decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Haematocrit increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Anaemia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Haemoconcentration",
+          "soc": "Vascular disorders"
+        }
+      ]
+    },
+    "HDL": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "High density lipoprotein decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Dyslipidaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "HGB": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Haemoglobin decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Haemoglobin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Anaemia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Polycythaemia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "IGA": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Immunoglobulin A increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Immunoglobulin A decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypergammaglobulinaemia",
+          "soc": "Immune system disorders"
+        },
+        {
+          "pt": "Selective immunoglobulin A deficiency",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "IGG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Immunoglobulin G increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Immunoglobulin G decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypergammaglobulinaemia",
+          "soc": "Immune system disorders"
+        },
+        {
+          "pt": "Hypogammaglobulinaemia",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "IGM": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Immunoglobulin M increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Immunoglobulin M decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypergammaglobulinaemia",
+          "soc": "Immune system disorders"
+        },
+        {
+          "pt": "Hypogammaglobulinaemia",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "INR": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "International normalised ratio increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Coagulopathy",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "INSULIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood insulin abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypoglycaemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Hyperglycaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "IRON": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood iron increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood iron decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Iron overload",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Iron deficiency anaemia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "K": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood potassium abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypokalaemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Hyperkalaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "KIM1": {
+      "direction": "up",
+      "_note": "FDA/EMA-qualified biomarker; PT may have been added in MedDRA v24.0+",
+      "pts": [
+        {
+          "pt": "Kidney injury molecule-1 increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acute kidney injury",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "LACT": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Lactate increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Lactic acidosis",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "LDH": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Lactate dehydrogenase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Haemolytic anaemia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ],
+      "_note": "LDH elevation is non-organ-specific; may indicate hemolysis, hepatocellular injury, or myocardial injury depending on isoenzyme"
+    },
+    "LDL": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Low density lipoprotein increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperlipidaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "LH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood luteinising hormone increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood luteinising hormone decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypergonadotropic hypogonadism",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Hypogonadotropic hypogonadism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "LIPA": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Lipase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Pancreatitis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "LUC": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Large unstained cells increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Atypical lymphocytes",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "LYM": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Lymphocyte count decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Lymphocyte count increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Lymphopenia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Lymphocytosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MCH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Mean corpuscular haemoglobin abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypochromia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MCHC": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Mean corpuscular haemoglobin concentration abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypochromia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MCV": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Mean corpuscular volume abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Microcytosis",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Macrocytosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood magnesium abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypomagnesaemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Hypermagnesaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "MICRTP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Albumin urine present",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Microalbuminuria",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MONO": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Monocyte count decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Monocyte count increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Monocytopenia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Monocytosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MPV": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Mean platelet volume abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Thrombocytopenia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "NA": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood sodium abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyponatraemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Hypernatraemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "NAG": {
+      "direction": "up",
+      "_note": "Urinary biomarker; Investigation PT may exist only as LLT in some MedDRA versions",
+      "pts": [
+        {
+          "pt": "Urine N-acetyl-beta-D-glucosaminidase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Renal tubular necrosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "NEUT": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Neutrophil count decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Neutrophil count increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Neutropenia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Neutrophilia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "NGAL": {
+      "direction": "up",
+      "_note": "Investigation PT may not exist as a distinct PT; verify in licensed MedDRA browser",
+      "pts": [
+        {
+          "pt": "Neutrophil gelatinase-associated lipocalin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acute kidney injury",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "NH3": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Blood ammonia increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperammonaemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Hepatic encephalopathy",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "NLR": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Neutrophil/lymphocyte ratio increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ],
+      "_note": "NLR is a derived parameter; may not have an official CDISC LBTESTCD"
+    },
+    "NTPROBNP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "N-terminal prohormone brain natriuretic peptide increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Cardiac failure",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "OSM": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Osmolality abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Dehydration",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "PHOS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood phosphorus abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypophosphataemia",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Hyperphosphataemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "PLT": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Platelet count decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Platelet count increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Thrombocytopenia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Thrombocytosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "PREALB": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Prealbumin decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Malnutrition",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "PRGES": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood progesterone increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood progesterone decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Luteal phase deficiency",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "PROLACT": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Blood prolactin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperprolactinaemia",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "PROT": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Protein total increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "PT": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Prothrombin time prolonged",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Coagulopathy",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Haemorrhage",
+          "soc": "Vascular disorders"
+        }
+      ]
+    },
+    "PTH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood parathyroid hormone increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood parathyroid hormone decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperparathyroidism",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Hypoparathyroidism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "RBC": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Red blood cell count decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Red blood cell count increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Anaemia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Polycythaemia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "RDW": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Red blood cell distribution width increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Anisocytosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "RENIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood renin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood renin decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperaldosteronism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "RETIC": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Reticulocyte count increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Reticulocyte count decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Reticulocytosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "RETPCT": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Reticulocyte percentage increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Reticulocyte percentage decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Reticulocytosis",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Anaemia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "SAA": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Serum amyloid A protein increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Acute phase reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "SDH": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Sorbitol dehydrogenase increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hepatocellular injury",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "T3": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood triiodothyronine increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood triiodothyronine decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperthyroidism",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Hypothyroidism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "T4": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood thyroxine abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypothyroidism",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Hyperthyroidism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "TBA": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Bile acid increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Cholestasis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Cholestatic liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "TESTO": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood testosterone increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Blood testosterone decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperandrogenism",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Hypogonadism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "TIBC": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Total iron binding capacity increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Total iron binding capacity decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Iron deficiency",
+          "soc": "Metabolism and nutrition disorders"
+        },
+        {
+          "pt": "Iron overload",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "TPR": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Body temperature abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Pyrexia",
+          "soc": "General disorders and administration site conditions"
+        },
+        {
+          "pt": "Hypothermia",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "TPRO": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Total protein decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypoproteinaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "TRIG": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Triglycerides increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypertriglyceridaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "TROP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Troponin increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Myocardial infarction",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "TSH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Blood thyroid stimulating hormone abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hypothyroidism",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Hyperthyroidism",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "UBIL": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Bilirubinuria",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Urine bilirubin positive",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperbilirubinaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "UBLD": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Haematuria",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Urine blood positive",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "UCAST": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Urine casts present",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Renal tubular necrosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "UCOL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Urine discolouration",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Chromaturia",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "UCREAT": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Urine creatinine increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Urine creatinine decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Renal impairment",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "UCRYST": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Crystalluria",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Urine crystals present",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "UEPITH": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Urine epithelial cells present",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Renal tubular necrosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "UGLU": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Glucosuria",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Urine glucose positive",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperglycaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "UKET": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Ketonuria",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Urine ketone bodies positive",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "UNITR": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Nitrite urine positive",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Urinary tract infection",
+          "soc": "Infections and infestations"
+        }
+      ]
+    },
+    "UOSM": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Urine osmolality increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Urine osmolality decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Dehydration",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "UPH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Urine pH abnormal",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "UPROT": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Proteinuria",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Urine protein positive",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "URBC": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Haematuria",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Erythrocyturia",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "UREA": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Blood urea increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Azotaemia",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "URIC": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Uric acid increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Hyperuricaemia",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "USG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Urine specific gravity abnormal",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Dehydration",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "UUROB": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Urobilinogen urine increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Haemolysis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "UVOL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Urine output increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Urine output decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Polyuria",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Oliguria",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "UWBC": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Leukocyturia",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Urine leukocytes positive",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "VITD": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Blood 25-hydroxycholecalciferol decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Vitamin D deficiency",
+          "soc": "Metabolism and nutrition disorders"
+        }
+      ]
+    },
+    "WBC": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "White blood cell count decreased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "White blood cell count increased",
+          "soc": "Investigations"
+        },
+        {
+          "pt": "Leukopenia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Leukocytosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:ADENOMA:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal adenoma",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:ADENOMA:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatocellular adenoma",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:ADENOMA:PANCREAS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pancreatic islet cell tumour benign",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:ADENOMA:PITUITARY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pituitary tumour benign",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:ADENOMA:THYROID": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thyroid adenoma",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:AMYLOID:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Amyloidosis",
+          "soc": "Immune system disorders"
+        },
+        {
+          "pt": "Renal amyloidosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:AMYLOID:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Amyloidosis",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:AMYLOID:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Amyloidosis",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:APOPTOSIS:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal tubular necrosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:APOPTOSIS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic apoptosis",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal gland atrophy",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:BONE_MARROW": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Bone marrow hypoplasia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Aplastic anaemia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:BRAIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Brain atrophy",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:EPIDIDYMIS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Epididymal atrophy",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Cardiac atrophy",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:INTESTINE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intestinal mucosal atrophy",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal atrophy",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic atrophy",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pulmonary atelectasis",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:OVARY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Ovarian atrophy",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:PANCREAS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pancreatic atrophy",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:PITUITARY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pituitary gland atrophy",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:PROSTATE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Prostatic atrophy",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Skin atrophy",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Splenic atrophy",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric atrophy",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:TESTIS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Testicular atrophy",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:THYMUS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thymic atrophy",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:THYROID": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thyroid atrophy",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:ATROPHY:UTERUS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Uterine atrophy",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:BILE DUCT PROLIFERATION:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Bile duct proliferation",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:BONE MARROW HYPERCELLULARITY:BONE_MARROW": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Bone marrow hyperplasia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:BONE MARROW HYPOCELLULARITY:BONE_MARROW": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Bone marrow hypoplasia",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Pancytopenia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:CARCINOMA:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal cell carcinoma",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:CARCINOMA:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatocellular carcinoma",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:CARCINOMA:THYROID": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thyroid carcinoma",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:CELLULAR INFILTRATION:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Myocardial infiltration",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:CELLULAR INFILTRATION:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Inflammatory cell infiltration",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "MI:CELLULAR INFILTRATION:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Inflammatory cell infiltration",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "MI:CELLULAR INFILTRATION:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Inflammatory cell infiltration",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "MI:CELLULAR INFILTRATION:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Inflammatory cell infiltration",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "MI:CENTRILOBULAR HYPERTROPHY:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatocellular hypertrophy",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Hepatic enzyme induction",
+          "soc": "Hepatobiliary disorders"
+        }
+      ],
+      "_note": "Centrilobular hypertrophy is the most common drug-induced liver finding; often adaptive and associated with enzyme induction"
+    },
+    "MI:CENTRILOBULAR NECROSIS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic necrosis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Hepatotoxicity",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:CHOLESTASIS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Cholestasis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Bile duct obstruction",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:CONGESTION:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal congestion",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:CONGESTION:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic congestion",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:CONGESTION:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pulmonary congestion",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:CONGESTION:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Splenic congestion",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:CORTICAL HYPERPLASIA:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal cortex hyperplasia",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Adrenal gland hyperplasia",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:CORTICAL HYPERTROPHY:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal cortex hypertrophy",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Adrenal gland hypertrophy",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal gland degeneration",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:BRAIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Neurodegeneration",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Myocardial degeneration",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal tubular degeneration",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatocyte degeneration",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Alveolar degeneration",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:PANCREAS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pancreatic acinar degeneration",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:RETINA": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Retinal degeneration",
+          "soc": "Eye disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:SKELETAL_MUSCLE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Myopathy",
+          "soc": "Musculoskeletal and connective tissue disorders"
+        },
+        {
+          "pt": "Rhabdomyolysis",
+          "soc": "Musculoskeletal and connective tissue disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Skin degeneration",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Splenic degeneration",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:DEGENERATION:TESTIS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Testicular degeneration",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:DEMYELINATION:BRAIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Demyelination",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "MI:DEMYELINATION:PERIPHERAL_NERVE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Demyelinating polyneuropathy",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "MI:DYSPLASIA:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Skin dysplasia",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:DYSPLASIA:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric dysplasia",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:EDEMA:BRAIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Cerebral oedema",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "MI:EDEMA:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Myocardial oedema",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:EDEMA:INTESTINE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intestinal oedema",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:EDEMA:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal oedema",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:EDEMA:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pulmonary oedema",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:EDEMA:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Peripheral oedema",
+          "soc": "General disorders and administration site conditions"
+        },
+        {
+          "pt": "Skin oedema",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:EDEMA:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric oedema",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:EROSION:INTESTINE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intestinal erosion",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:EROSION:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Skin erosion",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:EROSION:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric erosion",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:EXTRAMEDULLARY HEMATOPOIESIS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Extramedullary haematopoiesis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:EXTRAMEDULLARY HEMATOPOIESIS:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Extramedullary haematopoiesis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal gland fibrosis",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:BONE_MARROW": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Myelofibrosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Myocardial fibrosis",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:INJECTION_SITE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Injection site fibrosis",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "MI:FIBROSIS:INTESTINE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intestinal fibrosis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal fibrosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic fibrosis",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pulmonary fibrosis",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:PANCREAS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pancreatic fibrosis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Dermal fibrosis",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Splenic fibrosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric fibrosis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:FIBROSIS:TESTIS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Testicular fibrosis",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:FOLLICULAR CELL HYPERPLASIA:THYROID": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thyroid hyperplasia",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:FOLLICULAR CELL HYPERTROPHY:THYROID": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thyroid gland hypertrophy",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Goitre",
+          "soc": "Endocrine disorders"
+        }
+      ],
+      "_note": "Thyroid follicular cell hypertrophy is a common adaptive response to hepatic enzyme induction reducing circulating T4"
+    },
+    "MI:GLIOSIS:BRAIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gliosis",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "MI:GLOMERULOPATHY:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Glomerulonephritis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:GLOMERULOSCLEROSIS:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Glomerulosclerosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:GRANULOMA:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic granuloma",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:GRANULOMA:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pulmonary granuloma",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal haemorrhage",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:BRAIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intracranial haemorrhage",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Myocardial haemorrhage",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:INTESTINE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intestinal haemorrhage",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal haemorrhage",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic haemorrhage",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pulmonary haemorrhage",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:OVARY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Ovarian haemorrhage",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Skin haemorrhage",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Splenic haemorrhage",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric haemorrhage",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:TESTIS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Testicular haemorrhage",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:HEMORRHAGE:THYMUS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thymic haemorrhage",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:HEPATOCELLULAR HYPERTROPHY:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatocellular hypertrophy",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:HEPATOCELLULAR NECROSIS:LIVER": {
+      "direction": "any",
+      "_note": "Distinct from MI:NECROSIS:LIVER; specifies hepatocellular origin",
+      "pts": [
+        {
+          "pt": "Hepatic necrosis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Hepatocellular injury",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Drug-induced liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:HEPATOCELLULAR SWELLING:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatomegaly",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:HEPATOCELLULAR VACUOLATION:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatocellular vacuolation",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:HYALINE DROPLETS:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Alpha-2u globulin nephropathy",
+          "soc": "Renal and urinary disorders"
+        }
+      ],
+      "_note": "Hyaline droplet accumulation in proximal tubules; species-specific (rat males); alpha-2u globulin nephropathy"
+    },
+    "MI:HYPERPLASIA:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal gland hyperplasia",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:BONE_MARROW": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Bone marrow hyperplasia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:INTESTINE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intestinal mucosal hyperplasia",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal tubular hyperplasia",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Bile duct hyperplasia",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Alveolar epithelial hyperplasia",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:OVARY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Ovarian stromal hyperplasia",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:PANCREAS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pancreatic islet cell hyperplasia",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:PITUITARY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pituitary hyperplasia",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:PROSTATE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Prostatic hyperplasia",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Epidermal hyperplasia",
+          "soc": "Skin and subcutaneous tissue disorders"
+        },
+        {
+          "pt": "Acanthosis",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Splenic hyperplasia",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric mucosal hyperplasia",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:TESTIS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Leydig cell hyperplasia",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:THYMUS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thymic hyperplasia",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:HYPERPLASIA:THYROID": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thyroid hyperplasia",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:HYPERTROPHY:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal gland hypertrophy",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:HYPERTROPHY:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Cardiac hypertrophy",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:HYPERTROPHY:INTESTINE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intestinal mucosal hypertrophy",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:HYPERTROPHY:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal hypertrophy",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:HYPERTROPHY:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic hypertrophy",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:HYPERTROPHY:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Smooth muscle hypertrophy of bronchus",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:HYPERTROPHY:PROSTATE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Prostatic hypertrophy",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:HYPERTROPHY:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Splenomegaly",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:HYPERTROPHY:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric mucosal hypertrophy",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:HYPERTROPHY:THYROID": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Goitre",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Thyroid gland hypertrophy",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenalitis",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:BONE_MARROW": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Bone marrow inflammation",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ],
+      "_note": "Bone marrow inflammation may map to Osteomyelitis if infectious; use Bone marrow inflammation for drug-induced"
+    },
+    "MI:INFLAMMATION:BRAIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Meningoencephalitis",
+          "soc": "Nervous system disorders"
+        },
+        {
+          "pt": "Encephalitis noninfective",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:EPIDIDYMIS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Epididymitis",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Myocarditis",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:INJECTION_SITE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Injection site inflammation",
+          "soc": "General disorders and administration site conditions"
+        },
+        {
+          "pt": "Injection site reaction",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:INTESTINE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Enteritis",
+          "soc": "Gastrointestinal disorders"
+        },
+        {
+          "pt": "Colitis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Nephritis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatitis",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pneumonitis",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:LYMPH_NODE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Lymphadenitis",
+          "soc": "Infections and infestations"
+        },
+        {
+          "pt": "Lymph node pain",
+          "soc": "General disorders and administration site conditions"
+        }
+      ],
+      "_note": "Drug-induced lymph node inflammation may present as reactive hyperplasia; Lymphadenitis typically implies infectious etiology"
+    },
+    "MI:INFLAMMATION:OVARY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Oophoritis",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:PANCREAS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pancreatitis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:PITUITARY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hypophysitis",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:PROSTATE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Prostatitis",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:RETINA": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Retinitis",
+          "soc": "Eye disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Dermatitis",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Splenitis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastritis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:TESTIS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Orchitis",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:THYROID": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thyroiditis",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:INFLAMMATION:UTERUS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Endometritis",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:INTERSTITIAL NEPHRITIS:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Tubulointerstitial nephritis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:ISLET CELL HYPERTROPHY:PANCREAS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pancreatic islet cell hypertrophy",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:KUPFFER CELL HYPERTROPHY:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Kupffer cell hypertrophy",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:LYMPHOID DEPLETION:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Lymphoid depletion",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:LYMPHOID DEPLETION:THYMUS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Lymphoid depletion",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:LYMPHOID HYPERPLASIA:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Lymphoid hyperplasia",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:LYMPHOID HYPERPLASIA:THYMUS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Lymphoid hyperplasia",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:LYMPHOMA:LYMPH_NODE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Lymphoma",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:LYMPHOMA:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Lymphoma",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:MEDULLARY HYPERPLASIA:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal medulla hyperplasia",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:METAPLASIA:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal tubular metaplasia",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:METAPLASIA:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Squamous metaplasia of bronchus",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:METAPLASIA:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric intestinal metaplasia",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:MINERALIZATION:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Myocardial calcification",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:MINERALIZATION:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Nephrocalcinosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:MINERALIZATION:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pulmonary calcification",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal gland necrosis",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:BONE_MARROW": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Bone marrow necrosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:BRAIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Brain necrosis",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Myocardial necrosis",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:INJECTION_SITE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Injection site necrosis",
+          "soc": "General disorders and administration site conditions"
+        }
+      ]
+    },
+    "MI:NECROSIS:INTESTINE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intestinal necrosis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal tubular necrosis",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Acute kidney injury",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic necrosis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Hepatotoxicity",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pulmonary necrosis",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:LYMPH_NODE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Lymph node necrosis",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:OVARY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Ovarian necrosis",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:PANCREAS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pancreatic necrosis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:PROSTATE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Prostatic necrosis",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:SKELETAL_MUSCLE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Muscle necrosis",
+          "soc": "Musculoskeletal and connective tissue disorders"
+        },
+        {
+          "pt": "Rhabdomyolysis",
+          "soc": "Musculoskeletal and connective tissue disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Skin necrosis",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Splenic infarction",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric necrosis",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:TESTIS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Testicular necrosis",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:THYMUS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thymic necrosis",
+          "soc": "Immune system disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:THYROID": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Thyroid necrosis",
+          "soc": "Endocrine disorders"
+        }
+      ]
+    },
+    "MI:NECROSIS:UTERUS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Uterine necrosis",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:NECROTIZING INFLAMMATION:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Necrotising pneumonitis",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:OVAL CELL HYPERPLASIA:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic progenitor cell proliferation",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:PAPILLARY NECROSIS:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal papillary necrosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:PERIPORTAL NECROSIS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic necrosis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Liver injury",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:PHAEOCHROMOCYTOMA:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Phaeochromocytoma",
+          "soc": "Neoplasms benign, malignant and unspecified (incl cysts and polyps)"
+        }
+      ]
+    },
+    "MI:PHOSPHOLIPIDOSIS:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Phospholipidosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:PHOSPHOLIPIDOSIS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Phospholipidosis",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:PHOSPHOLIPIDOSIS:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Phospholipidosis",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:PIGMENTATION:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal pigmentation",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:PIGMENTATION:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic pigmentation",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:PIGMENTATION:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Skin hyperpigmentation",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:PIGMENTATION:SPLEEN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Haemosiderosis",
+          "soc": "Blood and lymphatic system disorders"
+        }
+      ]
+    },
+    "MI:REGENERATION:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Liver regeneration",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:SINGLE CELL NECROSIS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatocyte necrosis",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Hepatic apoptosis",
+          "soc": "Hepatobiliary disorders"
+        }
+      ],
+      "_note": "INHAND recommends 'single cell necrosis' over 'apoptosis'; both may coexist"
+    },
+    "MI:SPERMATOGENIC DEGENERATION:TESTIS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Spermatogenesis impaired",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Testicular disorder",
+          "soc": "Reproductive system and breast disorders"
+        }
+      ]
+    },
+    "MI:STEATOSIS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic steatosis",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:STELLATE CELL HYPERTROPHY:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic stellate cell activation",
+          "soc": "Hepatobiliary disorders"
+        }
+      ],
+      "_note": "May not have an exact MedDRA PT; closest is hepatic fibrosis pathway activation"
+    },
+    "MI:THROMBUS:HEART": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intracardiac thrombus",
+          "soc": "Cardiac disorders"
+        }
+      ]
+    },
+    "MI:THROMBUS:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal vein thrombosis",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:THROMBUS:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatic vein thrombosis",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:THROMBUS:LUNG": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pulmonary thrombosis",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        }
+      ]
+    },
+    "MI:TUBULAR BASOPHILIA:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal tubular basophilia",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:TUBULAR CASTS:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal tubular casts",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:TUBULAR DILATION:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal tubular dilatation",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:ULCERATION:INTESTINE": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Intestinal ulcer",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:ULCERATION:SKIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Skin ulcer",
+          "soc": "Skin and subcutaneous tissue disorders"
+        }
+      ]
+    },
+    "MI:ULCERATION:STOMACH": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Gastric ulcer",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "MI:VACUOLATION:ADRENAL": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Adrenal gland vacuolation",
+          "soc": "Endocrine disorders"
+        }
+      ],
+      "_note": "Cortical vacuolation often indicates lipid accumulation; common adaptive/toxic finding"
+    },
+    "MI:VACUOLATION:BRAIN": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Vacuolation",
+          "soc": "Nervous system disorders"
+        }
+      ]
+    },
+    "MI:VACUOLATION:KIDNEY": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Renal tubular vacuolation",
+          "soc": "Renal and urinary disorders"
+        }
+      ]
+    },
+    "MI:VACUOLATION:LIVER": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Hepatocellular vacuolation",
+          "soc": "Hepatobiliary disorders"
+        }
+      ]
+    },
+    "MI:VACUOLATION:PANCREAS": {
+      "direction": "any",
+      "pts": [
+        {
+          "pt": "Pancreatic acinar cell vacuolation",
+          "soc": "Gastrointestinal disorders"
+        }
+      ]
+    },
+    "OM:WEIGHT:ADRENAL:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Adrenal gland atrophy",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:ADRENAL:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Adrenal gland enlargement",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:BRAIN:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Brain atrophy",
+          "soc": "Nervous system disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:BRAIN:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Cerebral oedema",
+          "soc": "Nervous system disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:EPIDIDYMIS:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Epididymal atrophy",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:EPIDIDYMIS:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Epididymis enlarged",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:HEART:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Cardiac atrophy",
+          "soc": "Cardiac disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:HEART:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Cardiac hypertrophy",
+          "soc": "Cardiac disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:KIDNEY:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Renal atrophy",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:KIDNEY:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Renal hypertrophy",
+          "soc": "Renal and urinary disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:LIVER:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Hepatic atrophy",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:LIVER:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Hepatomegaly",
+          "soc": "Hepatobiliary disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:LUNG:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Pulmonary hypoplasia",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:LUNG:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Pulmonary congestion",
+          "soc": "Respiratory, thoracic and mediastinal disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:OVARY:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Ovarian atrophy",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:OVARY:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Ovary enlarged",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:PANCREAS:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Pancreatic atrophy",
+          "soc": "Gastrointestinal disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:PANCREAS:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Pancreatic enlargement",
+          "soc": "Gastrointestinal disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:PARATHYROID:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Parathyroid gland atrophy",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:PARATHYROID:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Parathyroid gland enlargement",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:PITUITARY:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Pituitary gland atrophy",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:PITUITARY:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Pituitary gland enlargement",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:PROSTATE:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Prostatic atrophy",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:PROSTATE:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Prostate enlarged",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:SALIVARY_GLAND:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Salivary gland atrophy",
+          "soc": "Gastrointestinal disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:SALIVARY_GLAND:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Salivary gland enlargement",
+          "soc": "Gastrointestinal disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ],
+      "_note": "Salivary glands weighed in some rat protocols; not always standard"
+    },
+    "OM:WEIGHT:SEMINAL_VESICLE:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Seminal vesicle atrophy",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:SEMINAL_VESICLE:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Seminal vesicle enlargement",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:SPLEEN:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Splenic atrophy",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:SPLEEN:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Splenomegaly",
+          "soc": "Blood and lymphatic system disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:TESTES:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Testicular atrophy",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:TESTES:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Testis enlarged",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:THYMUS:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Thymic atrophy",
+          "soc": "Immune system disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:THYMUS:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Thymic hyperplasia",
+          "soc": "Immune system disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ],
+      "_note": "Thymomegaly may exist as LLT; Thymic hyperplasia is the safer PT"
+    },
+    "OM:WEIGHT:THYROID:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Thyroid atrophy",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:THYROID:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Goitre",
+          "soc": "Endocrine disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:UTERUS:DOWN": {
+      "direction": "down",
+      "pts": [
+        {
+          "pt": "Uterine atrophy",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight decreased",
+          "soc": "Investigations"
+        }
+      ]
+    },
+    "OM:WEIGHT:UTERUS:UP": {
+      "direction": "up",
+      "pts": [
+        {
+          "pt": "Uterine enlargement",
+          "soc": "Reproductive system and breast disorders"
+        },
+        {
+          "pt": "Organ weight increased",
+          "soc": "Investigations"
+        }
+      ]
+    }
+  },
+  "_summary": {
+    "total_entries": 405,
+    "lb_entries": 134,
+    "mi_entries": 233,
+    "om_entries": 38
+  }
+}
