@@ -211,8 +211,10 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     maxIncidence: number | null;
     maxFoldChange: number | null;
     hasEarlyDeathExclusion: boolean;
-    /** REM-05: Group stats from scheduled sacrifice (first non-null array wins) */
+    /** REM-05: Group stats from scheduled sacrifice (same sex as direction) */
     groupStats: { dose_level: number; n: number; mean: number | null; sd: number | null; median?: number | null }[] | null;
+    /** Sex that set the direction (used to align groupStats with direction) */
+    directionSex?: string;
   }>();
 
   // Per-sex aggregation: label → sex → accumulator
@@ -314,6 +316,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         // would otherwise combine M's direction with F's fold change)
         if (row.direction === "up" || row.direction === "down") {
           entry.direction = row.direction;
+          entry.directionSex = row.sex;
         }
         // H1: pattern follows the strongest signal row
         if (row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
@@ -337,9 +340,15 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
       entry.pattern = row.dose_response_pattern;
     }
-    // REM-05: Collect group stats (first non-null array wins)
-    if (!entry.groupStats && row.scheduled_group_stats && row.scheduled_group_stats.length > 0) {
-      entry.groupStats = row.scheduled_group_stats;
+    // REM-05: Collect group stats — prefer the same sex that set direction
+    // to avoid misaligned FC (e.g., direction=↓ from male but female group stats showing increase)
+    if (row.scheduled_group_stats && row.scheduled_group_stats.length > 0) {
+      if (!entry.groupStats) {
+        entry.groupStats = row.scheduled_group_stats;
+      } else if (entry.directionSex && row.sex === entry.directionSex) {
+        // Override with direction-aligned sex's stats
+        entry.groupStats = row.scheduled_group_stats;
+      }
     }
   }
 

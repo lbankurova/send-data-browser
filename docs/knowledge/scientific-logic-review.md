@@ -415,6 +415,32 @@ Estimates how likely the animal findings translate to human risk, using species-
 
 **Data source:** SOC-level and endpoint-level LR+ from published preclinical-to-clinical concordance studies (Bailey et al., Olson et al.).
 
+## B.6: Statistical Methods (REM-06)
+
+All p-values and effect sizes in this document are computed by the backend analysis engine. Method documentation: `docs/knowledge/methods.md`.
+
+### Test Assignment by Endpoint Type
+
+| Domain | Endpoint type | Pairwise test | Trend test | Effect size |
+|--------|--------------|---------------|------------|-------------|
+| LB, BW, OM, EG, VS | Continuous | Welch's t-test (unequal variance) | Jonckheere-Terpstra (Spearman rank proxy) | Hedges' g (bias-corrected) |
+| MI, MA, TF | Incidence (binary) | Fisher's exact test (2×2) | Cochran-Armitage trend | — |
+| CL, DS | Incidence (event) | Fisher's exact test (2×2) | — | — |
+
+### Key Method Details
+
+- **Effect size** column (`Effect Size (g)`) uses Hedges' g with small-sample correction: g = d × (1 − 3/(4·df − 1)), where d = Cohen's d from pooled SD.
+- **P-values** for continuous endpoints are Bonferroni-corrected across dose groups. Incidence p-values are NOT corrected (Fisher's exact is inherently conservative with small counts).
+- **Dose-response pattern** is classified via step-wise noise-tolerant analysis: 0.5× pooled SD equivalence band for continuous endpoints (STAT-11 binomial tolerance for incidence).
+- **Trend p-value** uses Spearman rank correlation as a proxy for the Jonckheere-Terpstra test (both are rank-order-based; Spearman is available in scipy).
+
+### Limitations
+
+- Williams' test (optimal for monotonic dose-response) and Steel's test (nonparametric many-to-one) are not implemented.
+- Dunnett's test is computed but not used in classification logic (supplementary evidence only).
+- MI severity grades (1–5) have no formal ordinal test applied in the active pipeline.
+- No multiplicity correction within domains for incidence tests.
+
 **► Review questions for interpretation framework:**
 
 - [ ] Cohen's d thresholds for adversity magnitude: <0.5=minimal, 0.5–1.0=mild, 1.0–2.0=moderate, 2.0–3.0=marked, ≥3.0=severe. Are these appropriate for preclinical studies with n=5–30 per group?
@@ -508,13 +534,15 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
+> Column key: **g** = Hedges' g (Welch's t pairwise); **p** = Bonferroni-adjusted (continuous) or Fisher's exact (incidence); **FC** = treated/control ratio. See §B.6.
+
 | Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
 | **R** | ALT ↑ | ✓ matched | Alanine Aminotransferase | LB | ↑ | +2.13 | 0.0003 | 1.25× | non_monotonic |
 | **R** | AST ↑ | ✓ matched | Aspartate Aminotransferase | LB | ↑ | +3.82 | <0.0001 | 1.56× | threshold_increase |
 | S | SDH ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
 | S | BILI ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
-| S | Liver weight | ✓ matched | LIVER — LIVER (WEIGHT) | OM | ↑ | +2.26 | 0.0010 | 1.44× | threshold_increase |
+| S | Liver weight | ✓ matched | LIVER — LIVER (WEIGHT) | OM | ↑ | +2.26 | 0.0010 | 1.90× | threshold_increase |
 | S | Liver necrosis | — not measured | — | MI | — | n/a | n/a | n/a | — |
 | S | Liver hypertrophy | ✓ matched | LIVER — HYPERTROPHY | MI | ↑ | n/a | 0.003 | n/a | threshold_increase |
 
@@ -566,7 +594,7 @@ This section shows the system's actual output for each syndrome detected in the 
 |----------|---------------------|----------------------------------|
 | Alanine Aminotransferase | n=10, 29.600±3.406 | n=10, 37.000±3.232 (dose 3) |
 | Aspartate Aminotransferase | n=10, 99.400±9.617 | n=10, 154.900±17.188 (dose 3) |
-| LIVER — LIVER (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.596±0.238 (dose 2) |
+| LIVER — LIVER (WEIGHT) | n=10, 6.885±0.964 | n=10, 13.092±3.600 (dose 3) |
 
 **► Syndrome-specific review questions:**
 
@@ -586,16 +614,18 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
+> Column key: **g** = Hedges' g (Welch's t pairwise); **p** = Bonferroni-adjusted (continuous) or Fisher's exact (incidence); **FC** = treated/control ratio. See §B.6.
+
 | Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | NEUT ↓ | ✓ matched | Neutrophils | LB | ↓ | -2.34 | 0.0003 | 1.41× | threshold_decrease |
+| **R** | NEUT ↓ | ✓ matched | Neutrophils | LB | ↓ | -2.34 | 0.0003 | 0.66× | threshold_decrease |
 | **R** | PLAT ↓ | ○ not sig | Platelets | LB | ↑ | +1.02 | 0.091 | 1.13× | non_monotonic |
-| **R** | RBC ↓ | ✓ matched | Erythrocytes | LB | ↓ | -1.36 | 0.040 | 0.96× | non_monotonic |
+| **R** | RBC ↓ | ✓ matched | Erythrocytes | LB | ↓ | -1.36 | 0.040 | 0.97× | non_monotonic |
 | **R** | HGB ↓ | ✓ matched | Hemoglobin | LB | ↓ | -2.53 | <0.0001 | 0.91× | threshold_decrease |
 | S | Bone marrow hypocellularity | — not measured | — | MI | — | n/a | n/a | n/a | — |
 | S | RETIC ↓ | ⚠ opposite | Reticulocytes | LB | ↑ | +1.69 | 0.003 | 1.44× | non_monotonic |
 | S | Spleen atrophy | — not measured | — | MI | — | n/a | n/a | n/a | — |
-| S | Spleen weight ↓ | ⚠ opposite | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.42 | 0.018 | 1.44× | threshold_increase |
+| S | Spleen weight ↓ | ⚠ opposite | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.42 | 0.018 | 1.43× | threshold_increase |
 
 > ⚠ **2 opposite-direction match(es)** — endpoints matching term identity but in the wrong direction.
 
@@ -649,8 +679,8 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
 |----------|---------------------|----------------------------------|
-| Neutrophils | n=10, 0.509±0.187 | n=10, 0.720±0.469 (dose 1) |
-| Erythrocytes | n=10, 7.659±0.171 | n=10, 7.349±0.376 (dose 3) |
+| Neutrophils | n=9, 1.072±0.142 | n=9, 0.709±0.256 (dose 3) |
+| Erythrocytes | n=9, 8.203±0.086 | n=9, 7.918±0.270 (dose 3) |
 | Hemoglobin | n=10, 15.310±0.540 | n=10, 13.950±0.487 (dose 3) |
 
 > **Anomaly summary:** 2 anomaly marker(s) detected in this syndrome. Review marked items (⚠) above.
@@ -673,12 +703,14 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
+> Column key: **g** = Hedges' g (Welch's t pairwise); **p** = Bonferroni-adjusted (continuous) or Fisher's exact (incidence); **FC** = treated/control ratio. See §B.6.
+
 | Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | RBC ↓ | ✓ matched | Erythrocytes | LB | ↓ | -1.36 | 0.040 | 0.96× | non_monotonic |
+| **R** | RBC ↓ | ✓ matched | Erythrocytes | LB | ↓ | -1.36 | 0.040 | 0.97× | non_monotonic |
 | **R** | RETIC ↑ | ✓ matched | Reticulocytes | LB | ↑ | +1.69 | 0.003 | 1.44× | non_monotonic |
 | S | BILI ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
-| S | Spleen weight ↑ | ✓ matched | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.42 | 0.018 | 1.44× | threshold_increase |
+| S | Spleen weight ↑ | ✓ matched | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.42 | 0.018 | 1.43× | threshold_increase |
 | S | Spleen extramedullary hematopoiesis | — not measured | — | MI | — | n/a | n/a | n/a | — |
 | S | Spleen pigmentation | ✓ matched | SPLEEN — PIGMENTATION | MI | ↑ | n/a | 0.211 | n/a | threshold_increase |
 | S | HAPTO ↓ | — not measured | — | LB | — | n/a | n/a | n/a | — |
@@ -725,9 +757,9 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
 |----------|---------------------|----------------------------------|
-| Erythrocytes | n=10, 7.659±0.171 | n=10, 7.349±0.376 (dose 3) |
+| Erythrocytes | n=9, 8.203±0.086 | n=9, 7.918±0.270 (dose 3) |
 | Reticulocytes | n=10, 158.460±32.322 | n=10, 228.570±63.504 (dose 2) |
-| SPLEEN — SPLEEN (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.596±0.238 (dose 2) |
+| SPLEEN — SPLEEN (WEIGHT) | n=10, 0.546±0.039 | n=10, 0.778±0.218 (dose 2) |
 
 **► Syndrome-specific review questions:**
 
@@ -746,9 +778,11 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
+> Column key: **g** = Hedges' g (Welch's t pairwise); **p** = Bonferroni-adjusted (continuous) or Fisher's exact (incidence); **FC** = treated/control ratio. See §B.6.
+
 | Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | Adrenal weight ↑ | ✓ matched | GLAND, ADRENAL — GLAND, ADRENAL (WEIGHT) | OM | ↑ | +1.68 | 0.004 | 1.44× | threshold_increase |
+| **R** | Adrenal weight ↑ | ✓ matched | GLAND, ADRENAL — GLAND, ADRENAL (WEIGHT) | OM | ↑ | +1.68 | 0.004 | 1.42× | threshold_increase |
 | **R** | Thymus weight ↓ | ✓ matched | THYMUS — THYMUS (WEIGHT) | OM | ↓ | -1.07 | 0.068 | 0.71× | non_monotonic |
 | **R** | LYMPH ↓ | ⚠ opposite | Lymphocytes | LB | ↑ | +1.35 | 0.027 | 1.71× | threshold_increase |
 | **R** | Body Weight ↓ | ✓ matched | Body Weight | BW | ↓ | -7.80 | <0.0001 | 0.80× | threshold_decrease |
@@ -795,7 +829,7 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
 |----------|---------------------|----------------------------------|
-| GLAND, ADRENAL — GLAND, ADRENAL (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.596±0.238 (dose 2) |
+| GLAND, ADRENAL — GLAND, ADRENAL (WEIGHT) | n=10, 0.086±0.016 | n=10, 0.122±0.024 (dose 3) |
 | THYMUS — THYMUS (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.293±0.103 (dose 1) |
 
 > **Anomaly summary:** 1 anomaly marker(s) detected in this syndrome. Review marked items (⚠) above.
@@ -817,11 +851,13 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
+> Column key: **g** = Hedges' g (Welch's t pairwise); **p** = Bonferroni-adjusted (continuous) or Fisher's exact (incidence); **FC** = treated/control ratio. See §B.6.
+
 | Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
 | **R** | Body Weight ↓ | ✓ matched | Body Weight | BW | ↓ | -7.80 | <0.0001 | 0.80× | threshold_decrease |
 | S | Food Consumption ↓ | — not measured | — | BW | — | n/a | n/a | n/a | — |
-| S | Organ weight ↓ | ✓ matched | HEART — HEART (WEIGHT) | OM | ↓ | -2.61 | <0.0001 | 0.71× | threshold_decrease |
+| S | Organ weight ↓ | ✓ matched | HEART — HEART (WEIGHT) | OM | ↓ | -2.61 | <0.0001 | 0.68× | threshold_decrease |
 | S | Any atrophy | ✓ matched | GLAND, MAMMARY — ATROPHY | MI | ↑ | n/a | 0.061 | n/a | threshold_increase |
 
 ### Interpretation
@@ -850,7 +886,7 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
 |----------|---------------------|----------------------------------|
-| HEART — HEART (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.293±0.103 (dose 1) |
+| HEART — HEART (WEIGHT) | n=9, 1.463±0.172 | n=9, 0.989±0.183 (dose 3) |
 
 **► Syndrome-specific review questions:**
 
@@ -869,11 +905,13 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
+> Column key: **g** = Hedges' g (Welch's t pairwise); **p** = Bonferroni-adjusted (continuous) or Fisher's exact (incidence); **FC** = treated/control ratio. See §B.6.
+
 | Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | CREAT ↑ | ✓ matched | Creatinine | LB | ↑ | +1.70 | 0.007 | 0.91× | threshold_increase |
+| **R** | CREAT ↑ | ✓ matched | Creatinine | LB | ↑ | +1.70 | 0.007 | 1.25× | threshold_increase |
 | **R** | BUN ↑ | — not measured | — | LB | — | n/a | n/a | n/a | — |
-| S | Kidney weight | ✓ matched | KIDNEY — KIDNEY (WEIGHT) | OM | ↑ | +2.61 | 0.0002 | 1.44× | threshold_increase |
+| S | Kidney weight | ✓ matched | KIDNEY — KIDNEY (WEIGHT) | OM | ↑ | +2.61 | 0.0002 | 1.53× | threshold_increase |
 | S | SPGRAV ↓ | — not measured | — | LB | — | n/a | n/a | n/a | — |
 | S | Kidney tubular degeneration | — not measured | — | MI | — | n/a | n/a | n/a | — |
 
@@ -919,8 +957,8 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
 |----------|---------------------|----------------------------------|
-| Creatinine | n=10, 0.295±0.025 | n=10, 0.269±0.041 (dose 1) |
-| KIDNEY — KIDNEY (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.596±0.238 (dose 2) |
+| Creatinine | n=9, 0.232±0.022 | n=9, 0.291±0.041 (dose 3) |
+| KIDNEY — KIDNEY (WEIGHT) | n=10, 1.802±0.167 | n=10, 2.756±0.466 (dose 3) |
 
 **► Syndrome-specific review questions:**
 
@@ -939,12 +977,14 @@ This section shows the system's actual output for each syndrome detected in the 
 
 ### Term-by-Term Match Evidence
 
+> Column key: **g** = Hedges' g (Welch's t pairwise); **p** = Bonferroni-adjusted (continuous) or Fisher's exact (incidence); **FC** = treated/control ratio. See §B.6.
+
 | Role | Term | Status | Matched Endpoint | Domain | Dir | Effect Size (g) | p-value | Fold Change | Pattern |
 |------|------|--------|------------------|--------|-----|-----------------|---------|-------------|---------|
-| **R** | WBC ↓ | ✓ matched | Leukocytes | LB | ↓ | -1.98 | 0.003 | 1.22× | threshold_decrease |
+| **R** | WBC ↓ | ✓ matched | Leukocytes | LB | ↓ | -1.98 | 0.003 | 0.59× | threshold_decrease |
 | **R** | LYMPH ↓ | ⚠ opposite | Lymphocytes | LB | ↑ | +1.35 | 0.027 | 1.71× | threshold_increase |
 | **R** | Thymus weight ↓ | ✓ matched | THYMUS — THYMUS (WEIGHT) | OM | ↓ | -1.07 | 0.068 | 0.71× | non_monotonic |
-| S | Spleen weight ↓ | ⚠ opposite | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.42 | 0.018 | 1.44× | threshold_increase |
+| S | Spleen weight ↓ | ⚠ opposite | SPLEEN — SPLEEN (WEIGHT) | OM | ↑ | +1.42 | 0.018 | 1.43× | threshold_increase |
 | S | Spleen lymphoid depletion | — not measured | — | MI | — | n/a | n/a | n/a | — |
 
 > ⚠ **2 opposite-direction match(es)** — endpoints matching term identity but in the wrong direction.
@@ -983,7 +1023,7 @@ This section shows the system's actual output for each syndrome detected in the 
 
 | Endpoint | Control (n, mean±SD) | Worst Treated (n, mean±SD, dose) |
 |----------|---------------------|----------------------------------|
-| Leukocytes | n=10, 5.455±1.202 | n=10, 6.675±2.564 (dose 1) |
+| Leukocytes | n=9, 10.034±2.559 | n=9, 5.933±1.096 (dose 3) |
 | THYMUS — THYMUS (WEIGHT) | n=10, 0.414±0.113 | n=10, 0.293±0.103 (dose 1) |
 
 > **Anomaly summary:** 2 anomaly marker(s) detected in this syndrome. Review marked items (⚠) above.
