@@ -1,8 +1,8 @@
 /**
  * Early Death Exclusion — unit tests for scheduled-only stats selection logic.
  *
- * Tests the core logic: when toggle is on and scheduled stats exist,
- * return scheduled stats; otherwise return base stats. Falls back
+ * Tests the core logic: when any early-death subject is excluded and scheduled
+ * stats exist, return scheduled stats; otherwise return base stats. Falls back
  * to base stats when no scheduled data is available.
  */
 import { describe, it, expect } from "vitest";
@@ -10,12 +10,19 @@ import type { UnifiedFinding, GroupStat, PairwiseResult } from "@/types/analysis
 
 // ── Standalone helpers matching ScheduledOnlyContext logic ──
 
+/** Mirrors the context derivation: any TR early-death subject in the excluded set? */
+function anyTrExcluded(
+  trEarlyDeathIds: Set<string>,
+  excludedSubjects: Set<string>,
+): boolean {
+  return [...trEarlyDeathIds].some((id) => excludedSubjects.has(id));
+}
+
 function getActiveGroupStats(
   finding: UnifiedFinding,
-  useScheduledOnly: boolean,
-  hasEarlyDeaths: boolean,
+  isExcluded: boolean,
 ): GroupStat[] {
-  if (useScheduledOnly && hasEarlyDeaths && finding.scheduled_group_stats) {
+  if (isExcluded && finding.scheduled_group_stats) {
     return finding.scheduled_group_stats;
   }
   return finding.group_stats;
@@ -23,10 +30,9 @@ function getActiveGroupStats(
 
 function getActivePairwise(
   finding: UnifiedFinding,
-  useScheduledOnly: boolean,
-  hasEarlyDeaths: boolean,
+  isExcluded: boolean,
 ): PairwiseResult[] {
-  if (useScheduledOnly && hasEarlyDeaths && finding.scheduled_pairwise) {
+  if (isExcluded && finding.scheduled_pairwise) {
     return finding.scheduled_pairwise;
   }
   return finding.pairwise;
@@ -34,10 +40,9 @@ function getActivePairwise(
 
 function getActiveDirection(
   finding: UnifiedFinding,
-  useScheduledOnly: boolean,
-  hasEarlyDeaths: boolean,
+  isExcluded: boolean,
 ): UnifiedFinding["direction"] {
-  if (useScheduledOnly && hasEarlyDeaths && finding.scheduled_direction !== undefined) {
+  if (isExcluded && finding.scheduled_direction !== undefined) {
     return finding.scheduled_direction;
   }
   return finding.direction;
@@ -66,6 +71,14 @@ const SCHEDULED_PAIRWISE: PairwiseResult[] = [
   { dose_level: 1, p_value: 0.06, p_value_adj: 0.12, statistic: 1.9, cohens_d: 0.7 },
   { dose_level: 2, p_value: 0.008, p_value_adj: 0.016, statistic: 3.1, cohens_d: 1.6 },
 ];
+
+const EARLY_DEATH_SUBJECTS: Record<string, string> = {
+  "SUBJ-001": "DOSING ACCIDENT",      // accidental — should be included by default
+  "SUBJ-003": "MORIBUND SACRIFICE",   // TR — should be excluded by default
+};
+
+// Only SUBJ-003 is treatment-related; SUBJ-001 is accidental
+const TR_EARLY_DEATH_IDS = new Set(["SUBJ-003"]);
 
 function makeFinding(overrides: Partial<UnifiedFinding> = {}): UnifiedFinding {
   return {
@@ -96,37 +109,29 @@ function makeFinding(overrides: Partial<UnifiedFinding> = {}): UnifiedFinding {
 // ── Tests ──
 
 describe("Early death exclusion — getActiveGroupStats", () => {
-  it("returns scheduled stats when toggle on and early deaths exist", () => {
+  it("returns scheduled stats when early-death subjects are excluded", () => {
     const f = makeFinding({
       scheduled_group_stats: SCHEDULED_GROUP_STATS,
       n_excluded: 2,
     });
-    const result = getActiveGroupStats(f, true, true);
+    const result = getActiveGroupStats(f, true);
     expect(result).toBe(SCHEDULED_GROUP_STATS);
     expect(result[0].n).toBe(9); // 10 - 1 excluded
   });
 
-  it("returns base stats when toggle off", () => {
+  it("returns base stats when no subjects excluded", () => {
     const f = makeFinding({
       scheduled_group_stats: SCHEDULED_GROUP_STATS,
       n_excluded: 2,
     });
-    const result = getActiveGroupStats(f, false, true);
+    const result = getActiveGroupStats(f, false);
     expect(result).toBe(BASE_GROUP_STATS);
     expect(result[0].n).toBe(10);
   });
 
   it("falls back to base stats when no scheduled stats available", () => {
     const f = makeFinding(); // no scheduled_group_stats
-    const result = getActiveGroupStats(f, true, true);
-    expect(result).toBe(BASE_GROUP_STATS);
-  });
-
-  it("returns base stats when hasEarlyDeaths is false (no early deaths in study)", () => {
-    const f = makeFinding({
-      scheduled_group_stats: SCHEDULED_GROUP_STATS,
-    });
-    const result = getActiveGroupStats(f, true, false);
+    const result = getActiveGroupStats(f, true);
     expect(result).toBe(BASE_GROUP_STATS);
   });
 
@@ -136,57 +141,57 @@ describe("Early death exclusion — getActiveGroupStats", () => {
       test_code: "BW",
       // BW is longitudinal, no scheduled_group_stats field
     });
-    const result = getActiveGroupStats(f, true, true);
+    const result = getActiveGroupStats(f, true);
     expect(result).toBe(BASE_GROUP_STATS);
   });
 });
 
 describe("Early death exclusion — getActivePairwise", () => {
-  it("returns scheduled pairwise when toggle on", () => {
+  it("returns scheduled pairwise when subjects excluded", () => {
     const f = makeFinding({
       scheduled_pairwise: SCHEDULED_PAIRWISE,
     });
-    const result = getActivePairwise(f, true, true);
+    const result = getActivePairwise(f, true);
     expect(result).toBe(SCHEDULED_PAIRWISE);
     expect(result[0].p_value).toBe(0.06);
   });
 
-  it("returns base pairwise when toggle off", () => {
+  it("returns base pairwise when no subjects excluded", () => {
     const f = makeFinding({
       scheduled_pairwise: SCHEDULED_PAIRWISE,
     });
-    const result = getActivePairwise(f, false, true);
+    const result = getActivePairwise(f, false);
     expect(result).toBe(BASE_PAIRWISE);
     expect(result[0].p_value).toBe(0.05);
   });
 
   it("falls back to base pairwise when no scheduled pairwise", () => {
     const f = makeFinding();
-    const result = getActivePairwise(f, true, true);
+    const result = getActivePairwise(f, true);
     expect(result).toBe(BASE_PAIRWISE);
   });
 });
 
 describe("Early death exclusion — getActiveDirection", () => {
-  it("returns scheduled direction when toggle on", () => {
+  it("returns scheduled direction when subjects excluded", () => {
     const f = makeFinding({
       scheduled_direction: "down",
     });
-    const result = getActiveDirection(f, true, true);
+    const result = getActiveDirection(f, true);
     expect(result).toBe("down");
   });
 
-  it("returns base direction when toggle off", () => {
+  it("returns base direction when no subjects excluded", () => {
     const f = makeFinding({
       scheduled_direction: "down",
     });
-    const result = getActiveDirection(f, false, true);
+    const result = getActiveDirection(f, false);
     expect(result).toBe("up"); // base direction
   });
 
   it("falls back to base direction when no scheduled direction", () => {
     const f = makeFinding();
-    const result = getActiveDirection(f, true, true);
+    const result = getActiveDirection(f, true);
     expect(result).toBe("up"); // base direction
   });
 
@@ -195,7 +200,7 @@ describe("Early death exclusion — getActiveDirection", () => {
       scheduled_direction: null,
     });
     // null is not undefined, so scheduled_direction is "present" → should return it
-    const result = getActiveDirection(f, true, true);
+    const result = getActiveDirection(f, true);
     expect(result).toBeNull();
   });
 });
@@ -230,14 +235,61 @@ describe("Early death exclusion — n_excluded annotation", () => {
   });
 });
 
-describe("Early death exclusion — default toggle state", () => {
-  it("default context uses scheduled-only (returns scheduled stats)", () => {
-    // The ScheduledOnlyProvider defaults to useScheduledOnly=true
-    // Here we test the logic directly with useScheduledOnly=true
-    const f = makeFinding({
-      scheduled_group_stats: SCHEDULED_GROUP_STATS,
-    });
-    const result = getActiveGroupStats(f, true, true);
-    expect(result).toBe(SCHEDULED_GROUP_STATS);
+describe("Early death exclusion — attribution-aware per-subject derivation", () => {
+  it("anyTrExcluded is true when TR subject is excluded", () => {
+    const excluded = new Set(["SUBJ-003"]); // TR subject
+    expect(anyTrExcluded(TR_EARLY_DEATH_IDS, excluded)).toBe(true);
+  });
+
+  it("anyTrExcluded is false when only accidental subject is excluded", () => {
+    // SUBJ-001 is accidental — excluding it should NOT trigger scheduled stats
+    const excluded = new Set(["SUBJ-001"]);
+    expect(anyTrExcluded(TR_EARLY_DEATH_IDS, excluded)).toBe(false);
+  });
+
+  it("anyTrExcluded is false when no subjects excluded", () => {
+    const excluded = new Set<string>();
+    expect(anyTrExcluded(TR_EARLY_DEATH_IDS, excluded)).toBe(false);
+  });
+
+  it("anyTrExcluded is false when only non-early-death subjects excluded", () => {
+    const excluded = new Set(["SUBJ-999"]);
+    expect(anyTrExcluded(TR_EARLY_DEATH_IDS, excluded)).toBe(false);
+  });
+
+  it("anyTrExcluded is false when TR set is empty", () => {
+    const excluded = new Set(["SUBJ-001"]);
+    expect(anyTrExcluded(new Set(), excluded)).toBe(false);
+  });
+
+  it("default exclusion: only TR subjects excluded, accidentals included", () => {
+    // Simulate the context's default initialization
+    const defaultExcluded = new Set(TR_EARLY_DEATH_IDS); // only SUBJ-003
+    expect(defaultExcluded.has("SUBJ-003")).toBe(true);  // TR: excluded
+    expect(defaultExcluded.has("SUBJ-001")).toBe(false);  // accidental: included
+  });
+
+  it("uses scheduled stats only when a TR subject is excluded", () => {
+    const f = makeFinding({ scheduled_group_stats: SCHEDULED_GROUP_STATS });
+    // Exclude accidental only → should NOT trigger scheduled stats
+    const accidentalOnly = anyTrExcluded(TR_EARLY_DEATH_IDS, new Set(["SUBJ-001"]));
+    expect(getActiveGroupStats(f, accidentalOnly)).toBe(BASE_GROUP_STATS);
+    // Exclude TR subject → should trigger scheduled stats
+    const trExcluded = anyTrExcluded(TR_EARLY_DEATH_IDS, new Set(["SUBJ-003"]));
+    expect(getActiveGroupStats(f, trExcluded)).toBe(SCHEDULED_GROUP_STATS);
+  });
+
+  it("bulk setUseScheduledOnly(true) excludes only TR subjects", () => {
+    // Simulate setUseScheduledOnly(true): set excludedSubjects = trEarlyDeathIds
+    const excluded = new Set(TR_EARLY_DEATH_IDS);
+    expect(excluded.has("SUBJ-003")).toBe(true);   // TR: excluded
+    expect(excluded.has("SUBJ-001")).toBe(false);   // accidental: not excluded
+    expect(excluded.size).toBe(1);
+  });
+
+  it("bulk setUseScheduledOnly(false) includes all subjects", () => {
+    // Simulate setUseScheduledOnly(false): clear excludedSubjects
+    const excluded = new Set<string>();
+    expect(anyTrExcluded(TR_EARLY_DEATH_IDS, excluded)).toBe(false);
   });
 });
