@@ -6,6 +6,9 @@ that is aggregated away during view assembly. They serve specs 02-07.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Query
@@ -524,6 +527,21 @@ async def get_subject_profile(study_id: str, usubjid: str):
         except Exception:
             pass
 
+    # Death cause and relatedness from pre-generated mortality data
+    death_cause: str | None = None
+    death_relatedness: str | None = None
+    try:
+        mort_path = Path(__file__).parent.parent / "generated" / study_id / "study_mortality.json"
+        if mort_path.exists():
+            mort = json.loads(mort_path.read_text())
+            for rec in mort.get("deaths", []) + mort.get("accidentals", []):
+                if rec.get("USUBJID") == usubjid:
+                    death_cause = rec.get("cause")
+                    death_relatedness = rec.get("relatedness")
+                    break
+    except Exception:
+        pass
+
     return {
         "usubjid": usubjid,
         "sex": str(subj["SEX"]),
@@ -532,6 +550,8 @@ async def get_subject_profile(study_id: str, usubjid: str):
         "arm_code": str(subj["ARMCD"]),
         "disposition": disposition,
         "disposition_day": disposition_day,
+        "death_cause": death_cause,
+        "death_relatedness": death_relatedness,
         "domains": domains,
         "control_stats": control_stats if control_stats else None,
     }

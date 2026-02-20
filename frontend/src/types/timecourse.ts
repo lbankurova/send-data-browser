@@ -74,6 +74,8 @@ export interface SubjectProfile {
   arm_code: string;
   disposition: string | null;
   disposition_day: number | null;
+  death_cause?: string | null;
+  death_relatedness?: string | null;
   domains: {
     BW?: { measurements: SubjectMeasurement[] };
     LB?: { measurements: SubjectMeasurement[] };
