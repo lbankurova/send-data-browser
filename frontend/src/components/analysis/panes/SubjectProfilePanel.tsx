@@ -3,31 +3,16 @@ import { Loader2, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react"
 import { useSubjectProfile } from "@/hooks/useSubjectProfile";
 import { cn } from "@/lib/utils";
 import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
+import {
+  isNormalFinding,
+  isUnscheduledDeath,
+  severityNum,
+  classifyFindings,
+  flagLabValues,
+} from "@/lib/subject-profile-logic";
 import type { SubjectProfile, SubjectMeasurement, SubjectObservation, SubjectFinding } from "@/types/timecourse";
 
-// ─── Constants ───────────────────────────────────────────
-
-const NORMAL_TERMS = ["NORMAL", "UNREMARKABLE", "WITHIN NORMAL LIMITS"];
-
-/** Analytes that increase with toxicity — flag when > 2× control mean */
-const INCREASE_ANALYTES = new Set(["ALT", "AST", "ALP", "BILI", "BUN", "CREA", "GGT"]);
-/** Analytes that decrease with toxicity — flag when < 0.5× control mean */
-const DECREASE_ANALYTES = new Set(["ALB", "RBC", "HGB", "HCT", "PLT", "WBC"]);
-
-/** Death-indicating disposition strings (case-insensitive substring match) */
-const DEATH_INDICATORS = ["DEAD", "MORIBUND", "EUTHANIZED", "FOUND DEAD"];
-
-// ─── Helpers ─────────────────────────────────────────────
-
-function isNormalFinding(text: string): boolean {
-  return NORMAL_TERMS.includes(text.toUpperCase());
-}
-
-function isUnscheduledDeath(disposition: string | null): boolean {
-  if (!disposition) return false;
-  const upper = disposition.toUpperCase();
-  return DEATH_INDICATORS.some((d) => upper.includes(d));
-}
+// ─── Helpers (rendering-only) ────────────────────────────
 
 function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
   if (avgSev >= 4) return { bg: "#4B5563", text: "white" };
@@ -35,161 +20,6 @@ function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
   if (avgSev >= 2) return { bg: "#9CA3AF", text: "var(--foreground)" };
   if (avgSev >= 1) return { bg: "#D1D5DB", text: "var(--foreground)" };
   return { bg: "#E5E7EB", text: "var(--foreground)" };
-}
-
-const SEV_NUM: Record<string, number> = {
-  MINIMAL: 1, MILD: 2, MODERATE: 3, MARKED: 4, SEVERE: 5,
-};
-
-function severityNum(sev?: string | null): number {
-  if (!sev) return 0;
-  return SEV_NUM[sev.toUpperCase()] ?? 0;
-}
-
-// ─── COD detection ───────────────────────────────────────
-
-interface ClassifiedFinding extends SubjectFinding {
-  /** Sort tier: 0 = COD, 1 = presumptive COD, 2 = malignant, 3 = benign,
-   *  4 = non-neoplastic grade>=2, 5 = grade 1, 6 = normal */
-  tier: number;
-  isCOD: boolean;
-  isPresumptiveCOD: boolean;
-}
-
-function classifyFindings(
-  findings: SubjectFinding[],
-  disposition: string | null,
-): { classified: ClassifiedFinding[]; codFinding: ClassifiedFinding | null } {
-  const isDeath = isUnscheduledDeath(disposition);
-
-  // Separate normal from non-normal
-  const nonNormal: SubjectFinding[] = [];
-  for (const f of findings) {
-    if (!isNormalFinding(f.finding)) nonNormal.push(f);
-  }
-
-  // Find malignant findings
-  const malignant = nonNormal.filter(
-    (f) => f.result_category?.toUpperCase() === "MALIGNANT"
-  );
-
-  // Find highest-severity finding (for presumptive COD)
-  let maxSev = 0;
-  for (const f of nonNormal) {
-    const sn = severityNum(f.severity);
-    if (sn > maxSev) maxSev = sn;
-  }
-
-  let codFinding: ClassifiedFinding | null = null;
-
-  const classified: ClassifiedFinding[] = nonNormal.map((f) => {
-    const sn = severityNum(f.severity);
-    const isMalignant = f.result_category?.toUpperCase() === "MALIGNANT";
-    const isBenign = f.result_category?.toUpperCase() === "BENIGN";
-
-    // COD logic
-    let isCOD = false;
-    let isPresumptiveCOD = false;
-    if (isDeath) {
-      if (malignant.length > 0 && isMalignant) {
-        isCOD = true;
-      } else if (malignant.length === 0 && sn === maxSev && maxSev > 0) {
-        isPresumptiveCOD = true;
-      }
-    }
-
-    // Assign tier
-    let tier: number;
-    if (isCOD) tier = 0;
-    else if (isPresumptiveCOD) tier = 1;
-    else if (isMalignant) tier = 2;
-    else if (isBenign) tier = 3;
-    else if (sn >= 2) tier = 4;
-    else if (sn >= 1) tier = 5;
-    else tier = 4; // non-neoplastic without severity → group with grade>=2
-
-    const cf: ClassifiedFinding = { ...f, tier, isCOD, isPresumptiveCOD };
-    if (isCOD && !codFinding) codFinding = cf;
-    if (isPresumptiveCOD && !codFinding) codFinding = cf;
-    return cf;
-  });
-
-  // Sort: tier asc, then severity desc within tier, then specimen alpha
-  classified.sort((a, b) => {
-    if (a.tier !== b.tier) return a.tier - b.tier;
-    const sa = severityNum(a.severity);
-    const sb = severityNum(b.severity);
-    if (sa !== sb) return sb - sa;
-    return a.specimen.localeCompare(b.specimen);
-  });
-
-  return { classified, codFinding };
-}
-
-// ─── Lab flagging ────────────────────────────────────────
-
-interface FlaggedLab {
-  testCode: string;
-  day: number;
-  value: number;
-  unit: string;
-  flag: "up" | "down" | null;
-  ratio: number | null; // fold-change vs control
-}
-
-function flagLabValues(
-  measurements: SubjectMeasurement[],
-  controlStats?: Record<string, { mean: number; sd: number; unit: string; n: number }> | null,
-): FlaggedLab[] {
-  // Group by test_code, take terminal (max day) value
-  const byTest = new Map<string, SubjectMeasurement[]>();
-  for (const m of measurements) {
-    const arr = byTest.get(m.test_code) ?? [];
-    arr.push(m);
-    byTest.set(m.test_code, arr);
-  }
-
-  const result: FlaggedLab[] = [];
-  for (const [testCode, rows] of byTest) {
-    // Take the latest measurement for each test
-    const sorted = [...rows].sort((a, b) => b.day - a.day);
-    const latest = sorted[0];
-
-    let flag: "up" | "down" | null = null;
-    let ratio: number | null = null;
-
-    if (controlStats) {
-      const ctrl = controlStats[testCode];
-      if (ctrl && ctrl.mean > 0) {
-        const r = latest.value / ctrl.mean;
-        if (INCREASE_ANALYTES.has(testCode) && r > 2) {
-          flag = "up";
-          ratio = Math.round(r * 10) / 10;
-        } else if (DECREASE_ANALYTES.has(testCode) && r < 0.5) {
-          flag = "down";
-          ratio = Math.round(r * 10) / 10;
-        }
-      }
-    }
-
-    result.push({
-      testCode,
-      day: latest.day,
-      value: latest.value,
-      unit: latest.unit,
-      flag,
-      ratio,
-    });
-  }
-
-  // Sort: flagged first, then alphabetical
-  result.sort((a, b) => {
-    if (a.flag && !b.flag) return -1;
-    if (!a.flag && b.flag) return 1;
-    return a.testCode.localeCompare(b.testCode);
-  });
-
-  return result;
 }
 
 // ─── CollapsiblePane ─────────────────────────────────────
@@ -429,6 +259,27 @@ function CLTimeline({
   const nonNormal = sorted.filter((o) => !isNormalFinding(o.finding));
   const isDeath = isUnscheduledDeath(disposition);
 
+  // Sort abnormals by relevance: last 7 days before disposition first, then recent first
+  // NOTE: must be before the early return to keep hook count stable across renders
+  const sortedByRelevance = useMemo(() => {
+    if (nonNormal.length === 0) return [];
+    const deathDay = dispositionDay;
+    const last7Cutoff = deathDay != null ? deathDay - 7 : null;
+
+    const abnormal = nonNormal.map((o) => ({
+      ...o,
+      isProximate: isDeath && last7Cutoff != null && o.day >= last7Cutoff,
+    }));
+
+    abnormal.sort((a, b) => {
+      if (a.isProximate && !b.isProximate) return -1;
+      if (!a.isProximate && b.isProximate) return 1;
+      return b.day - a.day; // most recent first
+    });
+
+    return abnormal;
+  }, [nonNormal, dispositionDay, isDeath]);
+
   // All normal — show summary + inconsistency flag if applicable
   if (nonNormal.length === 0) {
     return (
@@ -448,25 +299,6 @@ function CLTimeline({
       </div>
     );
   }
-
-  // Sort abnormals by relevance: last 7 days before disposition first, then recent first
-  const sortedByRelevance = useMemo(() => {
-    const deathDay = dispositionDay;
-    const last7Cutoff = deathDay != null ? deathDay - 7 : null;
-
-    const abnormal = nonNormal.map((o) => ({
-      ...o,
-      isProximate: isDeath && last7Cutoff != null && o.day >= last7Cutoff,
-    }));
-
-    abnormal.sort((a, b) => {
-      if (a.isProximate && !b.isProximate) return -1;
-      if (!a.isProximate && b.isProximate) return 1;
-      return b.day - a.day; // most recent first
-    });
-
-    return abnormal;
-  }, [nonNormal, dispositionDay, isDeath]);
 
   const normalCount = sorted.length - nonNormal.length;
 
@@ -510,17 +342,19 @@ function CLTimeline({
 function HistopathFindings({
   findings,
   disposition,
+  isAccidental,
 }: {
   findings: SubjectFinding[];
   disposition: string | null;
+  isAccidental: boolean;
 }) {
   const [normalsExpanded, setNormalsExpanded] = useState(false);
 
   const { classified, normalFindings } = useMemo(() => {
     const normals = findings.filter((f) => isNormalFinding(f.finding));
-    const { classified } = classifyFindings(findings, disposition);
+    const { classified } = classifyFindings(findings, disposition, isAccidental);
     return { classified, normalFindings: normals };
-  }, [findings, disposition]);
+  }, [findings, disposition, isAccidental]);
 
   if (classified.length === 0 && normalFindings.length === 0) {
     return (
@@ -746,18 +580,21 @@ function SubjectProfileContent({
   const ma = profile.domains.MA?.findings ?? [];
 
   const isDeath = isUnscheduledDeath(profile.disposition);
+  const isAccidental = profile.death_relatedness?.toUpperCase() === "ACCIDENTAL";
   const clNonNormal = cl.filter((o) => !isNormalFinding(o.finding));
   const miNonNormal = mi.filter((f) => !isNormalFinding(f.finding));
 
-  // COD detection for header (§5)
+  // COD detection for header (§5) — skip for accidental deaths
   const { codFinding } = useMemo(
-    () => classifyFindings(mi, profile.disposition),
-    [mi, profile.disposition]
+    () => classifyFindings(mi, profile.disposition, isAccidental),
+    [mi, profile.disposition, isAccidental]
   );
 
   // Build cause line text
   const causeLine = useMemo(() => {
     if (!isDeath) return null;
+    // Accidental deaths: use the recorded cause (e.g., "GAVAGE ERROR")
+    if (isAccidental && profile.death_cause) return profile.death_cause;
     if (!codFinding) return "Unknown";
     // Count other COD/presumptive COD findings (excluding the primary one)
     const extra = mi.filter(
@@ -829,6 +666,9 @@ function SubjectProfileContent({
             )}>
               {causeLine}
             </span>
+            {isAccidental && (
+              <span className="ml-1.5 text-[9px] text-muted-foreground">(accidental)</span>
+            )}
           </div>
         )}
       </div>
@@ -897,7 +737,7 @@ function SubjectProfileContent({
               No microscopic findings recorded
             </div>
           ) : (
-            <HistopathFindings findings={mi} disposition={profile.disposition} />
+            <HistopathFindings findings={mi} disposition={profile.disposition} isAccidental={isAccidental} />
           )}
         </CollapsiblePane>
 
