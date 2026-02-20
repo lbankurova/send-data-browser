@@ -82,6 +82,9 @@ export interface SubjectProfile {
     MI?: { findings: SubjectFinding[] };
     MA?: { findings: SubjectFinding[] };
   };
+  control_stats?: {
+    lab?: Record<string, { mean: number; sd: number; unit: string; n: number }>;
+  } | null;
 }
 
 export interface SubjectMeasurement {
@@ -101,6 +104,7 @@ export interface SubjectFinding {
   specimen: string;
   finding: string;
   severity?: string | null;
+  result_category?: string | null;  // MIRESCAT: "MALIGNANT" | "BENIGN" | null
 }
 
 // --- Endpoint 4: Subject-level histopath matrix ---
