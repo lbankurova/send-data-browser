@@ -28,6 +28,7 @@ import { interpretSyndrome, mapDeathRecordsToDispositions } from "@/lib/syndrome
 import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext, OverallSeverity, RecoveryRow, TranslationalConfidence, UpgradeEvidenceResult } from "@/lib/syndrome-interpretation";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
+import type { StudyMortality } from "@/types/mortality";
 import { useTumorSummary } from "@/hooks/useTumorSummary";
 import { useFoodConsumptionSummary } from "@/hooks/useFoodConsumptionSummary";
 import { useClinicalObservations } from "@/hooks/useClinicalObservations";
@@ -681,7 +682,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
           expandAll={expandGen}
           collapseAll={collapseGen}
         >
-          <MortalityContextPane mortality={syndromeInterp.mortalityContext} />
+          <MortalityContextPane mortality={syndromeInterp.mortalityContext} mortalityRaw={mortalityRaw} />
         </CollapsiblePane>
       )}
 
@@ -1602,12 +1603,26 @@ function ClinicalObservationsPane({ support }: { support: SyndromeInterpretation
 }
 
 /** Mortality context pane — death details + NOAEL cap */
-function MortalityContextPane({ mortality }: { mortality: MortalityContext }) {
+function MortalityContextPane({ mortality, mortalityRaw }: { mortality: MortalityContext; mortalityRaw?: StudyMortality }) {
+  // Derive NOAEL cap label: dose level below mortality LOAEL
+  const noaelCapLabel = (() => {
+    if (mortality.mortalityNoaelCap == null || !mortalityRaw?.mortality_loael) return null;
+    const capLevel = mortalityRaw.mortality_loael - 1;
+    const capDose = mortalityRaw.by_dose.find(d => d.dose_level === capLevel);
+    const mortalityDose = mortalityRaw.by_dose.find(d => d.dose_level === mortalityRaw.mortality_loael);
+    const unit = mortalityRaw.mortality_loael_label?.match(/\d[\d.]*\s*(mg\/kg|mg|µg\/kg|µg|g\/kg|g)/)?.[1] ?? "";
+    const capStr = capDose?.dose_value != null && unit ? `${capDose.dose_value} ${unit}` : null;
+    const mortStr = mortalityDose?.dose_value != null && unit ? `${mortalityDose.dose_value} ${unit}` : null;
+    if (capStr && mortStr) return `NOAEL \u2264 ${capStr} (mortality at ${mortStr})`;
+    if (mortStr) return `NOAEL capped below ${mortStr}`;
+    return `NOAEL capped at dose level ${mortality.mortalityNoaelCap}`;
+  })();
+
   return (
     <div>
       {mortality.mortalityNoaelCap != null && (
         <div className="mb-2 text-[10px] font-medium text-foreground">
-          NOAEL cap: dose level {mortality.mortalityNoaelCap}
+          {noaelCapLabel ?? `NOAEL cap: dose level ${mortality.mortalityNoaelCap}`}
           {mortality.mortalityNoaelCapRelevant === false && (
             <span className="ml-1 font-normal text-muted-foreground">(unrelated)</span>
           )}

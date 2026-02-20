@@ -112,6 +112,7 @@ export function FindingsView() {
   const [scopeType, setScopeType] = useState<string | null>(null);
   const [filterLabels, setFilterLabels] = useState<string[]>([]);
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
+  const [activeGrouping, setActiveGrouping] = useState<GroupingMode | null>(null);
 
   // Local UI state
   const [selectedPointData, setSelectedPointData] = useState<ScatterSelectedPoint | null>(null);
@@ -164,6 +165,7 @@ export function FindingsView() {
   useEffect(() => {
     setFindingsRailCallback((state) => {
       if (state.activeEndpoint !== undefined) handleEndpointSelect(state.activeEndpoint);
+      if (state.activeGrouping !== undefined) setActiveGrouping(state.activeGrouping);
       if (state.restoreEndpoint !== undefined) handleRestoreEndpoint(state.restoreEndpoint);
       if (state.visibleEndpoints !== undefined) {
         const ve = state.visibleEndpoints;
@@ -479,7 +481,7 @@ export function FindingsView() {
     <FindingsAnalyticsProvider value={analyticsValue}>
     <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
       {/* Study context banner */}
-      {studyContext && <StudyBanner studyContext={studyContext} doseGroupCount={doseGroupCount} tumorCount={tumorSummary?.total_tumor_animals} />}
+      {studyContext && <StudyBanner studyContext={studyContext} doseGroupCount={doseGroupCount} tumorCount={tumorSummary?.total_tumor_animals} mortality={mortalityData} />}
       {/* Mortality banner */}
       {mortalityData && <MortalityBanner mortality={mortalityData} />}
       {/* Header */}
@@ -534,6 +536,7 @@ export function FindingsView() {
           excludedEndpoints={excludedEndpoints}
           onToggleExclude={handleRestoreEndpoint}
           activeEndpoint={activeEndpoint}
+          activeGrouping={activeGrouping}
         />
       ) : null}
       </div>
