@@ -25,6 +25,7 @@
 *Updated 2026-02-18: TC-1–7 resolved (5a89603, f44a5d6). Translational confidence scoring — types, SOC/PT lookup, MedDRA v3.0 dictionary, UI pane, 15 tests.*
 *Updated 2026-02-18: F-1, DR-1, S3 resolved (e4e6ca5). Rail card header split — chevron for expand/collapse, label area for scope selection.*
 *Updated 2026-02-18: MDI-6 reclassified — XS10/ECGInterp/CL already done (SIL-5/6, MDI-8), SC baseline N/A (PointCross has no numeric SC data). Remaining: OM-MI organ weight header strip (Medium→Low).*
+*Updated 2026-02-19: SyndromeContextPanel full restructure — 15 panes → 8, sticky header with severity accent, evidence pane merge, DR&R pane merge, FC pane redesign with verdict/key stats/recovery blocks, conditional display, reference merge. Source: `syndrome-context-panel-restructure-spec-v2.md` + `food-consumption-pane-spec-v2.md`. Known limitation: trend p-values (R-17/FC-32) not exposed in API.*
 
 ---
 
