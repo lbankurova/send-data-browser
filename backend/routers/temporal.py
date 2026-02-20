@@ -318,8 +318,10 @@ async def get_subject_profile(study_id: str, usubjid: str):
                     disposition = str(ds_subj["DSDECOD"].iloc[0])
                 elif "DSTERM" in ds_subj.columns:
                     disposition = str(ds_subj["DSTERM"].iloc[0])
-                if "DSDY" in ds_subj.columns:
-                    day_val = pd.to_numeric(ds_subj["DSDY"].iloc[0], errors="coerce")
+                # DSSTDY is the standard SEND variable; DSDY is a fallback
+                day_col = "DSSTDY" if "DSSTDY" in ds_subj.columns else "DSDY" if "DSDY" in ds_subj.columns else None
+                if day_col:
+                    day_val = pd.to_numeric(ds_subj[day_col].iloc[0], errors="coerce")
                     if pd.notna(day_val):
                         disposition_day = int(day_val)
         except Exception:
@@ -444,11 +446,21 @@ async def get_subject_profile(study_id: str, usubjid: str):
                 finding_col = "MISTRESC" if "MISTRESC" in mi_subj.columns else "MIORRES"
                 sev_col = "MISEV" if "MISEV" in mi_subj.columns else None
 
+                rescat_col = "MIRESCAT" if "MIRESCAT" in mi_subj.columns else None
+
+                def _safe_str(val):
+                    """Return None for NaN/empty, stripped string otherwise."""
+                    if pd.isna(val):
+                        return None
+                    s = str(val).strip()
+                    return s if s else None
+
                 findings = [
                     {
-                        "specimen": str(r[spec_col]) if spec_col in mi_subj.columns else "",
-                        "finding": str(r[finding_col]) if finding_col in mi_subj.columns else "",
-                        "severity": str(r[sev_col]) if sev_col and sev_col in mi_subj.columns and r.get(sev_col, "") != "" else None,
+                        "specimen": str(r.get(spec_col, "")).strip() if spec_col in mi_subj.columns else "",
+                        "finding": str(r.get(finding_col, "")).strip() if finding_col in mi_subj.columns else "",
+                        "severity": _safe_str(r[sev_col]) if sev_col and sev_col in mi_subj.columns else None,
+                        "result_category": _safe_str(r[rescat_col]) if rescat_col and rescat_col in mi_subj.columns else None,
                     }
                     for _, r in mi_subj.iterrows()
                 ]
@@ -478,6 +490,40 @@ async def get_subject_profile(study_id: str, usubjid: str):
         except Exception:
             pass
 
+    # Control group lab stats (terminal timepoint, same sex as subject)
+    control_stats: dict = {}
+    subject_sex = str(subj["SEX"])
+    if "lb" in study.xpt_files:
+        try:
+            all_control = subjects_df[subjects_df["dose_level"] == 0]
+            sex_control = all_control[all_control["SEX"] == subject_sex]
+            ctrl_ids = sex_control["USUBJID"].tolist()
+            if ctrl_ids:
+                lb_all = _read_domain_df(study, "LB")
+                lb_ctrl = lb_all[lb_all["USUBJID"].isin(ctrl_ids)]
+                val_col, day_col = "LBSTRESN", "LBDY"
+                unit_col, testcd_col = "LBSTRESU", "LBTESTCD"
+                lb_ctrl[val_col] = pd.to_numeric(lb_ctrl[val_col], errors="coerce")
+                lb_ctrl[day_col] = pd.to_numeric(lb_ctrl[day_col], errors="coerce")
+                lb_ctrl = lb_ctrl.dropna(subset=[val_col, day_col])
+                lab_stats: dict = {}
+                for test, tgrp in lb_ctrl.groupby(testcd_col):
+                    max_day = tgrp[day_col].max()
+                    terminal = tgrp[tgrp[day_col] == max_day]
+                    vals = terminal[val_col].dropna()
+                    if len(vals) >= 1:
+                        unit = str(terminal[unit_col].iloc[0]) if unit_col in terminal.columns and terminal[unit_col].iloc[0] != "" else ""
+                        lab_stats[str(test)] = {
+                            "mean": round(float(vals.mean()), 4),
+                            "sd": round(float(vals.std(ddof=1)), 4) if len(vals) > 1 else 0.0,
+                            "unit": unit,
+                            "n": int(len(vals)),
+                        }
+                if lab_stats:
+                    control_stats["lab"] = lab_stats
+        except Exception:
+            pass
+
     return {
         "usubjid": usubjid,
         "sex": str(subj["SEX"]),
@@ -487,6 +533,7 @@ async def get_subject_profile(study_id: str, usubjid: str):
         "disposition": disposition,
         "disposition_day": disposition_day,
         "domains": domains,
+        "control_stats": control_stats if control_stats else None,
     }
 
 
