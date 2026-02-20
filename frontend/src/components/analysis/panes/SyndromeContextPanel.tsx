@@ -1252,8 +1252,12 @@ function DoseResponseRecoveryPane({
   const adv = syndromeInterp.adversity;
   const recovery = syndromeInterp.recovery;
 
-  // Dose-response pattern text
-  const drPattern = tr.doseResponse === "strong" ? "monotonic" : tr.doseResponse === "weak" ? "non-monotonic" : "absent";
+  // Dose-response strength (A-1 factor)
+  const drTooltip = tr.doseResponse === "strong"
+    ? "At least one matched endpoint has a strong dose-response pattern (linear, monotonic, or threshold) with p < 0.1, or pairwise p < 0.01 with |d| ≥ 0.8"
+    : tr.doseResponse === "weak"
+      ? "At least one matched endpoint has a non-flat pattern, but none meet the strength criteria for strong"
+      : "No dose-response pattern detected in matched endpoints";
 
   // Find lead endpoint (lowest p-value among syndrome matched endpoints)
   const leadEp = useMemo(() => {
@@ -1272,7 +1276,7 @@ function DoseResponseRecoveryPane({
       <div className="space-y-0.5">
         <div className="flex items-baseline gap-1.5 text-[10px]">
           <span className="text-muted-foreground">Dose-response:</span>
-          <span className="font-mono font-medium text-foreground">{drPattern}</span>
+          <span className="font-mono font-medium text-foreground underline decoration-dotted decoration-muted-foreground/40 underline-offset-2" title={drTooltip}>{tr.doseResponse}</span>
         </div>
         {leadEp && (
           <div className="flex items-baseline gap-1.5 text-[10px]">
