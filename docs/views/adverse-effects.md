@@ -286,10 +286,11 @@ Shown when `selectedGroupType === "syndrome"`. Displays cross-domain syndrome in
 | 6 | Recovery | closed | `syndromeInterp` available |
 | 7 | Mortality context | closed | `treatmentRelatedDeaths > 0` |
 | 8 | Food consumption | closed | `available && bwFwAssessment !== "not_applicable"` |
-| 9 | ECETOC assessment | closed | `syndromeInterp && detected` |
-| 10 | Translational confidence | closed | `tier !== "insufficient_data"` |
-| 11 | Interpretation | closed | syndrome has authored interpretation text |
-| 12 | Related views | closed | always |
+| 9 | Organ proportionality | open | `xs09Active && organProportionality?.available` |
+| 10 | ECETOC assessment | closed | `syndromeInterp && detected` |
+| 11 | Translational confidence | closed | `tier !== "insufficient_data"` |
+| 12 | Interpretation | closed | syndrome has authored interpretation text |
+| 13 | Related views | closed | always |
 
 **Food consumption pane:** Narrative replaces generic "at high dose" with actual dose label from `dose_groups` (e.g., "at 200 mg/kg"). Food efficiency entries show actual dose labels.
 
