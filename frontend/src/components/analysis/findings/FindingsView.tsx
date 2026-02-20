@@ -470,12 +470,20 @@ export function FindingsView() {
     );
   }
 
-  const hasEarlyDeaths = !!mortalityData && Object.keys(mortalityData.early_death_subjects ?? {}).length > 0;
-  const { setHasEarlyDeaths } = useScheduledOnly();
+  const { setEarlyDeathSubjects } = useScheduledOnly();
   useEffect(() => {
-    setHasEarlyDeaths(hasEarlyDeaths);
-    return () => setHasEarlyDeaths(false);
-  }, [hasEarlyDeaths, setHasEarlyDeaths]);
+    if (mortalityData) {
+      const earlyDeaths = mortalityData.early_death_subjects ?? {};
+      // TR early deaths: from mortality.deaths (not recovery), present in early_death_subjects
+      const trIds = new Set(
+        mortalityData.deaths
+          .filter(d => !d.is_recovery && d.USUBJID in earlyDeaths)
+          .map(d => d.USUBJID),
+      );
+      setEarlyDeathSubjects(earlyDeaths, trIds);
+    }
+    return () => setEarlyDeathSubjects({}, new Set());
+  }, [mortalityData, setEarlyDeathSubjects]);
 
   return (
     <FindingsAnalyticsProvider value={analyticsValue}>

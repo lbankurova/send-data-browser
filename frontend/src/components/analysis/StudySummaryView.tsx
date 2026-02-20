@@ -21,6 +21,10 @@ import {
 } from "./SignalsPanel";
 import { ConfidencePopover } from "./ScoreBreakdown";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
+import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
+import { useStudyMortality } from "@/hooks/useStudyMortality";
+import type { StudyMortality, DeathRecord } from "@/types/mortality";
+import { ChevronDown } from "lucide-react";
 import type { SignalSelection, SignalSummaryRow, ProvenanceMessage, NoaelSummaryRow, RuleResult } from "@/types/analysis-views";
 import type { StudyMetadata } from "@/types";
 import type { Insight } from "@/hooks/useInsights";
@@ -40,6 +44,7 @@ export function StudySummaryView() {
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: meta } = useStudyMetadata(studyId!);
   const { data: provenanceData } = useProvenanceMessages(studyId);
+  const { data: mortalityData } = useStudyMortality(studyId);
 
   // Initialize tab from URL query parameter if present, then persist via session
   const initialTab = (searchParams.get("tab") as Tab) || "details";
@@ -167,7 +172,7 @@ export function StudySummaryView() {
       />
 
       {/* Tab content */}
-      {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} />}
+      {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} mortality={mortalityData} />}
       {tab === "insights" && <CrossStudyInsightsTab studyId={studyId!} />}
       {tab === "signals" && panelData && (
         <div className="flex h-full flex-col overflow-hidden">
@@ -691,14 +696,249 @@ function formatSubjects(
   return parts.join(" ");
 }
 
+/** Tooltip explaining why a subject is defaulted to included or excluded. */
+function subjectDataTooltip(d: DeathRecord & { attribution: string }, isExcluded: boolean, isTr: boolean): string {
+  const id = d.USUBJID;
+  if (d.is_recovery) {
+    return isExcluded
+      ? `${id}: Recovery arm \u2014 excluded from main-study analysis (separate arm). Click to override.`
+      : `${id}: Recovery arm \u2014 included by reviewer override.`;
+  }
+  if (d.attribution === "Accidental") {
+    return isExcluded
+      ? `${id}: Accidental death \u2014 excluded by reviewer override. Default: included (valid drug-exposure data through day ${d.study_day ?? "?"}).`
+      : `${id}: Accidental death \u2014 included (default). Data valid through death day; not drug-related. Longitudinal data naturally ends at day ${d.study_day ?? "?"}.`;
+  }
+  if (isTr) {
+    return isExcluded
+      ? `${id}: TR early death \u2014 excluded (default). Moribund/found-dead terminal data skews group means.`
+      : `${id}: TR early death \u2014 included by reviewer override. Default: excluded (terminal data from severely affected animals skews group means).`;
+  }
+  return isExcluded
+    ? `${id}: excluded from terminal stats. Click to include.`
+    : `${id}: included in terminal stats. Click to exclude.`;
+}
+
+/** Collapsible data settings section with per-subject mortality table. */
+function MortalityDataSettings({ mortality }: { mortality?: StudyMortality | null }) {
+  const [open, setOpen] = useState(false);
+  const { excludedSubjects, toggleSubjectExclusion, setUseScheduledOnly, trEarlyDeathIds } = useScheduledOnly();
+
+  // Combine all deaths: TR (main + recovery) + accidental, sorted by study_day
+  const allDeaths: (DeathRecord & { attribution: string })[] = mortality
+    ? [
+        ...mortality.deaths.map(d => ({ ...d, attribution: "TR" as const })),
+        ...mortality.accidentals.map(d => ({ ...d, attribution: "Accidental" as const })),
+      ].sort((a, b) => (a.study_day ?? 999) - (b.study_day ?? 999))
+    : [];
+
+  const hasMortality = mortality?.has_mortality && allDeaths.length > 0;
+  const unit = mortality?.mortality_loael_label?.match(/\d[\d.]*\s*(mg\/kg|mg|µg\/kg|µg|g\/kg|g)/)?.[1] ?? "";
+
+  // NOAEL cap
+  const capLevel = mortality?.mortality_loael != null ? mortality.mortality_loael - 1 : null;
+  const capDose = capLevel != null ? mortality?.by_dose.find(b => b.dose_level === capLevel) : null;
+  const capLabel = capDose?.dose_value != null && unit ? `${capDose.dose_value} ${unit}` : null;
+
+  const excludedCount = excludedSubjects.size;
+  const allTrExcluded = trEarlyDeathIds.size > 0 && [...trEarlyDeathIds].every(id => excludedSubjects.has(id));
+
+  return (
+    <section className="mb-4">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="mb-2 flex w-full items-center gap-1.5 border-b pb-0.5"
+      >
+        <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", !open && "-rotate-90")} />
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Data settings
+        </span>
+        <span className="ml-2 text-[10px] text-muted-foreground">
+          {excludedCount > 0
+            ? `${excludedCount} subject${excludedCount !== 1 ? "s" : ""} excluded`
+            : "All animals included"}
+          {hasMortality && ` \u00b7 ${allDeaths.length} death${allDeaths.length !== 1 ? "s" : ""}`}
+        </span>
+      </button>
+
+      {open && (
+        <div className="space-y-3">
+          {/* Bulk toggle — controls TR early deaths only */}
+          {trEarlyDeathIds.size > 0 && (
+            <label
+              className="flex items-center gap-2 text-xs"
+              title="Exclude treatment-related early deaths from terminal group statistics. Accidental deaths remain included (valid drug-exposure data)."
+            >
+              <input
+                type="checkbox"
+                checked={allTrExcluded}
+                onChange={(e) => setUseScheduledOnly(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-gray-300"
+              />
+              <span>Exclude TR early deaths from terminal stats</span>
+              <span className="text-[10px] text-muted-foreground">
+                ({trEarlyDeathIds.size} subject{trEarlyDeathIds.size !== 1 ? "s" : ""})
+              </span>
+            </label>
+          )}
+
+          {/* Per-subject table */}
+          {hasMortality && mortality && (
+            <div className="overflow-auto">
+              <table className="border-collapse text-[10px]">
+                <tbody>
+                  {/* Subj. ID */}
+                  <tr>
+                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Subj. ID</td>
+                    {allDeaths.map(d => (
+                      <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums font-medium" style={{ color: "#3b82f6" }}>
+                        {d.USUBJID.slice(-4)}
+                      </td>
+                    ))}
+                  </tr>
+                  {/* Group */}
+                  <tr>
+                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Group</td>
+                    {allDeaths.map(d => {
+                      const dg = mortality.by_dose.find(b => b.dose_level === d.dose_level);
+                      const doseStr = dg?.dose_value != null && unit ? `${dg.dose_value} ${unit}` : d.dose_label;
+                      return (
+                        <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums font-medium" style={{ color: getDoseGroupColor(d.dose_level) }}>
+                          {doseStr}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Sex */}
+                  <tr>
+                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Sex</td>
+                    {allDeaths.map(d => (
+                      <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums">{d.sex}</td>
+                    ))}
+                  </tr>
+                  {/* Day */}
+                  <tr>
+                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Day</td>
+                    {allDeaths.map(d => (
+                      <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums">{d.study_day != null ? String(d.study_day) : "\u2014"}</td>
+                    ))}
+                  </tr>
+                  {/* Phase */}
+                  <tr>
+                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Phase</td>
+                    {allDeaths.map(d => (
+                      <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums">{d.is_recovery ? "Recovery" : "Treatment"}</td>
+                    ))}
+                  </tr>
+                  {/* Attribution */}
+                  <tr>
+                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Attribution</td>
+                    {allDeaths.map(d => (
+                      <td key={d.USUBJID} className={`whitespace-nowrap px-2 py-px text-center font-mono tabular-nums ${d.attribution === "TR" ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                        {d.attribution}
+                      </td>
+                    ))}
+                  </tr>
+                  {/* Cause */}
+                  <tr>
+                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Cause</td>
+                    {allDeaths.map(d => {
+                      const cause = d.cause ?? d.disposition;
+                      const truncated = cause.length > 25 ? cause.slice(0, 24) + "\u2026" : cause;
+                      return (
+                        <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums" title={cause.length > 25 ? cause : undefined}>
+                          {truncated}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Data — per-subject YES/NO toggles with attribution reasoning */}
+                  <tr>
+                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Data</td>
+                    {allDeaths.map(d => {
+                      const isExcluded = excludedSubjects.has(d.USUBJID);
+                      const isTr = trEarlyDeathIds.has(d.USUBJID);
+                      return (
+                        <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center">
+                          <button
+                            type="button"
+                            className="inline-flex cursor-pointer gap-0.5 text-[9px]"
+                            onClick={() => toggleSubjectExclusion(d.USUBJID)}
+                            title={subjectDataTooltip(d, isExcluded, isTr)}
+                          >
+                            <span className={!isExcluded ? "font-medium text-foreground" : "text-muted-foreground/40"}>YES</span>
+                            <span className="text-muted-foreground/30">|</span>
+                            <span className={isExcluded ? "font-medium text-foreground" : "text-muted-foreground/40"}>NO</span>
+                          </button>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Default reason — shows why each subject is defaulted */}
+                  <tr>
+                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Default</td>
+                    {allDeaths.map(d => {
+                      const isTr = trEarlyDeathIds.has(d.USUBJID);
+                      let reason: string;
+                      let cls: string;
+                      if (d.is_recovery) {
+                        reason = "Separate arm";
+                        cls = "text-muted-foreground/60";
+                      } else if (d.attribution === "Accidental") {
+                        reason = "Included";
+                        cls = "text-muted-foreground";
+                      } else if (isTr) {
+                        reason = "Excluded";
+                        cls = "text-foreground/70 font-medium";
+                      } else {
+                        reason = "Included";
+                        cls = "text-muted-foreground";
+                      }
+                      return (
+                        <td key={d.USUBJID} className={`whitespace-nowrap px-2 py-px text-center text-[9px] ${cls}`}>
+                          {reason}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* NOAEL impact */}
+                  <tr>
+                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">NOAEL impact</td>
+                    {allDeaths.map(d => {
+                      if (d.is_recovery) return <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums text-muted-foreground">None (recovery)</td>;
+                      if (d.attribution === "Accidental") return <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums text-muted-foreground">None</td>;
+                      if (mortality.mortality_loael != null && d.dose_level === mortality.mortality_loael && capLabel) {
+                        return <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums font-medium text-foreground">Capped {"\u2264"} {capLabel}</td>;
+                      }
+                      return <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums text-muted-foreground">None</td>;
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!hasMortality && (
+            <div className="text-[10px] text-muted-foreground/60">No mortality events recorded in this study.</div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function DetailsTab({
   meta,
   studyId,
   provenanceMessages,
+  mortality,
 }: {
   meta: StudyMetadata | undefined;
   studyId: string;
   provenanceMessages: ProvenanceMessage[] | undefined;
+  mortality?: StudyMortality | null;
 }) {
   const navigate = useNavigate();
   if (!meta) {
@@ -833,6 +1073,8 @@ function DetailsTab({
           )}
         </section>
       )}
+
+      <MortalityDataSettings mortality={mortality} />
 
       <section>
         <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
