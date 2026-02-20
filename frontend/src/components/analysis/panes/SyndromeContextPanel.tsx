@@ -6,7 +6,7 @@
  * 15 panes → 8 sections: Answer → Evidence → Context → Reference.
  */
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useFindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import { useFindings } from "@/hooks/useFindings";
@@ -1514,25 +1514,6 @@ function FoodConsumptionHeaderRight({ assessment }: { assessment: FoodConsumptio
   );
 }
 
-/** Single recovery parameter row with border-left accent (§5.5) */
-function RecoveryParameterRow({ label, recovered, residualPct }: {
-  label: string;
-  recovered: boolean;
-  residualPct: number | null;
-}) {
-  if (recovered) {
-    return (
-      <div className="border-l-2 border-l-emerald-400/40 pl-2 text-[10px] text-muted-foreground" role="listitem" aria-label={`${label} recovered`}>
-        {label} recovered
-      </div>
-    );
-  }
-  return (
-    <div className="border-l-2 border-l-amber-400/60 pl-2 text-[10px] font-medium text-foreground" role="listitem" aria-label={`${label} not recovered`}>
-      {label} not recovered{residualPct != null ? ` — still ↓${Math.abs(residualPct)}% at recovery` : ""}
-    </div>
-  );
-}
 
 /** Food consumption context pane — redesigned per food-consumption-pane-spec-v2.md */
 function FoodConsumptionPane({
@@ -1555,60 +1536,55 @@ function FoodConsumptionPane({
     return `${dg.dose_value} ${dg.dose_unit}`;
   };
 
-  // ── Key stats: extract highest-dose worst-sex data ──
+  // ── Key stats: extract highest-dose per-sex data ──
   const keyStats = useMemo(() => {
     if (!rawData?.periods?.length) return null;
-    // Use terminal period (last)
     const termPeriod = rawData.periods[rawData.periods.length - 1];
     if (!termPeriod) return null;
     const entries = termPeriod.by_dose_sex;
-    const maxDose = Math.max(...entries.map(e => e.dose_level));
-    const highDoseEntries = entries.filter(e => e.dose_level === maxDose);
+    const sexes = [...new Set(entries.map(e => e.sex))].sort();
 
-    // Pick worst-affected sex (by FE pct change magnitude)
-    let worstEntry = highDoseEntries[0];
-    for (const e of highDoseEntries) {
-      const ctrl = e.food_efficiency_control;
-      const fePct = ctrl && ctrl > 0 ? ((e.mean_food_efficiency - ctrl) / ctrl) * 100 : null;
-      const worstCtrl = worstEntry?.food_efficiency_control;
-      const worstFePct = worstCtrl && worstCtrl > 0 ? ((worstEntry.mean_food_efficiency - worstCtrl) / worstCtrl) * 100 : null;
-      if (fePct != null && (worstFePct == null || Math.abs(fePct) > Math.abs(worstFePct))) {
-        worstEntry = e;
-      }
+    const bySex = sexes.map(sex => {
+      const sexEntries = entries.filter(e => e.sex === sex);
+      const maxDose = Math.max(...sexEntries.map(e => e.dose_level));
+      const e = sexEntries.find(x => x.dose_level === maxDose);
+      if (!e) return null;
+      const feCtrl = e.food_efficiency_control;
+      const fePct = feCtrl && feCtrl > 0 ? Math.round(((e.mean_food_efficiency - feCtrl) / feCtrl) * 100) : null;
+      return {
+        sex: sex as string,
+        bwPct: e.bw_pct_change as number | null,
+        fcPct: e.fw_pct_change as number | null,
+        fePct,
+        doseLabel: getDoseLabel(maxDose),
+      };
+    }).filter((s): s is NonNullable<typeof s> => s != null);
+
+    if (!bySex.length) return null;
+    // Derive per-sex recovery from recovery period data, fall back to study-level
+    const recPeriod = rawData.periods.find(p => p.label?.toLowerCase().includes("recov"));
+    let recoverySex: Array<{ sex: string; bwRecovered: boolean | null; fcRecovered: boolean | null }> | null = null;
+
+    if (recPeriod) {
+      recoverySex = sexes.map(sex => {
+        const sexEntries = recPeriod.by_dose_sex.filter(e => e.sex === sex);
+        const sexMaxDose = Math.max(...sexEntries.map(e => e.dose_level));
+        const e = sexEntries.find(x => x.dose_level === sexMaxDose);
+        if (!e) return null;
+        const bwRecovered = e.bw_pct_change != null ? Math.abs(e.bw_pct_change) < 5 : null;
+        const fcRecovered = e.fw_pct_change != null ? Math.abs(e.fw_pct_change) < 5 : null;
+        return { sex, bwRecovered, fcRecovered };
+      }).filter((s): s is NonNullable<typeof s> => s != null);
+    } else if (rawData.recovery?.available) {
+      // Study-level fallback — same values for all sexes
+      recoverySex = sexes.map(sex => ({
+        sex,
+        bwRecovered: rawData.recovery?.bw_recovered ?? null,
+        fcRecovered: rawData.recovery?.fw_recovered ?? null,
+      }));
     }
-    if (!worstEntry) return null;
 
-    const bwPct = worstEntry.bw_pct_change;
-    const fcPct = worstEntry.fw_pct_change;
-    const feCtrl = worstEntry.food_efficiency_control;
-    const fePct = feCtrl && feCtrl > 0 ? Math.round(((worstEntry.mean_food_efficiency - feCtrl) / feCtrl) * 100) : null;
-    const doseLabel = getDoseLabel(maxDose);
-
-    return { bwPct, fcPct, fePct, doseLabel, sex: worstEntry.sex };
-  }, [rawData, doseGroups]);
-
-  // ── Onset dose: lowest dose where |fePctChange| >= 20% ──
-  const onsetDose = useMemo(() => {
-    if (!rawData?.periods?.length) return null;
-    const termPeriod = rawData.periods[rawData.periods.length - 1];
-    if (!termPeriod) return null;
-    const entries = termPeriod.by_dose_sex;
-    const doseLevels = [...new Set(entries.filter(e => e.dose_level > 0).map(e => e.dose_level))].sort((a, b) => a - b);
-    const maxDose = Math.max(...doseLevels);
-
-    for (const dose of doseLevels) {
-      const doseEntries = entries.filter(e => e.dose_level === dose);
-      for (const e of doseEntries) {
-        const ctrl = e.food_efficiency_control;
-        if (ctrl && ctrl > 0) {
-          const fePct = ((e.mean_food_efficiency - ctrl) / ctrl) * 100;
-          if (Math.abs(fePct) >= 20 && dose < maxDose) {
-            return { dose: getDoseLabel(dose), fePct: Math.round(fePct) };
-          }
-        }
-      }
-    }
-    return null;
+    return { bySex, recoverySex };
   }, [rawData, doseGroups]);
 
   // ── Period data for FE by dose ──
@@ -1675,174 +1651,151 @@ function FoodConsumptionPane({
 
   return (
     <div>
-      {/* ── Verdict block (§5.2) ── */}
-      {verdict.borderClass ? (
-        <div
-          className={verdict.borderClass}
-          style={verdict.borderColor ? { borderLeftColor: verdict.borderColor } : undefined}
-          role="status"
-          aria-label={`${verdict.label}: ${verdict.description}`}
-        >
-          <div className={verdict.labelClass}>{verdict.label}</div>
-          {verdict.description && (
-            <div className="text-[10px] text-muted-foreground">{verdict.description}</div>
-          )}
-        </div>
-      ) : (
-        <div role="status" aria-label={verdict.label}>
-          <div className={verdict.labelClass}>
-            {context.bwFwAssessment === "not_applicable" ? verdict.label : verdict.label}
-          </div>
-          {verdict.description && (
-            <div className="text-[10px] text-muted-foreground">{verdict.description}</div>
-          )}
-        </div>
+      {/* ── Verdict description only ── */}
+      {verdict.description && (
+        <div className="text-[10px] text-muted-foreground">{verdict.description}</div>
       )}
 
-      {/* ── Key stats block (§5.3) ── */}
+      {/* ── Key stats — per-sex, aligned inline (§5.3) ── */}
       {keyStats && (
-        <div className="mt-2">
-          <div className="flex gap-x-4">
-            {keyStats.bwPct != null && (
-              <div className="flex flex-col" aria-label={`Body weight: ${keyStats.bwPct > 0 ? "increased" : "decreased"} ${Math.abs(Math.round(keyStats.bwPct))} percent`}>
-                <span className="text-sm font-semibold font-mono">
-                  {keyStats.bwPct > 0 ? "\u2191" : "\u2193"}{Math.abs(Math.round(keyStats.bwPct))}%
+        <div className="mt-1.5 space-y-0.5">
+          {keyStats.bySex.map(s => {
+            const hasEdgeCase = s.fcPct != null && s.fcPct > 0 && s.bwPct != null && s.bwPct < 0;
+            const rec = keyStats.recoverySex?.find(r => r.sex === s.sex);
+            const fmtPct = (v: number | null, threshold: number) => {
+              if (v == null) return null;
+              const text = `${v > 0 ? "+" : ""}${Math.round(v)}%`;
+              return <span className={Math.abs(v) >= threshold ? "font-medium text-foreground" : "text-muted-foreground"}>{text}</span>;
+            };
+            return (
+              <div key={s.sex} className="text-[10px]">
+                <span className="inline-block font-medium text-foreground" style={{ width: 46 }}>{s.sex === "M" ? "Males" : "Females"}</span>
+                {s.bwPct != null && (
+                  <span className="inline-block" style={{ width: 52 }}>
+                    <span className="text-muted-foreground">BW </span>
+                    <span className="tabular-nums font-mono">{fmtPct(s.bwPct, 10)}</span>
+                  </span>
+                )}
+                {s.fcPct != null && (
+                  <span className="inline-block" style={{ width: 52 }} title="Food consumption">
+                    <span className="text-muted-foreground">FC </span>
+                    <span className="tabular-nums font-mono">{fmtPct(s.fcPct, 10)}</span>
+                  </span>
+                )}
+                {s.fePct != null && (
+                  <span className="inline-block" style={{ width: 52 }} title="Food efficiency">
+                    <span className="text-muted-foreground">FE </span>
+                    <span className="tabular-nums font-mono">{fmtPct(s.fePct, 20)}</span>
+                  </span>
+                )}
+                <span className="inline-block" style={{ width: 80 }}>
+                  <span className="text-muted-foreground">at {s.doseLabel}</span>
                 </span>
-                <span className="text-[9px] text-muted-foreground">body weight</span>
+                {rec && (
+                  <span className="inline-block">
+                    <span className="text-muted-foreground">Recovery: </span>
+                    {rec.bwRecovered != null && (
+                      <span className="inline-block" style={{ width: 36 }}>
+                        <span className="text-muted-foreground">BW </span>
+                        <span className={rec.bwRecovered ? "text-muted-foreground" : "font-medium text-foreground"}>
+                          {rec.bwRecovered ? "yes" : "no"}
+                        </span>
+                      </span>
+                    )}
+                    {rec.fcRecovered != null && (
+                      <span className="inline-block" style={{ width: 36 }}>
+                        <span className="text-muted-foreground">FC </span>
+                        <span className={rec.fcRecovered ? "text-muted-foreground" : "font-medium text-foreground"}>
+                          {rec.fcRecovered ? "yes" : "no"}
+                        </span>
+                      </span>
+                    )}
+                  </span>
+                )}
+                {hasEdgeCase && (
+                  <span className="font-medium text-foreground ml-1.5">— weight loss despite increased intake</span>
+                )}
               </div>
-            )}
-            {keyStats.fcPct != null && (
-              <div className="flex flex-col" aria-label={`Food consumption: ${keyStats.fcPct > 0 ? "increased" : "decreased"} ${Math.abs(Math.round(keyStats.fcPct))} percent`}>
-                <span className="text-sm font-semibold font-mono">
-                  {keyStats.fcPct > 0 ? "\u2191" : "\u2193"}{Math.abs(Math.round(keyStats.fcPct))}%
-                </span>
-                <span className="text-[9px] text-muted-foreground">food consump</span>
-              </div>
-            )}
-            {keyStats.fePct != null && (
-              <div className="flex flex-col" aria-label={`Food efficiency: ${keyStats.fePct > 0 ? "increased" : "decreased"} ${Math.abs(keyStats.fePct)} percent`}>
-                <span className="text-sm font-semibold font-mono">
-                  {keyStats.fePct > 0 ? "\u2191" : "\u2193"}{Math.abs(keyStats.fePct)}%
-                </span>
-                <span className="text-[9px] text-muted-foreground">food efficiency</span>
-              </div>
-            )}
-          </div>
-          <div className="mt-0.5 text-[9px] text-muted-foreground">
-            at {keyStats.doseLabel}{keyStats.sex ? ` (${keyStats.sex === "M" ? "males" : keyStats.sex === "F" ? "females" : "worst affected sex"})` : ""}
-          </div>
-          {/* Onset line (§5.4) / edge case (§7): increased FC with weight loss */}
-          {keyStats.fcPct != null && keyStats.fcPct > 0 && keyStats.bwPct != null && keyStats.bwPct < 0 ? (
-            <div className="mt-0.5 text-[10px] font-medium text-foreground">
-              Weight loss despite increased intake
-            </div>
-          ) : onsetDose ? (
-            <div className="mt-0.5 text-[10px] text-muted-foreground">
-              Onset: {onsetDose.dose} (FE {onsetDose.fePct > 0 ? "+" : ""}{onsetDose.fePct}%)
-            </div>
-          ) : null}
-        </div>
-      )}
-
-      {/* ── Recovery block (§5.5) ── */}
-      {context.bwFwAssessment !== "not_applicable" && rawData?.recovery && (
-        <div className="mt-2.5">
-          <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Recovery</div>
-          {rawData.recovery.available ? (
-            <div className="mt-1 space-y-0.5">
-              {/* FC recovery */}
-              <RecoveryParameterRow
-                label="FC"
-                recovered={rawData.recovery.fw_recovered}
-                residualPct={(() => {
-                  if (rawData.recovery.fw_recovered || !rawData.periods?.length) return null;
-                  const recPeriod = rawData.periods.find(p => p.label?.toLowerCase().includes("recov"));
-                  if (!recPeriod) return null;
-                  const e = recPeriod.by_dose_sex;
-                  const maxDose = Math.max(...e.map(x => x.dose_level));
-                  const entry = e.find(x => x.dose_level === maxDose);
-                  return entry?.fw_pct_change != null ? Math.round(entry.fw_pct_change) : null;
-                })()}
-              />
-              {/* BW recovery */}
-              <RecoveryParameterRow
-                label="BW"
-                recovered={rawData.recovery.bw_recovered}
-                residualPct={(() => {
-                  if (rawData.recovery.bw_recovered || !rawData.periods?.length) return null;
-                  const recPeriod = rawData.periods.find(p => p.label?.toLowerCase().includes("recov"));
-                  if (!recPeriod) return null;
-                  const e = recPeriod.by_dose_sex;
-                  const maxDose = Math.max(...e.map(x => x.dose_level));
-                  const entry = e.find(x => x.dose_level === maxDose);
-                  return entry?.bw_pct_change != null ? Math.round(entry.bw_pct_change) : null;
-                })()}
-              />
-              {/* FE recovery — derive from period data */}
-              {rawData.periods && rawData.periods.length > 0 && (() => {
-                const recPeriod = rawData.periods.find(p => p.label?.toLowerCase().includes("recov"));
-                if (!recPeriod) return null;
-                const entries = recPeriod.by_dose_sex;
-                const maxDose = Math.max(...entries.map(e => e.dose_level));
-                const highDoseEntries = entries.filter(e => e.dose_level === maxDose);
-                const anyFeReduced = highDoseEntries.some(e => e.food_efficiency_reduced);
-                // Compute residual FE pct
-                let residualFePct: number | null = null;
-                if (anyFeReduced) {
-                  const worst = highDoseEntries[0];
-                  const ctrl = worst?.food_efficiency_control;
-                  if (worst && ctrl && ctrl > 0) {
-                    residualFePct = Math.round(((worst.mean_food_efficiency - ctrl) / ctrl) * 100);
-                  }
-                }
-                return (
-                  <RecoveryParameterRow
-                    label="FE"
-                    recovered={!anyFeReduced}
-                    residualPct={residualFePct}
-                  />
-                );
-              })()}
-            </div>
-          ) : (
-            <p className="mt-1 text-[10px] text-muted-foreground italic">Recovery: no recovery arm in this study</p>
+            );
+          })}
+          {!keyStats.recoverySex && rawData?.recovery && !rawData.recovery.available && (
+            <div className="text-[10px] text-muted-foreground italic">Recovery: no recovery arm</div>
           )}
         </div>
       )}
 
-      {/* ── FE dose-response by period (§5.6) ── */}
+      {/* ── FE dose-response by period (§5.6) — table layout ── */}
       {periodData.length > 0 && (
         <div className="mt-2.5">
-          <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Food efficiency by dose
-          </div>
-          <div className="mt-1.5 space-y-2.5">
-            {periodData.map((period, pi) => (
-              <div key={pi} className="border-l-2 border-muted-foreground/25 pl-2">
-                <div className="text-[10px] font-medium text-muted-foreground mb-1">
-                  {period.label ?? `Days ${period.startDay}\u2013${period.endDay}`}
-                </div>
-                <div className="space-y-0.5">
-                  {period.doseRows.map(({ dose, sexData, anyReduced }) => (
-                    <div key={dose} className={`flex items-baseline gap-1.5 text-[10px] leading-snug ${anyReduced ? "font-medium text-foreground" : "text-muted-foreground/60"}`}>
+          <table className="w-full text-[10px] border-collapse">
+            <thead>
+              <tr className="text-[9px] text-muted-foreground">
+                <th
+                  className="text-left font-semibold uppercase tracking-wider pr-2 pb-0.5"
+                  title="Food efficiency = body weight gain / food consumed per period. Values shown as mean FE with % change vs control."
+                >
+                  FE by dose
+                </th>
+                {periodData.map((period, pi) => (
+                  <th key={pi} colSpan={4} className="text-right font-medium pb-0.5 pl-1 pr-0.5">
+                    {period.label ?? `Days ${period.startDay}\u2013${period.endDay}`}
+                  </th>
+                ))}
+              </tr>
+              <tr className="text-[9px] text-muted-foreground/60 border-b border-muted-foreground/15">
+                <th className="pb-0.5" />
+                {periodData.map((_p, pi) => (
+                  <Fragment key={pi}>
+                    <th colSpan={2} className="text-right font-normal pb-0.5 pl-1 pr-0.5">M</th>
+                    <th colSpan={2} className="text-right font-normal pb-0.5 pl-1 pr-0.5">F</th>
+                  </Fragment>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(periodData[0]?.doseRows ?? []).map(({ dose }) => {
+                const rowReduced = periodData.some(p =>
+                  p.doseRows.find(r => r.dose === dose)?.anyReduced
+                );
+                return (
+                  <tr
+                    key={dose}
+                    className={rowReduced ? "font-medium text-foreground" : "text-muted-foreground/60"}
+                  >
+                    <td className="py-0.5 pr-2">
                       <span
-                        className="shrink-0 font-mono w-16"
-                        style={{ color: getDoseGroupColor(dose) }}
+                        className="border-l-2 pl-1.5 font-mono whitespace-nowrap"
+                        style={{ borderLeftColor: getDoseGroupColor(dose) }}
                       >
                         {getDoseLabel(dose)}
                       </span>
-                      {sexData.map((s) => (
-                        <span key={s.sex} className="shrink-0">
-                          {s.sex} {s.fe != null ? s.fe.toFixed(2) : "\u2014"}
-                          {s.pct != null && ` (${s.pct > 0 ? "+" : ""}${s.pct}%)`}
-                        </span>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+                    </td>
+                    {periodData.map((period, pi) => {
+                      const row = period.doseRows.find(r => r.dose === dose);
+                      const mData = row?.sexData.find(s => s.sex === "M");
+                      const fData = row?.sexData.find(s => s.sex === "F");
+                      return (
+                        <Fragment key={pi}>
+                          <td className="text-right pl-1 py-0.5 font-mono tabular-nums">
+                            {mData?.fe != null ? mData.fe.toFixed(2) : "\u2014"}
+                          </td>
+                          <td className="text-right pr-1 py-0.5 font-mono tabular-nums">
+                            {mData?.pct != null ? <span className={rowReduced ? "" : "text-muted-foreground/60"}>({mData.pct > 0 ? "+" : ""}{mData.pct}%)</span> : ""}
+                          </td>
+                          <td className="text-right pl-1 py-0.5 font-mono tabular-nums">
+                            {fData?.fe != null ? fData.fe.toFixed(2) : "\u2014"}
+                          </td>
+                          <td className="text-right pr-1 py-0.5 font-mono tabular-nums">
+                            {fData?.pct != null ? <span className={rowReduced ? "" : "text-muted-foreground/60"}>({fData.pct > 0 ? "+" : ""}{fData.pct}%)</span> : ""}
+                          </td>
+                        </Fragment>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -1857,9 +1810,9 @@ function FoodConsumptionPane({
         </button>
         {showRaw && rawMetrics && (
           <div className="mt-1.5 space-y-3">
-            <RawMetricsTable title="Food efficiency" data={rawMetrics.fe} getDoseLabel={getDoseLabel} />
-            <RawMetricsTable title="Food consumption" data={rawMetrics.fc} getDoseLabel={getDoseLabel} />
-            <RawMetricsTable title="Body weight gain" data={rawMetrics.bw} getDoseLabel={getDoseLabel} />
+            <RawMetricsTable title="FE" data={rawMetrics.fe} getDoseLabel={getDoseLabel} />
+            <RawMetricsTable title="FC" data={rawMetrics.fc} getDoseLabel={getDoseLabel} />
+            <RawMetricsTable title="BW gain" data={rawMetrics.bw} getDoseLabel={getDoseLabel} />
           </div>
         )}
       </div>
@@ -1867,7 +1820,7 @@ function FoodConsumptionPane({
   );
 }
 
-/** Compact raw metrics table */
+/** Compact raw metrics table — same layout as FE by dose */
 function RawMetricsTable({ title, data, getDoseLabel }: {
   title: string;
   data: {
@@ -1882,30 +1835,46 @@ function RawMetricsTable({ title, data, getDoseLabel }: {
   if (data.periods.length === 0) return null;
   return (
     <div>
-      <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
-      <table className="mt-0.5 w-full text-left">
+      <table className="w-full text-[10px] border-collapse">
         <thead>
-          <tr>
-            <th className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Dose</th>
-            {data.periods.map(p => (
-              data.sexes.map(sex => (
-                <th key={`${p.label}-${sex}`} className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {p.label} {sex}
-                </th>
-              ))
+          <tr className="text-[9px] text-muted-foreground">
+            <th className="text-left font-semibold uppercase tracking-wider pr-2 pb-0.5">{title}</th>
+            {data.periods.map((p, pi) => (
+              <th key={pi} colSpan={data.sexes.length} className="text-right font-medium pb-0.5 pl-1 pr-0.5">
+                {p.label}
+              </th>
+            ))}
+          </tr>
+          <tr className="text-[9px] text-muted-foreground/60 border-b border-muted-foreground/15">
+            <th className="pb-0.5" />
+            {data.periods.map((_p, pi) => (
+              <Fragment key={pi}>
+                {data.sexes.map(sex => (
+                  <th key={sex} className="text-right font-normal pb-0.5 pl-1 pr-0.5">{sex}</th>
+                ))}
+              </Fragment>
             ))}
           </tr>
         </thead>
         <tbody>
           {data.periods[0].rows.map((row, ri) => (
-            <tr key={ri}>
-              <td className="px-2 py-0.5 font-mono text-[10px]">{row.dose === 0 ? "Ctrl" : getDoseLabel(row.dose)}</td>
+            <tr key={ri} className="text-muted-foreground/60">
+              <td className="py-0.5 pr-2">
+                <span
+                  className="border-l-2 pl-1.5 font-mono whitespace-nowrap"
+                  style={{ borderLeftColor: getDoseGroupColor(row.dose) }}
+                >
+                  {getDoseLabel(row.dose)}
+                </span>
+              </td>
               {data.periods.map((p, pi) => (
-                data.sexes.map((_sex, si) => (
-                  <td key={`${pi}-${si}`} className="px-2 py-0.5 font-mono text-[10px] tabular-nums">
-                    {p.rows[ri]?.values[si]?.toFixed(2) ?? "\u2014"}
-                  </td>
-                ))
+                <Fragment key={pi}>
+                  {data.sexes.map((_sex, si) => (
+                    <td key={si} className="text-right pl-1 pr-0.5 py-0.5 font-mono tabular-nums">
+                      {p.rows[ri]?.values[si]?.toFixed(2) ?? "\u2014"}
+                    </td>
+                  ))}
+                </Fragment>
               ))}
             </tr>
           ))}
