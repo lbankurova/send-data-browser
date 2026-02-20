@@ -35,6 +35,8 @@ import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import type { FindingsFilters, UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
+import { computeOrganProportionality, checkSexDivergence } from "@/lib/organ-proportionality";
+import type { OrganProportionalityResult, OrganOpiRow, OpiClassification } from "@/lib/organ-proportionality";
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -101,9 +103,9 @@ const SYNDROME_INTERPRETATIONS: Record<string, {
     discriminator: "If body weight is significantly decreased (>10%), stress response findings may be secondary to inanition (XS09) rather than a separate mechanism. Check food consumption.",
   },
   XS09: {
-    description: "Target organ wasting indicates generalized toxicity with decreased body weight, food consumption, and secondary organ weight reductions. May represent non-specific malaise or palatability issues rather than direct organ toxicity.",
-    regulatory: "Confounds interpretation of organ weight changes \u2014 organ weights should be evaluated both as absolute and as ratio-to-body-weight. Body weight decrease >10% typically requires noting as a confounder in all organ weight assessments.",
-    discriminator: "Organ weight decreases proportional to body weight decrease are likely secondary (not direct toxicity). Organ weights that decrease MORE than body weight, or that INCREASE despite BW decrease, suggest direct target organ effects on top of the general wasting.",
+    description: "Target organ wasting indicates generalized toxicity with decreased body weight and food consumption. Organ weight decreases are evaluated for proportionality to body weight loss: proportionate decreases are secondary (expected consequence of general wasting), while disproportionate decreases suggest direct target organ toxicity. The Organ Proportionality Index (OPI) quantifies this relationship. Organs with OPI > 1.3 warrant independent toxicologic evaluation.",
+    regulatory: "Confounds interpretation of organ weight changes \u2014 organ weights should be evaluated both as absolute and as ratio-to-body-weight. Body weight decrease >10% typically requires noting as a confounder in all organ weight assessments. Proportionate organ weight decreases do not independently affect NOAEL. Disproportionate decreases may independently contribute to adverse classification and NOAEL capping.",
+    discriminator: "Proportionality analysis is the key discriminator. Organ weight decreases proportionate to body weight (OPI 0.7\u20131.3) are likely secondary. Disproportionate decreases (OPI > 1.3) or MI-confirmed atrophy/degeneration indicate direct organ effects. Organs showing inverse changes (weight increase despite BW decrease) suggest active pathological processes requiring separate evaluation.",
   },
   XS10: {
     description: "Cardiovascular syndrome indicates drug effects on cardiac electrophysiology or hemodynamics, detected through ECG interval changes (QTc, PR, RR) or vital sign shifts (heart rate). Multi-domain convergence with heart weight and cardiac histopathology strengthens confidence in structural cardiac toxicity.",
@@ -389,6 +391,24 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
     }));
   }, [recoveryComparison]);
 
+  // Convert OM findings to OrganWeightRow[] for interpretSyndrome
+  const organWeightRows = useMemo(() => {
+    if (!rawData?.findings?.length) return [];
+    return rawData.findings
+      .filter((f) => f.domain === "OM")
+      .flatMap((f) =>
+        f.group_stats
+          .filter((g) => g.mean != null)
+          .map((g) => ({
+            specimen: f.specimen ?? f.finding,
+            dose_level: g.dose_level,
+            sex: f.sex,
+            mean: g.mean!,
+            p_value: f.pairwise?.find((p) => p.dose_level === g.dose_level)?.p_value ?? null,
+          })),
+      );
+  }, [rawData]);
+
   // Compute syndrome interpretation (Phase A + Phase B + Phase C)
   const syndromeInterp = useMemo<SyndromeInterpretation | null>(() => {
     if (!detected || allEndpoints.length === 0 || !studyContext) return null;
@@ -400,7 +420,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       allEndpoints,
       histopathData ?? [],
       recoveryData,
-      [], // organ weights
+      organWeightRows,
       tumorFindings,
       mortalityDispositions,
       foodConsumptionSummary ?? { available: false, water_consumption: null },
@@ -409,7 +429,24 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       mortalityRaw?.mortality_noael_cap,
       analytics.syndromes.map((s) => s.id),
     );
-  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings, foodConsumptionSummary, clinicalObservations, recoveryData, analytics.syndromes]);
+  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings, foodConsumptionSummary, clinicalObservations, recoveryData, organWeightRows, analytics.syndromes]);
+
+  // Organ Proportionality Index (XS09 only) — computed after syndromeInterp for FC driver
+  const fcDriver = useMemo(() => {
+    if (!syndromeInterp?.foodConsumptionContext?.available) return null;
+    const a = syndromeInterp.foodConsumptionContext.bwFwAssessment;
+    if (a === "secondary_to_food") return "secondary to FC";
+    if (a === "primary_weight_loss") return "primary weight loss (not FC-driven)";
+    if (a === "malabsorption") return "indeterminate FC relationship";
+    return null;
+  }, [syndromeInterp]);
+
+  const xs09Active = syndromeId === "XS09" || analytics.syndromes.some((s) => s.id === "XS09");
+  const organProportionality = useMemo<OrganProportionalityResult | null>(() => {
+    if (!xs09Active || !rawData?.findings?.length) return null;
+    return computeOrganProportionality(rawData.findings, recoveryData, fcDriver);
+  }, [xs09Active, rawData, recoveryData, fcDriver]);
+  const showOrganProportionality = xs09Active && organProportionality?.available === true;
 
   // Interpretation content
   const interpretation = SYNDROME_INTERPRETATIONS[syndromeId];
@@ -519,6 +556,12 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
                 )}
               </div>
             )}
+            {/* Line 4: Organ proportionality narrative (XS09 only) */}
+            {xs09Active && organProportionality?.narrative && (
+              <div className="mt-0.5 text-[10px] text-muted-foreground">
+                {organProportionality.narrative}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -553,6 +596,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
             syndromeInterp={syndromeInterp}
             domainsCovered={detected.domainsCovered}
             allEndpoints={allEndpoints}
+            organProportionality={organProportionality}
           />
         </CollapsiblePane>
       )}
@@ -560,7 +604,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       {/* ══ HISTOPATHOLOGY (conditional) ══ */}
       {syndromeInterp && hasHistopath && (
         <CollapsiblePane title="Histopathology" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <HistopathContextPane crossRefs={syndromeInterp.histopathContext} />
+          <HistopathContextPane crossRefs={syndromeInterp.histopathContext} organProportionality={organProportionality} />
         </CollapsiblePane>
       )}
 
@@ -587,6 +631,19 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
           ) : (
             <p className="text-xs text-muted-foreground italic">Food consumption data not available for this study.</p>
           )}
+        </CollapsiblePane>
+      )}
+
+      {/* ══ ORGAN PROPORTIONALITY (XS09 only) ══ */}
+      {syndromeInterp && showOrganProportionality && organProportionality && (
+        <CollapsiblePane
+          title="Organ proportionality"
+          defaultOpen={true}
+          headerRight={<OrganProportionalityHeaderRight result={organProportionality} />}
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        >
+          <OrganProportionalityPane result={organProportionality} doseGroups={rawData?.dose_groups} />
         </CollapsiblePane>
       )}
 
@@ -1241,10 +1298,12 @@ function DoseResponseRecoveryPane({
   syndromeInterp,
   domainsCovered,
   allEndpoints,
+  organProportionality,
 }: {
   syndromeInterp: SyndromeInterpretation;
   domainsCovered: string[];
   allEndpoints: EndpointSummary[];
+  organProportionality: OrganProportionalityResult | null;
 }) {
   const [factorsOpen, setFactorsOpen] = useState(false);
 
@@ -1340,6 +1399,58 @@ function DoseResponseRecoveryPane({
         ) : (
           <p className="mt-1 text-[10px] text-muted-foreground">{recovery.summary}</p>
         )}
+
+        {/* Organ weight recovery rows (XS09) */}
+        {organProportionality?.available && (() => {
+          const organRecRows = organProportionality.organs.filter(
+            (r) => r.recoveryStatus != null,
+          );
+          if (organRecRows.length === 0) return null;
+
+          // Check if BW recovered
+          const bwRecEndpoint = recovery.endpoints.find(
+            (ep) => ep.label.toLowerCase().includes("body weight") || ep.label.toLowerCase().includes("bw"),
+          );
+          const bwRecovered = bwRecEndpoint?.status === "recovered";
+
+          return (
+            <div className="mt-2">
+              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Organ weight recovery</div>
+              <div className="mt-1 space-y-0.5">
+                {organRecRows.map((r, i) => {
+                  const isRec = r.recoveryStatus === "recovered";
+                  const isPart = r.recoveryStatus === "partial";
+                  const borderClass = isRec
+                    ? "border-l-2 border-l-emerald-400/40 pl-2"
+                    : isPart
+                      ? "border-l-2 border-l-amber-300/40 pl-2"
+                      : "border-l-2 border-l-amber-400/60 pl-2";
+                  const textClass = isRec
+                    ? "text-[10px] text-muted-foreground"
+                    : isPart
+                      ? "text-[10px] text-foreground/80"
+                      : "text-[10px] font-medium text-foreground";
+                  const persistent = !isRec && bwRecovered;
+
+                  return (
+                    <div key={i} className={`${borderClass} ${textClass}`}>
+                      <span>{r.organ} weight ({r.sex})</span>
+                      {r.recoveryResolutionPct != null && (
+                        <span className="ml-1.5 font-mono text-muted-foreground">
+                          {Math.round(r.recoveryResolutionPct)}% resolved
+                        </span>
+                      )}
+                      <span className="ml-1.5">{r.recoveryStatus!.replace(/_/g, " ")}</span>
+                      {persistent && (
+                        <span className="ml-1.5 text-foreground"> — persistent despite BW improvement</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── Collapsible "All A/B factors" ── */}
@@ -1394,57 +1505,81 @@ function EcetocFactorRow({ label, value }: { label: string; value: string }) {
 // ═══════════════════════════════════════════════════════════
 
 /** Histopathology context pane — specimen-by-specimen cross-reference */
-function HistopathContextPane({ crossRefs }: { crossRefs: HistopathCrossRef[] }) {
+function HistopathContextPane({
+  crossRefs,
+  organProportionality,
+}: {
+  crossRefs: HistopathCrossRef[];
+  organProportionality: OrganProportionalityResult | null;
+}) {
   return (
     <div className="space-y-3">
-      {crossRefs.map((ref) => (
-        <div key={ref.specimen}>
-          <div className="flex items-center gap-1.5 text-xs font-medium">
-            <span className="text-foreground">{ref.specimen}</span>
-            <span className="text-muted-foreground">
-              ({ref.examined ? "examined" : "not examined"})
-            </span>
-          </div>
+      {crossRefs.map((ref) => {
+        // Find OPI rows for this specimen
+        const opiRows = organProportionality?.available
+          ? organProportionality.organs.filter(
+              (r) => r.organ.toLowerCase().trim() === ref.specimen.toLowerCase().trim(),
+            )
+          : [];
 
-          {!ref.examined && (
-            <p className="ml-2 text-[10px] text-muted-foreground italic">Not examined in study</p>
-          )}
-
-          {ref.examined && (
-            <div className="ml-2 mt-1">
-              {ref.expectedFindings.length > 0 && (
-                <p className="text-[10px] text-muted-foreground">
-                  Expected: {ref.expectedFindings.join(", ").toLowerCase()}
-                </p>
-              )}
-              {ref.observedFindings.length > 0 && (
-                <div className="mt-0.5 space-y-0.5">
-                  {ref.observedFindings.filter(o => o.peakIncidence > 0).map((obs, i) => (
-                    <div key={i} className="text-[10px]">
-                      <span className="text-foreground">
-                        {obs.finding}
-                      </span>
-                      <span className="ml-1 text-muted-foreground">
-                        peak {Math.round(obs.peakIncidence * 100)}%, {obs.doseResponse}
-                      </span>
-                      {obs.proxy && (
-                        <span className="ml-1 text-[9px] text-muted-foreground italic">
-                          (proxy: {obs.proxy.relationship.split(".")[0].toLowerCase()})
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="mt-1 text-[10px] font-medium">
-                <span className={ref.assessment === "inconclusive" ? "text-muted-foreground" : "text-foreground"}>
-                  Assessment: {ref.assessment.replace(/_/g, " ")}
-                </span>
-              </div>
+        return (
+          <div key={ref.specimen}>
+            <div className="flex items-center gap-1.5 text-xs font-medium">
+              <span className="text-foreground">{ref.specimen}</span>
+              <span className="text-muted-foreground">
+                ({ref.examined ? "examined" : "not examined"})
+              </span>
             </div>
-          )}
-        </div>
-      ))}
+
+            {!ref.examined && (
+              <p className="ml-2 text-[10px] text-muted-foreground italic">Not examined in study</p>
+            )}
+
+            {ref.examined && (
+              <div className="ml-2 mt-1">
+                {ref.expectedFindings.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Expected: {ref.expectedFindings.join(", ").toLowerCase()}
+                  </p>
+                )}
+                {ref.observedFindings.length > 0 && (
+                  <div className="mt-0.5 space-y-0.5">
+                    {ref.observedFindings.filter(o => o.peakIncidence > 0).map((obs, i) => (
+                      <div key={i} className="text-[10px]">
+                        <span className="text-foreground">
+                          {obs.finding}
+                        </span>
+                        <span className="ml-1 text-muted-foreground">
+                          peak {Math.round(obs.peakIncidence * 100)}%, {obs.doseResponse}
+                        </span>
+                        {obs.proxy && (
+                          <span className="ml-1 text-[9px] text-muted-foreground italic">
+                            (proxy: {obs.proxy.relationship.split(".")[0].toLowerCase()})
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-1 text-[10px] font-medium">
+                  <span className={ref.assessment === "inconclusive" ? "text-muted-foreground" : "text-foreground"}>
+                    Assessment: {ref.assessment.replace(/_/g, " ")}
+                  </span>
+                </div>
+                {/* OPI concordance line */}
+                {opiRows.length > 0 && (
+                  <div className="mt-0.5 text-[10px] text-muted-foreground">
+                    Concordance: {opiRows[0].concordance.replace(/_/g, " ").replace(/^(\w+) /, "$1 \u2014 ")}
+                    {opiRows.length === 1
+                      ? ` (${opiRows[0].sex} OPI ${opiRows[0].opi?.toFixed(2) ?? "n/a"})`
+                      : ` (${opiRows.map((r) => `${r.sex} OPI ${r.opi?.toFixed(2) ?? "n/a"}`).join(", ")})`}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1917,6 +2052,416 @@ function TranslationalConfidencePane({ confidence }: { confidence: Translational
       )}
 
       <p className="text-[9px] text-muted-foreground/60">Data: {confidence.dataVersion}</p>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// ══ ORGAN PROPORTIONALITY PANE ════════════════════════════
+// ═══════════════════════════════════════════════════════════
+
+function OrganProportionalityHeaderRight({ result }: { result: OrganProportionalityResult }) {
+  const sexesDiverge = checkSexDivergence(result.bySex);
+  const sexes = Object.keys(result.bySex).sort();
+
+  if (sexesDiverge && sexes.length === 2) {
+    return (
+      <span className="text-muted-foreground">
+        {sexes.map((sex) => {
+          const s = result.bySex[sex];
+          return `${sex}: ${s.disproportionateCount + s.inverseCount} disprop`;
+        }).join(" · ")}
+      </span>
+    );
+  }
+
+  const totalDisprop = sexes.reduce(
+    (sum, s) => sum + result.bySex[s].disproportionateCount + result.bySex[s].inverseCount,
+    0,
+  );
+  const totalProp = sexes.reduce(
+    (sum, s) => sum + result.bySex[s].proportionateCount,
+    0,
+  );
+
+  return (
+    <span className="text-muted-foreground">
+      {totalDisprop} disproportionate · {totalProp} proportionate
+    </span>
+  );
+}
+
+function OrganProportionalityPane({
+  result,
+  doseGroups,
+}: {
+  result: OrganProportionalityResult;
+  doseGroups?: DoseGroup[];
+}) {
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const sexesDiverge = checkSexDivergence(result.bySex);
+  const sexes = Object.keys(result.bySex).sort();
+
+  const getDoseLabel = (level: number): string => {
+    if (level === 0) return "Control";
+    if (!doseGroups?.length) return `Dose ${level}`;
+    const dg = doseGroups.find((d) => d.dose_level === level);
+    if (!dg?.dose_value || !dg.dose_unit) return `Dose ${level}`;
+    return `${dg.dose_value} ${dg.dose_unit}`;
+  };
+
+  const fmtDelta = (pct: number | null) => {
+    if (pct == null) return "—";
+    const sign = pct >= 0 ? "+" : "";
+    return `${sign}${pct.toFixed(1)}%`;
+  };
+
+  const fmtOpi = (opi: number | null) => {
+    if (opi == null) return "—";
+    return opi.toFixed(2);
+  };
+
+  const getClassBorder = (c: OpiClassification) => {
+    switch (c) {
+      case "disproportionate":
+        return "border-l-4 pl-1.5";
+      case "inverse":
+        return "border-l-4 pl-1.5";
+      case "partially_proportionate":
+        return "border-l-2 pl-1.5";
+      default:
+        return "pl-2.5";
+    }
+  };
+
+  const getClassBorderColor = (c: OpiClassification): string | undefined => {
+    switch (c) {
+      case "disproportionate":
+        return "#D97706";
+      case "inverse":
+        return "#DC2626";
+      default:
+        return undefined;
+    }
+  };
+
+  const getClassTextClass = (c: OpiClassification) => {
+    switch (c) {
+      case "disproportionate":
+      case "inverse":
+        return "font-medium text-foreground";
+      case "partially_proportionate":
+        return "text-foreground/80";
+      case "proportionate":
+        return "text-muted-foreground";
+      case "not_applicable":
+        return "text-muted-foreground/60";
+    }
+  };
+
+  const getMiGlyph = (status: OrganOpiRow["miStatus"], findings: string[]) => {
+    switch (status) {
+      case "finding_present":
+        return <span className="text-foreground" title={findings.join(", ")}>●</span>;
+      case "examined_clean":
+        return <span className="text-muted-foreground" title="Examined, no atrophy">○</span>;
+      case "not_examined":
+        return <span className="text-muted-foreground/60" title="Not examined">—</span>;
+    }
+  };
+
+  const getRecoveryIndicator = (row: OrganOpiRow) => {
+    if (row.recoveryStatus == null) return <span className="text-muted-foreground/60">—</span>;
+    switch (row.recoveryStatus) {
+      case "recovered":
+        return <span className="border-l-2 border-l-emerald-400/40 pl-1 text-muted-foreground" title={`${Math.round(row.recoveryResolutionPct ?? 0)}% resolved`}>rec</span>;
+      case "partial":
+        return <span className="border-l-2 border-l-amber-300/40 pl-1 text-foreground/80" title={`${Math.round(row.recoveryResolutionPct ?? 0)}% resolved`}>part</span>;
+      case "not_recovered":
+        return <span className="border-l-2 border-l-amber-400/60 pl-1 font-medium text-foreground" title={`${Math.round(row.recoveryResolutionPct ?? 0)}% resolved`}>pers</span>;
+    }
+  };
+
+  const renderOrganRow = (row: OrganOpiRow) => {
+    const key = `${row.organ}-${row.sex}`;
+    const isExpanded = expandedKey === key;
+    const borderClass = getClassBorder(row.classification);
+    const borderColor = getClassBorderColor(row.classification);
+    const textClass = getClassTextClass(row.classification);
+
+    return (
+      <Fragment key={key}>
+        <tr
+          className={`cursor-pointer hover:bg-muted/30 ${textClass}`}
+          onClick={() => setExpandedKey(isExpanded ? null : key)}
+        >
+          <td
+            className={`py-0.5 pr-2 text-[10px] ${borderClass}`}
+            style={borderColor ? { borderLeftColor: borderColor } : undefined}
+          >
+            {row.organ}{row.concordance === "mi_only" && <span className="ml-1 text-[9px] text-muted-foreground italic">MI-only</span>}
+          </td>
+          <td className="py-0.5 px-1 text-[9px] text-muted-foreground">{row.sex}</td>
+          <td className="py-0.5 px-1 text-[10px] font-mono tabular-nums text-right">{fmtDelta(row.bwDeltaPct)}</td>
+          <td className="py-0.5 px-1 text-[10px] font-mono tabular-nums text-right">{fmtDelta(row.organWtDeltaPct)}</td>
+          <td className="py-0.5 px-1 text-[10px] font-mono tabular-nums text-right">{fmtOpi(row.opi)}</td>
+          <td className="py-0.5 px-1 text-[10px]">{row.classification.replace(/_/g, " ")}</td>
+          <td className="py-0.5 px-1 text-[10px] text-center">{getMiGlyph(row.miStatus, row.miFindings)}</td>
+          <td className="py-0.5 px-1 text-[10px]">{getRecoveryIndicator(row)}</td>
+        </tr>
+
+        {/* Expandable detail */}
+        {isExpanded && (
+          <tr>
+            <td colSpan={8} className="pb-2 pt-0.5">
+              <OrganDetailExpanded row={row} getDoseLabel={getDoseLabel} />
+            </td>
+          </tr>
+        )}
+      </Fragment>
+    );
+  };
+
+  const renderSexGroupHeader = (sex: string) => {
+    const s = result.bySex[sex];
+    if (!s) return null;
+    return (
+      <tr key={`header-${sex}`}>
+        <td colSpan={8} className="pt-2 pb-0.5 text-[9px] font-semibold text-muted-foreground">
+          ── {sex === "F" ? "Females" : "Males"} (BW {fmtDelta(s.bwDeltaPct)}) ──
+        </td>
+      </tr>
+    );
+  };
+
+  return (
+    <div>
+      {/* Coverage line */}
+      {sexesDiverge ? (
+        <div className="space-y-0.5">
+          {sexes.map((sex) => {
+            const s = result.bySex[sex];
+            if (!s) return null;
+            return (
+              <div key={sex} className="text-[10px] text-muted-foreground">
+                {sex === "F" ? "F" : "M"} (BW {fmtDelta(s.bwDeltaPct)}): {s.totalAssessed} organs · {s.disproportionateCount + s.inverseCount} disprop · {s.proportionateCount} prop
+                {s.partiallyProportionateCount > 0 && ` · ${s.partiallyProportionateCount} borderline`}
+                {s.notApplicableCount > 0 && ` · ${s.notApplicableCount} n/a`}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-[10px] text-muted-foreground">
+          {(() => {
+            const totals = sexes.reduce(
+              (acc, sex) => {
+                const s = result.bySex[sex];
+                return {
+                  total: acc.total + s.totalAssessed,
+                  disprop: acc.disprop + s.disproportionateCount + s.inverseCount,
+                  prop: acc.prop + s.proportionateCount,
+                  partial: acc.partial + s.partiallyProportionateCount,
+                  na: acc.na + s.notApplicableCount,
+                };
+              },
+              { total: 0, disprop: 0, prop: 0, partial: 0, na: 0 },
+            );
+            return (
+              <>
+                OM assessed: {totals.total} organs · Disproportionate: {totals.disprop} · Proportionate: {totals.prop}
+                {totals.partial > 0 && ` · Borderline: ${totals.partial}`}
+                {totals.na > 0 && ` · N/A: ${totals.na}`}
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Caveats */}
+      {result.caveats.length > 0 && (
+        <div className="mt-1.5 space-y-0.5">
+          {result.caveats.map((c, i) => (
+            <p key={i} className="text-[10px] italic text-foreground/80">{c}</p>
+          ))}
+        </div>
+      )}
+
+      {/* Organ ranking table */}
+      <table className="mt-2 w-full border-collapse text-[10px]">
+        <thead>
+          <tr className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <th className="py-0.5 pr-2 text-left">Organ</th>
+            <th className="py-0.5 px-1 text-left">Sex</th>
+            <th className="py-0.5 px-1 text-right">BW Δ%</th>
+            <th className="py-0.5 px-1 text-right">Wt Δ%</th>
+            <th className="py-0.5 px-1 text-right">OPI</th>
+            <th className="py-0.5 px-1 text-left">Class</th>
+            <th className="py-0.5 px-1 text-center">MI</th>
+            <th className="py-0.5 px-1 text-left">Rec</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sexesDiverge
+            ? sexes.flatMap((sex) => [
+                renderSexGroupHeader(sex),
+                ...result.organs.filter((r) => r.sex === sex).map(renderOrganRow),
+              ])
+            : (() => {
+                // Interleave M/F per organ for easy comparison
+                const organOrder: string[] = [];
+                const seen = new Set<string>();
+                for (const r of result.organs) {
+                  const key = r.organ.toLowerCase().trim();
+                  if (!seen.has(key)) {
+                    seen.add(key);
+                    organOrder.push(key);
+                  }
+                }
+                return organOrder.flatMap((key) =>
+                  result.organs.filter((r) => r.organ.toLowerCase().trim() === key).map(renderOrganRow),
+                );
+              })()}
+        </tbody>
+      </table>
+
+      {/* Interpretive summary for flagged organs */}
+      {(() => {
+        const flagged = result.organs.filter(
+          (r) => r.classification === "disproportionate" || r.classification === "inverse",
+        );
+        if (flagged.length === 0) return null;
+
+        // Group by organ to detect same-organ-both-sexes
+        const byOrgan = new Map<string, OrganOpiRow[]>();
+        for (const r of flagged) {
+          const key = r.organ.toLowerCase().trim();
+          const arr = byOrgan.get(key) ?? [];
+          arr.push(r);
+          byOrgan.set(key, arr);
+        }
+
+        return (
+          <div className="mt-3 space-y-1">
+            <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Interpretive summary</div>
+            {[...byOrgan.entries()].map(([key, rows]) => {
+              const bothSexes = rows.length >= 2;
+              const borderColor = rows.some((r) => r.classification === "inverse") ? "#DC2626" : "#D97706";
+              // Find highest dose where organ is flagged (for dose label)
+              const peakDose = rows[0].byDose.length > 0
+                ? rows[0].byDose[rows[0].byDose.length - 1]
+                : null;
+              const doseText = peakDose ? ` at ${getDoseLabel(peakDose.doseLevel)}` : "";
+
+              if (bothSexes) {
+                // Both sexes flagged
+                const opiText = rows.map((r) => `${r.sex} OPI ${r.opi?.toFixed(2) ?? "n/a"}`).join(", ");
+                const concordText = rows[0].concordance.includes("concordant") ? "MI-concordant" : "";
+                return (
+                  <div
+                    key={key}
+                    className="border-l-4 pl-1.5 text-[10px] text-foreground"
+                    style={{ borderLeftColor: borderColor }}
+                  >
+                    {rows[0].organ}: OPI {opiText}{doseText} — {rows[0].classification.replace(/_/g, " ")} in both sexes
+                    {concordText && ` (${concordText})`}
+                  </div>
+                );
+              }
+
+              // Single sex
+              const r = rows[0];
+              const oppositeSex = result.organs.find(
+                (o) => o.organ.toLowerCase().trim() === key && o.sex !== r.sex,
+              );
+              const sexNote = oppositeSex
+                ? ` Note: ${oppositeSex.classification.replace(/_/g, " ")} in ${oppositeSex.sex} (OPI ${oppositeSex.opi?.toFixed(2) ?? "n/a"}).`
+                : "";
+              const concordText = r.concordance.includes("concordant_disproportionate")
+                ? r.miFindings.length > 0 ? `, MI-concordant (${r.miFindings[0]})` : ", MI-concordant"
+                : "";
+              const deltaText = r.classification === "inverse" && r.organWtDeltaPct != null
+                ? ` ${r.organWtDeltaPct >= 0 ? "+" : ""}${r.organWtDeltaPct.toFixed(0)}% despite ${r.bwDeltaPct >= 0 ? "+" : ""}${r.bwDeltaPct.toFixed(0)}% BW`
+                : "";
+
+              return (
+                <div
+                  key={key}
+                  className="border-l-4 pl-1.5 text-[10px] text-foreground"
+                  style={{ borderLeftColor: borderColor }}
+                >
+                  {r.organ} ({r.sex}): OPI {r.opi?.toFixed(2) ?? "n/a"}{doseText} — {r.classification.replace(/_/g, " ")}
+                  {deltaText}{concordText}.{sexNote}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+/** Inline expanded detail for a single organ row */
+function OrganDetailExpanded({
+  row,
+  getDoseLabel,
+}: {
+  row: OrganOpiRow;
+  getDoseLabel: (level: number) => string;
+}) {
+  return (
+    <div className="ml-3 space-y-1.5 border-l border-muted pl-2">
+      {/* Dose-by-dose OPI */}
+      {row.byDose.length > 0 && (
+        <div>
+          <div className="text-[9px] font-semibold text-muted-foreground">Dose-by-dose</div>
+          <div className="mt-0.5 space-y-0.5">
+            {row.byDose.map((d) => (
+              <div key={d.doseLevel} className="flex items-baseline gap-2 text-[10px] font-mono tabular-nums">
+                <span className="text-muted-foreground" style={{ width: 70 }}>{getDoseLabel(d.doseLevel)}</span>
+                <span className="text-muted-foreground" style={{ width: 50 }}>Wt {d.organWtDeltaPct != null ? `${d.organWtDeltaPct >= 0 ? "+" : ""}${d.organWtDeltaPct.toFixed(1)}%` : "—"}</span>
+                <span className={`font-medium ${d.classification === "disproportionate" || d.classification === "inverse" ? "text-foreground" : "text-muted-foreground"}`} style={{ width: 40 }}>
+                  {d.opi != null ? d.opi.toFixed(2) : "—"}
+                </span>
+                <span className="text-muted-foreground">{d.classification.replace(/_/g, " ")}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MI detail */}
+      {row.miStatus === "finding_present" && (
+        <div className="text-[10px]">
+          <span className="text-muted-foreground">MI: </span>
+          <span className="text-foreground">{row.miFindings.join(", ")}</span>
+          {row.miIncidence && (
+            <span className="ml-1.5 text-muted-foreground">{row.miIncidence}</span>
+          )}
+          {row.miSeverity != null && (
+            <span className="ml-1.5 text-muted-foreground">severity {row.miSeverity.toFixed(1)}</span>
+          )}
+        </div>
+      )}
+
+      {/* Concordance */}
+      <div className="text-[10px] text-muted-foreground">
+        Concordance: {row.concordance.replace(/_/g, " ")}
+        {row.opi != null && ` (OPI ${row.opi.toFixed(2)}`}
+        {row.opi != null && row.miStatus === "finding_present" && row.miFindings.length > 0
+          ? ` confirmed by ${row.miFindings[0]}${row.miIncidence ? ` ${row.miIncidence} ${row.sex}` : ""})`
+          : row.opi != null ? ")" : ""}
+        {row.concordance === "discordant_weight_only" && "; review for weighing artifact"}
+      </div>
+
+      {/* Recovery */}
+      {row.recoveryStatus != null && (
+        <div className="text-[10px] text-muted-foreground">
+          Recovery: {row.recoveryStatus.replace(/_/g, " ")}
+          {row.recoveryResolutionPct != null && ` (${Math.round(row.recoveryResolutionPct)}% resolved)`}
+        </div>
+      )}
     </div>
   );
 }
