@@ -287,6 +287,86 @@ if mi_base and mi_excl:
                 excl_n == base_n,
             )
 
+# ── 8. Findings that disappear in Pass 2 get empty scheduled arrays ──
+
+print("\nDisappearing findings (early-death-only timepoints):")
+
+# Use unified_findings via the cached API response
+from services.analysis.unified_findings import compute_adverse_effects
+
+ae_result = compute_adverse_effects(study)
+api_findings = ae_result["findings"]
+
+# Bilirubin M day=30 exists ONLY because of PC201708-1001 (Control, early death)
+# Bilirubin M day=90 exists ONLY because of PC201708-4003 (dose 3, early death)
+# When Pass 2 excludes these subjects, these findings vanish entirely.
+# The backend MUST still attach scheduled_group_stats (as empty []) to signal
+# "this finding has no data under scheduled-only mode".
+
+bili_m_30 = next(
+    (f for f in api_findings
+     if f.get("test_code") == "BILI" and f.get("sex") == "M"
+     and f.get("day") == 30),
+    None,
+)
+bili_m_90 = next(
+    (f for f in api_findings
+     if f.get("test_code") == "BILI" and f.get("sex") == "M"
+     and f.get("day") == 90),
+    None,
+)
+
+if bili_m_30:
+    check(
+        "BILI M day30 has scheduled_group_stats key",
+        "scheduled_group_stats" in bili_m_30 and bili_m_30["scheduled_group_stats"] is not None,
+        f"scheduled_group_stats={bili_m_30.get('scheduled_group_stats')}",
+    )
+    check(
+        "BILI M day30 scheduled_group_stats is empty (finding disappears)",
+        bili_m_30.get("scheduled_group_stats") == [],
+        f"scheduled_group_stats={bili_m_30.get('scheduled_group_stats')}",
+    )
+    check(
+        "BILI M day30 has scheduled_pairwise key",
+        "scheduled_pairwise" in bili_m_30 and bili_m_30["scheduled_pairwise"] is not None,
+    )
+    check(
+        "BILI M day30 scheduled_pairwise is empty",
+        bili_m_30.get("scheduled_pairwise") == [],
+    )
+else:
+    check("BILI M day30 finding exists", False, "not found in API response")
+
+if bili_m_90:
+    check(
+        "BILI M day90 has scheduled_group_stats key",
+        "scheduled_group_stats" in bili_m_90 and bili_m_90["scheduled_group_stats"] is not None,
+        f"scheduled_group_stats={bili_m_90.get('scheduled_group_stats')}",
+    )
+    check(
+        "BILI M day90 scheduled_group_stats is empty (finding disappears)",
+        bili_m_90.get("scheduled_group_stats") == [],
+        f"scheduled_group_stats={bili_m_90.get('scheduled_group_stats')}",
+    )
+else:
+    check("BILI M day90 finding exists", False, "not found in API response")
+
+# ALL terminal/LB domain findings must have scheduled_group_stats (even if empty)
+terminal_or_lb = [
+    f for f in api_findings
+    if f.get("domain") in {"MI", "MA", "OM", "TF", "LB"}
+]
+missing_sched = [
+    f for f in terminal_or_lb
+    if f.get("scheduled_group_stats") is None
+]
+check(
+    "all terminal/LB API findings have scheduled_group_stats (never None)",
+    len(missing_sched) == 0,
+    f"{len(missing_sched)}/{len(terminal_or_lb)} missing scheduled_group_stats",
+)
+
 # ── Summary ──
 
 print(f"\n=== Results: {passed} passed, {failed} failed ===")
