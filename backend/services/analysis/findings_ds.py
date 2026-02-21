@@ -47,7 +47,7 @@ def compute_ds_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     if "DSDECOD" not in ds_df.columns:
         return []
 
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     ds_df = ds_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     # Filter to death-related records

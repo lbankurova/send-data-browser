@@ -13,6 +13,7 @@ interface StudyBannerProps {
   studyContext: StudyContext;
   doseGroupCount: number;
   tumorCount?: number;
+  tkSubjectCount?: number;
   mortality?: StudyMortality | null;
 }
 
@@ -21,7 +22,7 @@ interface StudyBannerProps {
  * Shows species+strain, duration+route, dose group count, GLP status.
  * Matches MortalityBanner pattern: bg-muted/30, text-[11px], border-b border-border/40.
  */
-export function StudyBanner({ studyContext, doseGroupCount, tumorCount, mortality }: StudyBannerProps) {
+export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjectCount, mortality }: StudyBannerProps) {
   const { species, strain, dosingDurationWeeks, route, glpCompliant } = studyContext;
 
   // Format: "Sprague-Dawley rat" or just "Rat" if no strain
@@ -81,6 +82,12 @@ export function StudyBanner({ studyContext, doseGroupCount, tumorCount, mortalit
         <>
           <span className="text-muted-foreground/40">|</span>
           <span>{tumorCount} tumor{tumorCount !== 1 ? "s" : ""}</span>
+        </>
+      )}
+      {tkSubjectCount != null && tkSubjectCount > 0 && (
+        <>
+          <span className="text-muted-foreground/40">|</span>
+          <span>{tkSubjectCount} TK satellite{tkSubjectCount !== 1 ? "s" : ""} excluded</span>
         </>
       )}
       {mortalityHeader && mortality && (

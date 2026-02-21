@@ -23,31 +23,31 @@
           "finding": "Large Unstained Cells",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01107
+          "p_value": 0.01105
         },
         {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00052
+          "p_value": 0.00064
         },
         {
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00159
+          "p_value": 0.00155
         },
         {
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03831
+          "p_value": 0.03829
         },
         {
           "finding": "VACUOLIZATION",
           "specimen": "GLAND, ADRENAL",
           "domain": "MI",
-          "p_value": 0.01772
+          "p_value": 0.00109
         }
       ],
       "n_adverse_at_loael": 5,
@@ -86,31 +86,31 @@
           "finding": "Glucose",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00426
+          "p_value": 0.00431
         },
         {
           "finding": "Potassium",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.03955
+          "p_value": 0.03952
         },
         {
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00711
+          "p_value": 0.00712
         },
         {
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.03411
+          "p_value": 0.03416
         },
         {
           "finding": "VACUOLIZATION",
           "specimen": "GLAND, ADRENAL",
           "domain": "MI",
-          "p_value": 0.01772
+          "p_value": 0.00109
         }
       ],
       "n_adverse_at_loael": 5,
@@ -150,61 +150,61 @@
           "finding": "Glucose",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00426
+          "p_value": 0.00431
         },
         {
           "finding": "Potassium",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.03955
+          "p_value": 0.03952
         },
         {
           "finding": "Large Unstained Cells",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01107
+          "p_value": 0.01105
         },
         {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00052
+          "p_value": 0.00064
         },
         {
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00711
+          "p_value": 0.00712
         },
         {
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00159
+          "p_value": 0.00155
         },
         {
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.03411
+          "p_value": 0.03416
         },
         {
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03831
+          "p_value": 0.03829
         },
         {
           "finding": "VACUOLIZATION",
           "specimen": "GLAND, ADRENAL",
           "domain": "MI",
-          "p_value": 0.01772
+          "p_value": 0.00109
         },
         {
           "finding": "VACUOLIZATION",
           "specimen": "GLAND, ADRENAL",
           "domain": "MI",
-          "p_value": 0.01772
+          "p_value": 0.00109
         }
       ],
       "n_adverse_at_loael": 10,

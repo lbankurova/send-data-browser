@@ -23,9 +23,9 @@ def parse_dd_domain(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     if "USUBJID" not in dd_df.columns:
         return []
 
-    # Merge with subjects for dose_level, SEX, is_recovery
+    # Merge with subjects for dose_level, SEX, is_recovery, is_satellite
     dd_df = dd_df.merge(
-        subjects[["USUBJID", "SEX", "dose_level", "is_recovery"]],
+        subjects[["USUBJID", "SEX", "dose_level", "is_recovery", "is_satellite"]],
         on="USUBJID",
         how="inner",
     )
@@ -51,6 +51,7 @@ def parse_dd_domain(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
             "SEX": str(row["SEX"]),
             "dose_level": int(row["dose_level"]),
             "is_recovery": bool(row["is_recovery"]),
+            "is_satellite": bool(row.get("is_satellite", False)),
             "cause": cause,
             "raw_cause": raw_cause if raw_cause != "nan" else "",
             "relatedness": relatedness if relatedness != "nan" else "",

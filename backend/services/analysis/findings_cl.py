@@ -17,7 +17,7 @@ def compute_cl_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     cl_df, _ = read_xpt(study.xpt_files["cl"])
     cl_df.columns = [c.upper() for c in cl_df.columns]
 
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     cl_df = cl_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     finding_col = "CLSTRESC" if "CLSTRESC" in cl_df.columns else ("CLORRES" if "CLORRES" in cl_df.columns else None)

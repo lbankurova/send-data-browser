@@ -19,24 +19,24 @@
         },
         {
           "dose_level": 1,
-          "n": 15,
+          "n": 10,
           "affected": 0,
           "incidence": 0.0
         },
         {
           "dose_level": 2,
-          "n": 15,
+          "n": 10,
           "affected": 0,
           "incidence": 0.0
         },
         {
           "dose_level": 3,
-          "n": 15,
+          "n": 10,
           "affected": 2,
-          "incidence": 0.1333
+          "incidence": 0.2
         }
       ],
-      "trend_p": 0.06583524760876891
+      "trend_p": 0.05157586362087696
     },
     {
       "organ": "LIVER",
@@ -54,24 +54,24 @@
         },
         {
           "dose_level": 1,
-          "n": 15,
+          "n": 10,
           "affected": 0,
           "incidence": 0.0
         },
         {
           "dose_level": 2,
-          "n": 15,
+          "n": 10,
           "affected": 0,
           "incidence": 0.0
         },
         {
           "dose_level": 3,
-          "n": 15,
+          "n": 10,
           "affected": 1,
-          "incidence": 0.0667
+          "incidence": 0.1
         }
       ],
-      "trend_p": 0.19751855128761941
+      "trend_p": 0.1742313882480251
     },
     {
       "organ": "UTERUS",
@@ -89,24 +89,24 @@
         },
         {
           "dose_level": 1,
-          "n": 15,
+          "n": 10,
           "affected": 1,
-          "incidence": 0.0667
+          "incidence": 0.1
         },
         {
           "dose_level": 2,
-          "n": 15,
+          "n": 10,
           "affected": 0,
           "incidence": 0.0
         },
         {
           "dose_level": 3,
-          "n": 15,
+          "n": 10,
           "affected": 0,
           "incidence": 0.0
         }
       ],
-      "trend_p": 0.5475924666383167
+      "trend_p": 0.6506129639327536
     }
   ],
   "combined_analyses": [
@@ -125,24 +125,24 @@
         },
         {
           "dose_level": 1,
-          "n": 15,
+          "n": 10,
           "affected": 0,
           "incidence": 0.0
         },
         {
           "dose_level": 2,
-          "n": 15,
+          "n": 10,
           "affected": 0,
           "incidence": 0.0
         },
         {
           "dose_level": 3,
-          "n": 15,
+          "n": 10,
           "affected": 3,
-          "incidence": 0.2
+          "incidence": 0.3
         }
       ],
-      "combined_trend_p": 0.022934030391992044
+      "combined_trend_p": 0.015685089789787998
     }
   ],
   "progression_sequences": [

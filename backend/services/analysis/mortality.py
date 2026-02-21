@@ -35,7 +35,7 @@ def get_early_death_subjects(
     if "DSDECOD" not in ds_df.columns:
         return {}
 
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     ds_df = ds_df.merge(
         main_subs[["USUBJID", "SEX", "dose_level"]],
         on="USUBJID", how="inner",
@@ -114,6 +114,7 @@ def compute_study_mortality(
                 "SEX": dd_rec["SEX"],
                 "dose_level": dd_rec["dose_level"],
                 "is_recovery": dd_rec["is_recovery"],
+                "is_satellite": dd_rec.get("is_satellite", False),
                 "dsdecod": "FOUND DEAD",
                 "category": "death",
             })
@@ -128,6 +129,7 @@ def compute_study_mortality(
             "sex": d["SEX"],
             "dose_level": d["dose_level"],
             "is_recovery": d["is_recovery"],
+            "is_satellite": d.get("is_satellite", False),
             "disposition": d.get("dsdecod", ""),
             "cause": dd["cause"] if dd else None,
             "relatedness": dd["relatedness"] if dd else None,
@@ -143,6 +145,7 @@ def compute_study_mortality(
             "sex": a["SEX"],
             "dose_level": a["dose_level"],
             "is_recovery": a["is_recovery"],
+            "is_satellite": a.get("is_satellite", False),
             "disposition": a.get("dsdecod", ""),
             "cause": dd["cause"] if dd else None,
             "relatedness": dd["relatedness"] if dd else None,
@@ -150,9 +153,9 @@ def compute_study_mortality(
             "dose_label": dose_label_map.get(a["dose_level"], ""),
         })
 
-    # --- Filter to main-study only for mortality counts ---
-    main_deaths = [d for d in enriched_deaths if not d["is_recovery"]]
-    main_accidentals = [a for a in enriched_accidentals if not a["is_recovery"]]
+    # --- Filter to main-study only for mortality counts (exclude recovery + TK satellite) ---
+    main_deaths = [d for d in enriched_deaths if not d["is_recovery"] and not d.get("is_satellite")]
+    main_accidentals = [a for a in enriched_accidentals if not a["is_recovery"] and not a.get("is_satellite")]
 
     # --- Build by_dose summary ---
     all_levels = sorted(dose_value_map.keys())
@@ -195,7 +198,7 @@ def compute_study_mortality(
     early_death_details = []
     for rec in enriched_deaths + enriched_accidentals:
         uid = rec["USUBJID"]
-        if uid in early_death_subjects and not rec.get("is_recovery"):
+        if uid in early_death_subjects and not rec.get("is_recovery") and not rec.get("is_satellite"):
             early_death_details.append({
                 "USUBJID": uid,
                 "sex": rec["sex"],
@@ -208,7 +211,7 @@ def compute_study_mortality(
     covered = {d["USUBJID"] for d in early_death_details}
     for rec in ds_records:
         uid = rec["USUBJID"]
-        if uid in early_death_subjects and uid not in covered and not rec.get("is_recovery"):
+        if uid in early_death_subjects and uid not in covered and not rec.get("is_recovery") and not rec.get("is_satellite"):
             early_death_details.append({
                 "USUBJID": uid,
                 "sex": rec["SEX"],
@@ -245,7 +248,7 @@ def _parse_ds_dispositions(study: StudyInfo, subjects: pd.DataFrame) -> list[dic
         return []
 
     ds_df = ds_df.merge(
-        subjects[["USUBJID", "SEX", "dose_level", "is_recovery"]],
+        subjects[["USUBJID", "SEX", "dose_level", "is_recovery", "is_satellite"]],
         on="USUBJID",
         how="inner",
     )
@@ -259,6 +262,7 @@ def _parse_ds_dispositions(study: StudyInfo, subjects: pd.DataFrame) -> list[dic
             "SEX": str(row["SEX"]),
             "dose_level": int(row["dose_level"]),
             "is_recovery": bool(row["is_recovery"]),
+            "is_satellite": bool(row.get("is_satellite", False)),
             "dsdecod": dsdecod,
             "category": cat,
         })

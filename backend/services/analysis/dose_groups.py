@@ -6,11 +6,16 @@ from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 
 
-def _parse_tx(study: StudyInfo) -> dict[str, dict]:
-    """Parse TX domain into a map of ARMCD -> {dose_value, dose_unit, label, is_recovery, is_satellite}."""
+def _parse_tx(study: StudyInfo) -> tuple[dict[str, dict], set[str]]:
+    """Parse TX domain into a map of ARMCD -> {dose_value, dose_unit, label, is_recovery, is_satellite}.
+
+    Returns (tx_map, tk_setcds) where tk_setcds is the set of SETCD values for TK satellite sets.
+    TK sets are excluded from tx_map to avoid ARMCD collision (TK and main arms share ARMCD).
+    """
     tx_map: dict[str, dict] = {}
+    tk_setcds: set[str] = set()
     if "tx" not in study.xpt_files:
-        return tx_map
+        return tx_map, tk_setcds
 
     tx_df, _ = read_xpt(study.xpt_files["tx"])
     tx_df.columns = [c.upper() for c in tx_df.columns]
@@ -37,15 +42,41 @@ def _parse_tx(study: StudyInfo) -> dict[str, dict]:
         # Detect recovery arms: TX RECOVDUR param present, or label contains "recovery"
         is_recovery = "RECOVDUR" in params or "recovery" in label.lower()
 
-        # Detect satellite/TK arms: TX TKGRP param present, or label contains "satellite" or "tk"
-        is_satellite = "TKGRP" in params or "satellite" in label.lower() or "toxicokinetic" in label.lower()
+        # Detect satellite/TK arms via multiple heuristics:
+        # 1. Any TK-prefixed param with a value indicating TK (not "non-TK", "none", etc.)
+        # 2. SETCD string contains "TK"
+        # 3. SETLBL/GRPLBL contains "satellite" or "toxicokinetic"
+        tk_positive_values = set()
+        for p, v in params.items():
+            if p.startswith("TK"):
+                vl = v.lower()
+                if vl not in ("non-tk", "none", "no", "n/a", ""):
+                    tk_positive_values.add(v)
+        setcd_str = str(setcd).strip()
+        setlbl = params.get("SETLBL", "")
+        grplbl = params.get("GRPLBL", "")
+        is_satellite = (
+            bool(tk_positive_values)
+            or "TK" in setcd_str.upper()
+            or "satellite" in label.lower()
+            or "toxicokinetic" in label.lower()
+            or "satellite" in setlbl.lower()
+            or "toxicokinetic" in setlbl.lower()
+            or "satellite" in grplbl.lower()
+            or "toxicokinetic" in grplbl.lower()
+        )
+
+        if is_satellite:
+            # Track TK SETCD but don't add to tx_map — avoids ARMCD collision
+            tk_setcds.add(setcd_str)
+            continue
 
         tx_map[armcd] = {
             "dose_value": dose_val,
             "dose_unit": params.get("TRTDOSU"),
             "label": label,
             "is_recovery": is_recovery,
-            "is_satellite": is_satellite,
+            "is_satellite": False,
         }
 
     # Post-process: detect recovery arms by ARMCD suffix convention
@@ -56,7 +87,7 @@ def _parse_tx(study: StudyInfo) -> dict[str, dict]:
             if base_armcd in tx_map and not tx_map[base_armcd]["is_recovery"]:
                 info["is_recovery"] = True
 
-    return tx_map
+    return tx_map, tk_setcds
 
 
 def build_dose_groups(study: StudyInfo) -> dict:
@@ -72,7 +103,7 @@ def build_dose_groups(study: StudyInfo) -> dict:
     dm_df.columns = [c.upper() for c in dm_df.columns]
 
     # Parse TX
-    tx_map = _parse_tx(study)
+    tx_map, tk_setcds = _parse_tx(study)
 
     # If TX didn't provide labels, use ARM column from DM
     if not tx_map:
@@ -91,13 +122,20 @@ def build_dose_groups(study: StudyInfo) -> dict:
     subjects = dm_df[["USUBJID", "SEX", "ARMCD"]].copy()
     subjects["ARMCD"] = subjects["ARMCD"].astype(str).str.strip()
 
-    # Mark recovery and satellite subjects
+    # Mark recovery subjects via ARMCD lookup
     subjects["is_recovery"] = subjects["ARMCD"].apply(
         lambda a: tx_map.get(a, {}).get("is_recovery", False)
     )
-    subjects["is_satellite"] = subjects["ARMCD"].apply(
-        lambda a: tx_map.get(a, {}).get("is_satellite", False)
-    )
+
+    # Mark satellite/TK subjects via DM.SETCD membership (not ARMCD — TK arms share ARMCD with main)
+    if tk_setcds and "SETCD" in dm_df.columns:
+        dm_setcd = dm_df["SETCD"].astype(str).str.strip()
+        subjects["is_satellite"] = dm_setcd.isin(tk_setcds).values
+    else:
+        # Fallback: ARMCD-based detection (for studies without TX TK info / no SETCD)
+        subjects["is_satellite"] = subjects["ARMCD"].apply(
+            lambda a: tx_map.get(a, {}).get("is_satellite", False)
+        )
 
     # Discover main study ARMCDs: not recovery, not satellite
     all_armcds = list(dm_df["ARMCD"].astype(str).str.strip().unique())
@@ -163,8 +201,11 @@ def build_dose_groups(study: StudyInfo) -> dict:
             "n_total": len(arm_subs),
         })
 
+    tk_count = int(subjects["is_satellite"].sum())
+
     return {
         "dose_groups": dose_groups,
         "subjects": subjects,
         "tx_map": tx_map,
+        "tk_count": tk_count,
     }
