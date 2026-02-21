@@ -13,6 +13,8 @@ interface PatternGlyphProps {
 
 const GLYPH_W = 24;
 const GLYPH_H = 12;
+const RENDER_W = 20;
+const RENDER_H = 10;
 
 function pathForPattern(pattern: string): string {
   switch (pattern) {
@@ -45,8 +47,8 @@ export function PatternGlyph({ pattern, className }: PatternGlyphProps) {
   const d = pathForPattern(pattern);
   return (
     <svg
-      width={GLYPH_W}
-      height={GLYPH_H}
+      width={RENDER_W}
+      height={RENDER_H}
       viewBox={`0 0 ${GLYPH_W} ${GLYPH_H}`}
       className={cn("shrink-0", className)}
       aria-label={pattern.replace(/_/g, " ")}

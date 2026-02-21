@@ -217,7 +217,7 @@ All defined in `frontend/src/index.css` `:root`. Consumed via Tailwind utilities
 
 ### 1.1 Conclusion-Tier Colors (analysis views only)
 
-These hex values are used ONLY for **conclusion-level elements** — tier dots, NOAEL/LOAEL banners, target organ indicators. They are NOT used for categorical severity badges (Error/Warning/Info), which always use neutral gray (see §1.8).
+These hex values are used ONLY for **conclusion-level elements** — tier dots, NOAEL/LOAEL banners, target organ indicators. They are NOT used for categorical severity badges (Error/Warning/Info), which always use neutral gray (see §1.9).
 
 | Tier | Hex | Usage |
 |------|-----|-------|
@@ -226,7 +226,7 @@ These hex values are used ONLY for **conclusion-level elements** — tier dots, 
 | Observed | — | No dot, no color |
 | Pass/Normal | `#16a34a` | Validation pass icon only |
 
-**Categorical badges** (severity level, fix status, review status, workflow state): always `bg-gray-100 text-gray-600 border-gray-200`. See §1.8. The `status.*` tokens in `design-tokens.ts` enforce this.
+**Categorical badges** (severity level, fix status, review status, workflow state): always `bg-gray-100 text-gray-600 border-gray-200`. See §1.9. The `status.*` tokens in `design-tokens.ts` enforce this.
 
 ### 1.2 P-Value Palette
 
@@ -310,15 +310,72 @@ Functions: `getDomainBadgeColor()`, `getDomainDotColor()`.
 | FW | `bg-teal-100` / `text-teal-700` | `#14B8A6` |
 | fallback | `bg-gray-100` / `text-gray-700` | `#9CA3AF` |
 
-**Domain labels** are always plain colored text: `getDomainBadgeColor(d).text` + `text-[9px] font-semibold`. Never dot badges, outline pills, or bordered treatments. (Hard rule — see CLAUDE.md.)
+**Domain labels** are categorical identity and must never be color-coded. Render as neutral text: `text-[9px] font-semibold text-muted-foreground`. Never use colored text, dot badges, outline pills, or bordered treatments. (Hard rule — see CLAUDE.md.) The color table above is retained as reference for chart series only; domain text labels use neutral gray. Existing code using `getDomainBadgeColor()` for text should be migrated incrementally.
 
-### 1.8 Validation Status Badges
+### 1.8 Categorical Chart Palettes
+
+Two categorical palettes for different contexts. Functions in `severity-colors.ts`.
+
+#### 1.8a In-App Categorical (Tableau 10 + 3 light pairs)
+
+For scatter "color by" overlays in the app (organ system, domain, syndrome). Same color family as `--chart-1`…`--chart-5` and Datagrok default palette (§0.10) — coordinates with dose group, sex, and other app chart colors.
+
+Functions: `getCategoricalChartColor()`, `getCategoricalChartColorMap()`, `getOrganColor()`.
+
+| Index | Hex | Name | Organ system assignment |
+|-------|-----|------|------------------------|
+| 0 | `#1F77B4` | Blue | renal |
+| 1 | `#FF7F0E` | Orange | reproductive |
+| 2 | `#2CA02C` | Green | gastrointestinal |
+| 3 | `#D62728` | Red | hematologic |
+| 4 | `#9467BD` | Purple | endocrine |
+| 5 | `#8C564B` | Brown | hepatic |
+| 6 | `#E377C2` | Pink | cardiovascular |
+| 7 | `#7F7F7F` | Gray | musculoskeletal |
+| 8 | `#BCBD22` | Yellow-green | neurological |
+| 9 | `#17BECF` | Cyan | respiratory |
+| 10 | `#AEC7E8` | Light blue | ocular |
+| 11 | `#FFBB78` | Light orange | integumentary |
+| 12 | `#98DF8A` | Light green | general (systemic) |
+
+**Usage rules:**
+- `getCategoricalChartColorMap(categories)` for stable string → color assignment
+- `getOrganColor(organSystem)` for the fixed organ system mapping above
+- Wraps at 13 — sufficient for all organ systems; overflow uses hash-based fallback
+- Never use this palette for dose groups, sex, severity, or p-value scales
+
+#### 1.8b MS Office Median (reports, exports)
+
+Warm, muted, earthy palette for non-app contexts: printed reports, standalone charts, exported figures. Does **not** coordinate with the Tableau-derived app chart colors — use only where the app palette is not present.
+
+Constant: `MEDIAN_PALETTE` (16 colors).
+
+| Index | Hex | Name |
+|-------|-----|------|
+| 0 | `#775F55` | Warm brown |
+| 1 | `#94B6D2` | Steel blue |
+| 2 | `#DD8047` | Burnt orange |
+| 3 | `#A5AB81` | Sage green |
+| 4 | `#D8B25C` | Gold |
+| 5 | `#7BA79D` | Teal |
+| 6 | `#968C8C` | Warm gray |
+| 7 | `#F7B615` | Bright amber |
+| 8 | `#704404` | Dark brown |
+| 9 | `#EBDDC3` | Cream (dark stroke on white bg) |
+| 10 | `#A2554A` | Brick red |
+| 11 | `#8E6C8A` | Dusty mauve |
+| 12 | `#545E8B` | Muted indigo |
+| 13 | `#6B8C5E` | Moss green |
+| 14 | `#C4786B` | Clay rose |
+| 15 | `#486B5F` | Forest teal |
+
+### 1.9 Validation Status Badges
 
 Two independent status tracks for validation records. Badge base: `inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold`.
 
-**ALL categorical badges use neutral gray:** `bg-gray-100 text-gray-600 border-gray-200`. This includes severity level (Error/Warning/Info), fix status, review status, and any other fixed classification. Severity is categorical — each rule has a fixed severity that does not vary with data. The text label alone communicates the category. Per §1.10 and CLAUDE.md hard rule, categorical identity NEVER gets per-category color.
+**ALL categorical badges use neutral gray:** `bg-gray-100 text-gray-600 border-gray-200`. This includes severity level (Error/Warning/Info), fix status, review status, and any other fixed classification. Severity is categorical — each rule has a fixed severity that does not vary with data. The text label alone communicates the category. Per §1.11 and CLAUDE.md hard rule, categorical identity NEVER gets per-category color.
 
-### 1.9 Effect Size Scale
+### 1.10 Effect Size Scale
 
 Function: `getEffectSizeColor()`.
 
@@ -332,7 +389,7 @@ Function: `getEffectSizeColor()`.
 
 Always `font-mono`, 2dp.
 
-### 1.10 Color Philosophy — Signal-First Rendering
+### 1.11 Color Philosophy — Signal-First Rendering
 
 > **"Color is punctuation, not prose. Conclusions speak in color; evidence whispers in text."**
 > **"If everything looks important, nothing is."**
@@ -344,7 +401,7 @@ Always `font-mono`, 2dp.
 | Tier | Visibility | What belongs here |
 |------|-----------|-------------------|
 | Tier 1 (always colored) | Persistent at rest | TARGET ORGAN badge, Critical flag, tier dots, NOAEL banner |
-| Tier 2 (visible, muted) | Visible but low-salience | "adverse" outline badge, direction arrows (gray), domain colored text |
+| Tier 2 (visible, muted) | Visible but low-salience | "adverse" outline badge, direction arrows (gray), domain labels (neutral text) |
 | Tier 3 (on interaction) | Hover/selection only | p-values, effect sizes, signal score cell fills |
 
 #### Rules
@@ -352,7 +409,7 @@ Always `font-mono`, 2dp.
 2. **Neutral at rest.** Heatmap cells, evidence bars, domain badges are neutral gray at rest.
 3. **Interaction-only evidence colors.** Signal score colors fill cells only on hover.
 4. **Tier dots for severity.** Critical = red `#DC2626`, Notable = amber `#D97706`, Observed = no dot.
-5. **Domain labels: colored text only** (this app). `getDomainBadgeColor(d).text` + `text-[9px] font-semibold`. General principle: domain identity may use dot, outline, or text — confirm with user per app.
+5. **Domain labels: neutral text only** (this app). `text-[9px] font-semibold text-muted-foreground`. Domain codes are categorical identity — never color-coded. Domain colors (§1.7) are retained for chart series only.
 6. **Decision Bar is the visual anchor.** `border-l-2 border-l-blue-500 bg-blue-50/30` — only element with persistent accent at rest in Signals tab.
 7. **One saturated color family per column at rest.** Everything else must be neutral, outlined, muted, or interaction-only.
 8. **Color budget test.** Grayscale must still make sense. ≤10% saturated pixels at rest. Only conclusions visually "shout."

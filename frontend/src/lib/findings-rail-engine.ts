@@ -53,7 +53,7 @@ const PATTERN_WEIGHTS: Record<string, number> = {
 
 export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts): number {
   const severityWeight = ep.worstSeverity === "adverse" ? 3 : 1;
-  const pValueWeight = ep.minPValue !== null ? Math.max(0, -Math.log10(ep.minPValue)) : 0;
+  const pValueWeight = ep.minPValue !== null ? Math.max(0, -Math.log10(Math.max(ep.minPValue, 1e-10))) : 0;
   const effectWeight = ep.maxEffectSize !== null ? Math.min(Math.abs(ep.maxEffectSize), 5) : 0;
   const trBoost = ep.treatmentRelated ? 2 : 0;
 
