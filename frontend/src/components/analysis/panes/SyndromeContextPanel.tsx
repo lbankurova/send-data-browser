@@ -8,6 +8,7 @@
 
 import { Fragment, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 import { useFindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import { useFindings } from "@/hooks/useFindings";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
@@ -675,7 +676,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
                 const bothSexes = maxDose.males.affected > 0 && maxDose.females.affected > 0;
                 return (
                   <div key={`${t.specimen}-${t.finding}`} className="mt-2 border-l-2 border-amber-400 bg-amber-50/50 px-2 py-1.5 text-[10px]">
-                    {"\u26A0"} {t.finding.toLowerCase()} at {maxDose.dose_label} ({affected} animal{affected !== 1 ? "s" : ""}{bothSexes ? ", both sexes" : ""})
+                    <AlertTriangle className="inline h-3 w-3 shrink-0 align-text-bottom" style={{ color: "#D97706" }} /> {t.finding.toLowerCase()} at {maxDose.dose_label} ({affected} animal{affected !== 1 ? "s" : ""}{bothSexes ? ", both sexes" : ""})
                     <span className="ml-1 text-muted-foreground">— consistent with progression from hepatocellular injury to neoplasia</span>
                   </div>
                 );
@@ -684,7 +685,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
           {/* §8D: Reactive confounder check — tumor-bearing animals in group stats */}
           {tumorConfounders.length > 0 && tumorConfounders.map((c) => (
             <div key={`confounder-${c.specimen}-${c.finding}`} className="mt-2 border-l-2 border-amber-400 bg-amber-50/50 px-2 py-1.5 text-[10px]">
-              <div>{"\u26A0"} {c.includedCount} animal{c.includedCount !== 1 ? "s" : ""} with {c.finding} included in group stats</div>
+              <div><AlertTriangle className="inline h-3 w-3 shrink-0 align-text-bottom" style={{ color: "#D97706" }} /> {c.includedCount} animal{c.includedCount !== 1 ? "s" : ""} with {c.finding} included in group stats</div>
               <div className="text-muted-foreground ml-3">Group means at {c.doseLabel} may reflect tumor burden</div>
             </div>
           ))}
