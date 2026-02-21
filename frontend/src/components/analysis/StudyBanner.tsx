@@ -1,6 +1,8 @@
 import type { StudyContext } from "@/types/study-context";
 import type { StudyMortality, DeathRecord } from "@/types/mortality";
+import type { CrossAnimalFlags } from "@/lib/analysis-view-api";
 import { getDoseGroupColor } from "@/lib/severity-colors";
+import { AlertTriangle } from "lucide-react";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import {
@@ -15,6 +17,7 @@ interface StudyBannerProps {
   tumorCount?: number;
   tkSubjectCount?: number;
   mortality?: StudyMortality | null;
+  crossAnimalFlags?: CrossAnimalFlags;
 }
 
 /**
@@ -22,7 +25,7 @@ interface StudyBannerProps {
  * Shows species+strain, duration+route, dose group count, GLP status.
  * Matches MortalityBanner pattern: bg-muted/30, text-[11px], border-b border-border/40.
  */
-export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjectCount, mortality }: StudyBannerProps) {
+export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjectCount, mortality, crossAnimalFlags }: StudyBannerProps) {
   const { species, strain, dosingDurationWeeks, route, glpCompliant } = studyContext;
 
   // Format: "Sprague-Dawley rat" or just "Rat" if no strain
@@ -81,7 +84,22 @@ export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjec
       {tumorCount != null && tumorCount > 0 && (
         <>
           <span className="text-muted-foreground/40">|</span>
-          <span>{tumorCount} tumor{tumorCount !== 1 ? "s" : ""}</span>
+          <span>
+            {tumorCount} tumor{tumorCount !== 1 ? "s" : ""}
+            {crossAnimalFlags?.tumor_linkage?.banner_text && (
+              <span className="ml-1 text-foreground/70">
+                | <AlertTriangle className="inline h-3 w-3 shrink-0 align-text-bottom" style={{ color: "#D97706" }} /> {crossAnimalFlags.tumor_linkage.banner_text}
+              </span>
+            )}
+          </span>
+        </>
+      )}
+      {crossAnimalFlags?.tissue_battery?.study_level_note && (
+        <>
+          <span className="text-muted-foreground/40">|</span>
+          <span className="text-foreground/70">
+            <AlertTriangle className="inline h-3 w-3 shrink-0 align-text-bottom" style={{ color: "#D97706" }} /> Tissue battery: {crossAnimalFlags.tissue_battery.study_level_note}
+          </span>
         </>
       )}
       {tkSubjectCount != null && tkSubjectCount > 0 && (
@@ -102,7 +120,7 @@ export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjec
             </button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-auto max-w-[480px] p-3">
-            <MortalityPopover mortality={mortality} />
+            <MortalityPopover mortality={mortality} crossAnimalFlags={crossAnimalFlags} />
           </PopoverContent>
         </Popover>
       )}
@@ -111,7 +129,7 @@ export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjec
 }
 
 /** Transposed mortality table: subjects as columns, fields as rows. */
-function MortalityPopover({ mortality }: { mortality: StudyMortality }) {
+function MortalityPopover({ mortality, crossAnimalFlags }: { mortality: StudyMortality; crossAnimalFlags?: CrossAnimalFlags }) {
   const { setSelectedSubject } = useViewSelection();
   const { excludedSubjects } = useScheduledOnly();
 
@@ -174,11 +192,27 @@ function MortalityPopover({ mortality }: { mortality: StudyMortality }) {
       label: "Data",
       cells: (d) => {
         const tip = "Can be changed on the study summary view";
-        if (excludedSubjects.has(d.USUBJID)) {
-          return { text: "Excluded", className: "text-foreground/70 font-medium", title: tip };
+        // Enrich with cross-animal flags data
+        const batteryFlag = crossAnimalFlags?.tissue_battery?.flagged_animals?.find(
+          (f) => f.animal_id === d.USUBJID,
+        );
+        const recoveryNarr = crossAnimalFlags?.recovery_narratives?.find(
+          (r) => r.animal_id === d.USUBJID,
+        );
+        let suffix = "";
+        if (batteryFlag) {
+          suffix += ` \u00B7 \u26A0 MI: ${batteryFlag.examined_count}/${batteryFlag.expected_count} tissues`;
+          if (batteryFlag.sacrifice_group === "recovery") suffix += " (recovery)";
         }
-        if (d.is_recovery) return { text: "Recovery arm", className: "text-muted-foreground/60", title: tip };
-        return { text: `Included${d.study_day != null ? ` (to d${d.study_day})` : ""}`, className: "text-muted-foreground", title: tip };
+        if (recoveryNarr && recoveryNarr.bw_trend !== "unknown") {
+          const sign = recoveryNarr.bw_change_pct > 0 ? "+" : "";
+          suffix += ` \u00B7 BW ${recoveryNarr.bw_trend} ${sign}${recoveryNarr.bw_change_pct}%`;
+        }
+        if (excludedSubjects.has(d.USUBJID)) {
+          return { text: `Excluded${suffix}`, className: "text-foreground/70 font-medium", title: tip };
+        }
+        if (d.is_recovery) return { text: `Recovery arm${suffix}`, className: "text-muted-foreground/60", title: tip };
+        return { text: `Included${d.study_day != null ? ` (to d${d.study_day})` : ""}${suffix}`, className: "text-muted-foreground", title: tip };
       },
     },
     {
