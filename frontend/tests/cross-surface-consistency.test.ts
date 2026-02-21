@@ -339,21 +339,13 @@ describe("cross-surface consistency", () => {
     }
   });
 
-  // ── Source-code parity: all row-mapping sites must include every data field ──
-  // Three sites convert UnifiedFinding → AdverseEffectSummaryRow:
-  //   1. FindingsView.tsx         (feeds scatter + FindingsAnalyticsContext)
-  //   2. FindingsRail.tsx         (feeds rail badges + signal scores)
-  //   3. useFindingsAnalyticsLocal.ts (feeds context panels)
-  // If one site omits a field, clinical rules or signal scores diverge silently.
+  // ── Source-code parity: single canonical row-mapping function ──
+  // mapFindingsToRows() in derive-summaries.ts is the single source of truth.
+  // All consumers use it via useFindingsAnalyticsLocal — no inline mappings.
 
-  test("all row-mapping sites include the same data fields (source parity)", () => {
+  test("mapFindingsToRows includes all required data fields (single source of truth)", () => {
     const srcRoot = path.resolve(__dirname, "../src");
-    const MAPPING_SITES = [
-      "components/analysis/findings/FindingsView.tsx",
-      "components/analysis/findings/FindingsRail.tsx",
-      "hooks/useFindingsAnalyticsLocal.ts",
-    ];
-    // Fields that must be present in every row mapping (the data-bearing fields of AdverseEffectSummaryRow)
+    const MAPPING_FILE = "lib/derive-summaries.ts";
     const REQUIRED_FIELDS = [
       "max_fold_change",
       "max_incidence",
@@ -361,16 +353,35 @@ describe("cross-surface consistency", () => {
       "specimen",
       "finding",
     ];
+    const filePath = path.join(srcRoot, MAPPING_FILE);
+    const source = fs.readFileSync(filePath, "utf-8");
+    for (const field of REQUIRED_FIELDS) {
+      expect(
+        source.includes(field),
+        `mapFindingsToRows in ${MAPPING_FILE} is missing "${field}"`,
+      ).toBe(true);
+    }
+  });
 
-    for (const site of MAPPING_SITES) {
-      const filePath = path.join(srcRoot, site);
+  test("no consumer files contain inline row-mapping (duplication guard)", () => {
+    const srcRoot = path.resolve(__dirname, "../src");
+    // These files previously had inline mappings — verify they no longer do
+    const CONSUMER_FILES = [
+      "components/analysis/findings/FindingsView.tsx",
+      "components/analysis/findings/FindingsRail.tsx",
+      "components/analysis/panes/SyndromeContextPanel.tsx",
+      "components/analysis/panes/OrganContextPanel.tsx",
+    ];
+    // The telltale pattern of an inline row mapping is the assignment form:
+    // endpoint_label: f.endpoint_label ?? f.finding
+    const INLINE_MAPPING_PATTERN = "endpoint_label: f.endpoint_label ?? f.finding";
+    for (const file of CONSUMER_FILES) {
+      const filePath = path.join(srcRoot, file);
       const source = fs.readFileSync(filePath, "utf-8");
-      for (const field of REQUIRED_FIELDS) {
-        expect(
-          source.includes(field),
-          `${site} is missing "${field}" in its row mapping — all three sites must map the same fields`,
-        ).toBe(true);
-      }
+      expect(
+        source.includes(INLINE_MAPPING_PATTERN),
+        `${file} still contains inline row mapping — use mapFindingsToRows() instead`,
+      ).toBe(false);
     }
   });
 });
