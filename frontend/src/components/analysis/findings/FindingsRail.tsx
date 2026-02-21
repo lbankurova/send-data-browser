@@ -19,11 +19,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useFindings } from "@/hooks/useFindings";
-import { deriveEndpointSummaries } from "@/lib/derive-summaries";
-import type { EndpointSummary } from "@/lib/derive-summaries";
-import type { FindingsFilters } from "@/types/analysis";
-import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
+import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import {
   withSignalScores,
   computeSignalSummary,
@@ -47,19 +43,11 @@ import type {
   EndpointWithSignal,
   SignalSummaryStats,
 } from "@/lib/findings-rail-engine";
-import { deriveOrganCoherence } from "@/lib/derive-summaries";
-import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
-import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
+import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { formatPValue, titleCase, getDirectionSymbol } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
-
-// Static empty filters — fetch all findings, filter client-side (same as FindingsView)
-const ALL_FINDINGS_FILTERS: FindingsFilters = {
-  domain: null, sex: null, severity: null, search: "",
-  organ_system: null, endpoint_label: null, dose_response_pattern: null,
-};
 
 // ─── Props ─────────────────────────────────────────────────
 
@@ -104,8 +92,9 @@ export function FindingsRail({
   excludedEndpoints,
   onRestoreEndpoint,
 }: FindingsRailProps) {
-  // Same data source as FindingsView — React Query shares the cache
-  const { data: rawData, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FINDINGS_FILTERS);
+  // Shared analytics derivation — single source of truth
+  const { analytics, isLoading, error } = useFindingsAnalyticsLocal(studyId);
+  const { endpoints: endpointSummaries, syndromes, labMatches } = analytics;
 
   // ── Local state ────────────────────────────────────────
   // Grouping & sort persist across view navigations (user preference)
@@ -125,48 +114,9 @@ export function FindingsRail({
     }
   }, [studyId]);
 
-  // ── Derived data (same pipeline as FindingsView) ──────
-  const endpointSummaries = useMemo<EndpointSummary[]>(() => {
-    if (!rawData?.findings?.length) return [];
-    const rows: AdverseEffectSummaryRow[] = rawData.findings.map((f) => {
-      // Compute max incidence across treated dose groups (dose_level > 0)
-      const treatedStats = (f.group_stats ?? []).filter((g) => g.dose_level > 0);
-      const maxInc = treatedStats.reduce<number | null>((max, g) => {
-        if (g.incidence == null) return max;
-        return max === null ? g.incidence : Math.max(max, g.incidence);
-      }, null);
-      return {
-        endpoint_label: f.endpoint_label ?? f.finding,
-        endpoint_type: f.data_type,
-        domain: f.domain,
-        organ_system: f.organ_system ?? "unknown",
-        dose_level: 0,
-        dose_label: "",
-        sex: f.sex,
-        p_value: f.min_p_adj,
-        effect_size: f.max_effect_size,
-        direction: f.direction,
-        severity: f.severity,
-        treatment_related: f.treatment_related,
-        dose_response_pattern: f.dose_response_pattern ?? "flat",
-        test_code: f.test_code,
-        specimen: f.specimen,
-        finding: f.finding,
-        max_incidence: maxInc,
-        max_fold_change: f.max_fold_change ?? null,
-      };
-    });
-    return deriveEndpointSummaries(rows);
-  }, [rawData]);
-
+  // ── Rail-specific derived data ──────
   const endpointsWithSignal = useMemo(
     () => withSignalScores(endpointSummaries),
-    [endpointSummaries],
-  );
-
-  // Syndrome detection (Layer B) — needed for syndrome grouping mode
-  const syndromes = useMemo(
-    () => detectCrossDomainSyndromes(endpointSummaries),
     [endpointSummaries],
   );
 
@@ -174,13 +124,6 @@ export function FindingsRail({
   const multiSyndromeIndex = useMemo(
     () => buildMultiSyndromeIndex(syndromes),
     [syndromes],
-  );
-
-  // Clinical severity data (Layer D) — needed for Clinical S2+ filter
-  const organCoherence = useMemo(() => deriveOrganCoherence(endpointSummaries), [endpointSummaries]);
-  const labMatches = useMemo(
-    () => evaluateLabRules(endpointSummaries, organCoherence, syndromes),
-    [endpointSummaries, organCoherence, syndromes],
   );
 
   // Clinical S2+ endpoints: endpoints with clinical severity >= S2

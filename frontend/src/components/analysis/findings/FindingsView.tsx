@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Info, EyeOff } from "lucide-react";
-import { useFindings } from "@/hooks/useFindings";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useTumorSummary } from "@/hooks/useTumorSummary";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
+import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { FilterBar } from "@/components/ui/FilterBar";
@@ -20,16 +20,9 @@ import type { RailVisibleState } from "./FindingsRail";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
-import { deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
-import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
-import { evaluateLabRules } from "@/lib/lab-clinical-catalog";
-import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
-import type { FindingsFilters } from "@/types/analysis";
-import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
-import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
-import type { GroupingMode, SignalBoosts } from "@/lib/findings-rail-engine";
+import type { GroupingMode } from "@/lib/findings-rail-engine";
 import { formatPValue, formatEffectSize } from "@/lib/severity-colors";
 import type { UnifiedFinding } from "@/types/analysis";
 
@@ -77,12 +70,6 @@ let _findingsExcludedCallback: ((excluded: ReadonlySet<string>) => void) | null 
 export function setFindingsExcludedCallback(cb: typeof _findingsExcludedCallback) {
   _findingsExcludedCallback = cb;
 }
-
-// Static empty filters — fetch all findings, filter client-side
-const ALL_FILTERS: FindingsFilters = {
-  domain: null, sex: null, severity: null, search: "",
-  organ_system: null, endpoint_label: null, dose_response_pattern: null,
-};
 
 export function FindingsView() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -184,8 +171,10 @@ export function FindingsView() {
     return () => setFindingsRailCallback(null);
   }, [handleEndpointSelect, handleRestoreEndpoint]);
 
-  // Fetch ALL findings (no API-level filtering — rail handles all filtering client-side)
-  const { data, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
+  // Shared analytics derivation — single source of truth for all findings consumers
+  const { analytics, data, isLoading, error } = useFindingsAnalyticsLocal(studyId);
+  const { endpoints: endpointSummaries, syndromes, organCoherence, labMatches,
+          signalScores: signalScoreMap, endpointSexes } = analytics;
 
   // Auto-select first finding when endpoint is selected
   useEffect(() => {
@@ -198,62 +187,6 @@ export function FindingsView() {
       selectFinding(null);
     }
   }, [activeEndpoint, data, selectFinding]);
-
-  // Derive endpoint summaries for scatter plot from UnifiedFinding[]
-  const endpointSummaries = useMemo(() => {
-    if (!data?.findings?.length) return [];
-    const rows: AdverseEffectSummaryRow[] = data.findings.map((f) => {
-      // Compute max incidence across treated dose groups (dose_level > 0)
-      const treatedStats = (f.group_stats ?? []).filter((g) => g.dose_level > 0);
-      const maxInc = treatedStats.reduce<number | null>((max, g) => {
-        if (g.incidence == null) return max;
-        return max === null ? g.incidence : Math.max(max, g.incidence);
-      }, null);
-      return {
-        endpoint_label: f.endpoint_label ?? f.finding,
-        endpoint_type: f.data_type,
-        domain: f.domain,
-        organ_system: f.organ_system ?? "unknown",
-        dose_level: 0,
-        dose_label: "",
-        sex: f.sex,
-        p_value: f.min_p_adj,
-        effect_size: f.max_effect_size,
-        direction: f.direction,
-        severity: f.severity,
-        treatment_related: f.treatment_related,
-        dose_response_pattern: f.dose_response_pattern ?? "flat",
-        test_code: f.test_code,
-        specimen: f.specimen,
-        finding: f.finding,
-        max_incidence: maxInc,
-        max_fold_change: f.max_fold_change ?? null,
-      };
-    });
-    const summaries = deriveEndpointSummaries(rows);
-    // Enrich with per-endpoint NOAEL tiers
-    if (data.dose_groups) {
-      const noaelMap = computeEndpointNoaelMap(data.findings, data.dose_groups);
-      for (const ep of summaries) {
-        const noael = noaelMap.get(ep.endpoint_label);
-        if (noael) {
-          ep.noaelTier = noael.combined.tier;
-          ep.noaelDoseValue = noael.combined.doseValue;
-          ep.noaelDoseUnit = noael.combined.doseUnit;
-          if (noael.sexDiffers) ep.noaelBySex = noael.bySex;
-        }
-      }
-    }
-    return summaries;
-  }, [data]);
-
-  // Phase 3: organ coherence, cross-domain syndromes, lab clinical rules
-  const organCoherence = useMemo(() => deriveOrganCoherence(endpointSummaries), [endpointSummaries]);
-  const syndromes = useMemo(() => detectCrossDomainSyndromes(endpointSummaries), [endpointSummaries]);
-  const labMatches = useMemo(
-    () => evaluateLabRules(endpointSummaries, organCoherence, syndromes),
-    [endpointSummaries, organCoherence, syndromes],
-  );
 
   // Scatter endpoints — filtered by rail's visible set, then by user exclusions
   const railFilteredEndpoints = useMemo(() => {
@@ -407,66 +340,10 @@ export function FindingsView() {
     </span>
   ), [showInfoTooltip, handleInfoMouseEnter, handleInfoMouseLeave, excludedChips]);
 
-  // Build signal boosts from analytics layers
-  const boostMap = useMemo(() => {
-    const map = new Map<string, SignalBoosts>();
-    const syndromeEndpoints = new Set<string>();
-    for (const syn of syndromes) {
-      for (const m of syn.matchedEndpoints) syndromeEndpoints.add(m.endpoint_label);
-    }
-    const clinicalFloors = new Map<string, number>();
-    for (const match of labMatches) {
-      const floor = getClinicalFloor(match.severity);
-      for (const ep of match.matchedEndpoints) {
-        const existing = clinicalFloors.get(ep) ?? 0;
-        if (floor > existing) clinicalFloors.set(ep, floor);
-      }
-    }
-    for (const ep of endpointSummaries) {
-      const coh = organCoherence.get(ep.organ_system);
-      const cohBoost = coh ? (coh.domainCount >= 3 ? 2 : coh.domainCount >= 2 ? 1 : 0) : 0;
-      const synBoost = syndromeEndpoints.has(ep.endpoint_label) ? 3 : 0;
-      const floor = clinicalFloors.get(ep.endpoint_label) ?? 0;
-      const conf = classifyEndpointConfidence(ep);
-      const confMult = getConfidenceMultiplier(conf);
-      if (cohBoost > 0 || synBoost > 0 || floor > 0 || confMult !== 1) {
-        map.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor, confidenceMultiplier: confMult });
-      }
-    }
-    return map;
-  }, [endpointSummaries, organCoherence, syndromes, labMatches]);
-
-  // Signal score map for tier encoding on severity column
-  const signalScoreMap = useMemo(() => {
-    const scored = withSignalScores(endpointSummaries, boostMap);
-    const map = new Map<string, number>();
-    for (const ep of scored) map.set(ep.endpoint_label, ep.signal);
-    return map;
-  }, [endpointSummaries, boostMap]);
-
-  // Endpoint → aggregate sexes map
-  const endpointSexes = useMemo(() => {
-    const map = new Map<string, string[]>();
-    for (const ep of endpointSummaries) {
-      map.set(ep.endpoint_label, ep.sexes);
-    }
-    return map;
-  }, [endpointSummaries]);
-
   // Sync endpoint sexes to shared selection context (reaches context panel)
   useEffect(() => {
     setEndpointSexes(endpointSexes);
   }, [endpointSexes, setEndpointSexes]);
-
-  // Analytics context value for context panel consumption
-  const analyticsValue = useMemo(() => ({
-    endpoints: endpointSummaries,
-    syndromes,
-    organCoherence,
-    labMatches,
-    signalScores: signalScoreMap,
-    endpointSexes,
-  }), [endpointSummaries, syndromes, organCoherence, labMatches, signalScoreMap, endpointSexes]);
 
   if (error) {
     return (
@@ -491,7 +368,7 @@ export function FindingsView() {
   }, [mortalityData, setEarlyDeathSubjects]);
 
   return (
-    <FindingsAnalyticsProvider value={analyticsValue}>
+    <FindingsAnalyticsProvider value={analytics}>
     <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
       {/* Study context banner */}
       {studyContext && <StudyBanner studyContext={studyContext} doseGroupCount={doseGroupCount} tumorCount={tumorSummary?.total_tumor_animals} tkSubjectCount={pkData?.tk_design?.n_tk_subjects} mortality={mortalityData} crossAnimalFlags={crossAnimalFlags} />}
