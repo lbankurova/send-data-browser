@@ -7,6 +7,7 @@ import { useTumorSummary } from "@/hooks/useTumorSummary";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
+import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { FilterBar } from "@/components/ui/FilterBar";
@@ -101,6 +102,9 @@ export function FindingsView() {
 
   // Tumor summary for StudyBanner
   const { data: tumorSummary } = useTumorSummary(studyId);
+
+  // Cross-animal flags for StudyBanner
+  const { data: crossAnimalFlags } = useCrossAnimalFlags(studyId);
 
   // Study context for StudyBanner
   const { data: studyContext } = useStudyContext(studyId);
@@ -484,14 +488,13 @@ export function FindingsView() {
       );
       setEarlyDeathSubjects(earlyDeaths, trIds);
     }
-    return () => setEarlyDeathSubjects({}, new Set());
   }, [mortalityData, setEarlyDeathSubjects]);
 
   return (
     <FindingsAnalyticsProvider value={analyticsValue}>
     <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
       {/* Study context banner */}
-      {studyContext && <StudyBanner studyContext={studyContext} doseGroupCount={doseGroupCount} tumorCount={tumorSummary?.total_tumor_animals} tkSubjectCount={pkData?.tk_design?.n_tk_subjects} mortality={mortalityData} />}
+      {studyContext && <StudyBanner studyContext={studyContext} doseGroupCount={doseGroupCount} tumorCount={tumorSummary?.total_tumor_animals} tkSubjectCount={pkData?.tk_design?.n_tk_subjects} mortality={mortalityData} crossAnimalFlags={crossAnimalFlags} />}
       {/* Mortality banner */}
       {mortalityData && <MortalityBanner mortality={mortalityData} />}
       {/* Header */}
