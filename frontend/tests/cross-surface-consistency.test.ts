@@ -4,6 +4,8 @@
  * by verifying that endpoints, rules, syndromes, and contexts agree.
  */
 import { describe, test, expect } from "vitest";
+import fs from "fs";
+import path from "path";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import { evaluateLabRules, buildContext, resolveCanonical } from "@/lib/lab-clinical-catalog";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
@@ -285,6 +287,41 @@ describe("cross-surface consistency", () => {
 
   // ── Fold change non-zero for matching endpoints ──
 
+  // ── Row-mapping parity: all three sites that convert UnifiedFinding → AdverseEffectSummaryRow ──
+  // Must map the same fields. If a new field is added to AdverseEffectSummaryRow,
+  // all three sites must include it. This catches the max_fold_change divergence class of bug.
+
+  test("all row-mapping sites include max_fold_change (clinical rule input parity)", () => {
+    // The fixture has max_fold_change on rows. After deriving endpoints, those with
+    // continuous data (LB, BW, OM) should have non-null maxFoldChange.
+    const withFoldChange = endpoints.filter(ep => ep.maxFoldChange != null && ep.maxFoldChange > 0);
+    expect(
+      withFoldChange.length,
+      "Fixture should produce endpoints with non-null fold change (tests assume fixture has max_fold_change in rows)",
+    ).toBeGreaterThan(5);
+  });
+
+  test("clinical rules fire correctly when fold change is present (Leukocytes = S2)", () => {
+    // L18: WBC decrease, S2, requires fold >= 1.5
+    // If max_fold_change is missing from row data, foldAbove() always returns false
+    // and L18 never fires — this is the exact bug that caused rail/scatter divergence.
+    const wbc = endpoints.find(ep => resolveCanonical(ep.endpoint_label, ep.testCode) === "WBC");
+    if (!wbc) return; // skip if WBC not in data
+    const wbcDir = wbc.direction;
+    if (wbcDir !== "down") return; // L18 only fires on decrease
+
+    const s2PlusEndpoints = new Set<string>();
+    for (const match of matches) {
+      if (match.severity === "S2" || match.severity === "S3" || match.severity === "S4") {
+        for (const ep of match.matchedEndpoints) s2PlusEndpoints.add(ep);
+      }
+    }
+    expect(
+      s2PlusEndpoints.has(wbc.endpoint_label),
+      `${wbc.endpoint_label} (WBC, direction=${wbcDir}, fc=${wbc.maxFoldChange}) should be S2+ but is not — likely missing max_fold_change in row mapping`,
+    ).toBe(true);
+  });
+
   test("per-sex fold changes are non-zero for endpoints with non-null maxFoldChange", () => {
     for (const match of matches) {
       if (!match.sex) continue;
@@ -298,6 +335,41 @@ describe("cross-surface consistency", () => {
             `Rule ${match.ruleId} sex=${match.sex}: ${canonical} fold change is ${fc} but endpoint has maxFoldChange=${ep.maxFoldChange}`,
           ).toBeGreaterThan(0);
         }
+      }
+    }
+  });
+
+  // ── Source-code parity: all row-mapping sites must include every data field ──
+  // Three sites convert UnifiedFinding → AdverseEffectSummaryRow:
+  //   1. FindingsView.tsx         (feeds scatter + FindingsAnalyticsContext)
+  //   2. FindingsRail.tsx         (feeds rail badges + signal scores)
+  //   3. useFindingsAnalyticsLocal.ts (feeds context panels)
+  // If one site omits a field, clinical rules or signal scores diverge silently.
+
+  test("all row-mapping sites include the same data fields (source parity)", () => {
+    const srcRoot = path.resolve(__dirname, "../src");
+    const MAPPING_SITES = [
+      "components/analysis/findings/FindingsView.tsx",
+      "components/analysis/findings/FindingsRail.tsx",
+      "hooks/useFindingsAnalyticsLocal.ts",
+    ];
+    // Fields that must be present in every row mapping (the data-bearing fields of AdverseEffectSummaryRow)
+    const REQUIRED_FIELDS = [
+      "max_fold_change",
+      "max_incidence",
+      "test_code",
+      "specimen",
+      "finding",
+    ];
+
+    for (const site of MAPPING_SITES) {
+      const filePath = path.join(srcRoot, site);
+      const source = fs.readFileSync(filePath, "utf-8");
+      for (const field of REQUIRED_FIELDS) {
+        expect(
+          source.includes(field),
+          `${site} is missing "${field}" in its row mapping — all three sites must map the same fields`,
+        ).toBe(true);
       }
     }
   });

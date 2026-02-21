@@ -50,7 +50,7 @@ import type {
 import { deriveOrganCoherence } from "@/lib/derive-summaries";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
-import { formatPValue, titleCase, getDirectionSymbol, getSeverityDotColor } from "@/lib/severity-colors";
+import { formatPValue, titleCase, getDirectionSymbol } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
@@ -153,6 +153,7 @@ export function FindingsRail({
         specimen: f.specimen,
         finding: f.finding,
         max_incidence: maxInc,
+        max_fold_change: f.max_fold_change ?? null,
       };
     });
     return deriveEndpointSummaries(rows);
@@ -1057,7 +1058,8 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
   const tier = getSignalTier(endpoint.signal);
   const isNormal = endpoint.worstSeverity === "normal";
   const pipeWeight = isNormal ? "border-l" : tier === 3 ? "border-l-4" : tier === 2 ? "border-l-2" : "border-l";
-  const pipeColor = getSeverityDotColor(endpoint.worstSeverity);
+  // Greyscale pipe — color encodes severity class, width encodes signal strength
+  const pipeColor = endpoint.worstSeverity === "adverse" ? "#4B5563" : endpoint.worstSeverity === "warning" ? "#D1D5DB" : "transparent";
   const tierLabel = tier === 3 ? "strong" : tier === 2 ? "moderate" : "weak";
   const pipeTooltip = isNormal ? "Normal" : `${sevLabel(endpoint.worstSeverity)} · ${tierLabel} signal`;
 
@@ -1090,7 +1092,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
             pipeWeight,
             isExcluded && "text-muted-foreground/50",
           )}
-          style={{ borderLeftColor: isNormal ? "transparent" : pipeColor }}
+          style={{ borderLeftColor: pipeColor }}
           title={`${endpoint.endpoint_label}\n${pipeTooltip}`}
         >
           {endpoint.endpoint_label}
