@@ -22,7 +22,7 @@ def compute_om_findings(
     om_df, _ = read_xpt(study.xpt_files["om"])
     om_df.columns = [c.upper() for c in om_df.columns]
 
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
         main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
     om_df = om_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")

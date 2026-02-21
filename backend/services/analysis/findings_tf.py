@@ -76,7 +76,7 @@ def compute_tf_findings(
     tf_df, _ = read_xpt(study.xpt_files["tf"])
     tf_df.columns = [c.upper() for c in tf_df.columns]
 
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
         main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
     tf_df = tf_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
