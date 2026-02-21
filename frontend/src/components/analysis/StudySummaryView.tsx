@@ -56,6 +56,21 @@ export function StudySummaryView() {
   // Read organ from StudySelectionContext
   const selectedOrgan = studySelection.organSystem ?? null;
 
+  // Initialize ScheduledOnlyContext from mortality data (matches FindingsView pattern)
+  const { setEarlyDeathSubjects } = useScheduledOnly();
+  useEffect(() => {
+    if (mortalityData) {
+      const earlyDeaths = mortalityData.early_death_subjects ?? {};
+      const trIds = new Set(
+        mortalityData.deaths
+          .filter(d => !d.is_recovery && d.USUBJID in earlyDeaths)
+          .map(d => d.USUBJID),
+      );
+      setEarlyDeathSubjects(earlyDeaths, trIds);
+    }
+    return () => setEarlyDeathSubjects({}, new Set());
+  }, [mortalityData, setEarlyDeathSubjects]);
+
   // Auto-select top organ when view loads and nothing is selected
   useEffect(() => {
     if (!selectedOrgan && targetOrgans && targetOrgans.length > 0) {
