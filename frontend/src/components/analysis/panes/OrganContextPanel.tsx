@@ -19,13 +19,11 @@ import {
   formatPValue,
   formatEffectSize,
 } from "@/lib/severity-colors";
-import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import { getSyndromeNearMissInfo } from "@/lib/cross-domain-syndromes";
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass, getClinicalTierCardBorderClass, getClinicalSeverityLabel } from "@/lib/lab-clinical-catalog";
 import type { FindingsFilters, UnifiedFinding } from "@/types/analysis";
-import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 
 // ─── Constants ─────────────────────────────────────────────
 
@@ -224,28 +222,11 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
   // Fetch all findings data (shared cache with FindingsView)
   const { data: rawData } = useFindings(studyId, 1, 10000, ALL_FILTERS);
 
-  // Derive endpoint summaries for this organ
-  const organEndpoints = useMemo<EndpointSummary[]>(() => {
-    if (!rawData?.findings?.length) return [];
-    const rows: AdverseEffectSummaryRow[] = rawData.findings
-      .filter(f => (f.organ_system ?? "unknown") === organKey)
-      .map(f => ({
-        endpoint_label: f.endpoint_label ?? f.finding,
-        endpoint_type: f.data_type,
-        domain: f.domain,
-        organ_system: f.organ_system ?? "unknown",
-        dose_level: 0,
-        dose_label: "",
-        sex: f.sex,
-        p_value: f.min_p_adj,
-        effect_size: f.max_effect_size,
-        direction: f.direction,
-        severity: f.severity,
-        treatment_related: f.treatment_related,
-        dose_response_pattern: f.dose_response_pattern ?? "flat",
-      }));
-    return deriveEndpointSummaries(rows);
-  }, [rawData, organKey]);
+  // Use shared derivation — single source of truth (includes all fields)
+  const organEndpoints = useMemo(
+    () => analytics.endpoints.filter(ep => ep.organ_system === organKey),
+    [analytics.endpoints, organKey],
+  );
 
   // Coherence data from analytics context
   const coherence = analytics.organCoherence.get(organKey);

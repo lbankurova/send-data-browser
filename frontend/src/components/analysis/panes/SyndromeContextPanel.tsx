@@ -19,7 +19,6 @@ import {
   formatEffectSize,
   getDoseGroupColor,
 } from "@/lib/severity-colors";
-import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import { getSyndromeTermReport, getSyndromeDefinition } from "@/lib/cross-domain-syndromes";
 import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
@@ -38,7 +37,6 @@ import { useClinicalObservations } from "@/hooks/useClinicalObservations";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import type { FindingsFilters, UnifiedFinding, DoseGroup } from "@/types/analysis";
-import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 import { computeOrganProportionality, checkSexDivergence } from "@/lib/organ-proportionality";
 import type { OrganProportionalityResult, OrganOpiRow, OpiClassification } from "@/lib/organ-proportionality";
 
@@ -287,29 +285,8 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   const syndromeDef = getSyndromeDefinition(syndromeId);
   const name = detected?.name ?? syndromeDef?.name ?? syndromeId;
 
-  // Derive all endpoint summaries for evidence/term report
-  const allEndpoints = useMemo<EndpointSummary[]>(() => {
-    if (!rawData?.findings?.length) return [];
-    const rows: AdverseEffectSummaryRow[] = rawData.findings.map((f) => ({
-      endpoint_label: f.endpoint_label ?? f.finding,
-      endpoint_type: f.data_type,
-      domain: f.domain,
-      organ_system: f.organ_system ?? "unknown",
-      dose_level: 0,
-      dose_label: "",
-      sex: f.sex,
-      p_value: f.min_p_adj,
-      effect_size: f.max_effect_size,
-      direction: f.direction,
-      severity: f.severity,
-      treatment_related: f.treatment_related,
-      dose_response_pattern: f.dose_response_pattern ?? "flat",
-      test_code: f.test_code,
-      specimen: f.specimen,
-      finding: f.finding,
-    }));
-    return deriveEndpointSummaries(rows);
-  }, [rawData]);
+  // Use shared derivation — single source of truth (includes all fields)
+  const allEndpoints = analytics.endpoints;
 
   // Evidence Summary: term report
   const syndromeSexes = detected?.sexes;

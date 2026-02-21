@@ -221,7 +221,7 @@ function PerSexCard({ entry, canonical }: { entry: PerSexEntry; canonical: strin
       <div className={`rounded p-2 ${getClinicalTierCardBorderClass(match.severity)} ${getClinicalTierCardBgClass(match.severity)}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium">{sexSymbol} {entry.sex}:</span>
+            <span className="text-xs font-medium">{sexSymbol}:</span>
             <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold ${getClinicalTierBadgeClasses(match.severity)}`}>
               {match.severity} {match.severityLabel}
             </span>
@@ -245,7 +245,7 @@ function PerSexCard({ entry, canonical }: { entry: PerSexEntry; canonical: strin
   return (
     <div className="rounded p-2 border-l-2 border-gray-200 bg-gray-50/50">
       <div className="flex items-center gap-1.5">
-        <span className="text-xs font-medium">{sexSymbol} {entry.sex}:</span>
+        <span className="text-xs font-medium">{sexSymbol}:</span>
         <span className="text-[10px] text-muted-foreground">No threshold reached</span>
       </div>
       {sexData && canonical && (

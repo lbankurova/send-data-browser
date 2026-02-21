@@ -1,59 +1,41 @@
 /**
- * Computes FindingsAnalytics locally from the useFindings data hook.
+ * Single source of truth for findings analytics derivation.
  *
- * This exists because the FindingsAnalyticsProvider lives inside FindingsView
- * (rendered in <Outlet>), but the ContextPanel is a sibling in Layout.tsx and
- * cannot access that provider.  React Query's 5-min stale cache ensures the
- * useFindings call here returns the same cached response — no extra API call.
+ * All findings consumers (FindingsView, FindingsRail, FindingsContextPanel,
+ * OrganContextPanel, SyndromeContextPanel) use this hook instead of
+ * duplicating the derivation pipeline. React Query's 5-min stale cache
+ * ensures the underlying useFindings() call returns the same cached
+ * response — no extra API calls.
  */
 
 import { useMemo } from "react";
 import { useFindings } from "@/hooks/useFindings";
-import { deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
+import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
-import type { FindingsFilters } from "@/types/analysis";
-import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
+import type { FindingsFilters, FindingsResponse } from "@/types/analysis";
 
 const ALL_FILTERS: FindingsFilters = {
   domain: null, sex: null, severity: null, search: "",
   organ_system: null, endpoint_label: null, dose_response_pattern: null,
 };
 
-export function useFindingsAnalyticsLocal(studyId: string | undefined): FindingsAnalytics {
-  const { data } = useFindings(studyId, 1, 10000, ALL_FILTERS);
+export interface FindingsAnalyticsResult {
+  analytics: FindingsAnalytics;
+  /** Raw API response — consumers that need UnifiedFinding[] or dose_groups access this. */
+  data: FindingsResponse | undefined;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export function useFindingsAnalyticsLocal(studyId: string | undefined): FindingsAnalyticsResult {
+  const { data, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
 
   const endpointSummaries = useMemo(() => {
     if (!data?.findings?.length) return [];
-    const rows: AdverseEffectSummaryRow[] = data.findings.map((f) => {
-      const treatedStats = (f.group_stats ?? []).filter((g) => g.dose_level > 0);
-      const maxInc = treatedStats.reduce<number | null>((max, g) => {
-        if (g.incidence == null) return max;
-        return max === null ? g.incidence : Math.max(max, g.incidence);
-      }, null);
-      return {
-        endpoint_label: f.endpoint_label ?? f.finding,
-        endpoint_type: f.data_type,
-        domain: f.domain,
-        organ_system: f.organ_system ?? "unknown",
-        dose_level: 0,
-        dose_label: "",
-        sex: f.sex,
-        p_value: f.min_p_adj,
-        effect_size: f.max_effect_size,
-        direction: f.direction,
-        severity: f.severity,
-        treatment_related: f.treatment_related,
-        dose_response_pattern: f.dose_response_pattern ?? "flat",
-        test_code: f.test_code,
-        specimen: f.specimen,
-        finding: f.finding,
-        max_incidence: maxInc,
-        max_fold_change: f.max_fold_change ?? null,
-      };
-    });
+    const rows = mapFindingsToRows(data.findings);
     const summaries = deriveEndpointSummaries(rows);
     if (data.dose_groups) {
       const noaelMap = computeEndpointNoaelMap(data.findings, data.dose_groups);
@@ -115,12 +97,14 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
     return map;
   }, [endpointSummaries]);
 
-  return useMemo(() => ({
+  const analytics = useMemo(() => ({
     endpoints: endpointSummaries,
     syndromes,
     organCoherence,
     labMatches,
     signalScores,
     endpointSexes,
-  }), [syndromes, organCoherence, labMatches, signalScores, endpointSexes]);
+  }), [endpointSummaries, syndromes, organCoherence, labMatches, signalScores, endpointSexes]);
+
+  return { analytics, data, isLoading, error: error as Error | null };
 }

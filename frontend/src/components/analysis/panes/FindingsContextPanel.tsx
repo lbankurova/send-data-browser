@@ -24,7 +24,7 @@ export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
   const { selectedFindingId, selectedFinding, endpointSexes, selectedGroupType, selectedGroupKey } = useFindingSelection();
-  const analytics = useFindingsAnalyticsLocal(studyId);
+  const { analytics } = useFindingsAnalyticsLocal(studyId);
   const { data: context, isLoading } = useFindingContext(
     studyId,
     selectedFindingId
