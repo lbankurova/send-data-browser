@@ -62,13 +62,22 @@ def _get_xpt_max_mtime(study: StudyInfo) -> float:
     return max(mtimes) if mtimes else 0
 
 
+def _get_code_max_mtime() -> float:
+    """Get the most recent mtime across analysis Python source files."""
+    code_dir = Path(__file__).parent
+    mtimes = [f.stat().st_mtime for f in code_dir.glob("*.py") if f.is_file()]
+    return max(mtimes) if mtimes else 0
+
+
 def _is_cache_valid(study: StudyInfo) -> bool:
-    """Check if cached JSON is newer than all relevant XPT files."""
+    """Check if cached JSON is newer than all relevant XPT files and code."""
     cp = _cache_path(study.study_id)
     if not cp.exists():
         return False
     cache_mtime = cp.stat().st_mtime
-    return cache_mtime > _get_xpt_max_mtime(study)
+    data_fresh = cache_mtime > _get_xpt_max_mtime(study)
+    code_fresh = cache_mtime > _get_code_max_mtime()
+    return data_fresh and code_fresh
 
 
 def compute_adverse_effects(study: StudyInfo) -> dict:
@@ -133,6 +142,12 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
                 finding["scheduled_direction"] = sched.get("direction")
                 finding["n_excluded"] = n_excluded
             elif finding["domain"] in TERMINAL_DOMAINS or finding["domain"] == LB_DOMAIN:
+                # Finding exists in Pass 1 but not Pass 2 — all subjects were
+                # early deaths at this timepoint.  Attach empty arrays so the
+                # frontend knows "this finding has no data under scheduled-only".
+                finding["scheduled_group_stats"] = []
+                finding["scheduled_pairwise"] = []
+                finding["scheduled_direction"] = None
                 finding["n_excluded"] = n_excluded
 
     # Step 3: Assign IDs and classify

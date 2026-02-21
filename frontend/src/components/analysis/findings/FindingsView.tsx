@@ -99,6 +99,9 @@ export function FindingsView() {
   const { data: pkData } = usePkIntegration(studyId);
   const doseGroupCount = studyMeta?.dose_groups?.length ?? 0;
 
+  // Scheduled-only exclusion context
+  const { setEarlyDeathSubjects, useScheduledOnly: isScheduledOnly } = useScheduledOnly();
+
   // Rail-provided state (single source of truth for filtering)
   const [visibleLabels, setVisibleLabels] = useState<Set<string> | null>(null);
   const [scopeLabel, setScopeLabel] = useState<string | null>(null);
@@ -199,15 +202,21 @@ export function FindingsView() {
     return railFilteredEndpoints.filter((ep) => !excludedEndpoints.has(ep.endpoint_label));
   }, [railFilteredEndpoints, excludedEndpoints]);
 
-  // Table findings — filtered by rail's visible set
+  // Table findings — filtered by rail's visible set + scheduled-only exclusion
   const tableFindings = useMemo(() => {
     if (!data?.findings) return [];
     let f = data.findings;
     if (visibleLabels) {
       f = f.filter((row) => visibleLabels.has(row.endpoint_label ?? row.finding));
     }
+    // Hide findings that vanish under scheduled-only mode (empty scheduled_group_stats)
+    if (isScheduledOnly) {
+      f = f.filter((row) =>
+        !row.scheduled_group_stats || row.scheduled_group_stats.length > 0,
+      );
+    }
     return f;
-  }, [data, visibleLabels]);
+  }, [data, visibleLabels, isScheduledOnly]);
 
   // Plottable count: endpoints with both effect size and p-value
   const plottableCount = useMemo(() =>
@@ -353,7 +362,6 @@ export function FindingsView() {
     );
   }
 
-  const { setEarlyDeathSubjects } = useScheduledOnly();
   useEffect(() => {
     if (mortalityData) {
       const earlyDeaths = mortalityData.early_death_subjects ?? {};

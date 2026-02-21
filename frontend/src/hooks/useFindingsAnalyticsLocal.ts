@@ -6,16 +6,22 @@
  * duplicating the derivation pipeline. React Query's 5-min stale cache
  * ensures the underlying useFindings() call returns the same cached
  * response — no extra API calls.
+ *
+ * Scheduled-only aware: when the mortality toggle excludes early-death
+ * subjects, the derivation pipeline uses scheduled stats and filters out
+ * findings that vanish entirely. This propagates through ALL downstream
+ * analytics (endpoint summaries, syndromes, signal scores, etc.).
  */
 
 import { useMemo } from "react";
 import { useFindings } from "@/hooks/useFindings";
+import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
-import type { FindingsFilters, FindingsResponse } from "@/types/analysis";
+import type { FindingsFilters, FindingsResponse, UnifiedFinding } from "@/types/analysis";
 
 const ALL_FILTERS: FindingsFilters = {
   domain: null, sex: null, severity: null, search: "",
@@ -30,15 +36,48 @@ export interface FindingsAnalyticsResult {
   error: Error | null;
 }
 
+/**
+ * When scheduled-only mode is active, swap each finding's group_stats with
+ * its scheduled_group_stats and filter out findings that vanish entirely
+ * (empty scheduled_group_stats means all subjects were early deaths).
+ */
+function applyScheduledFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
+  const result: UnifiedFinding[] = [];
+  for (const f of findings) {
+    // Findings with empty scheduled_group_stats vanish under scheduled-only
+    if (f.scheduled_group_stats && f.scheduled_group_stats.length === 0) continue;
+    // Findings with scheduled alternatives: swap stats in a shallow copy
+    if (f.scheduled_group_stats) {
+      result.push({
+        ...f,
+        group_stats: f.scheduled_group_stats,
+        pairwise: f.scheduled_pairwise ?? f.pairwise,
+        direction: f.scheduled_direction ?? f.direction,
+      });
+    } else {
+      // Longitudinal domains (BW, CL, FW) have no scheduled stats — pass through
+      result.push(f);
+    }
+  }
+  return result;
+}
+
 export function useFindingsAnalyticsLocal(studyId: string | undefined): FindingsAnalyticsResult {
   const { data, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
+  const { useScheduledOnly: isScheduledOnly } = useScheduledOnly();
+
+  // Active findings: swapped when scheduled-only is active
+  const activeFindings = useMemo(() => {
+    if (!data?.findings?.length) return [];
+    return isScheduledOnly ? applyScheduledFilter(data.findings) : data.findings;
+  }, [data, isScheduledOnly]);
 
   const endpointSummaries = useMemo(() => {
-    if (!data?.findings?.length) return [];
-    const rows = mapFindingsToRows(data.findings);
+    if (!activeFindings.length) return [];
+    const rows = mapFindingsToRows(activeFindings);
     const summaries = deriveEndpointSummaries(rows);
-    if (data.dose_groups) {
-      const noaelMap = computeEndpointNoaelMap(data.findings, data.dose_groups);
+    if (data?.dose_groups) {
+      const noaelMap = computeEndpointNoaelMap(activeFindings, data.dose_groups);
       for (const ep of summaries) {
         const noael = noaelMap.get(ep.endpoint_label);
         if (noael) {
@@ -50,7 +89,7 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
       }
     }
     return summaries;
-  }, [data]);
+  }, [activeFindings, data?.dose_groups]);
 
   const organCoherence = useMemo(() => deriveOrganCoherence(endpointSummaries), [endpointSummaries]);
   const syndromes = useMemo(() => detectCrossDomainSyndromes(endpointSummaries), [endpointSummaries]);

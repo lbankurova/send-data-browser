@@ -171,7 +171,15 @@ def compute_all_findings(
                 finding["scheduled_trend_p"] = sched.get("trend_p")
                 finding["n_excluded"] = n_excluded
             elif finding["domain"] in TERMINAL_DOMAINS or finding["domain"] == LB_DOMAIN:
-                # Terminal domain but no scheduled finding (all subjects excluded?) — keep base
+                # Finding exists in Pass 1 but not Pass 2 — all subjects were
+                # early deaths at this timepoint.  Attach empty arrays so
+                # consumers know "this finding has no data under scheduled-only".
+                finding["scheduled_group_stats"] = []
+                finding["scheduled_pairwise"] = []
+                finding["scheduled_direction"] = None
+                finding["scheduled_min_p_adj"] = None
+                finding["scheduled_max_effect_size"] = None
+                finding["scheduled_trend_p"] = None
                 finding["n_excluded"] = n_excluded
 
     # Try FW domain (food/water consumption) — mirrors BW pattern
