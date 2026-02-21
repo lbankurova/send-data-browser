@@ -30,7 +30,9 @@ import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import type { StudyMortality } from "@/types/mortality";
 import { useTumorSummary } from "@/hooks/useTumorSummary";
+import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { useFoodConsumptionSummary } from "@/hooks/useFoodConsumptionSummary";
+import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useClinicalObservations } from "@/hooks/useClinicalObservations";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { useStudyContext } from "@/hooks/useStudyContext";
@@ -301,6 +303,9 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       severity: f.severity,
       treatment_related: f.treatment_related,
       dose_response_pattern: f.dose_response_pattern ?? "flat",
+      test_code: f.test_code,
+      specimen: f.specimen,
+      finding: f.finding,
     }));
     return deriveEndpointSummaries(rows);
   }, [rawData]);
@@ -328,8 +333,12 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   // Food consumption data for interpretation layer
   const { data: foodConsumptionSummary } = useFoodConsumptionSummary(studyId);
 
+  // Exclusion state for reactive confounder checks
+  const { excludedSubjects } = useScheduledOnly();
+
   // Tumor data for interpretation layer
   const { data: tumorSummary } = useTumorSummary(studyId);
+  const { data: crossAnimalFlags } = useCrossAnimalFlags(studyId);
   const tumorFindings = useMemo<TumorFinding[]>(() => {
     if (!tumorSummary?.has_tumors) return [];
     const findings: TumorFinding[] = [];
@@ -470,6 +479,50 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
      syndromeInterp.foodConsumptionContext.bwFwAssessment !== "not_applicable" &&
      analytics.syndromes.some(s => s.id === "XS09"));
 
+  // ── Organ-matched specimens for tumor cross-reference (§8B) ──
+  const matchedSpecimens = useMemo(() => {
+    if (!detected) return new Set<string>();
+    const specs = new Set<string>();
+    for (const ep of detected.matchedEndpoints) {
+      if (ep.domain !== "MI" && ep.domain !== "MA" && ep.domain !== "OM") continue;
+      const summary = allEndpoints.find(
+        (s) => s.endpoint_label === ep.endpoint_label && s.domain === ep.domain,
+      );
+      if (summary?.specimen) specs.add(summary.specimen.toUpperCase());
+    }
+    return specs;
+  }, [detected, allEndpoints]);
+
+  // ── Reactive confounder check: tumor-bearing animals in group stats (§8D) ──
+  const tumorConfounders = useMemo(() => {
+    if (!syndromeId || syndromeId === "XS01") return [];
+    const tdr = crossAnimalFlags?.tumor_linkage?.tumor_dose_response;
+    if (!tdr?.length) return [];
+
+    const confounders: {
+      specimen: string;
+      finding: string;
+      includedCount: number;
+      doseLabel: string;
+    }[] = [];
+
+    for (const t of tdr) {
+      if (t.behavior !== "MALIGNANT") continue;
+      const includedIds = t.animal_ids.filter((id) => !excludedSubjects.has(id));
+      if (includedIds.length === 0) continue;
+      const highestAffected = [...t.incidence_by_dose]
+        .reverse()
+        .find((d) => d.males.affected + d.females.affected > 0);
+      confounders.push({
+        specimen: t.specimen,
+        finding: t.finding.toLowerCase(),
+        includedCount: includedIds.length,
+        doseLabel: highestAffected?.dose_label ?? "unknown",
+      });
+    }
+    return confounders;
+  }, [syndromeId, crossAnimalFlags, excludedSubjects]);
+
   // ── Severity accent for header ──
   const sevAccent = getSeverityAccent(syndromeInterp?.overallSeverity);
 
@@ -606,6 +659,35 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       {syndromeInterp && hasHistopath && (
         <CollapsiblePane title="Histopathology" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <HistopathContextPane crossRefs={syndromeInterp.histopathContext} organProportionality={organProportionality} />
+          {/* §8C: XS01 organ-matched tumor progression cross-reference */}
+          {syndromeId === "XS01" && matchedSpecimens.size > 0 &&
+            crossAnimalFlags?.tumor_linkage?.tumor_dose_response
+              ?.filter((t) =>
+                t.behavior === "MALIGNANT" &&
+                t.flags.length > 0 &&
+                matchedSpecimens.has(t.specimen.toUpperCase()),
+              )
+              .map((t) => {
+                const maxDose = t.incidence_by_dose.reduce((best, d) =>
+                  (d.males.affected + d.females.affected) > (best.males.affected + best.females.affected) ? d : best,
+                );
+                const affected = maxDose.males.affected + maxDose.females.affected;
+                const bothSexes = maxDose.males.affected > 0 && maxDose.females.affected > 0;
+                return (
+                  <div key={`${t.specimen}-${t.finding}`} className="mt-2 border-l-2 border-amber-400 bg-amber-50/50 px-2 py-1.5 text-[10px]">
+                    {"\u26A0"} {t.finding.toLowerCase()} at {maxDose.dose_label} ({affected} animal{affected !== 1 ? "s" : ""}{bothSexes ? ", both sexes" : ""})
+                    <span className="ml-1 text-muted-foreground">— consistent with progression from hepatocellular injury to neoplasia</span>
+                  </div>
+                );
+              })
+          }
+          {/* §8D: Reactive confounder check — tumor-bearing animals in group stats */}
+          {tumorConfounders.length > 0 && tumorConfounders.map((c) => (
+            <div key={`confounder-${c.specimen}-${c.finding}`} className="mt-2 border-l-2 border-amber-400 bg-amber-50/50 px-2 py-1.5 text-[10px]">
+              <div>{"\u26A0"} {c.includedCount} animal{c.includedCount !== 1 ? "s" : ""} with {c.finding} included in group stats</div>
+              <div className="text-muted-foreground ml-3">Group means at {c.doseLabel} may reflect tumor burden</div>
+            </div>
+          ))}
         </CollapsiblePane>
       )}
 
