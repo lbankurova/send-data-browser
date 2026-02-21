@@ -82,8 +82,14 @@ export function ViewSelectionProvider({ children }: { children: ReactNode }) {
   const [selection, setSelectionRaw] = useState<ViewSelection | null>(null);
   const [selectedSubject, setSelectedSubjectRaw] = useState<string | null>(null);
   const [pendingCompare, setPendingCompareRaw] = useState<string[] | null>(null);
-  const setSelection = useCallback((sel: ViewSelection | null) => setSelectionRaw(sel), []);
-  const setSelectedSubject = useCallback((usubjid: string | null) => setSelectedSubjectRaw(usubjid), []);
+  const setSelection = useCallback((sel: ViewSelection | null) => {
+    setSelectionRaw(sel);
+    if (sel) setSelectedSubjectRaw(null); // clear subject when view selection made
+  }, []);
+  const setSelectedSubject = useCallback((usubjid: string | null) => {
+    setSelectedSubjectRaw(usubjid);
+    if (usubjid) setSelectionRaw(null); // clear view selection when subject selected
+  }, []);
   const setPendingCompare = useCallback((ids: string[] | null) => setPendingCompareRaw(ids), []);
 
   return (

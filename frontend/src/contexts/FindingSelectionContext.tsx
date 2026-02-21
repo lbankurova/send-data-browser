@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import type { UnifiedFinding } from "@/types/analysis";
+import { useViewSelection } from "@/contexts/ViewSelectionContext";
 
 export type GroupSelectionType = "organ" | "syndrome" | null;
 
@@ -40,6 +41,7 @@ export function FindingSelectionProvider({
   );
   const [selectedGroupType, setSelectedGroupType] = useState<GroupSelectionType>(null);
   const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null);
+  const { setSelectedSubject } = useViewSelection();
 
   const selectFinding = useCallback((finding: UnifiedFinding | null) => {
     setSelectedFinding(finding);
@@ -47,8 +49,9 @@ export function FindingSelectionProvider({
     if (finding) {
       setSelectedGroupType(null);
       setSelectedGroupKey(null);
+      setSelectedSubject(null); // clear subject panel
     }
-  }, []);
+  }, [setSelectedSubject]);
 
   const selectGroup = useCallback((type: GroupSelectionType, key: string | null) => {
     setSelectedGroupType(type);
@@ -56,8 +59,9 @@ export function FindingSelectionProvider({
     // Group selection clears endpoint selection
     if (type && key) {
       setSelectedFinding(null);
+      setSelectedSubject(null); // clear subject panel
     }
-  }, []);
+  }, [setSelectedSubject]);
 
   const stableSetEndpointSexes = useCallback(
     (map: Map<string, string[]>) => setEndpointSexes(map),

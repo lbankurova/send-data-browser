@@ -110,8 +110,8 @@ export function Layout() {
   return (
     <DesignModeProvider>
     <SelectionProvider>
-      <FindingSelectionProvider>
-        <ViewSelectionProvider>
+      <ViewSelectionProvider>
+        <FindingSelectionProvider>
         <StudySelectionProvider studyId={studyId}>
         <GlobalFilterProvider>
         <RailModeProvider studyId={studyId}>
@@ -195,8 +195,8 @@ export function Layout() {
         </RailModeProvider>
         </GlobalFilterProvider>
         </StudySelectionProvider>
-        </ViewSelectionProvider>
-      </FindingSelectionProvider>
+        </FindingSelectionProvider>
+      </ViewSelectionProvider>
     </SelectionProvider>
     <GlobalTooltip />
     </DesignModeProvider>
