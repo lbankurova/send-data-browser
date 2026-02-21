@@ -18,8 +18,8 @@ def compute_eg_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     eg_df, _ = read_xpt(study.xpt_files["eg"])
     eg_df.columns = [c.upper() for c in eg_df.columns]
 
-    # Merge with subject info (main study only)
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    # Merge with subject info (main study only, exclude TK satellites)
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     eg_df = eg_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     # Parse numeric result

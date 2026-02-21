@@ -280,7 +280,7 @@ def _compute_fw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]
     fw_df, _ = read_xpt(study.xpt_files["fw"])
     fw_df.columns = [c.upper() for c in fw_df.columns]
 
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     fw_df = fw_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     if "FWSTRESN" in fw_df.columns:

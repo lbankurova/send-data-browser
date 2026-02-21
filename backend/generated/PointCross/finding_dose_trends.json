@@ -2,840 +2,840 @@
   {
     "specimen": "BONE MARROW, FEMUR",
     "finding": "FAT VACUOLES",
-    "ca_trend_p": 9.111743983325482e-06,
+    "ca_trend_p": 3.310313014104338e-05,
     "severity_trend_rho": -0.7378647873726218,
     "severity_trend_p": 0.26213521262737816
   },
   {
     "specimen": "BONE MARROW, FEMUR",
     "finding": "FIBROSIS",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "BONE MARROW, FEMUR",
     "finding": "HYPERPLASIA",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "BONE MARROW, STERNUM",
     "finding": "HYPERPLASIA",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "EPIDIDYMIS",
     "finding": "ASPERMIA",
-    "ca_trend_p": 0.6132417445640952,
+    "ca_trend_p": 0.7883433963343047,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "ESOPHAGUS",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.12201178788406808,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "EYE",
     "finding": "RETINAL FOLD",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "EYE",
     "finding": "RETINAL FOLD(S)",
-    "ca_trend_p": 0.12201178788406808,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, ADRENAL",
     "finding": "HEMORRHAGE",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, ADRENAL",
     "finding": "VACUOLIZATION",
-    "ca_trend_p": 0.09967635168847422,
+    "ca_trend_p": 0.010909498364269243,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, HARDERIAN",
     "finding": "DILATATION",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, MAMMARY",
     "finding": "ATROPHY",
-    "ca_trend_p": 0.0027484073720056568,
+    "ca_trend_p": 0.0013406411172294241,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, PITUITARY",
     "finding": "CYST",
-    "ca_trend_p": 0.12201178788406808,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, PROSTATE",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.8706031216640759,
+    "ca_trend_p": 0.4744863711713392,
     "severity_trend_rho": -0.316227766016838,
     "severity_trend_p": 0.683772233983162
   },
   {
     "specimen": "GLAND, SALIVARY, PAROTID",
     "finding": "CALCULUS",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, SALIVARY, PAROTID",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, SALIVARY, PAROTID",
     "finding": "METAPLASIA",
-    "ca_trend_p": 0.08569904877830492,
+    "ca_trend_p": 0.06021214580787393,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, THYROID",
     "finding": "ECTOPIC LYMPHOID TISSUE",
-    "ca_trend_p": 0.4524073321257993,
+    "ca_trend_p": 0.6373518882339371,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, THYROID",
     "finding": "HYPERPLASIA",
-    "ca_trend_p": 0.027282461131149516,
+    "ca_trend_p": 0.05157586362087696,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, THYROID",
     "finding": "HYPERTROPHY",
-    "ca_trend_p": 0.39064195584702377,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, THYROID",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "HEART",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.03584649650729821,
+    "ca_trend_p": 0.01748467441052126,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "KIDNEY",
     "finding": "BASOPHILIC TUBULES",
-    "ca_trend_p": 0.00037556567746555025,
+    "ca_trend_p": 0.00216040748076618,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "KIDNEY",
     "finding": "CAST",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "KIDNEY",
     "finding": "CYST",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6373518882339371,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "KIDNEY",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.21585971169382945,
+    "ca_trend_p": 0.3457785861511604,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "KIDNEY",
     "finding": "NECROSIS",
-    "ca_trend_p": 0.7193353429438689,
+    "ca_trend_p": 0.5212453081148147,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LARYNX",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.28848627060980014,
+    "ca_trend_p": 0.4205962375999266,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "ADENOMA, HEPATOCELLULAR",
-    "ca_trend_p": 0.06583524760876891,
+    "ca_trend_p": 0.05157586362087696,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "HEPATOCELLULAR CARCINOMA",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "HYPERTROPHY",
-    "ca_trend_p": 2.8060298010945672e-05,
+    "ca_trend_p": 4.830803958411067e-06,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.6237482928726448,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "NECROSIS",
-    "ca_trend_p": 0.0903301042981417,
+    "ca_trend_p": 0.04767038065616136,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "VACUOLIZATION",
-    "ca_trend_p": 0.0930318181568286,
+    "ca_trend_p": 0.05934643879191981,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LUNG",
     "finding": "ASPIRATION BLOOD",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LUNG",
     "finding": "INFILTRATION GRANULOCYTIC",
-    "ca_trend_p": 0.12201178788406786,
+    "ca_trend_p": 0.23476366282766925,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LUNG",
     "finding": "INFILTRATION MONONUCLEAR CELL",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LUNG",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.9363526272398266,
+    "ca_trend_p": 0.8306960113063697,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LUNG",
     "finding": "MACROPHAGES INTRA-ALVEOLAR",
-    "ca_trend_p": 0.18042535554982475,
+    "ca_trend_p": 0.04330814281079198,
     "severity_trend_rho": -0.7745966692414834,
     "severity_trend_p": 0.22540333075851665
   },
   {
     "specimen": "LUNG",
     "finding": "METAPLASIA",
-    "ca_trend_p": 0.39064195584702377,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "MUSCLE, QUADRICEPS FEMORIS",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "PANCREAS",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.37688617203603236,
+    "ca_trend_p": 0.23476366282766925,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "PEYER'S PATCH",
     "finding": "MINERALIZATION",
-    "ca_trend_p": 0.024376847339008023,
+    "ca_trend_p": 0.005478553242547424,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SMALL INTESTINE, JEJUNUM",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SPLEEN",
     "finding": "ATROPHY",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SPLEEN",
     "finding": "CONGESTION",
-    "ca_trend_p": 0.4394086765316232,
+    "ca_trend_p": 0.08808151166219025,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SPLEEN",
     "finding": "PIGMENTATION",
-    "ca_trend_p": 0.01021145888436159,
+    "ca_trend_p": 0.000646749122576562,
     "severity_trend_rho": 0.9486832980505139,
     "severity_trend_p": 0.05131670194948613
   },
   {
     "specimen": "STOMACH",
     "finding": "EDEMA",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "STOMACH",
     "finding": "EROSION",
-    "ca_trend_p": 0.6237482928726448,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "TESTIS",
     "finding": "ATROPHY",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "TESTIS",
     "finding": "AZOOSPERMIA",
-    "ca_trend_p": 0.8540492466773077,
+    "ca_trend_p": 1.0,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "TONGUE",
     "finding": "HEMORRHAGE",
-    "ca_trend_p": 0.4245517323446324,
+    "ca_trend_p": 0.28504940740261286,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "TRACHEA",
     "finding": "DILATATION",
-    "ca_trend_p": 0.12201178788406808,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "TRACHEA",
     "finding": "INFILTRATION MONONUCLEAR CELL",
-    "ca_trend_p": 0.39064195584702377,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "URINARY BLADDER",
     "finding": "INFLAMMATION",
-    "ca_trend_p": 0.12528740273661487,
+    "ca_trend_p": 0.19436591080310905,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "UTERUS",
     "finding": "LEIOMYOMA",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "BODY CAVITY, CRANIAL",
     "finding": "CONTENTS, DARK RED",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "EPIDIDYMIS",
     "finding": "AREA(S), DARK RED",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "EPIDIDYMIS",
     "finding": "SMALL",
-    "ca_trend_p": 0.10578229175801401,
+    "ca_trend_p": 0.17949481837303072,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "ESOPHAGUS",
     "finding": "PERFORATION",
-    "ca_trend_p": 0.12201178788406808,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, ADRENAL",
     "finding": "DISCOLORATION",
-    "ca_trend_p": 0.6237482928726448,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, ADRENAL",
     "finding": "ENLARGED",
-    "ca_trend_p": 0.027282461131149516,
+    "ca_trend_p": 0.05157586362087696,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, ADRENAL",
     "finding": "PALE",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, COAGULATING",
     "finding": "SMALL",
-    "ca_trend_p": 0.39064195584702377,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, SEMINAL VESICLE",
     "finding": "SMALL",
-    "ca_trend_p": 0.39064195584702377,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, THYROID",
     "finding": "ENLARGED",
-    "ca_trend_p": 0.02974710324483909,
+    "ca_trend_p": 0.06021214580787393,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, THYROID",
     "finding": "PALE",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "GLAND, THYROID",
     "finding": "SMALL",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "HINDLIMB",
     "finding": "HARD THICKENING",
-    "ca_trend_p": 0.12528740273661487,
+    "ca_trend_p": 0.19436591080310905,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "HINDLIMB",
     "finding": "HEMORRHAGE",
-    "ca_trend_p": 0.8540492466773077,
+    "ca_trend_p": 1.0,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "HINDLIMB",
     "finding": "SWELLING",
-    "ca_trend_p": 0.12201178788406808,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "KIDNEY",
     "finding": "DISCOLORATION",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LARGE INTESTINE, CECUM",
     "finding": "CONTENTS, DARK RED",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LARGE INTESTINE, CECUM",
     "finding": "DISTENDED",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LARGE INTESTINE, CECUM",
     "finding": "FIRM FECES",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LARGE INTESTINE, CECUM",
     "finding": "WATERY CONTENTS",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LARGE INTESTINE, COLON",
     "finding": "CONTENTS, DARK RED",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LARGE INTESTINE, COLON",
     "finding": "FIRM FECES",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LARGE INTESTINE, RECTUM",
     "finding": "FIRM FECES",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "AREA(S), WHITE",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "DISCOLORATION",
-    "ca_trend_p": 0.47943769756741705,
+    "ca_trend_p": 0.3457785861511604,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "ENLARGED",
-    "ca_trend_p": 0.0027484073720056568,
+    "ca_trend_p": 0.0013406411172294241,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "MASS",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LIVER",
     "finding": "MISSHAPEN",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LUNG",
     "finding": "DISCOLORATION",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LUNG",
     "finding": "DISCOLORED AREA",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LYMPH NODE, MESENTERIC",
     "finding": "DISCOLORATION",
-    "ca_trend_p": 0.39064195584702377,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LYMPH NODE, MESENTERIC",
     "finding": "ENLARGED",
-    "ca_trend_p": 0.24501680202436282,
+    "ca_trend_p": 0.17949481837303072,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "LYMPH NODE, MESENTERIC",
     "finding": "SMALL",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SKIN",
     "finding": "ALOPECIA",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SKIN",
     "finding": "HAIR LOSS",
-    "ca_trend_p": 0.39064195584702377,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SKIN",
     "finding": "MATTING",
-    "ca_trend_p": 0.022934030391992044,
+    "ca_trend_p": 0.015685089789787998,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SKIN",
     "finding": "ROUGH FUR",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SMALL INTESTINE, DUODENUM",
     "finding": "DISTENDED",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SMALL INTESTINE, DUODENUM",
     "finding": "INTUSSUSCEPTION",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SMALL INTESTINE, ILEUM",
     "finding": "CONTENTS, DARK RED",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SMALL INTESTINE, ILEUM",
     "finding": "WATERY CONTENTS",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SMALL INTESTINE, JEJUNUM",
     "finding": "DIVERTICULUM",
-    "ca_trend_p": 0.24400102835081117,
+    "ca_trend_p": 0.19436591080310905,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SMALL INTESTINE, JEJUNUM",
     "finding": "INTUSSUSCEPTION",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SPLEEN",
     "finding": "ACCESSORY",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SPLEEN",
     "finding": "ADHESION",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "SPLEEN",
     "finding": "SMALL",
-    "ca_trend_p": 0.24501680202436282,
+    "ca_trend_p": 0.17949481837303072,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "STOMACH",
     "finding": "AREA(S), DARK RED",
-    "ca_trend_p": 0.6237482928726448,
+    "ca_trend_p": 0.5164122683960384,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "STOMACH",
     "finding": "DISTENDED",
-    "ca_trend_p": 0.28848627060980014,
+    "ca_trend_p": 0.4205962375999266,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "STOMACH",
     "finding": "YELLOW FLUID",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "TESTIS",
     "finding": "SMALL",
-    "ca_trend_p": 0.10578229175801401,
+    "ca_trend_p": 0.17949481837303072,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "TESTIS",
     "finding": "SOFT",
-    "ca_trend_p": 0.28848627060980014,
+    "ca_trend_p": 0.4205962375999266,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "THYMUS",
     "finding": "AREA(S), DARK RED",
-    "ca_trend_p": 0.9596879696921041,
+    "ca_trend_p": 0.7883433963343047,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "THYMUS",
     "finding": "SMALL",
-    "ca_trend_p": 0.6132417445640952,
+    "ca_trend_p": 0.7883433963343047,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "URINARY BLADDER",
     "finding": "CONTENTS, DARK RED",
-    "ca_trend_p": 0.0014197194383258616,
+    "ca_trend_p": 0.00040695201744500586,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "URINARY BLADDER",
     "finding": "DISTENDED",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "UTERUS",
     "finding": "CLEAR FLUID",
-    "ca_trend_p": 0.012291268923231957,
+    "ca_trend_p": 0.00556423703055775,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "UTERUS",
     "finding": "DILATATION",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": "UTERUS",
     "finding": "MASS",
-    "ca_trend_p": 0.5475924666383167,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "ALOPECIA",
-    "ca_trend_p": 0.19751855128761941,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "BEDDING WET",
-    "ca_trend_p": 0.00034119006154242904,
+    "ca_trend_p": 0.001522419555560539,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "CRUST",
-    "ca_trend_p": 0.2327079698928105,
+    "ca_trend_p": 0.15729920705028522,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "EXUDATE",
-    "ca_trend_p": 0.24400102835081117,
+    "ca_trend_p": 0.19436591080310905,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "MOURIBUND",
-    "ca_trend_p": 0.12201178788406808,
+    "ca_trend_p": 0.1742313882480251,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "RED AREA",
-    "ca_trend_p": 0.7311163232744013,
+    "ca_trend_p": 0.6506129639327536,
     "severity_trend_rho": null,
     "severity_trend_p": null
   }

@@ -22,8 +22,8 @@ def compute_lb_findings(
     lb_df, _ = read_xpt(study.xpt_files["lb"])
     lb_df.columns = [c.upper() for c in lb_df.columns]
 
-    # Merge with subject info (main study only)
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    # Merge with subject info (main study only, exclude TK satellites)
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     lb_df = lb_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     # LB special case: only exclude early-death subjects from their terminal timepoint

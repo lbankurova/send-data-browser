@@ -24,7 +24,7 @@ def compute_ma_findings(
     ma_df, _ = read_xpt(study.xpt_files["ma"])
     ma_df.columns = [c.upper() for c in ma_df.columns]
 
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
         main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
     ma_df = ma_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")

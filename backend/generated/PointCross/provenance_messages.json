@@ -12,6 +12,12 @@
     "link_to_rule": null
   },
   {
+    "rule_id": "Prov-003",
+    "icon": "info",
+    "message": "30 TK subject(s) detected and excluded from statistical analysis by default.",
+    "link_to_rule": null
+  },
+  {
     "rule_id": "Prov-004",
     "icon": "info",
     "message": "Recovery groups detected in 4 arm(s). Recovery-phase data is analyzed separately.",

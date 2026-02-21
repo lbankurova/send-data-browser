@@ -28,7 +28,7 @@ def compute_mi_findings(
     mi_df, _ = read_xpt(study.xpt_files["mi"])
     mi_df.columns = [c.upper() for c in mi_df.columns]
 
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
         main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
     mi_df = mi_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")

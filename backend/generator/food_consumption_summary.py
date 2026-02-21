@@ -138,6 +138,7 @@ def _get_study_route(study: StudyInfo) -> str | None:
 
 def _assess_caloric_dilution(route: str | None) -> bool:
     """Dietary admin routes have caloric dilution risk."""
+    # @route ROUTE-02 — dietary routes carry caloric dilution confound for food consumption
     if not route:
         return False
     upper = route.upper()
@@ -150,7 +151,7 @@ def _get_dose_info(study: StudyInfo) -> pd.DataFrame | None:
     try:
         dg_data = build_dose_groups(study)
         subjects = dg_data["subjects"]
-        return subjects[["USUBJID", "SEX", "dose_level", "is_recovery"]].copy()
+        return subjects[["USUBJID", "SEX", "dose_level", "is_recovery", "is_satellite"]].copy()
     except Exception:
         return None
 
@@ -724,7 +725,7 @@ def build_food_consumption_summary_with_subjects(
     # Get subjects for dose_level merge
     dg_data = build_dose_groups(study)
     subjects = dg_data["subjects"]
-    main_subs = subjects[~subjects["is_recovery"]].copy()
+    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
 
     fw_findings = [f for f in findings if f.get("domain") == "FW"]
     bw_findings = [f for f in findings if f.get("domain") == "BW"]
