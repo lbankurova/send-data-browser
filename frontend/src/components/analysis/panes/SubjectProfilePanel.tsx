@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { Loader2, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { useSubjectProfile } from "@/hooks/useSubjectProfile";
+import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
+import type { CrossAnimalFlags } from "@/lib/analysis-view-api";
 import { cn } from "@/lib/utils";
 import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
 import {
@@ -60,7 +62,7 @@ function CollapsiblePane({
 
 // ─── BW Sparkline (§1) ──────────────────────────────────
 
-function BWSparkline({ measurements, doseLevel }: { measurements: SubjectMeasurement[]; doseLevel: number }) {
+function BWSparkline({ measurements }: { measurements: SubjectMeasurement[] }) {
   const sorted = useMemo(
     () => [...measurements].sort((a, b) => a.day - b.day),
     [measurements]
@@ -97,7 +99,7 @@ function BWSparkline({ measurements, doseLevel }: { measurements: SubjectMeasure
   }));
 
   const polylinePoints = coords.map((c) => `${c.x},${c.y}`).join(" ");
-  const color = getDoseGroupColor(doseLevel);
+  const color = "var(--color-muted-foreground)";
   const first = sorted[0];
   const last = sorted[sorted.length - 1];
 
@@ -343,10 +345,17 @@ function HistopathFindings({
   findings,
   disposition,
   isAccidental,
+  tumorCrossRef,
 }: {
   findings: SubjectFinding[];
   disposition: string | null;
   isAccidental: boolean;
+  tumorCrossRef?: {
+    others: { id: string; sex: string; arm: string; death_day: number | null }[];
+    totalAffected: number;
+    totalExamined: number;
+    doseLabel: string;
+  } | null;
 }) {
   const [normalsExpanded, setNormalsExpanded] = useState(false);
 
@@ -423,6 +432,15 @@ function HistopathFindings({
                       <span className="ml-1.5 text-[9px] font-semibold text-[#DC2626]/60">
                         Presumptive COD
                       </span>
+                    )}
+                    {/* Tumor cross-reference for COD/malignant findings */}
+                    {isCODRow && tumorCrossRef && (
+                      <div className="mt-0.5 pl-2 text-[9px] text-muted-foreground">
+                        Also in: {tumorCrossRef.others.map((o) =>
+                          `${o.id.slice(-4)} (${o.sex}, same dose, ${o.arm} ${o.death_day != null ? `day ${o.death_day}` : ""})`
+                        ).join(", ")}
+                        {" — "}{tumorCrossRef.totalAffected}/{tumorCrossRef.totalExamined} at {tumorCrossRef.doseLabel}
+                      </div>
                     )}
                   </td>
                   <td className="py-0.5 text-right">
@@ -536,6 +554,7 @@ export function SubjectProfilePanel({
   onBack: () => void;
 }) {
   const { data: profile, isLoading, error } = useSubjectProfile(studyId, usubjid);
+  const { data: crossAnimalFlags } = useCrossAnimalFlags(studyId);
 
   if (isLoading) {
     return (
@@ -563,15 +582,17 @@ export function SubjectProfilePanel({
     );
   }
 
-  return <SubjectProfileContent profile={profile} onBack={onBack} />;
+  return <SubjectProfileContent profile={profile} onBack={onBack} crossAnimalFlags={crossAnimalFlags} />;
 }
 
 function SubjectProfileContent({
   profile,
   onBack,
+  crossAnimalFlags,
 }: {
   profile: SubjectProfile;
   onBack: () => void;
+  crossAnimalFlags?: CrossAnimalFlags;
 }) {
   const bw = profile.domains.BW?.measurements ?? [];
   const lb = profile.domains.LB?.measurements ?? [];
@@ -607,6 +628,49 @@ function SubjectProfileContent({
     const text = `${codFinding.finding} (${codFinding.specimen})`;
     return extra > 0 ? `${text} (+${extra} more)` : text;
   }, [isDeath, codFinding, mi]);
+
+  // Tissue battery warning for this animal
+  const batteryFlag = useMemo(() => {
+    if (!crossAnimalFlags?.tissue_battery?.flagged_animals?.length) return null;
+    return crossAnimalFlags.tissue_battery.flagged_animals.find(
+      (f) => f.animal_id === profile.usubjid,
+    ) ?? null;
+  }, [crossAnimalFlags, profile.usubjid]);
+
+  // Tumor cross-reference: find matching tumor linkage for COD findings
+  const tumorCrossRef = useMemo(() => {
+    if (!codFinding || !crossAnimalFlags?.tumor_linkage?.tumor_dose_response?.length) return null;
+    const codSpec = codFinding.specimen.toUpperCase();
+    const codFind = codFinding.finding.toUpperCase();
+    for (const t of crossAnimalFlags.tumor_linkage.tumor_dose_response) {
+      if (
+        t.specimen.toUpperCase() === codSpec &&
+        (t.finding.toUpperCase().includes(codFind) || codFind.includes(t.finding.toUpperCase())) &&
+        t.animal_ids.length > 1
+      ) {
+        const others = t.animal_details.filter((a) => a.id !== profile.usubjid);
+        if (others.length === 0) return null;
+        // Find max dose incidence
+        const maxDose = t.incidence_by_dose.reduce((best, d) => {
+          const total = d.males.affected + d.females.affected;
+          const bestTotal = best.males.affected + best.females.affected;
+          return total > bestTotal ? d : best;
+        });
+        const totalAffected = maxDose.males.affected + maxDose.females.affected;
+        const totalExamined = maxDose.males.total + maxDose.females.total;
+        return { others, totalAffected, totalExamined, doseLabel: maxDose.dose_label };
+      }
+    }
+    return null;
+  }, [codFinding, crossAnimalFlags, profile.usubjid]);
+
+  // Recovery narrative for this animal
+  const recoveryNarrative = useMemo(() => {
+    if (!crossAnimalFlags?.recovery_narratives?.length) return null;
+    return crossAnimalFlags.recovery_narratives.find(
+      (r) => r.animal_id === profile.usubjid,
+    ) ?? null;
+  }, [crossAnimalFlags, profile.usubjid]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -671,6 +735,13 @@ function SubjectProfileContent({
             )}
           </div>
         )}
+
+        {/* Recovery narrative — below cause of death */}
+        {recoveryNarrative && (
+          <div className="mt-0.5 text-[10px] text-muted-foreground">
+            Recovery: {recoveryNarrative.narrative}
+          </div>
+        )}
       </div>
 
       {/* Scrollable panes */}
@@ -680,7 +751,7 @@ function SubjectProfileContent({
           <CollapsiblePane title="Measurements" defaultOpen>
             {bw.length > 0 && (
               <div className="mb-3">
-                <BWSparkline measurements={bw} doseLevel={profile.dose_level} />
+                <BWSparkline measurements={bw} />
               </div>
             )}
             {lb.length > 0 && (
@@ -732,12 +803,35 @@ function SubjectProfileContent({
                 : undefined
           }
         >
+          {/* Tissue battery warning */}
+          {batteryFlag && (
+            <div className="mb-2 border-l-2 border-amber-400 bg-amber-50/50 px-2 py-1.5 text-[10px]">
+              <div className="flex items-start gap-1">
+                <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+                <div>
+                  <span>
+                    {batteryFlag.examined_count} of ~{batteryFlag.expected_count} expected tissues examined ({batteryFlag.completion_pct}%) — verify MI data completeness
+                  </span>
+                  {batteryFlag.missing_target_organs.length > 0 && (
+                    <div className="mt-0.5 text-[9px] text-foreground/70">
+                      Missing target organs: {batteryFlag.missing_target_organs.join(", ")}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           {mi.length === 0 ? (
             <div className="text-[11px] text-muted-foreground">
               No microscopic findings recorded
             </div>
           ) : (
-            <HistopathFindings findings={mi} disposition={profile.disposition} isAccidental={isAccidental} />
+            <HistopathFindings
+              findings={mi}
+              disposition={profile.disposition}
+              isAccidental={isAccidental}
+              tumorCrossRef={tumorCrossRef}
+            />
           )}
         </CollapsiblePane>
 
