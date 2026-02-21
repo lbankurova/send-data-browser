@@ -68,7 +68,6 @@ export function StudySummaryView() {
       );
       setEarlyDeathSubjects(earlyDeaths, trIds);
     }
-    return () => setEarlyDeathSubjects({}, new Set());
   }, [mortalityData, setEarlyDeathSubjects]);
 
   // Auto-select top organ when view loads and nothing is selected

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 import type { UnifiedFinding, GroupStat, PairwiseResult } from "@/types/analysis";
 
@@ -57,6 +57,8 @@ export function ScheduledOnlyProvider({ children }: { children: ReactNode }) {
   const [excludedSubjects, setExcludedSubjects] = useState<Set<string>>(EMPTY_SET);
   const [earlyDeathSubjects, setEarlyDeathSubjectsRaw] = useState<Record<string, string>>(EMPTY_SUBJECTS);
   const [trEarlyDeathIds, setTrEarlyDeathIdsRaw] = useState<Set<string>>(EMPTY_SET);
+  /** Tracks which subject set is currently loaded — prevents resetting user toggles on re-init */
+  const initializedKeyRef = useRef("");
 
   const hasEarlyDeaths = useMemo(
     () => Object.keys(earlyDeathSubjects).length > 0,
@@ -80,10 +82,17 @@ export function ScheduledOnlyProvider({ children }: { children: ReactNode }) {
    */
   const setEarlyDeathSubjects = useCallback(
     (subjects: Record<string, string>, trIds: Set<string>) => {
+      const key = Object.keys(subjects).sort().join(",");
+      const isNew = key !== initializedKeyRef.current;
+      initializedKeyRef.current = key;
+
       setEarlyDeathSubjectsRaw(subjects);
       setTrEarlyDeathIdsRaw(trIds);
-      // Default: exclude only TR early deaths
-      setExcludedSubjects(trIds.size > 0 ? new Set(trIds) : EMPTY_SET);
+      // Only reset exclusions when subject set changes (new study or first init).
+      // Re-init with same subjects (e.g. navigating between views) preserves user toggles.
+      if (isNew) {
+        setExcludedSubjects(trIds.size > 0 ? new Set(trIds) : EMPTY_SET);
+      }
     },
     [],
   );
