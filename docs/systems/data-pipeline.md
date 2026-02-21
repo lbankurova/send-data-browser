@@ -18,7 +18,8 @@ Both pipelines share the same core modules: `dose_groups.py`, `findings_lb.py`, 
 
 ```
 dm.xpt --+
-tx.xpt --+--> build_dose_groups() --> dose_groups[], subjects DataFrame
+tx.xpt --+--> build_dose_groups() --> dose_groups[], subjects DataFrame (is_recovery, is_satellite)
+                |                     tk_setcds → is_satellite via DM.SETCD
                 |
 lb.xpt --------+--> compute_lb_findings(study, subjects) --+
 bw.xpt --------+--> compute_bw_findings(study, subjects) --+
@@ -175,7 +176,7 @@ subjects["dose_level"] = subjects["ARMCD"].apply(map_dose_level)
 
 **Step 4: Read TX domain (if present).**
 
-TX is a long-format table. For each unique `SETCD`, collect `TXPARMCD`/`TXVAL` pairs:
+TX is a long-format table. `_parse_tx(study)` returns `(tx_map, tk_setcds)` — the dose group map plus a set of TK satellite SETCDs. For each unique `SETCD`, collect `TXPARMCD`/`TXVAL` pairs:
 
 ```python
 for setcd in tx_df["SETCD"].unique():
@@ -190,6 +191,7 @@ for setcd in tx_df["SETCD"].unique():
     armcd = params.get("ARMCD", str(setcd))
     dose_val = float(params["TRTDOS"]) if "TRTDOS" in params else None
     label = params.get("GRPLBL") or params.get("SETLBL") or f"ARMCD {armcd}"
+    # TK satellites are detected and excluded from tx_map (see Step 4a)
     tx_map[armcd] = {"dose_value": dose_val, "dose_unit": params.get("TRTDOSU"), "label": label}
 ```
 
@@ -203,7 +205,26 @@ if not tx_map:
         tx_map[str(armcd).strip()] = {"dose_value": None, "dose_unit": None, "label": label}
 ```
 
-**Step 5: Build dose_groups summary (main study only, excluding recovery arms).**
+**Step 4a: TK satellite detection and segregation.**
+
+TK (toxicokinetic) satellite animals exist solely for plasma exposure data. They share ARMCD values with main study animals but have distinct SETCD values (e.g., "2TK", "3TK", "4TK"). Satellites must be excluded from all statistical analyses — including them inflates group N and corrupts p-values, incidence denominators, and group means.
+
+Detection uses a waterfall of heuristics (first match wins):
+
+| Heuristic | What it checks | Example |
+|-----------|----------------|---------|
+| TK-prefixed param value | Any `TXPARMCD` starting with "TK" where value is not "non-TK"/"none"/"no" | `TKDESC="TK"` (positive), `TKDESC="non-TK"` (negative) |
+| SETCD substring | `"TK"` appears in SETCD string | `SETCD="2TK"` |
+| Label keywords | SETLBL or GRPLBL contains "satellite" or "toxicokinetic" | `SETLBL="Group 2, TK"` |
+
+When a set is identified as TK satellite:
+1. Its SETCD is added to `tk_setcds` set
+2. It is **not** written to `tx_map` (avoids ARMCD collision — TK and main arms share ARMCD)
+3. `is_satellite` is assigned via `DM.SETCD.isin(tk_setcds)` (not ARMCD lookup)
+
+Fallback: if DM lacks a SETCD column, `is_satellite` falls back to ARMCD-based detection from `tx_map`.
+
+**Step 5: Build dose_groups summary (main study only, excluding recovery and satellite arms).**
 
 ```python
 for armcd in sorted(ARMCD_TO_DOSE_LEVEL.keys()):  # "1", "2", "3", "4"
@@ -220,18 +241,22 @@ for armcd in sorted(ARMCD_TO_DOSE_LEVEL.keys()):  # "1", "2", "3", "4"
     })
 ```
 
-**Output:** `{"dose_groups": list[dict], "subjects": DataFrame, "tx_map": dict}`
+**Output:** `{"dose_groups": list[dict], "subjects": DataFrame, "tx_map": dict, "tk_count": int}`
+
+The `subjects` DataFrame includes columns: `USUBJID`, `SEX`, `ARMCD`, `dose_level`, `is_recovery`, `is_satellite`.
 
 ### Phase 2: Per-Domain Statistics
 
 All statistical tests are computed **separately by sex** (M and F independently). Longitudinal domains (LB, BW, FW) are additionally stratified by study day. Terminal domains (MI, MA, OM) are analyzed once per specimen x sex.
 
-**Recovery-arm subjects are excluded from all computations:**
+**Recovery-arm and TK satellite subjects are excluded from all computations:**
 
 ```python
-main_subs = subjects[~subjects["is_recovery"]].copy()
+main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
 domain_df = domain_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 ```
+
+This filter is applied in all 12 domain findings modules (LB, BW, OM, MI, MA, CL, FW, DS, EG, VS, BG, TF), the mortality pipeline (`mortality.py`, `findings_dd.py`), and the food consumption summary (`food_consumption_summary.py`).
 
 #### Common Finding Structure
 
@@ -1086,8 +1111,7 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 - View-specific DataFrame assembly (all 8 JSON outputs)
 
 **Hardcoded (would need generalization for production):**
-- `ARMCD_TO_DOSE_LEVEL = {"1": 0, "2": 1, "3": 2, "4": 3}` -- assumes 4-group design with specific ARMCD values
-- `RECOVERY_ARMCDS = {"1R", "2R", "3R", "4R"}` -- hardcoded recovery arm codes
+- ~~`ARMCD_TO_DOSE_LEVEL`~~ and ~~`RECOVERY_ARMCDS`~~ — now dynamically derived from TX domain. Recovery detected via `RECOVDUR` param or label keywords. TK satellite detected via waterfall heuristics (see Phase 1 Step 4a). Dose levels sorted by `TRTDOS` ascending.
 - `ORGAN_SYSTEM_MAP` and `BIOMARKER_MAP` -- static lookup tables in `send_knowledge.py`
 - Severity classification thresholds (p < 0.05, |d| >= 0.5 etc.)
 - Signal score weights (0.35, 0.20, 0.25, 0.20)
@@ -1098,6 +1122,7 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 - No incremental recomputation -- full pipeline reruns on each generation
 - FW domain only in generator pipeline, not in on-demand adverse effects pipeline
 - Recovery subjects excluded from generator pipeline statistics (per SEND standard). Recovery reversibility assessments computed frontend-side via `lib/recovery-assessment.ts` using subject-level data from the temporal API.
+- TK satellite subjects excluded from all statistical analyses. Detected via TX domain heuristics (TXPARMCD values, SETCD substring, label keywords) and classified via DM.SETCD membership. Frontend `StudyBanner` displays exclusion count for reviewer transparency.
 
 ---
 
@@ -1112,7 +1137,7 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 | `generator/organ_map.py` | Organ system resolution (specimen/test_code/domain -> system) | `get_organ_system(specimen, test_code, domain)`, `get_organ_name(specimen, test_code)` |
 | `generator/static_charts.py` | HTML bar chart generation | `generate_target_organ_bar_chart(target_organs)` |
 | `services/xpt_processor.py` | XPT loading, CSV caching, TS metadata extraction | `read_xpt(xpt_path)`, `ensure_cached(study, domain)`, `extract_full_ts_metadata(study)` |
-| `services/analysis/dose_groups.py` | Dose group construction from DM+TX | `build_dose_groups(study)` |
+| `services/analysis/dose_groups.py` | Dose group construction from DM+TX, TK satellite detection | `_parse_tx(study)` → `(tx_map, tk_setcds)`, `build_dose_groups(study)` → `{dose_groups, subjects, tx_map, tk_count}` |
 | `services/analysis/findings_lb.py` | LB domain continuous analysis | `compute_lb_findings(study, subjects)` |
 | `services/analysis/findings_bw.py` | BW domain continuous analysis with baseline % change | `compute_bw_findings(study, subjects)` |
 | `services/analysis/findings_om.py` | OM domain continuous analysis with relative organ weight | `compute_om_findings(study, subjects)` |
@@ -1147,4 +1172,5 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 
 ## Changelog
 
+- 2026-02-20: Added TK satellite detection and segregation (63ae665). Phase 1 Step 4a documents waterfall heuristics (TK param value, SETCD substring, label keywords), ARMCD collision avoidance, SETCD-based subject classification. Phase 2 subject filter updated from `~is_recovery` to `~is_recovery & ~is_satellite` across all 12 domain modules + mortality + food consumption. Output contract updated: `tk_count` added, subjects DataFrame columns documented.
 - 2026-02-08: Consolidated from `data-pipeline-spec.md` (1,452 lines) and actual backend code. Verified all function signatures, column names, thresholds, and formulas against source. Corrected Phase numbering (generator has 4 phases in code, spec had 6 -- reconciled as Phases 1-6 covering loading, stats, classification, view assembly, rules, static charts). Added on-demand adverse effects pipeline documentation. Added complete code map with all function names.
