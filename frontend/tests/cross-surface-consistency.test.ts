@@ -224,6 +224,65 @@ describe("cross-surface consistency", () => {
     }
   });
 
+  // ── Organ-matched tumor filtering (§8B/8C) ──
+
+  test("XS01 matched specimens include LIVER from MI/OM endpoints", () => {
+    const xs01 = syndromes.find((s) => s.id === "XS01");
+    expect(xs01).toBeDefined();
+    const specimens = new Set<string>();
+    for (const ep of xs01!.matchedEndpoints) {
+      if (ep.domain !== "MI" && ep.domain !== "MA" && ep.domain !== "OM") continue;
+      const summary = endpoints.find(
+        (s) => s.endpoint_label === ep.endpoint_label && s.domain === ep.domain,
+      );
+      if (summary?.specimen) specimens.add(summary.specimen.toUpperCase());
+    }
+    expect(specimens.has("LIVER")).toBe(true);
+  });
+
+  test("XS09 matched specimens do NOT include LIVER", () => {
+    const xs09 = syndromes.find((s) => s.id === "XS09");
+    expect(xs09).toBeDefined();
+    const specimens = new Set<string>();
+    for (const ep of xs09!.matchedEndpoints) {
+      if (ep.domain !== "MI" && ep.domain !== "MA" && ep.domain !== "OM") continue;
+      const summary = endpoints.find(
+        (s) => s.endpoint_label === ep.endpoint_label && s.domain === ep.domain,
+      );
+      if (summary?.specimen) specimens.add(summary.specimen.toUpperCase());
+    }
+    expect(specimens.has("LIVER")).toBe(false);
+  });
+
+  test("syndrome matched MI/MA/OM endpoints have specimen populated in endpoint summaries", () => {
+    for (const syndrome of syndromes) {
+      for (const ep of syndrome.matchedEndpoints) {
+        if (ep.domain !== "MI" && ep.domain !== "MA" && ep.domain !== "OM") continue;
+        const summary = endpoints.find(
+          (s) => s.endpoint_label === ep.endpoint_label && s.domain === ep.domain,
+        );
+        expect(
+          summary?.specimen,
+          `Syndrome ${syndrome.id}: MI/MA/OM endpoint "${ep.endpoint_label}" has no specimen in summary`,
+        ).toBeTruthy();
+      }
+    }
+  });
+
+  test("XS05 matched specimens include SPLEEN", () => {
+    const xs05 = syndromes.find((s) => s.id === "XS05");
+    expect(xs05).toBeDefined();
+    const specimens = new Set<string>();
+    for (const ep of xs05!.matchedEndpoints) {
+      if (ep.domain !== "MI" && ep.domain !== "MA" && ep.domain !== "OM") continue;
+      const summary = endpoints.find(
+        (s) => s.endpoint_label === ep.endpoint_label && s.domain === ep.domain,
+      );
+      if (summary?.specimen) specimens.add(summary.specimen.toUpperCase());
+    }
+    expect(specimens.has("SPLEEN")).toBe(true);
+  });
+
   // ── Fold change non-zero for matching endpoints ──
 
   test("per-sex fold changes are non-zero for endpoints with non-null maxFoldChange", () => {
