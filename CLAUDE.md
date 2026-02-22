@@ -66,6 +66,8 @@ These rules are non-negotiable. No agent may override, reinterpret, or skip them
 
 5. **Never add Claude as a co-author.** Do not include `Co-Authored-By` lines in commit messages. All commits are authored by the user.
 
+6. **Reuse before reinventing.** When implementing a new spec, before writing any new or custom logic the agent must: (a) search the codebase for existing hooks, functions, derived data, and generated JSON that already compute the needed values; (b) read `docs/knowledge/methods.md`, `docs/knowledge/field-contracts.md`, `docs/knowledge/species-profiles.md`, and `docs/knowledge/vehicle-profiles.md` to understand what analytical data, field semantics, and reference data are already available. Only after confirming that no existing source provides the needed data may the agent write new computation logic. Duplicating or re-deriving data that already exists elsewhere is a defect.
+
 ## Agent Commit Protocol
 
 Before committing changes that alter system or view behavior:
@@ -114,19 +116,27 @@ After the spec's checklist (if any), re-read the spec section by section. For ev
 
 When the spec includes a code snippet or className string, compare it **character by character** against the implementation. A single missing class or wrong Tailwind modifier is a gap.
 
-### Step 2: Create todo items for all gaps
+### Step 2: Data reuse audit
+
+For every new function, computation, or derived value introduced by the implementation, verify it does not duplicate logic that already exists elsewhere in the codebase. Specifically:
+- Search for existing hooks, utility functions, generated JSON fields, and derived-summary functions that already compute the same or equivalent value.
+- Cross-reference `docs/knowledge/methods.md` and `docs/knowledge/field-contracts.md` for existing analytical methods and field semantics.
+- If the implementation re-derives a value that an existing source already provides, flag it as a gap: "DUPLICATION — [new code location] recomputes [value] already available from [existing source]."
+- Every new computation must be justified: either no existing source provides it, or the existing source is unsuitable (with documented reason).
+
+### Step 3: Create todo items for all gaps
 
 Every gap gets a todo item with: the spec section reference, which dimension failed (WHAT/WHEN/UNLESS/HOW), the exact spec quote, the code's actual behavior, and the file:line reference.
 
-### Step 3: Document decision points
+### Step 4: Document decision points
 
 If the implementation chose one approach over alternatives described in the spec (e.g., "Option A vs Option B"), record the choice and rationale.
 
-### Step 4: Flag cross-spec integration gaps
+### Step 5: Flag cross-spec integration gaps
 
 If the spec references other specs or views that need changes (e.g., "add column to NOAEL view"), create a todo for each.
 
-### Step 5: Present the full gap list to the user
+### Step 6: Present the full gap list to the user
 
 Present before moving on, so they can prioritize or dismiss items.
 
