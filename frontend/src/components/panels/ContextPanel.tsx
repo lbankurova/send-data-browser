@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
@@ -13,46 +12,21 @@ import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { FindingsContextPanel } from "@/components/analysis/panes/FindingsContextPanel";
 import { StudySummaryContextPanel } from "@/components/analysis/panes/StudySummaryContextPanel";
+import { StudyDetailsContextPanel } from "@/components/analysis/panes/StudyDetailsContextPanel";
 import { NoaelContextPanel } from "@/components/analysis/panes/NoaelContextPanel";
 import { DoseResponseContextPanel } from "@/components/analysis/panes/DoseResponseContextPanel";
 import { HistopathologyContextPanel } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { ValidationContextPanel } from "@/components/analysis/panes/ValidationContextPanel";
 import { SubjectProfilePanel } from "@/components/analysis/panes/SubjectProfilePanel";
+import { CollapsiblePane } from "@/components/analysis/panes/CollapsiblePane";
 import { StudyPortfolioContextPanel } from "@/components/portfolio/StudyPortfolioContextPanel";
+import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import type { ToxFinding, PathologyReview, ValidationRecordReview } from "@/types/annotations";
 import { Wrench } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-
-function CollapsibleSection({
-  title,
-  defaultOpen = false,
-  children,
-}: {
-  title: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <section className="mb-3">
-      <button
-        className="mb-1 flex w-full items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-        onClick={() => setOpen(!open)}
-      >
-        <ChevronRight
-          className="h-3 w-3 transition-transform"
-          style={{ transform: open ? "rotate(90deg)" : undefined }}
-        />
-        {title}
-      </button>
-      {open && <div className="pl-4">{children}</div>}
-    </section>
-  );
-}
 
 function MetadataRow({
   label,
@@ -129,7 +103,7 @@ function StudyInspector({ studyId }: { studyId: string }) {
     <div className="p-4">
       <h3 className="mb-3 text-sm font-semibold">{meta.study_id}</h3>
 
-      <CollapsibleSection title="Study details" defaultOpen>
+      <CollapsiblePane title="Study details" defaultOpen variant="margin">
         <MetadataRow label="Species" value={meta.species} />
         <MetadataRow label="Strain" value={meta.strain} />
         <MetadataRow label="Type" value={meta.study_type} />
@@ -154,9 +128,9 @@ function StudyInspector({ studyId }: { studyId: string }) {
         <MetadataRow label="Facility" value={meta.test_facility} />
         <MetadataRow label="Director" value={meta.study_director} />
         <MetadataRow label="GLP" value={meta.glp} />
-      </CollapsibleSection>
+      </CollapsiblePane>
 
-      <CollapsibleSection title="Study health" defaultOpen>
+      <CollapsiblePane title="Study health" defaultOpen variant="margin">
         {aeLoading ? (
           <Skeleton className="h-4 w-full" />
         ) : healthLine ? (
@@ -164,9 +138,9 @@ function StudyInspector({ studyId }: { studyId: string }) {
         ) : (
           <p className="text-xs text-muted-foreground">No analysis available</p>
         )}
-      </CollapsibleSection>
+      </CollapsiblePane>
 
-      <CollapsibleSection title="Review progress" defaultOpen>
+      <CollapsiblePane title="Review progress" defaultOpen variant="margin">
         <MetadataRow label="Tox findings" value={`${toxReviewed} / ${toxTotal} reviewed`} />
         <MetadataRow label="Pathology" value={`${pathReviewed} annotated`} />
         <MetadataRow
@@ -178,9 +152,9 @@ function StudyInspector({ studyId }: { studyId: string }) {
             Last validated: {new Date(validatedAt).toLocaleDateString()}
           </div>
         )}
-      </CollapsibleSection>
+      </CollapsiblePane>
 
-      <CollapsibleSection title="Actions">
+      <CollapsiblePane title="Actions" defaultOpen={false} variant="margin">
         <div className="space-y-0.5">
           <a
             href="#"
@@ -223,15 +197,21 @@ function StudyInspector({ studyId }: { studyId: string }) {
             Export...
           </a>
         </div>
-      </CollapsibleSection>
+      </CollapsiblePane>
     </div>
   );
 }
 
 function StudySummaryContextPanelWrapper({ studyId }: { studyId: string }) {
+  const [tab] = useStudySummaryTab();
   const { selection: studySel } = useStudySelection();
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
+
+  // When "Study details" tab is active, show the study-level context panel
+  if (tab === "details") {
+    return <StudyDetailsContextPanel studyId={studyId} />;
+  }
 
   const organSelection = studySel.organSystem ?? null;
 
@@ -356,7 +336,7 @@ function ScenarioInspector({ scenarioId }: { scenarioId: string }) {
         <>
           <p className="mb-3 text-xs text-muted-foreground">{expected.description}</p>
 
-          <CollapsibleSection title="Expected issues" defaultOpen>
+          <CollapsiblePane title="Expected issues" defaultOpen variant="margin">
             {Object.keys(expected.expected_issues).length === 0 ? (
               <p className="text-xs text-muted-foreground">No issues expected (clean study).</p>
             ) : (
@@ -371,9 +351,9 @@ function ScenarioInspector({ scenarioId }: { scenarioId: string }) {
                 ))}
               </div>
             )}
-          </CollapsibleSection>
+          </CollapsiblePane>
 
-          <CollapsibleSection title="What to check" defaultOpen>
+          <CollapsiblePane title="What to check" defaultOpen variant="margin">
             <ul className="space-y-1">
               {expected.what_to_check.map((item, i) => (
                 <li key={i} className="flex gap-1.5 text-xs text-muted-foreground">
@@ -382,9 +362,9 @@ function ScenarioInspector({ scenarioId }: { scenarioId: string }) {
                 </li>
               ))}
             </ul>
-          </CollapsibleSection>
+          </CollapsiblePane>
 
-          <CollapsibleSection title="Actions">
+          <CollapsiblePane title="Actions" defaultOpen={false} variant="margin">
             <div className="space-y-0.5">
               <a
                 href="#"
@@ -407,7 +387,7 @@ function ScenarioInspector({ scenarioId }: { scenarioId: string }) {
                 Validation report
               </a>
             </div>
-          </CollapsibleSection>
+          </CollapsiblePane>
         </>
       )}
     </div>

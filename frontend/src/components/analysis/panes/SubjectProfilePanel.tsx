@@ -4,6 +4,7 @@ import { useSubjectProfile } from "@/hooks/useSubjectProfile";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import type { CrossAnimalFlags } from "@/lib/analysis-view-api";
 import { cn } from "@/lib/utils";
+import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
 import {
   isNormalFinding,
@@ -12,6 +13,7 @@ import {
   classifyFindings,
   flagLabValues,
 } from "@/lib/subject-profile-logic";
+import { CollapsiblePane } from "./CollapsiblePane";
 import type { SubjectProfile, SubjectMeasurement, SubjectObservation, SubjectFinding } from "@/types/timecourse";
 
 // ─── Helpers (rendering-only) ────────────────────────────
@@ -22,42 +24,6 @@ function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
   if (avgSev >= 2) return { bg: "#9CA3AF", text: "var(--foreground)" };
   if (avgSev >= 1) return { bg: "#D1D5DB", text: "var(--foreground)" };
   return { bg: "#E5E7EB", text: "var(--foreground)" };
-}
-
-// ─── CollapsiblePane ─────────────────────────────────────
-
-function CollapsiblePane({
-  title,
-  defaultOpen = false,
-  children,
-  summary,
-}: {
-  title: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-  summary?: string;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <section className="border-b">
-      <button
-        className="flex w-full items-center gap-1 px-4 py-2 text-left"
-        onClick={() => setOpen(!open)}
-      >
-        <ChevronRight
-          className={cn("h-3 w-3 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")}
-        />
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {title}
-        </span>
-        {!open && summary && (
-          <span className="ml-auto truncate text-[10px] text-muted-foreground">{summary}</span>
-        )}
-      </button>
-      {open && <div className="px-4 pb-3">{children}</div>}
-    </section>
-  );
 }
 
 // ─── BW Sparkline (§1) ──────────────────────────────────
@@ -339,6 +305,52 @@ function CLTimeline({
   );
 }
 
+// ─── Tissue Battery Warning ────────────────────────────────
+
+function TissueBatteryWarning({ flag }: {
+  flag: CrossAnimalFlags["tissue_battery"]["flagged_animals"][number];
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const isLowConfidence = flag.reference_source.startsWith("max_recovery_animal");
+  const nonTargetMissing = flag.missing_specimens.filter(
+    (s) => !flag.missing_target_organs.includes(s),
+  );
+
+  return (
+    <div className="mb-2 border-l-2 bg-amber-50/50 px-2 py-1.5 text-[10px]" style={{ borderLeftColor: "#D97706" }}>
+      <button
+        className="flex w-full items-start gap-1 text-left"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" style={{ color: "#D97706" }} />
+        <span className="italic text-foreground/80">
+          {isLowConfidence
+            ? `${flag.examined_count} tissues examined — fewer than other recovery animals (~${flag.expected_count}). Verify MI data completeness.`
+            : `${flag.examined_count} of ~${flag.expected_count} expected tissues examined (${flag.completion_pct}%) — verify MI data completeness`
+          }
+        </span>
+      </button>
+      {expanded && flag.missing_specimens.length > 0 && (
+        <div className="mt-1 pl-4 text-[9px] leading-relaxed">
+          <div className="text-foreground/70">
+            Missing tissues ({flag.missing_specimens.length} of {flag.expected_count} expected):
+          </div>
+          {flag.missing_target_organs.length > 0 && (
+            <div className="mt-0.5 font-medium text-foreground/80">
+              {"\u26A0"} {flag.missing_target_organs.join(", ")} (target organs for detected syndromes)
+            </div>
+          )}
+          {nonTargetMissing.length > 0 && (
+            <div className="mt-0.5 text-muted-foreground">
+              {nonTargetMissing.join(", ")}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── MI/MA Findings (§2) ────────────────────────────────
 
 function HistopathFindings({
@@ -346,6 +358,8 @@ function HistopathFindings({
   disposition,
   isAccidental,
   tumorCrossRef,
+  onSelectSubject,
+  isRecoveryAnimal,
 }: {
   findings: SubjectFinding[];
   disposition: string | null;
@@ -356,6 +370,8 @@ function HistopathFindings({
     totalExamined: number;
     doseLabel: string;
   } | null;
+  onSelectSubject?: (usubjid: string) => void;
+  isRecoveryAnimal?: boolean;
 }) {
   const [normalsExpanded, setNormalsExpanded] = useState(false);
 
@@ -436,10 +452,28 @@ function HistopathFindings({
                     {/* Tumor cross-reference for COD/malignant findings */}
                     {isCODRow && tumorCrossRef && (
                       <div className="mt-0.5 pl-2 text-[9px] text-muted-foreground">
-                        Also in: {tumorCrossRef.others.map((o) =>
-                          `${o.id.slice(-4)} (${o.sex}, same dose, ${o.arm} ${o.death_day != null ? `day ${o.death_day}` : ""})`
-                        ).join(", ")}
-                        {" — "}{tumorCrossRef.totalAffected}/{tumorCrossRef.totalExamined} at {tumorCrossRef.doseLabel}
+                        <span>Also in: </span>
+                        {tumorCrossRef.others.map((o, idx) => (
+                          <span key={o.id}>
+                            {idx > 0 && ", "}
+                            <button
+                              type="button"
+                              className="cursor-pointer text-[#3b82f6] hover:opacity-70"
+                              onClick={() => onSelectSubject?.(o.id)}
+                            >
+                              {o.id.slice(-4)}
+                            </button>
+                            <span> ({o.sex}, same dose, {o.arm}{o.death_day != null ? ` day ${o.death_day}` : ""})</span>
+                          </span>
+                        ))}
+                        {" \u2014 "}{tumorCrossRef.totalAffected}/{tumorCrossRef.totalExamined} at {tumorCrossRef.doseLabel}
+                        {/* GAP-10: Second-line context */}
+                        {isRecoveryAnimal && (
+                          <div className="mt-0.5">Tumor persisted/progressed during recovery</div>
+                        )}
+                        {!isRecoveryAnimal && tumorCrossRef.others.some((o) => o.arm === "recovery") && (
+                          <div className="mt-0.5">Also found during recovery — irreversible</div>
+                        )}
                       </div>
                     )}
                   </td>
@@ -594,6 +628,7 @@ function SubjectProfileContent({
   onBack: () => void;
   crossAnimalFlags?: CrossAnimalFlags;
 }) {
+  const { setSelectedSubject } = useViewSelection();
   const bw = profile.domains.BW?.measurements ?? [];
   const lb = profile.domains.LB?.measurements ?? [];
   const cl = profile.domains.CL?.observations ?? [];
@@ -805,21 +840,7 @@ function SubjectProfileContent({
         >
           {/* Tissue battery warning */}
           {batteryFlag && (
-            <div className="mb-2 border-l-2 border-amber-400 bg-amber-50/50 px-2 py-1.5 text-[10px]">
-              <div className="flex items-start gap-1">
-                <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
-                <div>
-                  <span>
-                    {batteryFlag.examined_count} of ~{batteryFlag.expected_count} expected tissues examined ({batteryFlag.completion_pct}%) — verify MI data completeness
-                  </span>
-                  {batteryFlag.missing_target_organs.length > 0 && (
-                    <div className="mt-0.5 text-[9px] text-foreground/70">
-                      Missing target organs: {batteryFlag.missing_target_organs.join(", ")}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <TissueBatteryWarning flag={batteryFlag} />
           )}
           {mi.length === 0 ? (
             <div className="text-[11px] text-muted-foreground">
@@ -831,6 +852,8 @@ function SubjectProfileContent({
               disposition={profile.disposition}
               isAccidental={isAccidental}
               tumorCrossRef={tumorCrossRef}
+              onSelectSubject={setSelectedSubject}
+              isRecoveryAnimal={/R$/i.test(profile.arm_code) || /recovery/i.test(profile.arm_code)}
             />
           )}
         </CollapsiblePane>
