@@ -1,0 +1,397 @@
+{
+  "tissue_battery": {
+    "reference_batteries": {
+      "terminal_M": {
+        "expected_count": 51,
+        "specimens": [
+          "ARTERY, AORTA",
+          "BONE MARROW, FEMUR",
+          "BONE MARROW, STERNUM",
+          "BONE, STERNUM",
+          "BRAIN",
+          "EPIDIDYMIS",
+          "ESOPHAGUS",
+          "EYE",
+          "GLAND, ADRENAL",
+          "GLAND, COAGULATING",
+          "GLAND, HARDERIAN",
+          "GLAND, MAMMARY",
+          "GLAND, PARATHYROID",
+          "GLAND, PITUITARY",
+          "GLAND, PROSTATE",
+          "GLAND, SALIVARY, PAROTID",
+          "GLAND, SALIVARY, SUBLINGUAL",
+          "GLAND, SALIVARY, SUBMANDIBULAR",
+          "GLAND, SEMINAL VESICLE",
+          "GLAND, THYROID",
+          "HEART",
+          "JOINT, HIP",
+          "KIDNEY",
+          "LARGE INTESTINE, CECUM",
+          "LARGE INTESTINE, COLON",
+          "LARGE INTESTINE, RECTUM",
+          "LARYNX",
+          "LIVER",
+          "LUNG",
+          "LYMPH NODE, MESENTERIC",
+          "LYMPH NODE, POPLITEAL",
+          "MUSCLE, QUADRICEPS FEMORIS",
+          "NERVE, OPTIC",
+          "NERVE, SCIATIC",
+          "PANCREAS",
+          "PEYER'S PATCH",
+          "SKIN",
+          "SMALL INTESTINE, DUODENUM",
+          "SMALL INTESTINE, ILEUM",
+          "SMALL INTESTINE, JEJUNUM",
+          "SPINAL CORD, CERVICAL",
+          "SPINAL CORD, LUMBAR",
+          "SPINAL CORD, THORACIC",
+          "SPLEEN",
+          "STOMACH",
+          "TESTIS",
+          "THYMUS",
+          "TONGUE",
+          "TRACHEA",
+          "URETER",
+          "URINARY BLADDER"
+        ],
+        "source": "control"
+      },
+      "recovery_M": {
+        "expected_count": 5,
+        "specimens": [
+          "BONE MARROW, STERNUM",
+          "BONE, STERNUM",
+          "GLAND, ADRENAL",
+          "GLAND, THYROID",
+          "LIVER"
+        ],
+        "source": "control"
+      },
+      "terminal_F": {
+        "expected_count": 47,
+        "specimens": [
+          "ARTERY, AORTA",
+          "BONE MARROW, FEMUR",
+          "BONE MARROW, STERNUM",
+          "BONE, STERNUM",
+          "BRAIN",
+          "ESOPHAGUS",
+          "EYE",
+          "GLAND, ADRENAL",
+          "GLAND, HARDERIAN",
+          "GLAND, MAMMARY",
+          "GLAND, PARATHYROID",
+          "GLAND, PITUITARY",
+          "GLAND, SALIVARY, PAROTID",
+          "GLAND, SALIVARY, SUBLINGUAL",
+          "GLAND, SALIVARY, SUBMANDIBULAR",
+          "GLAND, THYROID",
+          "HEART",
+          "JOINT, HIP",
+          "KIDNEY",
+          "LARGE INTESTINE, CECUM",
+          "LARGE INTESTINE, COLON",
+          "LARGE INTESTINE, RECTUM",
+          "LARYNX",
+          "LIVER",
+          "LUNG",
+          "LYMPH NODE, MESENTERIC",
+          "LYMPH NODE, POPLITEAL",
+          "MUSCLE, QUADRICEPS FEMORIS",
+          "NERVE, OPTIC",
+          "NERVE, SCIATIC",
+          "PANCREAS",
+          "PEYER'S PATCH",
+          "SKIN",
+          "SMALL INTESTINE, DUODENUM",
+          "SMALL INTESTINE, ILEUM",
+          "SMALL INTESTINE, JEJUNUM",
+          "SPINAL CORD, CERVICAL",
+          "SPINAL CORD, LUMBAR",
+          "SPINAL CORD, THORACIC",
+          "SPLEEN",
+          "STOMACH",
+          "THYMUS",
+          "TONGUE",
+          "TRACHEA",
+          "URETER",
+          "URINARY BLADDER",
+          "UTERUS"
+        ],
+        "source": "control"
+      },
+      "recovery_F": {
+        "expected_count": 5,
+        "specimens": [
+          "BONE MARROW, STERNUM",
+          "BONE, STERNUM",
+          "GLAND, ADRENAL",
+          "GLAND, THYROID",
+          "LIVER"
+        ],
+        "source": "control"
+      }
+    },
+    "has_reduced_recovery_battery": true,
+    "flagged_animals": [],
+    "study_level_note": null
+  },
+  "tumor_linkage": {
+    "tumor_dose_response": [
+      {
+        "specimen": "UTERUS",
+        "finding": "LEIOMYOMA, BENIGN",
+        "behavior": "BENIGN",
+        "incidence_by_dose": [
+          {
+            "dose_level": 0,
+            "dose_label": "Group 1, Control",
+            "males": {
+              "affected": 0,
+              "total": 0
+            },
+            "females": {
+              "affected": 0,
+              "total": 10
+            }
+          },
+          {
+            "dose_level": 1,
+            "dose_label": "Group 2,2 mg/kg PCDRUG",
+            "males": {
+              "affected": 0,
+              "total": 0
+            },
+            "females": {
+              "affected": 1,
+              "total": 10
+            }
+          },
+          {
+            "dose_level": 2,
+            "dose_label": "Group 3,20 mg/kg PCDRUG",
+            "males": {
+              "affected": 0,
+              "total": 0
+            },
+            "females": {
+              "affected": 0,
+              "total": 10
+            }
+          },
+          {
+            "dose_level": 3,
+            "dose_label": "Group 4,200 mg/kg PCDRUG",
+            "males": {
+              "affected": 0,
+              "total": 0
+            },
+            "females": {
+              "affected": 0,
+              "total": 10
+            }
+          }
+        ],
+        "animal_ids": [
+          "PC201708-2110"
+        ],
+        "animal_details": [
+          {
+            "id": "PC201708-2110",
+            "sex": "F",
+            "arm": "terminal",
+            "death_day": null,
+            "scheduled": true
+          }
+        ],
+        "flags": [],
+        "denominator_note": "Terminal + recovery animals where tissue was examined (TK excluded)"
+      },
+      {
+        "specimen": "LIVER",
+        "finding": "CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+        "behavior": "MALIGNANT",
+        "incidence_by_dose": [
+          {
+            "dose_level": 0,
+            "dose_label": "Group 1, Control",
+            "males": {
+              "affected": 0,
+              "total": 15
+            },
+            "females": {
+              "affected": 0,
+              "total": 15
+            }
+          },
+          {
+            "dose_level": 1,
+            "dose_label": "Group 2,2 mg/kg PCDRUG",
+            "males": {
+              "affected": 0,
+              "total": 15
+            },
+            "females": {
+              "affected": 0,
+              "total": 15
+            }
+          },
+          {
+            "dose_level": 2,
+            "dose_label": "Group 3,20 mg/kg PCDRUG",
+            "males": {
+              "affected": 0,
+              "total": 15
+            },
+            "females": {
+              "affected": 0,
+              "total": 15
+            }
+          },
+          {
+            "dose_level": 3,
+            "dose_label": "Group 4,200 mg/kg PCDRUG",
+            "males": {
+              "affected": 1,
+              "total": 15
+            },
+            "females": {
+              "affected": 1,
+              "total": 15
+            }
+          }
+        ],
+        "animal_ids": [
+          "PC201708-4113",
+          "PC201708-4003"
+        ],
+        "animal_details": [
+          {
+            "id": "PC201708-4113",
+            "sex": "F",
+            "arm": "recovery",
+            "death_day": 100,
+            "scheduled": false
+          },
+          {
+            "id": "PC201708-4003",
+            "sex": "M",
+            "arm": "terminal",
+            "death_day": 90,
+            "scheduled": false
+          }
+        ],
+        "flags": [
+          "Dose-dependent: 2 at Group 4,200 mg/kg PCDRUG, 0 at lower doses",
+          "Both sexes affected at Group 4,200 mg/kg PCDRUG",
+          "Malignant neoplasm in SPRAGUE-DAWLEY rat at 13 weeks. Standard carcinogenicity duration: 104 weeks for this species.",
+          "Found during recovery \u2014 tumor persisted/progressed post-treatment",
+          "Present at terminal AND recovery at Group 4,200 mg/kg PCDRUG \u2014 irreversible",
+          "High-dose only \u2014 may exceed maximum tolerated dose"
+        ],
+        "denominator_note": "Terminal + recovery animals where tissue was examined (TK excluded)"
+      },
+      {
+        "specimen": "LIVER",
+        "finding": "ADENOMA, HEPATOCELLULAR, BENIGN",
+        "behavior": "BENIGN",
+        "incidence_by_dose": [
+          {
+            "dose_level": 0,
+            "dose_label": "Group 1, Control",
+            "males": {
+              "affected": 0,
+              "total": 15
+            },
+            "females": {
+              "affected": 0,
+              "total": 15
+            }
+          },
+          {
+            "dose_level": 1,
+            "dose_label": "Group 2,2 mg/kg PCDRUG",
+            "males": {
+              "affected": 0,
+              "total": 15
+            },
+            "females": {
+              "affected": 0,
+              "total": 15
+            }
+          },
+          {
+            "dose_level": 2,
+            "dose_label": "Group 3,20 mg/kg PCDRUG",
+            "males": {
+              "affected": 0,
+              "total": 15
+            },
+            "females": {
+              "affected": 0,
+              "total": 15
+            }
+          },
+          {
+            "dose_level": 3,
+            "dose_label": "Group 4,200 mg/kg PCDRUG",
+            "males": {
+              "affected": 2,
+              "total": 15
+            },
+            "females": {
+              "affected": 0,
+              "total": 15
+            }
+          }
+        ],
+        "animal_ids": [
+          "PC201708-4007",
+          "PC201708-4005"
+        ],
+        "animal_details": [
+          {
+            "id": "PC201708-4007",
+            "sex": "M",
+            "arm": "terminal",
+            "death_day": null,
+            "scheduled": true
+          },
+          {
+            "id": "PC201708-4005",
+            "sex": "M",
+            "arm": "terminal",
+            "death_day": null,
+            "scheduled": true
+          }
+        ],
+        "flags": [
+          "Dose-dependent: 2 at Group 4,200 mg/kg PCDRUG, 0 at lower doses",
+          "High-dose only \u2014 may exceed maximum tolerated dose"
+        ],
+        "denominator_note": "Terminal + recovery animals where tissue was examined (TK excluded)"
+      }
+    ],
+    "banner_text": "carcinoma, hepatocellular, malignant: 2/30 at Group 4,200 mg/kg PCDRUG (both sexes, 13-week study)"
+  },
+  "recovery_narratives": [
+    {
+      "animal_id": "PC201708-4113",
+      "sex": "F",
+      "dose_label": "Group 4,200 mg/kg PCDRUG",
+      "recovery_start_day": 91,
+      "death_day": 100,
+      "days_in_recovery": 9,
+      "bw_trend": "gaining",
+      "bw_change_pct": 20.1,
+      "bw_start": 279.0,
+      "bw_last": 335.0,
+      "cod_finding": "HEPATOCELLULAR CARCINOMA",
+      "cod_specimen": "LIVER",
+      "cod_wasting_related": false,
+      "narrative": "BW gaining (+20.1%) \u2014 death from independent liver neoplasia, not wasting"
+    }
+  ]
+}

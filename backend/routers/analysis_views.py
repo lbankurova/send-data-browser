@@ -26,6 +26,7 @@ VALID_VIEW_NAMES = {
     "tumor-summary",
     "food-consumption-summary",
     "pk-integration",
+    "cross-animal-flags",
 }
 
 # Map URL slugs to file names (slug uses hyphens, files use underscores)

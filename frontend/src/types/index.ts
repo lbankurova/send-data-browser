@@ -21,6 +21,10 @@ export interface DoseGroup {
   n_male: number;
   n_female: number;
   n_total: number;
+  tk_count?: number;
+  is_recovery?: boolean;
+  recovery_armcd?: string | null;
+  recovery_n?: number;
 }
 
 export interface StudyMetadata {
@@ -63,6 +67,7 @@ export interface DomainSummary {
   label: string;
   row_count: number;
   col_count: number;
+  subject_count?: number | null;
 }
 
 export interface ColumnInfo {

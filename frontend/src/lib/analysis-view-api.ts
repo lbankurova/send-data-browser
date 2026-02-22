@@ -171,6 +171,80 @@ export function fetchFoodConsumptionSummary(
   );
 }
 
+// ── Cross-animal flags ──────────────────────────────────────
+
+export interface CrossAnimalFlags {
+  tissue_battery: {
+    reference_batteries: Record<string, {
+      expected_count: number;
+      specimens: string[];
+      source: string;
+    }>;
+    has_reduced_recovery_battery: boolean;
+    flagged_animals: {
+      animal_id: string;
+      sex: string;
+      sacrifice_group: string;
+      examined_count: number;
+      expected_count: number;
+      completion_pct: number;
+      missing_specimens: string[];
+      missing_target_organs: string[];
+      flag: boolean;
+      reference_source: string;
+    }[];
+    study_level_note: string | null;
+  };
+  tumor_linkage: {
+    tumor_dose_response: {
+      specimen: string;
+      finding: string;
+      behavior: string;
+      incidence_by_dose: {
+        dose_level: number;
+        dose_label: string;
+        males: { affected: number; total: number };
+        females: { affected: number; total: number };
+      }[];
+      animal_ids: string[];
+      animal_details: {
+        id: string;
+        sex: string;
+        arm: string;
+        death_day: number | null;
+        scheduled: boolean;
+      }[];
+      flags: string[];
+      denominator_note: string;
+    }[];
+    banner_text: string | null;
+  };
+  recovery_narratives: {
+    animal_id: string;
+    sex: string;
+    dose_label: string;
+    recovery_start_day: number;
+    death_day: number | null;
+    days_in_recovery: number | null;
+    bw_trend: string;
+    bw_change_pct: number;
+    bw_start: number | null;
+    bw_last: number | null;
+    cod_finding: string | null;
+    cod_specimen: string | null;
+    cod_wasting_related: boolean;
+    narrative: string;
+  }[];
+}
+
+export function fetchCrossAnimalFlags(
+  studyId: string,
+): Promise<CrossAnimalFlags> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/cross-animal-flags`,
+  );
+}
+
 export function fetchStaticChart(
   studyId: string,
   chartName: string

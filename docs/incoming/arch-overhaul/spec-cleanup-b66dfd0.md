@@ -11,11 +11,11 @@
 | Priority | Count |
 |----------|-------|
 | High | 0 |
-| Medium | 31 |
-| Low | 61 |
+| Medium | 30 |
+| Low | 62 |
 | Deferred | 9 |
 | **Total open** | **95** |
-| ~~Resolved~~ | ~~30~~ |
+| ~~Resolved~~ | ~~32~~ |
 
 *Updated 2026-02-18: MDI-1–5, SIL-1/2/4/7 resolved (Phases 3–7 complete). MDI-7→Deferred, MDI-8/9→Medium.*
 *Updated 2026-02-18: MDI-8, SIL-3, SIL-5, SIL-8 resolved (51c0949). ECGInterpretation, humanNonRelevance, CL wiring, interp tests.*
@@ -29,6 +29,7 @@
 *Updated 2026-02-19: FC pane density refinements (3fd4953) — per-sex metrics with aligned inline-block columns, FE/raw metrics as tables with period×sex columns, colored pipe dose labels, abbreviated headers (FE/FC/BW GAIN), inline recovery per sex.
 *Updated 2026-02-20: XS09 Organ Proportionality Index (OPI) analysis — new `organ-proportionality.ts` module, OPI pane in SyndromeContextPanel, sticky header narrative, recovery/histopath context integration. Source: `xs09-agent-prompt.md`.*
 *Updated 2026-02-20: TK satellite detection and exclusion (63ae665) — fixed `_parse_tx()` to detect TK via param value (not presence), eliminated ARMCD collision by excluding TK from tx_map, added `~is_satellite` filter to all 12 findings modules + FW + mortality + DD. Group N corrected from 30→20 for PointCross dose groups 2-4. StudyBanner shows exclusion count. Source: `tk-satellite-detection-spec.md`.*
+*Updated 2026-02-22: Study Summary Signals→NOAEL merge — SS-2, SS-5 resolved. Signals tab removed from Study Summary (now 2-tab: Details + Cross-Study). Signal content (statements, protective signals, signal matrix, metrics, rules) merged into NOAEL Decision view (now 5-tab). SignalsPanel.tsx + StudySummaryContextPanel.tsx deleted. Study Profile Block, StudyTimeline SVG, Data Quality section added to Study Details tab.*
 
 ---
 
@@ -205,10 +206,10 @@
 
 | # | Element | Issue | Severity | Source |
 |---|---------|-------|----------|--------|
-| SS-2 | OrganPanel "Related views" | Duplicate "View histopathology" link — both go to same URL | **Medium** | interaction-audit |
+| ~~SS-2~~ | ~~OrganPanel "Related views"~~ | ~~Duplicate "View histopathology" link — both go to same URL~~ | ~~**Medium**~~ | **RESOLVED** — StudySummaryContextPanel.tsx deleted; OrganPanel removed from Study Summary (Signals→NOAEL merge) |
 | SS-3 | InsightsList "N ep" count | 9px text, not obviously clickable | Low | interaction-audit |
 | SS-4 | Treatment arms table rows | Look interactive (colored left border) but have no click handler | Low | interaction-audit |
-| SS-5 | ToxFindingForm adversity dropdown | Visually dimmed when treatment="No" but still fully interactive — confusing | Low | interaction-audit |
+| ~~SS-5~~ | ~~ToxFindingForm adversity dropdown~~ | ~~Visually dimmed when treatment="No" but still fully interactive — confusing~~ | ~~Low~~ | **RESOLVED** — EndpointPanel removed from Study Summary context panel (Signals→NOAEL merge) |
 | SS-6 | "Generate report" button | No loading/success feedback | Low | interaction-audit |
 
 ### Spec gaps — arch-redesign-final.md
@@ -380,6 +381,13 @@
 | TF-2 | TRUST-06: Audit trail lacks user identity (no auth infrastructure) | `AuditTrailPanel.tsx` | Medium | docs/incoming |
 | TF-3 | TRUST-07 Phase 2: Historical controls database integration not present | — | Medium | docs/incoming |
 
+### Spec gaps — data-quality-cross-animal-flags-spec.md
+
+| # | Issue | File | Severity | Source |
+|---|-------|------|----------|--------|
+| CAF-1 | Non-COD tumor cross-references not shown in SubjectProfilePanel — spec only describes COD case, ambiguous whether other tumors should also show "Also in" | `SubjectProfilePanel.tsx` | Low | post-impl review |
+| CAF-2 | Recovery narrative silently skipped when SE domain has no recovery element for a subject — no fallback to TE/TX-derived start day | `cross_animal_flags.py` | Low | post-impl review |
+
 ---
 
 ## Resolved Issues (for reference)
@@ -409,6 +417,8 @@
 | ~~F-1~~ | Rail card header triple-action | **DONE** (e4e6ca5) — chevron split from scope selection |
 | ~~DR-1~~ | Rail card header triple-action (D-R view) | **DONE** (e4e6ca5) — shared FindingsRail fix |
 | ~~S3~~ | Systemic rail triple-action | **DONE** (e4e6ca5) — separate expand/collapse from scope |
+| ~~SS-2~~ | OrganPanel duplicate "View histopathology" link | **RESOLVED** — StudySummaryContextPanel.tsx deleted (Signals→NOAEL merge) |
+| ~~SS-5~~ | ToxFindingForm dimmed adversity dropdown | **RESOLVED** — EndpointPanel removed from Study Summary (Signals→NOAEL merge) |
 
 ---
 
@@ -419,12 +429,12 @@
 | 1. Findings (AE) | 0 | 9 | 16 | 0 | **25** |
 | 2. Dose-Response | 0 | 2 | 3 | 0 | **5** |
 | 3. Histopathology | 0 | 8 | 22 | 3 | **33** |
-| 4. Study Summary | 0 | 3 | 4 | 0 | **7** |
+| 4. Study Summary | 0 | 2 | 3 | 0 | **5** |
 | 5. NOAEL Decision | 0 | 2 | 2 | 0 | **4** |
 | 6. Validation | 0 | 1 | 4 | 0 | **5** |
 | 7. Landing Page | 0 | 2 | 5 | 0 | **7** |
 | 8. Cross-View/Libs | 0 | 4 | 5 | 6 | **15** |
-| **Total** | **0** | **31** | **61** | **9** | **95** |
+| **Total** | **0** | **30** | **60** | **9** | **93** |
 
 *Note: F-1, DR-1, S3 resolved 2026-02-18 via e4e6ca5. All High-priority items now cleared.*
 

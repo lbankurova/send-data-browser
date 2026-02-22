@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
@@ -11,7 +11,6 @@ import { useRuleResults } from "@/hooks/useRuleResults";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { FindingsContextPanel } from "@/components/analysis/panes/FindingsContextPanel";
-import { StudySummaryContextPanel } from "@/components/analysis/panes/StudySummaryContextPanel";
 import { StudyDetailsContextPanel } from "@/components/analysis/panes/StudyDetailsContextPanel";
 import { NoaelContextPanel } from "@/components/analysis/panes/NoaelContextPanel";
 import { DoseResponseContextPanel } from "@/components/analysis/panes/DoseResponseContextPanel";
@@ -20,7 +19,6 @@ import { ValidationContextPanel } from "@/components/analysis/panes/ValidationCo
 import { SubjectProfilePanel } from "@/components/analysis/panes/SubjectProfilePanel";
 import { CollapsiblePane } from "@/components/analysis/panes/CollapsiblePane";
 import { StudyPortfolioContextPanel } from "@/components/portfolio/StudyPortfolioContextPanel";
-import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useAnnotations } from "@/hooks/useAnnotations";
@@ -203,48 +201,15 @@ function StudyInspector({ studyId }: { studyId: string }) {
 }
 
 function StudySummaryContextPanelWrapper({ studyId }: { studyId: string }) {
-  const [tab] = useStudySummaryTab();
-  const { selection: studySel } = useStudySelection();
-  const { data: signalData } = useStudySignalSummary(studyId);
-  const { data: ruleResults } = useRuleResults(studyId);
-
-  // When "Study details" tab is active, show the study-level context panel
-  if (tab === "details") {
-    return <StudyDetailsContextPanel studyId={studyId} />;
-  }
-
-  const organSelection = studySel.organSystem ?? null;
-
-  // Build endpoint selection from StudySelectionContext
-  const endpointSel = useMemo(() => {
-    if (!studySel.endpoint || !signalData) return null;
-    const row = signalData.find(r => r.endpoint_label === studySel.endpoint);
-    if (!row) return null;
-    return {
-      endpoint_label: row.endpoint_label,
-      dose_level: row.dose_level,
-      sex: row.sex,
-      domain: row.domain,
-      test_code: row.test_code,
-      organ_system: row.organ_system,
-    };
-  }, [studySel.endpoint, signalData]);
-
-  return (
-    <StudySummaryContextPanel
-      signalData={signalData ?? []}
-      ruleResults={ruleResults ?? []}
-      selection={endpointSel}
-      organSelection={organSelection}
-      studyId={studyId}
-    />
-  );
+  return <StudyDetailsContextPanel studyId={studyId} />;
 }
 
 function NoaelContextPanelWrapper({ studyId }: { studyId: string }) {
   const { selection: viewSel } = useViewSelection();
+  const { selection: studySel } = useStudySelection();
   const { data: aeData } = useAdverseEffectSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
+  const { data: signalData } = useStudySignalSummary(studyId);
 
   // NoaelContextPanel expects { endpoint_label, dose_level, sex } — these come from
   // NOAEL's local selection state, bridged via ViewSelectionContext during transition
@@ -254,7 +219,9 @@ function NoaelContextPanelWrapper({ studyId }: { studyId: string }) {
     <NoaelContextPanel
       aeData={aeData ?? []}
       ruleResults={ruleResults ?? []}
+      signalData={signalData ?? []}
       selection={sel}
+      organSelection={studySel.organSystem ?? null}
       studyId={studyId}
     />
   );

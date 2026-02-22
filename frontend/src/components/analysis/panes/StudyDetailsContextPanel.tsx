@@ -1,10 +1,7 @@
 import { useState, useMemo } from "react";
-import { ChevronRight, CheckCircle2, AlertTriangle } from "lucide-react";
-import type { ProvenanceMessage } from "@/types/analysis-views";
+import { ChevronRight, AlertTriangle } from "lucide-react";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useStudyContext } from "@/hooks/useStudyContext";
-import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
-import { useProvenanceMessages } from "@/hooks/useProvenanceMessages";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useSessionState } from "@/hooks/useSessionState";
@@ -59,77 +56,9 @@ function SimulatedSelect({
   );
 }
 
-// Required SEND domains for a typical repeat-dose toxicity study
-const REQUIRED_DOMAINS = [
-  "bw", "cl", "ds", "dm", "ex", "lb", "mi", "om", "fw",
-];
-const OPTIONAL_DOMAINS = ["ma", "tf", "pp", "pc", "eg", "vs"];
-
 interface StudyNote {
   text: string;
   lastEdited?: string;
-}
-
-interface FlaggedAnimal {
-  animal_id: string;
-  sex: string;
-  completion_pct: number;
-  missing_specimens: string[];
-}
-
-function AnomaliesList({
-  warnings,
-  flaggedAnimals,
-}: {
-  warnings: ProvenanceMessage[];
-  flaggedAnimals: FlaggedAnimal[];
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const allItems = [
-    ...warnings.map((w, i) => ({ type: "warning" as const, key: `w-${i}`, msg: w })),
-    ...flaggedAnimals.map((a) => ({ type: "animal" as const, key: `a-${a.animal_id}`, animal: a })),
-  ];
-  const displayed = expanded ? allItems : allItems.slice(0, 5);
-  const hasMore = allItems.length > 5;
-
-  return (
-    <div className="mb-2">
-      <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
-        Anomalies
-      </div>
-      <div className="space-y-0.5">
-        {displayed.map((item) =>
-          item.type === "warning" ? (
-            <div
-              key={item.key}
-              className="flex items-start gap-1 text-[10px] text-amber-700"
-            >
-              <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-              <span>{item.msg.message}</span>
-            </div>
-          ) : (
-            <div
-              key={item.key}
-              className="flex items-start gap-1 text-[10px] text-amber-700"
-            >
-              <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-              <span>
-                {item.animal.animal_id} ({item.animal.sex}) — {Math.round(item.animal.completion_pct)}% tissue completion
-              </span>
-            </div>
-          ),
-        )}
-      </div>
-      {hasMore && !expanded && (
-        <button
-          className="mt-0.5 text-[10px] text-primary hover:underline"
-          onClick={() => setExpanded(true)}
-        >
-          +{allItems.length - 5} more
-        </button>
-      )}
-    </div>
-  );
 }
 
 // ── Main Component ───────────────────────────────────────────
@@ -137,8 +66,6 @@ function AnomaliesList({
 export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const { data: meta, isLoading: metaLoading } = useStudyMetadata(studyId);
   const { data: studyCtx } = useStudyContext(studyId);
-  const { data: crossFlags } = useCrossAnimalFlags(studyId);
-  const { data: provenance } = useProvenanceMessages(studyId);
   const { data: mortalityData } = useStudyMortality(studyId);
   const { excludedSubjects } = useScheduledOnly();
 
@@ -205,26 +132,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
 
   if (!meta) return null;
 
-  // ── Data quality derivations ──────────────────────────────
-
-  // Domain completeness — three-tier (Required / Optional / Missing)
-  const presentDomains = new Set(meta.domains.map((d) => d.toLowerCase()));
-  const missingRequired = REQUIRED_DOMAINS.filter((d) => !presentDomains.has(d));
-  const optionalPresent = OPTIONAL_DOMAINS.filter((d) => presentDomains.has(d));
-  const optionalMissing = OPTIONAL_DOMAINS.filter((d) => !presentDomains.has(d));
-
-  // Tissue battery
-  const battery = crossFlags?.tissue_battery;
-  const batteryNote = battery?.study_level_note;
-  const flaggedAnimals = battery?.flagged_animals ?? [];
-  const flaggedCount = flaggedAnimals.filter((a) => a.flag).length;
-
-  // TK satellites
-  const tkTotal = meta.dose_groups?.reduce((sum, dg) => sum + (dg.tk_count ?? 0), 0) ?? 0;
-
-  // Anomalies from provenance warnings
-  const warnings = (provenance ?? []).filter((m) => m.icon === "warning");
-
   // Subtitle
   const durationStr = studyCtx?.dosingDurationWeeks
     ? `${studyCtx.dosingDurationWeeks}wk`
@@ -247,138 +154,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           <p className="mt-0.5 text-[10px] text-muted-foreground">{subtitle}</p>
         )}
       </div>
-
-      {/* ── Data quality ────────────────────────────────── */}
-      <CollapsiblePane title="Data quality" variant="margin">
-        {/* Domain completeness — three-tier layout */}
-        <div className="mb-2">
-          <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
-            Domain completeness
-          </div>
-          <div className="space-y-0.5 text-[10px]">
-            {/* Required row */}
-            <div className="flex flex-wrap items-center gap-x-1">
-              <span className="w-14 shrink-0 text-muted-foreground">Required:</span>
-              {REQUIRED_DOMAINS.map((d) => (
-                <span key={d} className={presentDomains.has(d) ? "text-green-700" : "text-red-600"}>
-                  {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2717"}
-                </span>
-              ))}
-            </div>
-            {/* Optional row */}
-            {(optionalPresent.length > 0 || optionalMissing.length > 0) && (
-              <div className="flex flex-wrap items-center gap-x-1">
-                <span className="w-14 shrink-0 text-muted-foreground">Optional:</span>
-                {OPTIONAL_DOMAINS.map((d) => (
-                  <span key={d} className={presentDomains.has(d) ? "text-green-700" : "text-foreground/60"}>
-                    {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2717"}
-                  </span>
-                ))}
-              </div>
-            )}
-            {/* Missing impact notes */}
-            {missingRequired.length > 0 && (
-              <div className="mt-0.5 flex items-start gap-1 text-amber-700">
-                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-                <span>
-                  {missingRequired.map((d) => d.toUpperCase()).join(", ")} missing
-                  {missingRequired.includes("mi") && " \u2014 histopath cross-reference unavailable"}
-                  {missingRequired.includes("om") && " \u2014 organ weight analysis unavailable"}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Tissue battery — per-sacrifice-group counts */}
-        {battery && (
-          <div className="mb-2">
-            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
-              Tissue battery
-            </div>
-            {/* Per-sacrifice-group counts from reference_batteries */}
-            {battery.reference_batteries && (() => {
-              const refs = battery.reference_batteries;
-              const termM = refs["terminal_M"];
-              const termF = refs["terminal_F"];
-              const recM = refs["recovery_M"];
-              const recF = refs["recovery_F"];
-              return (
-                <div className="space-y-0 text-[10px] text-muted-foreground">
-                  {(termM || termF) && (
-                    <div>
-                      Terminal: {termM ? `${termM.expected_count} tissues (control M)` : ""}
-                      {termM && termF ? " \u00b7 " : ""}
-                      {termF ? `${termF.expected_count} tissues (control F)` : ""}
-                    </div>
-                  )}
-                  {(recM || recF) && (
-                    <div>
-                      Recovery: {recM ? `${recM.expected_count} tissues (control M)` : ""}
-                      {recM && recF ? " \u00b7 " : ""}
-                      {recF ? `${recF.expected_count} tissues (control F)` : ""}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-            {batteryNote && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground">
-                {batteryNote}
-              </div>
-            )}
-            {flaggedCount > 0 ? (
-              <div className="mt-0.5 flex items-center gap-1 text-[10px] text-amber-700">
-                <AlertTriangle className="h-2.5 w-2.5" />
-                {flaggedCount} animal{flaggedCount !== 1 ? "s" : ""} below expected tissue count
-              </div>
-            ) : (
-              <div className="mt-0.5 flex items-center gap-1 text-[10px] text-green-700">
-                <CheckCircle2 className="h-3 w-3" />
-                All animals meet expected tissue count
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TK satellites — per-group breakdown */}
-        {tkTotal > 0 && (
-          <div className="mb-2">
-            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
-              TK satellites
-            </div>
-            <div className="space-y-0 text-[10px] text-muted-foreground">
-              <div>{tkTotal} subjects detected</div>
-              <div>Excluded from all toxicology analyses</div>
-              {/* Per-group breakdown */}
-              {meta.dose_groups && (() => {
-                const tkGroups = meta.dose_groups
-                  .filter((dg) => (dg.tk_count ?? 0) > 0)
-                  .map((dg) => {
-                    const doseLabel = dg.dose_value != null && dg.dose_unit
-                      ? `${dg.dose_value} ${dg.dose_unit}`
-                      : dg.dose_level === 0 ? "Control" : dg.armcd;
-                    return `${doseLabel} (${dg.tk_count})`;
-                  });
-                return tkGroups.length > 0 ? (
-                  <div>Groups: {tkGroups.join(", ")}</div>
-                ) : null;
-              })()}
-            </div>
-          </div>
-        )}
-
-        {/* Anomalies */}
-        {warnings.length > 0 && (
-          <AnomaliesList warnings={warnings} flaggedAnimals={flaggedAnimals.filter(a => a.flag)} />
-        )}
-
-        {warnings.length === 0 && !battery && tkTotal === 0 && missingRequired.length === 0 && (
-          <div className="text-[10px] text-muted-foreground">
-            No quality issues detected.
-          </div>
-        )}
-      </CollapsiblePane>
 
       {/* ── Analysis settings ───────────────────────────── */}
       <CollapsiblePane title="Analysis settings" variant="margin">

@@ -24,6 +24,10 @@ class DoseGroupSchema(BaseModel):
     n_male: int = 0
     n_female: int = 0
     n_total: int = 0
+    tk_count: int = 0
+    is_recovery: bool = False
+    recovery_armcd: str | None = None
+    recovery_n: int = 0
 
 
 class StudyMetadata(BaseModel):
@@ -66,6 +70,7 @@ class DomainSummary(BaseModel):
     label: str
     row_count: int
     col_count: int
+    subject_count: int | None = None
 
 
 class ColumnInfo(BaseModel):

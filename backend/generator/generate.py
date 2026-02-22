@@ -34,6 +34,7 @@ from services.analysis.mortality import compute_study_mortality
 from generator.tumor_summary import build_tumor_summary
 from generator.food_consumption_summary import build_food_consumption_summary_with_subjects
 from generator.pk_integration import build_pk_integration
+from generator.cross_animal_flags import build_cross_animal_flags
 
 
 OUTPUT_DIR = Path(__file__).parent.parent / "generated"
@@ -146,6 +147,21 @@ def generate(study_id: str):
         print(f"  {n_periods} measurement period(s), assessment: {assessment}")
     else:
         print("  No FW data available")
+
+    # Phase 1f: Cross-animal flags (tissue battery, tumor linkage, recovery narratives)
+    print("Phase 1f: Computing cross-animal flags...")
+    try:
+        cross_animal_flags = build_cross_animal_flags(
+            findings, study, _subjects, _dose_groups, mortality, tumor_summary,
+        )
+        _write_json(out_dir / "cross_animal_flags.json", cross_animal_flags)
+        n_flagged = len(cross_animal_flags.get("tissue_battery", {}).get("flagged_animals", []))
+        n_tumors = len(cross_animal_flags.get("tumor_linkage", {}).get("tumor_dose_response", []))
+        n_narratives = len(cross_animal_flags.get("recovery_narratives", []))
+        print(f"  {n_flagged} battery flags, {n_tumors} tumor types, {n_narratives} recovery narratives")
+    except Exception as e:
+        print(f"  WARNING: Cross-animal flags computation failed: {e}")
+        cross_animal_flags = None
 
     # Phase 1c: Build enriched subject context + provenance messages
     print("Phase 1c: Building subject context...")

@@ -13,6 +13,10 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useEffectiveNoael } from "@/hooks/useEffectiveNoael";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
+import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
+import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
+import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
+import type { PanelStatement } from "@/lib/signals-panel-engine";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
@@ -32,6 +36,10 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapseAllButtons } from "@/components/analysis/panes/CollapseAllButtons";
 import { InsightsList } from "./panes/InsightsList";
 import { ConfidencePopover } from "./ScoreBreakdown";
+import { SignalScorePopover } from "./ScoreBreakdown";
+import { OrganGroupedHeatmap } from "./charts/OrganGroupedHeatmap";
+import { StudySummaryFilters } from "./StudySummaryFilters";
+import { RuleInspectorTab } from "./RuleInspectorTab";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
@@ -39,6 +47,10 @@ import type {
   NoaelSummaryRow,
   AdverseEffectSummaryRow,
   RuleResult,
+  SignalSummaryRow,
+  TargetOrganRow,
+  SignalSelection,
+  StudySummaryFilters as Filters,
 } from "@/types/analysis-views";
 import { deriveOrganSummaries, deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { OrganSummary, EndpointSummary } from "@/lib/derive-summaries";
@@ -51,6 +63,9 @@ import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import type { NoaelOverride } from "@/types/annotations";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
 import type { PkIntegration } from "@/types/analysis-views";
+import { classifyProtectiveSignal, getProtectiveBadgeStyle } from "@/lib/protective-signal";
+import type { ProtectiveClassification } from "@/lib/protective-signal";
+import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -62,6 +77,32 @@ interface NoaelSelection {
 
 // OrganSummary, EndpointSummary, deriveOrganSummaries, deriveEndpointSummaries
 // imported from @/lib/derive-summaries
+
+// ─── StudyStatementsBar (moved from SignalsPanel) ────────────
+
+function StatementIcon({ icon }: { icon: PanelStatement["icon"] }) {
+  switch (icon) {
+    case "fact":
+      return <span className="mt-0.5 shrink-0 text-[10px] text-muted-foreground">{"\u25CF"}</span>;
+    case "warning":
+      return <span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u25B2"}</span>;
+    case "review-flag":
+      return <span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u26A0"}</span>;
+  }
+}
+
+function StudyStatementsBar({ statements, modifiers, caveats }: { statements: PanelStatement[]; modifiers: PanelStatement[]; caveats: PanelStatement[] }) {
+  const studyModifiers = modifiers.filter((s) => !s.organSystem);
+  const studyCaveats = caveats.filter((s) => !s.organSystem);
+  if (statements.length === 0 && studyModifiers.length === 0 && studyCaveats.length === 0) return null;
+  return (
+    <div className="shrink-0 border-b px-4 py-2">
+      {statements.map((s, i) => (<div key={i} className="flex items-start gap-2 text-sm leading-relaxed"><StatementIcon icon={s.icon} /><span>{s.text}</span></div>))}
+      {studyModifiers.length > 0 && (<div className="mt-1 space-y-0.5">{studyModifiers.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u25B2"}</span><span>{s.text}</span></div>))}</div>)}
+      {studyCaveats.length > 0 && (<div className="mt-1 space-y-0.5">{studyCaveats.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u26A0"}</span><span>{s.text}</span></div>))}</div>)}
+    </div>
+  );
+}
 
 // ─── Exposure Section (PK context in NOAEL card) ────────────
 
@@ -1095,9 +1136,439 @@ function AdversityMatrixTab({
   );
 }
 
+// ─── Protective Signals Bar ─────────────────────────────────
+
+interface ProtectiveFinding {
+  finding: string;
+  specimens: string[];
+  sexes: string;
+  ctrlPct: string;
+  highPct: string;
+  classification: ProtectiveClassification;
+}
+
+function aggregateProtectiveFindings(rules: RuleResult[]): ProtectiveFinding[] {
+  const map = new Map<string, { specimens: Set<string>; sexes: Set<string>; ctrlPct: string; highPct: string; hasR19: boolean }>();
+
+  for (const r of rules) {
+    if (r.rule_id !== "R18" && r.rule_id !== "R19") continue;
+
+    const p = r.params;
+    if (p?.finding && p?.specimen && p?.ctrl_pct) {
+      const findingName = p.finding;
+      const entry = map.get(findingName) ?? { specimens: new Set(), sexes: new Set(), ctrlPct: p.ctrl_pct, highPct: p.high_pct ?? "", hasR19: false };
+      entry.specimens.add(p.specimen);
+      if (p.sex) entry.sexes.add(p.sex);
+      if (parseInt(p.ctrl_pct) > parseInt(entry.ctrlPct)) { entry.ctrlPct = p.ctrl_pct; entry.highPct = p.high_pct ?? ""; }
+      if (r.rule_id === "R19") entry.hasR19 = true;
+      map.set(findingName, entry);
+    }
+  }
+
+  return [...map.entries()]
+    .map(([finding, info]) => {
+      const ctrlInc = parseInt(info.ctrlPct) / 100;
+      const highInc = parseInt(info.highPct) / 100;
+      const result = classifyProtectiveSignal({
+        finding,
+        controlIncidence: ctrlInc,
+        highDoseIncidence: highInc,
+        doseConsistency: info.hasR19 ? "Moderate" : "Weak",
+        direction: "decreasing",
+        crossDomainCorrelateCount: info.hasR19 ? 2 : 0,
+      });
+      return {
+        finding,
+        specimens: [...info.specimens].sort(),
+        sexes: [...info.sexes].sort().join(", "),
+        ctrlPct: info.ctrlPct,
+        highPct: info.highPct,
+        classification: result?.classification ?? "background" as ProtectiveClassification,
+      };
+    })
+    .sort((a, b) => {
+      // Pharmacological first, then treatment-decrease, then background
+      const order: Record<ProtectiveClassification, number> = { pharmacological: 0, "treatment-decrease": 1, background: 2 };
+      const d = order[a.classification] - order[b.classification];
+      if (d !== 0) return d;
+      return parseInt(b.ctrlPct) - parseInt(a.ctrlPct);
+    });
+}
+
+function ProtectiveSignalsBar({
+  rules,
+  studyId,
+  signalData,
+}: {
+  rules: RuleResult[];
+  studyId: string;
+  signalData?: SignalSummaryRow[];
+}) {
+  const navigate = useNavigate();
+  const { navigateTo } = useStudySelection();
+  const findings = useMemo(() => aggregateProtectiveFindings(rules), [rules]);
+
+  // Cross-domain correlates: for each protective finding's organ system,
+  // find other signals in the same organ system with direction info
+  const correlatesByFinding = useMemo(() => {
+    const map = new Map<string, { label: string; direction: string }[]>();
+    if (!signalData || findings.length === 0) return map;
+    for (const f of findings) {
+      if (f.classification === "background") continue;
+      // Determine organ system from first specimen
+      const spec = f.specimens[0];
+      if (!spec) continue;
+      const organ = specimenToOrganSystem(spec).toLowerCase();
+      // Find other endpoints in the same organ system (not the finding itself)
+      const correlates: { label: string; direction: string }[] = [];
+      const seen = new Set<string>();
+      for (const row of signalData) {
+        if (row.organ_system.toLowerCase() !== organ) continue;
+        if (row.endpoint_label.toLowerCase() === f.finding.toLowerCase()) continue;
+        if (seen.has(row.endpoint_label)) continue;
+        seen.add(row.endpoint_label);
+        const dir = row.direction === "down" ? "\u2193" : row.direction === "up" ? "\u2191" : "";
+        if (dir) correlates.push({ label: row.endpoint_label, direction: dir });
+      }
+      if (correlates.length > 0) map.set(f.finding, correlates.slice(0, 5));
+    }
+    return map;
+  }, [findings, signalData]);
+
+  if (findings.length === 0) return null;
+
+  const pharmacological = findings.filter((f) => f.classification === "pharmacological");
+  const treatmentDecrease = findings.filter((f) => f.classification === "treatment-decrease");
+  const background = findings.filter((f) => f.classification === "background");
+
+  const classifiedCount = pharmacological.length + treatmentDecrease.length;
+
+  return (
+    <div className="shrink-0 border-b px-4 py-2">
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Protective signals
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {findings.length} finding{findings.length !== 1 ? "s" : ""} with decreased incidence
+          {classifiedCount > 0 && ` \u00b7 ${pharmacological.length} pharmacological \u00b7 ${treatmentDecrease.length} treatment-related`}
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        {/* Pharmacological candidates */}
+        {pharmacological.map((f) => (
+          <div key={`ph-${f.finding}`} className="border-l-2 border-l-blue-400 py-1 pl-2.5">
+            <div className="flex items-baseline gap-2">
+              <button
+                className="text-[11px] font-semibold hover:underline"
+                onClick={() => {
+                  const spec = f.specimens[0];
+                  if (spec) {
+                    navigateTo({ specimen: spec });
+                    navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
+                  }
+                }}
+              >
+                {f.finding}
+              </button>
+              <span className="text-[10px] font-medium text-muted-foreground">{f.sexes}</span>
+              <span className={cn("rounded px-1.5 py-0.5", getProtectiveBadgeStyle("pharmacological"))}>pharmacological</span>
+            </div>
+            <div className="text-[10px] leading-snug text-muted-foreground">
+              {f.ctrlPct}% control {"\u2192"} {f.highPct}% high dose in {f.specimens.join(", ")}
+            </div>
+            {correlatesByFinding.get(f.finding) && (
+              <div className="mt-0.5 text-[10px] text-muted-foreground/70">
+                Correlated: {correlatesByFinding.get(f.finding)!.map((c, i) => (
+                  <span key={c.label}>{i > 0 && ", "}{c.label} {c.direction}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        {/* Treatment-decrease */}
+        {treatmentDecrease.map((f) => (
+          <div key={`td-${f.finding}`} className="border-l-2 border-l-slate-400 py-0.5 pl-2.5">
+            <div className="flex items-baseline gap-2">
+              <button
+                className="text-[11px] font-medium hover:underline"
+                onClick={() => {
+                  const spec = f.specimens[0];
+                  if (spec) {
+                    navigateTo({ specimen: spec });
+                    navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
+                  }
+                }}
+              >
+                {f.finding}
+              </button>
+              <span className="text-[10px] text-muted-foreground">{f.sexes}</span>
+              <span className={cn("rounded px-1.5 py-0.5", getProtectiveBadgeStyle("treatment-decrease"))}>treatment decrease</span>
+              <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                {f.ctrlPct}% {"\u2192"} {f.highPct}%
+              </span>
+            </div>
+            {f.specimens.length > 0 && (
+              <div className="text-[9px] text-muted-foreground/70">{f.specimens.join(", ")}</div>
+            )}
+            {correlatesByFinding.get(f.finding) && (
+              <div className="text-[10px] text-muted-foreground/70">
+                Correlated: {correlatesByFinding.get(f.finding)!.map((c, i) => (
+                  <span key={c.label}>{i > 0 && ", "}{c.label} {c.direction}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        {/* Background (other decreased) */}
+        {background.length > 0 && (
+          <div className="space-y-0.5">
+            <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+              Other decreased findings
+            </div>
+            {background.slice(0, 5).map((f) => (
+              <div key={`bg-${f.finding}`} className="border-l-2 border-l-gray-300 py-0.5 pl-2.5">
+                <div className="flex items-baseline gap-2">
+                  <button
+                    className="text-[11px] font-medium hover:underline"
+                    onClick={() => {
+                      const spec = f.specimens[0];
+                      if (spec) {
+                        navigateTo({ specimen: spec });
+                        navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
+                      }
+                    }}
+                  >
+                    {f.finding}
+                  </button>
+                  <span className="text-[10px] text-muted-foreground">{f.sexes}</span>
+                  <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                    {f.ctrlPct}% {"\u2192"} {f.highPct}%
+                  </span>
+                </div>
+              </div>
+            ))}
+            {background.length > 5 && (
+              <div className="pl-2.5 text-[10px] text-muted-foreground/50">
+                +{background.length - 5} more
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Signal Matrix Tab (Inline) ─────────────────────────────
+
+function SignalMatrixTabInline({ signalData, targetOrgan, selection, onSelect }: {
+  signalData: SignalSummaryRow[]; targetOrgan: TargetOrganRow; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void;
+}) {
+  const [filters, setFilters] = useState<Filters>({ endpoint_type: null, organ_system: null, signal_score_min: 0, sex: null, significant_only: true });
+  const filteredData = useMemo(() => signalData.filter((row) => {
+    if (filters.endpoint_type && row.endpoint_type !== filters.endpoint_type) return false;
+    if (row.signal_score < filters.signal_score_min) return false;
+    if (filters.sex && row.sex !== filters.sex) return false;
+    if (filters.significant_only && (row.p_value === null || row.p_value >= 0.05)) return false;
+    return true;
+  }), [signalData, filters]);
+  const emptySet = useMemo(() => new Set<string>(), []);
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="border-b bg-muted/30 px-4 py-2"><StudySummaryFilters data={signalData} filters={filters} onChange={setFilters} /></div>
+      <div className="flex-1 overflow-auto"><OrganGroupedHeatmap data={filteredData} targetOrgans={[targetOrgan]} selection={selection} organSelection={null} onSelect={onSelect} onOrganSelect={() => {}} expandedOrgans={emptySet} onToggleOrgan={() => {}} pendingNavigation={null} onNavigationConsumed={() => {}} singleOrganMode /></div>
+    </div>
+  );
+}
+
+// ─── Signal Metrics Tab (Inline) ────────────────────────────
+
+const signalColHelper = createColumnHelper<SignalSummaryRow>();
+
+function SignalScoreCell({ row }: { row: SignalSummaryRow }) {
+  return (
+    <SignalScorePopover row={row}>
+      <span className="font-mono">{row.signal_score.toFixed(2)}</span>
+    </SignalScorePopover>
+  );
+}
+
+const SIGNAL_METRICS_COLUMNS = [
+  signalColHelper.accessor("endpoint_label", {
+    header: "Endpoint",
+    size: 160,
+    cell: (info) => <span className="truncate font-medium" title={info.getValue()}>{info.getValue()}</span>,
+  }),
+  signalColHelper.accessor("domain", {
+    header: "Domain",
+    size: 55,
+    cell: (info) => <DomainLabel domain={info.getValue()} />,
+  }),
+  signalColHelper.accessor("dose_label", {
+    header: "Dose",
+    size: 90,
+    cell: (info) => <span className="truncate" title={info.getValue()}>{formatDoseShortLabel(info.getValue())}</span>,
+  }),
+  signalColHelper.accessor("sex", { header: "Sex", size: 40 }),
+  signalColHelper.accessor("signal_score", {
+    header: "Score",
+    size: 60,
+    cell: (info) => <SignalScoreCell row={info.row.original} />,
+  }),
+  signalColHelper.accessor("direction", {
+    header: "Dir",
+    size: 35,
+    cell: (info) => <span className="text-muted-foreground">{getDirectionSymbol(info.getValue())}</span>,
+  }),
+  signalColHelper.accessor("p_value", {
+    header: "p-value",
+    size: 65,
+    cell: (info) => <span className={cn("font-mono", info.getValue() != null && info.getValue()! < 0.01 && "font-semibold")}>{formatPValue(info.getValue())}</span>,
+  }),
+  signalColHelper.accessor("trend_p", {
+    header: "Trend p",
+    size: 65,
+    cell: (info) => <span className={cn("font-mono", info.getValue() != null && info.getValue()! < 0.01 && "font-semibold")}>{formatPValue(info.getValue())}</span>,
+  }),
+  signalColHelper.accessor("effect_size", {
+    header: "|d|",
+    size: 55,
+    cell: (info) => <span className={cn("font-mono", Math.abs(info.getValue() ?? 0) >= 0.8 && "font-semibold")}>{formatEffectSize(info.getValue())}</span>,
+  }),
+  signalColHelper.accessor("severity", {
+    header: "Severity",
+    size: 70,
+    cell: (info) => <span className="rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium">{info.getValue()}</span>,
+  }),
+  signalColHelper.accessor("treatment_related", {
+    header: "TR",
+    size: 35,
+    cell: (info) => info.getValue() ? <span className="font-semibold text-foreground">Y</span> : <span className="text-muted-foreground/50">N</span>,
+  }),
+  signalColHelper.accessor("dose_response_pattern", {
+    header: "Pattern",
+    size: 90,
+    cell: (info) => {
+      const val = info.getValue();
+      if (!val || val === "none" || val === "flat") return <span className="text-muted-foreground/50">&mdash;</span>;
+      return <span className="truncate" title={val}>{val.replace(/_/g, " ")}</span>;
+    },
+  }),
+];
+
+interface MetricsFilters {
+  sex: string | null;
+  severity: string | null;
+  significant_only: boolean;
+}
+
+function SignalMetricsTabInline({ signalData, selection, onSelect }: {
+  signalData: SignalSummaryRow[]; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void;
+}) {
+  const [filters, setFilters] = useState<MetricsFilters>({ sex: null, severity: null, significant_only: false });
+  const [sorting, setSorting] = useSessionState<SortingState>("pcc.noael.signals.sorting", [{ id: "signal_score", desc: true }]);
+  const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.noael.signals.columnSizing", {});
+
+  const filteredData = useMemo(() => signalData.filter((row) => {
+    if (filters.sex && row.sex !== filters.sex) return false;
+    if (filters.severity && row.severity !== filters.severity) return false;
+    if (filters.significant_only && (row.p_value === null || row.p_value >= 0.05)) return false;
+    return true;
+  }), [signalData, filters]);
+
+  const table = useReactTable({
+    data: filteredData,
+    columns: SIGNAL_METRICS_COLUMNS,
+    state: { sorting, columnSizing },
+    onSortingChange: setSorting,
+    onColumnSizingChange: setColumnSizing,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    columnResizeMode: "onChange",
+  });
+
+  const ABSORBER_ID = "endpoint_label";
+  function colStyle(colId: string) {
+    const manualWidth = columnSizing[colId];
+    if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
+    if (colId === ABSORBER_ID) return { width: "100%" };
+    return { width: 1, whiteSpace: "nowrap" as const };
+  }
+
+  const handleRowClick = (row: SignalSummaryRow) => {
+    const isSame = selection?.endpoint_label === row.endpoint_label && selection?.dose_level === row.dose_level && selection?.sex === row.sex;
+    if (isSame) { onSelect(null); return; }
+    onSelect({
+      endpoint_label: row.endpoint_label,
+      dose_level: row.dose_level,
+      sex: row.sex,
+      domain: row.domain,
+      test_code: row.test_code,
+      organ_system: row.organ_system,
+    });
+  };
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <FilterBar className="flex-wrap">
+        <FilterSelect value={filters.sex ?? ""} onChange={(e) => setFilters(f => ({ ...f, sex: e.target.value || null }))}>
+          <option value="">All sexes</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </FilterSelect>
+        <FilterSelect value={filters.severity ?? ""} onChange={(e) => setFilters(f => ({ ...f, severity: e.target.value || null }))}>
+          <option value="">All severities</option>
+          <option value="adverse">Adverse</option>
+          <option value="warning">Warning</option>
+          <option value="normal">Normal</option>
+        </FilterSelect>
+        <label className="flex items-center gap-1.5 text-xs">
+          <input type="checkbox" checked={filters.significant_only} onChange={(e) => setFilters(f => ({ ...f, significant_only: e.target.checked }))} className="rounded border" />
+          <span>Significant only</span>
+        </label>
+        <FilterBarCount>{filteredData.length} rows</FilterBarCount>
+      </FilterBar>
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-[10px]">
+          <thead className="sticky top-0 z-10 bg-background">
+            {table.getHeaderGroups().map((hg) => (
+              <tr key={hg.id} className="border-b bg-muted/30">
+                {hg.headers.map((header) => (
+                  <th key={header.id} className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50" style={colStyle(header.id)} onDoubleClick={header.column.getToggleSortingHandler()}>
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
+                    <div onMouseDown={header.getResizeHandler()} onTouchStart={header.getResizeHandler()} className={cn("absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none", header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30")} />
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => {
+              const orig = row.original;
+              const isSelected = selection?.endpoint_label === orig.endpoint_label && selection?.dose_level === orig.dose_level && selection?.sex === orig.sex;
+              return (
+                <tr key={row.id} className={cn("cursor-pointer border-b transition-colors hover:bg-accent/50", isSelected && "bg-accent font-medium")} onClick={() => handleRowClick(orig)}>
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className={cn("px-1.5 py-px", cell.column.id === ABSORBER_ID && !columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap")} style={colStyle(cell.column.id)}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {filteredData.length === 0 && <div className="p-4 text-center text-xs text-muted-foreground">No rows match the current filters.</div>}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main: NoaelDecisionView ───────────────────────────────
 
-type EvidenceTab = "overview" | "matrix";
+type EvidenceTab = "overview" | "matrix" | "signal-matrix" | "metrics" | "rules";
 
 export function NoaelDecisionView() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -1108,11 +1579,20 @@ export function NoaelDecisionView() {
   const { data: aeData, isLoading: aeLoading, error: aeError } = useAdverseEffectSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: pkData } = usePkIntegration(studyId);
+  const { data: signalData } = useStudySignalSummary(studyId);
+  const { data: targetOrgans } = useTargetOrganSummary(studyId);
+
+  // Build panel data for StudyStatementsBar
+  const panelData = useMemo(() => {
+    if (!signalData || !targetOrgans || !noaelData) return null;
+    return buildSignalsPanelData(noaelData, targetOrgans, signalData);
+  }, [signalData, targetOrgans, noaelData]);
 
   // Read organ from StudySelectionContext
   const selectedOrgan = studySelection.organSystem ?? null;
   const [activeTab, setActiveTab] = useSessionState<EvidenceTab>("pcc.noael.tab", "overview");
   const [selection, setSelection] = useState<NoaelSelection | null>(null);
+  const [localSignalSel, setLocalSignalSel] = useState<SignalSelection | null>(null);
   const { filters: globalFilters, setFilters: setGlobalFilters } = useGlobalFilters();
   const sexFilter = globalFilters.sex;
   const setSexFilter = (v: string | null) => setGlobalFilters({ sex: v });
@@ -1256,44 +1736,59 @@ export function NoaelDecisionView() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* NOAEL Banner (persistent, non-scrolling) */}
-      {noaelData && studyId && (
-        <NoaelBanner
-          data={noaelData}
-          aeData={aeData ?? []}
-          studyId={studyId}
-          onFindingClick={(_finding, organSystem) => {
-            if (organSystem) navigateTo({ organSystem });
-            setActiveTab("overview");
-          }}
-          pkData={pkData}
-        />
-      )}
+      {/* Top section: banner + bars — scrollable when content exceeds available space */}
+      <div className="min-h-0 shrink overflow-y-auto">
+        {/* NOAEL Banner */}
+        {noaelData && studyId && (
+          <NoaelBanner
+            data={noaelData}
+            aeData={aeData ?? []}
+            studyId={studyId}
+            onFindingClick={(_finding, organSystem) => {
+              if (organSystem) navigateTo({ organSystem });
+              setActiveTab("overview");
+            }}
+            pkData={pkData}
+          />
+        )}
 
-      {/* Dose proportionality warning */}
-      {pkData?.available && pkData.dose_proportionality?.assessment && pkData.dose_proportionality.assessment !== "linear" && pkData.dose_proportionality.assessment !== "insufficient_data" && (
-        <div className="shrink-0 border-b bg-amber-50 px-4 py-1.5 text-[11px] text-amber-800">
-          <div>
-            {"\u26a0"}{" "}
-            {pkData.dose_proportionality.non_monotonic
-              ? `Non-monotonic pharmacokinetics detected (slope ${pkData.dose_proportionality.slope}, R\u00b2 ${pkData.dose_proportionality.r_squared})`
-              : `${pkData.dose_proportionality.assessment === "supralinear" ? "Supralinear" : "Sublinear"} pharmacokinetics detected (slope ${pkData.dose_proportionality.slope})`
-            }
-          </div>
-          {pkData.dose_proportionality.interpretation && (
-            <div className="mt-0.5 text-[10px] text-amber-700">
-              {pkData.dose_proportionality.interpretation}
+        {/* Study-level statements + study-level flags */}
+        {panelData && (
+          <StudyStatementsBar
+            statements={panelData.studyStatements}
+            modifiers={panelData.modifiers}
+            caveats={panelData.caveats}
+          />
+        )}
+
+        {/* Protective signals — study-wide R18/R19 aggregation */}
+        {studyId && <ProtectiveSignalsBar rules={ruleResults ?? []} studyId={studyId} signalData={signalData} />}
+
+        {/* Dose proportionality warning */}
+        {pkData?.available && pkData.dose_proportionality?.assessment && pkData.dose_proportionality.assessment !== "linear" && pkData.dose_proportionality.assessment !== "insufficient_data" && (
+          <div className="shrink-0 border-b bg-amber-50 px-4 py-1.5 text-[11px] text-amber-800">
+            <div>
+              {"\u26a0"}{" "}
+              {pkData.dose_proportionality.non_monotonic
+                ? `Non-monotonic pharmacokinetics detected (slope ${pkData.dose_proportionality.slope}, R\u00b2 ${pkData.dose_proportionality.r_squared})`
+                : `${pkData.dose_proportionality.assessment === "supralinear" ? "Supralinear" : "Sublinear"} pharmacokinetics detected (slope ${pkData.dose_proportionality.slope})`
+              }
             </div>
-          )}
-        </div>
-      )}
+            {pkData.dose_proportionality.interpretation && (
+              <div className="mt-0.5 text-[10px] text-amber-700">
+                {pkData.dose_proportionality.interpretation}
+              </div>
+            )}
+          </div>
+        )}
 
-      {/* Safety margin calculator */}
-      {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (
-        <div className="shrink-0 border-b px-4 py-2">
-          <SafetyMarginCalculator pkData={pkData} />
-        </div>
-      )}
+        {/* Safety margin calculator */}
+        {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (
+          <div className="shrink-0 border-b px-4 py-2">
+            <SafetyMarginCalculator pkData={pkData} />
+          </div>
+        )}
+      </div>
 
       {/* Evidence panel — full width */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/5">
@@ -1306,6 +1801,9 @@ export function NoaelDecisionView() {
               tabs={[
                 { key: "overview", label: "Evidence" },
                 { key: "matrix", label: "Adversity matrix" },
+                { key: "signal-matrix", label: "Signal matrix" },
+                { key: "metrics", label: "Metrics" },
+                { key: "rules", label: "Rules" },
               ]}
               value={activeTab}
               onChange={(k) => setActiveTab(k as typeof activeTab)}
@@ -1315,7 +1813,7 @@ export function NoaelDecisionView() {
             />
 
             {/* Tab content */}
-            {activeTab === "overview" ? (
+            {activeTab === "overview" && (
               <OverviewTab
                 organData={organData}
                 endpointSummaries={endpointSummaries}
@@ -1326,7 +1824,8 @@ export function NoaelDecisionView() {
                 studyId={studyId}
                 recovery={organRecovery}
               />
-            ) : (
+            )}
+            {activeTab === "matrix" && (
               <AdversityMatrixTab
                 organData={organData}
                 allAeData={aeData ?? []}
@@ -1340,6 +1839,19 @@ export function NoaelDecisionView() {
                 collapseGen={collapseGen}
                 recovery={organRecovery}
               />
+            )}
+            {activeTab === "signal-matrix" && signalData && selectedOrgan && (() => {
+              const targetOrgan = targetOrgans?.find(o => o.organ_system === selectedOrgan);
+              if (!targetOrgan) return null;
+              const organSignalData = signalData.filter(r => r.organ_system === selectedOrgan);
+              return <SignalMatrixTabInline signalData={organSignalData} targetOrgan={targetOrgan} selection={localSignalSel} onSelect={setLocalSignalSel} />;
+            })()}
+            {activeTab === "metrics" && signalData && selectedOrgan && (() => {
+              const organSignalData = signalData.filter(r => r.organ_system === selectedOrgan);
+              return <SignalMetricsTabInline signalData={organSignalData} selection={localSignalSel} onSelect={setLocalSignalSel} />;
+            })()}
+            {activeTab === "rules" && (
+              <RuleInspectorTab ruleResults={ruleResults ?? []} organFilter={selectedOrgan} studyId={studyId} />
             )}
           </>
         )}

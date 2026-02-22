@@ -1,0 +1,15 @@
+{
+  "Basophils": {
+    "overrides": {},
+    "expert": {
+      "temporality": {
+        "level": 3,
+        "rationale": ""
+      }
+    },
+    "overall": "Unlikely causal",
+    "comment": "",
+    "pathologist": "User",
+    "reviewDate": "2026-02-17T17:16:22.353068+00:00"
+  }
+}

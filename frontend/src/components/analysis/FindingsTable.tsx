@@ -23,6 +23,7 @@ import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState } from "@/hooks/useSessionState";
 import { getSignalTier } from "@/lib/findings-rail-engine";
+import type { GroupingMode } from "@/lib/findings-rail-engine";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
 const col = createColumnHelper<UnifiedFinding>();
@@ -38,14 +39,25 @@ interface FindingsTableProps {
   onToggleExclude?: (label: string) => void;
   /** Active endpoint label — all rows matching this endpoint get a subtle highlight. */
   activeEndpoint?: string | null;
+  /** Current rail grouping mode — when "finding", table sorts by endpoint by default. */
+  activeGrouping?: GroupingMode | null;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping }: FindingsTableProps) {
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const selectedRowRef = useRef<HTMLTableRowElement | null>(null);
   const { getActiveGroupStats, useScheduledOnly: isScheduledOnly } = useScheduledOnly();
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
+
+  // When grouping switches to "finding" (endpoint mode), sort by endpoint name ascending
+  const prevGroupingRef = useRef(activeGrouping);
+  useEffect(() => {
+    if (activeGrouping === "finding" && prevGroupingRef.current !== "finding") {
+      setSorting([{ id: ABSORBER_ID, desc: false }]);
+    }
+    prevGroupingRef.current = activeGrouping;
+  }, [activeGrouping, setSorting]);
 
   const columns = useMemo(
     () => [
@@ -212,12 +224,20 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     columnResizeMode: "onChange",
   });
 
-  // Autoscroll selected row into view
+  // Ref for the first sibling row (same endpoint) — used for scroll target
+  const firstSiblingRef = useRef<HTMLTableRowElement | null>(null);
+  // Autoscroll: when activeEndpoint changes, scroll the first sibling row into view;
+  // when only selectedFindingId changes (within same endpoint), scroll that row.
+  // Use RAF to let the render with updated refs complete first.
   useEffect(() => {
-    if (selectedRowRef.current) {
-      selectedRowRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
-  }, [selectedFindingId]);
+    requestAnimationFrame(() => {
+      if (firstSiblingRef.current) {
+        firstSiblingRef.current.scrollIntoView({ block: "start", behavior: "smooth" });
+      } else if (selectedRowRef.current) {
+        selectedRowRef.current.scrollIntoView({ block: "start", behavior: "smooth" });
+      }
+    });
+  }, [activeEndpoint, selectedFindingId]);
 
   /** Content-hugging: non-absorber columns shrink to fit; absorber takes the rest.
    *  Manual resize overrides with an explicit width. */
@@ -257,18 +277,36 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           ))}
         </thead>
         <tbody>
-          {table.getRowModel().rows.map((row) => {
+          {(() => {
+            let firstSiblingAssigned = false;
+            return table.getRowModel().rows.map((row) => {
             const isSelected = selectedFindingId === row.original.id;
             const epLabel = row.original.endpoint_label ?? row.original.finding;
-            const isRelated = !isSelected && activeEndpoint != null && epLabel === activeEndpoint;
+            const isSibling = activeEndpoint != null && epLabel === activeEndpoint;
+            const isPrimary = isSelected && isSibling;
+            const isSecondary = !isSelected && isSibling;
+
+            // Assign firstSiblingRef to the first row in the active endpoint group
+            let refCb: ((el: HTMLTableRowElement | null) => void) | undefined;
+            if (isSibling && !firstSiblingAssigned) {
+              firstSiblingAssigned = true;
+              refCb = (el) => {
+                firstSiblingRef.current = el;
+                if (isSelected) selectedRowRef.current = el;
+              };
+            } else if (isSelected) {
+              refCb = (el) => { selectedRowRef.current = el; };
+            }
+
             return (
               <tr
                 key={row.id}
-                ref={isSelected ? selectedRowRef : undefined}
+                ref={refCb}
                 className={cn(
                   "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                  isSelected && "bg-accent font-medium",
-                  isRelated && "bg-accent/20",
+                  isPrimary && "bg-primary/15 font-medium",
+                  isSecondary && "bg-accent/40",
+                  isSelected && !isSibling && "bg-accent font-medium",
                 )}
                 data-selected={isSelected || undefined}
                 onClick={() => selectFinding(row.original)}
@@ -292,7 +330,8 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 })}
               </tr>
             );
-          })}
+          });
+          })()}
         </tbody>
       </table>
       {findings.length === 0 && (

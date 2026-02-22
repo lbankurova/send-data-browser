@@ -23,13 +23,13 @@
           "finding": "Large Unstained Cells",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01105
+          "p_value": 0.01115
         },
         {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00064
+          "p_value": 0.00057
         },
         {
           "finding": "Leukocytes",
@@ -86,7 +86,7 @@
           "finding": "Glucose",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00431
+          "p_value": 0.00429
         },
         {
           "finding": "Potassium",
@@ -98,13 +98,13 @@
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00712
+          "p_value": 0.00713
         },
         {
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.03416
+          "p_value": 0.0341
         },
         {
           "finding": "VACUOLIZATION",
@@ -150,7 +150,7 @@
           "finding": "Glucose",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00431
+          "p_value": 0.00429
         },
         {
           "finding": "Potassium",
@@ -162,19 +162,19 @@
           "finding": "Large Unstained Cells",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01105
+          "p_value": 0.01115
         },
         {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00064
+          "p_value": 0.00057
         },
         {
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00712
+          "p_value": 0.00713
         },
         {
           "finding": "Leukocytes",
@@ -186,7 +186,7 @@
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.03416
+          "p_value": 0.0341
         },
         {
           "finding": "TESTIS (WEIGHT)",

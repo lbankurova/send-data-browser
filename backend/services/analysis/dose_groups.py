@@ -186,10 +186,28 @@ def build_dose_groups(study: StudyInfo) -> dict:
 
     # Build dose groups summary (main study arms only)
     main_subjects = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]]
+
+    # TK satellite counts per ARMCD: satellites share ARMCD with main arms
+    tk_subjects = subjects[subjects["is_satellite"]]
+    tk_per_armcd = tk_subjects.groupby("ARMCD").size().to_dict() if len(tk_subjects) > 0 else {}
+
+    # Recovery arm linkage: find recovery ARMCDs that pair with main ARMCDs
+    recovery_armcds = {a: info for a, info in tx_map.items() if info.get("is_recovery", False)}
+    recovery_subjects = subjects[subjects["is_recovery"] & ~subjects["is_satellite"]]
+
     dose_groups = []
     for armcd in main_armcds:
         arm_subs = main_subjects[main_subjects["ARMCD"] == armcd]
         tx_info = tx_map.get(armcd, {})
+
+        # Find paired recovery arm: try ARMCD + "R" convention
+        rec_armcd = None
+        rec_n = 0
+        candidate = armcd + "R"
+        if candidate in recovery_armcds:
+            rec_armcd = candidate
+            rec_n = int(len(recovery_subjects[recovery_subjects["ARMCD"] == candidate]))
+
         dose_groups.append({
             "dose_level": armcd_to_level.get(armcd, -1),
             "armcd": armcd,
@@ -199,6 +217,10 @@ def build_dose_groups(study: StudyInfo) -> dict:
             "n_male": int((arm_subs["SEX"] == "M").sum()),
             "n_female": int((arm_subs["SEX"] == "F").sum()),
             "n_total": len(arm_subs),
+            "tk_count": int(tk_per_armcd.get(armcd, 0)),
+            "is_recovery": False,
+            "recovery_armcd": rec_armcd,
+            "recovery_n": rec_n,
         })
 
     tk_count = int(subjects["is_satellite"].sum())

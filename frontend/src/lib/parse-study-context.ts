@@ -79,6 +79,9 @@ function parseIntOrNull(s: string | null): number | null {
 // ECG interpretation — species-aware QTc translational relevance
 // ---------------------------------------------------------------------------
 
+// @species SPECIES-01, SPECIES-04 — rodent QTc non-translational (Ito-dominated repolarization)
+// @species SPECIES-02 — dog QTc gold-standard, Van de Water correction
+// @species SPECIES-03 — NHP QTc translational, Fridericia correction
 function deriveECGInterpretation(species: string): ECGInterpretation {
   const s = species.toUpperCase();
   if (s.includes("RAT") || s.includes("MOUSE")) {

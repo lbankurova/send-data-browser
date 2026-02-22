@@ -94,6 +94,8 @@ function routeCategory(route: string): "oral" | "parenteral" | "any" {
 // Source: Charles River Laboratories published HCD, Crl:CD(SD) rats,
 // 34 control groups, ages 4-26 weeks. isMock: false.
 
+// @strain STRAIN-01-SD — HCD scoped to Crl:CD(SD) Sprague-Dawley rats only
+// @species SPECIES-01 — all HCD entries are rat; no dog/NHP/mouse/rabbit HCD seeded
 const CR = {
   strain: "SPRAGUE-DAWLEY",
   species: "RAT",
@@ -241,6 +243,7 @@ function buildLegacyEntries(): HCDEntry[] {
  * Context-aware HCD query with 4-tier fallback matching.
  * Returns the best match for the given finding/specimen/sex in the study context.
  */
+// @strain STRAIN-01-SD — 4-tier fallback: strain+species → species-only; strain-specific flag in result
 export function queryHistoricalControl(
   query: HistoricalControlQuery,
 ): HistoricalControlResult | null {

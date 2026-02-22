@@ -11,6 +11,7 @@ import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { ValidationRuleRail } from "@/components/analysis/validation/ValidationRuleRail";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
+import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import type { ValidationRuleResult } from "@/hooks/useValidationResults";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 
@@ -150,8 +151,10 @@ export function ShellRailPanel() {
     }
   }, [studySelection.endpoint, isDRView]);
 
-  // Route detection — validation view
+  // Route detection — validation view, study summary details tab
   const isValidationRoute = pathname.includes("/validation");
+  const isStudySummaryRoute = studyId && pathname === `/studies/${encodeURIComponent(studyId)}`;
+  const [summaryTab] = useStudySummaryTab();
 
   // Validation rail: read/write selected rule via ViewSelectionContext
   const { selection: viewSelection, setSelection } = useViewSelection();
@@ -182,8 +185,10 @@ export function ShellRailPanel() {
     [selectedRuleId, setSelection]
   );
 
-  // Don't render on landing page, non-study routes, or domain browser
+  // Don't render on landing page, non-study routes, domain browser,
+  // or study summary "details" tab (no organ rail needed for metadata)
   if (!studyId || domainName) return null;
+  if (isStudySummaryRoute && summaryTab === "details") return null;
 
   return (
     <>
