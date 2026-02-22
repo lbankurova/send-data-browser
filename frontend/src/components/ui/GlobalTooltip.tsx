@@ -23,9 +23,11 @@ export function GlobalTooltip() {
   const [pos, setPos] = useState<Pos | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const active = useRef<HTMLElement | null>(null);
+  const observer = useRef<MutationObserver | null>(null);
 
   const clear = useCallback(() => {
     clearTimeout(timer.current);
+    observer.current?.disconnect();
     const el = active.current;
     if (el) {
       const saved = el.dataset.nativeTitle;
@@ -54,6 +56,21 @@ export function GlobalTooltip() {
       if (!text) return;
       el.dataset.nativeTitle = text;
       el.removeAttribute("title");
+
+      // Watch for React re-rendering a new title on this element
+      // (e.g., tooltip text changes after a state toggle while hovering)
+      observer.current?.disconnect();
+      observer.current = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.attributeName === "title" && el.title) {
+            const newText = el.title;
+            el.dataset.nativeTitle = newText;
+            el.removeAttribute("title");
+            setPos((prev) => prev ? { ...prev, text: newText } : prev);
+          }
+        }
+      });
+      observer.current.observe(el, { attributes: true, attributeFilter: ["title"] });
 
       timer.current = setTimeout(() => {
         if (active.current !== el) return;
@@ -85,6 +102,7 @@ export function GlobalTooltip() {
 
     return () => {
       clearTimeout(timer.current);
+      observer.current?.disconnect();
       document.removeEventListener("mouseover", onOver, true);
       document.removeEventListener("mouseout", onOut, true);
       window.removeEventListener("scroll", clear, true);
