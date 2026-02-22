@@ -5,8 +5,7 @@ import { useStudyContext } from "@/hooks/useStudyContext";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useSessionState } from "@/hooks/useSessionState";
-import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
-import { MortalityDataSettings } from "@/components/analysis/MortalityDataSettings";
+import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -67,8 +66,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const { data: meta, isLoading: metaLoading } = useStudyMetadata(studyId);
   const { data: studyCtx } = useStudyContext(studyId);
   const { data: mortalityData } = useStudyMortality(studyId);
-  const { excludedSubjects } = useScheduledOnly();
-
   // Study notes via annotation API
   const { data: studyNotes } = useAnnotations<StudyNote>(studyId, "study-notes");
   const saveNote = useSaveAnnotation<StudyNote>(studyId, "study-notes");
@@ -132,27 +129,15 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
 
   if (!meta) return null;
 
-  // Subtitle
-  const durationStr = studyCtx?.dosingDurationWeeks
-    ? `${studyCtx.dosingDurationWeeks}wk`
-    : meta.dosing_duration ?? "";
-  const subtitle = [durationStr, meta.species].filter(Boolean).join(" \u00b7 ");
-
   // Recovery detection
   const hasRecovery = meta.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
   const recoveryPeriod = studyCtx?.recoveryPeriodDays;
-
-  // Excluded count
-  const excludedCount = excludedSubjects.size;
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4">
       {/* Header */}
       <div className="mb-3">
-        <h3 className="text-sm font-semibold">Study: {studyId}</h3>
-        {subtitle && (
-          <p className="mt-0.5 text-[10px] text-muted-foreground">{subtitle}</p>
-        )}
+        <h3 className="text-sm font-semibold">Study: {studyId} — Settings</h3>
       </div>
 
       {/* ── Analysis settings ───────────────────────────── */}
@@ -181,20 +166,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           </>
         )}
 
-        {/* Mortality exclusion */}
-        <SettingsRow label="Mortality exclusion">
-          <span className="text-[10px] text-muted-foreground">
-            {excludedCount > 0
-              ? `${excludedCount} excluded`
-              : "None excluded"}
-          </span>
-        </SettingsRow>
-
-        {/* Mortality data settings — full table */}
-        <div className="-ml-4">
-          <MortalityDataSettings mortality={mortalityData} />
-        </div>
-
         {/* Organ weight method */}
         <SettingsRow label="Organ weight method">
           <SimulatedSelect
@@ -207,7 +178,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={setOrganWeightMethod}
           />
         </SettingsRow>
-        <div className="mb-1 text-[9px] leading-snug text-muted-foreground/70">
+        <div className="mb-1 text-[10px] leading-snug text-muted-foreground">
           {organWeightMethod === "absolute" && "Standard; preferred when BW is not significantly affected"}
           {organWeightMethod === "ratio-bw" && "Normalizes for body size; unreliable when BW is a treatment effect"}
           {organWeightMethod === "ratio-brain" && "Preferred when BW is significantly affected (brain is BW-resistant)"}
@@ -320,6 +291,9 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           </div>
         )}
       </CollapsiblePane>
+
+      {/* ── Mortality info ──────────────────────────────── */}
+      <MortalityInfoPane mortality={mortalityData} />
 
       {/* ── Study notes ─────────────────────────────────── */}
       <CollapsiblePane

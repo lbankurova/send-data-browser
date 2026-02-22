@@ -17,7 +17,7 @@ import { ShellRailPanel } from "@/components/shell/ShellRailPanel";
 import { GlobalTooltip } from "@/components/ui/GlobalTooltip";
 
 const LEFT_DEFAULT = 260;
-const RIGHT_DEFAULT = 280;
+const RIGHT_DEFAULT = 380;
 const LEFT_MIN = 180;
 const LEFT_MAX = 500;
 const RIGHT_MIN = 200;

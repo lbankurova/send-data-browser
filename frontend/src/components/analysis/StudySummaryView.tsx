@@ -584,7 +584,7 @@ function DomainTable({
                 <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
                   {row.adverseCount > 0 ? `${row.adverseCount} adv` : "\u2014"}
                 </td>
-                <td className="px-1.5 py-px text-muted-foreground">
+                <td className="px-1.5 py-px">
                   {row.keyFindings}
                 </td>
               </tr>
@@ -838,72 +838,67 @@ function DetailsTab({
   return (
     <div className="flex-1 overflow-auto p-4">
       {/* ── Profile block ────────────────────────────────── */}
-      <section className="mb-4">
-        <div className="text-sm font-semibold">{meta.study_id}</div>
-        <div className="text-[10px] text-muted-foreground">
-          {subtitleParts.join(" \u00b7 ")}
-        </div>
-        <div className="mt-0.5 text-[10px] text-muted-foreground">
-          {nGroups} groups: {doseLabels.join(", ")}
-          {perGroupM > 0 && perGroupF > 0 && ` \u00b7 ${perGroupM}M + ${perGroupF}F/group`}
-        </div>
-        <div className="mt-0.5 text-[10px] text-muted-foreground">
-          {"  "}Main study: {mainStudyN} ({mainMales}M, {mainFemales}F)
-          {hasTk && (
-            <>
-              {" \u00b7 TK satellite: "}
-              <span className={cn("tabular-nums", tkTotal > 0 && "font-semibold", tkAmber && "text-amber-600")}>
-                {tkTotal}
-              </span>
-            </>
-          )}
-          {hasRecovery && ` \u00b7 Recovery: ${recoveryTotal}`}
-        </div>
-        {hasRecovery && recoveryPeriodLabel && (
-          <div className="mt-0.5 text-[10px] text-muted-foreground">
-            Recovery: {recoveryPeriodLabel}
-            {recoveryGroupLabels.length > 0 && ` (Groups ${recoveryGroupLabels.join(", ")})`}
+      <section className="mb-6 border-b pb-4">
+        <div className="flex items-start justify-between gap-6">
+          {/* Left: study identity and design */}
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold">{meta.study_id}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              {subtitleParts.join(" \u00b7 ")}
+            </div>
+            <div className="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
+              <div>
+                {nGroups} groups: {doseLabels.join(", ")}
+                {perGroupM > 0 && perGroupF > 0 && ` \u00b7 ${perGroupM}M + ${perGroupF}F/group`}
+              </div>
+              <div>
+                Main study: {mainStudyN} ({mainMales}M, {mainFemales}F)
+                {hasTk && (
+                  <>
+                    {" \u00b7 TK satellite: "}
+                    <span className={cn("tabular-nums", tkTotal > 0 && "font-semibold", tkAmber && "text-amber-600")}>
+                      {tkTotal}
+                    </span>
+                  </>
+                )}
+                {hasRecovery && ` \u00b7 Recovery: ${recoveryTotal}`}
+              </div>
+              {hasRecovery && recoveryPeriodLabel && (
+                <div>
+                  Recovery: {recoveryPeriodLabel}
+                  {recoveryGroupLabels.length > 0 && ` (Groups ${recoveryGroupLabels.join(", ")})`}
+                </div>
+              )}
+            </div>
           </div>
-        )}
 
-        {/* Conclusions line */}
-        {(noaelLabel || targetOrganCount > 0) && (
-          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 text-xs">
-            {noaelLabel && (
-              <span>
-                <span className="font-semibold">NOAEL: {noaelLabel}</span>
-                {noaelSexNote && <span className="text-[10px] text-muted-foreground"> ({noaelSexNote})</span>}
-              </span>
-            )}
-            {loaelLabel && (
-              <span className="text-muted-foreground">
-                LOAEL: {loaelLabel}
-              </span>
-            )}
-          </div>
-        )}
-        {(targetOrganCount > 0 || domainsWithSignals > 0) && (
-          <div className="mt-0.5 flex items-center gap-x-2 text-[10px] text-muted-foreground">
-            {targetOrganCount > 0 && <span>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</span>}
-            {domainsWithSignals > 0 && (
-              <>
-                <span>&middot;</span>
-                <span>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</span>
-              </>
-            )}
-            {noaelConfidence != null && (
-              <>
-                <span>&middot;</span>
-                <span>{Math.round(noaelConfidence * 100)}% confidence</span>
-              </>
-            )}
-          </div>
-        )}
+          {/* Right: key conclusions */}
+          {(noaelLabel || targetOrganCount > 0) && (
+            <div className="shrink-0 text-right">
+              {noaelLabel && (
+                <div className="text-xs">
+                  <span className="font-semibold">NOAEL: {noaelLabel}</span>
+                  {noaelSexNote && <span className="ml-1 text-[10px] text-muted-foreground">({noaelSexNote})</span>}
+                </div>
+              )}
+              {loaelLabel && (
+                <div className="text-[10px] text-muted-foreground">
+                  LOAEL: {loaelLabel}
+                </div>
+              )}
+              <div className="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
+                {targetOrganCount > 0 && <div>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</div>}
+                {domainsWithSignals > 0 && <div>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</div>}
+                {noaelConfidence != null && <div>{Math.round(noaelConfidence * 100)}% confidence</div>}
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* ── Study timeline ───────────────────────────────── */}
       {doseGroups.length > 0 && studyCtx?.dosingDurationWeeks && (
-        <section className="mb-4">
+        <section className="mb-6">
           <StudyTimeline
             doseGroups={doseGroups}
             dosingDurationWeeks={studyCtx.dosingDurationWeeks}
@@ -914,7 +909,7 @@ function DetailsTab({
 
       {/* ── Treatment arms table ─────────────────────────── */}
       {doseGroups.length > 0 && (
-        <section className="mb-4">
+        <section className="mb-6">
           <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Treatment arms ({doseGroups.length})
           </h2>
@@ -977,7 +972,7 @@ function DetailsTab({
               {filteredProv.map((msg) => (
                 <div
                   key={msg.rule_id + msg.message}
-                  className="flex items-start gap-2 text-xs leading-snug"
+                  className="flex items-start gap-2 text-[10px] leading-snug"
                 >
                   <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
                   <span className="text-amber-700">
@@ -1000,7 +995,7 @@ function DetailsTab({
       )}
 
       {/* ── Data quality ─────────────────────────────────── */}
-      <section className="mb-4">
+      <section className="mb-6">
         <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Data quality
         </h2>
@@ -1011,21 +1006,21 @@ function DetailsTab({
             Domain completeness
           </div>
           <div className="space-y-0.5 text-[10px]">
-            {/* Required row */}
-            <div className="flex flex-wrap items-center gap-x-1">
+            {/* Required row — present domains neutral, missing domains amber */}
+            <div className="flex flex-wrap items-center gap-x-1.5">
               <span className="w-14 shrink-0 text-muted-foreground">Required:</span>
               {REQUIRED_DOMAINS.map((d) => (
-                <span key={d} className={presentDomains.has(d) ? "text-green-700" : "text-red-600"}>
+                <span key={d} className={presentDomains.has(d) ? "text-muted-foreground" : "font-medium text-amber-700"}>
                   {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2717"}
                 </span>
               ))}
             </div>
-            {/* Optional row */}
-            <div className="flex flex-wrap items-center gap-x-1">
+            {/* Optional row — present neutral, missing very faint */}
+            <div className="flex flex-wrap items-center gap-x-1.5">
               <span className="w-14 shrink-0 text-muted-foreground">Optional:</span>
               {OPTIONAL_DOMAINS.map((d) => (
-                <span key={d} className={presentDomains.has(d) ? "text-green-700" : "text-foreground/60"}>
-                  {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2717"}
+                <span key={d} className={presentDomains.has(d) ? "text-muted-foreground" : "text-muted-foreground/40"}>
+                  {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2013"}
                 </span>
               ))}
             </div>
@@ -1132,7 +1127,7 @@ function DetailsTab({
       </section>
 
       {/* ── Analysis settings — compact summary ──────────── */}
-      <section className="mb-4">
+      <section className="mb-6">
         <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Analysis settings
         </h2>
