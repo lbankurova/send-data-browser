@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useSessionState } from "@/hooks/useSessionState";
+import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useProvenanceMessages } from "@/hooks/useProvenanceMessages";
+import { useDomains } from "@/hooks/useDomains";
 import { useInsights } from "@/hooks/useInsights";
 import { generateStudyReport } from "@/lib/report-generator";
 import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
@@ -22,10 +23,10 @@ import {
 import { ConfidencePopover } from "./ScoreBreakdown";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
+import { useSessionState } from "@/hooks/useSessionState";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
-import type { StudyMortality, DeathRecord } from "@/types/mortality";
-import { ChevronDown } from "lucide-react";
 import type { SignalSelection, SignalSummaryRow, ProvenanceMessage, NoaelSummaryRow, RuleResult } from "@/types/analysis-views";
+import type { StudyMortality } from "@/types/mortality";
 import type { StudyMetadata } from "@/types";
 import type { Insight } from "@/hooks/useInsights";
 import { classifyProtectiveSignal, getProtectiveBadgeStyle } from "@/lib/protective-signal";
@@ -48,7 +49,7 @@ export function StudySummaryView() {
 
   // Initialize tab from URL query parameter if present, then persist via session
   const initialTab = (searchParams.get("tab") as Tab) || "details";
-  const [tab, setTab] = useSessionState<Tab>("pcc.studySummary.tab", initialTab);
+  const [tab, setTab] = useStudySummaryTab(initialTab);
 
   // Local signal selection (for endpoint-level detail in evidence panel)
   const [localSignalSel, setLocalSignalSel] = useState<SignalSelection | null>(null);
@@ -186,7 +187,7 @@ export function StudySummaryView() {
       />
 
       {/* Tab content */}
-      {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} mortality={mortalityData} />}
+      {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} signalData={signalData} mortalityData={mortalityData} />}
       {tab === "insights" && <CrossStudyInsightsTab studyId={studyId!} />}
       {tab === "signals" && panelData && (
         <div className="flex h-full flex-col overflow-hidden">
@@ -710,236 +711,354 @@ function formatSubjects(
   return parts.join(" ");
 }
 
-/** Tooltip explaining why a subject is defaulted to included or excluded. */
-function subjectDataTooltip(d: DeathRecord & { attribution: string }, isExcluded: boolean, isTr: boolean): string {
-  const id = d.USUBJID;
-  if (d.is_recovery) {
-    return isExcluded
-      ? `${id}: Recovery arm \u2014 excluded from main-study analysis (separate arm). Click to override.`
-      : `${id}: Recovery arm \u2014 included by reviewer override.`;
-  }
-  if (d.attribution === "Accidental") {
-    return isExcluded
-      ? `${id}: Accidental death \u2014 excluded by reviewer override. Default: included (valid drug-exposure data through day ${d.study_day ?? "?"}).`
-      : `${id}: Accidental death \u2014 included (default). Data valid through death day; not drug-related. Longitudinal data naturally ends at day ${d.study_day ?? "?"}.`;
-  }
-  if (isTr) {
-    return isExcluded
-      ? `${id}: TR early death \u2014 excluded (default). Moribund/found-dead terminal data skews group means.`
-      : `${id}: TR early death \u2014 included by reviewer override. Default: excluded (terminal data from severely affected animals skews group means).`;
-  }
-  return isExcluded
-    ? `${id}: excluded from terminal stats. Click to include.`
-    : `${id}: included in terminal stats. Click to exclude.`;
+
+/** Full SEND domain name map for display. */
+const DOMAIN_LABELS: Record<string, string> = {
+  dm: "Demographics", ex: "Exposure", ds: "Disposition", ts: "Trial Summary",
+  ta: "Trial Arms", te: "Trial Elements", tx: "Trial Sets",
+  bw: "Body Weights", cl: "Clinical Observations", fw: "Food/Water Consumption",
+  lb: "Laboratory", ma: "Macroscopic Findings", mi: "Microscopic Findings",
+  om: "Organ Measurements", pp: "Pharmacokinetics", pc: "Concentrations",
+  tf: "Tumor Findings", bg: "Biospecimen Genetics", dd: "Death Diagnosis",
+  eg: "ECG", cv: "Cardiovascular", re: "Respiratory", vs: "Vital Signs",
+  sc: "Subject Characteristics", se: "Subject Elements", co: "Comments",
+};
+
+// ---------------------------------------------------------------------------
+// Signal-prioritized domain table — sorts by adversity, shows key findings
+// ---------------------------------------------------------------------------
+
+/** Structural domains that always go below the fold. */
+const STRUCTURAL_DOMAINS = new Set([
+  "dm", "ex", "ta", "te", "tx", "ts", "co", "se",
+  "suppmi", "suppom", "supplb", "relrec", "sc", "pm",
+  "suppdm", "suppds", "suppcl", "suppex",
+]);
+
+/** Domains with special significance that stay above fold even with 0 signals. */
+const ALWAYS_VISIBLE = new Set(["ds", "tf"]);
+
+interface EndpointAgg {
+  tr: boolean;
+  adverse: boolean;
+  direction: string | null;
+  organName: string;
+  minP: number | null;
+  maxAbsD: number | null;
+  maxScore: number;
 }
 
-/** Collapsible data settings section with per-subject mortality table. */
-function MortalityDataSettings({ mortality }: { mortality?: StudyMortality | null }) {
-  const [open, setOpen] = useState(false);
-  const { excludedSubjects, toggleSubjectExclusion, setUseScheduledOnly, trEarlyDeathIds } = useScheduledOnly();
+interface DomainSignalInfo {
+  trCount: number;
+  adverseCount: number;
+  endpoints: Map<string, EndpointAgg>;
+}
 
-  // Combine all deaths: TR (main + recovery) + accidental, sorted by study_day
-  const allDeaths: (DeathRecord & { attribution: string })[] = mortality
-    ? [
-        ...mortality.deaths.map(d => ({ ...d, attribution: "TR" as const })),
-        ...mortality.accidentals.map(d => ({ ...d, attribution: "Accidental" as const })),
-      ].sort((a, b) => (a.study_day ?? 999) - (b.study_day ?? 999))
-    : [];
+/** Aggregate signal rows into per-domain stats, preserving p-value/effect size/score. */
+function aggregateDomainSignals(signalData: SignalSummaryRow[]): Record<string, DomainSignalInfo> {
+  const byDomain: Record<string, DomainSignalInfo> = {};
 
-  const hasMortality = mortality?.has_mortality && allDeaths.length > 0;
-  const unit = mortality?.mortality_loael_label?.match(/\d[\d.]*\s*(mg\/kg|mg|µg\/kg|µg|g\/kg|g)/)?.[1] ?? "";
+  for (const row of signalData) {
+    const dom = row.domain.toLowerCase();
+    if (!byDomain[dom]) byDomain[dom] = { trCount: 0, adverseCount: 0, endpoints: new Map() };
+    const existing = byDomain[dom].endpoints.get(row.endpoint_label);
+    const isTr = existing?.tr || row.treatment_related;
+    const isAdv = existing?.adverse || row.severity === "adverse";
+    const prevP = existing?.minP ?? null;
+    const newP = row.p_value != null
+      ? (prevP != null ? Math.min(prevP, row.p_value) : row.p_value)
+      : prevP;
+    const prevD = existing?.maxAbsD ?? null;
+    const absD = row.effect_size != null ? Math.abs(row.effect_size) : null;
+    const newD = absD != null
+      ? (prevD != null ? Math.max(prevD, absD) : absD)
+      : prevD;
+    const prevScore = existing?.maxScore ?? 0;
+    byDomain[dom].endpoints.set(row.endpoint_label, {
+      tr: isTr,
+      adverse: isAdv,
+      direction: row.direction ?? existing?.direction ?? null,
+      organName: row.organ_name,
+      minP: newP,
+      maxAbsD: newD,
+      maxScore: Math.max(prevScore, row.signal_score),
+    });
+  }
 
-  // NOAEL cap
-  const capLevel = mortality?.mortality_loael != null ? mortality.mortality_loael - 1 : null;
-  const capDose = capLevel != null ? mortality?.by_dose.find(b => b.dose_level === capLevel) : null;
-  const capLabel = capDose?.dose_value != null && unit ? `${capDose.dose_value} ${unit}` : null;
+  // Recount after dedup
+  for (const info of Object.values(byDomain)) {
+    info.trCount = [...info.endpoints.values()].filter(e => e.tr).length;
+    info.adverseCount = [...info.endpoints.values()].filter(e => e.adverse).length;
+  }
 
-  const excludedCount = excludedSubjects.size;
-  const allTrExcluded = trEarlyDeathIds.size > 0 && [...trEarlyDeathIds].every(id => excludedSubjects.has(id));
+  return byDomain;
+}
+
+// ---------------------------------------------------------------------------
+// Key findings generation — uses existing signal data fields directly
+// ---------------------------------------------------------------------------
+
+const DIR_ARROW: Record<string, string> = { up: "\u2191", down: "\u2193" };
+
+/** Format p-value compactly: p<.0001, p=.003 */
+function fmtP(p: number | null): string {
+  if (p == null) return "";
+  if (p < 0.0001) return "p<.0001";
+  if (p < 0.001) return `p=${p.toFixed(4).replace(/^0/, "")}`;
+  if (p < 0.01) return `p=${p.toFixed(3).replace(/^0/, "")}`;
+  return "";
+}
+
+/** Format Cohen's d compactly: |d|=7.8 */
+function fmtD(d: number | null): string {
+  if (d == null || d < 2.0) return "";
+  return `|d|=${d.toFixed(1)}`;
+}
+
+/** Compact clinical significance suffix: (p<.0001, d=7.8) */
+function clinSig(ep: EndpointAgg): string {
+  const parts = [fmtP(ep.minP), fmtD(ep.maxAbsD)].filter(Boolean);
+  return parts.length > 0 ? ` (${parts.join(", ")})` : "";
+}
+
+/**
+ * For MI/MA/OM/TF labels like "SPECIMEN — FINDING", extract a short display form.
+ * MI/MA: "finding (specimen)" lowercase. OM: just specimen name. TF: finding portion.
+ */
+function shortSpecimenLabel(label: string, domain: string): string {
+  const sep = label.indexOf(" \u2014 ");
+  if (sep < 0) return label.toLowerCase();
+  const specimen = label.substring(0, sep).trim().toLowerCase();
+  const finding = label.substring(sep + 3).trim().toLowerCase();
+  if (domain === "om") return specimen; // "kidney", "liver"
+  if (domain === "tf") return finding;  // "carcinoma, hepatocellular, malignant"
+  return `${finding} (${specimen})`; // MI/MA: "hypertrophy (liver)"
+}
+
+/** Generate key findings for a domain from its aggregated endpoints + mortality data. */
+function generateKeyFindings(
+  domain: string,
+  endpoints: Map<string, EndpointAgg>,
+  mortalityData?: StudyMortality,
+): string {
+  const dom = domain.toLowerCase();
+
+  // DS — use actual cause-of-death from mortality records
+  if (dom === "ds") {
+    if (!mortalityData?.has_mortality) return "";
+    const allDeaths = [...mortalityData.deaths, ...mortalityData.accidentals];
+    const byCause = new Map<string, number>();
+    for (const d of allDeaths) {
+      const label = d.cause
+        ? d.cause.toLowerCase()
+        : d.relatedness?.toLowerCase() ?? d.disposition.toLowerCase();
+      byCause.set(label, (byCause.get(label) ?? 0) + 1);
+    }
+    return [...byCause.entries()]
+      .map(([cause, n]) => n > 1 ? `${n} ${cause}` : cause)
+      .join(", ");
+  }
+
+  // All other domains: rank endpoints by adverse > TR, then by signal score
+  const ranked = [...endpoints.entries()]
+    .filter(([, ep]) => ep.tr || ep.adverse)
+    .sort(([, a], [, b]) => {
+      // Adverse first, then by signal score
+      if (a.adverse !== b.adverse) return a.adverse ? -1 : 1;
+      if (a.tr !== b.tr) return a.tr ? -1 : 1;
+      return b.maxScore - a.maxScore;
+    });
+
+  if (ranked.length === 0) {
+    // No TR/adverse — for TF, still show tumor types
+    if (dom === "tf" && endpoints.size > 0) {
+      return [...endpoints.keys()]
+        .map(label => shortSpecimenLabel(label, dom))
+        .slice(0, 3)
+        .join("; ");
+    }
+    return "";
+  }
+
+  const usesSpecimenFormat = ["mi", "ma", "om", "tf"].includes(dom);
+  const top = ranked.slice(0, 3);
+
+  return top.map(([label, ep]) => {
+    const dir = DIR_ARROW[ep.direction ?? ""] ?? "";
+    const name = usesSpecimenFormat ? shortSpecimenLabel(label, dom) : label;
+    const sig = clinSig(ep);
+    return `${name} ${dir}${sig}`.trim();
+  }).join(", ");
+}
+
+
+interface DomainTableRow {
+  code: string;
+  fullName: string;
+  rowCount: number;
+  subjectCount: number | null;
+  trCount: number;
+  adverseCount: number;
+  keyFindings: string;
+  tier: number; // 1=adverse, 2=TR, 3=always-visible, 4=data-no-findings, 5=structural
+}
+
+function DomainTable({
+  studyId,
+  domains,
+  signalData,
+  mortalityData,
+}: {
+  studyId: string;
+  domains: { name: string; label: string; row_count: number; subject_count?: number | null }[];
+  signalData: SignalSummaryRow[];
+  mortalityData?: StudyMortality;
+}) {
+  const navigate = useNavigate();
+  const [showFolded, setShowFolded] = useState(false);
+
+  const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
+
+  const rows: DomainTableRow[] = useMemo(() => {
+    return domains.map((d) => {
+      const dom = d.name.toLowerCase();
+      const sig = domainSignals[dom];
+      const trCount = sig?.trCount ?? 0;
+      const adverseCount = sig?.adverseCount ?? 0;
+      const isStructural = STRUCTURAL_DOMAINS.has(dom);
+      const isAlwaysVisible = ALWAYS_VISIBLE.has(dom);
+
+      let tier: number;
+      if (isStructural) tier = 5;
+      else if (adverseCount > 0) tier = 1;
+      else if (trCount > 0) tier = 2;
+      else if (isAlwaysVisible && d.row_count > 0) tier = 3;
+      else tier = 4;
+
+      const keyFindings = sig
+        ? generateKeyFindings(dom, sig.endpoints, mortalityData)
+        : dom === "ds"
+          ? generateKeyFindings(dom, new Map(), mortalityData)
+          : "";
+
+      return {
+        code: d.name,
+        fullName: DOMAIN_LABELS[dom] ?? d.label,
+        rowCount: d.row_count,
+        subjectCount: d.subject_count ?? null,
+        trCount,
+        adverseCount,
+        keyFindings,
+        tier,
+      };
+    }).sort((a, b) => {
+      // Sort by tier first, then by adverseCount desc, then trCount desc
+      if (a.tier !== b.tier) return a.tier - b.tier;
+      if (a.adverseCount !== b.adverseCount) return b.adverseCount - a.adverseCount;
+      if (a.trCount !== b.trCount) return b.trCount - a.trCount;
+      return b.rowCount - a.rowCount;
+    });
+  }, [domains, domainSignals, mortalityData]);
+
+  const aboveFold = rows.filter(r => r.tier <= 3);
+  const belowFold = rows.filter(r => r.tier > 3);
+  const displayed = showFolded ? rows : aboveFold;
+
+  const handleRowClick = (code: string) => {
+    navigate(`/studies/${encodeURIComponent(studyId)}/findings?domain=${code.toLowerCase()}`);
+  };
+
+  /** Format the Subjects cell — special for DS and TF */
+  const formatSubjectsCell = (row: DomainTableRow) => {
+    const dom = row.code.toLowerCase();
+    if (dom === "ds" && mortalityData?.has_mortality) {
+      // total_deaths only counts main-study non-accidental; use full arrays for real total
+      const totalEvents = mortalityData.deaths.length + mortalityData.accidentals.length;
+      return `${totalEvents} death${totalEvents !== 1 ? "s" : ""}`;
+    }
+    if (dom === "tf") {
+      // Count unique endpoint labels as proxy for tumor count
+      const sig = domainSignals[dom];
+      const count = sig ? sig.endpoints.size : 0;
+      return count > 0 ? `${count} type${count !== 1 ? "s" : ""}` : row.subjectCount != null ? String(row.subjectCount) : "\u2014";
+    }
+    return row.subjectCount != null ? String(row.subjectCount) : "\u2014";
+  };
 
   return (
-    <section className="mb-4">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="mb-2 flex w-full items-center gap-1.5 border-b pb-0.5"
-      >
-        <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", !open && "-rotate-90")} />
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Data settings
-        </span>
-        <span className="ml-2 text-[10px] text-muted-foreground">
-          {excludedCount > 0
-            ? `${excludedCount} subject${excludedCount !== 1 ? "s" : ""} excluded`
-            : "All animals included"}
-          {hasMortality && ` \u00b7 ${allDeaths.length} death${allDeaths.length !== 1 ? "s" : ""}`}
-        </span>
-      </button>
-
-      {open && (
-        <div className="space-y-3">
-          {/* Bulk toggle — controls TR early deaths only */}
-          {trEarlyDeathIds.size > 0 && (
-            <label
-              className="flex items-center gap-2 text-xs"
-              title="Exclude treatment-related early deaths from terminal group statistics. Accidental deaths remain included (valid drug-exposure data)."
-            >
-              <input
-                type="checkbox"
-                checked={allTrExcluded}
-                onChange={(e) => setUseScheduledOnly(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-gray-300"
-              />
-              <span>Exclude TR early deaths from terminal stats</span>
-              <span className="text-[10px] text-muted-foreground">
-                ({trEarlyDeathIds.size} subject{trEarlyDeathIds.size !== 1 ? "s" : ""})
-              </span>
-            </label>
-          )}
-
-          {/* Per-subject table */}
-          {hasMortality && mortality && (
-            <div className="overflow-auto">
-              <table className="border-collapse text-[10px]">
-                <tbody>
-                  {/* Subj. ID */}
-                  <tr>
-                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Subj. ID</td>
-                    {allDeaths.map(d => (
-                      <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums font-medium" style={{ color: "#3b82f6" }}>
-                        {d.USUBJID.slice(-4)}
-                      </td>
-                    ))}
-                  </tr>
-                  {/* Group */}
-                  <tr>
-                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Group</td>
-                    {allDeaths.map(d => {
-                      const dg = mortality.by_dose.find(b => b.dose_level === d.dose_level);
-                      const doseStr = dg?.dose_value != null && unit ? `${dg.dose_value} ${unit}` : d.dose_label;
-                      return (
-                        <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums font-medium" style={{ color: getDoseGroupColor(d.dose_level) }}>
-                          {doseStr}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                  {/* Sex */}
-                  <tr>
-                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Sex</td>
-                    {allDeaths.map(d => (
-                      <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums">{d.sex}</td>
-                    ))}
-                  </tr>
-                  {/* Day */}
-                  <tr>
-                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Day</td>
-                    {allDeaths.map(d => (
-                      <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums">{d.study_day != null ? String(d.study_day) : "\u2014"}</td>
-                    ))}
-                  </tr>
-                  {/* Phase */}
-                  <tr>
-                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Phase</td>
-                    {allDeaths.map(d => (
-                      <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums">{d.is_recovery ? "Recovery" : "Treatment"}</td>
-                    ))}
-                  </tr>
-                  {/* Attribution */}
-                  <tr>
-                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Attribution</td>
-                    {allDeaths.map(d => (
-                      <td key={d.USUBJID} className={`whitespace-nowrap px-2 py-px text-center font-mono tabular-nums ${d.attribution === "TR" ? "font-medium text-foreground" : "text-muted-foreground"}`}>
-                        {d.attribution}
-                      </td>
-                    ))}
-                  </tr>
-                  {/* Cause */}
-                  <tr>
-                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Cause</td>
-                    {allDeaths.map(d => {
-                      const cause = d.cause ?? d.disposition;
-                      const truncated = cause.length > 25 ? cause.slice(0, 24) + "\u2026" : cause;
-                      return (
-                        <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums" title={cause.length > 25 ? cause : undefined}>
-                          {truncated}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                  {/* Data — per-subject YES/NO toggles with attribution reasoning */}
-                  <tr>
-                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Data</td>
-                    {allDeaths.map(d => {
-                      const isExcluded = excludedSubjects.has(d.USUBJID);
-                      const isTr = trEarlyDeathIds.has(d.USUBJID);
-                      return (
-                        <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center">
-                          <button
-                            type="button"
-                            className="inline-flex cursor-pointer gap-0.5 text-[9px]"
-                            onClick={() => toggleSubjectExclusion(d.USUBJID)}
-                            title={subjectDataTooltip(d, isExcluded, isTr)}
-                          >
-                            <span className={!isExcluded ? "font-medium text-foreground" : "text-muted-foreground/40"}>YES</span>
-                            <span className="text-muted-foreground/30">|</span>
-                            <span className={isExcluded ? "font-medium text-foreground" : "text-muted-foreground/40"}>NO</span>
-                          </button>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                  {/* Default reason — shows why each subject is defaulted */}
-                  <tr>
-                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">Default</td>
-                    {allDeaths.map(d => {
-                      const isTr = trEarlyDeathIds.has(d.USUBJID);
-                      let reason: string;
-                      let cls: string;
-                      if (d.is_recovery) {
-                        reason = "Separate arm";
-                        cls = "text-muted-foreground/60";
-                      } else if (d.attribution === "Accidental") {
-                        reason = "Included";
-                        cls = "text-muted-foreground";
-                      } else if (isTr) {
-                        reason = "Excluded";
-                        cls = "text-foreground/70 font-medium";
-                      } else {
-                        reason = "Included";
-                        cls = "text-muted-foreground";
-                      }
-                      return (
-                        <td key={d.USUBJID} className={`whitespace-nowrap px-2 py-px text-center text-[9px] ${cls}`}>
-                          {reason}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                  {/* NOAEL impact */}
-                  <tr>
-                    <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground">NOAEL impact</td>
-                    {allDeaths.map(d => {
-                      if (d.is_recovery) return <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums text-muted-foreground">None (recovery)</td>;
-                      if (d.attribution === "Accidental") return <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums text-muted-foreground">None</td>;
-                      if (mortality.mortality_loael != null && d.dose_level === mortality.mortality_loael && capLabel) {
-                        return <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums font-medium text-foreground">Capped {"\u2264"} {capLabel}</td>;
-                      }
-                      return <td key={d.USUBJID} className="whitespace-nowrap px-2 py-px text-center font-mono tabular-nums text-muted-foreground">None</td>;
-                    })}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!hasMortality && (
-            <div className="text-[10px] text-muted-foreground/60">No mortality events recorded in this study.</div>
-          )}
-        </div>
+    <>
+      <div className="max-h-72 overflow-auto rounded-md border">
+        <table className="w-full text-[10px]">
+          <thead className="sticky top-0 z-10 bg-background">
+            <tr className="border-b bg-muted/30">
+              <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Domain
+              </th>
+              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                Subjects
+              </th>
+              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                Signals
+              </th>
+              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                Adverse
+              </th>
+              <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Key findings
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayed.map((row) => (
+              <tr
+                key={row.code}
+                className="cursor-pointer border-b last:border-b-0 hover:bg-muted/30"
+                onClick={() => handleRowClick(row.code)}
+              >
+                <td className="px-1.5 py-px" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                  <Link
+                    to={`/studies/${studyId}/domains/${row.code}`}
+                    className="text-primary hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="font-mono">{row.code.toUpperCase()}</span>
+                    <span className="ml-1.5 text-muted-foreground">{row.fullName}</span>
+                  </Link>
+                </td>
+                <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                  {formatSubjectsCell(row)}
+                </td>
+                <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                  {row.trCount > 0 ? `${row.trCount} TR` : "\u2014"}
+                </td>
+                <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                  {row.adverseCount > 0 ? `${row.adverseCount} adv` : "\u2014"}
+                </td>
+                <td className="px-1.5 py-px text-muted-foreground">
+                  {row.keyFindings}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {belowFold.length > 0 && !showFolded && (
+        <button
+          className="mt-1 text-[10px] text-primary hover:underline"
+          onClick={() => setShowFolded(true)}
+        >
+          + {belowFold.length} more domains (no findings)
+        </button>
       )}
-    </section>
+      {showFolded && belowFold.length > 0 && (
+        <button
+          className="mt-1 text-[10px] text-primary hover:underline"
+          onClick={() => setShowFolded(false)}
+        >
+          Hide structural domains
+        </button>
+      )}
+    </>
   );
 }
 
@@ -947,14 +1066,20 @@ function DetailsTab({
   meta,
   studyId,
   provenanceMessages,
-  mortality,
+  signalData,
+  mortalityData,
 }: {
   meta: StudyMetadata | undefined;
   studyId: string;
   provenanceMessages: ProvenanceMessage[] | undefined;
-  mortality?: StudyMortality | null;
+  signalData: SignalSummaryRow[];
+  mortalityData: StudyMortality | undefined;
 }) {
-  const navigate = useNavigate();
+  const { data: domainData } = useDomains(studyId);
+  const { excludedSubjects } = useScheduledOnly();
+  const [controlGroup] = useSessionState(`pcc.${studyId}.controlGroup`, "");
+  const [organWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
+
   if (!meta) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -965,6 +1090,38 @@ function DetailsTab({
       </div>
     );
   }
+
+  // Computed subject breakdown from dose_groups
+  const doseGroups = meta.dose_groups ?? [];
+  const mainStudyN = doseGroups.reduce((s, dg) => s + dg.n_total, 0);
+  const mainMales = doseGroups.reduce((s, dg) => s + dg.n_male, 0);
+  const mainFemales = doseGroups.reduce((s, dg) => s + dg.n_female, 0);
+  const tkTotal = doseGroups.reduce((s, dg) => s + (dg.tk_count ?? 0), 0);
+  const recoveryTotal = doseGroups.reduce((s, dg) => s + (dg.recovery_n ?? 0), 0);
+  const hasTk = tkTotal > 0;
+  const hasRecovery = recoveryTotal > 0;
+
+  // Filtered provenance: warnings only, excluding Prov-001..004 (now shown elsewhere)
+  const filteredProv = (provenanceMessages ?? []).filter(
+    (m) => m.icon === "warning" && !["Prov-001", "Prov-002", "Prov-003", "Prov-004"].includes(m.rule_id),
+  );
+
+  // Analysis settings summary — read shared session state to mirror context panel
+  const excludedCount = excludedSubjects.size;
+  const controlLabel = doseGroups.find((dg) => dg.armcd === controlGroup)?.label
+    ?? (doseGroups.find((dg) => dg.dose_level === 0)?.label)
+    ?? "Vehicle Control";
+  const owMethodLabel = organWeightMethod === "ratio-bw" ? "ratio-to-BW"
+    : organWeightMethod === "ratio-brain" ? "ratio-to-brain"
+    : "absolute";
+  const settingsParts: string[] = [];
+  if (excludedCount > 0) settingsParts.push(`${excludedCount} subject${excludedCount !== 1 ? "s" : ""} excluded`);
+  else settingsParts.push("All animals included");
+  settingsParts.push(`control: ${controlLabel}`);
+  settingsParts.push(`organ wt: ${owMethodLabel}`);
+
+  // Domain data: prefer live domain list (with subject_count) over meta.domains
+  const domainRows = domainData ?? meta.domains.map(d => ({ name: d, label: d.toUpperCase(), row_count: 0, col_count: 0 }));
 
   return (
     <div className="flex-1 overflow-auto p-4">
@@ -987,6 +1144,18 @@ function DetailsTab({
           label="Subjects"
           value={formatSubjects(meta.subjects, meta.males, meta.females)}
         />
+        {/* Subject breakdown — indented under Subjects */}
+        {doseGroups.length > 0 && (hasTk || hasRecovery) && (
+          <div className="ml-28 space-y-0 text-[10px] text-muted-foreground">
+            <div>{"\u251C\u2500"} Main study{" "}<span className="tabular-nums">{mainStudyN} ({mainMales}M, {mainFemales}F)</span></div>
+            {hasTk && (
+              <div>{hasRecovery ? "\u251C\u2500" : "\u2514\u2500"} TK satellite{" "}<span className="tabular-nums">{tkTotal}</span></div>
+            )}
+            {hasRecovery && (
+              <div>{"\u2514\u2500"} Recovery{" "}<span className="tabular-nums">{recoveryTotal}</span></div>
+            )}
+          </div>
+        )}
         <MetadataRow label="Start date" value={meta.start_date} />
         <MetadataRow label="End date" value={meta.end_date} />
         <MetadataRow
@@ -995,6 +1164,15 @@ function DetailsTab({
             meta.dosing_duration ? formatDuration(meta.dosing_duration) : null
           }
         />
+        {meta.dosing_duration && (() => {
+          const wk = meta.dosing_duration.match(/^P(\d+)W$/);
+          const dy = meta.dosing_duration.match(/^P(\d+)D$/);
+          const days = wk ? parseInt(wk[1]) * 7 : dy ? parseInt(dy[1]) : null;
+          return days ? <MetadataRow label="Dosing days" value={`${days}`} /> : null;
+        })()}
+        {meta.recovery_sacrifice && (
+          <MetadataRow label="Recovery period" value={formatDuration(meta.recovery_sacrifice)} />
+        )}
       </section>
 
       <section className="mb-4">
@@ -1007,10 +1185,10 @@ function DetailsTab({
       </section>
 
 
-      {meta.dose_groups && meta.dose_groups.length > 0 && (
+      {doseGroups.length > 0 && (
         <section className="mb-4">
           <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Treatment arms ({meta.dose_groups.length})
+            Treatment arms ({doseGroups.length})
           </h2>
           <div className="max-h-60 overflow-auto rounded-md border">
             <table className="w-full text-[10px]">
@@ -1022,10 +1200,16 @@ function DetailsTab({
                   <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">M</th>
                   <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">F</th>
                   <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
+                  {hasTk && (
+                    <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">TK</th>
+                  )}
+                  {hasRecovery && (
+                    <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Recovery</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {meta.dose_groups.map((dg) => (
+                {doseGroups.map((dg) => (
                   <tr
                     key={dg.armcd}
                     className="border-b last:border-b-0 border-l-2"
@@ -1036,50 +1220,49 @@ function DetailsTab({
                     <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">
                       {dg.dose_value != null
                         ? `${dg.dose_value}${dg.dose_unit ? ` ${dg.dose_unit}` : ""}`
-                        : "—"}
+                        : "\u2014"}
                     </td>
                     <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">{dg.n_male}</td>
                     <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">{dg.n_female}</td>
                     <td className="px-1.5 py-px text-right tabular-nums font-medium">{dg.n_total}</td>
+                    {hasTk && (
+                      <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">
+                        {(dg.tk_count ?? 0) > 0 ? dg.tk_count : "\u2014"}
+                      </td>
+                    )}
+                    {hasRecovery && (
+                      <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">
+                        {dg.recovery_armcd
+                          ? `${dg.recovery_n ?? 0} (${dg.recovery_armcd})`
+                          : "\u2014"}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {/* Provenance messages — below treatment arms table */}
-          {provenanceMessages && provenanceMessages.length > 0 && (
+          {/* Provenance warnings — filtered, with "Configure" link */}
+          {filteredProv.length > 0 && (
             <div className="mt-2 space-y-0.5">
-              {provenanceMessages.map((msg) => (
+              {filteredProv.map((msg) => (
                 <div
                   key={msg.rule_id + msg.message}
                   className="flex items-start gap-2 text-xs leading-snug"
                 >
-                  {msg.icon === "warning" ? (
-                    <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
-                  ) : (
-                    <Info className="mt-0.5 h-3 w-3 shrink-0 text-blue-400" />
-                  )}
-                  <span
-                    className={cn(
-                      msg.icon === "warning"
-                        ? "text-amber-700"
-                        : "text-muted-foreground"
-                    )}
-                  >
+                  <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+                  <span className="text-amber-700">
                     {msg.message}
-                    {msg.link_to_rule && (
-                      <button
-                        className="ml-1.5 text-primary hover:underline"
-                        onClick={() =>
-                          navigate(
-                            `/studies/${studyId}/validation?mode=study-design&rule=${msg.link_to_rule}`
-                          )
-                        }
-                      >
-                        Review &rarr;
-                      </button>
-                    )}
+                    <button
+                      className="ml-1.5 text-primary hover:underline"
+                      onClick={() => {
+                        const panel = document.querySelector("[data-panel='context']");
+                        if (panel) panel.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    >
+                      Configure &rarr;
+                    </button>
                   </span>
                 </div>
               ))}
@@ -1088,23 +1271,31 @@ function DetailsTab({
         </section>
       )}
 
-      <MortalityDataSettings mortality={mortality} />
+      {/* Analysis settings — compact summary, full table in context panel */}
+      <section className="mb-4">
+        <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Analysis settings
+        </h2>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{settingsParts.join(" \u00b7 ")}</span>
+          <button
+            className="text-primary hover:underline"
+            onClick={() => {
+              const panel = document.querySelector("[data-panel='context']");
+              if (panel) panel.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            Configure &rarr;
+          </button>
+        </div>
+      </section>
 
+      {/* Domain summary table */}
       <section>
         <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Domains ({meta.domain_count})
+          Domains ({domainRows.length})
         </h2>
-        <div className="flex flex-wrap gap-1.5">
-          {meta.domains.map((d) => (
-            <Link
-              key={d}
-              to={`/studies/${studyId}/domains/${d}`}
-              className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs transition-colors hover:bg-primary/20"
-            >
-              {d}
-            </Link>
-          ))}
-        </div>
+        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} />
       </section>
     </div>
   );
