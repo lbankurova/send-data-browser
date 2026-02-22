@@ -1,48 +1,35 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
+import { Loader2, FileText, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
-import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
-import { useRuleResults } from "@/hooks/useRuleResults";
+import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useProvenanceMessages } from "@/hooks/useProvenanceMessages";
 import { useDomains } from "@/hooks/useDomains";
 import { useInsights } from "@/hooks/useInsights";
+import { useStudyContext } from "@/hooks/useStudyContext";
+import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { generateStudyReport } from "@/lib/report-generator";
-import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
-import type { MetricsLine, PanelStatement } from "@/lib/signals-panel-engine";
-import {
-  SignalsEvidencePanel,
-  StudyStatementsBar,
-} from "./SignalsPanel";
-import { ConfidencePopover } from "./ScoreBreakdown";
-import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState } from "@/hooks/useSessionState";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
-import type { SignalSelection, SignalSummaryRow, ProvenanceMessage, NoaelSummaryRow, RuleResult } from "@/types/analysis-views";
+import { StudyTimeline } from "./charts/StudyTimeline";
+import type { SignalSummaryRow, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { StudyMetadata } from "@/types";
 import type { Insight } from "@/hooks/useInsights";
-import { classifyProtectiveSignal, getProtectiveBadgeStyle } from "@/lib/protective-signal";
-import type { ProtectiveClassification } from "@/lib/protective-signal";
-import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 
-type Tab = "details" | "signals" | "insights";
+type Tab = "details" | "insights";
 
 export function StudySummaryView() {
   const { studyId } = useParams<{ studyId: string }>();
   const [searchParams] = useSearchParams();
-  const { selection: studySelection, navigateTo } = useStudySelection();
   const { data: signalData, isLoading, error } = useStudySignalSummary(studyId);
-  const { data: targetOrgans } = useTargetOrganSummary(studyId);
-  const { data: noaelData } = useNoaelSummary(studyId);
-  const { data: ruleResults } = useRuleResults(studyId);
   const { data: meta } = useStudyMetadata(studyId!);
   const { data: provenanceData } = useProvenanceMessages(studyId);
   const { data: mortalityData } = useStudyMortality(studyId);
@@ -50,12 +37,6 @@ export function StudySummaryView() {
   // Initialize tab from URL query parameter if present, then persist via session
   const initialTab = (searchParams.get("tab") as Tab) || "details";
   const [tab, setTab] = useStudySummaryTab(initialTab);
-
-  // Local signal selection (for endpoint-level detail in evidence panel)
-  const [localSignalSel, setLocalSignalSel] = useState<SignalSelection | null>(null);
-
-  // Read organ from StudySelectionContext
-  const selectedOrgan = studySelection.organSystem ?? null;
 
   // Initialize ScheduledOnlyContext from mortality data (matches FindingsView pattern)
   const { setEarlyDeathSubjects } = useScheduledOnly();
@@ -71,33 +52,6 @@ export function StudySummaryView() {
     }
   }, [mortalityData, setEarlyDeathSubjects]);
 
-  // Auto-select top organ when view loads and nothing is selected
-  useEffect(() => {
-    if (!selectedOrgan && targetOrgans && targetOrgans.length > 0) {
-      const top = [...targetOrgans].sort((a, b) => b.evidence_score - a.evidence_score)[0];
-      navigateTo({ organSystem: top.organ_system });
-    }
-  }, [selectedOrgan, targetOrgans, navigateTo]);
-
-  const handleSetSelection = useCallback((sel: SignalSelection | null) => {
-    setLocalSignalSel(sel);
-    if (sel) {
-      navigateTo({ endpoint: sel.endpoint_label });
-    }
-  }, [navigateTo]);
-
-  // Build panel data
-  const panelData = useMemo(() => {
-    if (!signalData || !targetOrgans || !noaelData) return null;
-    return buildSignalsPanelData(noaelData, targetOrgans, signalData);
-  }, [signalData, targetOrgans, noaelData]);
-
-  // Selected organ data
-  const selectedOrganData = useMemo(() => {
-    if (!selectedOrgan || !targetOrgans) return null;
-    return targetOrgans.find((o) => o.organ_system === selectedOrgan) ?? null;
-  }, [selectedOrgan, targetOrgans]);
-
   // If analysis data not available but insights tab requested, show insights
   if (error && tab === "insights") {
     return (
@@ -105,7 +59,6 @@ export function StudySummaryView() {
         <ViewTabBar
           tabs={[
             { key: "details", label: "Study details" },
-            { key: "signals", label: "Signals" },
             { key: "insights", label: "Cross-study insights" },
           ]}
           value={tab}
@@ -168,7 +121,6 @@ export function StudySummaryView() {
       <ViewTabBar
         tabs={[
           { key: "details", label: "Study details" },
-          { key: "signals", label: "Signals" },
           { key: "insights", label: "Cross-study insights" },
         ]}
         value={tab}
@@ -189,46 +141,6 @@ export function StudySummaryView() {
       {/* Tab content */}
       {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} signalData={signalData} mortalityData={mortalityData} />}
       {tab === "insights" && <CrossStudyInsightsTab studyId={studyId!} />}
-      {tab === "signals" && panelData && (
-        <div className="flex h-full flex-col overflow-hidden">
-          {/* Decision Bar — persistent */}
-          <DecisionBar
-            statements={panelData.decisionBar}
-            metrics={panelData.metrics}
-            noaelData={noaelData}
-          />
-
-          {/* Study-level statements + study-level flags */}
-          <StudyStatementsBar
-            statements={panelData.studyStatements}
-            modifiers={panelData.modifiers}
-            caveats={panelData.caveats}
-          />
-
-          {/* Protective signals — study-wide R18/R19 aggregation */}
-          <ProtectiveSignalsBar rules={ruleResults ?? []} studyId={studyId!} signalData={signalData} />
-
-          {/* Evidence panel — full width (rail is in shell) */}
-          <div className="flex-1 overflow-hidden">
-            {selectedOrganData && signalData ? (
-              <SignalsEvidencePanel
-                organ={selectedOrganData}
-                signalData={signalData}
-                ruleResults={ruleResults ?? []}
-                modifiers={panelData.modifiers}
-                caveats={panelData.caveats}
-                selection={localSignalSel}
-                onSelect={handleSetSelection}
-                studyId={studyId!}
-              />
-            ) : (
-              <div className="flex items-center justify-center p-8 text-xs text-muted-foreground">
-                Select an organ system from the rail to view evidence
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -297,8 +209,8 @@ function CrossStudyInsightsTab({ studyId }: { studyId: string }) {
               className="mt-4 text-xs text-primary hover:underline"
             >
               {showAll
-                ? "Show fewer insights ▲"
-                : `Show ${priority23.length} more insights ▼`}
+                ? "Show fewer insights \u25B2"
+                : `Show ${priority23.length} more insights \u25BC`}
             </button>
             {showAll &&
               priority23.map((insight, idx) => (
@@ -337,360 +249,8 @@ function InsightCard({ insight }: { insight: Insight }) {
 }
 
 // ---------------------------------------------------------------------------
-// Protective Signals Bar — study-wide aggregation of R18/R19
+// Details tab — study metadata + profile block + timeline + data quality
 // ---------------------------------------------------------------------------
-
-interface ProtectiveFinding {
-  finding: string;
-  specimens: string[];
-  sexes: string;
-  ctrlPct: string;
-  highPct: string;
-  classification: ProtectiveClassification;
-}
-
-function aggregateProtectiveFindings(rules: RuleResult[]): ProtectiveFinding[] {
-  const map = new Map<string, { specimens: Set<string>; sexes: Set<string>; ctrlPct: string; highPct: string; hasR19: boolean }>();
-
-  for (const r of rules) {
-    if (r.rule_id !== "R18" && r.rule_id !== "R19") continue;
-
-    const p = r.params;
-    if (p?.finding && p?.specimen && p?.ctrl_pct) {
-      const findingName = p.finding;
-      const entry = map.get(findingName) ?? { specimens: new Set(), sexes: new Set(), ctrlPct: p.ctrl_pct, highPct: p.high_pct ?? "", hasR19: false };
-      entry.specimens.add(p.specimen);
-      if (p.sex) entry.sexes.add(p.sex);
-      if (parseInt(p.ctrl_pct) > parseInt(entry.ctrlPct)) { entry.ctrlPct = p.ctrl_pct; entry.highPct = p.high_pct ?? ""; }
-      if (r.rule_id === "R19") entry.hasR19 = true;
-      map.set(findingName, entry);
-    }
-  }
-
-  return [...map.entries()]
-    .map(([finding, info]) => {
-      const ctrlInc = parseInt(info.ctrlPct) / 100;
-      const highInc = parseInt(info.highPct) / 100;
-      const result = classifyProtectiveSignal({
-        finding,
-        controlIncidence: ctrlInc,
-        highDoseIncidence: highInc,
-        doseConsistency: info.hasR19 ? "Moderate" : "Weak",
-        direction: "decreasing",
-        crossDomainCorrelateCount: info.hasR19 ? 2 : 0,
-      });
-      return {
-        finding,
-        specimens: [...info.specimens].sort(),
-        sexes: [...info.sexes].sort().join(", "),
-        ctrlPct: info.ctrlPct,
-        highPct: info.highPct,
-        classification: result?.classification ?? "background" as ProtectiveClassification,
-      };
-    })
-    .sort((a, b) => {
-      // Pharmacological first, then treatment-decrease, then background
-      const order: Record<ProtectiveClassification, number> = { pharmacological: 0, "treatment-decrease": 1, background: 2 };
-      const d = order[a.classification] - order[b.classification];
-      if (d !== 0) return d;
-      return parseInt(b.ctrlPct) - parseInt(a.ctrlPct);
-    });
-}
-
-function ProtectiveSignalsBar({
-  rules,
-  studyId,
-  signalData,
-}: {
-  rules: RuleResult[];
-  studyId: string;
-  signalData?: SignalSummaryRow[];
-}) {
-  const navigate = useNavigate();
-  const { navigateTo } = useStudySelection();
-  const findings = useMemo(() => aggregateProtectiveFindings(rules), [rules]);
-
-  // Cross-domain correlates: for each protective finding's organ system,
-  // find other signals in the same organ system with direction info
-  const correlatesByFinding = useMemo(() => {
-    const map = new Map<string, { label: string; direction: string }[]>();
-    if (!signalData || findings.length === 0) return map;
-    for (const f of findings) {
-      if (f.classification === "background") continue;
-      // Determine organ system from first specimen
-      const spec = f.specimens[0];
-      if (!spec) continue;
-      const organ = specimenToOrganSystem(spec).toLowerCase();
-      // Find other endpoints in the same organ system (not the finding itself)
-      const correlates: { label: string; direction: string }[] = [];
-      const seen = new Set<string>();
-      for (const row of signalData) {
-        if (row.organ_system.toLowerCase() !== organ) continue;
-        if (row.endpoint_label.toLowerCase() === f.finding.toLowerCase()) continue;
-        if (seen.has(row.endpoint_label)) continue;
-        seen.add(row.endpoint_label);
-        const dir = row.direction === "down" ? "\u2193" : row.direction === "up" ? "\u2191" : "";
-        if (dir) correlates.push({ label: row.endpoint_label, direction: dir });
-      }
-      if (correlates.length > 0) map.set(f.finding, correlates.slice(0, 5));
-    }
-    return map;
-  }, [findings, signalData]);
-
-  if (findings.length === 0) return null;
-
-  const pharmacological = findings.filter((f) => f.classification === "pharmacological");
-  const treatmentDecrease = findings.filter((f) => f.classification === "treatment-decrease");
-  const background = findings.filter((f) => f.classification === "background");
-
-  const classifiedCount = pharmacological.length + treatmentDecrease.length;
-
-  return (
-    <div className="shrink-0 border-b px-4 py-2">
-      <div className="mb-1.5 flex items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Protective signals
-        </span>
-        <span className="text-[10px] text-muted-foreground">
-          {findings.length} finding{findings.length !== 1 ? "s" : ""} with decreased incidence
-          {classifiedCount > 0 && ` \u00b7 ${pharmacological.length} pharmacological \u00b7 ${treatmentDecrease.length} treatment-related`}
-        </span>
-      </div>
-      <div className="space-y-1.5">
-        {/* Pharmacological candidates */}
-        {pharmacological.map((f) => (
-          <div key={`ph-${f.finding}`} className="border-l-2 border-l-blue-400 py-1 pl-2.5">
-            <div className="flex items-baseline gap-2">
-              <button
-                className="text-[11px] font-semibold hover:underline"
-                onClick={() => {
-                  const spec = f.specimens[0];
-                  if (spec) {
-                    navigateTo({ specimen: spec });
-                    navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
-                  }
-                }}
-              >
-                {f.finding}
-              </button>
-              <span className="text-[10px] font-medium text-muted-foreground">{f.sexes}</span>
-              <span className={cn("rounded px-1.5 py-0.5", getProtectiveBadgeStyle("pharmacological"))}>pharmacological</span>
-            </div>
-            <div className="text-[10px] leading-snug text-muted-foreground">
-              {f.ctrlPct}% control {"\u2192"} {f.highPct}% high dose in {f.specimens.join(", ")}
-            </div>
-            {correlatesByFinding.get(f.finding) && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground/70">
-                Correlated: {correlatesByFinding.get(f.finding)!.map((c, i) => (
-                  <span key={c.label}>{i > 0 && ", "}{c.label} {c.direction}</span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-        {/* Treatment-decrease */}
-        {treatmentDecrease.map((f) => (
-          <div key={`td-${f.finding}`} className="border-l-2 border-l-slate-400 py-0.5 pl-2.5">
-            <div className="flex items-baseline gap-2">
-              <button
-                className="text-[11px] font-medium hover:underline"
-                onClick={() => {
-                  const spec = f.specimens[0];
-                  if (spec) {
-                    navigateTo({ specimen: spec });
-                    navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
-                  }
-                }}
-              >
-                {f.finding}
-              </button>
-              <span className="text-[10px] text-muted-foreground">{f.sexes}</span>
-              <span className={cn("rounded px-1.5 py-0.5", getProtectiveBadgeStyle("treatment-decrease"))}>treatment decrease</span>
-              <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-                {f.ctrlPct}% {"\u2192"} {f.highPct}%
-              </span>
-            </div>
-            {f.specimens.length > 0 && (
-              <div className="text-[9px] text-muted-foreground/70">{f.specimens.join(", ")}</div>
-            )}
-            {correlatesByFinding.get(f.finding) && (
-              <div className="text-[10px] text-muted-foreground/70">
-                Correlated: {correlatesByFinding.get(f.finding)!.map((c, i) => (
-                  <span key={c.label}>{i > 0 && ", "}{c.label} {c.direction}</span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-        {/* Background (other decreased) */}
-        {background.length > 0 && (
-          <div className="space-y-0.5">
-            <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-              Other decreased findings
-            </div>
-            {background.slice(0, 5).map((f) => (
-              <div key={`bg-${f.finding}`} className="border-l-2 border-l-gray-300 py-0.5 pl-2.5">
-                <div className="flex items-baseline gap-2">
-                  <button
-                    className="text-[11px] font-medium hover:underline"
-                    onClick={() => {
-                      const spec = f.specimens[0];
-                      if (spec) {
-                        navigateTo({ specimen: spec });
-                        navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`, { state: { specimen: spec, finding: f.finding } });
-                      }
-                    }}
-                  >
-                    {f.finding}
-                  </button>
-                  <span className="text-[10px] text-muted-foreground">{f.sexes}</span>
-                  <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-                    {f.ctrlPct}% {"\u2192"} {f.highPct}%
-                  </span>
-                </div>
-              </div>
-            ))}
-            {background.length > 5 && (
-              <div className="pl-2.5 text-[10px] text-muted-foreground/50">
-                +{background.length - 5} more
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Decision Bar — persistent across both modes
-// ---------------------------------------------------------------------------
-
-function DecisionBar({
-  statements,
-  metrics,
-  noaelData,
-}: {
-  statements: PanelStatement[];
-  metrics: MetricsLine;
-  noaelData?: NoaelSummaryRow[];
-}) {
-  // Separate the main NOAEL fact (first priority 990+ fact) from alerts/warnings
-  const alertStatements = statements.filter(
-    (s) => s.icon === "warning" || s.icon === "review-flag"
-  );
-
-  return (
-    <div className="shrink-0 border-b bg-muted/20 px-4 py-2">
-      {/* Structured NOAEL / LOAEL / Driver — single compact row */}
-      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
-        <span>
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">NOAEL</span>{" "}
-          <span
-            className={cn(
-              "text-xs font-semibold",
-              metrics.noael === "Not established"
-                ? "text-amber-600"
-                : "text-foreground"
-            )}
-          >
-            {metrics.noael}
-          </span>
-          {metrics.noaelSex && (
-            <span className="text-[10px] text-muted-foreground"> ({metrics.noaelSex})</span>
-          )}
-          {metrics.noaelConfidence != null && (() => {
-            const confidenceEl = (
-              <span
-                className={cn(
-                  "ml-1 text-[10px] font-medium",
-                  metrics.noaelConfidence >= 0.8
-                    ? "text-green-700"
-                    : metrics.noaelConfidence >= 0.6
-                      ? "text-amber-700"
-                      : "text-red-700"
-                )}
-              >
-                {Math.round(metrics.noaelConfidence * 100)}%
-              </span>
-            );
-            const combinedRow = noaelData?.find((r) => r.sex === "Combined");
-            if (combinedRow && noaelData) {
-              return (
-                <ConfidencePopover row={combinedRow} allNoael={noaelData}>
-                  {confidenceEl}
-                </ConfidencePopover>
-              );
-            }
-            return confidenceEl;
-          })()}
-        </span>
-        <span>
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">LOAEL</span>{" "}
-          <span className="text-xs font-semibold text-foreground">{metrics.loael}</span>
-        </span>
-        {metrics.driver && (
-          <span>
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Driver</span>{" "}
-            <span className="text-xs font-medium text-foreground">{metrics.driver}</span>
-          </span>
-        )}
-      </div>
-
-      {/* Alert/warning statements */}
-      {alertStatements.length > 0 && (
-        <div className="mt-1 space-y-0.5">
-          {alertStatements.map((s, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-2 text-xs leading-snug text-amber-700"
-            >
-              <span className="mt-0.5 shrink-0 text-[10px] text-amber-600">
-                {s.icon === "review-flag" ? "\u26A0" : "\u25B2"}
-              </span>
-              <span>{s.text}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Metrics line */}
-      <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-        <span>
-          {metrics.targets} target{metrics.targets !== 1 ? "s" : ""}
-        </span>
-        <span>&middot;</span>
-        <span>{metrics.significantRatio} sig</span>
-        <span>&middot;</span>
-        <span>{metrics.doseResponse} D-R</span>
-        <span>&middot;</span>
-        <span>
-          {metrics.domains} domain{metrics.domains !== 1 ? "s" : ""}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Details tab — study metadata
-// ---------------------------------------------------------------------------
-
-function MetadataRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null | undefined;
-}) {
-  if (!value) return null;
-  return (
-    <div className="flex gap-2 py-0.5 text-xs">
-      <span className="w-28 shrink-0 text-muted-foreground">{label}</span>
-      <span className="select-all">{value}</span>
-    </div>
-  );
-}
 
 function formatDuration(iso: string): string {
   const wMatch = iso.match(/^P(\d+)W$/);
@@ -698,17 +258,6 @@ function formatDuration(iso: string): string {
   const dMatch = iso.match(/^P(\d+)D$/);
   if (dMatch) return `${dMatch[1]} days`;
   return iso;
-}
-
-function formatSubjects(
-  total: string | null,
-  males: string | null,
-  females: string | null
-): string | null {
-  if (!total) return null;
-  const parts = [total];
-  if (males && females) parts.push(`(${males}M, ${females}F)`);
-  return parts.join(" ");
 }
 
 
@@ -1024,6 +573,7 @@ function DomainTable({
                     <span className="font-mono">{row.code.toUpperCase()}</span>
                     <span className="ml-1.5 text-muted-foreground">{row.fullName}</span>
                   </Link>
+                  <span className="ml-1.5 text-[9px] text-muted-foreground">{row.rowCount.toLocaleString()} records</span>
                 </td>
                 <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
                   {formatSubjectsCell(row)}
@@ -1062,6 +612,83 @@ function DomainTable({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Required/Optional domain constants for data quality
+// ---------------------------------------------------------------------------
+const REQUIRED_DOMAINS = ["bw", "cl", "ds", "dm", "ex", "lb", "mi", "om", "fw"];
+const OPTIONAL_DOMAINS = ["ma", "tf", "pp", "pc", "eg", "vs"];
+
+// ---------------------------------------------------------------------------
+// Anomalies list — shared with context panel
+// ---------------------------------------------------------------------------
+
+interface FlaggedAnimal {
+  animal_id: string;
+  sex: string;
+  completion_pct: number;
+  missing_specimens: string[];
+  flag?: boolean;
+}
+
+function AnomaliesList({
+  warnings,
+  flaggedAnimals,
+}: {
+  warnings: ProvenanceMessage[];
+  flaggedAnimals: FlaggedAnimal[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const allItems = [
+    ...warnings.map((w, i) => ({ type: "warning" as const, key: `w-${i}`, msg: w })),
+    ...flaggedAnimals.map((a) => ({ type: "animal" as const, key: `a-${a.animal_id}`, animal: a })),
+  ];
+  const displayed = expanded ? allItems : allItems.slice(0, 5);
+  const hasMore = allItems.length > 5;
+
+  return (
+    <div className="mb-2">
+      <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
+        Anomalies
+      </div>
+      <div className="space-y-0.5">
+        {displayed.map((item) =>
+          item.type === "warning" ? (
+            <div
+              key={item.key}
+              className="flex items-start gap-1 text-[10px] text-amber-700"
+            >
+              <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+              <span>{item.msg.message}</span>
+            </div>
+          ) : (
+            <div
+              key={item.key}
+              className="flex items-start gap-1 text-[10px] text-amber-700"
+            >
+              <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+              <span>
+                {item.animal.animal_id} ({item.animal.sex}) — {Math.round(item.animal.completion_pct)}% tissue completion
+              </span>
+            </div>
+          ),
+        )}
+      </div>
+      {hasMore && !expanded && (
+        <button
+          className="mt-0.5 text-[10px] text-primary hover:underline"
+          onClick={() => setExpanded(true)}
+        >
+          +{allItems.length - 5} more
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DetailsTab
+// ---------------------------------------------------------------------------
+
 function DetailsTab({
   meta,
   studyId,
@@ -1076,6 +703,10 @@ function DetailsTab({
   mortalityData: StudyMortality | undefined;
 }) {
   const { data: domainData } = useDomains(studyId);
+  const { data: noaelData } = useNoaelSummary(studyId);
+  const { data: targetOrgans } = useTargetOrganSummary(studyId);
+  const { data: studyCtx } = useStudyContext(studyId);
+  const { data: crossFlags } = useCrossAnimalFlags(studyId);
   const { excludedSubjects } = useScheduledOnly();
   const [controlGroup] = useSessionState(`pcc.${studyId}.controlGroup`, "");
   const [organWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
@@ -1123,68 +754,165 @@ function DetailsTab({
   // Domain data: prefer live domain list (with subject_count) over meta.domains
   const domainRows = domainData ?? meta.domains.map(d => ({ name: d, label: d.toUpperCase(), row_count: 0, col_count: 0 }));
 
+  // Profile block derivations
+  const speciesStrain = [meta.strain, meta.species?.toLowerCase()].filter(Boolean).join(" ");
+  const durationLabel = studyCtx?.dosingDurationWeeks
+    ? `${studyCtx.dosingDurationWeeks}wk`
+    : meta.dosing_duration
+      ? formatDuration(meta.dosing_duration).replace(" weeks", "wk").replace(" days", "d")
+      : null;
+  const studyTypeLabel = meta.study_type?.toLowerCase().replace(/\btoxicity\b/, "").replace(/\brepeat dose\b/, "repeat-dose").trim() || null;
+  const routeLabel = meta.route?.toLowerCase() || null;
+  const subtitleParts = [speciesStrain, [durationLabel, studyTypeLabel].filter(Boolean).join(" "), routeLabel].filter(Boolean);
+
+  // Dose group summary for profile
+  const nGroups = doseGroups.filter(dg => !dg.is_recovery).length;
+  const doseLabels = doseGroups
+    .filter(dg => !dg.is_recovery)
+    .sort((a, b) => a.dose_level - b.dose_level)
+    .map(dg => {
+      if (dg.dose_level === 0) return "Control";
+      if (dg.dose_value != null && dg.dose_unit) return `${dg.dose_value} ${dg.dose_unit}`;
+      return dg.label;
+    });
+  const perGroupM = doseGroups.length > 0 ? doseGroups[0].n_male : 0;
+  const perGroupF = doseGroups.length > 0 ? doseGroups[0].n_female : 0;
+
+  // TK amber threshold: > 10% of total population
+  const totalPop = mainStudyN + tkTotal + recoveryTotal;
+  const tkAmber = totalPop > 0 && tkTotal / totalPop > 0.1;
+
+  // Recovery period info
+  const recoveryPeriodLabel = studyCtx?.recoveryPeriodDays
+    ? `${studyCtx.recoveryPeriodDays / 7 >= 1 ? `${Math.round(studyCtx.recoveryPeriodDays / 7)}wk` : `${studyCtx.recoveryPeriodDays}d`}`
+    : meta.recovery_sacrifice
+      ? formatDuration(meta.recovery_sacrifice).replace(" weeks", "wk").replace(" days", "d")
+      : null;
+  const recoveryGroups = doseGroups.filter(dg => dg.recovery_armcd);
+  const recoveryGroupLabels = recoveryGroups.length > 0
+    ? recoveryGroups.map(dg => {
+        const dl = dg.dose_level;
+        const grpIdx = doseGroups.filter(g => !g.is_recovery).findIndex(g => g.dose_level === dl);
+        return `${grpIdx + 1}`;
+      })
+    : [];
+
+  // NOAEL / LOAEL from noaelData
+  const combinedNoael = noaelData?.find(r => r.sex === "Combined");
+  const noaelLabel = combinedNoael
+    ? (combinedNoael.noael_dose_level === 0
+        ? "Control"
+        : `${combinedNoael.noael_dose_value} ${combinedNoael.noael_dose_unit}`)
+    : null;
+  const noaelSexNote = (() => {
+    if (!noaelData) return null;
+    const mRow = noaelData.find(r => r.sex === "Male");
+    const fRow = noaelData.find(r => r.sex === "Female");
+    if (mRow && fRow && mRow.noael_dose_level !== fRow.noael_dose_level) {
+      return null; // sex-split, show Combined's value
+    }
+    return combinedNoael ? "M+F" : null;
+  })();
+  const loaelLabel = combinedNoael
+    ? (combinedNoael.loael_dose_level === 0
+        ? "Control"
+        : combinedNoael.loael_label
+          ? combinedNoael.loael_label.split(",").slice(1).join(",").trim().split(" ").slice(0, 2).join(" ")
+          : `Level ${combinedNoael.loael_dose_level}`)
+    : null;
+
+  // Target organ and domain signal counts
+  const targetOrganCount = targetOrgans?.filter(t => t.target_organ_flag).length ?? 0;
+  const domainsWithSignals = new Set(signalData.filter(s => s.treatment_related).map(s => s.domain.toLowerCase())).size;
+  const noaelConfidence = combinedNoael?.noael_confidence;
+
+  // Data quality derivations
+  const presentDomains = new Set(meta.domains.map(d => d.toLowerCase()));
+  const missingRequired = REQUIRED_DOMAINS.filter(d => !presentDomains.has(d));
+  const battery = crossFlags?.tissue_battery;
+  const batteryNote = battery?.study_level_note;
+  const flaggedAnimals = battery?.flagged_animals ?? [];
+  const flaggedCount = flaggedAnimals.filter(a => a.flag).length;
+  const allWarnings = (provenanceMessages ?? []).filter(m => m.icon === "warning");
+
   return (
     <div className="flex-1 overflow-auto p-4">
-      <div className="mb-3">
-        <h1 className="text-base font-semibold">Study: {meta.study_id}</h1>
-        {meta.title && (
-          <p className="mt-0.5 text-xs text-muted-foreground">{meta.title}</p>
-        )}
-      </div>
-
+      {/* ── Profile block ────────────────────────────────── */}
       <section className="mb-4">
-        <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Study overview
-        </h2>
-        <MetadataRow label="Species" value={meta.species} />
-        <MetadataRow label="Strain" value={meta.strain} />
-        <MetadataRow label="Study type" value={meta.study_type} />
-        <MetadataRow label="Design" value={meta.design} />
-        <MetadataRow
-          label="Subjects"
-          value={formatSubjects(meta.subjects, meta.males, meta.females)}
-        />
-        {/* Subject breakdown — indented under Subjects */}
-        {doseGroups.length > 0 && (hasTk || hasRecovery) && (
-          <div className="ml-28 space-y-0 text-[10px] text-muted-foreground">
-            <div>{"\u251C\u2500"} Main study{" "}<span className="tabular-nums">{mainStudyN} ({mainMales}M, {mainFemales}F)</span></div>
-            {hasTk && (
-              <div>{hasRecovery ? "\u251C\u2500" : "\u2514\u2500"} TK satellite{" "}<span className="tabular-nums">{tkTotal}</span></div>
+        <div className="text-sm font-semibold">{meta.study_id}</div>
+        <div className="text-[10px] text-muted-foreground">
+          {subtitleParts.join(" \u00b7 ")}
+        </div>
+        <div className="mt-0.5 text-[10px] text-muted-foreground">
+          {nGroups} groups: {doseLabels.join(", ")}
+          {perGroupM > 0 && perGroupF > 0 && ` \u00b7 ${perGroupM}M + ${perGroupF}F/group`}
+        </div>
+        <div className="mt-0.5 text-[10px] text-muted-foreground">
+          {"  "}Main study: {mainStudyN} ({mainMales}M, {mainFemales}F)
+          {hasTk && (
+            <>
+              {" \u00b7 TK satellite: "}
+              <span className={cn("tabular-nums", tkTotal > 0 && "font-semibold", tkAmber && "text-amber-600")}>
+                {tkTotal}
+              </span>
+            </>
+          )}
+          {hasRecovery && ` \u00b7 Recovery: ${recoveryTotal}`}
+        </div>
+        {hasRecovery && recoveryPeriodLabel && (
+          <div className="mt-0.5 text-[10px] text-muted-foreground">
+            Recovery: {recoveryPeriodLabel}
+            {recoveryGroupLabels.length > 0 && ` (Groups ${recoveryGroupLabels.join(", ")})`}
+          </div>
+        )}
+
+        {/* Conclusions line */}
+        {(noaelLabel || targetOrganCount > 0) && (
+          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 text-xs">
+            {noaelLabel && (
+              <span>
+                <span className="font-semibold">NOAEL: {noaelLabel}</span>
+                {noaelSexNote && <span className="text-[10px] text-muted-foreground"> ({noaelSexNote})</span>}
+              </span>
             )}
-            {hasRecovery && (
-              <div>{"\u2514\u2500"} Recovery{" "}<span className="tabular-nums">{recoveryTotal}</span></div>
+            {loaelLabel && (
+              <span className="text-muted-foreground">
+                LOAEL: {loaelLabel}
+              </span>
             )}
           </div>
         )}
-        <MetadataRow label="Start date" value={meta.start_date} />
-        <MetadataRow label="End date" value={meta.end_date} />
-        <MetadataRow
-          label="Duration"
-          value={
-            meta.dosing_duration ? formatDuration(meta.dosing_duration) : null
-          }
-        />
-        {meta.dosing_duration && (() => {
-          const wk = meta.dosing_duration.match(/^P(\d+)W$/);
-          const dy = meta.dosing_duration.match(/^P(\d+)D$/);
-          const days = wk ? parseInt(wk[1]) * 7 : dy ? parseInt(dy[1]) : null;
-          return days ? <MetadataRow label="Dosing days" value={`${days}`} /> : null;
-        })()}
-        {meta.recovery_sacrifice && (
-          <MetadataRow label="Recovery period" value={formatDuration(meta.recovery_sacrifice)} />
+        {(targetOrganCount > 0 || domainsWithSignals > 0) && (
+          <div className="mt-0.5 flex items-center gap-x-2 text-[10px] text-muted-foreground">
+            {targetOrganCount > 0 && <span>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</span>}
+            {domainsWithSignals > 0 && (
+              <>
+                <span>&middot;</span>
+                <span>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</span>
+              </>
+            )}
+            {noaelConfidence != null && (
+              <>
+                <span>&middot;</span>
+                <span>{Math.round(noaelConfidence * 100)}% confidence</span>
+              </>
+            )}
+          </div>
         )}
       </section>
 
-      <section className="mb-4">
-        <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Treatment
-        </h2>
-        <MetadataRow label="Test article" value={meta.treatment} />
-        <MetadataRow label="Vehicle" value={meta.vehicle} />
-        <MetadataRow label="Route" value={meta.route} />
-      </section>
+      {/* ── Study timeline ───────────────────────────────── */}
+      {doseGroups.length > 0 && studyCtx?.dosingDurationWeeks && (
+        <section className="mb-4">
+          <StudyTimeline
+            doseGroups={doseGroups}
+            dosingDurationWeeks={studyCtx.dosingDurationWeeks}
+            recoveryPeriodDays={studyCtx.recoveryPeriodDays ?? 0}
+          />
+        </section>
+      )}
 
-
+      {/* ── Treatment arms table ─────────────────────────── */}
       {doseGroups.length > 0 && (
         <section className="mb-4">
           <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -1271,7 +999,139 @@ function DetailsTab({
         </section>
       )}
 
-      {/* Analysis settings — compact summary, full table in context panel */}
+      {/* ── Data quality ─────────────────────────────────── */}
+      <section className="mb-4">
+        <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Data quality
+        </h2>
+
+        {/* Domain completeness — three-tier layout */}
+        <div className="mb-2">
+          <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
+            Domain completeness
+          </div>
+          <div className="space-y-0.5 text-[10px]">
+            {/* Required row */}
+            <div className="flex flex-wrap items-center gap-x-1">
+              <span className="w-14 shrink-0 text-muted-foreground">Required:</span>
+              {REQUIRED_DOMAINS.map((d) => (
+                <span key={d} className={presentDomains.has(d) ? "text-green-700" : "text-red-600"}>
+                  {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2717"}
+                </span>
+              ))}
+            </div>
+            {/* Optional row */}
+            <div className="flex flex-wrap items-center gap-x-1">
+              <span className="w-14 shrink-0 text-muted-foreground">Optional:</span>
+              {OPTIONAL_DOMAINS.map((d) => (
+                <span key={d} className={presentDomains.has(d) ? "text-green-700" : "text-foreground/60"}>
+                  {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2717"}
+                </span>
+              ))}
+            </div>
+            {/* Missing impact notes */}
+            {missingRequired.length > 0 && (
+              <div className="mt-0.5 flex items-start gap-1 text-amber-700">
+                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+                <span>
+                  {missingRequired.map((d) => d.toUpperCase()).join(", ")} missing
+                  {missingRequired.includes("mi") && " \u2014 histopath cross-reference unavailable"}
+                  {missingRequired.includes("om") && " \u2014 organ weight analysis unavailable"}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Tissue battery */}
+        {battery && (
+          <div className="mb-2">
+            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
+              Tissue battery
+            </div>
+            {battery.reference_batteries && (() => {
+              const refs = battery.reference_batteries;
+              const termM = refs["terminal_M"];
+              const termF = refs["terminal_F"];
+              const recM = refs["recovery_M"];
+              const recF = refs["recovery_F"];
+              return (
+                <div className="space-y-0 text-[10px] text-muted-foreground">
+                  {(termM || termF) && (
+                    <div>
+                      Terminal: {termM ? `${termM.expected_count} tissues (control M)` : ""}
+                      {termM && termF ? " \u00b7 " : ""}
+                      {termF ? `${termF.expected_count} tissues (control F)` : ""}
+                    </div>
+                  )}
+                  {(recM || recF) && (
+                    <div>
+                      Recovery: {recM ? `${recM.expected_count} tissues (control M)` : ""}
+                      {recM && recF ? " \u00b7 " : ""}
+                      {recF ? `${recF.expected_count} tissues (control F)` : ""}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+            {batteryNote && (
+              <div className="mt-0.5 text-[10px] text-muted-foreground">
+                {batteryNote}
+              </div>
+            )}
+            {flaggedCount > 0 ? (
+              <div className="mt-0.5 flex items-center gap-1 text-[10px] text-amber-700">
+                <AlertTriangle className="h-2.5 w-2.5" />
+                {flaggedCount} animal{flaggedCount !== 1 ? "s" : ""} below expected tissue count
+              </div>
+            ) : (
+              <div className="mt-0.5 flex items-center gap-1 text-[10px] text-green-700">
+                <CheckCircle2 className="h-3 w-3" />
+                All animals meet expected tissue count
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TK satellites */}
+        {tkTotal > 0 && (
+          <div className="mb-2">
+            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
+              TK satellites
+            </div>
+            <div className="space-y-0 text-[10px] text-muted-foreground">
+              <div>{tkTotal} subjects detected</div>
+              <div>Excluded from all toxicology analyses</div>
+              {doseGroups && (() => {
+                const tkGroups = doseGroups
+                  .filter((dg) => (dg.tk_count ?? 0) > 0)
+                  .map((dg) => {
+                    const doseLabel = dg.dose_value != null && dg.dose_unit
+                      ? `${dg.dose_value} ${dg.dose_unit}`
+                      : dg.dose_level === 0 ? "Control" : dg.armcd;
+                    return `${doseLabel} (${dg.tk_count})`;
+                  });
+                return tkGroups.length > 0 ? (
+                  <div>Groups: {tkGroups.join(", ")}</div>
+                ) : null;
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* Anomalies */}
+        {allWarnings.length > 0 && (
+          <AnomaliesList warnings={allWarnings} flaggedAnimals={flaggedAnimals.filter(a => a.flag)} />
+        )}
+
+        {allWarnings.length === 0 && !battery && tkTotal === 0 && missingRequired.length === 0 && (
+          <div className="text-[10px] text-muted-foreground">
+            No quality issues detected.
+          </div>
+        )}
+      </section>
+
+      {/* ── Analysis settings — compact summary ──────────── */}
       <section className="mb-4">
         <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Analysis settings
@@ -1290,7 +1150,7 @@ function DetailsTab({
         </div>
       </section>
 
-      {/* Domain summary table */}
+      {/* ── Domain summary table ─────────────────────────── */}
       <section>
         <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Domains ({domainRows.length})

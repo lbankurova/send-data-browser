@@ -1,0 +1,100 @@
+[
+  {
+    "timestamp": "2026-02-14T21:06:26.842510+00:00",
+    "user": "User",
+    "schemaType": "endpoint-bookmarks",
+    "entityKey": "Ery. Mean Corpuscular Hemoglobin",
+    "action": "create",
+    "changes": {
+      "note": {
+        "old": null,
+        "new": ""
+      },
+      "bookmarkedDate": {
+        "old": null,
+        "new": "2026-02-14T21:06:26.804Z"
+      },
+      "bookmarked": {
+        "old": null,
+        "new": true
+      }
+    }
+  },
+  {
+    "timestamp": "2026-02-14T21:06:43.107387+00:00",
+    "user": "User",
+    "schemaType": "endpoint-bookmarks",
+    "entityKey": "Ery. Mean Corpuscular Hemoglobin",
+    "action": "update",
+    "changes": {
+      "bookmarkedDate": {
+        "old": "2026-02-14T21:06:26.804Z",
+        "new": "2026-02-14T21:06:43.093Z"
+      },
+      "bookmarked": {
+        "old": true,
+        "new": false
+      }
+    }
+  },
+  {
+    "timestamp": "2026-02-17T17:16:22.354799+00:00",
+    "user": "User",
+    "schemaType": "causal-assessment",
+    "entityKey": "Basophils",
+    "action": "create",
+    "changes": {
+      "overall": {
+        "old": null,
+        "new": "Unlikely causal"
+      },
+      "expert": {
+        "old": null,
+        "new": {
+          "temporality": {
+            "level": 3,
+            "rationale": ""
+          }
+        }
+      },
+      "comment": {
+        "old": null,
+        "new": ""
+      },
+      "overrides": {
+        "old": null,
+        "new": {}
+      }
+    }
+  },
+  {
+    "timestamp": "2026-02-17T17:28:03.173052+00:00",
+    "user": "User",
+    "schemaType": "validation-rule-config",
+    "entityKey": "SD-004",
+    "action": "create",
+    "changes": {
+      "enabled": {
+        "old": null,
+        "new": false
+      },
+      "comment": {
+        "old": null,
+        "new": ""
+      }
+    }
+  },
+  {
+    "timestamp": "2026-02-18T14:35:38.417767+00:00",
+    "user": "User",
+    "schemaType": "validation-rule-config",
+    "entityKey": "SD-004",
+    "action": "update",
+    "changes": {
+      "enabled": {
+        "old": false,
+        "new": true
+      }
+    }
+  }
+]

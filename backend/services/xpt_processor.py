@@ -84,11 +84,22 @@ def get_all_domain_summaries(study: StudyInfo) -> list[DomainSummary]:
     for domain in sorted(study.xpt_files.keys()):
         try:
             meta = get_domain_metadata(study, domain)
+            # Count unique subjects from CSV cache if USUBJID column exists
+            subject_count = None
+            try:
+                csv_path = get_cached_csv_path(study.study_id, domain)
+                if csv_path.exists():
+                    df = pd.read_csv(csv_path, usecols=["USUBJID"], dtype=str)
+                    subject_count = int(df["USUBJID"].nunique())
+            except (ValueError, KeyError):
+                # Domain doesn't have USUBJID column — that's fine
+                pass
             summaries.append(DomainSummary(
                 name=meta.name,
                 label=meta.label,
                 row_count=meta.row_count,
                 col_count=meta.col_count,
+                subject_count=subject_count,
             ))
         except Exception:
             continue

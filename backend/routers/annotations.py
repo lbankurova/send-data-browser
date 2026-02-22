@@ -15,6 +15,7 @@ VALID_SCHEMA_TYPES = {
     "validation-records", "endpoint-bookmarks", "causal-assessment",
     "threshold-config", "validation-rule-config",
     "custom-insight-rules", "custom-validation-rules",
+    "study-notes",
 }
 
 # Map URL slugs to file names

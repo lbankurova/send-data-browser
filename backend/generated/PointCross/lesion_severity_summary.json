@@ -2911,6 +2911,9 @@
       "acute"
     ],
     "n_with_modifiers": 1,
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -2933,6 +2936,9 @@
       "acute"
     ],
     "n_with_modifiers": 1,
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -2955,6 +2961,9 @@
       "acute"
     ],
     "n_with_modifiers": 1,
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -2977,6 +2986,9 @@
       "acute"
     ],
     "n_with_modifiers": 1,
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -16967,6 +16979,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -16983,6 +16998,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -16999,6 +17017,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -17015,6 +17036,9 @@
     "avg_severity": null,
     "severity_status": "present_ungraded",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -33219,6 +33243,9 @@
     "avg_severity": null,
     "severity_status": "present_ungraded",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -33235,6 +33262,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -33251,6 +33281,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -33267,6 +33300,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -41105,6 +41141,9 @@
       "nodular"
     ],
     "n_with_modifiers": 1,
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -41127,6 +41166,9 @@
       "nodular"
     ],
     "n_with_modifiers": 1,
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -41149,6 +41191,9 @@
       "nodular"
     ],
     "n_with_modifiers": 1,
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -41171,6 +41216,9 @@
       "nodular"
     ],
     "n_with_modifiers": 1,
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -52375,6 +52423,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -52391,6 +52442,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -52407,6 +52461,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -52423,6 +52480,9 @@
     "avg_severity": null,
     "severity_status": "present_ungraded",
     "severity": "normal",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {

@@ -165,6 +165,51 @@ export function getSexColor(sex: string): string {
   return "#6b7280"; // gray-500
 }
 
+// ─── MS Office Median Palette (reports, exports, non-app contexts) ────────
+// Warm, muted, earthy — suitable for printed reports and standalone charts.
+// NOT used in app scatter plots (clashes with the Tableau-derived app chart colors).
+
+export const MEDIAN_PALETTE = [
+  "#775F55", "#94B6D2", "#DD8047", "#A5AB81", "#D8B25C",
+  "#7BA79D", "#968C8C", "#F7B615", "#704404", "#EBDDC3",
+  "#A2554A", "#8E6C8A", "#545E8B", "#6B8C5E", "#C4786B", "#486B5F",
+] as const;
+
+// ─── Categorical Chart Palette (Tableau 10 — matches app chart colors) ───
+// For scatter "color by" overlays (organ system, domain, syndrome).
+// Same family as --chart-1…5 and Datagrok default chart palette (§0.10).
+
+const CATEGORICAL_CHART_PALETTE = [
+  "#1F77B4",  //  0 blue
+  "#FF7F0E",  //  1 orange
+  "#2CA02C",  //  2 green
+  "#D62728",  //  3 red
+  "#9467BD",  //  4 purple
+  "#8C564B",  //  5 brown
+  "#E377C2",  //  6 pink
+  "#7F7F7F",  //  7 gray
+  "#BCBD22",  //  8 yellow-green
+  "#17BECF",  //  9 cyan
+  // Tableau 10 light pairs (for overflow beyond 10 categories)
+  "#AEC7E8",  // 10 light blue
+  "#FFBB78",  // 11 light orange
+  "#98DF8A",  // 12 light green
+] as const;
+
+/** Get a categorical chart color by index (wraps). For scatter "color by" overlays. */
+export function getCategoricalChartColor(index: number): string {
+  return CATEGORICAL_CHART_PALETTE[index % CATEGORICAL_CHART_PALETTE.length];
+}
+
+/** Get a categorical chart color for a named category.
+ *  Produces a stable assignment: same category string → same color. */
+export function getCategoricalChartColorMap(categories: readonly string[]): Map<string, string> {
+  const map = new Map<string, string>();
+  const unique = [...new Set(categories)];
+  unique.forEach((cat, i) => map.set(cat, getCategoricalChartColor(i)));
+  return map;
+}
+
 /** Significance stars from p-value. */
 export function getSignificanceStars(p: number | null): string {
   if (p == null) return "";
@@ -223,17 +268,76 @@ export function getEffectMagnitudeLabel(d: number): string {
   return "very large";
 }
 
+// ── Perceptually-Distinct Color Assignment (CIELAB) ──────────────────────
+
+/** sRGB hex → CIELAB [L, a, b]. Standard D65 illuminant. */
+function hexToLab(hex: string): [number, number, number] {
+  const ri = parseInt(hex.slice(1, 3), 16) / 255;
+  const gi = parseInt(hex.slice(3, 5), 16) / 255;
+  const bi = parseInt(hex.slice(5, 7), 16) / 255;
+  const lin = (c: number) => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  const rl = lin(ri), gl = lin(gi), bl = lin(bi);
+  const x = 0.4124564 * rl + 0.3575761 * gl + 0.1804375 * bl;
+  const y = 0.2126729 * rl + 0.7151522 * gl + 0.0721750 * bl;
+  const z = 0.0193339 * rl + 0.1191920 * gl + 0.9503041 * bl;
+  const f = (t: number) => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+  return [
+    116 * f(y) - 16,
+    500 * (f(x / 0.95047) - f(y)),
+    200 * (f(y) - f(z / 1.08883)),
+  ];
+}
+
+/** Euclidean ΔE in CIELAB (≈ CIEDE76). Good enough for palette selection. */
+function deltaE(a: [number, number, number], b: [number, number, number]): number {
+  return Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2);
+}
+
+/** Greedy max-min-distance assignment: each key gets the unused palette color
+ *  that maximizes its minimum CIELAB distance to all already-assigned colors.
+ *  Keys are sorted alphabetically for deterministic results across runs. */
+function assignDistinctColors(keys: string[], palette: readonly string[]): Map<string, string> {
+  const labs = palette.map(hexToLab);
+  const assigned: number[] = [];
+  const result = new Map<string, string>();
+  const sorted = [...keys].sort();
+
+  for (const key of sorted) {
+    if (assigned.length === 0) {
+      // First key gets palette[0] (blue — highest contrast on white)
+      assigned.push(0);
+      result.set(key, palette[0]);
+      continue;
+    }
+    let bestIdx = -1;
+    let bestMinDist = -1;
+    for (let i = 0; i < labs.length; i++) {
+      if (assigned.includes(i)) continue;
+      const minDist = Math.min(...assigned.map((j) => deltaE(labs[i], labs[j])));
+      if (minDist > bestMinDist) {
+        bestMinDist = minDist;
+        bestIdx = i;
+      }
+    }
+    if (bestIdx >= 0) {
+      assigned.push(bestIdx);
+      result.set(key, palette[bestIdx]);
+    }
+  }
+  return result;
+}
+
 // ── Organ System Colors ───────────────────────────────────────────────────
 
-/** Deterministic hue for organ system names (pastel-ish, well-spaced). */
-const ORGAN_COLORS: Record<string, string> = {};
+const KNOWN_ORGANS = [
+  "hepatic", "renal", "hematologic", "gastrointestinal", "cardiovascular",
+  "respiratory", "endocrine", "reproductive", "neurological", "musculoskeletal",
+  "integumentary", "ocular", "general",
+];
+
+/** Auto-assigned at module load: CIELAB max-min-distance from Tableau palette. */
+const ORGAN_COLOR_MAP = assignDistinctColors(KNOWN_ORGANS, CATEGORICAL_CHART_PALETTE);
+
 export function getOrganColor(organ: string): string {
-  if (ORGAN_COLORS[organ]) return ORGAN_COLORS[organ];
-  // Golden-angle hue spacing seeded by organ string hash
-  let h = 0;
-  for (let i = 0; i < organ.length; i++) h = (h * 31 + organ.charCodeAt(i)) | 0;
-  const hue = ((h % 360) + 360) % 360;
-  const color = `hsl(${hue}, 55%, 50%)`;
-  ORGAN_COLORS[organ] = color;
-  return color;
+  return ORGAN_COLOR_MAP.get(organ.toLowerCase()) ?? getCategoricalChartColor(ORGAN_COLOR_MAP.size);
 }

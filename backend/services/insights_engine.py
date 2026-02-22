@@ -244,6 +244,7 @@ def rule_03_dose_overlap_warning(selected: StudyMetadata, ref: StudyMetadata) ->
 
 def rule_04_cross_species_noael(selected: StudyMetadata, ref: StudyMetadata) -> List[Insight]:
     """Rule 4: Cross-Species NOAEL"""
+    # @species SPECIES-01, SPECIES-02, SPECIES-03, SPECIES-04 — cross-species NOAEL comparison and dose tolerance ratio
     if selected.species == ref.species:
         return []
 
@@ -297,7 +298,7 @@ def rule_05_shared_target_organ(selected: StudyMetadata, ref: StudyMetadata) -> 
     if not shared:
         return []
 
-    # Concordance interpretation
+    # @species SPECIES-01, SPECIES-02, SPECIES-03, SPECIES-04 — cross-species concordance interpretation
     if selected.species == ref.species:
         concordance = f"Reproducible across study durations ({selected.duration_weeks}w vs {ref.duration_weeks}w)."
     else:
@@ -330,7 +331,7 @@ def rule_06_novel_target_organ(selected: StudyMetadata, ref: StudyMetadata) -> L
 
     insights = []
 
-    # Novel in selected
+    # @species SPECIES-01, SPECIES-02, SPECIES-03, SPECIES-04 — novel organ may be species-specific
     novel_in_sel = sel_organs - ref_organs
     if novel_in_sel:
         if selected.species != ref.species:
@@ -377,6 +378,7 @@ def rule_06_novel_target_organ(selected: StudyMetadata, ref: StudyMetadata) -> L
 
 def rule_07_same_species_noael_trend(selected: StudyMetadata, ref: StudyMetadata) -> List[Insight]:
     """Rule 7: Same-Species NOAEL Trend"""
+    # @species SPECIES-01, SPECIES-02, SPECIES-03 — same-species gating for NOAEL temporal trend
     if selected.species != ref.species or selected.duration_weeks == ref.duration_weeks:
         return []
 
@@ -419,6 +421,7 @@ def rule_07_same_species_noael_trend(selected: StudyMetadata, ref: StudyMetadata
 
 def rule_08_same_species_loael_trend(selected: StudyMetadata, ref: StudyMetadata) -> List[Insight]:
     """Rule 8: Same-Species LOAEL Trend"""
+    # @species SPECIES-01, SPECIES-02, SPECIES-03 — same-species gating for LOAEL temporal trend
     if selected.species != ref.species or selected.duration_weeks == ref.duration_weeks:
         return []
 
@@ -693,6 +696,7 @@ def rule_14_sex_specific_finding(selected: StudyMetadata, ref: StudyMetadata) ->
 
 def rule_15_route_difference(selected: StudyMetadata, ref: StudyMetadata) -> List[Insight]:
     """Rule 15: Route of Administration Difference"""
+    # @route ROUTE-01, ROUTE-03, ROUTE-04, ROUTE-05 — cross-study route difference flags local vs systemic findings
     if selected.route == ref.route:
         return []
 
