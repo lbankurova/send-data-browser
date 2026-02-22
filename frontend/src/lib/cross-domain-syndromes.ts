@@ -1161,6 +1161,10 @@ function detectFromEndpoints(
         }
       }
 
+      // @field FIELD-03 — patternConfidence (confidence assignment)
+      // @field FIELD-18 — requiredMet (compound logic evaluation)
+      // @field FIELD-19 — domainsCovered (unique domain list)
+      // @field FIELD-20 — supportScore (supporting term count)
       results.push({
         id: syndrome.id,
         name: syndrome.name,

@@ -280,7 +280,7 @@ export const SYNDROME_RULES: SyndromeRule[] = [
     related_endpoints: [],
     interpretation_note: "Villous atrophy with crypt hyperplasia and mucosal erosion across GI segments is a hallmark of cytotoxic compound effects.",
   },
-  {
+  { // @route ROUTE-03, ROUTE-04, ROUTE-05 — injection site findings are route-dependent (parenteral only)
     syndrome_id: "injection_site_reaction",
     syndrome_name: "Injection Site Reaction",
     organ: ["INJECTION SITE", "SKIN"],
@@ -510,6 +510,7 @@ export function detectSyndromes(
           }
 
           // IMP-06c: Suppress injection site reaction for oral routes
+          // @route ROUTE-01 — oral routes make injection site findings unexpected
           if (rule.syndrome_id === "injection_site_reaction") {
             const route = studyContext.route.toUpperCase();
             if (route.includes("ORAL") || route.includes("GAVAGE") || route.includes("DIET")) {

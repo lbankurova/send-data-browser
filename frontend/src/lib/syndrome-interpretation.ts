@@ -737,7 +737,7 @@ export const SYNDROME_CL_CORRELATES: Record<string, {
     expectedObservations: ["PALLOR", "DARK URINE"],
     tier: [2, 3],
   },
-  XS08: {
+  XS08: { // @species SPECIES-01 — chromodacryorrhea is rat-specific (Harderian gland porphyrin secretion)
     expectedObservations: ["PILOERECTION", "DECREASED ACTIVITY", "CHROMODACRYORRHEA"],
     tier: [3, 3, 2],
   },
@@ -1226,6 +1226,7 @@ export function evaluateDiscriminator(
 /**
  * Assess certainty of a detected syndrome using discriminating evidence.
  */
+// @field FIELD-02 — syndrome certainty base assessment
 export function assessCertainty(
   syndrome: CrossDomainSyndrome,
   discriminators: SyndromeDiscriminators,
@@ -1560,6 +1561,7 @@ export function evaluateUpgradeEvidence(
  * Apply all certainty caps (directional gate, single-domain, data sufficiency, liver enzyme tiers).
  * Extracted so both the discriminator and no-discriminator paths use the same logic.
  */
+// @field FIELD-02 — certainty caps (can only reduce, except liver enzyme upgrade)
 function applyCertaintyCaps(
   syndrome: CrossDomainSyndrome,
   certainty: SyndromeCertainty,
@@ -1689,6 +1691,7 @@ function applyCertaintyCaps(
  * that improve certainty when present but carry no penalty when absent.
  * Per O'Brien 2002 (GLDH/SDH for rat), FDA/EMA guidance (KIM-1 for rat nephrotoxicity).
  */
+// @species SPECIES-01 — rat-only preferred biomarkers (GLDH, SDH, KIM-1, clusterin, troponin)
 const SPECIES_PREFERRED_MARKERS: Record<string, Record<string, {
   markers: string[];
   rationale: string;
@@ -1717,6 +1720,7 @@ const SPECIES_PREFERRED_MARKERS: Record<string, Record<string, {
  * Check species-specific preferred markers and return annotations.
  * Returns { present: matched markers, absent: not-measured markers, narrative }.
  */
+// @field FIELD-32 — species-specific preferred marker annotations
 export function checkSpeciesPreferredMarkers(
   syndromeId: string,
   species: string,
@@ -1904,6 +1908,8 @@ export function crossReferenceHistopath(
 /**
  * Assess recovery status for a syndrome's matched endpoints.
  */
+// @field FIELD-06 — syndrome-level recovery status roll-up
+// @field FIELD-28 — per-endpoint recovery entries
 export function assessSyndromeRecovery(
   syndrome: CrossDomainSyndrome,
   recoveryData: RecoveryRow[],
@@ -2138,7 +2144,7 @@ export function assembleStudyDesignNotes(
 
   // ── Strain-specific ──
 
-  // Fischer 344 rats have high background mononuclear cell leukemia
+  // @strain STRAIN-01-F344 — high background mononuclear cell leukemia (~38% males)
   if (["XS04", "XS05"].includes(syndrome.id)) {
     const strain = studyContext.strain.toUpperCase();
     if (strain.includes("FISCHER") || strain.includes("F344")) {
@@ -2175,7 +2181,7 @@ export function assembleStudyDesignNotes(
 
   // ── Route-specific ──
 
-  // Oral gavage GI findings may be route-related
+  // @route ROUTE-01 — gavage can cause local GI irritation distinct from systemic toxicity
   if (studyContext.route?.toUpperCase().includes("GAVAGE")) {
     // XS08 (stress response) may include secondary GI effects
     if (syndrome.id === "XS08") {
@@ -2281,6 +2287,8 @@ export function mapDeathRecordsToDispositions(mortality: StudyMortality): Animal
  * Matches cause-of-death text against syndrome organ terms,
  * computes dose-related mortality pattern, and builds narrative.
  */
+// @field FIELD-07 — mortalityNoaelCap assignment
+// @field FIELD-30 — mortalityNoaelCapRelevant tri-state
 export function assessMortalityContext(
   syndrome: CrossDomainSyndrome,
   mortalityData: AnimalDisposition[],
@@ -2400,6 +2408,7 @@ const TF_TUMOR_STAGES: Record<string, string[]> = {
  *   2. TSH-mediated thyroid tumors → follicular cell tumors from sustained TSH elevation
  *   3. α2u-globulin nephropathy → kidney tumors in male rats only (protein absent in humans)
  */
+// @species SPECIES-01, SPECIES-04 — rodent-specific tumor mechanisms (PPARα, TSH-mediated, α2u-globulin)
 function assessHumanNonRelevance(
   tumors: TumorFinding[],
   studyContext: StudyContext,
@@ -2624,6 +2633,7 @@ const BW_RELEVANT_SYNDROMES = new Set(["XS07", "XS08", "XS09"]);
  * Returns food efficiency assessment if FW data is available and the syndrome
  * involves body weight. Otherwise returns a "not_applicable" stub.
  */
+// @field FIELD-29 — food consumption context (bwFwAssessment)
 export function assessFoodConsumptionContext(
   syndrome: CrossDomainSyndrome,
   foodData: FoodConsumptionSummaryResponse,
@@ -2699,6 +2709,10 @@ export function assessFoodConsumptionContext(
  * - A-6 (statisticalSignificance): derived from matched endpoints' p-values
  * - A-2 ext (clinicalObservationSupport): from CL correlation assessment
  */
+// @field FIELD-04 — treatment-relatedness A-factor scoring and overall verdict
+// @field FIELD-21 — doseResponse sub-field (strong/weak/absent)
+// @field FIELD-22 — statisticalSignificance sub-field
+// @field FIELD-23 — hcdComparison sub-field (always "no_hcd")
 export function computeTreatmentRelatedness(
   syndrome: CrossDomainSyndrome,
   allEndpoints: EndpointSummary[],
@@ -2827,6 +2841,8 @@ export function computeTreatmentRelatedness(
  * Uses Cohen's d thresholds adapted for tox:
  *   |d| < 0.5 → minimal, < 1.0 → mild, < 1.5 → moderate, < 2.0 → marked, ≥ 2.0 → severe
  */
+// @field FIELD-24 — magnitudeLevel derivation from max |Cohen's d|
+// @species SPECIES-01 — thresholds are rat-derived; proxied for dog, NHP, mouse, rabbit
 function deriveMagnitudeLevel(
   syndrome: CrossDomainSyndrome,
   allEndpoints: EndpointSummary[],
@@ -2848,6 +2864,7 @@ function deriveMagnitudeLevel(
 /** REM-21: Extract max histopathologic severity grade from actual MI data.
  *  This is the pathologist's tissue grading, separate from statistical magnitude.
  *  avg_severity scale: 1=minimal, 2=mild, 3=moderate, 4=marked, 5=severe. */
+// @field FIELD-11 — histopathSeverityGrade (pathologist grading, not regulatory tier)
 function deriveHistopathSeverityGrade(
   histopathData: LesionSeverityRow[],
 ): SyndromeInterpretation["histopathSeverityGrade"] {
@@ -2887,6 +2904,7 @@ function isStressEndpoint(ep: EndpointMatch): boolean {
 // Liver: enzyme induction = weight↑ + hypertrophy + NO necrosis/degeneration.
 const ADAPTIVE_FOLD_THRESHOLD = 5.0; // ALT/AST ≥5× overrides adaptive classification
 
+// @field FIELD-25 — adaptive pattern check (XS01 enzyme induction)
 function checkAdaptivePattern(
   syndrome: CrossDomainSyndrome,
   allEndpoints: EndpointSummary[],
@@ -2951,6 +2969,10 @@ function checkAdaptivePattern(
  * - B-7 (secondaryToOther): from food consumption context
  * - REM-10: stress confound check when XS08 is co-detected
  */
+// @field FIELD-05 — adversity overall verdict (priority-ordered decision tree)
+// @field FIELD-24 — magnitudeLevel sub-field (Cohen's d thresholds)
+// @field FIELD-25 — adaptive sub-field (XS01 enzyme induction)
+// @field FIELD-26 — stressConfound sub-field (XS08 overlap check)
 export function computeAdversity(
   syndrome: CrossDomainSyndrome,
   allEndpoints: EndpointSummary[],
@@ -3035,6 +3057,7 @@ export function computeAdversity(
  * Cascade:
  *   S0_Death → carcinogenic → proliferative → S4_Critical → S3_Adverse → S2_Concern → S1_Monitor
  */
+// @field FIELD-01 — overall severity cascade assignment
 export function deriveOverallSeverity(
   mortalityContext: MortalityContext,
   tumorContext: TumorContext,
@@ -3072,6 +3095,7 @@ export function deriveOverallSeverity(
 const CONCORDANCE_DATA_VERSION = "concordance-v0";
 
 /** SOC-level LR+ by species. Midpoints of approximate ranges from Liu & Fan Fig. 3C. */
+// @species SPECIES-01, SPECIES-02, SPECIES-03, SPECIES-04, SPECIES-05 — species-specific concordance LR+
 const SOC_CONCORDANCE: Record<string, Record<string, number>> = {
   rat: {
     "hepatobiliary disorders": 3.5, "blood and lymphatic system disorders": 3.5,
@@ -3106,6 +3130,7 @@ const SOC_CONCORDANCE: Record<string, Record<string, number>> = {
 };
 
 /** PT-level LR+ for specific endpoints. Seeded from Liu & Fan paper text. */
+// @species SPECIES-01, SPECIES-02, SPECIES-03, SPECIES-04 — species-specific PT-level concordance LR+
 const KNOWN_PT_CONCORDANCE: Record<string, { species: string; lrPlus: number }[]> = {
   // Hepatobiliary
   "immune-mediated hepatitis": [{ species: "mouse", lrPlus: 462.4 }],
@@ -3304,6 +3329,7 @@ function resolveObservedPTs(
  * Uses the v3.0 MedDRA dictionary to resolve observed endpoints to PTs,
  * then matches against concordance data.
  */
+// @field FIELD-27 — translational confidence tier and LR+ data
 export function assessTranslationalConfidence(
   syndrome: CrossDomainSyndrome,
   species: string,

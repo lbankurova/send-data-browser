@@ -438,6 +438,7 @@ function computeOpi(organDelta: number | null, bwDelta: number): number | null {
   return organDelta / bwDelta;
 }
 
+// @field FIELD-12 — OPI classification (proportionate/disproportionate/inverse)
 export function classifyOpi(opi: number | null, bwDelta: number): OpiClassification {
   if (Math.abs(bwDelta) < BW_DELTA_THRESHOLD) return "not_applicable";
   if (opi == null) return "not_applicable";
