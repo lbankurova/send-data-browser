@@ -247,6 +247,33 @@ def dunnett_pairwise(
     return pairwise
 
 
+def welch_pairwise(
+    control: np.ndarray,
+    treated_groups: list[tuple[int, np.ndarray]],
+) -> list[dict]:
+    """Welch's t-test for each treated group vs control.
+
+    Returns raw (uncorrected) p-values for use with client-side multiplicity
+    correction methods (e.g. Bonferroni). Each entry contains:
+    dose_level, p_value_welch.
+    """
+    ctrl = np.array(control, dtype=float)
+    ctrl = ctrl[~np.isnan(ctrl)]
+    if len(ctrl) < 2 or not treated_groups:
+        return []
+
+    results = []
+    for dose_level, vals in treated_groups:
+        arr = np.array(vals, dtype=float)
+        arr = arr[~np.isnan(arr)]
+        t_result = welch_t_test(arr, ctrl)
+        results.append({
+            "dose_level": int(dose_level),
+            "p_value_welch": round(t_result["p_value"], 6) if t_result["p_value"] is not None else None,
+        })
+    return results
+
+
 def bonferroni_correct(p_values: list[float | None], n_tests: int | None = None) -> list[float | None]:
     """Apply Bonferroni correction to a list of p-values."""
     if n_tests is None:

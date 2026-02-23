@@ -22,6 +22,7 @@ import {
 import type { MergedPoint, VolcanoPoint } from "@/components/analysis/charts/dose-response-charts";
 import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
 import { useTimecourseGroup, useTimecourseSubject } from "@/hooks/useTimecourse";
+import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useClinicalObservations } from "@/hooks/useClinicalObservations";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
@@ -52,6 +53,8 @@ import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { DoseResponseRow, RuleResult, SignalSummaryRow, NoaelSummaryRow } from "@/types/analysis-views";
 import type { TimecourseResponse } from "@/types/timecourse";
 import type { ToxFinding } from "@/types/annotations";
+import { useStatMethods } from "@/hooks/useStatMethods";
+import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -254,6 +257,7 @@ export function DoseResponseView() {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
   const { selection: studySelection, navigateTo } = useStudySelection();
+  const statMethods = useStatMethods(studyId);
   const { data: drData, isLoading, error } = useDoseResponseMetrics(studyId);
 
   // State — selectedEndpoint is local for evidence panel display,
@@ -775,6 +779,7 @@ export function DoseResponseView() {
               ruleResults={ruleResults}
               signalSummary={signalSummary}
               onSelectEndpoint={selectEndpoint}
+              effectSizeLabel={getEffectSizeLabel(statMethods.effectSize)}
             />
           )}
         </div>
@@ -812,6 +817,7 @@ function ChartOverviewContent({
   expandGen,
   collapseGen,
 }: ChartOverviewProps) {
+  const chartStatMethods = useStatMethods(studyId);
   const chartRowRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [splitPct, setSplitPct] = useState(50); // default 50/50
@@ -950,7 +956,7 @@ function ChartOverviewContent({
         {hasEffect && (
           <div className="flex min-w-0 flex-1 flex-col px-2 py-1.5">
             <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Effect size (Hedges&apos; g)
+              Effect size ({getEffectSizeLabel(chartStatMethods.effectSize)})
             </div>
             <EChartsWrapper
               option={buildEffectSizeBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels)}
@@ -1067,11 +1073,20 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, tcSecti
   const isContinuous = selectedSummary.data_type === "continuous";
   const isCL = domain === "CL";
 
+  // Detect recovery arms (uses cached React Query)
+  const { data: meta } = useStudyMetadata(studyId ?? "");
+  const hasRecovery = meta?.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
+  // For in-life domains, include recovery data when study has recovery arms
+  const isInLifeDomain = ["BW", "LB", "FW", "BG", "EG", "VS"].includes(domain);
+  const includeRecovery = hasRecovery && isInLifeDomain;
+
   // Continuous temporal data
   const { data: tcData, isLoading: tcLoading, error: tcError } = useTimecourseGroup(
     isContinuous ? studyId : undefined,
     isContinuous ? domain : undefined,
     isContinuous ? testCode : undefined,
+    undefined,
+    includeRecovery,
   );
 
   // Subject data: only fetch when toggle is ON and continuous
@@ -1079,6 +1094,8 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, tcSecti
     showSubjects && isContinuous ? studyId : undefined,
     showSubjects && isContinuous ? domain : undefined,
     showSubjects && isContinuous ? testCode : undefined,
+    undefined,
+    includeRecovery,
   );
 
   // CL temporal data
@@ -1163,6 +1180,7 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, tcSecti
               yAxisMode={yAxisMode}
               showSubjects={showSubjects}
               subjData={subjData ?? null}
+              lastDosingDay={tcData.last_dosing_day}
             />
           )}
         </>
@@ -1279,11 +1297,13 @@ function TimecourseCharts({
   yAxisMode,
   showSubjects,
   subjData,
+  lastDosingDay,
 }: {
   tcData: TimecourseResponse;
   yAxisMode: YAxisMode;
   showSubjects: boolean;
   subjData: import("@/types/timecourse").TimecourseSubjectResponse | null;
+  lastDosingDay?: number;
 }) {
   // Determine available sexes
   const sexes = useMemo(() => {
@@ -1433,7 +1453,7 @@ function TimecourseCharts({
               {sexLabels[sex] ?? sex}
             </p>
             <EChartsWrapper
-              option={buildTimecourseLineOption(points, doseLevels, getDoseGroupColor, yLabel, baselineRefValue, yAxisMode, showSubjects, subjectTraces)}
+              option={buildTimecourseLineOption(points, doseLevels, getDoseGroupColor, yLabel, baselineRefValue, yAxisMode, showSubjects, subjectTraces, lastDosingDay)}
               style={{ width: "100%", height: 240 }}
               onClick={() => {
                 // Subject click handling now via context — no-op here
@@ -1461,6 +1481,12 @@ function TimecourseCharts({
           <span className="flex items-center gap-1">
             <span className="inline-block h-0 w-3 border-t border-dashed border-gray-400" />
             Baseline
+          </span>
+        )}
+        {lastDosingDay != null && (
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-3 w-0 border-l border-dashed border-amber-500" />
+            Recovery boundary
           </span>
         )}
       </div>
@@ -1816,9 +1842,10 @@ interface HypothesesTabProps {
   ruleResults: RuleResult[];
   signalSummary: SignalSummaryRow[];
   onSelectEndpoint?: (label: string) => void;
+  effectSizeLabel?: string;
 }
 
-function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSummaries, studyId, ruleResults, signalSummary, onSelectEndpoint }: HypothesesTabProps) {
+function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSummaries, studyId, ruleResults, signalSummary, onSelectEndpoint, effectSizeLabel }: HypothesesTabProps) {
   const [intent, setIntent] = useState<HypothesisIntent>("shape");
   const [favorites, setFavorites] = useState<HypothesisIntent[]>(DEFAULT_FAVORITES);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -1997,7 +2024,7 @@ function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSumma
         )}
         {intent === "model" && <ModelPlaceholder />}
         {intent === "pareto" && (
-          <VolcanoScatter endpointSummaries={endpointSummaries} selectedEndpoint={selectedEndpoint} onSelectEndpoint={onSelectEndpoint} />
+          <VolcanoScatter endpointSummaries={endpointSummaries} selectedEndpoint={selectedEndpoint} onSelectEndpoint={onSelectEndpoint} effectSizeLabel={effectSizeLabel} />
         )}
         {intent === "correlation" && <CorrelationPlaceholder />}
         {intent === "outliers" && (
@@ -2144,10 +2171,12 @@ function VolcanoScatter({
   endpointSummaries,
   selectedEndpoint,
   onSelectEndpoint,
+  effectSizeLabel = "Hedges' g",
 }: {
   endpointSummaries: EndpointSummary[];
   selectedEndpoint: string | null;
   onSelectEndpoint?: (label: string) => void;
+  effectSizeLabel?: string;
 }) {
   const points = useMemo<VolcanoPoint[]>(() => {
     return endpointSummaries
@@ -2189,7 +2218,7 @@ function VolcanoScatter({
       </div>
 
       <EChartsWrapper
-        option={buildVolcanoScatterOption(points, selectedEndpoint, organSystems)}
+        option={buildVolcanoScatterOption(points, selectedEndpoint, organSystems, effectSizeLabel)}
         style={{ width: "100%", height: 260 }}
         onClick={(params) => {
           if (params.name && onSelectEndpoint) {

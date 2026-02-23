@@ -35,6 +35,7 @@ export interface PairwiseResult {
   cohens_d: number | null;
   odds_ratio?: number | null;
   risk_ratio?: number | null;
+  p_value_welch?: number | null;
 }
 
 export interface UnifiedFinding {

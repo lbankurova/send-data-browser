@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { EndpointSummary, OrganCoherence } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
+import type { EffectSizeMethod, MultiplicityMethod } from "@/lib/stat-method-transforms";
 
 export interface FindingsAnalytics {
   endpoints: EndpointSummary[];
@@ -12,6 +13,12 @@ export interface FindingsAnalytics {
   signalScores: Map<string, number>;
   /** Aggregate sexes per endpoint_label (e.g., ["M","F"] for endpoints with both). */
   endpointSexes: Map<string, string[]>;
+  /** Active effect size method (for dynamic labels). */
+  activeEffectSizeMethod?: EffectSizeMethod;
+  /** Active multiplicity method (for dynamic labels). */
+  activeMultiplicityMethod?: MultiplicityMethod;
+  /** Whether the data includes Welch p-values (enables Bonferroni dropdown). */
+  hasWelchPValues?: boolean;
 }
 
 const defaultValue: FindingsAnalytics = {
