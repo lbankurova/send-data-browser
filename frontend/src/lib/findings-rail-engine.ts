@@ -51,6 +51,7 @@ const PATTERN_WEIGHTS: Record<string, number> = {
   flat: 0,
 };
 
+// @field FIELD-34 — endpoint composite signal score
 export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts): number {
   const severityWeight = ep.worstSeverity === "adverse" ? 3 : 1;
   const pValueWeight = ep.minPValue !== null ? Math.max(0, -Math.log10(Math.max(ep.minPValue, 1e-10))) : 0;
@@ -88,6 +89,7 @@ const CONFIDENCE_MULTIPLIERS: Record<EndpointConfidence, number> = {
   LOW: 0.4,
 };
 
+// @field FIELD-35 — endpoint confidence classification
 /** Classify endpoint confidence from summary-level data.
  *  Mirrors the histopath computeConfidence logic adapted for Findings endpoints. */
 export function classifyEndpointConfidence(ep: EndpointSummary): EndpointConfidence {
@@ -164,6 +166,7 @@ function groupKey(ep: EndpointWithSignal, mode: GroupingMode): string {
   }
 }
 
+// @field FIELD-36 — group signal score (sum of endpoint signals)
 export function groupEndpoints(
   endpoints: EndpointWithSignal[],
   mode: GroupingMode,

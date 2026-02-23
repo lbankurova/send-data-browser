@@ -752,6 +752,7 @@ function getFoldChangesForRule(rule: LabRule, ctx: RuleContext): Record<string, 
   return result;
 }
 
+// @field FIELD-43 — lab clinical significance match
 export function evaluateLabRules(
   endpoints: EndpointSummary[],
   organCoherence?: Map<string, OrganCoherence>,

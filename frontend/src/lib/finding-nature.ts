@@ -137,6 +137,9 @@ function baseQualifier(nature: FindingNature, reversibility: FindingNatureInfo["
  * When maxSeverity is provided, recovery timeline and qualifier are modulated:
  * higher severity → longer expected recovery and less certainty.
  */
+// @field FIELD-39 — finding nature (adaptive/degenerative/proliferative/etc.)
+// @field FIELD-40 — expected reversibility (high/moderate/low/none)
+// @field FIELD-41 — typical recovery weeks
 export function classifyFindingNature(
   findingName: string,
   maxSeverity?: number | null,
