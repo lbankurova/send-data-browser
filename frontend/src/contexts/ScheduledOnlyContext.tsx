@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo, useRef } from "react";
+import { createContext, useContext, useState, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
 import type { UnifiedFinding, GroupStat, PairwiseResult } from "@/types/analysis";
 
@@ -16,11 +16,11 @@ interface ScheduledOnlyContextValue {
   /**
    * Set by the view that knows about mortality data.
    * @param subjects Full early-death subject map {USUBJID: disposition}
-   * @param trIds Set of USUBJIDs that are treatment-related early deaths
-   *
-   * Auto-initializes exclusions: TR early deaths excluded, accidental included.
+   * @param trIds Set of USUBJIDs that are treatment-related early deaths (drives scheduled-only toggle)
+   * @param defaultExcludedIds Full set of USUBJIDs to exclude on first init (trIds + recovery deaths).
+   *   If omitted, defaults to trIds for backward compatibility.
    */
-  setEarlyDeathSubjects: (subjects: Record<string, string>, trIds: Set<string>) => void;
+  setEarlyDeathSubjects: (subjects: Record<string, string>, trIds: Set<string>, defaultExcludedIds?: Set<string>) => void;
   /** Derived: true when any TR early-death subject is excluded → scheduled stats active. */
   useScheduledOnly: boolean;
   /** Bulk control: true → exclude all TR early deaths (default), false → include all. */
@@ -44,7 +44,7 @@ const ScheduledOnlyContext = createContext<ScheduledOnlyContextValue>({
   setExcludedSubjects: () => {},
   earlyDeathSubjects: EMPTY_SUBJECTS,
   trEarlyDeathIds: EMPTY_SET,
-  setEarlyDeathSubjects: () => {},
+  setEarlyDeathSubjects: () => { /* no-op default */ },
   useScheduledOnly: true,
   setUseScheduledOnly: () => {},
   hasEarlyDeaths: false,
@@ -57,8 +57,10 @@ export function ScheduledOnlyProvider({ children }: { children: ReactNode }) {
   const [excludedSubjects, setExcludedSubjects] = useState<Set<string>>(EMPTY_SET);
   const [earlyDeathSubjects, setEarlyDeathSubjectsRaw] = useState<Record<string, string>>(EMPTY_SUBJECTS);
   const [trEarlyDeathIds, setTrEarlyDeathIdsRaw] = useState<Set<string>>(EMPTY_SET);
-  /** Tracks which subject set is currently loaded — prevents resetting user toggles on re-init */
-  const initializedKeyRef = useRef("");
+  /** Tracks which subject set is currently loaded — prevents resetting user toggles on re-init.
+   *  Uses useState (not useRef) so React Fast Refresh preserves it across HMR —
+   *  useRef resets to "" on HMR, causing the isNew guard to fire and overwrite user toggles. */
+  const [, setInitializedKey] = useState("");
 
   const hasEarlyDeaths = useMemo(
     () => Object.keys(earlyDeathSubjects).length > 0,
@@ -77,22 +79,27 @@ export function ScheduledOnlyProvider({ children }: { children: ReactNode }) {
   /**
    * Initialize from mortality data. Default exclusions follow regulatory tox convention:
    * - TR deaths (moribund sacrifice, found dead): excluded — terminal data skews group means
+   * - Recovery deaths: excluded — analyzed separately via arm filtering (DATA-01)
    * - Accidental deaths (gavage error, procedural): included — valid drug-exposure data
-   * - Recovery deaths: handled by arm filtering, not subject exclusion
+   *
+   * trIds drives the scheduled-only toggle (only main-study TR deaths affect terminal stats).
+   * defaultExcludedIds is the full set for initial checkbox state (trIds + recovery deaths).
    */
   const setEarlyDeathSubjects = useCallback(
-    (subjects: Record<string, string>, trIds: Set<string>) => {
-      const key = Object.keys(subjects).sort().join(",");
-      const isNew = key !== initializedKeyRef.current;
-      initializedKeyRef.current = key;
+    (subjects: Record<string, string>, trIds: Set<string>, defaultExcludedIds?: Set<string>) => {
+      const key = Object.keys(subjects).sort().join(",") + "|" + [...trIds].sort().join(",") + "|" + (defaultExcludedIds ? [...defaultExcludedIds].sort().join(",") : "");
 
       setEarlyDeathSubjectsRaw(subjects);
       setTrEarlyDeathIdsRaw(trIds);
       // Only reset exclusions when subject set changes (new study or first init).
       // Re-init with same subjects (e.g. navigating between views) preserves user toggles.
-      if (isNew) {
-        setExcludedSubjects(trIds.size > 0 ? new Set(trIds) : EMPTY_SET);
-      }
+      setInitializedKey(prev => {
+        if (prev !== key) {
+          const defaults = defaultExcludedIds ?? trIds;
+          setExcludedSubjects(defaults.size > 0 ? new Set(defaults) : EMPTY_SET);
+        }
+        return key;
+      });
     },
     [],
   );
