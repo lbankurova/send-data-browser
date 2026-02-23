@@ -191,7 +191,7 @@ Container: `ViewSection` component with `mode="fixed"`, title "Charts". Height m
 
 #### Effect Size Bar Chart (right panel, ECharts via `buildEffectSizeBarOption`)
 
-- Header: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` -- "Effect size (Cohen's d)"
+- Header: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` -- "Effect size ({method label})" where method label is dynamic from `getEffectSizeLabel(statMethods.effectSize)` (default: "Hedges' g")
 - Container: `<EChartsWrapper style={{ width: "100%", height: 220 }}>`
 - Reference lines: markLine on first series -- dashed lines at d=0.5 (`#d1d5db`), d=0.8 (`#9ca3af`, labeled "d=0.8"), d=-0.5, d=-0.8 (labeled "d=-0.8")
 - Bar: one series per sex, `barMaxWidth: 30`, sex-colored fill, `opacity: 0.8`
@@ -268,9 +268,14 @@ Shows a loading spinner when subject data is being fetched (`subjLoading`).
 - Subject traces: when "Show subjects" is active, low-opacity (0.3) thin lines per subject, colored by dose group, clickable -- clicking triggers `onSubjectClick(params.seriesName)` via chart onClick handler
 - Reference line: baseline (absolute mode) or 0% (pct modes) dashed markLine
 
+**Recovery boundary marker:** When `lastDosingDay` is available (study has recovery arms and `include_recovery` is active), a vertical dashed amber line (`border-l border-dashed border-amber-500`) is rendered at the dosing boundary via `markLine` in ECharts.
+
+**Include recovery toggle:** When study metadata indicates recovery arms exist (`dose_groups` has `recovery_armcd` entries), a checkbox "Include recovery" appears in the timecourse section header. Toggling it fetches timecourse data with `include_recovery=true`, extending the X-axis to show recovery-period data points.
+
 **Timecourse legend:** `flex items-center justify-center gap-3 border-b px-2 py-1 text-[10px] text-muted-foreground`
 - Dose level lines: `h-0.5 w-3 rounded` colored by dose group color
 - Baseline (absolute mode): dashed border swatch
+- Recovery boundary (when active): `h-3 w-0 border-l border-dashed border-amber-500` -- labeled "Recovery boundary"
 
 **Subject count indicator:** when subjects are shown, centered text: "Showing {count} subjects -- Click a line to view subject profile"
 

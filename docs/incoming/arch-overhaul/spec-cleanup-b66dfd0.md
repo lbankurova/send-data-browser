@@ -13,9 +13,9 @@
 | High | 0 |
 | Medium | 30 |
 | Low | 62 |
-| Deferred | 9 |
-| **Total open** | **95** |
-| ~~Resolved~~ | ~~32~~ |
+| Deferred | 8 |
+| **Total open** | **94** |
+| ~~Resolved~~ | ~~33~~ |
 
 *Updated 2026-02-18: MDI-1–5, SIL-1/2/4/7 resolved (Phases 3–7 complete). MDI-7→Deferred, MDI-8/9→Medium.*
 *Updated 2026-02-18: MDI-8, SIL-3, SIL-5, SIL-8 resolved (51c0949). ECGInterpretation, humanNonRelevance, CL wiring, interp tests.*
@@ -30,6 +30,7 @@
 *Updated 2026-02-20: XS09 Organ Proportionality Index (OPI) analysis — new `organ-proportionality.ts` module, OPI pane in SyndromeContextPanel, sticky header narrative, recovery/histopath context integration. Source: `xs09-agent-prompt.md`.*
 *Updated 2026-02-20: TK satellite detection and exclusion (63ae665) — fixed `_parse_tx()` to detect TK via param value (not presence), eliminated ARMCD collision by excluding TK from tx_map, added `~is_satellite` filter to all 12 findings modules + FW + mortality + DD. Group N corrected from 30→20 for PointCross dose groups 2-4. StudyBanner shows exclusion count. Source: `tk-satellite-detection-spec.md`.*
 *Updated 2026-02-22: Study Summary Signals→NOAEL merge — SS-2, SS-5 resolved. Signals tab removed from Study Summary (now 2-tab: Details + Cross-Study). Signal content (statements, protective signals, signal matrix, metrics, rules) merged into NOAEL Decision view (now 5-tab). SignalsPanel.tsx + StudySummaryContextPanel.tsx deleted. Study Profile Block, StudyTimeline SVG, Data Quality section added to Study Details tab.*
+*Updated 2026-02-23: RDC-2 resolved (4181435) — "Include recovery" checkbox in timecourse section + recovery boundary markLine in DoseResponseView.*
 
 ---
 
@@ -158,7 +159,7 @@
 | # | Issue | File | Severity | Source |
 |---|-------|------|----------|--------|
 | RDC-1 | D2: Stable Y-axis frame when switching findings (Y-axis jumps) | — | Medium | arch-overhaul |
-| RDC-2 | Recovery toggle/filter in chart controls (speculative requirement) | — | Deferred | arch-overhaul |
+| ~~RDC-2~~ | ~~Recovery toggle/filter in chart controls (speculative requirement)~~ | ~~`DoseResponseView.tsx`~~ | ~~Deferred~~ | **DONE** (4181435) — "Include recovery" checkbox in timecourse section + recovery boundary markLine |
 
 ### Spec gaps — pattern-classification-prototype-spec.md
 

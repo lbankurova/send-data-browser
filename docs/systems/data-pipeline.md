@@ -249,14 +249,26 @@ The `subjects` DataFrame includes columns: `USUBJID`, `SEX`, `ARMCD`, `dose_leve
 
 All statistical tests are computed **separately by sex** (M and F independently). Longitudinal domains (LB, BW, FW) are additionally stratified by study day. Terminal domains (MI, MA, OM) are analyzed once per specimen x sex.
 
-**Recovery-arm and TK satellite subjects are excluded from all computations:**
+**Subject filtering is phase-aware (DATA-01).** TK satellites are always excluded. Recovery animals are handled differently by domain type:
+
+**In-life domains (BW, LB, CL, FW, BG, EG, VS):** Recovery animals are pooled with main study animals during the treatment period. Their records are filtered to `day <= last_dosing_day` so only treatment-period data contributes to statistics.
+
+```python
+from services.analysis.phase_filter import get_treatment_subjects, filter_treatment_period_records
+
+treatment_subs = get_treatment_subjects(subjects)  # main + recovery, exclude satellites
+domain_df = domain_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+domain_df = filter_treatment_period_records(domain_df, subjects, day_col, last_dosing_day)
+```
+
+**Terminal domains (MI, MA, OM, TF) and mortality (DS, DD):** Recovery animals are excluded (different sacrifice timing). Uses the legacy filter:
 
 ```python
 main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
 domain_df = domain_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 ```
 
-This filter is applied in all 12 domain findings modules (LB, BW, OM, MI, MA, CL, FW, DS, EG, VS, BG, TF), the mortality pipeline (`mortality.py`, `findings_dd.py`), and the food consumption summary (`food_consumption_summary.py`).
+**`last_dosing_day`** is computed once per study by `phase_filter.compute_last_dosing_day()` from TE/TA epoch structure (primary) or TS.DOSDUR (fallback). If unavailable, recovery records are excluded entirely (safe fallback). See `docs/knowledge/methods.md` DATA-01 for details.
 
 #### Common Finding Structure
 
@@ -305,16 +317,20 @@ Every domain module produces findings with this common structure:
 
 **Pairwise tests (each treated dose_level vs. control, dose_level=0):**
 
+Primary method: `dunnett_pairwise(control_values, treated_groups)` (STAT-07, REM-28). Dunnett's p-values are already FWER-controlled, so `p_value_adj = p_value`.
+
 | Field | Computation |
 |-------|-------------|
-| `p_value` | `welch_t_test(treat_vals, control_values)["p_value"]` |
-| `statistic` | `welch_t_test(treat_vals, control_values)["statistic"]` |
-| `cohens_d` | `round(cohens_d(treat_vals, control_values), 4)` |
-| `p_value_adj` | Bonferroni-corrected p_value |
+| `dose_level` | Treated group dose level |
+| `p_value` | Dunnett's test p-value (FWER-controlled) |
+| `p_value_adj` | Same as `p_value` (Dunnett's controls FWER inherently) |
+| `statistic` | `None` (Dunnett's doesn't provide per-comparison statistics) |
+| `cohens_d` | Hedges' g bias-corrected effect size (STAT-12) |
+| `p_value_welch` | Raw Welch's t-test p-value (STAT-13, for alternative multiplicity corrections) |
 
 Minimum group size: control must have n >= 2 for any pairwise tests to run.
 
-**Trend test:** `trend_test(dose_groups_values)` -- Spearman correlation between dose level (ordinal) and individual values. Requires >= 2 dose groups.
+**Trend test:** `trend_test(dose_groups_values)` -- Jonckheere-Terpstra (STAT-04, REM-29) for ordered independent groups. Requires >= 2 dose groups.
 
 **Direction:**
 ```python
@@ -1121,7 +1137,7 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 - Single study only (`ALLOWED_STUDIES = {"PointCross"}`)
 - No incremental recomputation -- full pipeline reruns on each generation
 - FW domain only in generator pipeline, not in on-demand adverse effects pipeline
-- Recovery subjects excluded from generator pipeline statistics (per SEND standard). Recovery reversibility assessments computed frontend-side via `lib/recovery-assessment.ts` using subject-level data from the temporal API.
+- Recovery subjects pooled with main study during treatment period for in-life domains (DATA-01). Terminal domains (MI, MA, OM, TF) and mortality (DS, DD) remain main-study-only. Recovery reversibility assessments computed frontend-side via `lib/recovery-assessment.ts` using subject-level data from the temporal API.
 - TK satellite subjects excluded from all statistical analyses. Detected via TX domain heuristics (TXPARMCD values, SETCD substring, label keywords) and classified via DM.SETCD membership. Frontend `StudyBanner` displays exclusion count for reviewer transparency.
 
 ---
@@ -1176,14 +1192,15 @@ activeFindings                         ← consumed by all downstream useMemo ch
 | `generator/static_charts.py` | HTML bar chart generation | `generate_target_organ_bar_chart(target_organs)` |
 | `services/xpt_processor.py` | XPT loading, CSV caching, TS metadata extraction | `read_xpt(xpt_path)`, `ensure_cached(study, domain)`, `extract_full_ts_metadata(study)` |
 | `services/analysis/dose_groups.py` | Dose group construction from DM+TX, TK satellite detection | `_parse_tx(study)` → `(tx_map, tk_setcds)`, `build_dose_groups(study)` → `{dose_groups, subjects, tx_map, tk_count}` |
-| `services/analysis/findings_lb.py` | LB domain continuous analysis | `compute_lb_findings(study, subjects)` |
-| `services/analysis/findings_bw.py` | BW domain continuous analysis with baseline % change | `compute_bw_findings(study, subjects)` |
+| `services/analysis/phase_filter.py` | Phase-aware subject/record filtering (DATA-01) | `get_treatment_subjects()`, `get_terminal_subjects()`, `filter_treatment_period_records()`, `compute_last_dosing_day()` |
+| `services/analysis/findings_lb.py` | LB domain continuous analysis | `compute_lb_findings(study, subjects, last_dosing_day)` |
+| `services/analysis/findings_bw.py` | BW domain continuous analysis with baseline % change | `compute_bw_findings(study, subjects, last_dosing_day)` |
 | `services/analysis/findings_om.py` | OM domain continuous analysis with relative organ weight | `compute_om_findings(study, subjects)` |
 | `services/analysis/findings_mi.py` | MI domain incidence + severity analysis | `compute_mi_findings(study, subjects)` |
 | `services/analysis/findings_ma.py` | MA domain incidence analysis | `compute_ma_findings(study, subjects)` |
 | `services/analysis/findings_cl.py` | CL domain incidence analysis | `compute_cl_findings(study, subjects)` |
 | `services/analysis/findings_ds.py` | DS domain mortality incidence analysis | `compute_ds_findings(study, subjects)` |
-| `services/analysis/statistics.py` | Pure function wrappers for all statistical tests | `welch_t_test()`, `welch_pairwise()`, `fisher_exact_2x2()`, `trend_test()`, `trend_test_incidence()`, `cohens_d()`, `spearman_correlation()`, `bonferroni_correct()`, `mann_whitney_u()` |
+| `services/analysis/statistics.py` | Pure function wrappers for all statistical tests | `dunnett_pairwise()`, `welch_pairwise()`, `welch_t_test()`, `fisher_exact_2x2()`, `trend_test()`, `trend_test_incidence()`, `cohens_d()`, `spearman_correlation()`, `severity_trend()`, `bonferroni_correct()`, `mann_whitney_u()` |
 | `services/analysis/classification.py` | Finding classification (severity, pattern, treatment-related) | `classify_severity(finding)`, `classify_dose_response(group_stats, data_type)`, `determine_treatment_related(finding)` |
 | `services/analysis/send_knowledge.py` | Static SEND domain knowledge tables | `BIOMARKER_MAP`, `ORGAN_SYSTEM_MAP`, `THRESHOLDS`, `DOMAIN_EFFECT_THRESHOLDS` |
 | `services/analysis/unified_findings.py` | On-demand adverse effects orchestrator with caching | `compute_adverse_effects(study)` |
