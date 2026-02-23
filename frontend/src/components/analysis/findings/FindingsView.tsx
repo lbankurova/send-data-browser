@@ -366,13 +366,19 @@ export function FindingsView() {
   useEffect(() => {
     if (mortalityData) {
       const earlyDeaths = mortalityData.early_death_subjects ?? {};
-      // TR early deaths: from mortality.deaths (not recovery), present in early_death_subjects
+      // TR IDs for scheduled-only toggle: main-study TR deaths only (recovery animals
+      // are already excluded from terminal domains by arm filtering — DATA-01)
       const trIds = new Set(
         mortalityData.deaths
           .filter(d => !d.is_recovery && d.USUBJID in earlyDeaths)
           .map(d => d.USUBJID),
       );
-      setEarlyDeathSubjects(earlyDeaths, trIds);
+      // Default exclusion: TR deaths + recovery deaths (both default to excluded in UI)
+      const recoveryDeathIds = mortalityData.deaths
+        .filter(d => d.is_recovery)
+        .map(d => d.USUBJID);
+      const defaultExcluded = new Set([...trIds, ...recoveryDeathIds]);
+      setEarlyDeathSubjects(earlyDeaths, trIds, defaultExcluded);
     }
   }, [mortalityData, setEarlyDeathSubjects]);
 
