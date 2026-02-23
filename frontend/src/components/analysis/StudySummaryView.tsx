@@ -1020,6 +1020,9 @@ function DetailsTab({
             doseGroups={doseGroups}
             dosingDurationWeeks={studyCtx.dosingDurationWeeks}
             recoveryPeriodDays={studyCtx.recoveryPeriodDays ?? 0}
+            treatmentRelatedDeaths={mortalityData?.deaths}
+            accidentalDeaths={mortalityData?.accidentals}
+            excludedSubjects={excludedSubjects}
           />
         </section>
       )}
