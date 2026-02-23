@@ -1126,6 +1126,44 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 
 ---
 
+## Frontend Transform Pipeline
+
+After the backend delivers `UnifiedFinding[]` to the frontend, `useFindingsAnalyticsLocal.ts` applies a chain of client-side transforms before passing data to downstream derivations (endpoint summaries, organ coherence, syndromes, signal scores, NOAEL). The transforms operate on `UnifiedFinding[]` at the array level, preserving the same pattern as the backend pipeline.
+
+```
+API response (UnifiedFinding[])
+  │
+  ├─ sex filter, domain filter, search filter
+  │
+  ▼
+scheduledFindings                      ← applyScheduledFilter() swaps group_stats/pairwise
+  │                                      for terminal domains when mortality exclusion enabled
+  ▼
+applyEffectSizeMethod(method)          ← recomputes pairwise[].cohens_d + max_effect_size
+  │                                      from group_stats[].n, .mean, .sd
+  │                                      Fast path: "hedges-g" returns input by reference (no-op)
+  ▼
+applyMultiplicityMethod(method)        ← recomputes p_value_adj + min_p_adj from p_value_welch
+  │                                      Fast path: "dunnett-fwer" returns input by reference (no-op)
+  ▼
+activeFindings                         ← consumed by all downstream useMemo chains:
+                                         deriveEndpointSummaries(), organCoherence,
+                                         crossDomainSyndromes, signal scores, NOAEL
+```
+
+**Transform composition order matters:** Scheduled filter runs first because it swaps the underlying `group_stats` arrays. Effect size recomputation uses those (possibly swapped) stats. Multiplicity correction uses `p_value_welch` from the (possibly swapped) pairwise arrays.
+
+**Session state keys:** Method preferences stored via `useSessionState()`:
+- `pcc.${studyId}.effectSize` — `"hedges-g"` (default) | `"cohens-d"` | `"glass-delta"`
+- `pcc.${studyId}.multiplicity` — `"dunnett-fwer"` (default) | `"bonferroni"`
+
+**Files:**
+- `lib/stat-method-transforms.ts` — pure transform functions (no React dependencies)
+- `hooks/useStatMethods.ts` — reads session state, returns `{ effectSize, multiplicity }`
+- `hooks/useFindingsAnalyticsLocal.ts` — wires transforms into the derivation pipeline
+
+---
+
 ## Code Map
 
 | File | What It Does | Key Functions |
@@ -1145,7 +1183,7 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 | `services/analysis/findings_ma.py` | MA domain incidence analysis | `compute_ma_findings(study, subjects)` |
 | `services/analysis/findings_cl.py` | CL domain incidence analysis | `compute_cl_findings(study, subjects)` |
 | `services/analysis/findings_ds.py` | DS domain mortality incidence analysis | `compute_ds_findings(study, subjects)` |
-| `services/analysis/statistics.py` | Pure function wrappers for all statistical tests | `welch_t_test()`, `fisher_exact_2x2()`, `trend_test()`, `trend_test_incidence()`, `cohens_d()`, `spearman_correlation()`, `bonferroni_correct()`, `mann_whitney_u()` |
+| `services/analysis/statistics.py` | Pure function wrappers for all statistical tests | `welch_t_test()`, `welch_pairwise()`, `fisher_exact_2x2()`, `trend_test()`, `trend_test_incidence()`, `cohens_d()`, `spearman_correlation()`, `bonferroni_correct()`, `mann_whitney_u()` |
 | `services/analysis/classification.py` | Finding classification (severity, pattern, treatment-related) | `classify_severity(finding)`, `classify_dose_response(group_stats, data_type)`, `determine_treatment_related(finding)` |
 | `services/analysis/send_knowledge.py` | Static SEND domain knowledge tables | `BIOMARKER_MAP`, `ORGAN_SYSTEM_MAP`, `THRESHOLDS`, `DOMAIN_EFFECT_THRESHOLDS` |
 | `services/analysis/unified_findings.py` | On-demand adverse effects orchestrator with caching | `compute_adverse_effects(study)` |
@@ -1172,5 +1210,6 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 
 ## Changelog
 
+- 2026-02-22: Added frontend transform pipeline documentation. Backend: `welch_pairwise()` added to statistics.py and called in 6 continuous domain modules (LB, BW, OM, EG, VS, BG) to store raw Welch p-values as `p_value_welch` alongside Dunnett-corrected p-values. Frontend: client-side effect size switching (Hedges' g / Cohen's d / Glass's Δ) and multiplicity switching (Dunnett FWER / Bonferroni) via transform pipeline in useFindingsAnalyticsLocal.ts.
 - 2026-02-20: Added TK satellite detection and segregation (63ae665). Phase 1 Step 4a documents waterfall heuristics (TK param value, SETCD substring, label keywords), ARMCD collision avoidance, SETCD-based subject classification. Phase 2 subject filter updated from `~is_recovery` to `~is_recovery & ~is_satellite` across all 12 domain modules + mortality + food consumption. Output contract updated: `tk_count` added, subjects DataFrame columns documented.
 - 2026-02-08: Consolidated from `data-pipeline-spec.md` (1,452 lines) and actual backend code. Verified all function signatures, column names, thresholds, and formulas against source. Corrected Phase numbering (generator has 4 phases in code, spec had 6 -- reconciled as Phases 1-6 covering loading, stats, classification, view assembly, rules, static charts). Added on-demand adverse effects pipeline documentation. Added complete code map with all function names.

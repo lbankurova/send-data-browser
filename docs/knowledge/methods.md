@@ -208,7 +208,55 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Alternatives considered:** Uncorrected Cohen's d (biased high for small n, previously used). Glass's delta (uses only control SD — biased when treatment changes variance).
 
-**Consumers:** All continuous pairwise comparisons (LB, BW, OM, FW). Max |g| feeds severity classification (CLASS-01) and signal scoring (METRIC-01). Thresholds used across the system: 0.5 (meaningful), 0.8 (strong), 1.0 (very strong), 2.0 (extreme). Review packet column header: "Effect Size (g)".
+**Consumers:** All continuous pairwise comparisons (LB, BW, OM, FW, EG, VS, BG). Max |g| feeds severity classification (CLASS-01) and signal scoring (METRIC-01). Thresholds used across the system: 0.5 (meaningful), 0.8 (strong), 1.0 (very strong), 2.0 (extreme). Review packet column header: "Effect Size (g)".
+
+**Frontend switching:** Users can switch to alternative effect size methods (STAT-12b, STAT-12c) via the Study Details context panel. See below.
+
+---
+
+### STAT-12b — Cohen's d Effect Size (uncorrected)
+
+**Purpose:** Standardized mean difference using pooled SD, without small-sample bias correction.
+
+**Implementation:** Frontend-only — `computeEffectSize("cohens-d", ...)` in `lib/stat-method-transforms.ts`. Not computed by the backend. The frontend recomputes from existing `group_stats[].n`, `.mean`, `.sd` values when the user selects this method.
+
+**Parameters:** `d = (mean_treated - mean_control) / SD_pooled`, where `SD_pooled = sqrt(((n1-1)*s1² + (n2-1)*s2²) / (n1 + n2 - 2))`. Minimum n=2 per group. Returns null if pooled SD = 0.
+
+**Why available:** Cohen's d is the most widely cited effect size metric in the literature. Some reviewers prefer it for comparability with published benchmarks. For large samples (n > 20), the difference from Hedges' g is negligible.
+
+**Trade-offs:** Overestimates effect size for small samples (n < 20), which are typical in preclinical studies. The bias is `1 + 3/(4*df - 1)` — approximately 8% at n=5 per group. STAT-12 (Hedges' g) remains the default for this reason.
+
+**References:** Cohen (1988), "Statistical Power Analysis for the Behavioral Sciences."
+
+---
+
+### STAT-12c — Glass's Δ Effect Size (control SD only)
+
+**Purpose:** Standardized mean difference using only the control group's SD, rather than pooled SD.
+
+**Implementation:** Frontend-only — `computeEffectSize("glass-delta", ...)` in `lib/stat-method-transforms.ts`. Not computed by the backend. Recomputes from existing `group_stats` when user selects this method.
+
+**Parameters:** `Δ = (mean_treated - mean_control) / SD_control`. Minimum n=2 for control group. Returns null if control SD = 0.
+
+**Why available:** When treatment affects both the mean and the variance of a measurement, pooled SD conflates two effects. Glass's Δ isolates the shift in central tendency by using only the unperturbed control SD as the denominator. Useful when treatment increases variability (e.g., some animals respond strongly while others don't).
+
+**Trade-offs:** Sensitive to control group SD estimation. With small control n (e.g., n=5), the SD estimate is noisy, making Δ less stable than pooled-SD methods. Also does not account for small-sample bias (no J correction).
+
+**References:** Glass (1976), "Primary, secondary, and meta-analysis of research." Glass, McGaw & Smith (1981).
+
+---
+
+### STAT-13 — Welch Pairwise (raw p-values for Bonferroni)
+
+**Purpose:** Provides raw (uncorrected) Welch t-test p-values for each treated-vs-control comparison, enabling frontend Bonferroni correction as an alternative multiplicity method.
+
+**Implementation:** `welch_pairwise(control, treated_groups)` in backend `statistics.py`. Calls `welch_t_test()` (STAT-01) for each treated group vs control. Results stored as `p_value_welch` field in each `PairwiseResult`.
+
+**Parameters:** Same as STAT-01 (Welch's t-test). Returns list of `{dose_level, p_value_welch}` dicts.
+
+**Why this method:** Dunnett's test (STAT-07) provides FWER-corrected p-values but they cannot be decomposed back into raw p-values for alternative corrections. By storing the raw Welch p-values alongside Dunnett-corrected p-values, the frontend can apply Bonferroni correction as `min(p_welch × k, 1.0)` where k = number of treated groups.
+
+**Consumers:** All 6 continuous domain modules (LB, BW, OM, EG, VS, BG) merge `p_value_welch` into their pairwise results. Frontend `applyMultiplicityMethod("bonferroni")` in `lib/stat-method-transforms.ts` reads these values.
 
 ---
 
@@ -235,6 +283,8 @@ This table documents which statistical test is applied to each endpoint type in 
 - Williams' test (optimal for monotonic dose-response) and Steel's test (nonparametric many-to-one) are not implemented. Dunnett's (STAT-07, REM-28) handles the pairwise many-to-one case; JT (STAT-04, REM-29) handles the trend case.
 - MI severity grading uses numerical avg_severity (1–5 scale) but no formal ordinal statistical test is applied to the grades in the active pipeline.
 - No multiplicity correction is applied within domains for incidence tests (see STAT-03 design note).
+
+**User-switchable methods:** Effect size (STAT-12 default, STAT-12b, STAT-12c) and multiplicity correction (STAT-07 Dunnett default, Bonferroni via STAT-13 raw Welch p-values) are switchable at runtime via the Study Details context panel. Frontend transforms recompute `pairwise[].cohens_d`, `max_effect_size`, `p_value_adj`, and `min_p_adj` from stored group_stats and p_value_welch. Severity classification and NOAEL may shift when methods change — this is intentional.
 
 ---
 
