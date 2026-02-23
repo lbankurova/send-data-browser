@@ -266,7 +266,7 @@ export function FindingsView() {
               {" "}
               <span className="font-medium">{selectedPointData.label}</span>
               {sep}
-              <span className="font-mono" title="Cohen's d — standardized effect size. Negative = decrease, positive = increase.">d={formatEffectSize(selectedPointData.effectSize)}</span>
+              <span className="font-mono" title="Hedges' g — bias-corrected standardized effect size. Negative = decrease, positive = increase.">g={formatEffectSize(selectedPointData.effectSize)}</span>
               {sep}
               <span className="font-mono">
                 p={formatPValue(selectedPointData.rawP)}

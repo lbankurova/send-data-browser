@@ -8,13 +8,7 @@ import { useSessionState } from "@/hooks/useSessionState";
 import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FilterSelect } from "@/components/ui/FilterBar";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -26,8 +20,8 @@ function SettingsRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 py-1 text-xs">
-      <span className="text-muted-foreground">{label}</span>
+    <div className="flex items-center gap-2 py-1 text-xs">
+      <span className="w-28 shrink-0 text-muted-foreground">{label}</span>
       <div className="shrink-0">{children}</div>
     </div>
   );
@@ -45,24 +39,19 @@ function SettingsSelect({
   confirmMessage?: string;
 }) {
   return (
-    <Select
+    <FilterSelect
       value={value}
-      onValueChange={(v) => {
+      onChange={(e) => {
         if (confirmMessage && !window.confirm(confirmMessage)) return;
-        onChange(v);
+        onChange(e.target.value);
       }}
     >
-      <SelectTrigger size="sm" className="h-6 gap-1 px-1.5 text-xs shadow-none">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((o) => (
-          <SelectItem key={o.value} value={o.value} className="text-xs">
-            {o.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </FilterSelect>
   );
 }
 
@@ -120,6 +109,18 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const [incidenceTest, setIncidenceTest] = useSessionState(
     `pcc.${studyId}.incidenceTest`,
     "fisher",
+  );
+  const [incidenceTrend, setIncidenceTrend] = useSessionState(
+    `pcc.${studyId}.incidenceTrend`,
+    "cochran-armitage",
+  );
+  const [multiplicity, setMultiplicity] = useSessionState(
+    `pcc.${studyId}.multiplicity`,
+    "dunnett-fwer",
+  );
+  const [effectSize, setEffectSize] = useSessionState(
+    `pcc.${studyId}.effectSize`,
+    "hedges-g",
   );
   const [recoveryOverride, setRecoveryOverride] = useSessionState<boolean>(
     `pcc.${studyId}.recoveryOverride`,
@@ -251,15 +252,15 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       </CollapsiblePane>
 
       {/* ── Statistical methods ────────────────────────── */}
-      <CollapsiblePane title="Statistical methods" variant="margin" defaultOpen={false}>
+      <CollapsiblePane title="Statistical methods" variant="margin">
         <div className="space-y-0.5">
           <SettingsRow label="Pairwise test">
             <SettingsSelect
               value={pairwiseTest}
               options={[
                 { value: "dunnett", label: "Dunnett (default)" },
-                { value: "dunn", label: "Dunn" },
-                { value: "tukey", label: "Tukey" },
+                { value: "williams", label: "Williams" },
+                { value: "steel", label: "Steel" },
               ]}
               onChange={setPairwiseTest}
             />
@@ -269,8 +270,8 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               value={trendTest}
               options={[
                 { value: "jonckheere", label: "Jonckheere-Terpstra (default)" },
-                { value: "cochran-armitage", label: "Cochran-Armitage" },
-                { value: "linear-contrast", label: "Linear contrast" },
+                { value: "cuzick", label: "Cuzick" },
+                { value: "williams-trend", label: "Williams (parametric)" },
               ]}
               onChange={setTrendTest}
             />
@@ -280,9 +281,43 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               value={incidenceTest}
               options={[
                 { value: "fisher", label: "Fisher exact (default)" },
-                { value: "cochran-armitage", label: "Cochran-Armitage" },
+                { value: "chi-square", label: "Chi-square" },
+                { value: "barnard", label: "Barnard exact" },
               ]}
               onChange={setIncidenceTest}
+            />
+          </SettingsRow>
+          <SettingsRow label="Incidence trend">
+            <SettingsSelect
+              value={incidenceTrend}
+              options={[
+                { value: "cochran-armitage", label: "Cochran-Armitage (default)" },
+                { value: "logistic-slope", label: "Logistic regression" },
+              ]}
+              onChange={setIncidenceTrend}
+            />
+          </SettingsRow>
+          <SettingsRow label="Multiplicity">
+            <SettingsSelect
+              value={multiplicity}
+              options={[
+                { value: "dunnett-fwer", label: "Dunnett FWER (default)" },
+                { value: "bonferroni", label: "Bonferroni" },
+                { value: "holm-sidak", label: "Holm-Sidak" },
+                { value: "bh-fdr", label: "Benjamini-Hochberg FDR" },
+              ]}
+              onChange={setMultiplicity}
+            />
+          </SettingsRow>
+          <SettingsRow label="Effect size">
+            <SettingsSelect
+              value={effectSize}
+              options={[
+                { value: "hedges-g", label: "Hedges' g (default)" },
+                { value: "cohens-d", label: "Cohen's d" },
+                { value: "glass-delta", label: "Glass's delta" },
+              ]}
+              onChange={setEffectSize}
             />
           </SettingsRow>
         </div>
