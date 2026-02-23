@@ -190,11 +190,6 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
   const hasMortality = mortality?.has_mortality && allDeaths.length > 0;
   const unit = mortality?.mortality_loael_label?.match(/\d[\d.]*\s*(mg\/kg|mg|µg\/kg|µg|g\/kg|g)/)?.[1] ?? "";
 
-  // NOAEL cap
-  const capLevel = mortality?.mortality_loael != null ? mortality.mortality_loael - 1 : null;
-  const capDose = capLevel != null ? mortality?.by_dose.find(b => b.dose_level === capLevel) : null;
-  const capLabel = capDose?.dose_value != null && unit ? `${capDose.dose_value} ${unit}` : null;
-
   // Summary reflects current inclusion state
   const includedCount = allDeaths.filter(d => !excludedSubjects.has(d.USUBJID)).length;
   const excludedCount = allDeaths.length - includedCount;
@@ -331,12 +326,6 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
         </div>
       )}
 
-      {/* NOAEL cap note */}
-      {capLabel && mortality?.mortality_loael != null && (
-        <div className="mt-1.5 text-[10px] text-muted-foreground">
-          NOAEL capped {"\u2264"} {capLabel} due to mortality at dose level {mortality.mortality_loael}
-        </div>
-      )}
     </CollapsiblePane>
   );
 }
