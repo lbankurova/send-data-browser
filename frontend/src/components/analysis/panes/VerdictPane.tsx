@@ -246,7 +246,7 @@ export function VerdictPane({
   // Key numbers
   const isContinuous = statistics?.data_type === "continuous";
   const effectSize = finding.max_effect_size;
-  const effectLabel = isContinuous ? "Cohen\u2019s d" : "Avg severity";
+  const effectLabel = isContinuous ? "Hedges\u2019 g" : "Avg severity";
   const effectMag = effectSize != null ? getEffectMagnitudeLabel(effectSize) : null;
 
   const trendP = doseResponse?.trend_p ?? statistics?.trend_p ?? null;

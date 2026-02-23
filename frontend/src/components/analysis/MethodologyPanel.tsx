@@ -59,8 +59,8 @@ export function MethodologyPanel({ expandAll, collapseAll }: Props) {
         <MethodSection title="Pairwise comparisons">
           <div>
             <span className="font-medium text-foreground">Continuous endpoints</span> (LB, BW, OM, FW):
-            Welch&apos;s t-test (unequal variance) comparing each treated group vs. control.
-            Min n &ge; 2 per group. <Ref>scipy.stats.ttest_ind, equal_var=False</Ref>
+            Dunnett&apos;s test &mdash; many-to-one comparisons of each treated group vs. control with
+            family-wise error rate control. Min n &ge; 2 per group. <Ref>scipy.stats.dunnett</Ref>
           </div>
           <div>
             <span className="font-medium text-foreground">Incidence endpoints</span> (MI, MA, CL, DS):
@@ -72,44 +72,43 @@ export function MethodologyPanel({ expandAll, collapseAll }: Props) {
         {/* Multiplicity adjustment */}
         <MethodSection title="Multiplicity adjustment">
           <div>
-            <span className="font-medium text-foreground">Continuous domains:</span> Bonferroni correction
-            applied to pairwise p-values. p<sub>adj</sub> = min(p &times; n<sub>tests</sub>, 1.0).
+            <span className="font-medium text-foreground">Continuous domains:</span> Dunnett&apos;s test
+            inherently controls FWER for many-to-one comparisons. p<sub>adj</sub> = Dunnett-corrected p-value.
+            Bonferroni applied only as fallback if Dunnett fails.
           </div>
           <div>
             <span className="font-medium text-foreground">Incidence domains:</span> No correction applied.
             Each histopathological finding is a distinct biological observation, not part of a test battery.
             Consistent with FDA/EMA guidance for histopathology review.
           </div>
-          <div>
-            Additional: Dunnett&apos;s test provides family-wise error control for continuous many-to-one
-            comparisons. <Ref>scipy.stats.dunnett</Ref>
-          </div>
         </MethodSection>
 
         {/* Effect size */}
         <MethodSection title="Effect size">
           <div>
-            <span className="font-medium text-foreground">Cohen&apos;s d</span> (pooled standard deviation):
-            d = (mean<sub>treated</sub> &minus; mean<sub>control</sub>) / s<sub>pooled</sub>
+            <span className="font-medium text-foreground">Hedges&apos; g</span> (bias-corrected pooled SD):
+            g = d &times; J, where d = (mean<sub>treated</sub> &minus; mean<sub>control</sub>) / s<sub>pooled</sub>,
+            J = 1 &minus; 3/(4df &minus; 1)
           </div>
           <div>
-            s<sub>pooled</sub> = &radic;(((n<sub>1</sub>&minus;1)&sdot;s<sub>1</sub>&sup2; + (n<sub>2</sub>&minus;1)&sdot;s<sub>2</sub>&sup2;) / (n<sub>1</sub>+n<sub>2</sub>&minus;2))
+            s<sub>pooled</sub> = &radic;(((n<sub>1</sub>&minus;1)&sdot;s<sub>1</sub>&sup2; + (n<sub>2</sub>&minus;1)&sdot;s<sub>2</sub>&sup2;) / (n<sub>1</sub>+n<sub>2</sub>&minus;2)).
+            The Hedges correction J compensates for upward bias with small n (typical in preclinical studies).
           </div>
           <div>
-            Thresholds: |d| &ge; 0.5 moderate, |d| &ge; 1.0 large. Cap at |d| = 2.0 in signal score.
+            Thresholds: |g| &ge; 0.5 moderate, |g| &ge; 1.0 large. Cap at |g| = 2.0 in signal score.
           </div>
         </MethodSection>
 
         {/* Trend tests */}
         <MethodSection title="Dose-response trend">
           <div>
-            <span className="font-medium text-foreground">Continuous:</span> Spearman rank correlation
-            between dose levels and response values (proxy for Jonckheere-Terpstra).
-            Min 4 total observations. <Ref>scipy.stats.spearmanr</Ref>
+            <span className="font-medium text-foreground">Continuous:</span> Jonckheere-Terpstra trend test &mdash;
+            nonparametric test for monotonic dose-response across ordered groups.
+            Min 2 groups, 4 total observations. Normal approximation for p-value. <Ref>custom JT implementation</Ref>
           </div>
           <div>
-            <span className="font-medium text-foreground">Incidence:</span> Cochran-Armitage trend test
-            (chi-square approximation) using ordinal dose scores [0, 1, ..., k&minus;1].
+            <span className="font-medium text-foreground">Incidence:</span> Cochran-Armitage-like trend test
+            (chi-square linear contrast approximation) using ordinal dose scores [0, 1, ..., k&minus;1].
           </div>
           <div>
             Significance threshold: trend p &lt; 0.05.
@@ -206,7 +205,7 @@ export function MethodologyPanel({ expandAll, collapseAll }: Props) {
             <div>&bull; Bonferroni correction per Dunn (1961)</div>
             <div>&bull; Dunnett&apos;s test per Dunnett (1955, 1964)</div>
             <div>&bull; Cochran-Armitage per Cochran (1954) and Armitage (1955)</div>
-            <div>&bull; Cohen&apos;s d per Cohen (1988) &mdash; &ldquo;Statistical Power Analysis for the Behavioral Sciences&rdquo;</div>
+            <div>&bull; Hedges&apos; g per Hedges (1981); Cohen&apos;s d base per Cohen (1988)</div>
             <div>&bull; FDA Guidance: &ldquo;Nonclinical Safety Evaluation of Drug or Biologic Combinations&rdquo; (2006)</div>
             <div>&bull; ICH S3A: &ldquo;Toxicokinetics&rdquo; (1994)</div>
           </div>
