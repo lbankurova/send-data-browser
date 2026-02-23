@@ -6,10 +6,11 @@ export function useTimecourseGroup(
   domain: string | undefined,
   testCode: string | undefined,
   sex?: "M" | "F",
+  includeRecovery?: boolean,
 ) {
   return useQuery({
-    queryKey: ["timecourse", studyId, domain, testCode, "group", sex],
-    queryFn: () => fetchTimecourseGroup(studyId!, domain!, testCode!, sex),
+    queryKey: ["timecourse", studyId, domain, testCode, "group", sex, includeRecovery],
+    queryFn: () => fetchTimecourseGroup(studyId!, domain!, testCode!, sex, includeRecovery),
     enabled: !!studyId && !!domain && !!testCode,
     staleTime: 5 * 60 * 1000,
   });
@@ -20,10 +21,11 @@ export function useTimecourseSubject(
   domain: string | undefined,
   testCode: string | undefined,
   sex?: "M" | "F",
+  includeRecovery?: boolean,
 ) {
   return useQuery({
-    queryKey: ["timecourse", studyId, domain, testCode, "subject", sex],
-    queryFn: () => fetchTimecourseSubject(studyId!, domain!, testCode!, sex),
+    queryKey: ["timecourse", studyId, domain, testCode, "subject", sex, includeRecovery],
+    queryFn: () => fetchTimecourseSubject(studyId!, domain!, testCode!, sex, includeRecovery),
     enabled: !!studyId && !!domain && !!testCode,
     staleTime: 5 * 60 * 1000,
   });

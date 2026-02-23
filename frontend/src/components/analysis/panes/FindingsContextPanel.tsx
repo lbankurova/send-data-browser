@@ -18,7 +18,9 @@ import { CorrelationsPane } from "./CorrelationsPane";
 import { ContextPane } from "./ContextPane";
 import { OrganContextPanel } from "./OrganContextPanel";
 import { SyndromeContextPanel } from "./SyndromeContextPanel";
+import { RecoveryPane } from "./RecoveryPane";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -33,6 +35,8 @@ export function FindingsContextPanel() {
   const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-finding");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
   const { useScheduledOnly: isScheduledOnly, hasEarlyDeaths } = useScheduledOnly();
+  const { data: studyMeta } = useStudyMetadata(studyId ?? "");
+  const hasRecovery = studyMeta?.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
 
   // When scheduled-only mode is active, swap statistics rows to scheduled variants
   const activeStatistics = useMemo(() => {
@@ -197,6 +201,13 @@ export function FindingsContextPanel() {
           selectedFindingId={selectedFindingId}
         />
       </CollapsiblePane>
+
+      {/* Recovery insights */}
+      {hasRecovery && selectedFinding && (
+        <CollapsiblePane title="Recovery" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <RecoveryPane finding={selectedFinding} />
+        </CollapsiblePane>
+      )}
 
       {/* Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>

@@ -12,6 +12,7 @@ import {
   describeThreshold,
 } from "@/lib/lab-clinical-catalog";
 import type { EndpointSummary } from "@/lib/derive-summaries";
+import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -246,7 +247,8 @@ export function VerdictPane({
   // Key numbers
   const isContinuous = statistics?.data_type === "continuous";
   const effectSize = finding.max_effect_size;
-  const effectLabel = isContinuous ? "Hedges\u2019 g" : "Avg severity";
+  const esMethod = analytics?.activeEffectSizeMethod ?? "hedges-g";
+  const effectLabel = isContinuous ? getEffectSizeLabel(esMethod) : "Avg severity";
   const effectMag = effectSize != null ? getEffectMagnitudeLabel(effectSize) : null;
 
   const trendP = doseResponse?.trend_p ?? statistics?.trend_p ?? null;
@@ -350,7 +352,7 @@ export function VerdictPane({
         <div className="mt-2 flex gap-x-4 text-[10px]">
           {effectSize != null && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold font-mono">|d| = {Math.abs(effectSize).toFixed(2)}</span>
+              <span className="text-sm font-semibold font-mono">|{isContinuous ? getEffectSizeSymbol(esMethod) : "d"}| = {Math.abs(effectSize).toFixed(2)}</span>
               <span className="text-[9px] text-muted-foreground">{effectLabel}</span>
               {effectMag && <span className="text-[9px] text-muted-foreground">({effectMag})</span>}
             </div>

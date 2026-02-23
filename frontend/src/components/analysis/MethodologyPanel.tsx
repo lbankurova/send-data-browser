@@ -6,12 +6,15 @@
  */
 import { useState } from "react";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
+import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
+import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 
 // ── Props ─────────────────────────────────────────────────────────────
 
 interface Props {
   expandAll?: number;
   collapseAll?: number;
+  activeEffectSizeMethod?: EffectSizeMethod;
 }
 
 // ── Sub-section helper ────────────────────────────────────────────────
@@ -46,7 +49,9 @@ function Ref({ children }: { children: React.ReactNode }) {
 
 // ── Component ─────────────────────────────────────────────────────────
 
-export function MethodologyPanel({ expandAll, collapseAll }: Props) {
+export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMethod }: Props) {
+  const esMethod = activeEffectSizeMethod ?? "hedges-g";
+  const esLabel = getEffectSizeLabel(esMethod);
   return (
     <CollapsiblePane
       title="Statistical methodology"
@@ -84,18 +89,30 @@ export function MethodologyPanel({ expandAll, collapseAll }: Props) {
         </MethodSection>
 
         {/* Effect size */}
-        <MethodSection title="Effect size">
-          <div>
+        <MethodSection title={`Effect size — ${esLabel}`}>
+          <div className={esMethod === "hedges-g" ? "border-l-2 border-primary pl-2" : "pl-2 opacity-60"}>
             <span className="font-medium text-foreground">Hedges&apos; g</span> (bias-corrected pooled SD):
             g = d &times; J, where d = (mean<sub>treated</sub> &minus; mean<sub>control</sub>) / s<sub>pooled</sub>,
-            J = 1 &minus; 3/(4df &minus; 1)
+            J = 1 &minus; 3/(4df &minus; 1).
+            {esMethod === "hedges-g" && <span className="ml-1 text-[9px] text-primary">(active)</span>}
+          </div>
+          <div className={esMethod === "cohens-d" ? "border-l-2 border-primary pl-2" : "pl-2 opacity-60"}>
+            <span className="font-medium text-foreground">Cohen&apos;s d</span> (uncorrected pooled SD):
+            d = (mean<sub>treated</sub> &minus; mean<sub>control</sub>) / s<sub>pooled</sub>.
+            No bias correction. May overestimate for small n.
+            {esMethod === "cohens-d" && <span className="ml-1 text-[9px] text-primary">(active)</span>}
+          </div>
+          <div className={esMethod === "glass-delta" ? "border-l-2 border-primary pl-2" : "pl-2 opacity-60"}>
+            <span className="font-medium text-foreground">Glass&apos;s &Delta;</span> (control SD only):
+            &Delta; = (mean<sub>treated</sub> &minus; mean<sub>control</sub>) / s<sub>control</sub>.
+            Preferred when treatment affects variance.
+            {esMethod === "glass-delta" && <span className="ml-1 text-[9px] text-primary">(active)</span>}
           </div>
           <div>
             s<sub>pooled</sub> = &radic;(((n<sub>1</sub>&minus;1)&sdot;s<sub>1</sub>&sup2; + (n<sub>2</sub>&minus;1)&sdot;s<sub>2</sub>&sup2;) / (n<sub>1</sub>+n<sub>2</sub>&minus;2)).
-            The Hedges correction J compensates for upward bias with small n (typical in preclinical studies).
           </div>
           <div>
-            Thresholds: |g| &ge; 0.5 moderate, |g| &ge; 1.0 large. Cap at |g| = 2.0 in signal score.
+            Thresholds: |effect| &ge; 0.5 moderate, |effect| &ge; 1.0 large. Cap at 2.0 in signal score.
           </div>
         </MethodSection>
 
