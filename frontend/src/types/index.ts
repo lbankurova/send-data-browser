@@ -21,6 +21,10 @@ export interface DoseGroup {
   n_male: number;
   n_female: number;
   n_total: number;
+  /** Treatment-period pooled N: main + recovery animals at same dose level */
+  pooled_n_male?: number;
+  pooled_n_female?: number;
+  pooled_n_total?: number;
   tk_count?: number;
   is_recovery?: boolean;
   recovery_armcd?: string | null;

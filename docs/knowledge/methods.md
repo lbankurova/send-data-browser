@@ -1534,3 +1534,31 @@ HED rounded to 4 decimals. MRSD rounded to 4 decimals. Status: "established" if 
 **Alternatives considered:** Allometric scaling by body weight (less accurate than BSA for most drug classes). PBPK modeling (requires detailed pharmacokinetic parameters, beyond scope of automated screening). Plasma exposure-based scaling (preferred when TK data available — see CLASS-17 for PK analysis).
 
 **References:** FDA Guidance for Industry: Estimating the Maximum Safe Starting Dose in Initial Clinical Trials for Therapeutics in Adult Healthy Volunteers (2005). See `dependencies.md` entry FDA-KM-SCALING.
+
+---
+
+## Data Pipeline Methods (DATA)
+
+### DATA-01 — Recovery Animal Treatment-Period Pooling
+
+**Purpose:** Pool recovery animals with main study animals during the treatment period for in-life domain statistics, increasing statistical power without introducing bias.
+
+**Implementation:** `backend/services/analysis/phase_filter.py` — `get_treatment_subjects()`, `filter_treatment_period_records()`, `compute_last_dosing_day()`. Called by all in-life domain findings modules (`findings_bw.py`, `findings_lb.py`, `findings_cl.py`, `findings_bg.py`, `findings_eg.py`, `findings_vs.py`) and `domain_stats.py` (FW inline).
+
+**Parameters:**
+- `last_dosing_day`: Study day of last dosing, derived from TE/TA epoch structure (primary) or TS.DOSDUR (fallback).
+- In-life domains (BW, LB, CL, FW, BG, EG, VS): recovery animals included, records filtered to day <= `last_dosing_day`.
+- Terminal domains (MI, MA, OM, TF): main-study-only (unchanged). Recovery animals sacrifice at different timepoints.
+- DS/DD: main-study-only (unchanged). Mortality is per-arm.
+
+**Behavior:**
+- `get_treatment_subjects(subjects)` returns all non-satellite subjects (main + recovery).
+- `filter_treatment_period_records(records, subjects, day_col, last_dosing_day)` keeps all main study records plus recovery records where `day_col <= last_dosing_day`.
+- If `last_dosing_day` is None (can't determine treatment period), recovery records are excluded (safe fallback).
+- `pooled_n_male/female/total` fields in dose_groups output reflect the pooled counts.
+
+**Why this method:** Recovery animals receive identical treatment during the dosing period. Excluding them from treatment-period statistics wastes valid data and reduces N per group. Pooling is standard practice in regulatory toxicology for in-life endpoints. Terminal domains cannot be pooled because sacrifice timing differs.
+
+**Alternatives considered:** Always exclude recovery (current legacy behavior — discards valid data). Per-endpoint toggle (deferred — pooling is the scientifically correct default).
+
+**References:** `docs/knowledge/recovery-animal-data-handling-spec.md`.

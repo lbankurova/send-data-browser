@@ -265,11 +265,11 @@
   ],
   "overall_assessment": {
     "bw_decreased": true,
-    "fw_decreased": false,
+    "fw_decreased": true,
     "fe_reduced": true,
-    "assessment": "primary_weight_loss",
+    "assessment": "malabsorption",
     "temporal_onset": "unknown",
-    "narrative": "Body weight decreased at high dose (-18%) while food consumption was minimally affected (-5%). Food efficiency markedly reduced (0.03 vs 0.47 control), indicating primary weight loss."
+    "narrative": "Both body weight and food consumption decreased, but food efficiency is also reduced. This pattern suggests malabsorption or metabolic disruption beyond simple palatability."
   },
   "water_consumption": null,
   "recovery": {
