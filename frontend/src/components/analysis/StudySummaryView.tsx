@@ -861,7 +861,7 @@ function DetailsTab({
                     </span>
                   </>
                 )}
-                {hasRecovery && ` \u00b7 Recovery: ${recoveryTotal}`}
+                {hasRecovery && ` \u00b7 Recovery: ${recoveryTotal} (pooled during treatment)`}
               </div>
               {hasRecovery && recoveryPeriodLabel && (
                 <div>

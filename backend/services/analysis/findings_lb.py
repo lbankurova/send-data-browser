@@ -8,12 +8,16 @@ from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, cohens_d, trend_test,
 )
+from services.analysis.phase_filter import (
+    get_treatment_subjects, filter_treatment_period_records,
+)
 
 
 def compute_lb_findings(
     study: StudyInfo,
     subjects: pd.DataFrame,
     excluded_subjects: set[str] | None = None,
+    last_dosing_day: int | None = None,
 ) -> list[dict]:
     """Compute findings from LB domain."""
     if "lb" not in study.xpt_files:
@@ -22,9 +26,9 @@ def compute_lb_findings(
     lb_df, _ = read_xpt(study.xpt_files["lb"])
     lb_df.columns = [c.upper() for c in lb_df.columns]
 
-    # Merge with subject info (main study only, exclude TK satellites)
-    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
-    lb_df = lb_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
+    treatment_subs = get_treatment_subjects(subjects)
+    lb_df = lb_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     # LB special case: only exclude early-death subjects from their terminal timepoint
     # (max VISITDY per subject), not from earlier longitudinal visits
@@ -34,6 +38,11 @@ def compute_lb_findings(
         terminal_mask = lb_df["LBDY"] == max_day
         exclude_mask = terminal_mask & lb_df["USUBJID"].isin(excluded_subjects)
         lb_df = lb_df[~exclude_mask]
+
+    # Filter recovery animals' records to treatment period only
+    if "LBDY" not in lb_df.columns:
+        lb_df["LBDY"] = pd.to_numeric(lb_df.get("LBDY", pd.Series(dtype=float)), errors="coerce")
+    lb_df = filter_treatment_period_records(lb_df, subjects, "LBDY", last_dosing_day)
 
     # Parse numeric result
     if "LBSTRESN" in lb_df.columns:

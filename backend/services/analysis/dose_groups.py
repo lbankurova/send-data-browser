@@ -187,6 +187,9 @@ def build_dose_groups(study: StudyInfo) -> dict:
     # Build dose groups summary (main study arms only)
     main_subjects = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]]
 
+    # Treatment-period subjects: main + recovery (for pooled N counts)
+    treatment_subjects = subjects[~subjects["is_satellite"]]
+
     # TK satellite counts per ARMCD: satellites share ARMCD with main arms
     tk_subjects = subjects[subjects["is_satellite"]]
     tk_per_armcd = tk_subjects.groupby("ARMCD").size().to_dict() if len(tk_subjects) > 0 else {}
@@ -208,6 +211,11 @@ def build_dose_groups(study: StudyInfo) -> dict:
             rec_armcd = candidate
             rec_n = int(len(recovery_subjects[recovery_subjects["ARMCD"] == candidate]))
 
+        # Pooled N: main + recovery animals at the same dose level
+        # (recovery animals share dose_level with their parent main arm)
+        dose_lvl = armcd_to_level.get(armcd, -1)
+        pooled = treatment_subjects[treatment_subjects["dose_level"] == dose_lvl]
+
         dose_groups.append({
             "dose_level": armcd_to_level.get(armcd, -1),
             "armcd": armcd,
@@ -217,6 +225,9 @@ def build_dose_groups(study: StudyInfo) -> dict:
             "n_male": int((arm_subs["SEX"] == "M").sum()),
             "n_female": int((arm_subs["SEX"] == "F").sum()),
             "n_total": len(arm_subs),
+            "pooled_n_male": int((pooled["SEX"] == "M").sum()),
+            "pooled_n_female": int((pooled["SEX"] == "F").sum()),
+            "pooled_n_total": len(pooled),
             "tk_count": int(tk_per_armcd.get(armcd, 0)),
             "is_recovery": False,
             "recovery_armcd": rec_armcd,
