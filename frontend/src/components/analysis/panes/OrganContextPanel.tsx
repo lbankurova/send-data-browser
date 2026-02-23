@@ -23,6 +23,8 @@ import type { EndpointSummary } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import { getSyndromeNearMissInfo } from "@/lib/cross-domain-syndromes";
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass, getClinicalTierCardBorderClass, getClinicalSeverityLabel } from "@/lib/lab-clinical-catalog";
+import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
+import { getTierSeverityLabel, getOrganCorrelationCategory } from "@/lib/organ-weight-normalization";
 import type { FindingsFilters, UnifiedFinding } from "@/types/analysis";
 
 // ─── Constants ─────────────────────────────────────────────
@@ -213,6 +215,18 @@ interface OrganContextPanelProps {
   organKey: string;
 }
 
+/** Map organ_system key → potential OM specimen names for normalization lookup */
+const ORGAN_SYSTEM_TO_SPECIMENS: Record<string, string[]> = {
+  hepatic: ["LIVER"],
+  renal: ["KIDNEY", "KIDNEYS"],
+  hematologic: ["SPLEEN"],
+  immune: ["THYMUS", "ADRENAL", "ADRENALS"],
+  general: ["HEART", "LUNG", "LUNGS"],
+  reproductive: ["TESTES", "TESTIS", "OVARY", "OVARIES", "UTERUS", "PROSTATE", "EPIDID"],
+  endocrine: ["THYROID", "PITUITARY", "ADRENAL", "ADRENALS"],
+  neurological: ["BRAIN"],
+};
+
 export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectFinding, selectGroup } = useFindingSelection();
@@ -221,6 +235,9 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
 
   // Fetch all findings data (shared cache with FindingsView)
   const { data: rawData } = useFindings(studyId, 1, 10000, ALL_FILTERS);
+
+  // Normalization engine — for "Organ weight normalization" pane
+  const normalization = useOrganWeightNormalization(studyId);
 
   // Use shared derivation — single source of truth (includes all fields)
   const organEndpoints = useMemo(
@@ -412,6 +429,74 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
           </p>
         )}
       </div>
+
+      {/* Pane 1b: ORGAN WEIGHT NORMALIZATION (only when organ has OM endpoints and tier >= 2) */}
+      {(() => {
+        if (normalization.highestTier < 2) return null;
+        const specimens = ORGAN_SYSTEM_TO_SPECIMENS[organKey.toLowerCase()] ?? [];
+        let bestDecision: ReturnType<typeof normalization.getDecision> = null;
+        let matchedSpecimen = "";
+        for (const sp of specimens) {
+          const d = normalization.getDecision(sp);
+          if (d && (!bestDecision || d.tier > bestDecision.tier)) {
+            bestDecision = d;
+            matchedSpecimen = sp;
+          }
+        }
+        if (!bestDecision || bestDecision.tier < 2) return null;
+        const category = getOrganCorrelationCategory(matchedSpecimen);
+        const categoryLabels: Record<string, string> = {
+          strong_bw: "Strong BW correlation (liver, thyroid)",
+          moderate_bw: "Moderate BW correlation (heart, kidney, spleen, lung)",
+          weak_bw: "Weak BW correlation — brain normalization preferred (adrenals, thymus)",
+          brain: "Brain organ — cannot normalize to itself",
+          reproductive: "Reproductive organ — specialized interpretation",
+          unknown: "Unknown correlation category",
+        };
+        const modeLabels: Record<string, string> = {
+          absolute: "Absolute weight",
+          body_weight: "Ratio to body weight",
+          brain_weight: "Ratio to brain weight",
+          ancova: "ANCOVA (Phase 2)",
+        };
+        return (
+          <CollapsiblePane title="Organ weight normalization" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+            <div className="space-y-2">
+              <div className="text-xs">
+                <span className="font-semibold">Normalization: </span>
+                {modeLabels[bestDecision.mode] ?? bestDecision.mode}
+                {!bestDecision.userOverridden && " (auto-selected)"}
+              </div>
+              <div className="text-xs">
+                <span className="font-semibold">Tier: </span>
+                {bestDecision.tier} — {getTierSeverityLabel(bestDecision.tier)} BW effect
+              </div>
+              <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
+                <div>BW effect (worst group): g = {normalization.worstBwG.toFixed(2)}</div>
+                <div>
+                  Brain weight: {normalization.worstBrainG != null
+                    ? `g = ${normalization.worstBrainG.toFixed(2)} (${bestDecision.brainAffected ? "affected" : "unaffected"})`
+                    : "not collected"}
+                </div>
+                <div>Organ category: {categoryLabels[category] ?? category}</div>
+              </div>
+              {bestDecision.rationale.length > 0 && (
+                <div className="mt-2 border-t pt-2">
+                  <div className="mb-1 text-[10px] font-semibold text-muted-foreground">Rationale</div>
+                  <ul className="space-y-0.5 text-[10px] text-muted-foreground">
+                    {bestDecision.rationale.map((r, i) => (
+                      <li key={i}>• {r}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="text-[9px] text-muted-foreground/60">
+                Ref: Bailey et al. 2004, Sellers et al. 2007
+              </div>
+            </div>
+          </CollapsiblePane>
+        );
+      })()}
 
       {/* Pane 2: ORGAN NOAEL */}
       <CollapsiblePane title="Organ NOAEL" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>

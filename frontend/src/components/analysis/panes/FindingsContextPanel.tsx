@@ -21,6 +21,7 @@ import { SyndromeContextPanel } from "./SyndromeContextPanel";
 import { RecoveryPane } from "./RecoveryPane";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
+import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -37,6 +38,7 @@ export function FindingsContextPanel() {
   const { useScheduledOnly: isScheduledOnly, hasEarlyDeaths } = useScheduledOnly();
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");
   const hasRecovery = studyMeta?.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
+  const normalization = useOrganWeightNormalization(studyId);
 
   // When scheduled-only mode is active, swap statistics rows to scheduled variants
   const activeStatistics = useMemo(() => {
@@ -169,6 +171,34 @@ export function FindingsContextPanel() {
           statistics={activeStatistics!}
           effectSize={context.effect_size}
         />
+        {/* Normalization annotation for OM domain endpoints at tier >= 2 */}
+        {selectedFinding.domain === "OM" && (() => {
+          const specimen = selectedFinding.specimen?.toUpperCase() ?? "";
+          const normCtx = specimen ? normalization.getContext(specimen) : null;
+          if (!normCtx || normCtx.tier < 2) return null;
+          const modeLabels: Record<string, string> = {
+            absolute: "absolute weight",
+            body_weight: "ratio-to-BW",
+            brain_weight: "ratio-to-brain",
+            ancova: "ANCOVA",
+          };
+          return (
+            <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+              <div className="font-semibold text-amber-800">
+                Body weight confounding (Tier {normCtx.tier})
+              </div>
+              <div className="mt-0.5 text-amber-700">
+                BW effect: g = {normCtx.bwG.toFixed(2)}. {normCtx.tier >= 3
+                  ? "Organ-to-BW ratios unreliable for this dose group."
+                  : "Organ-to-BW ratios should be interpreted with caution."}
+              </div>
+              <div className="mt-0.5 text-amber-700">
+                Active normalization: {modeLabels[normCtx.activeMode] ?? normCtx.activeMode}
+                {normCtx.tier === 4 && " — ANCOVA recommended for definitive assessment"}
+              </div>
+            </div>
+          );
+        })()}
       </CollapsiblePane>
 
       <CollapsiblePane

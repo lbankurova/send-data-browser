@@ -38,6 +38,7 @@ import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import type { FindingsFilters, UnifiedFinding, DoseGroup } from "@/types/analysis";
 import { computeOrganProportionality, checkSexDivergence } from "@/lib/organ-proportionality";
+import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import type { OrganProportionalityResult, OrganOpiRow, OpiClassification } from "@/lib/organ-proportionality";
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -288,11 +289,15 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   // Use shared derivation — single source of truth (includes all fields)
   const allEndpoints = analytics.endpoints;
 
+  // Normalization engine — for OM term annotations and B-7 BW confounding
+  const normalization = useOrganWeightNormalization(studyId);
+
   // Evidence Summary: term report
   const syndromeSexes = detected?.sexes;
+  const normContexts = normalization.state?.contexts;
   const termReport = useMemo(
-    () => getSyndromeTermReport(syndromeId, allEndpoints, syndromeSexes),
-    [syndromeId, allEndpoints, syndromeSexes],
+    () => getSyndromeTermReport(syndromeId, allEndpoints, syndromeSexes, normContexts),
+    [syndromeId, allEndpoints, syndromeSexes, normContexts],
   );
 
   // Header stats
@@ -416,8 +421,9 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
       studyContext,
       mortalityRaw?.mortality_noael_cap,
       analytics.syndromes.map((s) => s.id),
+      normContexts,
     );
-  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings, foodConsumptionSummary, clinicalObservations, recoveryData, organWeightRows, analytics.syndromes]);
+  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings, foodConsumptionSummary, clinicalObservations, recoveryData, organWeightRows, analytics.syndromes, normContexts]);
 
   // Organ Proportionality Index (XS09 only) — computed after syndromeInterp for FC driver
   const fcDriver = useMemo(() => {
@@ -976,25 +982,32 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
 
   if (entry.status === "matched") {
     return (
-      <div className="flex items-center gap-1.5 text-[10px] font-medium text-foreground">
-        <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}{entry.sex && <span className="text-[9px] text-muted-foreground"> ({entry.sex})</span>}</span>
-        <span className="shrink-0 text-[9px] font-semibold text-muted-foreground">
-          {entry.domain}
-        </span>
-        {entry.pValue != null && (
-          <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-            {formatPValueWithPrefix(entry.pValue)}
+      <div>
+        <div className="flex items-center gap-1.5 text-[10px] font-medium text-foreground">
+          <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}{entry.sex && <span className="text-[9px] text-muted-foreground"> ({entry.sex})</span>}</span>
+          <span className="shrink-0 text-[9px] font-semibold text-muted-foreground">
+            {entry.domain}
           </span>
-        )}
-        {entry.severity && (
-          <span className="shrink-0 text-[9px] text-muted-foreground">{entry.severity}</span>
-        )}
-        {clinicalTag ? (
-          <span className={`shrink-0 font-mono text-[9px] ${getClinicalTierTextClass(clinicalTag.severity)}`}>
-            {clinicalTag.severity} {clinicalTag.ruleId}
-          </span>
-        ) : (
-          <span className="shrink-0 font-mono text-[9px] text-muted-foreground/40">{"\u2014"}</span>
+          {entry.pValue != null && (
+            <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+              {formatPValueWithPrefix(entry.pValue)}
+            </span>
+          )}
+          {entry.severity && (
+            <span className="shrink-0 text-[9px] text-muted-foreground">{entry.severity}</span>
+          )}
+          {clinicalTag ? (
+            <span className={`shrink-0 font-mono text-[9px] ${getClinicalTierTextClass(clinicalTag.severity)}`}>
+              {clinicalTag.severity} {clinicalTag.ruleId}
+            </span>
+          ) : (
+            <span className="shrink-0 font-mono text-[9px] text-muted-foreground/40">{"\u2014"}</span>
+          )}
+        </div>
+        {entry.magnitudeFloorNote && entry.domain === "OM" && (
+          <div className="ml-2 mt-0.5 text-[9px] text-amber-700">
+            {entry.magnitudeFloorNote}
+          </div>
         )}
       </div>
     );
@@ -1535,7 +1548,7 @@ function DoseResponseRecoveryPane({
                 <EcetocFactorRow label="CL observations" value={tr.clinicalObservationSupport ? "supports" : "no support"} />
               </div>
             </div>
-            {/* Adversity — hide B-2, B-6, B-7 (unimplemented) */}
+            {/* Adversity — B-2 and B-6 still unimplemented */}
             <div>
               <div className="mb-1 text-xs font-medium text-foreground">Adverse: {advLabel}</div>
               <div className="space-y-0.5 pl-2">
@@ -1543,6 +1556,12 @@ function DoseResponseRecoveryPane({
                 <EcetocFactorRow label="B-3 Reversible" value={adv.reversible === true ? "yes" : adv.reversible === false ? "no" : "unknown"} />
                 <EcetocFactorRow label="B-4 Magnitude" value={adv.magnitudeLevel} />
                 <EcetocFactorRow label="B-5 Cross-domain" value={adv.crossDomainSupport ? "yes" : "no"} />
+                <EcetocFactorRow
+                  label="B-7 Secondary to BW"
+                  value={adv.secondaryToBW
+                    ? `yes (g=${adv.secondaryToBW.bwG.toFixed(2)}, ${adv.secondaryToBW.confidence})`
+                    : adv.secondaryToOther ? "secondary to food" : "no"}
+                />
               </div>
             </div>
           </div>

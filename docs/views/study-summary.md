@@ -82,30 +82,53 @@ Dense narrative header at the top of the tab. No section header — renders dire
 
 **Component:** `StudyTimeline` from `components/analysis/charts/StudyTimeline.tsx`.
 
-Compact SVG visualization showing the study design as horizontal dosing lanes. Only renders when `doseGroups.length > 0` and `studyCtx.dosingDurationWeeks` is available. Wrapped in `mb-4` section.
+Spacious SVG swimlane visualization showing study design, phases, and death events as horizontal dosing lanes. Only renders when `doseGroups.length > 0` and `studyCtx.dosingDurationWeeks` is available. Wrapped in `mb-6` section. Target height ~260–320px per spec.
+
+**Props:** `doseGroups`, `dosingDurationWeeks`, `recoveryPeriodDays`, `deaths` (combined `mortalityData.deaths` + `.accidentals`), `excludedSubjects`.
 
 **SVG layout constants:**
-- `LANE_HEIGHT = 14`, `LANE_GAP = 3`, `LEFT_MARGIN = 90`, `RIGHT_MARGIN = 40`
-- `TOP_MARGIN = 4`, `BOTTOM_AXIS_HEIGHT = 16`, `TK_LANE_GAP = 6`
-- Total width: 520 (viewBox), responsive via `width="100%"`
+- `LANE_HEIGHT = 20` (spec: 18–20px), `ROW_PITCH = 46` (top-to-top lane spacing; gap = 26px for sub-labels)
+- `LEFT_MARGIN = 150` (spec: 140–160px), `RIGHT_MARGIN = 20` (spec: 16–24px)
+- `TOP_MARGIN = 24`, `BOTTOM_AXIS_HEIGHT = 30`, `TK_LANE_HEIGHT = 10` (spec: 8–10px, thinner than main), `TK_LANE_GAP = 14`
+- `DEATH_R = 3.5`, `DEATH_OFFSET_ABOVE = 3` (spec: 2–4px above bar)
+- Total width: 600 (viewBox), responsive via `width="100%"`
 
 **Elements:**
 
-1. **Terminal sacrifice line:** Dashed vertical line (`stroke="#9CA3AF"`, `strokeDasharray="3,2"`) at the dosing end day. Label "terminal sac" above in `fill-muted-foreground` 8px font.
+1. **Reference lines (3 vertical):**
+   - **D1 "First dose":** Light dashed line (`stroke="#D1D5DB"`, `strokeWidth={0.75}`) from `TOP_MARGIN` to lanes bottom. Label "First dose" above in 8px muted-foreground.
+   - **Terminal sacrifice:** Dashed line (`stroke="#9CA3AF"`, `strokeWidth={1}`) at dosing end day. Label "Terminal sac." above. Tooltip: `"Terminal sacrifice · D{dosingDays}"`.
+   - **End of recovery (conditional):** Light dashed line at `totalDays`, only when `hasRecovery`. Label "End recovery" above. Tooltip: `"End of recovery · D{totalDays}"`.
 
-2. **Dose group lanes:** One horizontal bar per main (non-recovery) group, sorted by `dose_level` ascending.
-   - **Left label:** Group dose (via `formatDoseShortLabel`), `fill-foreground` 10px, right-aligned at `LEFT_MARGIN - 4`.
-   - **Dosing bar:** Rectangle from Day 1 to terminal sacrifice, filled with `getDoseGroupColor(dose_level)`, `opacity={0.85}`, `rx={2}`.
-   - **Size annotation:** White text inside bar — `"{n_male}M {n_female}F"`, 9px font-weight 500.
-   - **Recovery extension (conditional):** Lighter rectangle from terminal to study end. Fill: group color lightened 50% (`lighten(color, 0.5)`), `opacity={0.7}`, dashed stroke in group color. Text inside: `"R:{recovery_n}"` in group color, 8px font.
+2. **Dose group lanes:** One horizontal bar per main (non-recovery) group, sorted by `dose_level` ascending. Each lane occupies `LANE_HEIGHT` (20px) with `ROW_PITCH` (46px) spacing.
+   - **Left label line 1:** Dose label (via `formatDoseShortLabel`), `fill-foreground` 11px font-weight 500, right-aligned at `LEFT_MARGIN - 6`, vertically centered with bar.
+   - **Left label line 2 (sub-label):** Sex split + optional death count (e.g., `"10M / 10F · 2 TR deaths"`), 9px muted-foreground, positioned 10px below bar bottom.
+   - **Dosing bar:** Rectangle from Day 1 to terminal sacrifice, filled with `getDoseGroupColor(dose_level)`, `opacity={0.85}`, `rx={3}`. Tooltip: dose label, sex split, N, death counts (TR + incidental), recovery info.
+   - **N annotation:** White text inside bar — `"n={n_total}"`, 9px font-weight 500, `pointerEvents: "none"`.
+   - **Recovery extension (conditional):** Lighter rectangle from terminal to study end. Fill: group color lightened 50%, `opacity={0.7}`, dashed stroke. Text inside: `"R:{recovery_n}"` in group color, 8px font. Tooltip with subject count and day range.
 
-3. **TK satellite lane (conditional):** Rendered below main lanes with `TK_LANE_GAP` spacing when any group has TK subjects.
-   - **Left label:** `"TK satellite"` in muted-foreground, italic, 9px.
-   - **Background:** Light gray rectangle (`fill="#F3F4F6"`) with dashed gray border.
-   - **Per-group segments:** Equal-width sub-rectangles, each lightened group color with centered TK count in group color, 8px bold.
-   - **Right annotation:** `"Excluded from toxicology analyses"` in muted-foreground italic 8px, after terminal sacrifice line.
+3. **Death markers (conditional):** Rendered per lane when `deaths` prop is provided. Each death with a non-null `study_day` is mapped to its lane by `dose_level` (including recovery groups mapped to parent lane). **Positioned 3px above bar top** (not at bar center) per spec §4.3.
+   - **TR death:** Filled red circle (`fill="#DC2626"`, `stroke="white"`, `strokeWidth={1.5}`, `r={3.5}`).
+   - **Non-TR / incidental death:** Hollow circle (`fill="white"`, `stroke="#6B7280"`, `strokeWidth={1.5}`, `r={3.5}`).
+   - **Attribution logic:** `isTreatmentRelated()` checks DDRESCAT for "TREATMENT", "DRUG", "COMPOUND", or "TEST ARTICLE" (case-insensitive). All others classified as incidental.
+   - **Stacking:** Multiple deaths on the same day stacked upward by `DEATH_R * 2 + 1` per prior same-day death.
+   - **Tooltip:** Subject ID, study day, dose label, attribution (TR / incidental), cause (if available), exclusion status (included/excluded from analysis).
 
-4. **Day axis:** Tick marks along the bottom. Ticks generated by `dayTicks()` — always includes Day 1 and dosing end day; intermediate ticks at 7/14/28-day intervals depending on study length. Format: `"D{day}"`, 9px muted-foreground.
+4. **TK satellite lane (conditional, Variant A pooled):** Rendered below main lanes with `TK_LANE_GAP` (14px) spacing. **Thinner** than main lanes: `TK_LANE_HEIGHT = 10` (spec: 8–10px).
+   - **Left label:** `"TK satellites (n={tkTotal})"` in muted-foreground, italic, 9px.
+   - **Background:** Light gray rectangle (`fill="#F3F4F6"`) with dashed gray border. Tooltip: subject count + exclusion note.
+   - **Per-group segments:** Equal-width sub-rectangles, each lightened group color with centered TK count in group color, 7px bold.
+   - **Right annotation:** `"Excluded from tox analyses"` in muted-foreground italic 8px.
+
+5. **Day axis:** "Study day" label at left margin (9px font-weight 500). Tick marks along the bottom. Ticks generated by `dayTicks()` — always includes Day 1 and dosing end day; intermediate ticks at 7/14/28-day intervals depending on study length. Format: `"D{day}"`, 9px muted-foreground.
+
+6. **Legend (conditional, HTML below SVG):** Rendered when the timeline has recovery, TK, or deaths. Single-row flex-wrap layout, `text-[9px] text-muted-foreground`, `gap-x-4 gap-y-0.5`. Items:
+   - Treatment (colored rect swatch, `h-2.5`)
+   - Recovery (lighter rect with dashed border) — only if recovery exists
+   - TK satellites (gray dashed rect, `h-2`) — only if TK lane exists
+   - TR death (red filled circle SVG) — only if TR deaths exist
+   - Incidental death (hollow gray circle SVG) — only if non-TR deaths exist
+   - Terminal sacrifice (dashed vertical line SVG)
 
 ### Treatment Arms ({count})
 
@@ -188,7 +211,7 @@ Signal-prioritized domain table with key findings and clinical significance metr
 | Subjects | Subjects | right | `tabular-nums text-muted-foreground`. DS domain: `"{N} deaths"`. TF domain: `"{N} types"`. Others: subject count or em dash. | `1px; nowrap` |
 | Signals | Signals | right | `tabular-nums text-muted-foreground` — `"{N} TR"` or em dash | `1px; nowrap` |
 | Adverse | Adverse | right | `tabular-nums text-muted-foreground` — `"{N} adv"` or em dash | `1px; nowrap` |
-| Notes | Notes | left | Generated key findings text + decision-point context notes (absorber column, no width constraint). Context notes appended in `text-muted-foreground` after findings with ` · ` separator. DS: `"{N} excluded from terminal stats"` with "configure →" link. BW: `"organ weights auto-set to ratio-to-brain"` when BW has adverse+down endpoints, with "configure →" link. OM: `"using {method}"` with "configure →" link. | absorber |
+| Notes | Notes | left | Generated key findings text + decision-point context notes (absorber column, no width constraint). Context notes appended in `text-muted-foreground` after findings with ` · ` separator. DS: `"{N} excluded from terminal stats"` with "configure →" link. BW: tier-aware confounding note — Tier 1: no note; Tier 2: `"organ weight ratios may be confounded (g=X.XX)"` + "configure →"; Tier 3–4: `"organ weights auto-set to ratio-to-brain (g=X.XX)"` + "configure →". OM: `"using {method}"` + tier/g annotation when normalization tier >= 2 (e.g., `"BW effect moderate (g=0.7, Tier 2)"`) + "configure →" link. | absorber |
 
 **Tier system (sort order):**
 
@@ -216,7 +239,7 @@ Within tier: sort by adverse count desc, then TR count desc, then row count desc
 **Row click:** Navigates to Findings view with domain filter: `/studies/{studyId}/findings?domain={code}`.
 **Domain link click:** Navigates to domain browser: `/studies/{studyId}/domains/{code}`. Stops event propagation (does not trigger row click).
 
-**Auto-set organ weight method:** When BW domain has adverse endpoints with `direction === "down"` and current `organWeightMethod === "absolute"`, the view auto-sets it to `"ratio-brain"` via `useEffect`. User can manually override in context panel.
+**Auto-set organ weight method:** Uses the organ weight normalization engine (`useOrganWeightNormalization`). The engine computes Hedges' g for body weight and brain weight across all dose groups, then assigns a tier (1–4) per organ. When `highestTier >= 3` (large BW effect, g >= 1.0) and current `organWeightMethod === "absolute"`, auto-sets to `"ratio-brain"`. User can manually override in context panel. See `lib/organ-weight-normalization.ts` for the tiered decision engine.
 
 ### Interpretation Context
 
@@ -231,6 +254,12 @@ Section at the bottom of the DetailsTab. Only rendered when interpretation notes
 Note format: `<category>: <note>` — category in `font-medium text-muted-foreground`, note in `text-foreground`.
 
 **Data source:** `getInterpretationContext()` from `lib/species-vehicle-context.ts`. Static lookup tables derived from `docs/knowledge/species-profiles.md` and `docs/knowledge/vehicle-profiles.md`. Returns notes filtered by the study's species, strain, vehicle, and route.
+
+**BW confounding note (conditional):** When `useOrganWeightNormalization` reports `highestTier >= 2`, a caution note is appended:
+- Tier 2: `"Moderate BW effect (g=X.XX). Organ-to-BW ratios should be interpreted with caution for high-dose groups."`
+- Tier 3: `"Large BW effect (g=X.XX). Brain-weight normalization auto-selected for organ weights."`
+- Tier 4: `"Severe BW effect (g=X.XX). ANCOVA recommended for definitive organ weight assessment."`
+Rendered with `AlertTriangle` icon, category `"Body weight"`, severity `"caution"`.
 
 **Species notes (selected examples):**
 - Rat: preferred hepatotoxicity markers (SDH/GLDH), QTc not translational, nephrotoxicity qualification markers
@@ -309,7 +338,7 @@ Route-detected: when pathname matches `/studies/{studyId}`, shows `StudyDetailsC
 | Setting | Control | Notes |
 |---------|---------|-------|
 | Primary comparator | `<select>` dropdown | Lists control groups (dose_level === 0, non-recovery). Change triggers confirm dialog. Shows amber warning if multiple control groups detected or recovery controls excluded. |
-| Organ weight method | `<select>` dropdown | Options: Absolute (default), Ratio to BW, Ratio to brain. Explanatory note below changes with selection. |
+| Organ weight method | `<select>` dropdown | Options: Absolute (default), Ratio to BW, Ratio to brain. Explanatory note below changes with selection. When normalization `highestTier >= 2`, an additional summary block appears below the dropdown showing: BW effect g + tier label, brain weight g + affected/unaffected status, auto/manual status + organ count at elevated tiers, and expandable `[Why?]` rationale with numbered decision strings. See `useOrganWeightNormalization` hook. |
 | Adversity threshold | `<select>` dropdown | Options: Grade >= 1, Grade >= 2, Grade >= 2 or dose-dep (default), Custom. |
 
 All settings persist via `useSessionState` with study-scoped keys (e.g., `pcc.{studyId}.controlGroup`).

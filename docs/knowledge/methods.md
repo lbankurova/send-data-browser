@@ -336,6 +336,34 @@ This table documents which statistical test is applied to each endpoint type in 
 
 ---
 
+### METH-03a — Organ Weight Normalization Auto-Selection (Phase 1)
+
+**Purpose:** Auto-detect body weight confounding via Hedges' g from summary statistics, select the appropriate organ weight normalization strategy (absolute / body weight / brain weight), and present the rationale transparently.
+
+**Implementation:** `computeStudyNormalization(...)` — frontend `lib/organ-weight-normalization.ts`. React hook: `useOrganWeightNormalization(studyId)` — frontend `hooks/useOrganWeightNormalization.ts`.
+
+**Parameters:**
+- **Hedges' g from summary stats:** `hedgesGFromStats(controlMean, controlSd, controlN, treatedMean, treatedSd, treatedN)` — same formula as STAT-12 but computed from per-group `{mean, sd, n}` triplets in findings data (no individual-level data needed).
+- **4-tier BW classification:** Tier 1 (g<0.5, routine), Tier 2 (0.5–1.0, caution), Tier 3 (1.0–2.0, auto-switch to brain), Tier 4 (≥2.0, ANCOVA needed).
+- **Organ correlation categories (Bailey et al. 2004):** STRONG_BW (liver, thyroid), MODERATE_BW (heart, kidney, spleen, lung), WEAK_BW (adrenals, thymus — always prefer brain), BRAIN (can't normalize to itself), REPRODUCTIVE.
+- **Species/strain profiles:** 12 entries with BW CV and brain CV ranges (rat SD, rat Wistar, mouse C57BL/6, etc.).
+- **Brain affected check:** |brain g| ≥ 0.8 → brain normalization may be unreliable.
+- **B-7 secondary assessment:** `assessSecondaryToBodyWeight(normCtx)` — Phase 1 heuristic: tier ≥ 3 → secondary with low confidence.
+
+**Data source:** Reuses `useFindings(studyId)` — BW and OM group_stats already cached by React Query. Zero extra API calls.
+
+**Integration points:**
+- Study Details: tier-based auto-set replaces simple BW-adverse check; domain table notes show tier + g value.
+- Study Details Context Panel: normalization summary with BW g, tier, brain g, Why? rationale.
+- Findings View: OrganContextPanel pane, FindingsContextPanel OM annotation.
+- Syndrome Engine: `getSyndromeTermReport` adds normalization annotation for OM terms; `computeAdversity` uses B-7 BW confounding factor.
+
+**References:** Bailey SA et al. Toxicol Pathol 2004;32:448. Sellers RS et al. Toxicol Pathol 2007;35:751. Lazic SE et al. Sci Rep 2020;10:6625.
+
+**Phase 2 (deferred):** ANCOVA backend (Python statsmodels), effect decomposition (directG vs totalG), per-group heatmap UI. Phase 3 (deferred): Bayesian mediation (PyMC).
+
+---
+
 ### METH-04 — MI Severity Score Mapping
 
 **Purpose:** Convert text-based microscopic finding severity grades (SENDIG terminology) to numeric scores for statistical analysis.
