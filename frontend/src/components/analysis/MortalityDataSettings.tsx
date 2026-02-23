@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { cn } from "@/lib/utils";
-import { useTabComplete } from "@/hooks/useTabComplete";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { CollapsiblePane } from "@/components/analysis/panes/CollapsiblePane";
@@ -54,17 +53,26 @@ function OverrideDot({
   subjectId,
   comments,
   onSave,
+  autoOpen,
+  onAutoOpened,
 }: {
   subjectId: string;
   comments: Record<string, string>;
   onSave: (id: string, text: string) => void;
+  autoOpen?: boolean;
+  onAutoOpened?: () => void;
 }) {
   const existing = comments[subjectId] ?? "";
   const [draft, setDraft] = useState(existing);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen ?? false);
+  // Handle auto-open trigger
+  if (autoOpen && !open) {
+    setOpen(true);
+    setDraft(existing);
+    onAutoOpened?.();
+  }
   const hasComment = existing.length > 0;
   const PLACEHOLDER = "Death on D90 near terminal sacrifice \u2014 included in stats";
-  const tabComplete = useTabComplete(draft, setDraft, PLACEHOLDER);
 
   return (
     <Popover open={open} onOpenChange={(v) => { setOpen(v); if (v) setDraft(existing); }}>
@@ -92,18 +100,29 @@ function OverrideDot({
           placeholder={`e.g., ${PLACEHOLDER}`}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          {...tabComplete}
+          onKeyDown={(e) => {
+            // Tab-complete when empty
+            if (e.key === "Tab" && !draft.trim()) {
+              e.preventDefault();
+              setDraft(PLACEHOLDER);
+              return;
+            }
+            // Enter saves (Shift+Enter for newline)
+            if (e.key === "Enter" && !e.shiftKey && draft !== existing) {
+              e.preventDefault();
+              onSave(subjectId, draft);
+              setOpen(false);
+            }
+          }}
         />
         <div className="mt-1 flex justify-end gap-1">
-          {hasComment && (
-            <button
-              type="button"
-              className="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
-              onClick={() => { onSave(subjectId, ""); setOpen(false); }}
-            >
-              Clear
-            </button>
-          )}
+          <button
+            type="button"
+            className="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </button>
           <button
             type="button"
             className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
@@ -122,7 +141,7 @@ function OverrideDot({
 
 /** Mortality info pane — top-level CollapsiblePane with per-subject table. */
 export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | null }) {
-  const { excludedSubjects, toggleSubjectExclusion, setUseScheduledOnly, trEarlyDeathIds } = useScheduledOnly();
+  const { excludedSubjects, toggleSubjectExclusion, trEarlyDeathIds } = useScheduledOnly();
   const [overrideComments, setOverrideComments] = useState<Record<string, string>>({});
 
   const saveComment = (id: string, text: string) => {
@@ -132,6 +151,32 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
       else delete next[id];
       return next;
     });
+  };
+
+  // Pending confirmation when reverting a subject with a comment
+  const [pendingRevert, setPendingRevert] = useState<string | null>(null);
+  // Auto-open the comment popover for this subject after revert
+  const [autoOpenComment, setAutoOpenComment] = useState<string | null>(null);
+
+  /** Toggle inclusion — if reverting an override with a comment, ask inline. */
+  const handleToggle = (d: DeathRecord & { attribution: string }) => {
+    const id = d.USUBJID;
+    const isExcluded = excludedSubjects.has(id);
+    const isTr = trEarlyDeathIds.has(id);
+    const currentlyOverridden = isOverride(d, isExcluded, isTr);
+
+    if (currentlyOverridden && overrideComments[id]) {
+      setPendingRevert(id);
+      return; // wait for inline confirmation
+    }
+    toggleSubjectExclusion(id);
+  };
+
+  const confirmRevert = (clearComment: boolean) => {
+    if (!pendingRevert) return;
+    if (clearComment) saveComment(pendingRevert, "");
+    toggleSubjectExclusion(pendingRevert);
+    setPendingRevert(null);
   };
 
   // Combine all deaths: TR (main + recovery) + accidental, sorted by study_day
@@ -150,43 +195,25 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
   const capDose = capLevel != null ? mortality?.by_dose.find(b => b.dose_level === capLevel) : null;
   const capLabel = capDose?.dose_value != null && unit ? `${capDose.dose_value} ${unit}` : null;
 
-  const excludedCount = excludedSubjects.size;
-  const allTrExcluded = trEarlyDeathIds.size > 0 && [...trEarlyDeathIds].every(id => excludedSubjects.has(id));
-
-  // Collapsed summary
+  // Summary reflects current inclusion state
+  const includedCount = allDeaths.filter(d => !excludedSubjects.has(d.USUBJID)).length;
+  const excludedCount = allDeaths.length - includedCount;
   const summary = hasMortality
-    ? `${allDeaths.length} death${allDeaths.length !== 1 ? "s" : ""}${excludedCount > 0 ? ` \u00b7 ${excludedCount} excluded` : ""}`
+    ? excludedCount > 0
+      ? `${allDeaths.length} deaths \u00b7 ${includedCount} included \u00b7 ${excludedCount} excluded`
+      : `${allDeaths.length} death${allDeaths.length !== 1 ? "s" : ""}`
     : undefined;
 
   if (!hasMortality) {
     return (
-      <CollapsiblePane title="Mortality info" variant="margin" defaultOpen={false}>
+      <CollapsiblePane title="Mortality" variant="margin" defaultOpen={false}>
         <div className="text-[10px] text-muted-foreground">No mortality events recorded.</div>
       </CollapsiblePane>
     );
   }
 
   return (
-    <CollapsiblePane title="Mortality info" variant="margin" summary={summary}>
-      {/* Bulk toggle — controls TR early deaths only */}
-      {trEarlyDeathIds.size > 0 && (
-        <label
-          className="mb-2 flex items-center gap-2 text-xs"
-          title="Exclude treatment-related early deaths from terminal group statistics. Accidental deaths remain included (valid drug-exposure data)."
-        >
-          <input
-            type="checkbox"
-            checked={allTrExcluded}
-            onChange={(e) => setUseScheduledOnly(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-gray-300"
-          />
-          <span>Exclude TR early deaths</span>
-          <span className="text-[10px] text-muted-foreground">
-            ({trEarlyDeathIds.size} subject{trEarlyDeathIds.size !== 1 ? "s" : ""})
-          </span>
-        </label>
-      )}
-
+    <CollapsiblePane title="Mortality" variant="margin" headerRight={summary}>
       {/* Per-subject table — standard orientation matching SubjectContextPanel */}
       {mortality && (
         <div className="-mx-4 overflow-auto">
@@ -214,11 +241,11 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
                 const hasComment = !!overrideComments[d.USUBJID];
 
                 return (
+                  <Fragment key={d.USUBJID}>
                   <tr
-                    key={d.USUBJID}
                     className={cn(
                       "border-b border-dashed border-border/30",
-                      isTr && !d.is_recovery && "bg-amber-50/50",
+                      d.attribution === "TR" && "bg-amber-50/50",
                     )}
                   >
                     {/* Include: dot (override indicator) + checkbox */}
@@ -231,20 +258,22 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
                               subjectId={d.USUBJID}
                               comments={overrideComments}
                               onSave={saveComment}
+                              autoOpen={autoOpenComment === d.USUBJID}
+                              onAutoOpened={() => setAutoOpenComment(null)}
                             />
                           )}
                         </div>
                         <input
                           type="checkbox"
                           checked={!isExcluded}
-                          onChange={() => toggleSubjectExclusion(d.USUBJID)}
+                          onChange={() => handleToggle(d)}
                           title={subjectTooltip(d, isExcluded, isTr)}
                           className="h-3 w-3 rounded border-gray-300"
                         />
                       </div>
                     </td>
                     {/* Subject ID */}
-                    <td className="px-1.5 py-1 font-mono tabular-nums" style={{ color: "#3b82f6" }}>
+                    <td className="px-1.5 py-1 font-mono tabular-nums">
                       {d.USUBJID.slice(-4)}
                     </td>
                     {/* Group */}
@@ -264,6 +293,37 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
                       {truncCause}
                     </td>
                   </tr>
+                  {pendingRevert === d.USUBJID && (
+                    <tr className="bg-muted/40">
+                      <td colSpan={7} className="px-2 py-1.5">
+                        <div className="flex items-center gap-2 text-[10px]">
+                          <span className="text-muted-foreground">Override note exists. Select what happens to it:</span>
+                          <button
+                            type="button"
+                            className="font-medium text-primary hover:text-primary/80"
+                            onClick={() => confirmRevert(true)}
+                          >
+                            Clear
+                          </button>
+                          <button
+                            type="button"
+                            className="font-medium text-primary hover:text-primary/80"
+                            onClick={() => confirmRevert(false)}
+                          >
+                            Keep
+                          </button>
+                          <button
+                            type="button"
+                            className="font-medium text-primary hover:text-primary/80"
+                            onClick={() => { toggleSubjectExclusion(d.USUBJID); setPendingRevert(null); setAutoOpenComment(d.USUBJID); }}
+                          >
+                            Update
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
