@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useStudyContext } from "@/hooks/useStudyContext";
+import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
+import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useSessionState } from "@/hooks/useSessionState";
@@ -102,6 +104,8 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
     `pcc.${studyId}.organWeightMethod`,
     "absolute",
   );
+  const normalization = useOrganWeightNormalization(studyId);
+  const [normWhyOpen, setNormWhyOpen] = useState(false);
   const [adversityThreshold, setAdversityThreshold] = useSessionState(
     `pcc.${studyId}.adversityThreshold`,
     "grade-ge-2-or-dose-dep",
@@ -212,6 +216,69 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           {organWeightMethod === "ratio-brain" && "Preferred when BW is significantly affected (brain is BW-resistant)"}
         </div>
 
+        {/* Normalization summary — shown when tier >= 2 */}
+        {normalization.highestTier >= 2 && (() => {
+          const organsAtTier = normalization.state?.decisions
+            ? [...normalization.state.decisions.entries()].filter(
+                ([, doseMap]) => [...doseMap.values()].some(d => d.tier >= 2),
+              ).length
+            : 0;
+          return (
+            <div className="mb-2 rounded border border-amber-200 bg-amber-50/50 p-2">
+              <div className="space-y-0.5 text-[10px] text-muted-foreground">
+                <div>BW effect: g = {normalization.worstBwG.toFixed(2)} (Tier {normalization.highestTier} — {getTierSeverityLabel(normalization.highestTier)})</div>
+                <div>
+                  Brain weight: {normalization.worstBrainG != null
+                    ? `g = ${normalization.worstBrainG.toFixed(2)} (${Math.abs(normalization.worstBrainG) >= 0.8 ? "affected" : "unaffected"})`
+                    : "not collected"}
+                </div>
+                <div>
+                  {organWeightMethod !== "absolute" && normalization.highestTier >= 3
+                    ? "Auto-selected"
+                    : "Manual selection"} · {organsAtTier} organ{organsAtTier !== 1 ? "s" : ""} at Tier 2+{" "}
+                  <button
+                    className="text-primary underline"
+                    onClick={() => setNormWhyOpen(!normWhyOpen)}
+                  >
+                    {normWhyOpen ? "Hide" : "Why?"}
+                  </button>
+                </div>
+              </div>
+              {normWhyOpen && (() => {
+                // Get worst-case decision for rationale display
+                let worstDecision = normalization.getDecision("");
+                if (normalization.state?.decisions) {
+                  for (const [organ] of normalization.state.decisions) {
+                    const d = normalization.getDecision(organ);
+                    if (d && (!worstDecision || d.tier > worstDecision.tier)) worstDecision = d;
+                  }
+                }
+                if (!worstDecision) return null;
+                return (
+                  <div className="mt-2 border-t border-amber-200 pt-2 text-[10px] text-muted-foreground">
+                    <ol className="list-decimal space-y-0.5 pl-3">
+                      {worstDecision.rationale.map((r, i) => <li key={i}>{r}</li>)}
+                    </ol>
+                    {worstDecision.warnings.length > 0 && (
+                      <div className="mt-1 space-y-0.5">
+                        {worstDecision.warnings.map((w, i) => (
+                          <div key={i} className="flex items-start gap-1">
+                            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+                            <span>{w}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-1 text-[9px] text-muted-foreground/60">
+                      Ref: Bailey et al. 2004, Sellers et al. 2007
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          );
+        })()}
+
         {/* Adversity threshold */}
         <SettingsRow label="Adversity threshold">
           <SettingsSelect
@@ -276,7 +343,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                       : null;
                     const recDays = recoveryPeriod;
                     if (dosingDays && recDays) {
-                      return <div>Auto-detected: Day {dosingDays + 1}\u2013{dosingDays + recDays} ({recDays} days)</div>;
+                      return <div>Auto-detected: Day {dosingDays + 1}–{dosingDays + recDays} ({recDays} days)</div>;
                     }
                     return <div>Auto-detected: {recDays ? `${recDays} days` : "detected"}</div>;
                   })()}
@@ -311,9 +378,10 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                     checked={recoveryOverride}
                     onChange={(e) => setRecoveryOverride(e.target.checked)}
                     className="h-3 w-3 rounded border-gray-300"
+                    disabled
                   />
-                  <span className="text-muted-foreground">
-                    Override recovery start day
+                  <span className="text-muted-foreground/50">
+                    Override recovery start day (requires re-analysis)
                   </span>
                 </label>
               </div>
