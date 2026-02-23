@@ -68,6 +68,7 @@ export interface ClassifyProtectiveInput {
  * Step 3: Dose consistency + cross-domain correlates → pharmacological / treatment-decrease / background.
  * Step 4: Historical control override (stub — fires when data provided).
  */
+// @field FIELD-42 — protective signal classification
 export function classifyProtectiveSignal(input: ClassifyProtectiveInput): ProtectiveSignalResult | null {
   // Step 1: directionality gate
   if (input.direction !== "decreasing") return null;
