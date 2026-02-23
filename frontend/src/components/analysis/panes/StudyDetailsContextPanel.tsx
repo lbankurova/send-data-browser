@@ -124,6 +124,10 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
     `pcc.${studyId}.recoveryOverride`,
     false,
   );
+  const [recoveryPooling, setRecoveryPooling] = useSessionState(
+    `pcc.${studyId}.recoveryPooling`,
+    "pool",
+  );
 
   if (metaLoading) {
     return (
@@ -234,6 +238,22 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 ) : null;
               })()}
             </div>
+            <SettingsRow label="Treatment period">
+              <SettingsSelect
+                value={recoveryPooling}
+                options={[
+                  { value: "pool", label: "Pool with main study" },
+                  { value: "separate", label: "Analyze separately" },
+                ]}
+                onChange={setRecoveryPooling}
+                confirmMessage="Changing pooling mode will affect all treatment-period statistics. Continue?"
+              />
+            </SettingsRow>
+            <div className="mb-1 text-[10px] leading-snug text-muted-foreground">
+              {recoveryPooling === "pool"
+                ? "Recovery animals pooled with main study during treatment (recommended)"
+                : "Recovery animals excluded from treatment-period statistics"}
+            </div>
             <label className="mt-1 flex items-center gap-2 text-[10px]">
               <input
                 type="checkbox"
@@ -323,7 +343,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 pairwiseTest === "dunnett"
                   ? [
                       { value: "dunnett-fwer", label: "Dunnett FWER (built-in)" },
-                      { value: "bonferroni", label: "Bonferroni", disabled: true },
+                      { value: "bonferroni", label: "Bonferroni" },
                       { value: "holm-sidak", label: "Holm-Sidak", disabled: true },
                       { value: "bh-fdr", label: "BH-FDR", disabled: true },
                     ]
@@ -338,9 +358,11 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             />
           </SettingsRow>
           <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
-            {pairwiseTest === "dunnett"
+            {multiplicity === "dunnett-fwer" && pairwiseTest === "dunnett"
               ? "FWER-controlled many-to-one. Incidence: Fisher exact, no correction."
-              : "Separate correction needed. Incidence: Fisher exact, no correction."}
+              : multiplicity === "bonferroni"
+                ? "Bonferroni: min(p \u00d7 k, 1.0) applied to raw Welch t-test p-values"
+                : "Separate correction needed. Incidence: Fisher exact, no correction."}
           </div>
           <SettingsRow label="Trend test">
             <SettingsSelect
@@ -371,14 +393,16 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               value={effectSize}
               options={[
                 { value: "hedges-g", label: "Hedges' g" },
-                { value: "cohens-d", label: "Cohen's d (uncorrected)", disabled: true },
-                { value: "glass-delta", label: "Glass's delta", disabled: true },
+                { value: "cohens-d", label: "Cohen's d (uncorrected)" },
+                { value: "glass-delta", label: "Glass's delta" },
               ]}
               onChange={setEffectSize}
             />
           </SettingsRow>
           <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
-            Bias-corrected for small samples (J = 1 − 3/(4df − 1))
+            {effectSize === "hedges-g" && "Bias-corrected for small samples (J = 1 \u2212 3/(4df \u2212 1))"}
+            {effectSize === "cohens-d" && "Uncorrected pooled SD. May overestimate for small n."}
+            {effectSize === "glass-delta" && "Uses control SD only. Preferred when treatment affects variance."}
           </div>
         </div>
       </CollapsiblePane>

@@ -579,6 +579,7 @@ export function buildTimecourseLineOption(
   yAxisMode: "absolute" | "pct_change" | "pct_vs_control",
   showSubjects: boolean,
   subjectTraces: SubjectTrace[],
+  lastDosingDay?: number,
 ): EChartsOption {
   const days = points.map((p) => p.day as number);
 
@@ -701,20 +702,63 @@ export function buildTimecourseLineOption(
     (s) => (s as Record<string, unknown>).type === "line" && (s as Record<string, unknown>).z === 10,
   );
 
-  if (showRefLine && refLineValue != null && firstGroupIdx >= 0) {
-    const firstGroup = series[firstGroupIdx] as Record<string, unknown>;
-    firstGroup.markLine = {
-      silent: true,
-      symbol: "none",
-      lineStyle: { color: "#9CA3AF", type: "dashed", width: 1 },
-      label: {
-        formatter: yAxisMode === "absolute" ? "Baseline" : "0%",
-        position: "insideEndTop",
-        fontSize: REF_LINE_LABEL_SIZE,
-        color: "#9CA3AF",
-      },
-      data: [{ yAxis: refLineValue }],
-    };
+  if (firstGroupIdx >= 0) {
+    const markLineData: unknown[] = [];
+
+    // Horizontal reference line (baseline or 0%)
+    if (showRefLine && refLineValue != null) {
+      markLineData.push({
+        yAxis: refLineValue,
+        lineStyle: { color: "#9CA3AF", type: "dashed", width: 1 },
+        label: {
+          formatter: yAxisMode === "absolute" ? "Baseline" : "0%",
+          position: "insideEndTop",
+          fontSize: REF_LINE_LABEL_SIZE,
+          color: "#9CA3AF",
+        },
+      });
+    }
+
+    // Recovery boundary vertical line
+    if (lastDosingDay != null) {
+      // Find the category index closest to lastDosingDay
+      const boundaryIdx = days.findIndex((d) => d >= lastDosingDay);
+      if (boundaryIdx >= 0) {
+        markLineData.push({
+          xAxis: String(days[boundaryIdx]),
+          lineStyle: { color: "#D97706", type: "dashed", width: 1.5 },
+          label: {
+            formatter: "Recovery",
+            position: "insideEndTop",
+            fontSize: REF_LINE_LABEL_SIZE,
+            color: "#D97706",
+          },
+        });
+      }
+
+      // Add a shaded recovery region background
+      const recoveryStart = days.find((d) => d > lastDosingDay);
+      const recoveryEnd = days[days.length - 1];
+      if (recoveryStart != null && recoveryEnd > lastDosingDay) {
+        const firstGroup = series[firstGroupIdx] as Record<string, unknown>;
+        firstGroup.markArea = {
+          silent: true,
+          data: [[
+            { xAxis: String(recoveryStart), itemStyle: { color: "rgba(217, 119, 6, 0.06)" } },
+            { xAxis: String(recoveryEnd) },
+          ]],
+        };
+      }
+    }
+
+    if (markLineData.length > 0) {
+      const firstGroup = series[firstGroupIdx] as Record<string, unknown>;
+      firstGroup.markLine = {
+        silent: true,
+        symbol: "none",
+        data: markLineData,
+      };
+    }
   }
 
   return {
@@ -752,7 +796,9 @@ export function buildTimecourseLineOption(
         );
         if (groupItems.length === 0) return "";
 
-        const dayLabel = `Day ${groupItems[0].axisValueLabel ?? groupItems[0].name ?? ""}`;
+        const dayNum = Number(groupItems[0].axisValueLabel ?? groupItems[0].name ?? "0");
+        const isRecoveryPhase = lastDosingDay != null && dayNum > lastDosingDay;
+        const dayLabel = `Day ${dayNum}${isRecoveryPhase ? " (recovery period)" : ""}`;
         let html = `<div style="font-size:11px;font-weight:600;margin-bottom:4px">${dayLabel}</div>`;
 
         for (const item of groupItems) {
@@ -815,6 +861,7 @@ export function buildVolcanoScatterOption(
   points: VolcanoPoint[],
   selectedEndpoint: string | null,
   organSystems: [string, string][],
+  effectSizeLabel = "Hedges' g",
 ): EChartsOption {
   // Group points by organ system for colored series
   const seriesByOrgan = new Map<string, VolcanoPoint[]>();
@@ -915,7 +962,7 @@ export function buildVolcanoScatterOption(
       min: 0,
       axisLabel: axisLabel(),
       splitLine: splitLineStyle(),
-      name: "|Effect size| (Hedges' g)",
+      name: `|Effect size| (${effectSizeLabel})`,
       nameLocation: "center",
       nameGap: 24,
       nameTextStyle: { fontSize: 10, color: "#9CA3AF" },

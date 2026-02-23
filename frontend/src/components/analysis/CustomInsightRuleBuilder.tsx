@@ -16,7 +16,7 @@ const CONDITION_PRESETS = [
   { value: "treatment_related", label: "Treatment-related", humanTemplate: "treatment_related == true", templateHint: "{endpoint_label}: treatment-related in {sex}." },
   { value: "p_value_below", label: "P-value below threshold", humanTemplate: "p_value_adj < {value}", templateHint: "{endpoint_label}: significant pairwise (p < {value}) in {sex}." },
   { value: "trend_p_below", label: "Trend p below threshold", humanTemplate: "trend_p < {value}", templateHint: "{endpoint_label}: significant trend (p < {value})." },
-  { value: "effect_size_above", label: "Effect size above threshold", humanTemplate: "|effect_size| >= {value}", templateHint: "{endpoint_label}: Hedges' g >= {value} in {sex}." },
+  { value: "effect_size_above", label: "Effect size above threshold", humanTemplate: "|effect_size| >= {value}", templateHint: "{endpoint_label}: effect size >= {value} in {sex}." },
   { value: "specific_domain", label: "Specific domain", humanTemplate: 'domain == "{value}"', templateHint: "{endpoint_label}: finding in {value} domain." },
   { value: "specific_pattern", label: "Dose-response pattern", humanTemplate: 'pattern == "{value}"', templateHint: "{endpoint_label}: {value} pattern in {sex}." },
   { value: "specific_organ", label: "Specific organ system", humanTemplate: 'organ_system == "{value}"', templateHint: "Finding in {value}: {endpoint_label}." },

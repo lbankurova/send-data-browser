@@ -24,9 +24,11 @@ export function fetchTimecourseGroup(
   domain: string,
   testCode: string,
   sex?: "M" | "F",
+  includeRecovery?: boolean,
 ): Promise<TimecourseResponse> {
   const params = new URLSearchParams({ mode: "group" });
   if (sex) params.set("sex", sex);
+  if (includeRecovery) params.set("include_recovery", "true");
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/timecourse/${encodeURIComponent(domain)}/${encodeURIComponent(testCode)}?${params}`,
   );
@@ -37,9 +39,11 @@ export function fetchTimecourseSubject(
   domain: string,
   testCode: string,
   sex?: "M" | "F",
+  includeRecovery?: boolean,
 ): Promise<TimecourseSubjectResponse> {
   const params = new URLSearchParams({ mode: "subject" });
   if (sex) params.set("sex", sex);
+  if (includeRecovery) params.set("include_recovery", "true");
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/timecourse/${encodeURIComponent(domain)}/${encodeURIComponent(testCode)}?${params}`,
   );

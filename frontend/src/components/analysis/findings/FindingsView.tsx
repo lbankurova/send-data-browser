@@ -24,6 +24,7 @@ import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import { formatPValue, formatEffectSize } from "@/lib/severity-colors";
+import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { UnifiedFinding } from "@/types/analysis";
 
 /** Pick the most-significant finding row: min p-value (primary), max |effect size| (secondary). */
@@ -266,7 +267,7 @@ export function FindingsView() {
               {" "}
               <span className="font-medium">{selectedPointData.label}</span>
               {sep}
-              <span className="font-mono" title="Hedges' g — bias-corrected standardized effect size. Negative = decrease, positive = increase.">g={formatEffectSize(selectedPointData.effectSize)}</span>
+              <span className="font-mono" title={`${getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")} — standardized effect size. Negative = decrease, positive = increase.`}>{getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}={formatEffectSize(selectedPointData.effectSize)}</span>
               {sep}
               <span className="font-mono">
                 p={formatPValue(selectedPointData.rawP)}
@@ -330,7 +331,7 @@ export function FindingsView() {
             <div className="text-[11px] leading-relaxed text-popover-foreground">
               <p>Each dot is one endpoint (e.g., "ALT", "Liver weight").</p>
               <p className="mt-1.5 font-medium">Position shows signal strength:</p>
-              <p><span className="text-muted-foreground">&rarr;</span> Right = larger effect (Hedges&apos; g)</p>
+              <p><span className="text-muted-foreground">&rarr;</span> Right = larger effect ({getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")})</p>
               <p><span className="text-muted-foreground">&uarr;</span> Up = more statistically significant</p>
               <p className="mt-1.5 font-medium">Reference lines:</p>
               <p><span className="text-muted-foreground">&mdash;</span> Vertical at |d| = 0.8 (large effect)</p>

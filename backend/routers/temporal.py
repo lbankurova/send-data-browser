@@ -16,6 +16,7 @@ from fastapi import APIRouter, HTTPException, Query
 from services.study_discovery import StudyInfo
 from services.xpt_processor import ensure_cached, read_xpt
 from services.analysis.dose_groups import build_dose_groups
+from services.analysis.phase_filter import compute_last_dosing_day
 
 router = APIRouter(prefix="/api", tags=["temporal"])
 
@@ -92,6 +93,7 @@ async def get_timecourse(
     test_code: str,
     sex: str | None = Query(None, description="Filter by sex: M or F"),
     mode: str = Query("group", description="group or subject"),
+    include_recovery: bool = Query(False, description="Include recovery-arm subjects and recovery-period data"),
 ):
     """Per-subject or group-level time-course for a continuous endpoint."""
     study = _get_study(study_id)
@@ -131,10 +133,12 @@ async def get_timecourse(
     df[day_col] = pd.to_numeric(df[day_col], errors="coerce")
     df = df.dropna(subset=[value_col, day_col])
 
-    # Join with subject roster
-    subjects_df = _get_subjects_df(study)
-    df = df.merge(subjects_df[["USUBJID", "SEX", "ARMCD", "dose_level", "dose_label"]],
-                  on="USUBJID", how="inner")
+    # Join with subject roster (include recovery subjects if requested)
+    subjects_df = _get_subjects_df(study, include_recovery=include_recovery)
+    merge_cols = ["USUBJID", "SEX", "ARMCD", "dose_level", "dose_label"]
+    if include_recovery and "is_recovery" in subjects_df.columns:
+        merge_cols.append("is_recovery")
+    df = df.merge(subjects_df[merge_cols], on="USUBJID", how="inner")
 
     # Filter by sex if requested
     if sex:
@@ -142,15 +146,24 @@ async def get_timecourse(
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data for sex='{sex}'")
 
+    # Compute last dosing day for recovery boundary marker
+    last_dosing_day = compute_last_dosing_day(study) if include_recovery else None
+
     if mode == "subject":
-        return _build_subject_response(df, test_code, test_name, domain_upper, unit, value_col, day_col)
+        return _build_subject_response(
+            df, test_code, test_name, domain_upper, unit, value_col, day_col,
+            include_recovery=include_recovery, last_dosing_day=last_dosing_day,
+        )
     else:
-        return _build_group_response(df, test_code, test_name, domain_upper, unit, value_col, day_col)
+        return _build_group_response(
+            df, test_code, test_name, domain_upper, unit, value_col, day_col,
+            last_dosing_day=last_dosing_day,
+        )
 
 
 def _build_group_response(
     df: pd.DataFrame, test_code: str, test_name: str, domain: str, unit: str,
-    value_col: str, day_col: str,
+    value_col: str, day_col: str, *, last_dosing_day: int | None = None,
 ) -> dict:
     """Build group-level (mean ± SD) time-course response."""
     timepoints = []
@@ -169,18 +182,22 @@ def _build_group_response(
             })
         timepoints.append({"day": int(day), "groups": groups})
 
-    return {
+    result: dict = {
         "test_code": test_code.upper(),
         "test_name": test_name,
         "domain": domain,
         "unit": unit,
         "timepoints": timepoints,
     }
+    if last_dosing_day is not None:
+        result["last_dosing_day"] = last_dosing_day
+    return result
 
 
 def _build_subject_response(
     df: pd.DataFrame, test_code: str, test_name: str, domain: str, unit: str,
-    value_col: str, day_col: str,
+    value_col: str, day_col: str, *, include_recovery: bool = False,
+    last_dosing_day: int | None = None,
 ) -> dict:
     """Build subject-level time-course response."""
     subjects = []
@@ -191,22 +208,28 @@ def _build_subject_response(
             for _, r in subj_df.sort_values(day_col).iterrows()
             if pd.notna(r[value_col])
         ]
-        subjects.append({
+        entry: dict = {
             "usubjid": usubjid,
             "sex": row0["SEX"],
             "dose_level": int(row0["dose_level"]),
             "dose_label": row0["dose_label"],
             "arm_code": row0["ARMCD"],
             "values": values,
-        })
+        }
+        if include_recovery and "is_recovery" in row0.index:
+            entry["is_recovery"] = bool(row0["is_recovery"])
+        subjects.append(entry)
 
-    return {
+    result: dict = {
         "test_code": test_code.upper(),
         "test_name": test_name,
         "domain": domain,
         "unit": unit,
         "subjects": subjects,
     }
+    if last_dosing_day is not None:
+        result["last_dosing_day"] = last_dosing_day
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -985,7 +1008,7 @@ async def get_recovery_comparison(study_id: str):
     """Compare recovery-arm subjects vs recovery-arm controls for LB and BW.
 
     Returns per-endpoint, per-sex, per-dose recovery statistics including
-    p-value (Welch t-test) and effect size (Cohen's d) at recovery sacrifice.
+    p-value (Welch t-test) and effect size (Hedges' g) at recovery sacrifice.
     Also includes the terminal (main-arm) effect for comparison.
     """
     from services.analysis.statistics import welch_t_test, cohens_d
@@ -1002,19 +1025,30 @@ async def get_recovery_comparison(study_id: str):
     recovery_ids = set(recovery_subjects["USUBJID"])
     main_ids = set(main_subjects["USUBJID"])
 
-    # Determine recovery day from DS domain
+    # Determine recovery sacrifice day from DS domain
     recovery_day = None
     if "ds" in study.xpt_files:
         try:
             ds_df = _read_domain_df(study, "DS")
-            ds_df["DSDY"] = pd.to_numeric(ds_df.get("DSDY"), errors="coerce")
+            # SEND uses DSSTDY for disposition study day
+            day_col_ds = "DSSTDY" if "DSSTDY" in ds_df.columns else "DSDY"
+            ds_df[day_col_ds] = pd.to_numeric(ds_df.get(day_col_ds), errors="coerce")
             rec_ds = ds_df[ds_df["USUBJID"].isin(recovery_ids)]
-            if not rec_ds.empty and rec_ds["DSDY"].notna().any():
-                recovery_day = int(rec_ds["DSDY"].dropna().max())
+            if not rec_ds.empty and rec_ds[day_col_ds].notna().any():
+                recovery_day = int(rec_ds[day_col_ds].dropna().max())
         except Exception:
             pass
 
     rows: list[dict] = []
+
+    def _safe_round(v: float | None, ndigits: int) -> float | None:
+        """Round a value, converting NaN/Inf to None for JSON safety."""
+        if v is None:
+            return None
+        import math
+        if math.isnan(v) or math.isinf(v):
+            return None
+        return round(v, ndigits)
 
     def _compute_domain_recovery(
         domain_key: str,
@@ -1124,11 +1158,11 @@ async def get_recovery_comparison(study_id: str):
                         "sex": str(sex_val),
                         "recovery_day": recovery_day or int(dose_day),
                         "dose_level": int(dose_level),
-                        "mean": round(float(np.mean(treat_vals)), 4),
-                        "sd": round(float(np.std(treat_vals, ddof=1)), 4),
-                        "p_value": round(t_result["p_value"], 6) if t_result["p_value"] is not None else None,
-                        "effect_size": round(d, 4) if d is not None else None,
-                        "terminal_effect": round(terminal_d, 4) if terminal_d is not None else None,
+                        "mean": _safe_round(float(np.mean(treat_vals)), 4),
+                        "sd": _safe_round(float(np.std(treat_vals, ddof=1)), 4),
+                        "p_value": _safe_round(t_result["p_value"], 6),
+                        "effect_size": _safe_round(d, 4),
+                        "terminal_effect": _safe_round(terminal_d, 4),
                     })
 
     # Process LB domain

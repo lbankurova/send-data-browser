@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
 import {
   withSignalScores,
   computeSignalSummary,
@@ -478,6 +479,7 @@ export function FindingsRail({
                   onRestore={onRestoreEndpoint}
                   ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
                   clinicalTier={clinicalTierMap.get(ep.endpoint_label)}
+                  effectSizeLabel={getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")}
                 />
               ))
             )}
@@ -502,6 +504,7 @@ export function FindingsRail({
               excludedEndpoints={excludedEndpoints}
               onRestoreEndpoint={onRestoreEndpoint}
               clinicalTierMap={clinicalTierMap}
+              effectSizeLabel={getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")}
             />
           ))
         )}
@@ -810,6 +813,7 @@ function CardSection({
   excludedEndpoints,
   onRestoreEndpoint,
   clinicalTierMap,
+  effectSizeLabel,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -827,6 +831,7 @@ function CardSection({
   excludedEndpoints?: ReadonlySet<string>;
   onRestoreEndpoint?: (label: string) => void;
   clinicalTierMap?: Map<string, string>;
+  effectSizeLabel?: string;
 }) {
   return (
     <div>
@@ -858,6 +863,7 @@ function CardSection({
                 ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
                 otherSyndromes={otherSyndromes}
                 clinicalTier={clinicalTierMap?.get(ep.endpoint_label)}
+                effectSizeLabel={effectSizeLabel}
               />
             );
           })}
@@ -996,7 +1002,8 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
   onRestore?: (label: string) => void;
   otherSyndromes?: string[];
   clinicalTier?: string;
-}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onRestore, otherSyndromes, clinicalTier }, ref) {
+  effectSizeLabel?: string;
+}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onRestore, otherSyndromes, clinicalTier, effectSizeLabel }, ref) {
   // Pipe weight from signal tier (matches FindingsTable severity column)
   const tier = getSignalTier(endpoint.signal);
   const isNormal = endpoint.worstSeverity === "normal";
@@ -1055,7 +1062,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
         {/* Effect size — typographic weight encodes magnitude */}
         <span
           className={cn("w-6 shrink-0 text-right font-mono text-[10px]", effectTypography(endpoint.maxEffectSize))}
-          title={endpoint.maxEffectSize !== null ? `Hedges' g = ${endpoint.maxEffectSize.toFixed(3)}\nLargest effect size across all dose groups and sexes` : undefined}
+          title={endpoint.maxEffectSize !== null ? `${effectSizeLabel ?? "Hedges\u2019 g"} = ${endpoint.maxEffectSize.toFixed(3)}\nLargest effect size across all dose groups and sexes` : undefined}
         >
           {endpoint.maxEffectSize !== null ? formatEffectCompact(endpoint.maxEffectSize) : ""}
         </span>

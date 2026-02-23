@@ -21,6 +21,7 @@ import { DomainLabel } from "@/components/ui/DomainLabel";
 import { SignalScorePopover } from "@/components/analysis/ScoreBreakdown";
 import { SourceRecordsExpander } from "@/components/analysis/SourceRecordsExpander";
 import { MethodologyPanel } from "@/components/analysis/MethodologyPanel";
+import { useStatMethods } from "@/hooks/useStatMethods";
 import { AuditTrailPanel } from "@/components/analysis/AuditTrailPanel";
 import type { Tier } from "@/lib/rule-synthesis";
 import type {
@@ -54,6 +55,7 @@ export function NoaelContextPanel({
 }: Props) {
   const { studyId: studyIdParam } = useParams<{ studyId: string }>();
   const studyId = studyIdProp ?? studyIdParam;
+  const noaelStatMethods = useStatMethods(studyId);
   const navigate = useNavigate();
   const { navigateTo } = useStudySelection();
   const [tierFilter, setTierFilter] = useState<Tier | null>(null);
@@ -568,7 +570,7 @@ export function NoaelContextPanel({
       )}
 
       {/* 9. Statistical methodology */}
-      <MethodologyPanel expandAll={expandGen} collapseAll={collapseGen} />
+      <MethodologyPanel expandAll={expandGen} collapseAll={collapseGen} activeEffectSizeMethod={noaelStatMethods.effectSize} />
     </div>
   );
 }

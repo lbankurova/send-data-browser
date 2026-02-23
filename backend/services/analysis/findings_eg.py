@@ -6,7 +6,7 @@ import pandas as pd
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
-    dunnett_pairwise, cohens_d, trend_test,
+    dunnett_pairwise, welch_pairwise, cohens_d, trend_test,
 )
 from services.analysis.phase_filter import (
     get_treatment_subjects, filter_treatment_period_records,
@@ -109,6 +109,10 @@ def compute_eg_findings(
                 for dl in sorted(grp["dose_level"].unique()) if dl != 0
             ]
             pairwise = dunnett_pairwise(control_values, treated)
+            welch = welch_pairwise(control_values, treated)
+            welch_map = {w["dose_level"]: w for w in welch}
+            for pw in pairwise:
+                pw["p_value_welch"] = welch_map.get(pw["dose_level"], {}).get("p_value_welch")
 
         trend_result = trend_test(dose_groups_values) if len(dose_groups_values) >= 2 else {"statistic": None, "p_value": None}
 

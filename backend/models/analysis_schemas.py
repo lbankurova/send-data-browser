@@ -40,6 +40,7 @@ class PairwiseResult(BaseModel):
     cohens_d: float | None = None
     odds_ratio: float | None = None
     risk_ratio: float | None = None
+    p_value_welch: float | None = None
 
 
 class UnifiedFinding(BaseModel):

@@ -16,10 +16,12 @@
 import { useMemo } from "react";
 import { useFindings } from "@/hooks/useFindings";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
+import { useStatMethods } from "@/hooks/useStatMethods";
 import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
+import { applyEffectSizeMethod, applyMultiplicityMethod, hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import type { FindingsFilters, FindingsResponse, UnifiedFinding } from "@/types/analysis";
 
@@ -65,12 +67,26 @@ function applyScheduledFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
 export function useFindingsAnalyticsLocal(studyId: string | undefined): FindingsAnalyticsResult {
   const { data, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
   const { useScheduledOnly: isScheduledOnly } = useScheduledOnly();
+  const statMethods = useStatMethods(studyId);
 
   // Active findings: swapped when scheduled-only is active
-  const activeFindings = useMemo(() => {
+  const scheduledFindings = useMemo(() => {
     if (!data?.findings?.length) return [];
     return isScheduledOnly ? applyScheduledFilter(data.findings) : data.findings;
   }, [data, isScheduledOnly]);
+
+  // Apply statistical method transforms: effect size → multiplicity
+  const activeFindings = useMemo(() => {
+    if (!scheduledFindings.length) return [];
+    const afterEffect = applyEffectSizeMethod(scheduledFindings, statMethods.effectSize);
+    return applyMultiplicityMethod(afterEffect, statMethods.multiplicity);
+  }, [scheduledFindings, statMethods.effectSize, statMethods.multiplicity]);
+
+  // Detect Welch p-value availability for dropdown enablement
+  const welchAvailable = useMemo(
+    () => checkWelchPValues(scheduledFindings),
+    [scheduledFindings],
+  );
 
   const endpointSummaries = useMemo(() => {
     if (!activeFindings.length) return [];
@@ -143,7 +159,10 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
     labMatches,
     signalScores,
     endpointSexes,
-  }), [endpointSummaries, syndromes, organCoherence, labMatches, signalScores, endpointSexes]);
+    activeEffectSizeMethod: statMethods.effectSize,
+    activeMultiplicityMethod: statMethods.multiplicity,
+    hasWelchPValues: welchAvailable,
+  }), [endpointSummaries, syndromes, organCoherence, labMatches, signalScores, endpointSexes, statMethods.effectSize, statMethods.multiplicity, welchAvailable]);
 
   return { analytics, data, isLoading, error: error as Error | null };
 }

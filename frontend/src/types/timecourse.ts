@@ -8,6 +8,7 @@ export interface TimecourseResponse {
   domain: string;
   unit: string;
   timepoints: TimecourseTimepoint[];
+  last_dosing_day?: number;
 }
 
 export interface TimecourseTimepoint {
@@ -31,6 +32,7 @@ export interface TimecourseSubjectResponse {
   domain: string;
   unit: string;
   subjects: TimecourseSubject[];
+  last_dosing_day?: number;
 }
 
 export interface TimecourseSubject {
@@ -39,6 +41,7 @@ export interface TimecourseSubject {
   dose_level: number;
   dose_label: string;
   arm_code: string;
+  is_recovery?: boolean;
   values: { day: number; value: number }[];
 }
 
