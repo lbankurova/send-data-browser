@@ -779,7 +779,7 @@ Below the viewer placeholder, a single `rounded-md border bg-card px-2 py-1.5` c
 
 - **Implementation:** Fully functional interactive ECharts scatter chart via `VolcanoScatter` component
 - **Chart:** `<EChartsWrapper style={{ width: "100%", height: 260 }}>` using `buildVolcanoScatterOption()`
-- **Axes:** X = |effect size| (Cohen's d), Y = -log10(trend p)
+- **Axes:** X = |effect size| ({method label}), Y = -log10(trend p). Method label is dynamic from `getEffectSizeLabel(statMethods.effectSize)` (default: "Hedges' g")
 - **Colors:** Organ system colors via deterministic `getOrganColor()` function -- `hsl(hash(organ) % 360, 55%, 50%)` with a golden-angle hash. Cached in `ORGAN_COLORS` object for stability.
 - **Reference lines:** markLine on first series -- vertical dashed lines at d=0.5 (`#D1D5DB`) and d=0.8 (`#9CA3AF`); horizontal dashed lines at p=0.05 (`#D1D5DB`) and p=0.01 (`#9CA3AF`). Labels in fontSize 9.
 - **Selected endpoint:** symbolSize 14 (vs 8 normal), opacity 1 (vs 0.65), dark border `#1F2937` borderWidth 2
@@ -1118,6 +1118,12 @@ The view uses `StudySelectionContext` (not `ViewSelectionContext`) for selection
 ---
 
 ## Changelog
+
+### 2026-02-22 -- Statistical method switching (dynamic labels)
+
+- **Volcano scatter X-axis:** Label changed from hardcoded "Cohen's d" to dynamic `|Effect size| ({method label})` via `getEffectSizeLabel(statMethods.effectSize)`.
+- **Effect size bar chart header:** Already documented as dynamic (line 194). Confirmed correct.
+- **Chart builder parameter:** `buildVolcanoScatterOption()` now accepts optional `effectSizeLabel` parameter (default: "Hedges' g").
 
 ### 2026-02-16 -- Spec sync with codebase (session state, ChartModeToggle, metrics layout)
 
