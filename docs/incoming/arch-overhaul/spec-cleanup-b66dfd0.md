@@ -31,6 +31,7 @@
 *Updated 2026-02-20: TK satellite detection and exclusion (63ae665) — fixed `_parse_tx()` to detect TK via param value (not presence), eliminated ARMCD collision by excluding TK from tx_map, added `~is_satellite` filter to all 12 findings modules + FW + mortality + DD. Group N corrected from 30→20 for PointCross dose groups 2-4. StudyBanner shows exclusion count. Source: `tk-satellite-detection-spec.md`.*
 *Updated 2026-02-22: Study Summary Signals→NOAEL merge — SS-2, SS-5 resolved. Signals tab removed from Study Summary (now 2-tab: Details + Cross-Study). Signal content (statements, protective signals, signal matrix, metrics, rules) merged into NOAEL Decision view (now 5-tab). SignalsPanel.tsx + StudySummaryContextPanel.tsx deleted. Study Profile Block, StudyTimeline SVG, Data Quality section added to Study Details tab.*
 *Updated 2026-02-23: RDC-2 resolved (4181435) — "Include recovery" checkbox in timecourse section + recovery boundary markLine in DoseResponseView.*
+*Updated 2026-02-23: Study Timeline swimlane implemented (39616ea) — treatment/recovery bars with dose-group color coding, TK satellite lane (thinner), death markers (● TR solid red / ○ incidental hollow, backend-classified), D1/terminal/end-recovery reference lines, compact legend. Source: `study-timeline-swimlane-spec.md`.*
 
 ---
 

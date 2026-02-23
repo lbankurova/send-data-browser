@@ -84,7 +84,7 @@ Dense narrative header at the top of the tab. No section header — renders dire
 
 Spacious SVG swimlane visualization showing study design, phases, and death events as horizontal dosing lanes. Only renders when `doseGroups.length > 0` and `studyCtx.dosingDurationWeeks` is available. Wrapped in `mb-6` section. Target height ~260–320px per spec.
 
-**Props:** `doseGroups`, `dosingDurationWeeks`, `recoveryPeriodDays`, `deaths` (combined `mortalityData.deaths` + `.accidentals`), `excludedSubjects`.
+**Props:** `doseGroups`, `dosingDurationWeeks`, `recoveryPeriodDays`, `treatmentRelatedDeaths` (`mortalityData.deaths` — backend-classified TR), `accidentalDeaths` (`mortalityData.accidentals` — backend-classified incidental), `excludedSubjects`.
 
 **SVG layout constants:**
 - `LANE_HEIGHT = 20` (spec: 18–20px), `ROW_PITCH = 46` (top-to-top lane spacing; gap = 26px for sub-labels)
@@ -105,12 +105,12 @@ Spacious SVG swimlane visualization showing study design, phases, and death even
    - **Left label line 2 (sub-label):** Sex split + optional death count (e.g., `"10M / 10F · 2 TR deaths"`), 9px muted-foreground, positioned 10px below bar bottom.
    - **Dosing bar:** Rectangle from Day 1 to terminal sacrifice, filled with `getDoseGroupColor(dose_level)`, `opacity={0.85}`, `rx={3}`. Tooltip: dose label, sex split, N, death counts (TR + incidental), recovery info.
    - **N annotation:** White text inside bar — `"n={n_total}"`, 9px font-weight 500, `pointerEvents: "none"`.
-   - **Recovery extension (conditional):** Lighter rectangle from terminal to study end. Fill: group color lightened 50%, `opacity={0.7}`, dashed stroke. Text inside: `"R:{recovery_n}"` in group color, 8px font. Tooltip with subject count and day range.
+   - **Recovery extension (conditional):** Rendered when `hasRecovery && group.recovery_armcd && group.recovery_n > 0`. Uses the main group's own `recovery_n` field (NOT separate recovery group entries). Lighter rectangle from terminal to study end. Fill: group color lightened 50%, `opacity={0.7}`, dashed stroke. Text inside: `"R:{recovery_n}"` in group color, 8px font. Tooltip with subject count and day range.
 
-3. **Death markers (conditional):** Rendered per lane when `deaths` prop is provided. Each death with a non-null `study_day` is mapped to its lane by `dose_level` (including recovery groups mapped to parent lane). **Positioned 3px above bar top** (not at bar center) per spec §4.3.
-   - **TR death:** Filled red circle (`fill="#DC2626"`, `stroke="white"`, `strokeWidth={1.5}`, `r={3.5}`).
-   - **Non-TR / incidental death:** Hollow circle (`fill="white"`, `stroke="#6B7280"`, `strokeWidth={1.5}`, `r={3.5}`).
-   - **Attribution logic:** `isTreatmentRelated()` checks DDRESCAT for "TREATMENT", "DRUG", "COMPOUND", or "TEST ARTICLE" (case-insensitive). All others classified as incidental.
+3. **Death markers (conditional):** Rendered per lane from `treatmentRelatedDeaths` + `accidentalDeaths` props. Each death with non-null `study_day` is mapped to its lane by `dose_level`. **Positioned 3px above bar top** per spec §4.3.
+   - **TR death:** Filled red circle (`fill="#DC2626"`, `stroke="white"`, `strokeWidth={1.5}`, `r={3.5}`). Source: `mortalityData.deaths` (backend-classified).
+   - **Non-TR / incidental death:** Hollow circle (`fill="white"`, `stroke="#6B7280"`, `strokeWidth={1.5}`, `r={3.5}`). Source: `mortalityData.accidentals`.
+   - **Attribution logic:** Uses the backend's classification (deaths[] = TR, accidentals[] = incidental). No client-side text parsing of DDRESCAT.
    - **Stacking:** Multiple deaths on the same day stacked upward by `DEATH_R * 2 + 1` per prior same-day death.
    - **Tooltip:** Subject ID, study day, dose label, attribution (TR / incidental), cause (if available), exclusion status (included/excluded from analysis).
 
