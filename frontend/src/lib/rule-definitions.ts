@@ -173,8 +173,8 @@ export interface ThresholdDef {
 
 export const THRESHOLDS: ThresholdDef[] = [
   { key: "p_value_significance", name: "P-value significance", value: "p < 0.05", usedBy: ["R02", "R03"], description: "Pairwise and trend significance threshold" },
-  { key: "large_effect", name: "Large effect", value: "|d| \u2265 1.0", usedBy: ["R10"], description: "Large Cohen\u2019s d threshold" },
-  { key: "moderate_effect", name: "Moderate effect", value: "|d| \u2265 0.5", usedBy: ["R11"], description: "Moderate Cohen\u2019s d threshold" },
+  { key: "large_effect", name: "Large effect", value: "|g| \u2265 1.0", usedBy: ["R10"], description: "Large Hedges\u2019 g threshold" },
+  { key: "moderate_effect", name: "Moderate effect", value: "|g| \u2265 0.5", usedBy: ["R11"], description: "Moderate Hedges\u2019 g threshold" },
   { key: "target_organ_evidence", name: "Target organ evidence", value: "evidence \u2265 0.3", usedBy: ["R08"], description: "Minimum evidence score for target organ flag" },
   { key: "target_organ_significant", name: "Target organ significant", value: "n_significant \u2265 1", usedBy: ["R08"], description: "Minimum significant endpoints for target organ" },
   { key: "p_value_cap", name: "P-value cap", value: "p = 0.0001", usedBy: [], description: "P-value component capped at -log\u2081\u2080(0.0001)/4 = 1.0" },
