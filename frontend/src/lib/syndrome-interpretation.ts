@@ -46,6 +46,8 @@ import { getSyndromeDefinition } from "@/lib/cross-domain-syndromes";
 import type { LesionSeverityRow } from "@/types/analysis-views";
 import type { StudyContext } from "@/types/study-context";
 import type { StudyMortality } from "@/types/mortality";
+import { assessSecondaryToBodyWeight } from "@/lib/organ-weight-normalization";
+import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import meddraMapping from "@/data/send-to-meddra-v3.json";
 
 // ─── Exported threshold constants (single source of truth) ─────────
@@ -346,6 +348,8 @@ export interface AdversityAssessment {
   crossDomainSupport: boolean;
   precursorToWorse: boolean;
   secondaryToOther: boolean;
+  /** BW confounding secondary assessment (tier >= 3 in Phase 1) */
+  secondaryToBW: { isSecondary: boolean; confidence: string; bwG: number } | null;
   overall: "adverse" | "non_adverse" | "equivocal";
 }
 
@@ -2982,6 +2986,7 @@ export function computeAdversity(
   foodConsumptionContext: FoodConsumptionContext,
   histopathData: LesionSeverityRow[],
   allDetectedSyndromeIds: string[],
+  normalizationContexts?: NormalizationContext[],
 ): AdversityAssessment {
   const reversible =
     recovery.status === "recovered" ? true
@@ -2995,8 +3000,24 @@ export function computeAdversity(
 
   const precursorToWorse = tumorContext.progressionDetected;
 
-  const secondaryToOther =
+  const secondaryToFood =
     foodConsumptionContext.bwFwAssessment === "secondary_to_food";
+
+  // B-7: BW confounding — check if OM endpoints in this syndrome may be secondary to BW loss
+  // Use worst-tier normalization context across all organs
+  const worstNormCtx = normalizationContexts
+    ? normalizationContexts.reduce<NormalizationContext | undefined>(
+        (worst, ctx) => (!worst || ctx.tier > worst.tier ? ctx : worst),
+        undefined,
+      )
+    : undefined;
+  const secondaryToBWResult = worstNormCtx
+    ? assessSecondaryToBodyWeight(worstNormCtx)
+    : null;
+  const secondaryToBW = secondaryToBWResult && secondaryToBWResult.isSecondary
+    ? { ...secondaryToBWResult, bwG: worstNormCtx!.bwG } : null;
+
+  const secondaryToOther = secondaryToFood || (secondaryToBW?.isSecondary ?? false);
 
   // REM-16: Check adaptive response pattern (XS01 enzyme induction)
   const adaptive = checkAdaptivePattern(syndrome, allEndpoints, histopathData);
@@ -3045,6 +3066,11 @@ export function computeAdversity(
     crossDomainSupport,
     precursorToWorse,
     secondaryToOther,
+    secondaryToBW: secondaryToBW ? {
+      isSecondary: secondaryToBW.isSecondary,
+      confidence: secondaryToBW.confidence,
+      bwG: secondaryToBW.bwG,
+    } : null,
     overall,
   };
 }
@@ -3397,6 +3423,8 @@ export function interpretSyndrome(
   mortalityNoaelCap?: number | null,
   /** REM-10: IDs of all detected syndromes (for stress confound cross-check) */
   allDetectedSyndromeIds?: string[],
+  /** Organ weight normalization contexts for B-7 BW confounding assessment */
+  normalizationContexts?: NormalizationContext[],
 ): SyndromeInterpretation {
   const discriminators = DISCRIMINATOR_REGISTRY[syndrome.id];
 
@@ -3490,6 +3518,7 @@ export function interpretSyndrome(
     foodConsumptionContext,
     histopathData,
     allDetectedSyndromeIds ?? [],
+    normalizationContexts,
   );
 
   // REM-10: Stress confound certainty downgrade — reduce by one level
@@ -3597,7 +3626,8 @@ export function interpretSyndrome(
   if (adversity.precursorToWorse) advFactors.push("precursor to worse");
   if (adversity.reversible === true) advFactors.push("reversible");
   if (adversity.reversible === false) advFactors.push("irreversible");
-  if (adversity.secondaryToOther) advFactors.push("secondary to food consumption");
+  if (adversity.secondaryToOther && !adversity.secondaryToBW) advFactors.push("secondary to food consumption");
+  if (adversity.secondaryToBW) advFactors.push(`secondary to body weight loss (BW g=${adversity.secondaryToBW.bwG.toFixed(2)}, ${adversity.secondaryToBW.confidence} confidence)`);
   if (adversity.stressConfound) advFactors.push("potentially secondary to stress (XS08)");
   if (adversity.adaptive) advFactors.push("adaptive pattern (enzyme induction)");
   if (adversity.crossDomainSupport) advFactors.push("cross-domain support");

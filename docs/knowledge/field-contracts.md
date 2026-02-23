@@ -1134,6 +1134,44 @@ Not:         [common misreadings that lead to bugs]
 
 ---
 
+### FIELD-51 — `NormalizationDecision` (organ weight normalization)
+
+**Type:** `{ mode, tier, confidence, rationale[], warnings[], brainAffected, userOverridden }`
+**Scope:** per-organ × per-dose-group
+**Source:** `organ-weight-normalization.ts:decideNormalization()`, hook `useOrganWeightNormalization(studyId)`
+**Consumers:** StudySummaryView (auto-set), StudyDetailsContextPanel (summary), OrganContextPanel (pane), FindingsContextPanel (OM annotation), SyndromeContextPanel (term annotation, B-7), syndrome-interpretation.ts (B-7 adversity factor)
+
+**Invariants:**
+- `tier` is 1–4, monotonically increasing with |BW Hedges' g|.
+- `mode` is one of `"absolute"`, `"body_weight"`, `"brain_weight"`, `"ancova"`.
+- `rationale` is non-empty for tier >= 2.
+- `effectDecomposition` is always null in Phase 1.
+- Session state `organWeightMethod` auto-set only when tier >= 3 and current value is `"absolute"`.
+
+**Null means:** Insufficient BW or OM data (< 2 dose groups, no OM domain findings).
+
+**Not:**
+- Not a backend field — computed entirely in frontend from existing group_stats.
+- Not persisted — recomputed from cached findings on each mount.
+
+---
+
+### FIELD-52 — `adversity.secondaryToBW`
+
+**Type:** `{ isSecondary: boolean; confidence: string; bwG: number } | null`
+**Scope:** per-syndrome adversity assessment
+**Source:** `syndrome-interpretation.ts:computeAdversity()` via `assessSecondaryToBodyWeight()`
+**Consumers:** SyndromeContextPanel (B-7 factor display), narrative generation
+
+**Invariants:**
+- Non-null only when normalization tier >= 3 in Phase 1 (heuristic).
+- Phase 2+: uses `proportionDirect` threshold from ANCOVA effect decomposition.
+- `confidence` is `"low"` in Phase 1 (no ANCOVA), `"medium"` or `"high"` in Phase 2+.
+
+**Null means:** No normalization context provided, or BW effect too small (tier < 3).
+
+---
+
 ## ID Allocation
 
 | Range | Category | Count |
@@ -1157,6 +1195,7 @@ Not:         [common misreadings that lead to bugs]
 | FIELD-44 | NOAEL narrative | 1 |
 | FIELD-45 – FIELD-48 | Rule synthesis & aggregation | 4 |
 | FIELD-49 – FIELD-50 | Statistical method transforms | 2 |
-| FIELD-51+ | Reserved for future fields | — |
+| FIELD-51 – FIELD-52 | Organ weight normalization | 2 |
+| FIELD-53+ | Reserved for future fields | — |
 
-Total: 50 fields documented.
+Total: 52 fields documented.

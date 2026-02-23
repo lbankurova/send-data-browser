@@ -21,6 +21,8 @@ import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { StudyTimeline } from "./charts/StudyTimeline";
 import { getInterpretationContext } from "@/lib/species-vehicle-context";
+import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
+import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
 import type { SignalSummaryRow, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { StudyMetadata } from "@/types";
@@ -469,6 +471,8 @@ function DomainTable({
   mortalityData,
   excludedSubjects,
   organWeightMethod,
+  normTier,
+  normBwG,
 }: {
   studyId: string;
   domains: { name: string; label: string; row_count: number; subject_count?: number | null }[];
@@ -476,6 +480,8 @@ function DomainTable({
   mortalityData?: StudyMortality;
   excludedSubjects: ReadonlySet<string>;
   organWeightMethod: string;
+  normTier: number;
+  normBwG: number;
 }) {
   const navigate = useNavigate();
   const [showFolded, setShowFolded] = useState(false);
@@ -483,23 +489,24 @@ function DomainTable({
   const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
 
   /** Generate decision-context notes for domains where analysis settings matter. */
-  const generateContextNote = (dom: string, sig: DomainSignalInfo | undefined): string => {
+  const generateContextNote = (dom: string): string => {
     if (dom === "ds" && mortalityData?.has_mortality) {
-      // Count deaths that are currently excluded from terminal stats
       const allDeaths = [...mortalityData.deaths, ...mortalityData.accidentals];
       const deathsExcluded = allDeaths.filter(d => excludedSubjects.has(d.USUBJID)).length;
       if (deathsExcluded > 0) return `${deathsExcluded} excluded from terminal stats`;
       return "";
     }
-    if (dom === "bw" && sig) {
-      // Check if BW has adverse endpoints with direction "down"
-      const hasBwDown = [...sig.endpoints.values()].some(ep => ep.adverse && ep.direction === "down");
-      if (hasBwDown) return "organ weights auto-set to ratio-to-brain";
+    if (dom === "bw") {
+      if (normTier >= 3) return `organ weights auto-set to ratio-to-brain (g=${normBwG.toFixed(2)})`;
+      if (normTier >= 2) return `organ weight ratios may be confounded (g=${normBwG.toFixed(2)})`;
     }
     if (dom === "om") {
       const methodLabel = organWeightMethod === "ratio-bw" ? "ratio-to-BW"
         : organWeightMethod === "ratio-brain" ? "ratio-to-brain"
         : "absolute";
+      if (normTier >= 2) {
+        return `using ${methodLabel} · ${getTierSeverityLabel(normTier)} BW effect (g=${normBwG.toFixed(2)}, Tier ${normTier})`;
+      }
       return `using ${methodLabel}`;
     }
     return "";
@@ -527,7 +534,7 @@ function DomainTable({
           ? generateKeyFindings(dom, new Map(), mortalityData)
           : "";
 
-      const contextNote = generateContextNote(dom, sig);
+      const contextNote = generateContextNote(dom);
 
       return {
         code: d.name,
@@ -770,16 +777,38 @@ function DetailsTab({
   const { excludedSubjects } = useScheduledOnly();
   const [organWeightMethod, setOrganWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
 
-  // Auto-set organ weight method to ratio-to-brain when BW is adversely affected (direction down)
-  const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
+  // Auto-set organ weight method: tier-based decision from normalization engine
+  const normalization = useOrganWeightNormalization(studyId);
   useEffect(() => {
-    const bwSig = domainSignals["bw"];
-    if (!bwSig) return;
-    const hasBwDown = [...bwSig.endpoints.values()].some(ep => ep.adverse && ep.direction === "down");
-    if (hasBwDown && organWeightMethod === "absolute") {
+    // Tier >= 3 (large BW effect): auto-set to ratio-to-brain
+    if (normalization.highestTier >= 3 && organWeightMethod === "absolute") {
       setOrganWeightMethod("ratio-brain");
     }
-  }, [domainSignals, organWeightMethod, setOrganWeightMethod]);
+  }, [normalization.highestTier, organWeightMethod, setOrganWeightMethod]);
+
+  // Interpretation context notes from species/vehicle/route + BW confounding
+  // (must be before early return to satisfy Rules of Hooks)
+  const interpretationNotes = useMemo(() => {
+    if (!studyCtx) return [];
+    const notes = getInterpretationContext({
+      species: studyCtx.species,
+      strain: studyCtx.strain,
+      vehicle: studyCtx.vehicle,
+      route: studyCtx.route,
+    });
+    // Add BW confounding note when normalization tier >= 2
+    if (normalization.highestTier >= 2) {
+      const g = normalization.worstBwG.toFixed(2);
+      const tierLabel = getTierSeverityLabel(normalization.highestTier);
+      const noteText = normalization.highestTier >= 4
+        ? `Severe BW effect (g=${g}). ANCOVA recommended for definitive organ weight assessment.`
+        : normalization.highestTier >= 3
+        ? `Large BW effect (g=${g}). Brain-weight normalization auto-selected for organ weights.`
+        : `Moderate BW effect (g=${g}). Organ-to-BW ratios should be interpreted with caution for high-dose groups.`;
+      notes.push({ category: "Body weight", note: noteText, severity: tierLabel as "caution" });
+    }
+    return notes;
+  }, [studyCtx, normalization.highestTier, normalization.worstBwG]);
 
   if (!meta) {
     return (
@@ -890,17 +919,6 @@ function DetailsTab({
   const flaggedAnimals = battery?.flagged_animals ?? [];
   const flaggedCount = flaggedAnimals.filter(a => a.flag).length;
   const allWarnings = (provenanceMessages ?? []).filter(m => m.icon === "warning");
-
-  // Interpretation context notes from species/vehicle/route
-  const interpretationNotes = useMemo(() => {
-    if (!studyCtx) return [];
-    return getInterpretationContext({
-      species: studyCtx.species,
-      strain: studyCtx.strain,
-      vehicle: studyCtx.vehicle,
-      route: studyCtx.route,
-    });
-  }, [studyCtx]);
 
   return (
     <div className="flex-1 overflow-auto p-4">
@@ -1211,7 +1229,7 @@ function DetailsTab({
         <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Domains ({domainRows.length})
         </h2>
-        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} />
+        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} />
       </section>
 
       {/* ── Interpretation context ────────────────────────── */}

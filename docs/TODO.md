@@ -190,10 +190,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open (deferred — no data source available)
 - **Owner hint:** backend-dev (database), frontend-dev (integration into interpretation layer)
 
-### GAP-18: Auto-select organ weight method — full spec implementation
-- **Files:** `frontend/src/components/analysis/StudySummaryView.tsx`, `docs/incoming/`
-- **Issue:** Current implementation is a display-time auto-default: when BW has adverse endpoints with direction "down", `organWeightMethod` is auto-set to `"ratio-brain"` via `useEffect` in DetailsTab. A full spec exists (or should be written) for more comprehensive organ weight method automation — e.g., propagating the auto-set to all views that consume `organWeightMethod`, persisting the auto-selection rationale, and handling edge cases (manual override tracking, reverting when BW signal changes).
-- **Status:** Open (current auto-default sufficient for prototype)
+### ~~GAP-18: Auto-select organ weight method — full spec implementation~~
+- **Files:** `frontend/src/lib/organ-weight-normalization.ts` (NEW), `frontend/src/hooks/useOrganWeightNormalization.ts` (NEW), `frontend/src/components/analysis/StudySummaryView.tsx`, `frontend/src/components/analysis/panes/StudyDetailsContextPanel.tsx`, `frontend/src/components/analysis/panes/OrganContextPanel.tsx`, `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`, `frontend/src/components/analysis/panes/SyndromeContextPanel.tsx`, `frontend/src/lib/cross-domain-syndromes.ts`, `frontend/src/lib/syndrome-interpretation.ts`
+- **Resolution:** Phase 1 of Organ Weight Normalization Auto-Selection Engine implemented. Hedges' g decision engine with 4-tier BW confounding classification, species/strain profiles (12 entries), Bailey et al. organ correlation categories (21 entries), full UI integration (Study Details view + Findings view context panels), syndrome engine integration (OM term annotation + B-7 secondary-to-BW adversity factor). 55 unit tests. Phase 2 (ANCOVA backend) and Phase 3 (Bayesian mediation) deferred.
+- **Status:** ~~Resolved~~ (Phase 1 complete)
 - **Owner hint:** ux-designer → frontend-dev
 
 ### GAP-17: Chrome MCP server for E2E / integration testing
