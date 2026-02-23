@@ -227,7 +227,12 @@ Three selection priorities:
 #### Pane 4: Context (default open)
 `ContextPane` component — effect size interpretation and contextual information.
 
-#### Pane 5: Related views (default closed)
+#### Pane 5: Recovery (conditional, default open)
+`RecoveryPane` component — shown only when study has recovery arm (`dose_groups` has a `recovery_armcd` entry). Renders two domain-specific sections:
+- **Histopath (MI/MA):** Per-dose recovery verdicts (reversed/persistent/progressing), classification with confidence, finding nature assessment.
+- **Continuous (LB/BW etc.):** Recovery vs terminal comparison table (dose, recovery effect size, terminal effect size, p-value). Interpretation text (trending reversal / persistent / partial recovery).
+
+#### Pane 6: Related views (default closed)
 Navigation links to other views. Explicitly passed `defaultOpen={false}`. Contains 4 links:
 
 | Link Text | Target Route |
