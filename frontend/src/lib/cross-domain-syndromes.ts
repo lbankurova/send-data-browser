@@ -9,6 +9,7 @@
  */
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
+import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -1507,6 +1508,7 @@ export function getSyndromeTermReport(
   syndromeId: string,
   endpoints: EndpointSummary[],
   syndromeSexes?: string[],
+  normalizationContexts?: NormalizationContext[],
 ): SyndromeTermReport | null {
   const def = SYNDROME_DEFINITIONS.find((s) => s.id === syndromeId);
   if (!def) return null;
@@ -1571,6 +1573,14 @@ export function getSyndromeTermReport(
         entry.severity = ep.worstSeverity;
         entry.foundDirection = ep.direction;
         if (syndromeSexes && syndromeSexes.length === 1) entry.sex = syndromeSexes[0];
+        // Normalization annotation for OM terms with BW confounding
+        if (term.domain === "OM" && normalizationContexts) {
+          const specimen = (ep.specimen ?? "").toUpperCase();
+          const normCtx = normalizationContexts.find(c => c.organ === specimen);
+          if (normCtx && normCtx.tier >= 2) {
+            entry.magnitudeFloorNote = `BW confounding tier ${normCtx.tier} (BW g=${normCtx.bwG.toFixed(2)}), using ${normCtx.activeMode}`;
+          }
+        }
         fullMatch = true;
         break;
       }
