@@ -110,12 +110,10 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
     `pcc.${studyId}.incidenceTrend`,
     "cochran-armitage",
   );
-  const [multiplicityRaw, setMultiplicity] = useSessionState(
+  const [multiplicity, setMultiplicity] = useSessionState(
     `pcc.${studyId}.multiplicity`,
     "dunnett-fwer",
   );
-  // When Dunnett is selected, FWER is built in — override any stale stored value
-  const multiplicity = pairwiseTest === "dunnett" ? "dunnett-fwer" : multiplicityRaw;
   const [effectSize, setEffectSize] = useSessionState(
     `pcc.${studyId}.effectSize`,
     "hedges-g",

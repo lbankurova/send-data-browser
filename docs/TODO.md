@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 4 | Spec'd but not implemented |
-| Gap | 11 | 4 | Missing capability, no spec exists |
+| Gap | 12 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **26** | **37** | |
+| **Total open** | **27** | **37** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -189,3 +189,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Blocked on:** External compound-class-to-findings reference database
 - **Status:** Open (deferred — no data source available)
 - **Owner hint:** backend-dev (database), frontend-dev (integration into interpretation layer)
+
+### GAP-17: Chrome MCP server for E2E / integration testing
+- **Files:** N/A (new infrastructure)
+- **Issue:** Pure-function unit tests cannot catch UI wiring bugs (e.g., a dropdown writes to session state but a derived override prevents the displayed value from updating — see Bonferroni dropdown bug fixed 2026-02-23). An MCP server for Chrome would enable Claude Code to drive browser interactions and verify visual/interactive behavior as part of the development loop. This would cover the gap between vitest unit tests and full Playwright E2E suites.
+- **Approach:** Implement an MCP server that exposes Chrome DevTools Protocol actions (navigate, click, read DOM, screenshot). Claude Code connects via MCP tool, enabling ad-hoc integration checks during development without heavyweight E2E infrastructure.
+- **Status:** Open (not critical — unit tests cover math; this catches wiring/interaction bugs)
+- **Owner hint:** infrastructure
