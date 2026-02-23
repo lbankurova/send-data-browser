@@ -18,7 +18,9 @@ import { generateStudyReport } from "@/lib/report-generator";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState } from "@/hooks/useSessionState";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
+import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { StudyTimeline } from "./charts/StudyTimeline";
+import { getInterpretationContext } from "@/lib/species-vehicle-context";
 import type { SignalSummaryRow, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { StudyMetadata } from "@/types";
@@ -456,6 +458,7 @@ interface DomainTableRow {
   trCount: number;
   adverseCount: number;
   keyFindings: string;
+  contextNote: string;
   tier: number; // 1=adverse, 2=TR, 3=always-visible, 4=data-no-findings, 5=structural
 }
 
@@ -464,16 +467,43 @@ function DomainTable({
   domains,
   signalData,
   mortalityData,
+  excludedSubjects,
+  organWeightMethod,
 }: {
   studyId: string;
   domains: { name: string; label: string; row_count: number; subject_count?: number | null }[];
   signalData: SignalSummaryRow[];
   mortalityData?: StudyMortality;
+  excludedSubjects: ReadonlySet<string>;
+  organWeightMethod: string;
 }) {
   const navigate = useNavigate();
   const [showFolded, setShowFolded] = useState(false);
 
   const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
+
+  /** Generate decision-context notes for domains where analysis settings matter. */
+  const generateContextNote = (dom: string, sig: DomainSignalInfo | undefined): string => {
+    if (dom === "ds" && mortalityData?.has_mortality) {
+      // Count deaths that are currently excluded from terminal stats
+      const allDeaths = [...mortalityData.deaths, ...mortalityData.accidentals];
+      const deathsExcluded = allDeaths.filter(d => excludedSubjects.has(d.USUBJID)).length;
+      if (deathsExcluded > 0) return `${deathsExcluded} excluded from terminal stats`;
+      return "";
+    }
+    if (dom === "bw" && sig) {
+      // Check if BW has adverse endpoints with direction "down"
+      const hasBwDown = [...sig.endpoints.values()].some(ep => ep.adverse && ep.direction === "down");
+      if (hasBwDown) return "organ weights auto-set to ratio-to-brain";
+    }
+    if (dom === "om") {
+      const methodLabel = organWeightMethod === "ratio-bw" ? "ratio-to-BW"
+        : organWeightMethod === "ratio-brain" ? "ratio-to-brain"
+        : "absolute";
+      return `using ${methodLabel}`;
+    }
+    return "";
+  };
 
   const rows: DomainTableRow[] = useMemo(() => {
     return domains.map((d) => {
@@ -497,6 +527,8 @@ function DomainTable({
           ? generateKeyFindings(dom, new Map(), mortalityData)
           : "";
 
+      const contextNote = generateContextNote(dom, sig);
+
       return {
         code: d.name,
         fullName: DOMAIN_LABELS[dom] ?? d.label,
@@ -505,6 +537,7 @@ function DomainTable({
         trCount,
         adverseCount,
         keyFindings,
+        contextNote,
         tier,
       };
     }).sort((a, b) => {
@@ -514,7 +547,8 @@ function DomainTable({
       if (a.trCount !== b.trCount) return b.trCount - a.trCount;
       return b.rowCount - a.rowCount;
     });
-  }, [domains, domainSignals, mortalityData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [domains, domainSignals, mortalityData, excludedSubjects, organWeightMethod]);
 
   const aboveFold = rows.filter(r => r.tier <= 3);
   const belowFold = rows.filter(r => r.tier > 3);
@@ -560,7 +594,7 @@ function DomainTable({
                 Adverse
               </th>
               <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Key findings
+                Notes
               </th>
             </tr>
           </thead>
@@ -593,6 +627,24 @@ function DomainTable({
                 </td>
                 <td className="px-1.5 py-px">
                   {row.keyFindings}
+                  {row.contextNote && (
+                    <span className="text-muted-foreground">
+                      {row.keyFindings ? " · " : ""}
+                      {row.contextNote}
+                      {(row.code.toLowerCase() === "ds" || row.code.toLowerCase() === "bw" || row.code.toLowerCase() === "om") && (
+                        <button
+                          className="ml-1 text-primary hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const panel = document.querySelector("[data-panel='context']");
+                            if (panel) panel.scrollIntoView({ behavior: "smooth" });
+                          }}
+                        >
+                          configure &rarr;
+                        </button>
+                      )}
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -714,9 +766,20 @@ function DetailsTab({
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const { data: studyCtx } = useStudyContext(studyId);
   const { data: crossFlags } = useCrossAnimalFlags(studyId);
+  const { data: pkData } = usePkIntegration(studyId);
   const { excludedSubjects } = useScheduledOnly();
-  const [controlGroup] = useSessionState(`pcc.${studyId}.controlGroup`, "");
-  const [organWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
+  const [organWeightMethod, setOrganWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
+
+  // Auto-set organ weight method to ratio-to-brain when BW is adversely affected (direction down)
+  const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
+  useEffect(() => {
+    const bwSig = domainSignals["bw"];
+    if (!bwSig) return;
+    const hasBwDown = [...bwSig.endpoints.values()].some(ep => ep.adverse && ep.direction === "down");
+    if (hasBwDown && organWeightMethod === "absolute") {
+      setOrganWeightMethod("ratio-brain");
+    }
+  }, [domainSignals, organWeightMethod, setOrganWeightMethod]);
 
   if (!meta) {
     return (
@@ -743,20 +806,6 @@ function DetailsTab({
   const filteredProv = (provenanceMessages ?? []).filter(
     (m) => m.icon === "warning" && !["Prov-001", "Prov-002", "Prov-003", "Prov-004"].includes(m.rule_id),
   );
-
-  // Analysis settings summary — read shared session state to mirror context panel
-  const excludedCount = excludedSubjects.size;
-  const controlLabel = doseGroups.find((dg) => dg.armcd === controlGroup)?.label
-    ?? (doseGroups.find((dg) => dg.dose_level === 0)?.label)
-    ?? "Vehicle Control";
-  const owMethodLabel = organWeightMethod === "ratio-bw" ? "ratio-to-BW"
-    : organWeightMethod === "ratio-brain" ? "ratio-to-brain"
-    : "absolute";
-  const settingsParts: string[] = [];
-  if (excludedCount > 0) settingsParts.push(`${excludedCount} subject${excludedCount !== 1 ? "s" : ""} excluded`);
-  else settingsParts.push("All animals included");
-  settingsParts.push(`control: ${controlLabel}`);
-  settingsParts.push(`organ wt: ${owMethodLabel}`);
 
   // Domain data: prefer live domain list (with subject_count) over meta.domains
   const domainRows = domainData ?? meta.domains.map(d => ({ name: d, label: d.toUpperCase(), row_count: 0, col_count: 0 }));
@@ -842,65 +891,108 @@ function DetailsTab({
   const flaggedCount = flaggedAnimals.filter(a => a.flag).length;
   const allWarnings = (provenanceMessages ?? []).filter(m => m.icon === "warning");
 
+  // Interpretation context notes from species/vehicle/route
+  const interpretationNotes = useMemo(() => {
+    if (!studyCtx) return [];
+    return getInterpretationContext({
+      species: studyCtx.species,
+      strain: studyCtx.strain,
+      vehicle: studyCtx.vehicle,
+      route: studyCtx.route,
+    });
+  }, [studyCtx]);
+
   return (
     <div className="flex-1 overflow-auto p-4">
-      {/* ── Profile block ────────────────────────────────── */}
+      {/* ── Profile block — Identity + Conclusions ────────── */}
       <section className="mb-6 border-b pb-4">
-        <div className="flex items-start justify-between gap-6">
-          {/* Left: study identity and design */}
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold">{meta.study_id}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground">
-              {subtitleParts.join(" \u00b7 ")}
-            </div>
-            <div className="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
-              <div>
-                {nGroups} groups: {doseLabels.join(", ")}
-                {perGroupM > 0 && perGroupF > 0 && ` \u00b7 ${perGroupM}M + ${perGroupF}F/group`}
-              </div>
-              <div>
-                Main study: {mainStudyN} ({mainMales}M, {mainFemales}F)
-                {hasTk && (
-                  <>
-                    {" \u00b7 TK satellite: "}
-                    <span className={cn("tabular-nums", tkTotal > 0 && "font-semibold", tkAmber && "text-amber-600")}>
-                      {tkTotal}
-                    </span>
-                  </>
-                )}
-                {hasRecovery && ` \u00b7 Recovery: ${recoveryTotal} (pooled during treatment)`}
-              </div>
-              {hasRecovery && recoveryPeriodLabel && (
-                <div>
-                  Recovery: {recoveryPeriodLabel}
-                  {recoveryGroupLabels.length > 0 && ` (Groups ${recoveryGroupLabels.join(", ")})`}
-                </div>
-              )}
-            </div>
+        {/* Zone A: Study identity */}
+        <div className="text-sm font-semibold">{meta.study_id}</div>
+        <div className="mt-0.5 text-xs text-muted-foreground">
+          {subtitleParts.join(" \u00b7 ")}
+        </div>
+        <div className="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
+          <div>
+            {nGroups} groups: {doseLabels.join(", ")}
+            {perGroupM > 0 && perGroupF > 0 && ` \u00b7 ${perGroupM}M + ${perGroupF}F/group`}
           </div>
+          <div>
+            Main study: {mainStudyN} ({mainMales}M, {mainFemales}F)
+            {hasTk && (
+              <>
+                {" \u00b7 TK satellite: "}
+                <span className={cn("tabular-nums", tkTotal > 0 && "font-semibold", tkAmber && "text-amber-600")}>
+                  {tkTotal}
+                </span>
+              </>
+            )}
+            {hasRecovery && (
+              <>
+                {" \u00b7 Recovery: "}{recoveryTotal}
+                {recoveryPeriodLabel && `, ${recoveryPeriodLabel}`}
+                {recoveryGroupLabels.length > 0 && ` (Groups ${recoveryGroupLabels.join(", ")})`}
+                {" \u2014 pooled during treatment"}
+              </>
+            )}
+          </div>
+        </div>
 
-          {/* Right: key conclusions */}
-          {(noaelLabel || targetOrganCount > 0) && (
-            <div className="shrink-0 text-right">
+        {/* Zone B: Conclusions strip */}
+        {(noaelLabel || targetOrganCount > 0) && (
+          <div className="mt-3 rounded-md bg-muted/10 p-3">
+            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+              {/* NOAEL / LOAEL */}
               {noaelLabel && (
                 <div className="text-xs">
                   <span className="font-semibold">NOAEL: {noaelLabel}</span>
                   {noaelSexNote && <span className="ml-1 text-[10px] text-muted-foreground">({noaelSexNote})</span>}
+                  {loaelLabel && <span className="ml-2 text-[10px] text-muted-foreground">LOAEL: {loaelLabel}</span>}
                 </div>
               )}
-              {loaelLabel && (
-                <div className="text-[10px] text-muted-foreground">
-                  LOAEL: {loaelLabel}
-                </div>
-              )}
-              <div className="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
-                {targetOrganCount > 0 && <div>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</div>}
-                {domainsWithSignals > 0 && <div>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</div>}
-                {noaelConfidence != null && <div>{Math.round(noaelConfidence * 100)}% confidence</div>}
+              {/* Target organs + domains */}
+              <div className="flex flex-wrap gap-x-3 text-[10px] text-muted-foreground">
+                {targetOrganCount > 0 && <span>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</span>}
+                {domainsWithSignals > 0 && <span>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</span>}
+                {noaelConfidence != null && <span>{Math.round(noaelConfidence * 100)}% confidence</span>}
               </div>
             </div>
-          )}
-        </div>
+
+            {/* Exposure at NOAEL */}
+            {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (() => {
+              const exp = pkData.noael_exposure ?? pkData.loael_exposure;
+              const expLabel = pkData.noael_exposure ? "At NOAEL" : "At LOAEL";
+              if (!exp) return null;
+              const parts: string[] = [];
+              if (exp.cmax) parts.push(`Cmax ${exp.cmax.mean.toPrecision(3)} ${exp.cmax.unit}`);
+              if (exp.auc) parts.push(`AUC ${exp.auc.mean.toPrecision(3)} ${exp.auc.unit}`);
+              if (parts.length === 0) return null;
+              return (
+                <div className="mt-1.5 text-[10px] text-muted-foreground">
+                  <span className="font-medium">{expLabel}:</span> {parts.join(" \u00b7 ")}
+                </div>
+              );
+            })()}
+
+            {/* HED / MRSD */}
+            {pkData?.hed && pkData.hed.noael_status !== "at_control" && (
+              <div className="mt-0.5 text-[10px] text-muted-foreground">
+                <span className="font-medium">HED:</span> {pkData.hed.hed_mg_kg} mg/kg
+                {" \u00b7 "}
+                <span className="font-medium">MRSD:</span> {pkData.hed.mrsd_mg_kg} mg/kg
+              </div>
+            )}
+
+            {/* Dose proportionality warning */}
+            {pkData?.dose_proportionality &&
+              pkData.dose_proportionality.assessment !== "linear" &&
+              pkData.dose_proportionality.assessment !== "insufficient_data" && (
+              <div className="mt-0.5 flex items-start gap-1 text-[10px] text-amber-700">
+                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+                <span>{pkData.dose_proportionality.interpretation ?? "Non-linear dose proportionality detected"}</span>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* ── Study timeline ───────────────────────────────── */}
@@ -1097,27 +1189,8 @@ function DetailsTab({
 
         {/* TK satellites */}
         {tkTotal > 0 && (
-          <div className="mb-2">
-            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
-              TK satellites
-            </div>
-            <div className="space-y-0 text-[10px] text-muted-foreground">
-              <div>{tkTotal} subjects detected</div>
-              <div>Excluded from all toxicology analyses</div>
-              {doseGroups && (() => {
-                const tkGroups = doseGroups
-                  .filter((dg) => (dg.tk_count ?? 0) > 0)
-                  .map((dg) => {
-                    const doseLabel = dg.dose_value != null && dg.dose_unit
-                      ? `${dg.dose_value} ${dg.dose_unit}`
-                      : dg.dose_level === 0 ? "Control" : dg.armcd;
-                    return `${doseLabel} (${dg.tk_count})`;
-                  });
-                return tkGroups.length > 0 ? (
-                  <div>Groups: {tkGroups.join(", ")}</div>
-                ) : null;
-              })()}
-            </div>
+          <div className="mb-2 text-[10px] text-muted-foreground">
+            TK satellite: {tkTotal} subjects excluded from all toxicology analyses
           </div>
         )}
 
@@ -1133,32 +1206,36 @@ function DetailsTab({
         )}
       </section>
 
-      {/* ── Analysis settings — compact summary ──────────── */}
-      <section className="mb-6">
-        <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Analysis settings
-        </h2>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{settingsParts.join(" \u00b7 ")}</span>
-          <button
-            className="text-primary hover:underline"
-            onClick={() => {
-              const panel = document.querySelector("[data-panel='context']");
-              if (panel) panel.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
-            Configure &rarr;
-          </button>
-        </div>
-      </section>
-
       {/* ── Domain summary table ─────────────────────────── */}
-      <section>
+      <section className="mb-6">
         <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Domains ({domainRows.length})
         </h2>
-        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} />
+        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} />
       </section>
+
+      {/* ── Interpretation context ────────────────────────── */}
+      {interpretationNotes.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Interpretation context
+          </h2>
+          <div className="space-y-1 text-[10px]">
+            {interpretationNotes.map((n, i) => (
+              <div key={i} className="flex items-start gap-1.5">
+                {n.severity === "caution"
+                  ? <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+                  : <Info className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                }
+                <div>
+                  <span className="font-medium text-muted-foreground">{n.category}:</span>{" "}
+                  <span className="text-foreground">{n.note}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
