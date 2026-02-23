@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ChevronRight, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
@@ -8,6 +8,13 @@ import { useSessionState } from "@/hooks/useSessionState";
 import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -26,7 +33,7 @@ function SettingsRow({
   );
 }
 
-function SimulatedSelect({
+function SettingsSelect({
   value,
   options,
   onChange,
@@ -38,20 +45,24 @@ function SimulatedSelect({
   confirmMessage?: string;
 }) {
   return (
-    <select
-      className="rounded border bg-background px-1.5 py-0.5 text-xs"
+    <Select
       value={value}
-      onChange={(e) => {
+      onValueChange={(v) => {
         if (confirmMessage && !window.confirm(confirmMessage)) return;
-        onChange(e.target.value);
+        onChange(v);
       }}
     >
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+      <SelectTrigger size="sm" className="h-6 gap-1 px-1.5 text-xs shadow-none">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value} className="text-xs">
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -98,7 +109,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
     `pcc.${studyId}.adversityThreshold`,
     "grade-ge-2-or-dose-dep",
   );
-  const [showStatsMethods, setShowStatsMethods] = useState(false);
   const [pairwiseTest, setPairwiseTest] = useSessionState(
     `pcc.${studyId}.pairwiseTest`,
     "dunnett",
@@ -146,7 +156,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
         {controlGroups.length > 0 && (
           <>
             <SettingsRow label="Primary comparator">
-              <SimulatedSelect
+              <SettingsSelect
                 value={controlGroup}
                 options={controlGroups}
                 onChange={setControlGroup}
@@ -168,7 +178,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
 
         {/* Organ weight method */}
         <SettingsRow label="Organ weight method">
-          <SimulatedSelect
+          <SettingsSelect
             value={organWeightMethod}
             options={[
               { value: "absolute", label: "Absolute (default)" },
@@ -186,7 +196,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
 
         {/* Adversity threshold */}
         <SettingsRow label="Adversity threshold">
-          <SimulatedSelect
+          <SettingsSelect
             value={adversityThreshold}
             options={[
               { value: "grade-ge-1", label: "Grade \u2265 1" },
@@ -197,58 +207,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={setAdversityThreshold}
           />
         </SettingsRow>
-
-        {/* Statistical methods — collapsed by default */}
-        <div className="mt-1">
-          <button
-            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
-            onClick={() => setShowStatsMethods(!showStatsMethods)}
-          >
-            <ChevronRight
-              className="h-2.5 w-2.5 transition-transform"
-              style={{
-                transform: showStatsMethods ? "rotate(90deg)" : undefined,
-              }}
-            />
-            Statistical methods
-          </button>
-          {showStatsMethods && (
-            <div className="mt-1 space-y-0.5 pl-3.5">
-              <SettingsRow label="Pairwise test">
-                <SimulatedSelect
-                  value={pairwiseTest}
-                  options={[
-                    { value: "dunnett", label: "Dunnett (default)" },
-                    { value: "dunn", label: "Dunn" },
-                    { value: "tukey", label: "Tukey" },
-                  ]}
-                  onChange={setPairwiseTest}
-                />
-              </SettingsRow>
-              <SettingsRow label="Trend test">
-                <SimulatedSelect
-                  value={trendTest}
-                  options={[
-                    { value: "jonckheere", label: "Jonckheere-Terpstra (default)" },
-                    { value: "cochran-armitage", label: "Cochran-Armitage" },
-                    { value: "linear-contrast", label: "Linear contrast" },
-                  ]}
-                  onChange={setTrendTest}
-                />
-              </SettingsRow>
-              <SettingsRow label="Incidence test">
-                <SimulatedSelect
-                  value={incidenceTest}
-                  options={[
-                    { value: "fisher", label: "Fisher exact (default)" },
-                    { value: "cochran-armitage", label: "Cochran-Armitage" },
-                  ]}
-                  onChange={setIncidenceTest}
-                />
-              </SettingsRow>
-            </div>
-          )}
-        </div>
 
         {/* Recovery period — day range + arms */}
         {hasRecovery && (
@@ -292,7 +250,45 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
         )}
       </CollapsiblePane>
 
-      {/* ── Mortality info ──────────────────────────────── */}
+      {/* ── Statistical methods ────────────────────────── */}
+      <CollapsiblePane title="Statistical methods" variant="margin" defaultOpen={false}>
+        <div className="space-y-0.5">
+          <SettingsRow label="Pairwise test">
+            <SettingsSelect
+              value={pairwiseTest}
+              options={[
+                { value: "dunnett", label: "Dunnett (default)" },
+                { value: "dunn", label: "Dunn" },
+                { value: "tukey", label: "Tukey" },
+              ]}
+              onChange={setPairwiseTest}
+            />
+          </SettingsRow>
+          <SettingsRow label="Trend test">
+            <SettingsSelect
+              value={trendTest}
+              options={[
+                { value: "jonckheere", label: "Jonckheere-Terpstra (default)" },
+                { value: "cochran-armitage", label: "Cochran-Armitage" },
+                { value: "linear-contrast", label: "Linear contrast" },
+              ]}
+              onChange={setTrendTest}
+            />
+          </SettingsRow>
+          <SettingsRow label="Incidence test">
+            <SettingsSelect
+              value={incidenceTest}
+              options={[
+                { value: "fisher", label: "Fisher exact (default)" },
+                { value: "cochran-armitage", label: "Cochran-Armitage" },
+              ]}
+              onChange={setIncidenceTest}
+            />
+          </SettingsRow>
+        </div>
+      </CollapsiblePane>
+
+      {/* ── Mortality ────────────────────────────────────── */}
       <MortalityInfoPane mortality={mortalityData} />
 
       {/* ── Study notes ─────────────────────────────────── */}
