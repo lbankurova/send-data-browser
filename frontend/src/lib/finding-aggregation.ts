@@ -111,6 +111,7 @@ export interface AggregatedFinding {
  */
 const validRuleIdSet = new Set<string>(VALID_RULE_IDS);
 
+// @field FIELD-47 — aggregated finding category
 export function aggregateByFinding(rules: RuleResult[]): AggregatedFinding[] {
   const map = new Map<string, RuleResult[]>();
 

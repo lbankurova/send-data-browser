@@ -27,6 +27,7 @@ export interface NoaelNarrative {
  * @param sex - Which sex to generate for ("Combined", "M", or "F")
  * @param mortality - Optional study mortality summary for mortality context sentence
  */
+// @field FIELD-44 — NOAEL narrative structure
 export function generateNoaelNarrative(
   noaelRow: NoaelSummaryRow,
   aeData: AdverseEffectSummaryRow[],

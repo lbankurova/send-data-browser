@@ -137,6 +137,8 @@ function guardAction(verdict: string): string | undefined {
 
 // ─── Classification logic ────────────────────────────────
 
+// @field FIELD-37 — recovery classification (7-tier interpretive)
+// @field FIELD-38 — recovery confidence (High/Moderate/Low)
 export function classifyRecovery(
   assessment: RecoveryAssessment,
   context: RecoveryContext,

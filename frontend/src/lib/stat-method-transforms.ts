@@ -16,6 +16,7 @@ export type MultiplicityMethod = "dunnett-fwer" | "bonferroni";
 
 // ── Effect Size Computation ──────────────────────────────────
 
+// @field FIELD-49 — effect size (transformed by selected method)
 /**
  * Compute effect size for a single treated vs control comparison.
  * Returns null if inputs are insufficient (n < 2, sd = 0).
@@ -142,6 +143,7 @@ export function applyEffectSizeMethod(
  *
  * Falls back gracefully if p_value_welch is not present in the data.
  */
+// @field FIELD-50 — p-value (multiplicity-corrected)
 export function applyMultiplicityMethod(
   findings: UnifiedFinding[],
   method: MultiplicityMethod,

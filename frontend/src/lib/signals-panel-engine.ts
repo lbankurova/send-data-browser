@@ -137,6 +137,7 @@ interface DerivedRule {
 // NOAEL rules → Decision Summary
 // ---------------------------------------------------------------------------
 
+// @field FIELD-48 — panel statement (structured signals panel entry)
 function deriveNoaelRules(
   noael: NoaelSummaryRow[],
   signals: SignalSummaryRow[]

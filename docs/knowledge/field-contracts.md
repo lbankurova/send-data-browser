@@ -2,7 +2,7 @@
 
 Every derived field at the engine→UI boundary: what it means, what it guarantees, and where it comes from. Spec-unaware — this file describes field semantics, not which specs reference them. UI specs reference fields via their stable IDs (e.g., `FIELD-01`, `FIELD-15`).
 
-Companion to `methods.md` (how we compute things) and `dependencies.md` (what we depend on). This file documents **what the computation produces** — types, invariants, null semantics, and gotchas.
+Companion to `methods.md` (how we compute things) and `dependencies.md` (what we depend on). This file documents **what the computation produces** — types, invariants, null semantics, and gotchas. For backend API fields (the upstream contract), see `api-field-contracts.md`.
 
 ---
 
@@ -13,7 +13,8 @@ Companion to `methods.md` (how we compute things) and `dependencies.md` (what we
 Type:        TypeScript type (including null)
 Unit:        (if numeric — otherwise omitted)
 Scope:       syndrome-level | endpoint-level | organ-level | study-level
-Source:      file.ts:functionName() — line range
+Source:      file.ts:functionName()
+Consumers:   [views/components that directly render or use this field]
 Methods:     @method IDs from methods.md
 Invariants:  [testable guarantees — never/always/exactly constraints]
 Null means:  [what null/undefined communicates]
@@ -29,7 +30,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"S0_Death" | "carcinogenic" | "proliferative" | "S4_Critical" | "S3_Adverse" | "S2_Concern" | "S1_Monitor"`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:deriveOverallSeverity()` — lines 3038–3067
+**Source:** `syndrome-interpretation.ts:deriveOverallSeverity()`
+**Consumers:** AdverseEffectsView, SyndromeContextPanel, NoaelDecisionView
 **Methods:** @method CLASS-14
 
 **Invariants:**
@@ -57,7 +59,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"mechanism_confirmed" | "mechanism_uncertain" | "pattern_only"`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:assessCertainty()` — lines 1227–1300, caps at `applyCertaintyCaps()` — lines 1560–1640, stress/adaptive post-adjustment at lines 3470–3490
+**Source:** `syndrome-interpretation.ts:assessCertainty()`, caps at `applyCertaintyCaps()`
+**Consumers:** SyndromeContextPanel, NoaelDecisionView
 **Methods:** @method CLASS-12, @method METH-22, @method METH-29, @method METH-31
 
 **Invariants:**
@@ -87,6 +90,7 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `"HIGH" | "MODERATE" | "LOW"`
 **Scope:** syndrome-level
 **Source:** `cross-domain-syndromes.ts:detectCrossDomainSyndromes()` — confidence assigned during detection
+**Consumers:** FindingsRail, SyndromeContextPanel
 **Methods:** @method CLASS-09
 
 **Invariants:**
@@ -110,7 +114,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"treatment_related" | "possibly_related" | "not_related"`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:computeTreatmentRelatedness()` — lines 2702–2820
+**Source:** `syndrome-interpretation.ts:computeTreatmentRelatedness()`
+**Consumers:** SyndromeContextPanel, NoaelDecisionView
 **Methods:** @method METRIC-08
 
 **Invariants:**
@@ -139,7 +144,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"adverse" | "non_adverse" | "equivocal"`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:computeAdversity()` — lines 2954–3028
+**Source:** `syndrome-interpretation.ts:computeAdversity()`
+**Consumers:** SyndromeContextPanel, NoaelDecisionView
 **Methods:** @method CLASS-13, @method METH-24, @method METH-25
 
 **Invariants:**
@@ -168,7 +174,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"recovered" | "partial" | "not_recovered" | "not_examined" | "mixed"`
 **Scope:** syndrome-level (rolled up from per-endpoint)
-**Source:** `syndrome-interpretation.ts:assessSyndromeRecovery()` — lines 1907–2065
+**Source:** `syndrome-interpretation.ts:assessSyndromeRecovery()`
+**Consumers:** SyndromeContextPanel, RecoveryPane
 **Methods:** @method CLASS-10, @method CLASS-20
 
 **Invariants:**
@@ -197,7 +204,8 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `number | null`
 **Unit:** dose level (integer ordinal, not absolute dose in mg/kg)
 **Scope:** syndrome-level (passed in from study-level computation)
-**Source:** `syndrome-interpretation.ts:assessMortalityContext()` — lines 2284–2376
+**Source:** `syndrome-interpretation.ts:assessMortalityContext()`
+**Consumers:** NoaelDecisionView, SyndromeContextPanel
 **Methods:** @method CLASS-14 (consumed by severity cascade)
 
 **Invariants:**
@@ -222,7 +230,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"adverse" | "warning" | "normal"`
 **Scope:** endpoint-level
-**Source:** `derive-summaries.ts:deriveEndpointSummaries()` — lines 197–440
+**Source:** `derive-summaries.ts:deriveEndpointSummaries()`
+**Consumers:** FindingsRail, AdverseEffectsView, DoseResponseView
 **Methods:** @method CLASS-01, @method CLASS-05
 
 **Invariants:**
@@ -248,7 +257,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"up" | "down" | "none" | null`
 **Scope:** endpoint-level
-**Source:** `derive-summaries.ts:deriveEndpointSummaries()` — lines 310–332
+**Source:** `derive-summaries.ts:deriveEndpointSummaries()`
+**Consumers:** FindingsRail, DoseResponseView, AdverseEffectsView
 **Methods:** @method METH-13
 
 **Invariants:**
@@ -275,7 +285,8 @@ Not:         [common misreadings that lead to bugs]
 **NoaelTier:** `"below-lowest" | "at-lowest" | "mid" | "high" | "none"`
 **Unit:** noaelDoseValue is in the study's dose unit (mg/kg, mg/m², etc.)
 **Scope:** endpoint-level
-**Source:** `derive-summaries.ts:computeEndpointNoaelMap()` — lines 548–599
+**Source:** `derive-summaries.ts:computeEndpointNoaelMap()`
+**Consumers:** NoaelDecisionView, FindingsRail
 **Methods:** @method CLASS-07
 
 **Invariants:**
@@ -305,7 +316,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"none" | "minimal" | "mild" | "moderate" | "marked" | "severe" | null`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:deriveHistopathSeverityGrade()` — lines 2848–2862
+**Source:** `syndrome-interpretation.ts:deriveHistopathSeverityGrade()`
+**Consumers:** SyndromeContextPanel, HistopathologyView
 **Methods:** @method METH-28
 
 **Invariants:**
@@ -336,7 +348,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"proportionate" | "disproportionate" | "partially_proportionate" | "inverse" | "not_applicable"`
 **Scope:** organ × dose level
-**Source:** `organ-proportionality.ts:classifyOpi()` — lines 441–453
+**Source:** `organ-proportionality.ts:classifyOpi()`
+**Consumers:** AdverseEffectsView (OPI context section)
 **Methods:** @method CLASS-21
 
 **Invariants:**
@@ -366,7 +379,8 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `number | null`
 **Unit:** Cohen's d (Hedges' g variant, standardized mean difference)
 **Scope:** endpoint-level
-**Source:** `derive-summaries.ts:deriveEndpointSummaries()` — lines 310–313
+**Source:** `derive-summaries.ts:deriveEndpointSummaries()`
+**Consumers:** FindingsRail, DoseResponseView, signal scoring (FIELD-34)
 **Methods:** @method METRIC-10
 
 **Invariants:**
@@ -390,7 +404,8 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `number | null`
 **Unit:** p-value (0–1)
 **Scope:** endpoint-level
-**Source:** `derive-summaries.ts:deriveEndpointSummaries()` — line 333
+**Source:** `derive-summaries.ts:deriveEndpointSummaries()`
+**Consumers:** FindingsRail, DoseResponseView
 **Methods:** @method STAT-01 (continuous), @method STAT-03 (incidence)
 
 **Invariants:**
@@ -414,7 +429,8 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `number | null`
 **Unit:** ratio (treated mean / control mean)
 **Scope:** endpoint-level
-**Source:** `derive-summaries.ts:deriveEndpointSummaries()` — lines 326, 397–403
+**Source:** `derive-summaries.ts:deriveEndpointSummaries()`
+**Consumers:** FindingsRail, DoseResponseView
 **Methods:** @method METRIC-11
 
 **Invariants:**
@@ -437,7 +453,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `boolean`
 **Scope:** endpoint-level
-**Source:** `derive-summaries.ts:deriveEndpointSummaries()` — line 309
+**Source:** `derive-summaries.ts:deriveEndpointSummaries()`
+**Consumers:** FindingsRail, filter bar
 **Methods:** @method CLASS-05
 
 **Invariants:**
@@ -459,7 +476,8 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `string` (backend-defined dose-response pattern labels)
 **Common values:** `"linear" | "monotonic" | "threshold" | "threshold_increase" | "threshold_decrease" | "u_shaped" | "inverted_u" | "flat" | "insufficient_data"`
 **Scope:** endpoint-level
-**Source:** `derive-summaries.ts:deriveEndpointSummaries()` — lines 322–325, 339–342
+**Source:** `derive-summaries.ts:deriveEndpointSummaries()`
+**Consumers:** FindingsRail, DoseResponseView
 **Methods:** @method CLASS-02 (continuous), @method CLASS-03 (incidence)
 
 **Invariants:**
@@ -484,6 +502,7 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `boolean`
 **Scope:** syndrome-level
 **Source:** `cross-domain-syndromes.ts:detectCrossDomainSyndromes()` — during detection
+**Consumers:** internal (gates FIELD-02 certainty)
 **Methods:** @method METH-14, @method METH-15
 
 **Invariants:**
@@ -507,6 +526,7 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `string[]`
 **Scope:** syndrome-level
 **Source:** `cross-domain-syndromes.ts:detectCrossDomainSyndromes()` — during detection
+**Consumers:** SyndromeContextPanel, TR scoring (FIELD-04)
 **Methods:** @method METH-14
 
 **Invariants:**
@@ -527,6 +547,7 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `number`
 **Scope:** syndrome-level
 **Source:** `cross-domain-syndromes.ts:detectCrossDomainSyndromes()` — during detection
+**Consumers:** internal (confidence scoring)
 **Methods:** @method CLASS-09
 
 **Invariants:**
@@ -548,7 +569,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"strong" | "weak" | "absent"`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:computeTreatmentRelatedness()` — lines 2707–2728
+**Source:** `syndrome-interpretation.ts:computeTreatmentRelatedness()`
+**Consumers:** SyndromeContextPanel
 **Methods:** @method METRIC-08
 
 **Invariants:**
@@ -564,7 +586,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"significant" | "borderline" | "not_significant"`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:computeTreatmentRelatedness()` — lines 2734–2747
+**Source:** `syndrome-interpretation.ts:computeTreatmentRelatedness()`
+**Consumers:** SyndromeContextPanel
 **Methods:** @method METRIC-08
 
 **Invariants:**
@@ -579,7 +602,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"outside_range" | "within_range" | "no_hcd"`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:computeTreatmentRelatedness()` — line 2815
+**Source:** `syndrome-interpretation.ts:computeTreatmentRelatedness()`
+**Consumers:** SyndromeContextPanel (stub)
 **Methods:** @method METRIC-08
 
 **Invariants:**
@@ -597,7 +621,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"minimal" | "mild" | "moderate" | "marked" | "severe"`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:deriveMagnitudeLevel()` — lines 2830–2846
+**Source:** `syndrome-interpretation.ts:deriveMagnitudeLevel()`
+**Consumers:** SyndromeContextPanel, adversity logic (FIELD-05)
 **Methods:** @method METRIC-10
 
 **Invariants:**
@@ -620,7 +645,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `boolean`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:checkAdaptivePattern()` — lines 2890–2941
+**Source:** `syndrome-interpretation.ts:checkAdaptivePattern()`
+**Consumers:** SyndromeContextPanel
 **Methods:** @method METH-25
 
 **Invariants:**
@@ -635,7 +661,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `boolean`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:computeAdversity()` — lines 2982–2991
+**Source:** `syndrome-interpretation.ts:computeAdversity()`
+**Consumers:** SyndromeContextPanel
 **Methods:** @method METH-24
 
 **Invariants:**
@@ -652,7 +679,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"high" | "moderate" | "low" | "insufficient_data"`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:computeTranslationalConfidence()` — around lines 3300–3354
+**Source:** `syndrome-interpretation.ts:computeTranslationalConfidence()`
+**Consumers:** SyndromeContextPanel
 **Methods:** @method METRIC-09
 
 **Invariants:**
@@ -676,7 +704,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `EndpointRecovery[]`
 **Scope:** syndrome-level (contains per-endpoint, per-sex entries)
-**Source:** `syndrome-interpretation.ts:assessSyndromeRecovery()` — lines 1943–2014
+**Source:** `syndrome-interpretation.ts:assessSyndromeRecovery()`
+**Consumers:** SyndromeContextPanel, RecoveryPane
 **Methods:** @method CLASS-10
 
 **Invariants:**
@@ -694,7 +723,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"primary_weight_loss" | "secondary_to_food" | "malabsorption" | "not_applicable"`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:assessFoodConsumptionContext()` — around lines 2650–2687
+**Source:** `syndrome-interpretation.ts:assessFoodConsumptionContext()`
+**Consumers:** SyndromeContextPanel
 **Methods:** (no dedicated method ID — inline assessment)
 
 **Invariants:**
@@ -713,7 +743,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `boolean | null`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:assessMortalityContext()` — lines 2341–2348
+**Source:** `syndrome-interpretation.ts:assessMortalityContext()`
+**Consumers:** SyndromeContextPanel
 **Methods:** @method CLASS-14
 
 **Invariants:**
@@ -728,7 +759,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `{ n: number; mean: number; sd: number } | null` and `{ n: number; mean: number; sd: number; doseLevel: number } | null`
 **Scope:** endpoint-level
-**Source:** `derive-summaries.ts:deriveEndpointSummaries()` — lines 376–407
+**Source:** `derive-summaries.ts:deriveEndpointSummaries()`
+**Consumers:** DoseResponseView, fold change recomputation (FIELD-15)
 **Methods:** (REM-05 derivation, no dedicated method ID)
 
 **Invariants:**
@@ -747,7 +779,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `{ present: string[]; absent: string[]; narrative: string | null; certaintyBoost: boolean }`
 **Scope:** syndrome-level
-**Source:** `syndrome-interpretation.ts:interpretSyndrome()` — species marker evaluation
+**Source:** `syndrome-interpretation.ts:checkSpeciesPreferredMarkers()`
+**Consumers:** SyndromeContextPanel
 **Methods:** @method METH-26
 
 **Invariants:**
@@ -763,7 +796,8 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `{ pooled_n_male: number; pooled_n_female: number; pooled_n_total: number }`
 **Scope:** study-level (per dose group)
-**Source:** `backend/services/analysis/dose_groups.py:build_dose_groups()` — pooled N computation
+**Source:** `backend/services/analysis/dose_groups.py:build_dose_groups()`
+**Consumers:** DoseResponseView, dose group headers
 **Methods:** @method DATA-01
 
 **Invariants:**
@@ -775,6 +809,328 @@ Not:         [common misreadings that lead to bugs]
 **Null means:** Field absent → no recovery pooling data available. Frontend falls back to `n_total`.
 
 **Not:** These are not the N values in per-finding `group_stats`. Finding-level N reflects actual data availability at each timepoint (subjects may have missing records). `pooled_n_*` is the maximum possible N when pooling.
+
+---
+
+## Signal Scoring Fields
+
+### FIELD-34 — `EndpointWithSignal.signal`
+
+**Type:** `number`
+**Scope:** endpoint-level
+**Source:** `findings-rail-engine.ts:computeEndpointSignal()`
+**Consumers:** FindingsRail sorting/filtering
+
+**Invariants:**
+- Never null. Always ≥ 0.
+- Composite score combining: severity weight (adverse=3, warning=1), p-value weight (-log10), effect size magnitude (capped at ±5), treatment-related boost (+2), pattern weight (per PATTERN_WEIGHTS), syndrome boost (+3 if in syndrome), coherence boost (+2 for 3+ domains), clinical floor (S4=15, S3=8, S2=4, S1=0), and confidence multiplier (HIGH=1.0, MODERATE=0.7, LOW=0.4).
+- Result is `max(base + synBoost + cohBoost, clinicalFloor)`.
+- Per-sex pattern divergence uses worst (highest-weight) pattern.
+
+**Null means:** N/A — never null (defaults to floor).
+
+**Not:**
+- Not the backend `signal_score` (that's study-signal-summary level). This is the frontend per-endpoint composite for rail ordering.
+
+---
+
+### FIELD-35 — `EndpointConfidence`
+
+**Type:** `"HIGH" | "MODERATE" | "LOW"`
+**Scope:** endpoint-level
+**Source:** `findings-rail-engine.ts:classifyEndpointConfidence()`
+**Consumers:** signal scoring (FIELD-34 confidence multiplier)
+
+**Invariants:**
+- Never null. Defaults to `"LOW"`.
+- `"HIGH"`: p < 0.01 + |effect| ≥ 0.8 + clear monotonic/threshold pattern.
+- `"MODERATE"`: moderate p or effect or treatment-related pattern.
+- `"LOW"`: default when criteria not met.
+- Modifiers: treatment-related (+1 tier max), multiple sexes (+1 tier max).
+
+**Null means:** N/A — never null.
+
+**Not:**
+- Not syndrome-level `patternConfidence` (FIELD-03). This is per-endpoint, not per-syndrome.
+
+---
+
+### FIELD-36 — `GroupCard.groupSignal`
+
+**Type:** `number`
+**Scope:** group-level (organ/domain/pattern/syndrome group of endpoints)
+**Source:** `findings-rail-engine.ts:groupEndpoints()`, `groupEndpointsBySyndrome()`
+**Consumers:** FindingsRail group sorting
+
+**Invariants:**
+- Never null. Always ≥ 0.
+- Sum of `endpoint.signal` (FIELD-34) for all endpoints in the group.
+- Used for stable card ordering: highest signal first, ties by adverse count, then alphabetically.
+
+**Null means:** N/A — never null.
+
+---
+
+## Recovery & Finding Nature Fields
+
+### FIELD-37 — `RecoveryClassification.classification`
+
+**Type:** `"EXPECTED_REVERSIBILITY" | "INCOMPLETE_RECOVERY" | "ASSESSMENT_LIMITED_BY_DURATION" | "DELAYED_ONSET_POSSIBLE" | "INCIDENTAL_RECOVERY_SIGNAL" | "PATTERN_ANOMALY" | "UNCLASSIFIABLE"`
+**Scope:** finding-level (histopathology)
+**Source:** `recovery-classification.ts:classifyRecovery()`
+**Consumers:** HistopathologyContextPanel, RecoveryInsightBlock
+**Methods:** @method CLASS-20
+
+**Invariants:**
+- Never null. Defaults to `"UNCLASSIFIABLE"`.
+- Priority is safety-conservative (first match wins): PATTERN_ANOMALY → DELAYED_ONSET_POSSIBLE → INCOMPLETE_RECOVERY → ASSESSMENT_LIMITED_BY_DURATION → EXPECTED_REVERSIBILITY → INCIDENTAL_RECOVERY_SIGNAL → UNCLASSIFIABLE.
+- Guard verdicts (not_examined, insufficient_n, low_power, anomaly, no_data) short-circuit to UNCLASSIFIABLE.
+- Neoplastic findings (proliferative nature from FIELD-39) always UNCLASSIFIABLE.
+- Combines mechanical recovery assessment with finding nature, dose consistency, and clinical classification.
+
+**Null means:** N/A — never null.
+
+---
+
+### FIELD-38 — `RecoveryClassification.confidence`
+
+**Type:** `"High" | "Moderate" | "Low"`
+**Scope:** finding-level (histopathology)
+**Source:** `recovery-classification.ts:classifyRecovery()`, `computeConfidence()`
+**Consumers:** HistopathologyContextPanel (confidence badges)
+
+**Invariants:**
+- Never null.
+- Score-based: sample size (≥10=+2, ≥5=+1), incidence delta (≥30%=+2, ≥15%=+1), severity delta (≥1.0=+1), dose-response p<0.05 (+1), cross-domain corroboration (+1).
+- Caps (one-directional down only): weak dose-consistency → MODERATE cap, examined<5 → LOW cap, normal signal + no clinical match → MODERATE cap.
+- Mapping: score ≥5=High, ≥3=Moderate, <3=Low.
+
+**Null means:** N/A — never null.
+
+---
+
+### FIELD-39 — `FindingNatureInfo.nature`
+
+**Type:** `"adaptive" | "degenerative" | "proliferative" | "inflammatory" | "depositional" | "vascular" | "unknown"`
+**Scope:** finding-level (histopathology)
+**Source:** `finding-nature.ts:classifyFindingNature()`
+**Consumers:** recovery classification (FIELD-37), protective signal (FIELD-42), histopath insights
+
+**Invariants:**
+- Never null. Defaults to `"unknown"`.
+- CT-normalized lookup (via `finding-term-map.ts`) takes precedence over substring matching fallback.
+- Proliferative = neoplastic (irreversible). Adaptive = hypertrophy, hyperplasia, vacuolation (reversible). Degenerative = fibrosis, sclerosis, necrosis (moderate to irreversible).
+
+**Null means:** N/A — never null.
+
+---
+
+### FIELD-40 — `FindingNatureInfo.expected_reversibility`
+
+**Type:** `"high" | "moderate" | "low" | "none"`
+**Scope:** finding-level (histopathology)
+**Source:** `finding-nature.ts:classifyFindingNature()`, `modulateBySeverity()`
+**Consumers:** recovery classification (FIELD-37), clinical decision support
+
+**Invariants:**
+- Never null. Defaults to `"moderate"` for unknown nature.
+- Base from keyword table or CT mapping. Severity modulation can only **reduce** expectations, never raise.
+- `"high"` = adaptive in low severity. `"moderate"` = inflammatory/degenerative mild. `"low"` = depositional, highly severe adaptive. `"none"` = proliferative, fibrotic, sclerotic.
+
+**Null means:** N/A — never null.
+
+---
+
+### FIELD-41 — `FindingNatureInfo.typical_recovery_weeks`
+
+**Type:** `number | null`
+**Unit:** weeks
+**Scope:** finding-level (histopathology)
+**Source:** `finding-nature.ts:classifyFindingNature()`, severity modulation
+**Consumers:** recovery context, duration assessment
+
+**Invariants:**
+- Always null for findings with `expected_reversibility: "none"` (irreversible).
+- Severity modulation scales base weeks by multiplier (adaptive low=1.0, mid=1.5, high=2.0; degenerative high=2.5).
+- Result is rounded.
+
+**Null means:** No typical recovery timeline exists — cannot predict reversibility duration.
+
+---
+
+## Protective Signal Fields
+
+### FIELD-42 — `ProtectiveSignalResult.classification`
+
+**Type:** `"pharmacological" | "treatment-decrease" | "background" | null`
+**Scope:** finding-level (histopathology, decreased incidence)
+**Source:** `protective-signal.ts:classifyProtectiveSignal()`
+**Consumers:** FindingsRail, rule synthesis
+
+**Invariants:**
+- Null if direction != "decreasing" (not a protective signal candidate).
+- When non-null, never null within the three tiers (defaults to `"background"`).
+- `"pharmacological"`: strong dose-response + ≥2 cross-domain correlates + not a consequence finding.
+- `"treatment-decrease"`: strong DR OR (moderate + ≥1 correlate) OR consequence finding.
+- `"background"`: all others, or decrease magnitude <15pp, or control <10%.
+- Magnitude check: controlIncidence - highDoseIncidence ≥ 0.15.
+
+**Null means:** Not a protective signal (increasing or flat pattern).
+
+---
+
+## Clinical Significance Fields
+
+### FIELD-43 — `LabClinicalMatch`
+
+**Type:** composite `{ ruleId, ruleName, severity, category, matchedEndpoints, foldChanges, confidenceScore, confidence, source, sex }`
+**Scope:** endpoint-level (rule match)
+**Source:** `lab-clinical-catalog.ts:evaluateLabRules()`
+**Consumers:** AdverseEffectsView clinical annotations, context panels
+
+**Invariants:**
+- `evaluateLabRules()` returns an array; empty array if no matches.
+- 31 rules (L01-L31) grouped as liver/graded/governance.
+- Severity order: S4 > S3 > S2 > S1. Deduplication keeps highest severity per endpoint+sex combo.
+- Confidence scale: score ≥4=HIGH, 1-3=MODERATE, ≤0=LOW.
+- Governance rules (L26-L27) contribute to confidence modifiers but not severity triggers.
+
+**Null means:** N/A — returns empty array when no rules match.
+
+---
+
+## NOAEL & Narrative Fields
+
+### FIELD-44 — `NoaelNarrative`
+
+**Type:** composite `{ summary, loael_findings, loael_details, noael_basis, mortality_context }`
+**Scope:** study-level (per sex)
+**Source:** `noael-narrative.ts:generateNoaelNarrative()`
+**Consumers:** NoaelDecisionView banner, context panel
+
+**Invariants:**
+- `loael_findings` capped to top 3 adverse, treatment-related endpoints by |effect size| at LOAEL dose.
+- `noael_basis` is one of: `"adverse_findings"`, `"control_noael"`, `"not_established"`.
+- `dose_dependent` = pattern is monotonic_* or threshold* (not flat/no_pattern).
+- `mortality_context` only populated if `mortality.has_mortality === true`.
+
+**Null means:** `mortality_context` is null if no deaths; `loael_findings` empty if no adverse findings at LOAEL.
+
+---
+
+## Rule Synthesis Fields
+
+### FIELD-45 — `SynthLine`
+
+**Type:** composite `{ text, isWarning, chips?, endpoints?, qualifiers?, listItems? }`
+**Scope:** study-level (organ-scoped or study-scoped)
+**Source:** `rule-synthesis.ts:synthesize()`
+**Consumers:** InsightsList, signals panel
+
+**Invariants:**
+- Returns array; empty when no rules match.
+- One line per synthesis pattern (signal, clinical, histopath, protective, correlation, NOAEL).
+- Collapses R10/R11 (effects) + R04 (adverse) into endpoints with qualifiers (adverse, dose-dependent, both sexes, M/F only).
+- R12/R13 (histopath) deduplicated by finding+specimen. R16 (correlation) renders as chips.
+- Findings deduplicated by key (finding+specimen) with sex aggregation. List items sorted alphabetically.
+
+**Null means:** N/A — empty array means no synthesis lines.
+
+---
+
+### FIELD-46 — `OrganGroup.tier`
+
+**Type:** `"Critical" | "Notable" | "Observed"`
+**Scope:** organ-level
+**Source:** `rule-synthesis.ts:computeTier()`
+**Consumers:** signals panel organ grouping, priority sort
+
+**Invariants:**
+- Never null. Defaults to `"Observed"`.
+- `"Critical"`: has R08 (target organ marker).
+- `"Notable"`: has R04 (adverse) + real R10 (warning severity, not dampened) + ≥2 warning endpoints, OR only R04/R10.
+- `"Observed"`: has R01 (dose-dependent, ≥2 endpoints) or lower.
+- R10 only counts as adverse when `severity="warning"` (dampened R10 with `severity="info"` doesn't raise tier).
+
+**Null means:** N/A — never null.
+
+---
+
+### FIELD-47 — `AggregatedFinding.category`
+
+**Type:** `"adverse" | "protective" | "trend" | "info"`
+**Scope:** finding-level
+**Source:** `finding-aggregation.ts:aggregateByFinding()`
+**Consumers:** FindingsRail grouping/filtering, evidence panel
+
+**Invariants:**
+- Never null.
+- Determined by highest-priority rule in group: R04/R12/R13=adverse, R10 warning=adverse, R10 info=info, R18/R19 unexcluded=protective, R01/R03/R05=trend, others=info.
+- Priority order: adverse > protective > trend > info.
+- R18/R19 excluded by backend (`protective_excluded` flag) downgrade to info.
+
+**Null means:** N/A — never null.
+
+---
+
+### FIELD-48 — `PanelStatement`
+
+**Type:** composite `{ id, priority, icon, text, section, organSystem, clickEndpoint, clickOrgan }`
+**Scope:** study-level (per section)
+**Source:** `signals-panel-engine.ts:deriveNoaelRules()`, `deriveOrganRules()`, `deriveStudyRules()`, `deriveSynthesisPromotions()`
+**Consumers:** NoaelDecisionView signals panel
+
+**Invariants:**
+- Priority bands: 900–1000=DecisionBar (NOAEL), 800–899=TargetOrgansHeadline, 600–799=TargetOrgansEvidence, 400–599=Modifiers, 200–399=Caveats.
+- Icons: fact (blue), warning (orange), review-flag (red).
+- Section assigned by priority band via `assignSection()`.
+- Statements within section sorted by priority descending.
+
+**Null means:** `organSystem`/`clickEndpoint`/`clickOrgan` null for study-level statements.
+
+---
+
+## Statistical Method Fields
+
+### FIELD-49 — `effectSize` (transformed)
+
+**Type:** `number | null`
+**Unit:** standardized mean difference (method-dependent)
+**Scope:** pairwise comparison (endpoint × dose level)
+**Source:** `stat-method-transforms.ts:computeEffectSize()`, `applyEffectSizeMethod()`
+**Consumers:** DoseResponseView, FindingsRail, signal scoring
+
+**Invariants:**
+- Null if insufficient data (n<2, sd=0, missing values).
+- Hedges' g (backend default) passes through unchanged (fast path).
+- Cohen's d and Glass's delta recompute from `group_stats`.
+- Glass's delta uses control SD; Hedges' g and Cohen's d use pooled SD with bias correction (Hedges only).
+- Magnitude preserved; sign indicates direction.
+
+**Null means:** Insufficient statistical data to compute.
+
+**Not:**
+- Not the raw backend `cohens_d` field — this is the frontend-transformed value that respects the user's selected method.
+
+---
+
+### FIELD-50 — `pValue` (multiplicity-corrected)
+
+**Type:** `number | null`
+**Unit:** p-value (0–1)
+**Scope:** pairwise comparison (endpoint × dose level)
+**Source:** `stat-method-transforms.ts:applyMultiplicityMethod()`
+**Consumers:** DoseResponseView, significance thresholds
+
+**Invariants:**
+- Dunnett-FWER (backend default) returns p unchanged (fast path).
+- Bonferroni: `min(p_value_welch × k, 1.0)` where k = number of treated groups. Falls back gracefully if Welch p absent.
+- Always ≤ 1.0.
+
+**Null means:** Welch p-value not present or data insufficient for Welch test.
+
+**Not:**
+- Not the raw backend `p_value_adj` — this is the frontend-transformed value that respects the user's selected multiplicity correction method.
 
 ---
 
@@ -794,6 +1150,13 @@ Not:         [common misreadings that lead to bugs]
 | FIELD-31 | Endpoint group stats | 1 |
 | FIELD-32 | Species context | 1 |
 | FIELD-33 | Pooled N (recovery treatment-period) | 1 |
-| FIELD-34+ | Reserved for future fields | — |
+| FIELD-34 – FIELD-36 | Signal scoring | 3 |
+| FIELD-37 – FIELD-41 | Recovery & finding nature | 5 |
+| FIELD-42 | Protective signal | 1 |
+| FIELD-43 | Clinical significance | 1 |
+| FIELD-44 | NOAEL narrative | 1 |
+| FIELD-45 – FIELD-48 | Rule synthesis & aggregation | 4 |
+| FIELD-49 – FIELD-50 | Statistical method transforms | 2 |
+| FIELD-51+ | Reserved for future fields | — |
 
-Total: 33 fields documented.
+Total: 50 fields documented.

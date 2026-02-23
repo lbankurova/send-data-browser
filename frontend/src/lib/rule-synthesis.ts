@@ -142,6 +142,7 @@ export interface SynthLine {
   listItems?: string[];
 }
 
+// @field FIELD-45 — synthesis line (collapsible insight statement)
 export function synthesize(rules: RuleResult[]): SynthLine[] {
   const lines: SynthLine[] = [];
 
@@ -319,6 +320,7 @@ export function synthesize(rules: RuleResult[]): SynthLine[] {
 
 export type Tier = "Critical" | "Notable" | "Observed";
 
+// @field FIELD-46 — organ group tier (Critical/Notable/Observed)
 export function computeTier(rules: RuleResult[]): Tier {
   const ids = new Set(rules.map((r) => r.rule_id));
   const warningEps = new Set<string>();
