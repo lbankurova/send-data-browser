@@ -272,7 +272,7 @@ export function FindingsView() {
                 p={formatPValue(selectedPointData.rawP)}
                 {" "}
                 <span className="font-normal text-muted-foreground/60">
-                  ({["LB", "BW", "OM", "FW"].includes(selectedPointData.domain) ? "Welch\u2019s" : "Fisher\u2019s"})
+                  ({["LB", "BW", "OM", "FW"].includes(selectedPointData.domain) ? "Dunnett\u2019s" : "Fisher\u2019s"})
                 </span>
               </span>
             </>
@@ -330,7 +330,7 @@ export function FindingsView() {
             <div className="text-[11px] leading-relaxed text-popover-foreground">
               <p>Each dot is one endpoint (e.g., "ALT", "Liver weight").</p>
               <p className="mt-1.5 font-medium">Position shows signal strength:</p>
-              <p><span className="text-muted-foreground">&rarr;</span> Right = larger effect (Cohen&apos;s d)</p>
+              <p><span className="text-muted-foreground">&rarr;</span> Right = larger effect (Hedges&apos; g)</p>
               <p><span className="text-muted-foreground">&uarr;</span> Up = more statistically significant</p>
               <p className="mt-1.5 font-medium">Reference lines:</p>
               <p><span className="text-muted-foreground">&mdash;</span> Vertical at |d| = 0.8 (large effect)</p>

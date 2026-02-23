@@ -34,7 +34,7 @@ function SettingsSelect({
   confirmMessage,
 }: {
   value: string;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; disabled?: boolean }[];
   onChange: (v: string) => void;
   confirmMessage?: string;
 }) {
@@ -47,8 +47,8 @@ function SettingsSelect({
       }}
     >
       {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
+        <option key={o.value} value={o.value} disabled={o.disabled}>
+          {o.label}{o.disabled ? " (planned)" : ""}
         </option>
       ))}
     </FilterSelect>
@@ -106,18 +106,16 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
     `pcc.${studyId}.trendTest`,
     "jonckheere",
   );
-  const [incidenceTest, setIncidenceTest] = useSessionState(
-    `pcc.${studyId}.incidenceTest`,
-    "fisher",
-  );
   const [incidenceTrend, setIncidenceTrend] = useSessionState(
     `pcc.${studyId}.incidenceTrend`,
     "cochran-armitage",
   );
-  const [multiplicity, setMultiplicity] = useSessionState(
+  const [multiplicityRaw, setMultiplicity] = useSessionState(
     `pcc.${studyId}.multiplicity`,
     "dunnett-fwer",
   );
+  // When Dunnett is selected, FWER is built in — override any stale stored value
+  const multiplicity = pairwiseTest === "dunnett" ? "dunnett-fwer" : multiplicityRaw;
   const [effectSize, setEffectSize] = useSessionState(
     `pcc.${studyId}.effectSize`,
     "hedges-g",
@@ -258,68 +256,77 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             <SettingsSelect
               value={pairwiseTest}
               options={[
-                { value: "dunnett", label: "Dunnett (default)" },
-                { value: "williams", label: "Williams" },
-                { value: "steel", label: "Steel" },
+                { value: "dunnett", label: "Dunnett" },
+                { value: "williams", label: "Williams", disabled: true },
+                { value: "steel", label: "Steel", disabled: true },
               ]}
               onChange={setPairwiseTest}
             />
           </SettingsRow>
+          <SettingsRow label="Multiplicity">
+            <SettingsSelect
+              value={multiplicity}
+              options={
+                pairwiseTest === "dunnett"
+                  ? [
+                      { value: "dunnett-fwer", label: "Dunnett FWER (built-in)" },
+                      { value: "bonferroni", label: "Bonferroni", disabled: true },
+                      { value: "holm-sidak", label: "Holm-Sidak", disabled: true },
+                      { value: "bh-fdr", label: "BH-FDR", disabled: true },
+                    ]
+                  : [
+                      { value: "dunnett-fwer", label: "Dunnett FWER" },
+                      { value: "bonferroni", label: "Bonferroni" },
+                      { value: "holm-sidak", label: "Holm-Sidak", disabled: true },
+                      { value: "bh-fdr", label: "BH-FDR", disabled: true },
+                    ]
+              }
+              onChange={setMultiplicity}
+            />
+          </SettingsRow>
+          <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
+            {pairwiseTest === "dunnett"
+              ? "FWER-controlled many-to-one. Incidence: Fisher exact, no correction."
+              : "Separate correction needed. Incidence: Fisher exact, no correction."}
+          </div>
           <SettingsRow label="Trend test">
             <SettingsSelect
               value={trendTest}
               options={[
-                { value: "jonckheere", label: "Jonckheere-Terpstra (default)" },
-                { value: "cuzick", label: "Cuzick" },
-                { value: "williams-trend", label: "Williams (parametric)" },
+                { value: "jonckheere", label: "Jonckheere-Terpstra" },
+                { value: "cuzick", label: "Cuzick", disabled: true },
+                { value: "williams-trend", label: "Williams (parametric)", disabled: true },
               ]}
               onChange={setTrendTest}
-            />
-          </SettingsRow>
-          <SettingsRow label="Incidence test">
-            <SettingsSelect
-              value={incidenceTest}
-              options={[
-                { value: "fisher", label: "Fisher exact (default)" },
-                { value: "chi-square", label: "Chi-square" },
-                { value: "barnard", label: "Barnard exact" },
-              ]}
-              onChange={setIncidenceTest}
             />
           </SettingsRow>
           <SettingsRow label="Incidence trend">
             <SettingsSelect
               value={incidenceTrend}
               options={[
-                { value: "cochran-armitage", label: "Cochran-Armitage (default)" },
-                { value: "logistic-slope", label: "Logistic regression" },
+                { value: "cochran-armitage", label: "Cochran-Armitage (approx.)" },
+                { value: "logistic-slope", label: "Logistic regression", disabled: true },
               ]}
               onChange={setIncidenceTrend}
             />
           </SettingsRow>
-          <SettingsRow label="Multiplicity">
-            <SettingsSelect
-              value={multiplicity}
-              options={[
-                { value: "dunnett-fwer", label: "Dunnett FWER (default)" },
-                { value: "bonferroni", label: "Bonferroni" },
-                { value: "holm-sidak", label: "Holm-Sidak" },
-                { value: "bh-fdr", label: "Benjamini-Hochberg FDR" },
-              ]}
-              onChange={setMultiplicity}
-            />
-          </SettingsRow>
+          <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
+            Chi-square linear contrast approximation with ordinal dose scores
+          </div>
           <SettingsRow label="Effect size">
             <SettingsSelect
               value={effectSize}
               options={[
-                { value: "hedges-g", label: "Hedges' g (default)" },
-                { value: "cohens-d", label: "Cohen's d" },
-                { value: "glass-delta", label: "Glass's delta" },
+                { value: "hedges-g", label: "Hedges' g" },
+                { value: "cohens-d", label: "Cohen's d (uncorrected)", disabled: true },
+                { value: "glass-delta", label: "Glass's delta", disabled: true },
               ]}
               onChange={setEffectSize}
             />
           </SettingsRow>
+          <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
+            Bias-corrected for small samples (J = 1 − 3/(4df − 1))
+          </div>
         </div>
       </CollapsiblePane>
 

@@ -950,7 +950,7 @@ function ChartOverviewContent({
         {hasEffect && (
           <div className="flex min-w-0 flex-1 flex-col px-2 py-1.5">
             <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Effect size (Cohen&apos;s d)
+              Effect size (Hedges&apos; g)
             </div>
             <EChartsWrapper
               option={buildEffectSizeBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels)}
