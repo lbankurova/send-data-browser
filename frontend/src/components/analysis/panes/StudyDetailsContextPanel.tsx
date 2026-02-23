@@ -12,6 +12,14 @@ import { FilterSelect } from "@/components/ui/FilterBar";
 
 // ── Helpers ──────────────────────────────────────────────────
 
+function formatDuration(iso: string): string {
+  const wMatch = iso.match(/^P(\d+)W$/);
+  if (wMatch) return `${wMatch[1]} weeks`;
+  const dMatch = iso.match(/^P(\d+)D$/);
+  if (dMatch) return `${dMatch[1]} days`;
+  return iso;
+}
+
 function SettingsRow({
   label,
   children,
@@ -148,9 +156,18 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
     <div className="flex h-full flex-col overflow-auto p-4">
       {/* Header */}
       <div className="mb-3">
-        <h3 className="text-sm font-semibold">Study: {studyId} — Settings</h3>
+        <h3 className="text-sm font-semibold">Study: {studyId}</h3>
+        {(meta.dosing_duration || meta.species) && (
+          <div className="mt-0.5 text-[10px] text-muted-foreground">
+            {[
+              meta.dosing_duration ? formatDuration(meta.dosing_duration) : null,
+              meta.species?.toLowerCase(),
+            ].filter(Boolean).join(" · ")}
+          </div>
+        )}
       </div>
 
+      <div className="space-y-3">
       {/* ── Analysis settings ───────────────────────────── */}
       <CollapsiblePane title="Analysis settings" variant="margin">
         {/* Control group */}
@@ -208,95 +225,24 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={setAdversityThreshold}
           />
         </SettingsRow>
-
-        {/* Recovery period — day range + arms */}
-        {hasRecovery && (
-          <div className="mt-1.5 border-t pt-1.5">
-            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
-              Recovery period
-            </div>
-            <div className="space-y-0 text-[10px] text-muted-foreground">
-              {(() => {
-                const dosingDays = studyCtx?.dosingDurationWeeks
-                  ? Math.round(studyCtx.dosingDurationWeeks * 7)
-                  : null;
-                const recDays = recoveryPeriod;
-                if (dosingDays && recDays) {
-                  return <div>Auto-detected: Day {dosingDays + 1}\u2013{dosingDays + recDays} ({recDays} days)</div>;
-                }
-                return <div>Auto-detected: {recDays ? `${recDays} days` : "detected"}</div>;
-              })()}
-              {/* Recovery arms list */}
-              {meta.dose_groups && (() => {
-                const arms = meta.dose_groups
-                  .filter((dg) => dg.recovery_armcd)
-                  .map((dg) => dg.recovery_armcd!);
-                return arms.length > 0 ? (
-                  <div>Arms: {arms.join(", ")}</div>
-                ) : null;
-              })()}
-            </div>
-            <SettingsRow label="Treatment period">
-              <SettingsSelect
-                value={recoveryPooling}
-                options={[
-                  { value: "pool", label: "Pool with main study" },
-                  { value: "separate", label: "Analyze separately" },
-                ]}
-                onChange={setRecoveryPooling}
-                confirmMessage="Changing pooling mode will affect all treatment-period statistics. Continue?"
-              />
-            </SettingsRow>
-            <div className="mb-1 text-[10px] leading-snug text-muted-foreground">
-              {recoveryPooling === "pool"
-                ? "Recovery animals pooled with main study during treatment (recommended)"
-                : "Recovery animals excluded from treatment-period statistics"}
-            </div>
-            <label className="mt-1 flex items-center gap-2 text-[10px]">
-              <input
-                type="checkbox"
-                checked={recoveryOverride}
-                onChange={(e) => setRecoveryOverride(e.target.checked)}
-                className="h-3 w-3 rounded border-gray-300"
-              />
-              <span className="text-muted-foreground">
-                Override recovery start day
-              </span>
-            </label>
-          </div>
-        )}
       </CollapsiblePane>
 
-      {/* ── Subject population breakdown ──────────────── */}
+      {/* ── Subject population — edge-case settings ─────── */}
       {meta.dose_groups && meta.dose_groups.length > 0 && (() => {
         const dgs = meta.dose_groups;
-        const mainN = dgs.reduce((s, dg) => s + dg.n_total, 0);
-        const mainM = dgs.reduce((s, dg) => s + dg.n_male, 0);
-        const mainF = dgs.reduce((s, dg) => s + dg.n_female, 0);
         const recovN = dgs.reduce((s, dg) => s + (dg.recovery_n ?? 0), 0);
         const tkN = dgs.reduce((s, dg) => s + (dg.tk_count ?? 0), 0);
-        const totalPop = mainN + recovN + tkN;
         const hasRec = recovN > 0;
         const hasTk = tkN > 0;
         if (!hasRec && !hasTk) return null;
         return (
           <CollapsiblePane title="Subject population" variant="margin">
             <div className="space-y-0.5 text-[10px] text-muted-foreground">
-              <div className="font-medium text-foreground">
-                Subjects: {totalPop} ({Math.round(totalPop / 2)}M, {Math.round(totalPop / 2)}F)
-              </div>
-              <div className="pl-2">
-                Main study: {mainN} ({mainM}M, {mainF}F) — terminal analysis
-              </div>
               {hasRec && (
-                <div className="pl-2">
-                  Recovery: {recovN} — pooled with main during treatment
-                </div>
+                <div>Recovery: {recovN} — pooled with main during treatment</div>
               )}
               {hasTk && (
-                <div className="pl-2">
-                  TK satellite: {tkN} — excluded from all analyses
-                </div>
+                <div>TK satellite: {tkN} — excluded from all analyses</div>
               )}
               {hasRec && (
                 <div className="mt-1.5 border-t pt-1.5 text-[10px] text-muted-foreground">
@@ -316,6 +262,62 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 </div>
               )}
             </div>
+
+            {/* Recovery period settings */}
+            {hasRecovery && (
+              <div className="mt-1.5 border-t pt-1.5">
+                <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
+                  Recovery period
+                </div>
+                <div className="space-y-0 text-[10px] text-muted-foreground">
+                  {(() => {
+                    const dosingDays = studyCtx?.dosingDurationWeeks
+                      ? Math.round(studyCtx.dosingDurationWeeks * 7)
+                      : null;
+                    const recDays = recoveryPeriod;
+                    if (dosingDays && recDays) {
+                      return <div>Auto-detected: Day {dosingDays + 1}\u2013{dosingDays + recDays} ({recDays} days)</div>;
+                    }
+                    return <div>Auto-detected: {recDays ? `${recDays} days` : "detected"}</div>;
+                  })()}
+                  {meta.dose_groups && (() => {
+                    const arms = meta.dose_groups
+                      .filter((dg) => dg.recovery_armcd)
+                      .map((dg) => dg.recovery_armcd!);
+                    return arms.length > 0 ? (
+                      <div>Arms: {arms.join(", ")}</div>
+                    ) : null;
+                  })()}
+                </div>
+                <SettingsRow label="Treatment period">
+                  <SettingsSelect
+                    value={recoveryPooling}
+                    options={[
+                      { value: "pool", label: "Pool with main study" },
+                      { value: "separate", label: "Analyze separately" },
+                    ]}
+                    onChange={setRecoveryPooling}
+                    confirmMessage="Changing pooling mode will affect all treatment-period statistics. Continue?"
+                  />
+                </SettingsRow>
+                <div className="mb-1 text-[10px] leading-snug text-muted-foreground">
+                  {recoveryPooling === "pool"
+                    ? "Recovery animals pooled with main study during treatment (recommended)"
+                    : "Recovery animals excluded from treatment-period statistics"}
+                </div>
+                <label className="mt-1 flex items-center gap-2 text-[10px]">
+                  <input
+                    type="checkbox"
+                    checked={recoveryOverride}
+                    onChange={(e) => setRecoveryOverride(e.target.checked)}
+                    className="h-3 w-3 rounded border-gray-300"
+                  />
+                  <span className="text-muted-foreground">
+                    Override recovery start day
+                  </span>
+                </label>
+              </div>
+            )}
           </CollapsiblePane>
         );
       })()}
@@ -411,6 +413,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       {/* ── Study notes ─────────────────────────────────── */}
       <CollapsiblePane
         title="Study notes"
+        headerRight={currentNote ? "1 note" : "none"}
         defaultOpen={!!currentNote}
         variant="margin"
       >
@@ -445,6 +448,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           )}
         </div>
       </CollapsiblePane>
+      </div>
     </div>
   );
 }

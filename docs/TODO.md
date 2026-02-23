@@ -30,13 +30,13 @@
 | Bug | 1 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
-| Missing feature | 4 | 4 | Spec'd but not implemented |
-| Gap | 12 | 4 | Missing capability, no spec exists |
+| Missing feature | 3 | 5 | Spec'd but not implemented |
+| Gap | 13 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **27** | **37** | |
+| **Total open** | **27** | **38** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -128,9 +128,9 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Issue:** Fix scripts only annotate; production needs correction overlay (not XPT modification).
 - **Status:** Defer to production
 
-### MF-06: Recovery arm analysis
+### ~~MF-06: Recovery arm analysis~~ ✅
 - **Issue:** Recovery subjects excluded from all computations. Separate analysis mode needed.
-- **Status:** Defer to Phase 2
+- **Status:** Resolved (commits 4f6138f, 4181435, e51c67f) — phase-aware pooling (DATA-01), recovery toggle, 62 tests
 
 ### MF-08: No authentication system
 - **Issue:** No auth anywhere. Required for production.
@@ -138,7 +138,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Gaps (10 open)
+## Gaps (11 open)
 
 ### GAP-01: No URL persistence of filter state
 - **Status:** Skip for prototype (Datagrok handles differently)
@@ -189,6 +189,12 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Blocked on:** External compound-class-to-findings reference database
 - **Status:** Open (deferred — no data source available)
 - **Owner hint:** backend-dev (database), frontend-dev (integration into interpretation layer)
+
+### GAP-18: Auto-select organ weight method — full spec implementation
+- **Files:** `frontend/src/components/analysis/StudySummaryView.tsx`, `docs/incoming/`
+- **Issue:** Current implementation is a display-time auto-default: when BW has adverse endpoints with direction "down", `organWeightMethod` is auto-set to `"ratio-brain"` via `useEffect` in DetailsTab. A full spec exists (or should be written) for more comprehensive organ weight method automation — e.g., propagating the auto-set to all views that consume `organWeightMethod`, persisting the auto-selection rationale, and handling edge cases (manual override tracking, reverting when BW signal changes).
+- **Status:** Open (current auto-default sufficient for prototype)
+- **Owner hint:** ux-designer → frontend-dev
 
 ### GAP-17: Chrome MCP server for E2E / integration testing
 - **Files:** N/A (new infrastructure)

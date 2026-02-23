@@ -87,7 +87,7 @@ export function CollapsiblePane({
         )}
       </button>
       {isOpen && (
-        <div className={isBorder ? "px-4 pb-3" : "pl-4"}>
+        <div className={isBorder ? "px-4 pb-3" : "pl-4 pt-1.5"}>
           {children}
         </div>
       )}
