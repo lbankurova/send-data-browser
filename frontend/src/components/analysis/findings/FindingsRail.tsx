@@ -1055,7 +1055,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
         {/* Effect size — typographic weight encodes magnitude */}
         <span
           className={cn("w-6 shrink-0 text-right font-mono text-[10px]", effectTypography(endpoint.maxEffectSize))}
-          title={endpoint.maxEffectSize !== null ? `Cohen's d = ${endpoint.maxEffectSize.toFixed(3)}\nLargest effect size across all dose groups and sexes` : undefined}
+          title={endpoint.maxEffectSize !== null ? `Hedges' g = ${endpoint.maxEffectSize.toFixed(3)}\nLargest effect size across all dose groups and sexes` : undefined}
         >
           {endpoint.maxEffectSize !== null ? formatEffectCompact(endpoint.maxEffectSize) : ""}
         </span>

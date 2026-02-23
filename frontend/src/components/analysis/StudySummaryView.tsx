@@ -358,7 +358,7 @@ function fmtP(p: number | null): string {
   return "";
 }
 
-/** Format Cohen's d compactly: |d|=7.8 */
+/** Format Hedges' g compactly: |g|=7.8 */
 function fmtD(d: number | null): string {
   if (d == null || d < 2.0) return "";
   return `|d|=${d.toFixed(1)}`;

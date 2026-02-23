@@ -91,14 +91,14 @@ export const RULE_CATALOG: RuleDef[] = [
     id: "R10", name: "Large effect", scope: "endpoint", severity: "warning",
     condition: "large_effect",
     conditionHuman: "|max_effect_size| >= 1.0",
-    template: "{endpoint_label}: Cohen's d = {effect_size} at high dose in {sex}.",
+    template: "{endpoint_label}: Hedges' g = {effect_size} at high dose in {sex}.",
     thresholdRefs: ["large_effect"],
   },
   {
     id: "R11", name: "Moderate effect", scope: "endpoint", severity: "info",
     condition: "moderate_effect",
     conditionHuman: "0.5 <= |max_effect_size| < 1.0",
-    template: "{endpoint_label}: Cohen's d = {effect_size} at high dose.",
+    template: "{endpoint_label}: Hedges' g = {effect_size} at high dose.",
     thresholdRefs: ["moderate_effect"],
   },
   {

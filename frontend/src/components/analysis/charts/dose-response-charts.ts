@@ -367,7 +367,7 @@ export function buildIncidenceBarOption(
 // ─── 3. Effect Size Bar Chart ───────────────────────────────
 
 /**
- * Bar chart of effect size (Cohen's d) by dose for each sex.
+ * Bar chart of effect size (Hedges' g) by dose for each sex.
  * Reference lines at y = +/-0.5 (medium) and y = +/-0.8 (large).
  */
 export function buildEffectSizeBarOption(
@@ -915,7 +915,7 @@ export function buildVolcanoScatterOption(
       min: 0,
       axisLabel: axisLabel(),
       splitLine: splitLineStyle(),
-      name: "|Effect size| (Cohen's d)",
+      name: "|Effect size| (Hedges' g)",
       nameLocation: "center",
       nameGap: 24,
       nameTextStyle: { fontSize: 10, color: "#9CA3AF" },
