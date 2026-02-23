@@ -8,9 +8,16 @@ from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, cohens_d, trend_test,
 )
+from services.analysis.phase_filter import (
+    get_treatment_subjects, filter_treatment_period_records,
+)
 
 
-def compute_bw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def compute_bw_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    last_dosing_day: int | None = None,
+) -> list[dict]:
     """Compute findings from BW domain."""
     if "bw" not in study.xpt_files:
         return []
@@ -18,9 +25,9 @@ def compute_bw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     bw_df, _ = read_xpt(study.xpt_files["bw"])
     bw_df.columns = [c.upper() for c in bw_df.columns]
 
-    # Merge with subject info (main study only, exclude TK satellites)
-    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
-    bw_df = bw_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
+    treatment_subs = get_treatment_subjects(subjects)
+    bw_df = bw_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     # Parse numeric result
     if "BWSTRESN" in bw_df.columns:
@@ -34,6 +41,9 @@ def compute_bw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     if day_col is None:
         bw_df["BWDY"] = 1
     bw_df["BWDY"] = pd.to_numeric(bw_df["BWDY"], errors="coerce")
+
+    # Filter recovery animals' records to treatment period only
+    bw_df = filter_treatment_period_records(bw_df, subjects, "BWDY", last_dosing_day)
 
     unit_col = "BWSTRESU" if "BWSTRESU" in bw_df.columns else None
 

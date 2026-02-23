@@ -800,42 +800,42 @@
   {
     "specimen": null,
     "finding": "ALOPECIA",
-    "ca_trend_p": 0.1742313882480251,
+    "ca_trend_p": 0.17606749881174233,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "BEDDING WET",
-    "ca_trend_p": 0.001522419555560539,
+    "ca_trend_p": 5.744711919053458e-06,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "CRUST",
-    "ca_trend_p": 0.15729920705028522,
+    "ca_trend_p": 0.01741713028689995,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "EXUDATE",
-    "ca_trend_p": 0.19436591080310905,
+    "ca_trend_p": 0.020637558243972176,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "MOURIBUND",
-    "ca_trend_p": 0.1742313882480251,
+    "ca_trend_p": 0.17606749881174233,
     "severity_trend_rho": null,
     "severity_trend_p": null
   },
   {
     "specimen": null,
     "finding": "RED AREA",
-    "ca_trend_p": 0.6506129639327536,
+    "ca_trend_p": 0.1982563974433571,
     "severity_trend_rho": null,
     "severity_trend_p": null
   }

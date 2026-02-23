@@ -8,9 +8,16 @@ from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, cohens_d, trend_test,
 )
+from services.analysis.phase_filter import (
+    get_treatment_subjects, filter_treatment_period_records,
+)
 
 
-def compute_vs_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def compute_vs_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    last_dosing_day: int | None = None,
+) -> list[dict]:
     """Compute findings from VS domain."""
     if "vs" not in study.xpt_files:
         return []
@@ -18,9 +25,9 @@ def compute_vs_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     vs_df, _ = read_xpt(study.xpt_files["vs"])
     vs_df.columns = [c.upper() for c in vs_df.columns]
 
-    # Merge with subject info (main study only, exclude TK satellites)
-    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
-    vs_df = vs_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
+    treatment_subs = get_treatment_subjects(subjects)
+    vs_df = vs_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     # Parse numeric result
     if "VSSTRESN" in vs_df.columns:
@@ -35,6 +42,9 @@ def compute_vs_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
         vs_df["VSDY"] = pd.to_numeric(vs_df["VSDY"], errors="coerce")
     else:
         vs_df["VSDY"] = 1
+
+    # Filter recovery animals' records to treatment period only
+    vs_df = filter_treatment_period_records(vs_df, subjects, "VSDY", last_dosing_day)
 
     # Test code / test name
     has_testcd = "VSTESTCD" in vs_df.columns

@@ -8,9 +8,16 @@ from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, cohens_d, trend_test,
 )
+from services.analysis.phase_filter import (
+    get_treatment_subjects, filter_treatment_period_records,
+)
 
 
-def compute_bg_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def compute_bg_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    last_dosing_day: int | None = None,
+) -> list[dict]:
     """Compute findings from BG domain."""
     if "bg" not in study.xpt_files:
         return []
@@ -18,9 +25,9 @@ def compute_bg_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     bg_df, _ = read_xpt(study.xpt_files["bg"])
     bg_df.columns = [c.upper() for c in bg_df.columns]
 
-    # Merge with subject info (main study only, exclude TK satellites)
-    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
-    bg_df = bg_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
+    treatment_subs = get_treatment_subjects(subjects)
+    bg_df = bg_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     # Parse numeric result
     if "BGSTRESN" in bg_df.columns:
@@ -35,6 +42,9 @@ def compute_bg_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
         bg_df["BGDY"] = pd.to_numeric(bg_df["BGDY"], errors="coerce")
     else:
         bg_df["BGDY"] = 1
+
+    # Filter recovery animals' records to treatment period only
+    bg_df = filter_treatment_period_records(bg_df, subjects, "BGDY", last_dosing_day)
 
     # Test code / test name
     has_testcd = "BGTESTCD" in bg_df.columns

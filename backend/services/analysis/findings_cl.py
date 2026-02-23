@@ -5,11 +5,18 @@ import pandas as pd
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 from services.analysis.statistics import fisher_exact_2x2, trend_test_incidence
+from services.analysis.phase_filter import (
+    get_treatment_subjects, filter_treatment_period_records,
+)
 
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE", "NONE"}
 
 
-def compute_cl_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def compute_cl_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    last_dosing_day: int | None = None,
+) -> list[dict]:
     """Compute findings from CL domain (clinical observations)."""
     if "cl" not in study.xpt_files:
         return []
@@ -17,8 +24,12 @@ def compute_cl_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     cl_df, _ = read_xpt(study.xpt_files["cl"])
     cl_df.columns = [c.upper() for c in cl_df.columns]
 
-    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
-    cl_df = cl_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    # Include recovery animals for treatment-period pooling
+    treatment_subs = get_treatment_subjects(subjects)
+    cl_df = cl_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+
+    # Filter recovery records to treatment period if day column exists
+    cl_df = filter_treatment_period_records(cl_df, subjects, "CLDY", last_dosing_day)
 
     finding_col = "CLSTRESC" if "CLSTRESC" in cl_df.columns else ("CLORRES" if "CLORRES" in cl_df.columns else None)
     if finding_col is None:
@@ -31,8 +42,8 @@ def compute_cl_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     if len(cl_abnormal) == 0:
         return []
 
-    n_per_group = main_subs.groupby(["dose_level", "SEX"]).size().to_dict()
-    all_dose_levels = sorted(main_subs["dose_level"].unique())
+    n_per_group = treatment_subs.groupby(["dose_level", "SEX"]).size().to_dict()
+    all_dose_levels = sorted(treatment_subs["dose_level"].unique())
 
     findings = []
     grouped = cl_abnormal.groupby([finding_col, "SEX"])

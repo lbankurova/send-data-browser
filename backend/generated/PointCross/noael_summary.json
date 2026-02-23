@@ -7,8 +7,9 @@
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
     "loael_label": "Group 2,2 mg/kg PCDRUG",
-    "n_adverse_at_loael": 5,
+    "n_adverse_at_loael": 11,
     "adverse_domains_at_loael": [
+      "BW",
       "LB",
       "MI",
       "OM"
@@ -20,28 +21,64 @@
       "loael_label": "Group 2,2 mg/kg PCDRUG",
       "adverse_findings_at_loael": [
         {
+          "finding": "Creatinine",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01274
+        },
+        {
           "finding": "Large Unstained Cells",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01115
+          "p_value": 0.01107
+        },
+        {
+          "finding": "Ery. Mean Corpuscular Hemoglobin",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00517
+        },
+        {
+          "finding": "Ery. Mean Corpuscular Volume",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00707
         },
         {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00057
+          "p_value": 0.00053
+        },
+        {
+          "finding": "Erythrocytes",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.0027
+        },
+        {
+          "finding": "Urea Nitrogen",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01755
         },
         {
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00155
+          "p_value": 0.00153
+        },
+        {
+          "finding": "Body Weight",
+          "specimen": null,
+          "domain": "BW",
+          "p_value": 0.00436
         },
         {
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03829
+          "p_value": 0.03832
         },
         {
           "finding": "VACUOLIZATION",
@@ -50,7 +87,7 @@
           "p_value": 0.00109
         }
       ],
-      "n_adverse_at_loael": 5,
+      "n_adverse_at_loael": 11,
       "confidence": 0.8,
       "confidence_penalties": []
     },
@@ -72,7 +109,6 @@
     "loael_label": "Group 2,2 mg/kg PCDRUG",
     "n_adverse_at_loael": 5,
     "adverse_domains_at_loael": [
-      "BW",
       "LB",
       "MI"
     ],
@@ -83,28 +119,28 @@
       "loael_label": "Group 2,2 mg/kg PCDRUG",
       "adverse_findings_at_loael": [
         {
-          "finding": "Glucose",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.00429
-        },
-        {
-          "finding": "Potassium",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.03952
-        },
-        {
-          "finding": "Reticulocytes",
+          "finding": "Activated Partial Thromboplastin Time",
           "specimen": null,
           "domain": "LB",
           "p_value": 0.00713
         },
         {
-          "finding": "Body Weight",
+          "finding": "Glucose",
           "specimen": null,
-          "domain": "BW",
-          "p_value": 0.0341
+          "domain": "LB",
+          "p_value": 0.00428
+        },
+        {
+          "finding": "Potassium",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.03951
+        },
+        {
+          "finding": "Reticulocytes",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00711
         },
         {
           "finding": "VACUOLIZATION",
@@ -133,7 +169,7 @@
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
     "loael_label": "Group 2,2 mg/kg PCDRUG",
-    "n_adverse_at_loael": 10,
+    "n_adverse_at_loael": 16,
     "adverse_domains_at_loael": [
       "BW",
       "LB",
@@ -147,52 +183,88 @@
       "loael_label": "Group 2,2 mg/kg PCDRUG",
       "adverse_findings_at_loael": [
         {
-          "finding": "Glucose",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.00429
-        },
-        {
-          "finding": "Potassium",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.03952
-        },
-        {
-          "finding": "Large Unstained Cells",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.01115
-        },
-        {
-          "finding": "Neutrophils",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.00057
-        },
-        {
-          "finding": "Reticulocytes",
+          "finding": "Activated Partial Thromboplastin Time",
           "specimen": null,
           "domain": "LB",
           "p_value": 0.00713
         },
         {
+          "finding": "Creatinine",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01274
+        },
+        {
+          "finding": "Glucose",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00428
+        },
+        {
+          "finding": "Potassium",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.03951
+        },
+        {
+          "finding": "Large Unstained Cells",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01107
+        },
+        {
+          "finding": "Ery. Mean Corpuscular Hemoglobin",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00517
+        },
+        {
+          "finding": "Ery. Mean Corpuscular Volume",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00707
+        },
+        {
+          "finding": "Neutrophils",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00053
+        },
+        {
+          "finding": "Erythrocytes",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.0027
+        },
+        {
+          "finding": "Reticulocytes",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.00711
+        },
+        {
+          "finding": "Urea Nitrogen",
+          "specimen": null,
+          "domain": "LB",
+          "p_value": 0.01755
+        },
+        {
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00155
+          "p_value": 0.00153
         },
         {
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.0341
+          "p_value": 0.00436
         },
         {
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03829
+          "p_value": 0.03832
         },
         {
           "finding": "VACUOLIZATION",
@@ -207,7 +279,7 @@
           "p_value": 0.00109
         }
       ],
-      "n_adverse_at_loael": 10,
+      "n_adverse_at_loael": 16,
       "confidence": 0.8,
       "confidence_penalties": []
     },

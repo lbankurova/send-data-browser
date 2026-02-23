@@ -249,6 +249,59 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
         )}
       </CollapsiblePane>
 
+      {/* ── Subject population breakdown ──────────────── */}
+      {meta.dose_groups && meta.dose_groups.length > 0 && (() => {
+        const dgs = meta.dose_groups;
+        const mainN = dgs.reduce((s, dg) => s + dg.n_total, 0);
+        const mainM = dgs.reduce((s, dg) => s + dg.n_male, 0);
+        const mainF = dgs.reduce((s, dg) => s + dg.n_female, 0);
+        const recovN = dgs.reduce((s, dg) => s + (dg.recovery_n ?? 0), 0);
+        const tkN = dgs.reduce((s, dg) => s + (dg.tk_count ?? 0), 0);
+        const totalPop = mainN + recovN + tkN;
+        const hasRec = recovN > 0;
+        const hasTk = tkN > 0;
+        if (!hasRec && !hasTk) return null;
+        return (
+          <CollapsiblePane title="Subject population" variant="margin">
+            <div className="space-y-0.5 text-[10px] text-muted-foreground">
+              <div className="font-medium text-foreground">
+                Subjects: {totalPop} ({Math.round(totalPop / 2)}M, {Math.round(totalPop / 2)}F)
+              </div>
+              <div className="pl-2">
+                Main study: {mainN} ({mainM}M, {mainF}F) — terminal analysis
+              </div>
+              {hasRec && (
+                <div className="pl-2">
+                  Recovery: {recovN} — pooled with main during treatment
+                </div>
+              )}
+              {hasTk && (
+                <div className="pl-2">
+                  TK satellite: {tkN} — excluded from all analyses
+                </div>
+              )}
+              {hasRec && (
+                <div className="mt-1.5 border-t pt-1.5 text-[10px] text-muted-foreground">
+                  <span className="font-medium text-foreground">Treatment-period N per group: </span>
+                  {dgs.filter(dg => !dg.is_recovery).map((dg) => {
+                    const pooled = dg.pooled_n_total ?? dg.n_total;
+                    const isPooled = pooled > dg.n_total;
+                    return (
+                      <span key={dg.armcd} className="mr-2 tabular-nums">
+                        {dg.label.split(",")[0]}: {pooled}
+                        {isPooled && (
+                          <span className="text-muted-foreground/60"> (+{pooled - dg.n_total}R)</span>
+                        )}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </CollapsiblePane>
+        );
+      })()}
+
       {/* ── Statistical methods ────────────────────────── */}
       <CollapsiblePane title="Statistical methods" variant="margin">
         <div className="space-y-0.5">

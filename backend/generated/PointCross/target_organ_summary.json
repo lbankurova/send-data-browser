@@ -1,7 +1,7 @@
 [
   {
     "organ_system": "general",
-    "evidence_score": 1.276,
+    "evidence_score": 1.31,
     "n_endpoints": 61,
     "n_domains": 8,
     "domains": [
@@ -14,29 +14,32 @@
       "MI",
       "OM"
     ],
-    "max_signal_score": 0.8,
-    "n_significant": 39,
-    "n_treatment_related": 39,
+    "max_signal_score": 0.844,
+    "n_significant": 44,
+    "n_treatment_related": 43,
     "target_organ_flag": true,
     "max_severity": 2.6
   },
   {
-    "organ_system": "neurological",
-    "evidence_score": 0.617,
-    "n_endpoints": 2,
-    "n_domains": 1,
+    "organ_system": "hematologic",
+    "evidence_score": 0.893,
+    "n_endpoints": 65,
+    "n_domains": 4,
     "domains": [
+      "LB",
+      "MA",
+      "MI",
       "OM"
     ],
-    "max_signal_score": 0.725,
-    "n_significant": 2,
-    "n_treatment_related": 2,
+    "max_signal_score": 0.856,
+    "n_significant": 38,
+    "n_treatment_related": 34,
     "target_organ_flag": true,
-    "max_severity": null
+    "max_severity": 2.5
   },
   {
     "organ_system": "hepatic",
-    "evidence_score": 0.556,
+    "evidence_score": 0.769,
     "n_endpoints": 39,
     "n_domains": 5,
     "domains": [
@@ -47,31 +50,14 @@
       "TF"
     ],
     "max_signal_score": 0.86,
-    "n_significant": 12,
-    "n_treatment_related": 12,
+    "n_significant": 17,
+    "n_treatment_related": 15,
     "target_organ_flag": true,
     "max_severity": 3.0
   },
   {
-    "organ_system": "hematologic",
-    "evidence_score": 0.55,
-    "n_endpoints": 65,
-    "n_domains": 4,
-    "domains": [
-      "LB",
-      "MA",
-      "MI",
-      "OM"
-    ],
-    "max_signal_score": 0.8,
-    "n_significant": 23,
-    "n_treatment_related": 22,
-    "target_organ_flag": true,
-    "max_severity": 2.5
-  },
-  {
     "organ_system": "renal",
-    "evidence_score": 0.472,
+    "evidence_score": 0.653,
     "n_endpoints": 32,
     "n_domains": 4,
     "domains": [
@@ -81,10 +67,52 @@
       "OM"
     ],
     "max_signal_score": 0.8,
-    "n_significant": 9,
-    "n_treatment_related": 9,
+    "n_significant": 12,
+    "n_treatment_related": 12,
     "target_organ_flag": true,
     "max_severity": 3.0
+  },
+  {
+    "organ_system": "neurological",
+    "evidence_score": 0.618,
+    "n_endpoints": 2,
+    "n_domains": 1,
+    "domains": [
+      "OM"
+    ],
+    "max_signal_score": 0.726,
+    "n_significant": 2,
+    "n_treatment_related": 2,
+    "target_organ_flag": true,
+    "max_severity": null
+  },
+  {
+    "organ_system": "metabolic",
+    "evidence_score": 0.562,
+    "n_endpoints": 8,
+    "n_domains": 1,
+    "domains": [
+      "LB"
+    ],
+    "max_signal_score": 0.666,
+    "n_significant": 6,
+    "n_treatment_related": 3,
+    "target_organ_flag": true,
+    "max_severity": null
+  },
+  {
+    "organ_system": "electrolyte",
+    "evidence_score": 0.477,
+    "n_endpoints": 8,
+    "n_domains": 1,
+    "domains": [
+      "LB"
+    ],
+    "max_signal_score": 0.5,
+    "n_significant": 3,
+    "n_treatment_related": 2,
+    "target_organ_flag": true,
+    "max_severity": null
   },
   {
     "organ_system": "endocrine",
@@ -102,7 +130,7 @@
   },
   {
     "organ_system": "cardiovascular",
-    "evidence_score": 0.389,
+    "evidence_score": 0.363,
     "n_endpoints": 12,
     "n_domains": 4,
     "domains": [
@@ -112,8 +140,8 @@
       "VS"
     ],
     "max_signal_score": 0.525,
-    "n_significant": 2,
-    "n_treatment_related": 2,
+    "n_significant": 3,
+    "n_treatment_related": 3,
     "target_organ_flag": true,
     "max_severity": 2.0
   },
@@ -133,20 +161,6 @@
     "max_severity": 3.0
   },
   {
-    "organ_system": "metabolic",
-    "evidence_score": 0.288,
-    "n_endpoints": 8,
-    "n_domains": 1,
-    "domains": [
-      "LB"
-    ],
-    "max_signal_score": 0.45,
-    "n_significant": 3,
-    "n_treatment_related": 2,
-    "target_organ_flag": false,
-    "max_severity": null
-  },
-  {
     "organ_system": "ocular",
     "evidence_score": 0.288,
     "n_endpoints": 4,
@@ -159,20 +173,6 @@
     "n_treatment_related": 0,
     "target_organ_flag": false,
     "max_severity": 2.0
-  },
-  {
-    "organ_system": "electrolyte",
-    "evidence_score": 0.251,
-    "n_endpoints": 8,
-    "n_domains": 1,
-    "domains": [
-      "LB"
-    ],
-    "max_signal_score": 0.461,
-    "n_significant": 2,
-    "n_treatment_related": 1,
-    "target_organ_flag": false,
-    "max_severity": null
   },
   {
     "organ_system": "reproductive",

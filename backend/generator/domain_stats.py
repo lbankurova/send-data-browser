@@ -26,6 +26,9 @@ from services.analysis.classification import (
     compute_max_fold_change,
 )
 from generator.organ_map import get_organ_system, get_organ_name
+from services.analysis.phase_filter import (
+    compute_last_dosing_day, get_treatment_subjects, filter_treatment_period_records,
+)
 
 
 def _safe_float(v) -> float | None:
@@ -114,22 +117,27 @@ def compute_all_findings(
     subjects = dg_data["subjects"]
     dose_groups = dg_data["dose_groups"]
 
+    # Compute last dosing day for recovery animal treatment-period pooling
+    last_dosing_day = compute_last_dosing_day(study)
+
     excluded_set = set(early_death_subjects.keys()) if early_death_subjects else None
     n_excluded = len(excluded_set) if excluded_set else 0
 
     # Collect all findings from existing modules (pass 1 — all animals)
+    # In-life domains receive last_dosing_day for recovery pooling;
+    # terminal domains (MI, MA, OM, TF) and DS are main-study-only.
     all_findings = []
-    all_findings.extend(compute_lb_findings(study, subjects))
-    all_findings.extend(compute_bw_findings(study, subjects))
+    all_findings.extend(compute_lb_findings(study, subjects, last_dosing_day=last_dosing_day))
+    all_findings.extend(compute_bw_findings(study, subjects, last_dosing_day=last_dosing_day))
     all_findings.extend(compute_om_findings(study, subjects))
     all_findings.extend(compute_mi_findings(study, subjects))
     all_findings.extend(compute_ma_findings(study, subjects))
     all_findings.extend(compute_tf_findings(study, subjects))
-    all_findings.extend(compute_cl_findings(study, subjects))
+    all_findings.extend(compute_cl_findings(study, subjects, last_dosing_day=last_dosing_day))
     all_findings.extend(compute_ds_findings(study, subjects))
-    all_findings.extend(compute_eg_findings(study, subjects))
-    all_findings.extend(compute_vs_findings(study, subjects))
-    all_findings.extend(compute_bg_findings(study, subjects))
+    all_findings.extend(compute_eg_findings(study, subjects, last_dosing_day=last_dosing_day))
+    all_findings.extend(compute_vs_findings(study, subjects, last_dosing_day=last_dosing_day))
+    all_findings.extend(compute_bg_findings(study, subjects, last_dosing_day=last_dosing_day))
 
     # Pass 2 — scheduled-only stats for terminal + LB domains
     if excluded_set:
@@ -155,7 +163,7 @@ def compute_all_findings(
         for sched_f in compute_tf_findings(study, subjects, excluded_subjects=excluded_set):
             scheduled_findings_map[_sched_key(sched_f)] = sched_f
 
-        for sched_f in compute_lb_findings(study, subjects, excluded_subjects=excluded_set):
+        for sched_f in compute_lb_findings(study, subjects, excluded_subjects=excluded_set, last_dosing_day=last_dosing_day):
             scheduled_findings_map[_sched_key(sched_f)] = sched_f
 
         # Merge scheduled stats into all_findings
@@ -184,7 +192,7 @@ def compute_all_findings(
 
     # Try FW domain (food/water consumption) — mirrors BW pattern
     if "fw" in study.xpt_files:
-        all_findings.extend(_compute_fw_findings(study, subjects))
+        all_findings.extend(_compute_fw_findings(study, subjects, last_dosing_day=last_dosing_day))
 
     # Enrich each finding
     for finding in all_findings:
@@ -277,7 +285,11 @@ def _classify_endpoint_type(domain: str, test_code: str | None = None) -> str:
     return mapping.get(domain, "other")
 
 
-def _compute_fw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def _compute_fw_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    last_dosing_day: int | None = None,
+) -> list[dict]:
     """Compute findings from FW domain — mirrors BW pattern."""
     from services.xpt_processor import read_xpt
     from services.analysis.statistics import dunnett_pairwise, cohens_d, trend_test
@@ -288,8 +300,9 @@ def _compute_fw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]
     fw_df, _ = read_xpt(study.xpt_files["fw"])
     fw_df.columns = [c.upper() for c in fw_df.columns]
 
-    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
-    fw_df = fw_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    # Include recovery animals for treatment-period pooling
+    treatment_subs = get_treatment_subjects(subjects)
+    fw_df = fw_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     if "FWSTRESN" in fw_df.columns:
         fw_df["value"] = pd.to_numeric(fw_df["FWSTRESN"], errors="coerce")
@@ -302,6 +315,9 @@ def _compute_fw_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]
     if day_col is None:
         fw_df["FWDY"] = 1
     fw_df["FWDY"] = pd.to_numeric(fw_df["FWDY"], errors="coerce")
+
+    # Filter recovery animals' records to treatment period only
+    fw_df = filter_treatment_period_records(fw_df, subjects, "FWDY", last_dosing_day)
 
     unit_col = "FWSTRESU" if "FWSTRESU" in fw_df.columns else None
     test_col = "FWTESTCD" if "FWTESTCD" in fw_df.columns else None

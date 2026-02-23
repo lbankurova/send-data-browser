@@ -8,9 +8,16 @@ from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, cohens_d, trend_test,
 )
+from services.analysis.phase_filter import (
+    get_treatment_subjects, filter_treatment_period_records,
+)
 
 
-def compute_eg_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def compute_eg_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    last_dosing_day: int | None = None,
+) -> list[dict]:
     """Compute findings from EG domain."""
     if "eg" not in study.xpt_files:
         return []
@@ -18,9 +25,9 @@ def compute_eg_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     eg_df, _ = read_xpt(study.xpt_files["eg"])
     eg_df.columns = [c.upper() for c in eg_df.columns]
 
-    # Merge with subject info (main study only, exclude TK satellites)
-    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
-    eg_df = eg_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
+    treatment_subs = get_treatment_subjects(subjects)
+    eg_df = eg_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     # Parse numeric result
     if "EGSTRESN" in eg_df.columns:
@@ -35,6 +42,9 @@ def compute_eg_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
         eg_df["EGDY"] = pd.to_numeric(eg_df["EGDY"], errors="coerce")
     else:
         eg_df["EGDY"] = 1
+
+    # Filter recovery animals' records to treatment period only
+    eg_df = filter_treatment_period_records(eg_df, subjects, "EGDY", last_dosing_day)
 
     # Test code / test name
     has_testcd = "EGTESTCD" in eg_df.columns

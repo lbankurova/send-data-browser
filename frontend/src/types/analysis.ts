@@ -9,6 +9,9 @@ export interface DoseGroup {
   n_male: number;
   n_female: number;
   n_total: number;
+  pooled_n_male?: number;
+  pooled_n_female?: number;
+  pooled_n_total?: number;
 }
 
 export interface GroupStat {
