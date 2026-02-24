@@ -441,8 +441,8 @@ export function StudyTimeline({
                         death.isTR ? "Treatment-related" : "Accidental",
                         death.cause ?? undefined,
                         death.isExcluded
-                          ? "Excluded from analysis"
-                          : "Included in analysis",
+                          ? "Excluded from terminal stats"
+                          : "Included in terminal stats",
                       ]
                         .filter(Boolean)
                         .join("\n")}
