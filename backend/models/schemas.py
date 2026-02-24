@@ -64,6 +64,7 @@ class StudyMetadata(BaseModel):
     age_unit: str | None = None              # AGEU — e.g., "WEEKS"
     sex_population: str | None = None        # SEXPOP — e.g., "BOTH"
     supplier: str | None = None              # SPLRNAM — e.g., "Rat Labs"
+    pipeline_stage: str | None = None          # "submitted" | "pre_submission" | "ongoing" | "planned"
     domain_count: int = 0
     domains: list[str] = []
     dose_groups: list[DoseGroupSchema] | None = None

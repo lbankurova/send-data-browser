@@ -607,7 +607,7 @@ function DomainTable({
           className="mt-1 text-[10px] text-primary hover:underline"
           onClick={() => setShowFolded(true)}
         >
-          + {belowFold.length} more domains (no findings)
+          + {belowFold.length} more domains
         </button>
       )}
       {showFolded && belowFold.length > 0 && (
@@ -615,7 +615,7 @@ function DomainTable({
           className="mt-1 text-[10px] text-primary hover:underline"
           onClick={() => setShowFolded(false)}
         >
-          Hide structural domains
+          Restore compact view
         </button>
       )}
     </>
@@ -720,6 +720,7 @@ function DetailsTab({
   const { data: pkData } = usePkIntegration(studyId);
   const { excludedSubjects } = useScheduledOnly();
   const [organWeightMethod, setOrganWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
+  const [recoveryPooling] = useSessionState(`pcc.${studyId}.recoveryPooling`, "pool");
   const { effectSize: effectSizeMethod } = useStatMethods(studyId);
 
   // Fetch TF domain records for tumor type summary (tiny payload — typically <50 records)
@@ -784,8 +785,6 @@ function DetailsTab({
   // Computed subject breakdown from dose_groups
   const doseGroups = meta.dose_groups ?? [];
   const mainStudyN = doseGroups.reduce((s, dg) => s + dg.n_total, 0);
-  const mainMales = doseGroups.reduce((s, dg) => s + dg.n_male, 0);
-  const mainFemales = doseGroups.reduce((s, dg) => s + dg.n_female, 0);
   const tkTotal = doseGroups.reduce((s, dg) => s + (dg.tk_count ?? 0), 0);
   const recoveryTotal = doseGroups.reduce((s, dg) => s + (dg.recovery_n ?? 0), 0);
   const hasTk = tkTotal > 0;
@@ -808,7 +807,7 @@ function DetailsTab({
       : null;
   const studyTypeLabel = meta.study_type?.toLowerCase().replace(/\btoxicity\b/, "").replace(/\brepeat dose\b/, "repeat-dose").trim() || null;
   const routeLabel = meta.route?.toLowerCase() || null;
-  const subtitleParts = [speciesStrain, [durationLabel, studyTypeLabel].filter(Boolean).join(" "), routeLabel].filter(Boolean);
+  const subtitleParts = [speciesStrain, [durationLabel, studyTypeLabel].filter(Boolean).join(" "), routeLabel].filter((x): x is string => !!x);
 
   // Dose group summary for profile
   const nGroups = doseGroups.filter(dg => !dg.is_recovery).length;
@@ -820,27 +819,6 @@ function DetailsTab({
       if (dg.dose_value != null && dg.dose_unit) return `${dg.dose_value} ${dg.dose_unit}`;
       return dg.label;
     });
-  const perGroupM = doseGroups.length > 0 ? doseGroups[0].n_male : 0;
-  const perGroupF = doseGroups.length > 0 ? doseGroups[0].n_female : 0;
-
-  // TK amber threshold: > 10% of total population
-  const totalPop = mainStudyN + tkTotal + recoveryTotal;
-  const tkAmber = totalPop > 0 && tkTotal / totalPop > 0.1;
-
-  // Recovery period info
-  const recoveryPeriodLabel = studyCtx?.recoveryPeriodDays
-    ? `${studyCtx.recoveryPeriodDays / 7 >= 1 ? `${Math.round(studyCtx.recoveryPeriodDays / 7)}wk` : `${studyCtx.recoveryPeriodDays}d`}`
-    : meta.recovery_sacrifice
-      ? formatDuration(meta.recovery_sacrifice).replace(" weeks", "wk").replace(" days", "d")
-      : null;
-  const recoveryGroups = doseGroups.filter(dg => dg.recovery_armcd);
-  const recoveryGroupLabels = recoveryGroups.length > 0
-    ? recoveryGroups.map(dg => {
-        const dl = dg.dose_level;
-        const grpIdx = doseGroups.filter(g => !g.is_recovery).findIndex(g => g.dose_level === dl);
-        return `${grpIdx + 1}`;
-      })
-    : [];
 
   // NOAEL / LOAEL from noaelData
   const combinedNoael = noaelData?.find(r => r.sex === "Combined");
@@ -884,93 +862,105 @@ function DetailsTab({
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* ── Profile block — Identity + Conclusions (frozen header) ── */}
       <section className="shrink-0 border-b px-4 pb-4 pt-4">
-        {/* Zone A: Study identity */}
-        <div className="text-sm font-semibold">{meta.study_id}</div>
-        <div className="mt-0.5 text-xs text-muted-foreground">
-          {subtitleParts.join(" \u00b7 ")}
-        </div>
-        <div className="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
-          <div>
-            {nGroups} groups: {doseLabels.join(", ")}
-            {perGroupM > 0 && perGroupF > 0 && ` \u00b7 ${perGroupM}M + ${perGroupF}F/group`}
-          </div>
-          <div>
-            Main study: {mainStudyN} ({mainMales}M, {mainFemales}F)
-            {hasTk && (
-              <>
-                {" \u00b7 TK satellite: "}
-                <span className={cn("tabular-nums", tkTotal > 0 && "font-semibold", tkAmber && "text-amber-600")}>
-                  {tkTotal}
-                </span>
-              </>
-            )}
-            {hasRecovery && (
-              <>
-                {" \u00b7 Recovery: "}{recoveryTotal}
-                {recoveryPeriodLabel && `, ${recoveryPeriodLabel}`}
-                {recoveryGroupLabels.length > 0 && ` (Groups ${recoveryGroupLabels.join(", ")})`}
-                {" \u2014 pooled during treatment"}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Zone B: Conclusions strip */}
-        {(noaelLabel || targetOrganCount > 0) && (
-          <div className="mt-3 rounded-md bg-muted/10 p-3">
-            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-              {/* NOAEL / LOAEL */}
-              {noaelLabel && (
-                <div className="text-xs">
-                  <span className="font-semibold">NOAEL: {noaelLabel}</span>
-                  {noaelSexNote && <span className="ml-1 text-[10px] text-muted-foreground">({noaelSexNote})</span>}
-                  {loaelLabel && <span className="ml-2 text-[10px] text-muted-foreground">LOAEL: {loaelLabel}</span>}
+        <div className="flex gap-1.5">
+          {/* Zone A: Study identity (60%) */}
+          <div className="w-[55%] min-w-0">
+            <div className="flex items-baseline gap-1.5 text-sm">
+              <span className="font-semibold">{meta.study_id}</span>
+              <span className="text-xs text-muted-foreground">
+                {subtitleParts.map((p, i) => (
+                  <span key={i}>
+                    {i > 0 && <span className="mx-1.5 text-border">|</span>}
+                    {p.toLowerCase()}
+                  </span>
+                ))}
+                <span className="mx-1.5 text-border">|</span>
+                {nGroups} groups, {mainStudyN + recoveryTotal + tkTotal} subjects
+              </span>
+            </div>
+            <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
+              <div>
+                Groups: {doseLabels.join(", ")}
+              </div>
+              <div>
+                Arms: Main: {mainStudyN}
+                {hasRecovery && ` · Recovery: ${recoveryTotal}`}
+                {hasTk && ` · TK satellite: ${tkTotal}`}
+              </div>
+              {(hasTk || hasRecovery) && (
+                <div>
+                  {hasTk && "TK satellite subjects excluded from toxicology endpoints"}
+                  {hasTk && hasRecovery && " · "}
+                  {hasRecovery && (recoveryPooling === "pool"
+                    ? "Recovery arms included in treatment-period statistics"
+                    : "Recovery arms excluded from treatment-period statistics")}
                 </div>
               )}
-              {/* Target organs + domains */}
-              <div className="flex flex-wrap gap-x-3 text-[10px] text-muted-foreground">
-                {targetOrganCount > 0 && <span>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</span>}
-                {domainsWithSignals > 0 && <span>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</span>}
-                {noaelConfidence != null && <span>{Math.round(noaelConfidence * 100)}% confidence</span>}
-              </div>
             </div>
-
-            {/* Exposure at NOAEL */}
-            {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (() => {
-              const exp = pkData.noael_exposure ?? pkData.loael_exposure;
-              const expLabel = pkData.noael_exposure ? "At NOAEL" : "At LOAEL";
-              if (!exp) return null;
-              const parts: string[] = [];
-              if (exp.cmax) parts.push(`Cmax ${exp.cmax.mean.toPrecision(3)} ${exp.cmax.unit}`);
-              if (exp.auc) parts.push(`AUC ${exp.auc.mean.toPrecision(3)} ${exp.auc.unit}`);
-              if (parts.length === 0) return null;
-              return (
-                <div className="mt-1.5 text-[10px] text-muted-foreground">
-                  <span className="font-medium">{expLabel}:</span> {parts.join(" \u00b7 ")}
-                </div>
-              );
-            })()}
-
-            {/* HED / MRSD */}
-            {pkData?.hed && pkData.hed.noael_status !== "at_control" && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground">
-                <span className="font-medium">HED:</span> {pkData.hed.hed_mg_kg} mg/kg
-                {" \u00b7 "}
-                <span className="font-medium">MRSD:</span> {pkData.hed.mrsd_mg_kg} mg/kg
-              </div>
-            )}
-
-            {/* Dose proportionality warning */}
-            {pkData?.dose_proportionality &&
-              pkData.dose_proportionality.assessment !== "linear" &&
-              pkData.dose_proportionality.assessment !== "insufficient_data" && (
-              <div className="mt-0.5 flex items-start gap-1 text-[10px] text-amber-700">
-                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-                <span>{pkData.dose_proportionality.interpretation ?? "Non-linear dose proportionality detected"}</span>
-              </div>
-            )}
           </div>
-        )}
+
+          {/* Zone B: NOAEL & conclusions (40%) */}
+          {(noaelLabel || targetOrganCount > 0) && (
+            <div className="w-[45%] min-w-0 rounded-md bg-muted/10 p-2">
+              {meta.pipeline_stage && (
+                <div className="mb-1 text-[10px] text-muted-foreground">
+                  Stage: {meta.pipeline_stage.charAt(0).toUpperCase() + meta.pipeline_stage.slice(1).replace(/_/g, " ")}
+                </div>
+              )}
+              <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                {/* NOAEL / LOAEL */}
+                {noaelLabel && (
+                  <div className="text-xs">
+                    <span className="font-semibold">NOAEL: {noaelLabel}</span>
+                    {noaelSexNote && <span className="ml-1 text-[10px] text-muted-foreground">({noaelSexNote})</span>}
+                    {loaelLabel && <span className="ml-2 text-[10px] text-muted-foreground">LOAEL: {loaelLabel}</span>}
+                  </div>
+                )}
+                {/* Target organs + domains */}
+                <div className="flex flex-wrap gap-x-3 text-[10px] text-muted-foreground">
+                  {targetOrganCount > 0 && <span>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</span>}
+                  {domainsWithSignals > 0 && <span>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</span>}
+                  {noaelConfidence != null && <span>{Math.round(noaelConfidence * 100)}% confidence</span>}
+                </div>
+              </div>
+
+              {/* Exposure at NOAEL */}
+              {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (() => {
+                const exp = pkData.noael_exposure ?? pkData.loael_exposure;
+                const expLabel = pkData.noael_exposure ? "At NOAEL" : "At LOAEL";
+                if (!exp) return null;
+                const parts: string[] = [];
+                if (exp.cmax) parts.push(`Cmax ${exp.cmax.mean.toPrecision(3)} ${exp.cmax.unit}`);
+                if (exp.auc) parts.push(`AUC ${exp.auc.mean.toPrecision(3)} ${exp.auc.unit}`);
+                if (parts.length === 0) return null;
+                return (
+                  <div className="mt-1.5 text-[10px] text-muted-foreground">
+                    <span className="font-medium">{expLabel}:</span> {parts.join(" \u00b7 ")}
+                  </div>
+                );
+              })()}
+
+              {/* HED / MRSD */}
+              {pkData?.hed && pkData.hed.noael_status !== "at_control" && (
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  <span className="font-medium">HED:</span> {pkData.hed.hed_mg_kg} mg/kg
+                  {" \u00b7 "}
+                  <span className="font-medium">MRSD:</span> {pkData.hed.mrsd_mg_kg} mg/kg
+                </div>
+              )}
+
+              {/* Dose proportionality warning */}
+              {pkData?.dose_proportionality &&
+                pkData.dose_proportionality.assessment !== "linear" &&
+                pkData.dose_proportionality.assessment !== "insufficient_data" && (
+                <div className="mt-0.5 flex items-start gap-1 text-[10px] text-amber-700">
+                  <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+                  <span>{pkData.dose_proportionality.interpretation ?? "Non-linear dose proportionality detected"}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* ── Scrollable body with collapsible sections ──── */}
