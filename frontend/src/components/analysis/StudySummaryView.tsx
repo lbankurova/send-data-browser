@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
-import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Loader2, FileText, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
@@ -471,7 +471,6 @@ function DomainTable({
   normBwG: number;
   effectSizeSymbol: string;
 }) {
-  const navigate = useNavigate();
   const [showFolded, setShowFolded] = useState(false);
 
   const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
@@ -558,10 +557,6 @@ function DomainTable({
   const belowFold = rows.filter(r => r.tier > 3);
   const displayed = showFolded ? rows : aboveFold;
 
-  const handleRowClick = (code: string) => {
-    navigate(`/studies/${encodeURIComponent(studyId)}/findings?domain=${code.toLowerCase()}`);
-  };
-
   /** Format the Subjects cell — special for DS and TF */
   const formatSubjectsCell = (row: DomainTableRow) => {
     const dom = row.code.toLowerCase();
@@ -606,18 +601,16 @@ function DomainTable({
             {displayed.map((row) => (
               <tr
                 key={row.code}
-                className="cursor-pointer border-b transition-colors hover:bg-accent/50"
-                onClick={() => handleRowClick(row.code)}
+                className="border-b transition-colors hover:bg-accent/50"
               >
                 <td className="px-1.5 py-px" style={{ width: 1, whiteSpace: "nowrap" }}>
                   <Link
                     to={`/studies/${studyId}/domains/${row.code}`}
-                    className="text-primary hover:underline"
-                    onClick={(e) => e.stopPropagation()}
+                    className="font-mono text-primary hover:underline"
                   >
-                    <span className="font-mono">{row.code.toUpperCase()}</span>
-                    <span className="ml-1.5 text-muted-foreground">{row.fullName}</span>
+                    {row.code.toUpperCase()}
                   </Link>
+                  <span className="ml-1.5 text-muted-foreground">{row.fullName}</span>
                   <span className="ml-1.5 text-[9px] text-muted-foreground">{row.rowCount.toLocaleString()} records</span>
                 </td>
                 <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
@@ -638,8 +631,7 @@ function DomainTable({
                       {(row.code.toLowerCase() === "ds" || row.code.toLowerCase() === "bw" || row.code.toLowerCase() === "om") && (
                         <button
                           className="ml-1 text-primary hover:underline"
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={() => {
                             const panel = document.querySelector("[data-panel='context']");
                             if (panel) panel.scrollIntoView({ behavior: "smooth" });
                           }}
