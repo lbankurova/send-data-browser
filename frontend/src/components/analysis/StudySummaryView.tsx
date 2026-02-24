@@ -461,20 +461,15 @@ function DomainTable({
     if (dom === "ds" && mortalityData?.has_mortality) {
       const allDeaths = [...mortalityData.deaths, ...mortalityData.accidentals];
       const deathsExcluded = allDeaths.filter(d => excludedSubjects.has(d.USUBJID)).length;
-      if (deathsExcluded > 0) return `${deathsExcluded} excluded from terminal stats`;
+      if (deathsExcluded > 0) return `${deathsExcluded} excluded from terminal stats. Confirm selection in Context Panel`;
       return "";
     }
     if (dom === "om") {
-      const methodLabel = organWeightMethod === "ratio-bw" ? "body-weight ratio"
-        : organWeightMethod === "ratio-brain" ? "brain-weight ratio"
-        : "absolute";
-      if (normTier >= 3) {
-        return `Large BW effect (${effectSizeSymbol}=${normBwG.toFixed(2)}) \u2014 organ weight method auto-set to ${methodLabel}`;
-      }
       if (normTier >= 2) {
-        return `Moderate BW effect (${effectSizeSymbol}=${normBwG.toFixed(2)}) \u2014 organ weight method: ${methodLabel} (review recommended)`;
+        const tierLabel = getTierSeverityLabel(normTier);
+        return `BW effect: ${effectSizeSymbol} = ${normBwG.toFixed(2)} (Tier ${normTier} \u2014 ${tierLabel}). Confirm Organ Weight Method selection in Context Panel`;
       }
-      return `Organ weight method: ${methodLabel}`;
+      return "";
     }
     return "";
   };
@@ -588,23 +583,12 @@ function DomainTable({
                 <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                   {row.adverseCount > 0 ? `${row.adverseCount} adv` : "\u2014"}
                 </td>
-                <td className="px-1.5 py-px overflow-hidden text-ellipsis whitespace-nowrap" style={{ width: "100%" }}>
+                <td className="px-1.5 py-px overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground" style={{ width: "100%" }}>
                   {row.keyFindings}
                   {row.contextNote && (
-                    <span className="text-muted-foreground">
+                    <span>
                       {row.keyFindings ? " · " : ""}
                       {row.contextNote}
-                      {(row.code.toLowerCase() === "ds" || row.code.toLowerCase() === "om") && (
-                        <button
-                          className="ml-1 text-primary hover:underline"
-                          onClick={() => {
-                            const panel = document.querySelector("[data-panel='context']");
-                            if (panel) panel.scrollIntoView({ behavior: "smooth" });
-                          }}
-                        >
-                          configure &rarr;
-                        </button>
-                      )}
                     </span>
                   )}
                 </td>
@@ -783,19 +767,8 @@ function DetailsTab({
       vehicle: studyCtx.vehicle,
       route: studyCtx.route,
     });
-    if (normalization.highestTier >= 2) {
-      const sym = getEffectSizeSymbol(effectSizeMethod);
-      const g = normalization.worstBwG.toFixed(2);
-      const tierLabel = getTierSeverityLabel(normalization.highestTier);
-      const noteText = normalization.highestTier >= 4
-        ? `Severe BW effect (${sym}=${g}). ANCOVA recommended for definitive organ weight assessment.`
-        : normalization.highestTier >= 3
-        ? `Large BW effect (${sym}=${g}). Brain-weight normalization auto-selected for organ weights.`
-        : `Moderate BW effect (${sym}=${g}). Organ-to-BW ratios should be interpreted with caution for high-dose groups.`;
-      notes.push({ category: "Body weight", note: noteText, severity: tierLabel as "caution" });
-    }
     return notes;
-  }, [studyCtx, normalization.highestTier, normalization.worstBwG, effectSizeMethod]);
+  }, [studyCtx]);
 
   if (!meta) {
     return (

@@ -47,25 +47,38 @@ function toTriplets(stats: GroupStat[]): GroupStatsTriplet[] {
 }
 
 /**
- * Aggregate BW findings: picks the "best" BW finding (typically terminal BW
- * or BW gain), preferring the one with the most dose groups and aggregate sex.
+ * Pick the BW finding with the peak treatment effect (max |effect_size|),
+ * excluding day 1 (pre-dose randomization noise).
+ *
+ * Rationale: the normalization engine needs worst-case BW confounding, not
+ * terminal BW. Terminal underestimates confounding when there's partial
+ * recovery or TR deaths (survivorship bias). Peak divergence — typically
+ * mid-study — captures all animals before censoring.
+ *
+ * Ties: latest day first, then males (larger absolute BW effects).
  */
 function extractBwGroupStats(findings: UnifiedFinding[]): GroupStatsTriplet[] {
-  // BW domain findings
-  const bwFindings = findings.filter(f => f.domain === "BW" && f.data_type === "continuous");
+  // BW domain findings, exclude day 1 (pre-dose)
+  const bwFindings = findings.filter(
+    f => f.domain === "BW" && f.data_type === "continuous" && (f.day ?? 0) > 1,
+  );
   if (bwFindings.length === 0) return [];
 
-  // Prefer aggregate sex (often has combined stats), then pick by group count
+  // Sort by max |effect_size| desc, then latest day, then males first
   const sorted = [...bwFindings].sort((a, b) => {
-    // Prefer "Combined" or aggregate
-    const aAgg = a.sex === "Combined" || a.sex === "All" ? 1 : 0;
-    const bAgg = b.sex === "Combined" || b.sex === "All" ? 1 : 0;
-    if (bAgg !== aAgg) return bAgg - aAgg;
-    // More dose groups = better coverage
-    return b.group_stats.length - a.group_stats.length;
+    const aEs = Math.abs(a.max_effect_size ?? 0);
+    const bEs = Math.abs(b.max_effect_size ?? 0);
+    if (bEs !== aEs) return bEs - aEs;
+    // Tie-break: latest day
+    const aDay = a.day ?? 0;
+    const bDay = b.day ?? 0;
+    if (bDay !== aDay) return bDay - aDay;
+    // Tie-break: males first (conservative pick)
+    const aM = a.sex === "M" ? 1 : 0;
+    const bM = b.sex === "M" ? 1 : 0;
+    return bM - aM;
   });
 
-  // Use the first one (best candidate)
   return toTriplets(sorted[0].group_stats);
 }
 
