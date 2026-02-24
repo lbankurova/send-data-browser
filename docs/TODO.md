@@ -196,6 +196,12 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** ~~Resolved~~ (Phase 1 complete)
 - **Owner hint:** ux-designer → frontend-dev
 
+### GAP-19: Recovery start day override — visual verification + generator test
+- **Files:** `frontend/src/components/analysis/panes/StudyDetailsContextPanel.tsx`, `backend/routers/analysis_views.py`, `backend/generator/generate.py`, `backend/services/analysis/override_reader.py`
+- **Issue:** Full implementation landed (annotations schema, generator pipeline threading, regenerate endpoint, functional UI) but needs: (1) visual verification of the override UI (checkbox, number input, re-analyze button, reset link, spinner states, success/error feedback); (2) manual test of the full round-trip (set override → save annotation → trigger regeneration → verify data refreshes); (3) the generator takes ~60s for PointCross, so the regenerate endpoint may need a progress indicator or timeout handling for larger studies.
+- **Status:** Open (visual verification required by user)
+- **Owner hint:** user (visual), frontend-dev (UX polish)
+
 ### GAP-17: Chrome MCP server for E2E / integration testing
 - **Files:** N/A (new infrastructure)
 - **Issue:** Pure-function unit tests cannot catch UI wiring bugs (e.g., a dropdown writes to session state but a derived override prevents the displayed value from updating — see Bonferroni dropdown bug fixed 2026-02-23). An MCP server for Chrome would enable Claude Code to drive browser interactions and verify visual/interactive behavior as part of the development loop. This would cover the gap between vitest unit tests and full Playwright E2E suites.

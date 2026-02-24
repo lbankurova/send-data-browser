@@ -1,16 +1,20 @@
 import { useState, useMemo } from "react";
-import { AlertTriangle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
+import { useRegenerate } from "@/hooks/useRegenerate";
 import { useSessionState } from "@/hooks/useSessionState";
 import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSelect } from "@/components/ui/FilterBar";
+import { fetchStudyMetadataEnriched } from "@/lib/analysis-view-api";
+import type { StudyMetadataEnriched } from "@/lib/analysis-view-api";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -70,12 +74,223 @@ interface StudyNote {
   lastEdited?: string;
 }
 
+interface AnalysisSettings {
+  last_dosing_day_override: number | null;
+}
+
+// ── Recovery Override Sub-component ─────────────────────────
+
+function RecoveryOverrideSection({
+  studyId,
+  recoveryPeriod,
+  dosingDurationWeeks,
+}: {
+  studyId: string;
+  recoveryPeriod: number | null | undefined;
+  dosingDurationWeeks: number | null | undefined;
+}) {
+  // Server state: analysis settings annotation
+  const { data: settingsData } = useAnnotations<AnalysisSettings>(studyId, "analysis-settings");
+  const saveSettings = useSaveAnnotation<AnalysisSettings>(studyId, "analysis-settings");
+  const regenerate = useRegenerate(studyId);
+
+  // Enriched metadata: contains last_dosing_day from generator
+  const { data: enrichedMeta } = useQuery<StudyMetadataEnriched>({
+    queryKey: ["study-metadata-enriched", studyId],
+    queryFn: () => fetchStudyMetadataEnriched(studyId),
+    enabled: !!studyId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const autoDetected = enrichedMeta?.auto_detected_last_dosing_day ?? null;
+  const serverOverride = settingsData?.["settings"]?.last_dosing_day_override ?? null;
+  const isOverrideActive = serverOverride != null;
+
+  // Local UI state for the override input
+  const [overrideChecked, setOverrideChecked] = useState<boolean | null>(null);
+  const [overrideValue, setOverrideValue] = useState<string>("");
+
+  // Derive effective checked state: local UI state takes precedence, falls back to server
+  const effectiveChecked = overrideChecked ?? isOverrideActive;
+
+  // Initialize override value from server when it loads
+  const displayValue = overrideValue || (serverOverride != null ? String(serverOverride) : (autoDetected != null ? String(autoDetected) : ""));
+
+  const isReanalyzing = regenerate.isPending || saveSettings.isPending;
+
+  // Compute the effective last dosing day and recovery range display
+  const effectiveLastDosingDay = effectiveChecked && displayValue
+    ? parseInt(displayValue, 10)
+    : autoDetected;
+  const recDays = recoveryPeriod;
+
+  // Check if current input differs from server state (needs re-analysis)
+  const inputDay = displayValue ? parseInt(displayValue, 10) : null;
+  const needsReanalysis = effectiveChecked
+    ? inputDay != null && inputDay !== serverOverride
+    : isOverrideActive; // unchecking means we need to clear the override
+
+  const handleReanalyze = () => {
+    if (isReanalyzing) return;
+
+    const newOverride = effectiveChecked && inputDay != null ? inputDay : null;
+
+    saveSettings.mutate(
+      {
+        entityKey: "settings",
+        data: { last_dosing_day_override: newOverride },
+      },
+      {
+        onSuccess: () => {
+          regenerate.mutate(undefined, {
+            onSuccess: () => {
+              // Reset local state — server is now the source of truth
+              setOverrideChecked(null);
+              setOverrideValue("");
+            },
+          });
+        },
+      },
+    );
+  };
+
+  const handleReset = () => {
+    setOverrideChecked(false);
+    setOverrideValue("");
+    // Immediately clear override and re-analyze
+    saveSettings.mutate(
+      {
+        entityKey: "settings",
+        data: { last_dosing_day_override: null },
+      },
+      {
+        onSuccess: () => {
+          regenerate.mutate(undefined, {
+            onSuccess: () => {
+              setOverrideChecked(null);
+              setOverrideValue("");
+            },
+          });
+        },
+      },
+    );
+  };
+
+  return (
+    <>
+      {/* Recovery period range display */}
+      <div className="space-y-0 text-[10px] text-muted-foreground">
+        {(() => {
+          if (effectiveChecked && effectiveLastDosingDay != null && recDays) {
+            return (
+              <div>
+                Override: Day {effectiveLastDosingDay + 1}\u2013{effectiveLastDosingDay + recDays} ({recDays} days)
+              </div>
+            );
+          }
+          if (autoDetected == null) {
+            return (
+              <div className="flex items-start gap-1 text-amber-700">
+                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+                <span>Auto-detection failed \u2014 override recommended</span>
+              </div>
+            );
+          }
+          const dosingDays = dosingDurationWeeks
+            ? Math.round(dosingDurationWeeks * 7)
+            : autoDetected;
+          if (dosingDays && recDays) {
+            return <div>Auto-detected: Day {dosingDays + 1}\u2013{dosingDays + recDays} ({recDays} days)</div>;
+          }
+          return <div>Auto-detected: {recDays ? `${recDays} days` : "detected"}</div>;
+        })()}
+      </div>
+
+      {/* Override checkbox + input */}
+      <label className="mt-1 flex items-center gap-2 text-[10px]">
+        <input
+          type="checkbox"
+          checked={effectiveChecked}
+          onChange={(e) => {
+            setOverrideChecked(e.target.checked);
+            if (e.target.checked && !overrideValue) {
+              // Pre-fill with auto-detected value or server override
+              setOverrideValue(
+                serverOverride != null ? String(serverOverride) : (autoDetected != null ? String(autoDetected) : ""),
+              );
+            }
+          }}
+          className="h-3 w-3 rounded border-gray-300"
+          disabled={isReanalyzing}
+        />
+        <span className={effectiveChecked ? "text-foreground" : "text-muted-foreground"}>
+          Override last dosing day
+        </span>
+      </label>
+
+      {/* Override input + actions (shown when checked) */}
+      {effectiveChecked && (
+        <div className="ml-5 mt-1 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground">Last dosing day:</span>
+            <input
+              type="number"
+              min={1}
+              className="w-16 rounded border bg-background px-1.5 py-0.5 text-[10px] tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+              value={displayValue}
+              onChange={(e) => setOverrideValue(e.target.value)}
+              disabled={isReanalyzing}
+            />
+          </div>
+
+          {/* Re-analyze + Reset actions */}
+          <div className="flex items-center gap-2">
+            <button
+              className="flex items-center gap-1 rounded bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              disabled={!needsReanalysis || isReanalyzing}
+              onClick={handleReanalyze}
+            >
+              {isReanalyzing && <Loader2 className="h-3 w-3 animate-spin" />}
+              {isReanalyzing ? "Re-analyzing..." : "Re-analyze"}
+            </button>
+            {isOverrideActive && (
+              <button
+                className="text-[10px] text-primary underline hover:text-primary/80 disabled:opacity-50"
+                onClick={handleReset}
+                disabled={isReanalyzing}
+              >
+                Reset to auto-detected
+              </button>
+            )}
+          </div>
+
+          {/* Success feedback */}
+          {regenerate.isSuccess && !regenerate.isPending && (
+            <div className="text-[10px] text-green-600">
+              Re-analysis complete \u2014 {regenerate.data?.findings_count ?? 0} findings updated
+            </div>
+          )}
+
+          {/* Error feedback */}
+          {regenerate.isError && (
+            <div className="text-[10px] text-red-600">
+              Re-analysis failed. Try again.
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 // ── Main Component ───────────────────────────────────────────
 
 export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const { data: meta, isLoading: metaLoading } = useStudyMetadata(studyId);
   const { data: studyCtx } = useStudyContext(studyId);
   const { data: mortalityData } = useStudyMortality(studyId);
+  const normalization = useOrganWeightNormalization(studyId, false);
+  const [normWhyOpen, setNormWhyOpen] = useState(false);
   // Study notes via annotation API
   const { data: studyNotes } = useAnnotations<StudyNote>(studyId, "study-notes");
   const saveNote = useSaveAnnotation<StudyNote>(studyId, "study-notes");
@@ -84,7 +299,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const [noteText, setNoteText] = useState<string | null>(null);
   const displayNote = noteText ?? currentNote;
 
-  // Simulated analysis settings via session state
+  // Analysis settings via session state
   // Control groups: exclude recovery controls per spec §2A
   const controlGroups = useMemo(() => {
     if (!meta?.dose_groups) return [];
@@ -104,8 +319,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
     `pcc.${studyId}.organWeightMethod`,
     "absolute",
   );
-  const normalization = useOrganWeightNormalization(studyId);
-  const [normWhyOpen, setNormWhyOpen] = useState(false);
   const [adversityThreshold, setAdversityThreshold] = useSessionState(
     `pcc.${studyId}.adversityThreshold`,
     "grade-ge-2-or-dose-dep",
@@ -129,10 +342,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const [effectSize, setEffectSize] = useSessionState(
     `pcc.${studyId}.effectSize`,
     "hedges-g",
-  );
-  const [recoveryOverride, setRecoveryOverride] = useSessionState<boolean>(
-    `pcc.${studyId}.recoveryOverride`,
-    false,
   );
   const [recoveryPooling, setRecoveryPooling] = useSessionState(
     `pcc.${studyId}.recoveryPooling`,
@@ -216,65 +425,70 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           {organWeightMethod === "ratio-brain" && "Preferred when BW is significantly affected (brain is BW-resistant)"}
         </div>
 
-        {/* Normalization summary — shown when tier >= 2 */}
-        {normalization.highestTier >= 2 && (() => {
-          const organsAtTier = normalization.state?.decisions
-            ? [...normalization.state.decisions.entries()].filter(
-                ([, doseMap]) => [...doseMap.values()].some(d => d.tier >= 2),
-              ).length
-            : 0;
-          return (
-            <div className="mb-2 rounded border border-amber-200 bg-amber-50/50 p-2">
-              <div className="space-y-0.5 text-[10px] text-muted-foreground">
-                <div>BW effect: g = {normalization.worstBwG.toFixed(2)} (Tier {normalization.highestTier} — {getTierSeverityLabel(normalization.highestTier)})</div>
-                <div>
-                  Brain weight: {normalization.worstBrainG != null
-                    ? `g = ${normalization.worstBrainG.toFixed(2)} (${Math.abs(normalization.worstBrainG) >= 0.8 ? "affected" : "unaffected"})`
-                    : "not collected"}
-                </div>
-                <div>
-                  {organWeightMethod !== "absolute" && normalization.highestTier >= 3
-                    ? "Auto-selected"
-                    : "Manual selection"} · {organsAtTier} organ{organsAtTier !== 1 ? "s" : ""} at Tier 2+{" "}
-                  <button
-                    className="text-primary underline"
-                    onClick={() => setNormWhyOpen(!normWhyOpen)}
-                  >
-                    {normWhyOpen ? "Hide" : "Why?"}
-                  </button>
-                </div>
-              </div>
-              {normWhyOpen && (() => {
-                // Get worst-case decision for rationale display
-                let worstDecision = normalization.getDecision("");
-                if (normalization.state?.decisions) {
-                  for (const [organ] of normalization.state.decisions) {
-                    const d = normalization.getDecision(organ);
-                    if (d && (!worstDecision || d.tier > worstDecision.tier)) worstDecision = d;
-                  }
+        {/* Normalization summary — shown when tier ≥ 2 and data cached */}
+        {normalization.state && normalization.highestTier >= 2 && (() => {
+          const { highestTier, worstBwG, worstBrainG, state } = normalization;
+          const tierLabel = getTierSeverityLabel(highestTier);
+          const brainOk = worstBrainG == null || Math.abs(worstBrainG) < 0.5;
+          // Count organs at elevated tiers
+          let elevatedCount = 0;
+          if (state) {
+            for (const organMap of state.decisions.values()) {
+              for (const d of organMap.values()) {
+                if (d.tier >= 2) { elevatedCount++; break; }
+              }
+            }
+          }
+          // Get worst-case decision rationale
+          let worstRationale: string[] = [];
+          if (state) {
+            let worstTier = 0;
+            for (const organMap of state.decisions.values()) {
+              for (const d of organMap.values()) {
+                if (d.tier > worstTier) {
+                  worstTier = d.tier;
+                  worstRationale = d.rationale;
                 }
-                if (!worstDecision) return null;
-                return (
-                  <div className="mt-2 border-t border-amber-200 pt-2 text-[10px] text-muted-foreground">
-                    <ol className="list-decimal space-y-0.5 pl-3">
-                      {worstDecision.rationale.map((r, i) => <li key={i}>{r}</li>)}
-                    </ol>
-                    {worstDecision.warnings.length > 0 && (
-                      <div className="mt-1 space-y-0.5">
-                        {worstDecision.warnings.map((w, i) => (
-                          <div key={i} className="flex items-start gap-1">
-                            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
-                            <span>{w}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="mt-1 text-[9px] text-muted-foreground/60">
-                      Ref: Bailey et al. 2004, Sellers et al. 2007
-                    </div>
-                  </div>
-                );
-              })()}
+              }
+            }
+          }
+          const isAutoSelected = highestTier >= 3 && organWeightMethod === "ratio-brain";
+          return (
+            <div className="mb-1 rounded border border-amber-200 bg-amber-50/50 px-2 py-1.5 text-[10px]">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-muted-foreground">BW effect:</span>
+                <span className="font-mono font-medium">g = {worstBwG.toFixed(2)}</span>
+                <span className="text-muted-foreground">(Tier {highestTier} — {tierLabel})</span>
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-muted-foreground">Brain weight:</span>
+                <span className="font-mono font-medium">
+                  g = {worstBrainG != null ? worstBrainG.toFixed(2) : "n/a"}
+                </span>
+                {worstBrainG != null && (
+                  <span className={brainOk ? "text-green-700" : "text-amber-700"}>
+                    {brainOk ? "unaffected \u2713" : "\u26A0 affected"}
+                  </span>
+                )}
+              </div>
+              <div className="mt-0.5 text-muted-foreground">
+                {isAutoSelected ? "Auto-selected" : "Manual override"}
+                {" \u00B7 "}{elevatedCount} organ{elevatedCount !== 1 ? "s" : ""} at Tier 2+
+                {" \u00B7 "}
+                <button
+                  className="text-primary underline hover:text-primary/80"
+                  onClick={() => setNormWhyOpen(!normWhyOpen)}
+                >
+                  {normWhyOpen ? "Hide" : "Why?"}
+                </button>
+              </div>
+              {normWhyOpen && worstRationale.length > 0 && (
+                <ol className="mt-1 list-inside list-decimal space-y-0.5 border-t border-amber-200 pt-1 text-muted-foreground">
+                  {worstRationale.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ol>
+              )}
             </div>
           );
         })()}
@@ -336,26 +550,19 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
                   Recovery period
                 </div>
-                <div className="space-y-0 text-[10px] text-muted-foreground">
-                  {(() => {
-                    const dosingDays = studyCtx?.dosingDurationWeeks
-                      ? Math.round(studyCtx.dosingDurationWeeks * 7)
-                      : null;
-                    const recDays = recoveryPeriod;
-                    if (dosingDays && recDays) {
-                      return <div>Auto-detected: Day {dosingDays + 1}–{dosingDays + recDays} ({recDays} days)</div>;
-                    }
-                    return <div>Auto-detected: {recDays ? `${recDays} days` : "detected"}</div>;
-                  })()}
-                  {meta.dose_groups && (() => {
-                    const arms = meta.dose_groups
-                      .filter((dg) => dg.recovery_armcd)
-                      .map((dg) => dg.recovery_armcd!);
-                    return arms.length > 0 ? (
-                      <div>Arms: {arms.join(", ")}</div>
-                    ) : null;
-                  })()}
-                </div>
+                <RecoveryOverrideSection
+                  studyId={studyId}
+                  recoveryPeriod={recoveryPeriod}
+                  dosingDurationWeeks={studyCtx?.dosingDurationWeeks}
+                />
+                {meta.dose_groups && (() => {
+                  const arms = meta.dose_groups
+                    .filter((dg) => dg.recovery_armcd)
+                    .map((dg) => dg.recovery_armcd!);
+                  return arms.length > 0 ? (
+                    <div className="mt-0.5 text-[10px] text-muted-foreground">Arms: {arms.join(", ")}</div>
+                  ) : null;
+                })()}
                 <SettingsRow label="Treatment period">
                   <SettingsSelect
                     value={recoveryPooling}
@@ -372,18 +579,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                     ? "Recovery animals pooled with main study during treatment (recommended)"
                     : "Recovery animals excluded from treatment-period statistics"}
                 </div>
-                <label className="mt-1 flex items-center gap-2 text-[10px]">
-                  <input
-                    type="checkbox"
-                    checked={recoveryOverride}
-                    onChange={(e) => setRecoveryOverride(e.target.checked)}
-                    className="h-3 w-3 rounded border-gray-300"
-                    disabled
-                  />
-                  <span className="text-muted-foreground/50">
-                    Override recovery start day (requires re-analysis)
-                  </span>
-                </label>
               </div>
             )}
           </CollapsiblePane>

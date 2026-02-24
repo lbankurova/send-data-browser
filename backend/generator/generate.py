@@ -35,6 +35,9 @@ from generator.tumor_summary import build_tumor_summary
 from generator.food_consumption_summary import build_food_consumption_summary_with_subjects
 from generator.pk_integration import build_pk_integration
 from generator.cross_animal_flags import build_cross_animal_flags
+from services.analysis.override_reader import get_last_dosing_day_override
+from services.analysis.phase_filter import compute_last_dosing_day
+from services.analysis.unified_findings import compute_adverse_effects
 
 
 OUTPUT_DIR = Path(__file__).parent.parent / "generated"
@@ -119,9 +122,17 @@ def generate(study_id: str):
     except Exception as e:
         print(f"  WARNING: Mortality computation failed: {e}")
 
+    # Read analysis settings override (if any)
+    last_dosing_day_override = get_last_dosing_day_override(study_id)
+    if last_dosing_day_override is not None:
+        print(f"  Override: last_dosing_day = {last_dosing_day_override}")
+
     # Phase 1b: Compute all findings with enriched stats (dual-pass for terminal domains)
     print("Phase 1b: Computing domain statistics...")
-    findings, dg_data = compute_all_findings(study, early_death_subjects=early_death_subjects)
+    findings, dg_data = compute_all_findings(
+        study, early_death_subjects=early_death_subjects,
+        last_dosing_day_override=last_dosing_day_override,
+    )
     dose_groups = dg_data["dose_groups"]
     print(f"  {len(findings)} findings across {len(set(f['domain'] for f in findings))} domains")
 
@@ -139,6 +150,7 @@ def generate(study_id: str):
     print("Phase 1e: Computing food consumption summary...")
     food_summary = build_food_consumption_summary_with_subjects(
         findings, study, early_death_subjects=early_death_subjects,
+        last_dosing_day_override=last_dosing_day_override,
     )
     _write_json(out_dir / "food_consumption_summary.json", food_summary)
     if food_summary.get("available"):
@@ -172,6 +184,12 @@ def generate(study_id: str):
         ctx_df = context_result["subject_context"]
         _write_json(out_dir / "subject_context.json", ctx_df.to_dict(orient="records"))
         _write_json(out_dir / "provenance_messages.json", provenance_msgs)
+        # Inject last_dosing_day metadata for frontend recovery override UI
+        auto_detected = compute_last_dosing_day(study)
+        effective = last_dosing_day_override if last_dosing_day_override is not None else auto_detected
+        context_result["study_metadata"]["last_dosing_day"] = effective
+        context_result["study_metadata"]["auto_detected_last_dosing_day"] = auto_detected
+        context_result["study_metadata"]["last_dosing_day_override"] = last_dosing_day_override
         _write_json(out_dir / "study_metadata_enriched.json", context_result["study_metadata"])
         print(f"  {len(ctx_df)} subjects, {len(provenance_msgs)} provenance messages")
     except Exception as e:
@@ -228,6 +246,25 @@ def generate(study_id: str):
     with open(target_bar_path, "w") as f:
         f.write(target_organ_html)
     print(f"  wrote static/target_organ_bar.html")
+
+    # Phase 5: Pre-generate unified findings (full adverse effects + classification)
+    # This is the expensive computation that previously ran live on every API request.
+    # Pre-generating it eliminates the only remaining live-compute endpoint.
+    print("Phase 5: Pre-generating unified findings...")
+    ae_data = compute_adverse_effects(study)
+    ae_findings = ae_data["findings"]
+    unified = {
+        "study_id": study_id,
+        "dose_groups": ae_data["dose_groups"],
+        "findings": ae_findings,
+        "total_findings": len(ae_findings),
+        "page": 1,
+        "page_size": len(ae_findings),
+        "total_pages": 1,
+        "summary": ae_data["summary"],
+    }
+    _write_json(out_dir / "unified_findings.json", unified)
+    print(f"  {len(ae_findings)} findings pre-generated")
 
     print(f"\n=== Generation complete: {out_dir} ===")
     print(f"  Signal summary: {len(signal_summary)} rows")

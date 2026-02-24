@@ -17,6 +17,7 @@ from services.study_discovery import StudyInfo
 from services.xpt_processor import ensure_cached, read_xpt
 from services.analysis.dose_groups import build_dose_groups
 from services.analysis.phase_filter import compute_last_dosing_day
+from services.analysis.override_reader import get_last_dosing_day_override
 
 router = APIRouter(prefix="/api", tags=["temporal"])
 
@@ -147,7 +148,11 @@ async def get_timecourse(
             raise HTTPException(status_code=404, detail=f"No data for sex='{sex}'")
 
     # Compute last dosing day for recovery boundary marker
-    last_dosing_day = compute_last_dosing_day(study) if include_recovery else None
+    if include_recovery:
+        override = get_last_dosing_day_override(study_id)
+        last_dosing_day = compute_last_dosing_day(study, override=override)
+    else:
+        last_dosing_day = None
 
     if mode == "subject":
         return _build_subject_response(

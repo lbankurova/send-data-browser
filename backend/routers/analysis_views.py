@@ -27,12 +27,56 @@ VALID_VIEW_NAMES = {
     "food-consumption-summary",
     "pk-integration",
     "cross-animal-flags",
+    "unified-findings",
 }
 
 # Map URL slugs to file names (slug uses hyphens, files use underscores)
 _slug_to_file = {slug: slug.replace("-", "_") + ".json" for slug in VALID_VIEW_NAMES}
 
 router = APIRouter(prefix="/api", tags=["analysis-views"])
+
+
+# Regenerate endpoint — runs the full generation pipeline synchronously.
+# Plain `def` (not `async def`) so FastAPI runs it in a threadpool,
+# keeping the event loop responsive during the ~10s rebuild.
+@router.post("/studies/{study_id}/regenerate")
+def regenerate_study(study_id: str):
+    """Re-run the generator pipeline for a study.
+
+    Reads analysis settings (e.g. last_dosing_day_override) from
+    annotations and rebuilds all generated JSON files.
+    """
+    from generator.generate import generate
+
+    if "/" in study_id or "\\" in study_id or ".." in study_id:
+        raise HTTPException(status_code=400, detail="Invalid study ID")
+
+    try:
+        generate(study_id)
+    except SystemExit:
+        raise HTTPException(status_code=404, detail=f"Study '{study_id}' not found")
+
+    # Read back the enriched metadata for response
+    meta_path = GENERATED_DIR / study_id / "study_metadata_enriched.json"
+    last_dosing_day = None
+    last_dosing_day_override = None
+    findings_count = 0
+    if meta_path.exists():
+        meta = json.loads(meta_path.read_text())
+        last_dosing_day = meta.get("last_dosing_day")
+        last_dosing_day_override = meta.get("last_dosing_day_override")
+
+    # Count findings from signal summary
+    signal_path = GENERATED_DIR / study_id / "study_signal_summary.json"
+    if signal_path.exists():
+        findings_count = len(json.loads(signal_path.read_text()))
+
+    return {
+        "status": "ok",
+        "last_dosing_day": last_dosing_day,
+        "last_dosing_day_override": last_dosing_day_override,
+        "findings_count": findings_count,
+    }
 
 
 # Static route MUST be defined before the wildcard route

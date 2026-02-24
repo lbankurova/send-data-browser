@@ -104,12 +104,16 @@ LB_DOMAIN = "LB"  # Terminal timepoint only exclusion
 def compute_all_findings(
     study: StudyInfo,
     early_death_subjects: dict[str, str] | None = None,
+    last_dosing_day_override: int | None = None,
 ) -> tuple[list[dict], dict]:
     """Run all domain findings modules and enrich with additional tests.
 
     When early_death_subjects is provided, runs a dual-pass for terminal domains:
     pass 1 = all animals (base stats), pass 2 = scheduled-only (excluded early deaths).
     Longitudinal domains (BW, FW, CL) are never affected.
+
+    When last_dosing_day_override is provided, it replaces the auto-detected
+    last dosing day for treatment/recovery phase boundary classification.
 
     Returns (enriched_findings, dose_group_data).
     """
@@ -118,7 +122,7 @@ def compute_all_findings(
     dose_groups = dg_data["dose_groups"]
 
     # Compute last dosing day for recovery animal treatment-period pooling
-    last_dosing_day = compute_last_dosing_day(study)
+    last_dosing_day = compute_last_dosing_day(study, override=last_dosing_day_override)
 
     excluded_set = set(early_death_subjects.keys()) if early_death_subjects else None
     n_excluded = len(excluded_set) if excluded_set else 0
