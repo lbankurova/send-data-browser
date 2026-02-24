@@ -735,9 +735,9 @@ function DetailsTab({
     [tfDomainData],
   );
 
-  // Normalization engine — cache-only on study details (no backend fetch).
-  // Data appears once the user visits the findings view.
-  const normalization = useOrganWeightNormalization(studyId, false, effectSizeMethod);
+  // Normalization engine — fetches findings if not already cached.
+  // Shared query key with findings view → zero extra calls if already visited.
+  const normalization = useOrganWeightNormalization(studyId, true, effectSizeMethod);
 
   // Auto-set organ weight method: tier-based when normalization data available,
   // otherwise fall back to signal-based BW adverse+down heuristic.
