@@ -201,14 +201,14 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
 
   if (!hasMortality) {
     return (
-      <CollapsiblePane title="Mortality" variant="margin" defaultOpen={false}>
+      <CollapsiblePane title="Mortality"  defaultOpen={false}>
         <div className="text-[10px] text-muted-foreground">No mortality events recorded.</div>
       </CollapsiblePane>
     );
   }
 
   return (
-    <CollapsiblePane title="Mortality" variant="margin" headerRight={summary}>
+    <CollapsiblePane title="Mortality"  headerRight={summary}>
       {/* Per-subject table — standard orientation matching SubjectContextPanel */}
       {mortality && (
         <div className="-mx-4 overflow-auto">

@@ -25,9 +25,13 @@ class DoseGroupSchema(BaseModel):
     n_female: int = 0
     n_total: int = 0
     tk_count: int = 0
+    tk_n_male: int = 0
+    tk_n_female: int = 0
     is_recovery: bool = False
     recovery_armcd: str | None = None
     recovery_n: int = 0
+    recovery_n_male: int = 0
+    recovery_n_female: int = 0
 
 
 class StudyMetadata(BaseModel):
