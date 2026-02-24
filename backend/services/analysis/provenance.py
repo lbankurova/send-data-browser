@@ -226,8 +226,14 @@ def _prov_006(ctx: pd.DataFrame, issues: list[dict]) -> dict | None:
             "link_to_rule": "SD-003",
         }
 
-    # Multiple distinct control arms
-    control_arms = control_subjects["ARMCD"].unique()
+    # Multiple distinct control arms — but recovery arms share the same
+    # vehicle as the main control (different sacrifice timepoint, not a
+    # separate control group).  Only flag if there are multiple *main-study*
+    # control arms.
+    main_control = control_subjects
+    if "HAS_RECOVERY" in ctx.columns:
+        main_control = control_subjects[control_subjects["HAS_RECOVERY"] != True]  # noqa: E712
+    control_arms = main_control["ARMCD"].unique()
     if len(control_arms) > 1:
         labels = []
         for armcd in control_arms:
