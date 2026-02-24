@@ -193,6 +193,8 @@ def build_dose_groups(study: StudyInfo) -> dict:
     # TK satellite counts per ARMCD: satellites share ARMCD with main arms
     tk_subjects = subjects[subjects["is_satellite"]]
     tk_per_armcd = tk_subjects.groupby("ARMCD").size().to_dict() if len(tk_subjects) > 0 else {}
+    tk_male_per_armcd = tk_subjects[tk_subjects["SEX"] == "M"].groupby("ARMCD").size().to_dict() if len(tk_subjects) > 0 else {}
+    tk_female_per_armcd = tk_subjects[tk_subjects["SEX"] == "F"].groupby("ARMCD").size().to_dict() if len(tk_subjects) > 0 else {}
 
     # Recovery arm linkage: find recovery ARMCDs that pair with main ARMCDs
     recovery_armcds = {a: info for a, info in tx_map.items() if info.get("is_recovery", False)}
@@ -206,10 +208,15 @@ def build_dose_groups(study: StudyInfo) -> dict:
         # Find paired recovery arm: try ARMCD + "R" convention
         rec_armcd = None
         rec_n = 0
+        rec_n_male = 0
+        rec_n_female = 0
         candidate = armcd + "R"
         if candidate in recovery_armcds:
             rec_armcd = candidate
-            rec_n = int(len(recovery_subjects[recovery_subjects["ARMCD"] == candidate]))
+            rec_subs = recovery_subjects[recovery_subjects["ARMCD"] == candidate]
+            rec_n = int(len(rec_subs))
+            rec_n_male = int((rec_subs["SEX"] == "M").sum())
+            rec_n_female = int((rec_subs["SEX"] == "F").sum())
 
         # Pooled N: main + recovery animals at the same dose level
         # (recovery animals share dose_level with their parent main arm)
@@ -229,9 +236,13 @@ def build_dose_groups(study: StudyInfo) -> dict:
             "pooled_n_female": int((pooled["SEX"] == "F").sum()),
             "pooled_n_total": len(pooled),
             "tk_count": int(tk_per_armcd.get(armcd, 0)),
+            "tk_n_male": int(tk_male_per_armcd.get(armcd, 0)),
+            "tk_n_female": int(tk_female_per_armcd.get(armcd, 0)),
             "is_recovery": False,
             "recovery_armcd": rec_armcd,
             "recovery_n": rec_n,
+            "recovery_n_male": rec_n_male,
+            "recovery_n_female": rec_n_female,
         })
 
     tk_count = int(subjects["is_satellite"].sum())

@@ -366,23 +366,23 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const recoveryPeriod = studyCtx?.recoveryPeriodDays;
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-4">
-      {/* Header */}
-      <div className="mb-3">
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <h3 className="text-sm font-semibold">Study: {studyId}</h3>
         {(meta.dosing_duration || meta.species) && (
-          <div className="mt-0.5 text-[10px] text-muted-foreground">
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
             {[
               meta.dosing_duration ? formatDuration(meta.dosing_duration) : null,
               meta.species?.toLowerCase(),
             ].filter(Boolean).join(" · ")}
-          </div>
+          </p>
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="flex-1 overflow-auto">
       {/* ── Analysis settings ───────────────────────────── */}
-      <CollapsiblePane title="Analysis settings" variant="margin">
+      <CollapsiblePane title="Analysis settings">
         {/* Control group */}
         {controlGroups.length > 0 && (
           <>
@@ -517,7 +517,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
         const hasTk = tkN > 0;
         if (!hasRec && !hasTk) return null;
         return (
-          <CollapsiblePane title="Subject population" variant="margin">
+          <CollapsiblePane title="Subject population">
             <div className="space-y-0.5 text-[10px] text-muted-foreground">
               {hasRec && (
                 <div>Recovery: {recovN} — pooled with main during treatment</div>
@@ -586,7 +586,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       })()}
 
       {/* ── Statistical methods ────────────────────────── */}
-      <CollapsiblePane title="Statistical methods" variant="margin">
+      <CollapsiblePane title="Statistical methods">
         <div className="space-y-0.5">
           <SettingsRow label="Pairwise test">
             <SettingsSelect
@@ -678,8 +678,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
         title="Study notes"
         headerRight={currentNote ? "1 note" : "none"}
         defaultOpen={!!currentNote}
-        variant="margin"
-      >
+              >
         <textarea
           className="w-full rounded border bg-background px-2 py-1.5 text-xs leading-snug placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
           rows={4}
