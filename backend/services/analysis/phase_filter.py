@@ -33,15 +33,22 @@ def _parse_iso_duration_days(duration: str) -> int | None:
     return total if total > 0 else None
 
 
-def compute_last_dosing_day(study: StudyInfo) -> int | None:
+def compute_last_dosing_day(
+    study: StudyInfo,
+    override: int | None = None,
+) -> int | None:
     """Compute the last dosing day (study day number) from TE or TS domains.
 
     Used to separate treatment-period records (pool main + recovery) from
     recovery-period records (recovery only).
 
+    When override is provided, it is returned immediately (reviewer override).
+
     Method 1: TE/TA domains — accumulate epoch durations, find treatment epoch end.
     Method 2: TS.DOSDUR — parse dosing duration (assumes dosing starts Day 1).
     """
+    if override is not None:
+        return override
     # Method 1: TE + TA domains — per-arm epoch structure
     if "te" in study.xpt_files and "ta" in study.xpt_files:
         try:
