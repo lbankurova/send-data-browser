@@ -37,8 +37,8 @@ interface StudyTimelineProps {
 // ── Constants (spec §2) ─────────────────────────────────────────────────────
 
 const LANE_HEIGHT = 20; // spec: 18–20px
-const ROW_PITCH = 46; // top-of-lane to top-of-next-lane (gap = 26px for sub-label)
-const LEFT_MARGIN = 150; // spec: 140–160px
+const ROW_PITCH = 38; // top-of-lane to top-of-next-lane (gap = 18px for sub-label)
+const LEFT_MARGIN = 180; // spec: 140–180px (wider for enriched labels with n=XX)
 const RIGHT_MARGIN = 20; // spec: 16–24px
 const TOP_MARGIN = 24; // room for reference line labels above lanes
 const BOTTOM_AXIS_HEIGHT = 30; // axis ticks + "Study day" label
@@ -46,7 +46,7 @@ const TK_LANE_HEIGHT = 10; // spec: 8–10px (thinner than main lanes)
 const TK_LANE_GAP = 14;
 const DEATH_R = 3.5;
 const DEATH_OFFSET_ABOVE = 3; // spec §4.3: 2–4px above bar top
-const SVG_WIDTH = 600;
+const SVG_WIDTH = 900;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -213,12 +213,11 @@ export function StudyTimeline({
   const showLegend = hasRecovery || hasTkLane || hasAnyDeaths;
 
   return (
-    <div className="w-full">
+    <div className="w-full rounded-md border p-3">
       <svg
         width="100%"
         viewBox={`0 0 ${SVG_WIDTH} ${svgHeight}`}
         className="overflow-visible"
-        style={{ maxHeight: `${Math.max(svgHeight, 100)}px` }}
       >
         {/* ── Reference lines (spec §3, §5) ─────────────────────── */}
 
@@ -334,16 +333,16 @@ export function StudyTimeline({
 
           return (
             <g key={group.armcd}>
-              {/* Lane label line 1: dose */}
+              {/* Lane label line 1: dose + N */}
               <text
                 x={LEFT_MARGIN - 6}
                 y={y + LANE_HEIGHT / 2}
                 textAnchor="end"
                 dominantBaseline="central"
                 className="fill-foreground"
-                style={{ fontSize: "11px", fontWeight: 500 }}
+                style={{ fontSize: "11px", fontWeight: 600 }}
               >
-                {doseLabel}
+                {doseLabel} (n={group.n_total})
               </text>
 
               {/* Lane label line 2: sub-label */}
@@ -370,21 +369,6 @@ export function StudyTimeline({
               >
                 <title>{barTooltip}</title>
               </rect>
-
-              {/* N annotation inside bar */}
-              <text
-                x={d1X + 4}
-                y={y + LANE_HEIGHT / 2}
-                dominantBaseline="central"
-                fill="white"
-                style={{
-                  fontSize: "9px",
-                  fontWeight: 500,
-                  pointerEvents: "none",
-                }}
-              >
-                n={group.n_total}
-              </text>
 
               {/* Recovery extension (spec §4.1) — uses main group's recovery_armcd/recovery_n */}
               {hasGroupRecovery && (
