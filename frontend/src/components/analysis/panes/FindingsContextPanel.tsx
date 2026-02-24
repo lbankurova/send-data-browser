@@ -22,6 +22,7 @@ import { RecoveryPane } from "./RecoveryPane";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
+import { useStatMethods } from "@/hooks/useStatMethods";
 
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -38,7 +39,8 @@ export function FindingsContextPanel() {
   const { useScheduledOnly: isScheduledOnly, hasEarlyDeaths } = useScheduledOnly();
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");
   const hasRecovery = studyMeta?.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
-  const normalization = useOrganWeightNormalization(studyId);
+  const { effectSize } = useStatMethods(studyId);
+  const normalization = useOrganWeightNormalization(studyId, true, effectSize);
 
   // When scheduled-only mode is active, swap statistics rows to scheduled variants
   const activeStatistics = useMemo(() => {

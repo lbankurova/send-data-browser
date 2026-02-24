@@ -136,6 +136,7 @@ export function buildFindingsQuadrantOption(
   points: QuadrantPoint[],
   selectedEndpoint: string | null,
   scopeFilter?: string,
+  effectSizeSymbol = "g",
 ): EChartsOption {
   if (points.length === 0) return {};
 
@@ -216,7 +217,7 @@ export function buildFindingsQuadrantOption(
       max: maxX,
       axisLabel: { fontSize: 9, color: "#9CA3AF", formatter: (v: number) => v.toFixed(2) },
       splitLine: { lineStyle: { color: "#F3F4F6", type: "dashed" } },
-      name: "|d|",
+      name: `|${effectSizeSymbol}|`,
       nameLocation: "end",
       nameTextStyle: { fontSize: 9, color: "#9CA3AF" },
     },
@@ -249,7 +250,7 @@ export function buildFindingsQuadrantOption(
           `<div style="font-size:11px;font-weight:600">${meta.endpoint_label}</div>`,
           `<div style="font-size:10px;color:#9CA3AF"><span style="color:${domainColor}">${meta.domain}</span> \u00b7 ${meta.organ_system}</div>`,
           `<div style="display:flex;gap:12px;font-family:monospace;font-size:10px;margin-top:3px">`,
-          `<span>|d|=${meta.x.toFixed(2)}</span>`,
+          `<span>|${effectSizeSymbol}|=${meta.x.toFixed(2)}</span>`,
           `<span>p=${meta.rawP.toExponential(1)}</span>`,
           `</div>`,
           `<div style="font-size:9px;color:#9CA3AF;margin-top:2px">${sevLabel} \u00b7 ${trLabel}</div>`,
@@ -301,7 +302,7 @@ export function buildFindingsQuadrantOption(
               xAxis: 0.8,
               lineStyle: { color: "#9CA3AF", type: "dashed", width: 1 },
               label: {
-                formatter: "|d|=0.8",
+                formatter: `|${effectSizeSymbol}|=0.8`,
                 position: "end",
                 fontSize: 8,
                 color: "#6B7280",

@@ -25,6 +25,7 @@ interface FindingsQuadrantScatterProps {
   syndromes?: CrossDomainSyndrome[];
   labMatches?: LabClinicalMatch[];
   scopeFilter?: string;
+  effectSizeSymbol?: string;
 }
 
 export function FindingsQuadrantScatter({
@@ -37,6 +38,7 @@ export function FindingsQuadrantScatter({
   syndromes,
   labMatches,
   scopeFilter,
+  effectSizeSymbol = "g",
 }: FindingsQuadrantScatterProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
@@ -47,8 +49,8 @@ export function FindingsQuadrantScatter({
   );
 
   const option = useMemo(
-    () => buildFindingsQuadrantOption(points, selectedEndpoint, scopeFilter),
-    [points, selectedEndpoint, scopeFilter],
+    () => buildFindingsQuadrantOption(points, selectedEndpoint, scopeFilter, effectSizeSymbol),
+    [points, selectedEndpoint, scopeFilter, effectSizeSymbol],
   );
 
   // Build syndrome member index for hover linking

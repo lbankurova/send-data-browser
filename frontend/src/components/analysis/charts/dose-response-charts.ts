@@ -375,6 +375,7 @@ export function buildEffectSizeBarOption(
   sexes: string[],
   sexColors: Record<string, string>,
   sexLabels: Record<string, string>,
+  effectSizeSymbol = "g",
 ): EChartsOption {
   const categories = mergedPoints.map((p) => String(p.dose_label));
 
@@ -409,7 +410,7 @@ export function buildEffectSizeBarOption(
           yAxis: 0.8,
           lineStyle: { color: "#9ca3af", type: "dashed", width: 1 },
           label: {
-            formatter: "d=0.8",
+            formatter: `${effectSizeSymbol}=0.8`,
             position: "insideEndTop",
             fontSize: REF_LINE_LABEL_SIZE,
             color: "#6B7280",
@@ -424,7 +425,7 @@ export function buildEffectSizeBarOption(
           yAxis: -0.8,
           lineStyle: { color: "#9ca3af", type: "dashed", width: 1 },
           label: {
-            formatter: "d=\u22120.8",
+            formatter: `${effectSizeSymbol}=\u22120.8`,
             position: "insideEndBottom",
             fontSize: REF_LINE_LABEL_SIZE,
             color: "#6B7280",
@@ -862,6 +863,7 @@ export function buildVolcanoScatterOption(
   selectedEndpoint: string | null,
   organSystems: [string, string][],
   effectSizeLabel = "Hedges' g",
+  effectSizeSymbol = "g",
 ): EChartsOption {
   // Group points by organ system for colored series
   const seriesByOrgan = new Map<string, VolcanoPoint[]>();
@@ -911,7 +913,7 @@ export function buildVolcanoScatterOption(
           xAxis: 0.5,
           lineStyle: { color: "#D1D5DB", type: "dashed", width: 1 },
           label: {
-            formatter: "d=0.5",
+            formatter: `${effectSizeSymbol}=0.5`,
             position: "end",
             fontSize: REF_LINE_LABEL_SIZE,
             color: "#9CA3AF",
@@ -921,7 +923,7 @@ export function buildVolcanoScatterOption(
           xAxis: 0.8,
           lineStyle: { color: "#9CA3AF", type: "dashed", width: 1 },
           label: {
-            formatter: "d=0.8",
+            formatter: `${effectSizeSymbol}=0.8`,
             position: "end",
             fontSize: REF_LINE_LABEL_SIZE,
             color: "#6B7280",
@@ -995,7 +997,7 @@ export function buildVolcanoScatterOption(
           `<div style="font-size:11px;font-weight:600">${name}</div>`,
           `<div style="font-size:10px;color:#9CA3AF">${organ}</div>`,
           `<div style="display:flex;gap:12px;font-family:monospace;font-size:10px;margin-top:4px">`,
-          `<span>|d|=${x.toFixed(2)}</span>`,
+          `<span>|${effectSizeSymbol}|=${x.toFixed(2)}</span>`,
           `<span>p=${pRaw.toExponential(1)}</span>`,
           `</div>`,
         ].join("");

@@ -1,7 +1,7 @@
 /**
  * Organ Weight Normalization Auto-Selection Engine — Phase 1.
  *
- * Detects BW confounding via Hedges' g, selects normalization strategy
+ * Detects BW confounding via standardized effect size, selects normalization strategy
  * (absolute / body weight / brain weight), and provides rationale.
  *
  * Phase 2 (ANCOVA) and Phase 3 (Bayesian mediation) are deferred.
@@ -13,6 +13,9 @@
  *   Lazic SE et al. Sci Rep 2020;10:6625
  *   Hedges LV. Psychol Bull 1981;86:461–465
  */
+
+import { computeEffectSize } from "./stat-method-transforms";
+import type { EffectSizeMethod } from "./stat-method-transforms";
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -481,6 +484,7 @@ export function computeStudyNormalization(
   speciesStrain: string,
   studyType: string | null,
   studyId: string,
+  effectSizeMethod: EffectSizeMethod = "hedges-g",
 ): StudyNormalizationState {
   const bwGByGroup = new Map<string, HedgesGResult>();
   const brainGByGroup = new Map<string, HedgesGResult | null>();
@@ -499,12 +503,32 @@ export function computeStudyNormalization(
   // Find control brain stats
   const controlBrain = brainGroupStats?.find(s => s.doseLevel === controlDoseLevel) ?? null;
 
+  // Build a HedgesGResult using the user-selected effect size method
+  function buildResult(
+    cMean: number, cSd: number, cN: number,
+    tMean: number, tSd: number, tN: number,
+  ): HedgesGResult {
+    const raw = computeEffectSize(effectSizeMethod, cMean, cSd, cN, tMean, tSd, tN);
+    const g = raw != null ? Math.abs(raw) : 0;
+    // Approximate 95% CI (Hedges & Olkin, 1985 formula — valid for all standardized ES)
+    const df = cN + tN - 2;
+    const seG = df > 0 ? Math.sqrt((cN + tN) / (cN * tN) + (g ** 2) / (2 * df)) : 0;
+    return {
+      g,
+      ciLower: g - 1.96 * seG,
+      ciUpper: g + 1.96 * seG,
+      nControl: cN, nTreatment: tN,
+      meanControl: cMean, meanTreatment: tMean,
+      sdControl: cSd, sdTreatment: tSd,
+    };
+  }
+
   // Compute BW g and brain g for each treated group
   const treatedBwGroups = bwGroupStats.filter(s => s.doseLevel !== controlDoseLevel);
   for (const grp of treatedBwGroups) {
     if (grp.n < 2) continue;
     const key = String(grp.doseLevel);
-    const bwResult = hedgesGFromStats(
+    const bwResult = buildResult(
       controlBw.mean, controlBw.sd, controlBw.n,
       grp.mean, grp.sd, grp.n,
     );
@@ -514,7 +538,7 @@ export function computeStudyNormalization(
     if (controlBrain && controlBrain.n >= 2 && brainGroupStats) {
       const treatedBrain = brainGroupStats.find(s => s.doseLevel === grp.doseLevel);
       if (treatedBrain && treatedBrain.n >= 2) {
-        const brainResult = hedgesGFromStats(
+        const brainResult = buildResult(
           controlBrain.mean, controlBrain.sd, controlBrain.n,
           treatedBrain.mean, treatedBrain.sd, treatedBrain.n,
         );

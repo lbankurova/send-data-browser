@@ -22,7 +22,9 @@ import { StudyTimeline } from "./charts/StudyTimeline";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
 import { getInterpretationContext } from "@/lib/species-vehicle-context";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
+import { useStatMethods } from "@/hooks/useStatMethods";
 import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
+import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { SignalSummaryRow, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { StudyMetadata } from "@/types";
@@ -399,39 +401,26 @@ function shortSpecimenLabel(label: string, domain: string): string {
 function generateKeyFindings(
   domain: string,
   endpoints: Map<string, EndpointAgg>,
-  mortalityData?: StudyMortality,
+  _mortalityData?: StudyMortality,
 ): string {
   const dom = domain.toLowerCase();
 
-  // DS — use actual cause-of-death from mortality records
-  if (dom === "ds") {
-    if (!mortalityData?.has_mortality) return "";
-    const allDeaths = [...mortalityData.deaths, ...mortalityData.accidentals];
-    const byCause = new Map<string, number>();
-    for (const d of allDeaths) {
-      const label = d.cause
-        ? d.cause.toLowerCase()
-        : d.relatedness?.toLowerCase() ?? d.disposition.toLowerCase();
-      byCause.set(label, (byCause.get(label) ?? 0) + 1);
-    }
-    return [...byCause.entries()]
-      .map(([cause, n]) => n > 1 ? `${n} ${cause}` : cause)
-      .join(", ");
-  }
+  // Only TF gets key findings — tumor types are important progression context.
+  // All other domains: findings belong in the Findings/Histopathology views,
+  // not the summary domain table. Context notes (DS, BW, OM) handle actionable info.
+  if (dom !== "tf") return "";
 
-  // All other domains: rank endpoints by adverse > TR, then by signal score
+  // TF: show top 3 tumor types (ranked by adverse > TR > score, or all types if no signals)
   const ranked = [...endpoints.entries()]
     .filter(([, ep]) => ep.tr || ep.adverse)
     .sort(([, a], [, b]) => {
-      // Adverse first, then by signal score
       if (a.adverse !== b.adverse) return a.adverse ? -1 : 1;
       if (a.tr !== b.tr) return a.tr ? -1 : 1;
       return b.maxScore - a.maxScore;
     });
 
   if (ranked.length === 0) {
-    // No TR/adverse — for TF, still show tumor types
-    if (dom === "tf" && endpoints.size > 0) {
+    if (endpoints.size > 0) {
       return [...endpoints.keys()]
         .map(label => shortSpecimenLabel(label, dom))
         .slice(0, 3)
@@ -440,12 +429,9 @@ function generateKeyFindings(
     return "";
   }
 
-  const usesSpecimenFormat = ["mi", "ma", "om", "tf"].includes(dom);
-  const top = ranked.slice(0, 3);
-
-  return top.map(([label, ep]) => {
+  return ranked.slice(0, 3).map(([label, ep]) => {
     const dir = DIR_ARROW[ep.direction ?? ""] ?? "";
-    const name = usesSpecimenFormat ? shortSpecimenLabel(label, dom) : label;
+    const name = shortSpecimenLabel(label, dom);
     const sig = clinSig(ep);
     return `${name} ${dir}${sig}`.trim();
   }).join(", ");
@@ -473,6 +459,7 @@ function DomainTable({
   organWeightMethod,
   normTier,
   normBwG,
+  effectSizeSymbol,
 }: {
   studyId: string;
   domains: { name: string; label: string; row_count: number; subject_count?: number | null }[];
@@ -482,6 +469,7 @@ function DomainTable({
   organWeightMethod: string;
   normTier: number;
   normBwG: number;
+  effectSizeSymbol: string;
 }) {
   const navigate = useNavigate();
   const [showFolded, setShowFolded] = useState(false);
@@ -498,21 +486,24 @@ function DomainTable({
     }
     if (dom === "bw") {
       // Tier-aware note when normalization data is available, fallback to signal-based
-      if (normTier >= 3) return `organ weights auto-set to ratio-to-brain (g=${normBwG.toFixed(2)})`;
-      if (normTier >= 2) return `organ weight ratios may be confounded (g=${normBwG.toFixed(2)})`;
+      if (normTier >= 3) return `organ weights auto-set to ratio-to-brain (${effectSizeSymbol}=${normBwG.toFixed(2)})`;
+      if (normTier >= 2) return `organ weight ratios may be confounded (${effectSizeSymbol}=${normBwG.toFixed(2)})`;
       if (sig) {
         const hasBwDown = [...sig.endpoints.values()].some(ep => ep.adverse && ep.direction === "down");
         if (hasBwDown) return "organ weights auto-set to ratio-to-brain";
       }
     }
     if (dom === "om") {
-      const methodLabel = organWeightMethod === "ratio-bw" ? "ratio-to-BW"
-        : organWeightMethod === "ratio-brain" ? "ratio-to-brain"
+      const methodLabel = organWeightMethod === "ratio-bw" ? "body-weight ratio"
+        : organWeightMethod === "ratio-brain" ? "brain-weight ratio"
         : "absolute";
-      if (normTier >= 2) {
-        return `using ${methodLabel} · ${getTierSeverityLabel(normTier)} BW effect (g=${normBwG.toFixed(2)}, Tier ${normTier})`;
+      if (normTier >= 3) {
+        return `Large BW effect (${effectSizeSymbol}=${normBwG.toFixed(2)}) \u2014 organ weight method auto-set to ${methodLabel}`;
       }
-      return `using ${methodLabel}`;
+      if (normTier >= 2) {
+        return `Moderate BW effect (${effectSizeSymbol}=${normBwG.toFixed(2)}) \u2014 organ weight method: ${methodLabel} (review recommended)`;
+      }
+      return `Organ weight method: ${methodLabel}`;
     }
     return "";
   };
@@ -561,7 +552,7 @@ function DomainTable({
       return b.rowCount - a.rowCount;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domains, domainSignals, mortalityData, excludedSubjects, organWeightMethod]);
+  }, [domains, domainSignals, mortalityData, excludedSubjects, organWeightMethod, normTier, normBwG, effectSizeSymbol]);
 
   const aboveFold = rows.filter(r => r.tier <= 3);
   const belowFold = rows.filter(r => r.tier > 3);
@@ -590,23 +581,23 @@ function DomainTable({
 
   return (
     <>
-      <div className="max-h-72 overflow-auto rounded-md border">
+      <div className="h-full overflow-auto">
         <table className="w-full text-[10px]">
           <thead className="sticky top-0 z-10 bg-background">
             <tr className="border-b bg-muted/30">
               <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Domain
               </th>
-              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                 Subjects
               </th>
-              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                 Signals
               </th>
-              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                 Adverse
               </th>
-              <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: "100%" }}>
                 Notes
               </th>
             </tr>
@@ -615,10 +606,10 @@ function DomainTable({
             {displayed.map((row) => (
               <tr
                 key={row.code}
-                className="cursor-pointer border-b last:border-b-0 hover:bg-muted/30"
+                className="cursor-pointer border-b transition-colors hover:bg-accent/50"
                 onClick={() => handleRowClick(row.code)}
               >
-                <td className="px-1.5 py-px" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                <td className="px-1.5 py-px" style={{ width: 1, whiteSpace: "nowrap" }}>
                   <Link
                     to={`/studies/${studyId}/domains/${row.code}`}
                     className="text-primary hover:underline"
@@ -629,16 +620,16 @@ function DomainTable({
                   </Link>
                   <span className="ml-1.5 text-[9px] text-muted-foreground">{row.rowCount.toLocaleString()} records</span>
                 </td>
-                <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                   {formatSubjectsCell(row)}
                 </td>
-                <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                   {row.trCount > 0 ? `${row.trCount} TR` : "\u2014"}
                 </td>
-                <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                   {row.adverseCount > 0 ? `${row.adverseCount} adv` : "\u2014"}
                 </td>
-                <td className="px-1.5 py-px">
+                <td className="px-1.5 py-px overflow-hidden text-ellipsis whitespace-nowrap" style={{ width: "100%" }}>
                   {row.keyFindings}
                   {row.contextNote && (
                     <span className="text-muted-foreground">
@@ -663,6 +654,11 @@ function DomainTable({
             ))}
           </tbody>
         </table>
+        {displayed.length === 0 && (
+          <div className="p-4 text-center text-xs text-muted-foreground">
+            No domains available.
+          </div>
+        )}
       </div>
       {belowFold.length > 0 && !showFolded && (
         <button
@@ -782,10 +778,11 @@ function DetailsTab({
   const { data: pkData } = usePkIntegration(studyId);
   const { excludedSubjects } = useScheduledOnly();
   const [organWeightMethod, setOrganWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
+  const { effectSize: effectSizeMethod } = useStatMethods(studyId);
 
   // Normalization engine — cache-only on study details (no backend fetch).
   // Data appears once the user visits the findings view.
-  const normalization = useOrganWeightNormalization(studyId, false);
+  const normalization = useOrganWeightNormalization(studyId, false, effectSizeMethod);
 
   // Auto-set organ weight method: tier-based when normalization data available,
   // otherwise fall back to signal-based BW adverse+down heuristic.
@@ -816,17 +813,18 @@ function DetailsTab({
       route: studyCtx.route,
     });
     if (normalization.highestTier >= 2) {
+      const sym = getEffectSizeSymbol(effectSizeMethod);
       const g = normalization.worstBwG.toFixed(2);
       const tierLabel = getTierSeverityLabel(normalization.highestTier);
       const noteText = normalization.highestTier >= 4
-        ? `Severe BW effect (g=${g}). ANCOVA recommended for definitive organ weight assessment.`
+        ? `Severe BW effect (${sym}=${g}). ANCOVA recommended for definitive organ weight assessment.`
         : normalization.highestTier >= 3
-        ? `Large BW effect (g=${g}). Brain-weight normalization auto-selected for organ weights.`
-        : `Moderate BW effect (g=${g}). Organ-to-BW ratios should be interpreted with caution for high-dose groups.`;
+        ? `Large BW effect (${sym}=${g}). Brain-weight normalization auto-selected for organ weights.`
+        : `Moderate BW effect (${sym}=${g}). Organ-to-BW ratios should be interpreted with caution for high-dose groups.`;
       notes.push({ category: "Body weight", note: noteText, severity: tierLabel as "caution" });
     }
     return notes;
-  }, [studyCtx, normalization.highestTier, normalization.worstBwG]);
+  }, [studyCtx, normalization.highestTier, normalization.worstBwG, effectSizeMethod]);
 
   if (!meta) {
     return (
@@ -1075,7 +1073,7 @@ function DetailsTab({
 
       {/* ── Domain summary table ─────────────────────────── */}
       <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen>
-        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} />
+        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)} />
       </CollapsiblePane>
 
       {/* ── Data quality + Interpretation context (side by side) ── */}

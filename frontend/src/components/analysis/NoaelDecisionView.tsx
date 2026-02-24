@@ -64,6 +64,8 @@ import type { NoaelOverride } from "@/types/annotations";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
 import type { PkIntegration } from "@/types/analysis-views";
 import { classifyProtectiveSignal, getProtectiveBadgeStyle } from "@/lib/protective-signal";
+import { useStatMethods } from "@/hooks/useStatMethods";
+import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { ProtectiveClassification } from "@/lib/protective-signal";
 import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 
@@ -569,7 +571,7 @@ function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: { data: 
 
 // ─── OrganHeader ───────────────────────────────────────────
 
-function OrganHeader({ summary, recovery }: { summary: OrganSummary; recovery?: OrganRecoveryResult }) {
+function OrganHeader({ summary, recovery, effectSizeSymbol = "d" }: { summary: OrganSummary; recovery?: OrganRecoveryResult; effectSizeSymbol?: string }) {
   return (
     <div className="shrink-0 border-b px-4 py-3">
       <div className="flex items-center gap-2">
@@ -596,7 +598,7 @@ function OrganHeader({ summary, recovery }: { summary: OrganSummary; recovery?: 
 
       <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
         <div>
-          <span className="text-muted-foreground">Max |d|: </span>
+          <span className="text-muted-foreground">Max |{effectSizeSymbol}|: </span>
           <span className={cn(
             "font-mono",
             summary.maxEffectSize >= 0.8 ? "font-semibold" : "font-medium"
@@ -1362,8 +1364,8 @@ function ProtectiveSignalsBar({
 
 // ─── Signal Matrix Tab (Inline) ─────────────────────────────
 
-function SignalMatrixTabInline({ signalData, targetOrgan, selection, onSelect }: {
-  signalData: SignalSummaryRow[]; targetOrgan: TargetOrganRow; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void;
+function SignalMatrixTabInline({ signalData, targetOrgan, selection, onSelect, effectSizeSymbol = "d" }: {
+  signalData: SignalSummaryRow[]; targetOrgan: TargetOrganRow; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void; effectSizeSymbol?: string;
 }) {
   const [filters, setFilters] = useState<Filters>({ endpoint_type: null, organ_system: null, signal_score_min: 0, sex: null, significant_only: true });
   const filteredData = useMemo(() => signalData.filter((row) => {
@@ -1377,7 +1379,7 @@ function SignalMatrixTabInline({ signalData, targetOrgan, selection, onSelect }:
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="border-b bg-muted/30 px-4 py-2"><StudySummaryFilters data={signalData} filters={filters} onChange={setFilters} /></div>
-      <div className="flex-1 overflow-auto"><OrganGroupedHeatmap data={filteredData} targetOrgans={[targetOrgan]} selection={selection} organSelection={null} onSelect={onSelect} onOrganSelect={() => {}} expandedOrgans={emptySet} onToggleOrgan={() => {}} pendingNavigation={null} onNavigationConsumed={() => {}} singleOrganMode /></div>
+      <div className="flex-1 overflow-auto"><OrganGroupedHeatmap data={filteredData} targetOrgans={[targetOrgan]} selection={selection} organSelection={null} onSelect={onSelect} onOrganSelect={() => {}} expandedOrgans={emptySet} onToggleOrgan={() => {}} pendingNavigation={null} onNavigationConsumed={() => {}} singleOrganMode effectSizeSymbol={effectSizeSymbol} /></div>
     </div>
   );
 }
@@ -1394,7 +1396,7 @@ function SignalScoreCell({ row }: { row: SignalSummaryRow }) {
   );
 }
 
-const SIGNAL_METRICS_COLUMNS = [
+function buildSignalMetricsColumns(esSymbol = "d") { return [
   signalColHelper.accessor("endpoint_label", {
     header: "Endpoint",
     size: 160,
@@ -1432,7 +1434,7 @@ const SIGNAL_METRICS_COLUMNS = [
     cell: (info) => <span className={cn("font-mono", info.getValue() != null && info.getValue()! < 0.01 && "font-semibold")}>{formatPValue(info.getValue())}</span>,
   }),
   signalColHelper.accessor("effect_size", {
-    header: "|d|",
+    header: `|${esSymbol}|`,
     size: 55,
     cell: (info) => <span className={cn("font-mono", Math.abs(info.getValue() ?? 0) >= 0.8 && "font-semibold")}>{formatEffectSize(info.getValue())}</span>,
   }),
@@ -1455,7 +1457,7 @@ const SIGNAL_METRICS_COLUMNS = [
       return <span className="truncate" title={val}>{val.replace(/_/g, " ")}</span>;
     },
   }),
-];
+]; }
 
 interface MetricsFilters {
   sex: string | null;
@@ -1463,8 +1465,8 @@ interface MetricsFilters {
   significant_only: boolean;
 }
 
-function SignalMetricsTabInline({ signalData, selection, onSelect }: {
-  signalData: SignalSummaryRow[]; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void;
+function SignalMetricsTabInline({ signalData, selection, onSelect, effectSizeSymbol = "d" }: {
+  signalData: SignalSummaryRow[]; selection: SignalSelection | null; onSelect: (sel: SignalSelection | null) => void; effectSizeSymbol?: string;
 }) {
   const [filters, setFilters] = useState<MetricsFilters>({ sex: null, severity: null, significant_only: false });
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.noael.signals.sorting", [{ id: "signal_score", desc: true }]);
@@ -1477,9 +1479,10 @@ function SignalMetricsTabInline({ signalData, selection, onSelect }: {
     return true;
   }), [signalData, filters]);
 
+  const columns = useMemo(() => buildSignalMetricsColumns(effectSizeSymbol), [effectSizeSymbol]);
   const table = useReactTable({
     data: filteredData,
-    columns: SIGNAL_METRICS_COLUMNS,
+    columns,
     state: { sorting, columnSizing },
     onSortingChange: setSorting,
     onColumnSizingChange: setColumnSizing,
@@ -1581,6 +1584,7 @@ export function NoaelDecisionView() {
   const { data: pkData } = usePkIntegration(studyId);
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
+  const esSymbol = getEffectSizeSymbol(useStatMethods(studyId).effectSize);
 
   // Build panel data for StudyStatementsBar
   const panelData = useMemo(() => {
@@ -1794,7 +1798,7 @@ export function NoaelDecisionView() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/5">
         {selectedSummary && (
           <>
-            <OrganHeader summary={selectedSummary} recovery={organRecovery} />
+            <OrganHeader summary={selectedSummary} recovery={organRecovery} effectSizeSymbol={esSymbol} />
 
             {/* Tab bar */}
             <ViewTabBar
@@ -1844,11 +1848,11 @@ export function NoaelDecisionView() {
               const targetOrgan = targetOrgans?.find(o => o.organ_system === selectedOrgan);
               if (!targetOrgan) return null;
               const organSignalData = signalData.filter(r => r.organ_system === selectedOrgan);
-              return <SignalMatrixTabInline signalData={organSignalData} targetOrgan={targetOrgan} selection={localSignalSel} onSelect={setLocalSignalSel} />;
+              return <SignalMatrixTabInline signalData={organSignalData} targetOrgan={targetOrgan} selection={localSignalSel} onSelect={setLocalSignalSel} effectSizeSymbol={esSymbol} />;
             })()}
             {activeTab === "metrics" && signalData && selectedOrgan && (() => {
               const organSignalData = signalData.filter(r => r.organ_system === selectedOrgan);
-              return <SignalMetricsTabInline signalData={organSignalData} selection={localSignalSel} onSelect={setLocalSignalSel} />;
+              return <SignalMetricsTabInline signalData={organSignalData} selection={localSignalSel} onSelect={setLocalSignalSel} effectSizeSymbol={esSymbol} />;
             })()}
             {activeTab === "rules" && (
               <RuleInspectorTab ruleResults={ruleResults ?? []} organFilter={selectedOrgan} studyId={studyId} />

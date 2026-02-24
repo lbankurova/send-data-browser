@@ -25,7 +25,7 @@ import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-sy
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass } from "@/lib/lab-clinical-catalog";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { interpretSyndrome, mapDeathRecordsToDispositions } from "@/lib/syndrome-interpretation";
-import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext, OverallSeverity, RecoveryRow, TranslationalConfidence, UpgradeEvidenceResult } from "@/lib/syndrome-interpretation";
+import type { SyndromeInterpretation, DiscriminatingFinding, HistopathCrossRef, MortalityContext, TumorFinding, FoodConsumptionContext, OverallSeverity, RecoveryRow, TranslationalConfidence, UpgradeEvidenceResult } from "@/lib/syndrome-interpretation-types";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import type { StudyMortality } from "@/types/mortality";
@@ -39,6 +39,7 @@ import { useStudyContext } from "@/hooks/useStudyContext";
 import type { FindingsFilters, UnifiedFinding, DoseGroup } from "@/types/analysis";
 import { computeOrganProportionality, checkSexDivergence } from "@/lib/organ-proportionality";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
+import { useStatMethods } from "@/hooks/useStatMethods";
 import type { OrganProportionalityResult, OrganOpiRow, OpiClassification } from "@/lib/organ-proportionality";
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -290,7 +291,8 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   const allEndpoints = analytics.endpoints;
 
   // Normalization engine — for OM term annotations and B-7 BW confounding
-  const normalization = useOrganWeightNormalization(studyId);
+  const { effectSize } = useStatMethods(studyId);
+  const normalization = useOrganWeightNormalization(studyId, true, effectSize);
 
   // Evidence Summary: term report
   const syndromeSexes = detected?.sexes;

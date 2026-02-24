@@ -5,6 +5,7 @@ import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
+import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useRegenerate } from "@/hooks/useRegenerate";
@@ -289,7 +290,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const { data: meta, isLoading: metaLoading } = useStudyMetadata(studyId);
   const { data: studyCtx } = useStudyContext(studyId);
   const { data: mortalityData } = useStudyMortality(studyId);
-  const normalization = useOrganWeightNormalization(studyId, false);
   const [normWhyOpen, setNormWhyOpen] = useState(false);
   // Study notes via annotation API
   const { data: studyNotes } = useAnnotations<StudyNote>(studyId, "study-notes");
@@ -343,6 +343,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
     `pcc.${studyId}.effectSize`,
     "hedges-g",
   );
+  const normalization = useOrganWeightNormalization(studyId, false, effectSize as EffectSizeMethod);
   const [recoveryPooling, setRecoveryPooling] = useSessionState(
     `pcc.${studyId}.recoveryPooling`,
     "pool",

@@ -24,6 +24,7 @@ import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import { getSyndromeNearMissInfo } from "@/lib/cross-domain-syndromes";
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass, getClinicalTierCardBorderClass, getClinicalSeverityLabel } from "@/lib/lab-clinical-catalog";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
+import { useStatMethods } from "@/hooks/useStatMethods";
 import { getTierSeverityLabel, getOrganCorrelationCategory } from "@/lib/organ-weight-normalization";
 import type { FindingsFilters, UnifiedFinding } from "@/types/analysis";
 
@@ -237,7 +238,8 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
   const { data: rawData } = useFindings(studyId, 1, 10000, ALL_FILTERS);
 
   // Normalization engine — for "Organ weight normalization" pane
-  const normalization = useOrganWeightNormalization(studyId);
+  const { effectSize } = useStatMethods(studyId);
+  const normalization = useOrganWeightNormalization(studyId, true, effectSize);
 
   // Use shared derivation — single source of truth (includes all fields)
   const organEndpoints = useMemo(
