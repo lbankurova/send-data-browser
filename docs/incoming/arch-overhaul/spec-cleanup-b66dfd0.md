@@ -12,10 +12,10 @@
 |----------|-------|
 | High | 0 |
 | Medium | 30 |
-| Low | 62 |
+| Low | 61 |
 | Deferred | 8 |
-| **Total open** | **94** |
-| ~~Resolved~~ | ~~33~~ |
+| **Total open** | **93** |
+| ~~Resolved~~ | ~~34~~ |
 
 *Updated 2026-02-18: MDI-1–5, SIL-1/2/4/7 resolved (Phases 3–7 complete). MDI-7→Deferred, MDI-8/9→Medium.*
 *Updated 2026-02-18: MDI-8, SIL-3, SIL-5, SIL-8 resolved (51c0949). ECGInterpretation, humanNonRelevance, CL wiring, interp tests.*
@@ -210,7 +210,7 @@
 |---|---------|-------|----------|--------|
 | ~~SS-2~~ | ~~OrganPanel "Related views"~~ | ~~Duplicate "View histopathology" link — both go to same URL~~ | ~~**Medium**~~ | **RESOLVED** — StudySummaryContextPanel.tsx deleted; OrganPanel removed from Study Summary (Signals→NOAEL merge) |
 | SS-3 | InsightsList "N ep" count | 9px text, not obviously clickable | Low | interaction-audit |
-| SS-4 | Treatment arms table rows | Look interactive (colored left border) but have no click handler | Low | interaction-audit |
+| ~~SS-4~~ | ~~Treatment arms table rows~~ | ~~Look interactive (colored left border) but have no click handler~~ | ~~Low~~ | **RESOLVED** — Treatment arms table removed; arm data absorbed into enriched StudyTimeline labels |
 | ~~SS-5~~ | ~~ToxFindingForm adversity dropdown~~ | ~~Visually dimmed when treatment="No" but still fully interactive — confusing~~ | ~~Low~~ | **RESOLVED** — EndpointPanel removed from Study Summary context panel (Signals→NOAEL merge) |
 | SS-6 | "Generate report" button | No loading/success feedback | Low | interaction-audit |
 
@@ -421,6 +421,7 @@
 | ~~S3~~ | Systemic rail triple-action | **DONE** (e4e6ca5) — separate expand/collapse from scope |
 | ~~SS-2~~ | OrganPanel duplicate "View histopathology" link | **RESOLVED** — StudySummaryContextPanel.tsx deleted (Signals→NOAEL merge) |
 | ~~SS-5~~ | ToxFindingForm dimmed adversity dropdown | **RESOLVED** — EndpointPanel removed from Study Summary (Signals→NOAEL merge) |
+| ~~SS-4~~ | Treatment arms table interactive rows | **RESOLVED** — Table removed; arm data absorbed into enriched StudyTimeline labels |
 
 ---
 
@@ -431,7 +432,7 @@
 | 1. Findings (AE) | 0 | 9 | 16 | 0 | **25** |
 | 2. Dose-Response | 0 | 2 | 3 | 0 | **5** |
 | 3. Histopathology | 0 | 8 | 22 | 3 | **33** |
-| 4. Study Summary | 0 | 2 | 3 | 0 | **5** |
+| 4. Study Summary | 0 | 2 | 2 | 0 | **4** |
 | 5. NOAEL Decision | 0 | 2 | 2 | 0 | **4** |
 | 6. Validation | 0 | 1 | 4 | 0 | **5** |
 | 7. Landing Page | 0 | 2 | 5 | 0 | **7** |

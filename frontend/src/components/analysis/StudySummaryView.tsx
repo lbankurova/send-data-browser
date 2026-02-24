@@ -3,7 +3,6 @@ import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, FileText, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getDoseGroupColor } from "@/lib/severity-colors";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
@@ -489,7 +488,7 @@ function DomainTable({
   const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
 
   /** Generate decision-context notes for domains where analysis settings matter. */
-  const generateContextNote = (dom: string): string => {
+  const generateContextNote = (dom: string, sig: DomainSignalInfo | undefined): string => {
     if (dom === "ds" && mortalityData?.has_mortality) {
       const allDeaths = [...mortalityData.deaths, ...mortalityData.accidentals];
       const deathsExcluded = allDeaths.filter(d => excludedSubjects.has(d.USUBJID)).length;
@@ -497,8 +496,13 @@ function DomainTable({
       return "";
     }
     if (dom === "bw") {
+      // Tier-aware note when normalization data is available, fallback to signal-based
       if (normTier >= 3) return `organ weights auto-set to ratio-to-brain (g=${normBwG.toFixed(2)})`;
       if (normTier >= 2) return `organ weight ratios may be confounded (g=${normBwG.toFixed(2)})`;
+      if (sig) {
+        const hasBwDown = [...sig.endpoints.values()].some(ep => ep.adverse && ep.direction === "down");
+        if (hasBwDown) return "organ weights auto-set to ratio-to-brain";
+      }
     }
     if (dom === "om") {
       const methodLabel = organWeightMethod === "ratio-bw" ? "ratio-to-BW"
@@ -534,7 +538,8 @@ function DomainTable({
           ? generateKeyFindings(dom, new Map(), mortalityData)
           : "";
 
-      const contextNote = generateContextNote(dom);
+      const contextNote = generateContextNote(dom, sig);
+
 
       return {
         code: d.name,
@@ -777,17 +782,30 @@ function DetailsTab({
   const { excludedSubjects } = useScheduledOnly();
   const [organWeightMethod, setOrganWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
 
-  // Auto-set organ weight method: tier-based decision from normalization engine
-  const normalization = useOrganWeightNormalization(studyId);
+  // Normalization engine — cache-only on study details (no backend fetch).
+  // Data appears once the user visits the findings view.
+  const normalization = useOrganWeightNormalization(studyId, false);
+
+  // Auto-set organ weight method: tier-based when normalization data available,
+  // otherwise fall back to signal-based BW adverse+down heuristic.
+  const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
   useEffect(() => {
-    // Tier >= 3 (large BW effect): auto-set to ratio-to-brain
     if (normalization.highestTier >= 3 && organWeightMethod === "absolute") {
       setOrganWeightMethod("ratio-brain");
+      return;
     }
-  }, [normalization.highestTier, organWeightMethod, setOrganWeightMethod]);
+    // Fallback: signal-based auto-set when normalization data not yet cached
+    if (normalization.highestTier <= 1) {
+      const bwSig = domainSignals["bw"];
+      if (!bwSig) return;
+      const hasBwDown = [...bwSig.endpoints.values()].some(ep => ep.adverse && ep.direction === "down");
+      if (hasBwDown && organWeightMethod === "absolute") {
+        setOrganWeightMethod("ratio-brain");
+      }
+    }
+  }, [normalization.highestTier, domainSignals, organWeightMethod, setOrganWeightMethod]);
 
   // Interpretation context notes from species/vehicle/route + BW confounding
-  // (must be before early return to satisfy Rules of Hooks)
   const interpretationNotes = useMemo(() => {
     if (!studyCtx) return [];
     const notes = getInterpretationContext({
@@ -796,7 +814,6 @@ function DetailsTab({
       vehicle: studyCtx.vehicle,
       route: studyCtx.route,
     });
-    // Add BW confounding note when normalization tier >= 2
     if (normalization.highestTier >= 2) {
       const g = normalization.worstBwG.toFixed(2);
       const tierLabel = getTierSeverityLabel(normalization.highestTier);
@@ -1013,6 +1030,32 @@ function DetailsTab({
         )}
       </section>
 
+      {/* ── Provenance warnings ─────────────────────────── */}
+      {filteredProv.length > 0 && (
+        <div className="mb-4 space-y-0.5">
+          {filteredProv.map((msg) => (
+            <div
+              key={msg.rule_id + msg.message}
+              className="flex items-start gap-2 text-[10px] leading-snug"
+            >
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+              <span className="text-amber-700">
+                {msg.message}
+                <button
+                  className="ml-1.5 text-primary hover:underline"
+                  onClick={() => {
+                    const panel = document.querySelector("[data-panel='context']");
+                    if (panel) panel.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  Configure &rarr;
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── Study timeline ───────────────────────────────── */}
       {doseGroups.length > 0 && studyCtx?.dosingDurationWeeks && (
         <section className="mb-6">
@@ -1027,205 +1070,147 @@ function DetailsTab({
         </section>
       )}
 
-      {/* ── Treatment arms table ─────────────────────────── */}
-      {doseGroups.length > 0 && (
-        <section className="mb-6">
+      {/* ── Data quality + Interpretation context (side by side) ── */}
+      <div className={cn(
+        "mb-6 grid grid-cols-1 gap-6",
+        interpretationNotes.length > 0 && "xl:grid-cols-2"
+      )}>
+        {/* ── Data quality ─────────────────────────────────── */}
+        <section>
           <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Treatment arms ({doseGroups.length})
+            Data quality
           </h2>
-          <div className="max-h-60 overflow-auto rounded-md border">
-            <table className="w-full text-[10px]">
-              <thead className="sticky top-0 z-10 bg-background">
-                <tr className="border-b bg-muted/30">
-                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Arm code</th>
-                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Label</th>
-                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dose</th>
-                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">M</th>
-                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">F</th>
-                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
-                  {hasTk && (
-                    <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">TK</th>
-                  )}
-                  {hasRecovery && (
-                    <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Recovery</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {doseGroups.map((dg) => (
-                  <tr
-                    key={dg.armcd}
-                    className="border-b last:border-b-0 border-l-2"
-                    style={{ borderLeftColor: getDoseGroupColor(dg.dose_level) }}
-                  >
-                    <td className="px-1.5 py-px font-mono">{dg.armcd}</td>
-                    <td className="px-1.5 py-px">{dg.label}</td>
-                    <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">
-                      {dg.dose_value != null
-                        ? `${dg.dose_value}${dg.dose_unit ? ` ${dg.dose_unit}` : ""}`
-                        : "\u2014"}
-                    </td>
-                    <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">{dg.n_male}</td>
-                    <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">{dg.n_female}</td>
-                    <td className="px-1.5 py-px text-right tabular-nums font-medium">{dg.n_total}</td>
-                    {hasTk && (
-                      <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">
-                        {(dg.tk_count ?? 0) > 0 ? dg.tk_count : "\u2014"}
-                      </td>
-                    )}
-                    {hasRecovery && (
-                      <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">
-                        {dg.recovery_armcd
-                          ? `${dg.recovery_n ?? 0} (${dg.recovery_armcd})`
-                          : "\u2014"}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
 
-          {/* Provenance warnings — filtered, with "Configure" link */}
-          {filteredProv.length > 0 && (
-            <div className="mt-2 space-y-0.5">
-              {filteredProv.map((msg) => (
-                <div
-                  key={msg.rule_id + msg.message}
-                  className="flex items-start gap-2 text-[10px] leading-snug"
-                >
-                  <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
-                  <span className="text-amber-700">
-                    {msg.message}
-                    <button
-                      className="ml-1.5 text-primary hover:underline"
-                      onClick={() => {
-                        const panel = document.querySelector("[data-panel='context']");
-                        if (panel) panel.scrollIntoView({ behavior: "smooth" });
-                      }}
-                    >
-                      Configure &rarr;
-                    </button>
+          {/* Domain completeness — three-tier layout */}
+          <div className="mb-2">
+            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
+              Domain completeness
+            </div>
+            <div className="space-y-0.5 text-[10px]">
+              {/* Required row — present domains neutral, missing domains amber */}
+              <div className="flex flex-wrap items-center gap-x-1.5">
+                <span className="w-14 shrink-0 text-muted-foreground">Required:</span>
+                {REQUIRED_DOMAINS.map((d) => (
+                  <span key={d} className={presentDomains.has(d) ? "text-muted-foreground" : "font-medium text-amber-700"}>
+                    {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2717"}
+                  </span>
+                ))}
+              </div>
+              {/* Optional row — present neutral, missing very faint */}
+              <div className="flex flex-wrap items-center gap-x-1.5">
+                <span className="w-14 shrink-0 text-muted-foreground">Optional:</span>
+                {OPTIONAL_DOMAINS.map((d) => (
+                  <span key={d} className={presentDomains.has(d) ? "text-muted-foreground" : "text-muted-foreground/40"}>
+                    {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2013"}
+                  </span>
+                ))}
+              </div>
+              {/* Missing impact notes */}
+              {missingRequired.length > 0 && (
+                <div className="mt-0.5 flex items-start gap-1 text-amber-700">
+                  <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+                  <span>
+                    {missingRequired.map((d) => d.toUpperCase()).join(", ")} missing
+                    {missingRequired.includes("mi") && " \u2014 histopath cross-reference unavailable"}
+                    {missingRequired.includes("om") && " \u2014 organ weight analysis unavailable"}
                   </span>
                 </div>
-              ))}
+              )}
+            </div>
+          </div>
+
+          {/* Tissue battery */}
+          {battery && (
+            <div className="mb-2">
+              <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
+                Tissue battery
+              </div>
+              {battery.reference_batteries && (() => {
+                const refs = battery.reference_batteries;
+                const termM = refs["terminal_M"];
+                const termF = refs["terminal_F"];
+                const recM = refs["recovery_M"];
+                const recF = refs["recovery_F"];
+                return (
+                  <div className="space-y-0 text-[10px] text-muted-foreground">
+                    {(termM || termF) && (
+                      <div>
+                        Terminal: {termM ? `${termM.expected_count} tissues (control M)` : ""}
+                        {termM && termF ? " \u00b7 " : ""}
+                        {termF ? `${termF.expected_count} tissues (control F)` : ""}
+                      </div>
+                    )}
+                    {(recM || recF) && (
+                      <div>
+                        Recovery: {recM ? `${recM.expected_count} tissues (control M)` : ""}
+                        {recM && recF ? " \u00b7 " : ""}
+                        {recF ? `${recF.expected_count} tissues (control F)` : ""}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              {batteryNote && (
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  {batteryNote}
+                </div>
+              )}
+              {flaggedCount > 0 ? (
+                <div className="mt-0.5 flex items-center gap-1 text-[10px] text-amber-700">
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  {flaggedCount} animal{flaggedCount !== 1 ? "s" : ""} below expected tissue count
+                </div>
+              ) : (
+                <div className="mt-0.5 flex items-center gap-1 text-[10px] text-green-700">
+                  <CheckCircle2 className="h-3 w-3" />
+                  All animals meet expected tissue count
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TK satellites */}
+          {tkTotal > 0 && (
+            <div className="mb-2 text-[10px] text-muted-foreground">
+              TK satellite: {tkTotal} subjects excluded from all toxicology analyses
+            </div>
+          )}
+
+          {/* Anomalies */}
+          {allWarnings.length > 0 && (
+            <AnomaliesList warnings={allWarnings} flaggedAnimals={flaggedAnimals.filter(a => a.flag)} />
+          )}
+
+          {allWarnings.length === 0 && !battery && tkTotal === 0 && missingRequired.length === 0 && (
+            <div className="text-[10px] text-muted-foreground">
+              No quality issues detected.
             </div>
           )}
         </section>
-      )}
 
-      {/* ── Data quality ─────────────────────────────────── */}
-      <section className="mb-6">
-        <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Data quality
-        </h2>
-
-        {/* Domain completeness — three-tier layout */}
-        <div className="mb-2">
-          <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
-            Domain completeness
-          </div>
-          <div className="space-y-0.5 text-[10px]">
-            {/* Required row — present domains neutral, missing domains amber */}
-            <div className="flex flex-wrap items-center gap-x-1.5">
-              <span className="w-14 shrink-0 text-muted-foreground">Required:</span>
-              {REQUIRED_DOMAINS.map((d) => (
-                <span key={d} className={presentDomains.has(d) ? "text-muted-foreground" : "font-medium text-amber-700"}>
-                  {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2717"}
-                </span>
-              ))}
-            </div>
-            {/* Optional row — present neutral, missing very faint */}
-            <div className="flex flex-wrap items-center gap-x-1.5">
-              <span className="w-14 shrink-0 text-muted-foreground">Optional:</span>
-              {OPTIONAL_DOMAINS.map((d) => (
-                <span key={d} className={presentDomains.has(d) ? "text-muted-foreground" : "text-muted-foreground/40"}>
-                  {d.toUpperCase()}{"\u00a0"}{presentDomains.has(d) ? "\u2713" : "\u2013"}
-                </span>
-              ))}
-            </div>
-            {/* Missing impact notes */}
-            {missingRequired.length > 0 && (
-              <div className="mt-0.5 flex items-start gap-1 text-amber-700">
-                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-                <span>
-                  {missingRequired.map((d) => d.toUpperCase()).join(", ")} missing
-                  {missingRequired.includes("mi") && " \u2014 histopath cross-reference unavailable"}
-                  {missingRequired.includes("om") && " \u2014 organ weight analysis unavailable"}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Tissue battery */}
-        {battery && (
-          <div className="mb-2">
-            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
-              Tissue battery
-            </div>
-            {battery.reference_batteries && (() => {
-              const refs = battery.reference_batteries;
-              const termM = refs["terminal_M"];
-              const termF = refs["terminal_F"];
-              const recM = refs["recovery_M"];
-              const recF = refs["recovery_F"];
-              return (
-                <div className="space-y-0 text-[10px] text-muted-foreground">
-                  {(termM || termF) && (
-                    <div>
-                      Terminal: {termM ? `${termM.expected_count} tissues (control M)` : ""}
-                      {termM && termF ? " \u00b7 " : ""}
-                      {termF ? `${termF.expected_count} tissues (control F)` : ""}
-                    </div>
-                  )}
-                  {(recM || recF) && (
-                    <div>
-                      Recovery: {recM ? `${recM.expected_count} tissues (control M)` : ""}
-                      {recM && recF ? " \u00b7 " : ""}
-                      {recF ? `${recF.expected_count} tissues (control F)` : ""}
-                    </div>
-                  )}
+        {/* ── Interpretation context ────────────────────────── */}
+        {interpretationNotes.length > 0 && (
+          <section>
+            <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Interpretation context
+            </h2>
+            <div className="space-y-1 text-[10px]">
+              {interpretationNotes.map((n, i) => (
+                <div key={i} className="flex items-start gap-1.5">
+                  {n.severity === "caution"
+                    ? <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+                    : <Info className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                  }
+                  <div>
+                    <span className="font-medium text-muted-foreground">{n.category}:</span>{" "}
+                    <span className="text-foreground">{n.note}</span>
+                  </div>
                 </div>
-              );
-            })()}
-            {batteryNote && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground">
-                {batteryNote}
-              </div>
-            )}
-            {flaggedCount > 0 ? (
-              <div className="mt-0.5 flex items-center gap-1 text-[10px] text-amber-700">
-                <AlertTriangle className="h-2.5 w-2.5" />
-                {flaggedCount} animal{flaggedCount !== 1 ? "s" : ""} below expected tissue count
-              </div>
-            ) : (
-              <div className="mt-0.5 flex items-center gap-1 text-[10px] text-green-700">
-                <CheckCircle2 className="h-3 w-3" />
-                All animals meet expected tissue count
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          </section>
         )}
-
-        {/* TK satellites */}
-        {tkTotal > 0 && (
-          <div className="mb-2 text-[10px] text-muted-foreground">
-            TK satellite: {tkTotal} subjects excluded from all toxicology analyses
-          </div>
-        )}
-
-        {/* Anomalies */}
-        {allWarnings.length > 0 && (
-          <AnomaliesList warnings={allWarnings} flaggedAnimals={flaggedAnimals.filter(a => a.flag)} />
-        )}
-
-        {allWarnings.length === 0 && !battery && tkTotal === 0 && missingRequired.length === 0 && (
-          <div className="text-[10px] text-muted-foreground">
-            No quality issues detected.
-          </div>
-        )}
-      </section>
+      </div>
 
       {/* ── Domain summary table ─────────────────────────── */}
       <section className="mb-6">
@@ -1234,29 +1219,6 @@ function DetailsTab({
         </h2>
         <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} />
       </section>
-
-      {/* ── Interpretation context ────────────────────────── */}
-      {interpretationNotes.length > 0 && (
-        <section className="mb-6">
-          <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Interpretation context
-          </h2>
-          <div className="space-y-1 text-[10px]">
-            {interpretationNotes.map((n, i) => (
-              <div key={i} className="flex items-start gap-1.5">
-                {n.severity === "caution"
-                  ? <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
-                  : <Info className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
-                }
-                <div>
-                  <span className="font-medium text-muted-foreground">{n.category}:</span>{" "}
-                  <span className="text-foreground">{n.note}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
