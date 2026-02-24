@@ -363,14 +363,14 @@ function aggregateDomainSignals(signalData: SignalSummaryRow[]): Record<string, 
 // ---------------------------------------------------------------------------
 
 /** Per-specimen tumor type counts from raw TF domain data. */
-interface TfTypeSummary {
+export interface TfTypeSummary {
   /** Total unique TFSTRESC values across all specimens */
   uniqueTypeCount: number;
   /** specimen (uppercase) → finding (lowercase) → record count */
   bySpecimen: Map<string, Map<string, number>>;
 }
 
-function buildTfTypeSummary(rows: Record<string, unknown>[]): TfTypeSummary {
+export function buildTfTypeSummary(rows: Record<string, unknown>[]): TfTypeSummary {
   const bySpecimen = new Map<string, Map<string, number>>();
   const uniqueTypes = new Set<string>();
 
