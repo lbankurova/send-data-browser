@@ -334,7 +334,7 @@ export function FindingsView() {
               <p><span className="text-muted-foreground">&rarr;</span> Right = larger effect ({getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")})</p>
               <p><span className="text-muted-foreground">&uarr;</span> Up = more statistically significant</p>
               <p className="mt-1.5 font-medium">Reference lines:</p>
-              <p><span className="text-muted-foreground">&mdash;</span> Vertical at |d| = 0.8 (large effect)</p>
+              <p><span className="text-muted-foreground">&mdash;</span> Vertical at |{getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}| = 0.8 (large effect)</p>
               <p><span className="text-muted-foreground">&mdash;</span> Horizontal at p = 0.05 (significance)</p>
               <p className="mt-1.5 font-medium">Dot color:</p>
               <p><span className="text-muted-foreground">&bull;</span> Gray = effect at higher doses only</p>
@@ -355,14 +355,6 @@ export function FindingsView() {
     setEndpointSexes(endpointSexes);
   }, [endpointSexes, setEndpointSexes]);
 
-  if (error) {
-    return (
-      <div className="p-6 text-destructive">
-        Failed to load analysis: {error.message}
-      </div>
-    );
-  }
-
   useEffect(() => {
     if (mortalityData) {
       const earlyDeaths = mortalityData.early_death_subjects ?? {};
@@ -381,6 +373,14 @@ export function FindingsView() {
       setEarlyDeathSubjects(earlyDeaths, trIds, defaultExcluded);
     }
   }, [mortalityData, setEarlyDeathSubjects]);
+
+  if (error) {
+    return (
+      <div className="p-6 text-destructive">
+        Failed to load analysis: {error.message}
+      </div>
+    );
+  }
 
   return (
     <FindingsAnalyticsProvider value={analytics}>
@@ -420,6 +420,7 @@ export function FindingsView() {
             organCoherence={organCoherence}
             syndromes={syndromes}
             labMatches={labMatches}
+            effectSizeSymbol={getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}
           />
         </ViewSection>
       )}

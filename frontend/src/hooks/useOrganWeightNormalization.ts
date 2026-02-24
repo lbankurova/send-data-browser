@@ -2,14 +2,19 @@
  * Hook: useOrganWeightNormalization
  *
  * Computes organ weight normalization state from existing findings data.
- * Reuses useFindings() via useFindingsAnalyticsLocal — React Query cache
- * ensures zero extra API calls.
+ * On the findings view, findings are already fetched by useFindingsAnalyticsLocal
+ * and React Query deduplicates — zero extra API calls.
+ *
+ * On the study details view, pass `fetchEnabled: false` to read from cache
+ * only — no expensive backend call triggered. Data appears once the user
+ * visits the findings view (cache populates), then persists for 5 min.
  *
  * Phase 1: Hedges' g from summary stats, tiered decisions, no ANCOVA.
  */
 
 import { useMemo } from "react";
-import { useFindings } from "@/hooks/useFindings";
+import { useQuery } from "@tanstack/react-query";
+import { fetchFindings } from "@/lib/analysis-api";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import {
   computeStudyNormalization,
@@ -22,6 +27,7 @@ import type {
   NormalizationContext,
   GroupStatsTriplet,
 } from "@/lib/organ-weight-normalization";
+import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import type { FindingsFilters, UnifiedFinding, GroupStat } from "@/types/analysis";
 
 const ALL_FILTERS: FindingsFilters = {
@@ -136,10 +142,28 @@ export interface UseOrganWeightNormalizationResult {
   getWorstDecision: (organ: string) => NormalizationDecision | null;
 }
 
+/**
+ * @param studyId  Study to compute normalization for
+ * @param fetchEnabled  When true (default), triggers the findings API call.
+ *   When false, reads from React Query cache only — returns data if findings
+ *   were previously fetched (e.g., from the findings view), otherwise returns
+ *   defaults. Use false on the study details view to avoid the expensive
+ *   backend computation.
+ */
 export function useOrganWeightNormalization(
   studyId: string | undefined,
+  fetchEnabled = true,
+  effectSizeMethod: EffectSizeMethod = "hedges-g",
 ): UseOrganWeightNormalizationResult {
-  const { data: findingsData, isLoading: findingsLoading } = useFindings(studyId, 1, 10000, ALL_FILTERS);
+  // Use useQuery directly so we can control `enabled` per-caller.
+  // Query key matches useFindings(studyId, 1, 10000, ALL_FILTERS) exactly,
+  // so React Query deduplicates with useFindingsAnalyticsLocal on the findings view.
+  const { data: findingsData, isLoading: findingsLoading } = useQuery({
+    queryKey: ["findings", studyId, 1, 10000, ALL_FILTERS],
+    queryFn: () => fetchFindings(studyId!, 1, 10000, ALL_FILTERS),
+    enabled: fetchEnabled && !!studyId,
+    staleTime: 5 * 60 * 1000,
+  });
   const { data: meta } = useStudyMetadata(studyId ?? "");
 
   const state = useMemo(() => {
@@ -165,8 +189,9 @@ export function useOrganWeightNormalization(
       speciesStrain,
       studyType,
       studyId ?? "",
+      effectSizeMethod,
     );
-  }, [findingsData, meta, studyId]);
+  }, [findingsData, meta, studyId, effectSizeMethod]);
 
   const getDecision = useMemo(() => {
     return (organ: string, doseKey?: string): NormalizationDecision | null => {

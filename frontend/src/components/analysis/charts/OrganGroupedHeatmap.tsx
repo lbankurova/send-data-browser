@@ -36,6 +36,7 @@ interface Props {
   onNavigationConsumed: () => void;
   /** When true, suppress organ header and always expand the single organ */
   singleOrganMode?: boolean;
+  effectSizeSymbol?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -197,6 +198,7 @@ export function OrganGroupedHeatmap({
   pendingNavigation,
   onNavigationConsumed,
   singleOrganMode = false,
+  effectSizeSymbol = "g",
 }: Props) {
   // Build dose labels (global)
   const doseLabels = useMemo(() => {
@@ -375,7 +377,7 @@ export function OrganGroupedHeatmap({
                                 : "1px solid rgba(0,0,0,0.05)",
                               outlineOffset: isCellSelected ? "-2px" : "0",
                             }}
-                            title={cell ? `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}${stars ? ` (${stars})` : ""}${cell.direction && cell.direction !== "none" ? ` ${cell.direction === "up" ? "↑" : "↓"}` : ""}${cell.effect_size != null ? ` |d|=${Math.abs(cell.effect_size).toFixed(2)}` : ""}${cell.trend_p != null ? ` trend_p=${cell.trend_p < 0.0001 ? "<0.0001" : cell.trend_p.toFixed(3)}` : ""}${cell.dose_response_pattern ? ` (${cell.dose_response_pattern})` : ""}` : `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}`}
+                            title={cell ? `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}${stars ? ` (${stars})` : ""}${cell.direction && cell.direction !== "none" ? ` ${cell.direction === "up" ? "↑" : "↓"}` : ""}${cell.effect_size != null ? ` |${effectSizeSymbol}|=${Math.abs(cell.effect_size).toFixed(2)}` : ""}${cell.trend_p != null ? ` trend_p=${cell.trend_p < 0.0001 ? "<0.0001" : cell.trend_p.toFixed(3)}` : ""}${cell.dose_response_pattern ? ` (${cell.dose_response_pattern})` : ""}` : `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (!cell) return;
