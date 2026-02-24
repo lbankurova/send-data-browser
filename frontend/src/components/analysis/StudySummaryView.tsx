@@ -19,6 +19,7 @@ import { useSessionState } from "@/hooks/useSessionState";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { StudyTimeline } from "./charts/StudyTimeline";
+import { CollapsiblePane } from "./panes/CollapsiblePane";
 import { getInterpretationContext } from "@/lib/species-vehicle-context";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
@@ -850,7 +851,7 @@ function DetailsTab({
 
   // Filtered provenance: warnings only, excluding Prov-001..004 (now shown elsewhere)
   const filteredProv = (provenanceMessages ?? []).filter(
-    (m) => m.icon === "warning" && !["Prov-001", "Prov-002", "Prov-003", "Prov-004"].includes(m.rule_id),
+    (m) => m.icon === "warning" && !["Prov-001", "Prov-002", "Prov-003", "Prov-004", "Prov-006"].includes(m.rule_id),
   );
 
   // Domain data: prefer live domain list (with subject_count) over meta.domains
@@ -938,9 +939,9 @@ function DetailsTab({
   const allWarnings = (provenanceMessages ?? []).filter(m => m.icon === "warning");
 
   return (
-    <div className="flex-1 overflow-auto p-4">
-      {/* ── Profile block — Identity + Conclusions ────────── */}
-      <section className="mb-6 border-b pb-4">
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* ── Profile block — Identity + Conclusions (frozen header) ── */}
+      <section className="shrink-0 border-b px-4 pb-4 pt-4">
         {/* Zone A: Study identity */}
         <div className="text-sm font-semibold">{meta.study_id}</div>
         <div className="mt-0.5 text-xs text-muted-foreground">
@@ -1030,9 +1031,11 @@ function DetailsTab({
         )}
       </section>
 
+      {/* ── Scrollable body with collapsible sections ──── */}
+      <div className="flex-1 overflow-auto">
       {/* ── Provenance warnings ─────────────────────────── */}
       {filteredProv.length > 0 && (
-        <div className="mb-4 space-y-0.5">
+        <div className="border-b px-4 py-3 space-y-0.5">
           {filteredProv.map((msg) => (
             <div
               key={msg.rule_id + msg.message}
@@ -1058,7 +1061,7 @@ function DetailsTab({
 
       {/* ── Study timeline ───────────────────────────────── */}
       {doseGroups.length > 0 && studyCtx?.dosingDurationWeeks && (
-        <section className="mb-6">
+        <CollapsiblePane title="Study timeline" defaultOpen>
           <StudyTimeline
             doseGroups={doseGroups}
             dosingDurationWeeks={studyCtx.dosingDurationWeeks}
@@ -1067,20 +1070,22 @@ function DetailsTab({
             accidentalDeaths={mortalityData?.accidentals}
             excludedSubjects={excludedSubjects}
           />
-        </section>
+        </CollapsiblePane>
       )}
 
-      {/* ── Data quality + Interpretation context (side by side) ── */}
-      <div className={cn(
-        "mb-6 grid grid-cols-1 gap-6",
-        interpretationNotes.length > 0 && "xl:grid-cols-2"
-      )}>
-        {/* ── Data quality ─────────────────────────────────── */}
-        <section>
-          <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Data quality
-          </h2>
+      {/* ── Domain summary table ─────────────────────────── */}
+      <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen>
+        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} />
+      </CollapsiblePane>
 
+      {/* ── Data quality + Interpretation context (side by side) ── */}
+      <CollapsiblePane title="Data quality" defaultOpen>
+        <div className={cn(
+          "grid grid-cols-1 gap-6",
+          interpretationNotes.length > 0 && "xl:grid-cols-2"
+        )}>
+        {/* ── Data quality ─────────────────────────────────── */}
+        <div>
           {/* Domain completeness — three-tier layout */}
           <div className="mb-2">
             <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
@@ -1186,14 +1191,14 @@ function DetailsTab({
               No quality issues detected.
             </div>
           )}
-        </section>
+        </div>
 
         {/* ── Interpretation context ────────────────────────── */}
         {interpretationNotes.length > 0 && (
-          <section>
-            <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div>
+            <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Interpretation context
-            </h2>
+            </h3>
             <div className="space-y-1 text-[10px]">
               {interpretationNotes.map((n, i) => (
                 <div key={i} className="flex items-start gap-1.5">
@@ -1208,17 +1213,11 @@ function DetailsTab({
                 </div>
               ))}
             </div>
-          </section>
+          </div>
         )}
+        </div>
+      </CollapsiblePane>
       </div>
-
-      {/* ── Domain summary table ─────────────────────────── */}
-      <section className="mb-6">
-        <h2 className="mb-2 border-b pb-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Domains ({domainRows.length})
-        </h2>
-        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} />
-      </section>
     </div>
   );
 }
