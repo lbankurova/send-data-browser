@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2, FileText, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
@@ -18,6 +19,7 @@ import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState } from "@/hooks/useSessionState";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
+import { fetchDomainData } from "@/lib/api";
 import { StudyTimeline } from "./charts/StudyTimeline";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
 import { getInterpretationContext } from "@/lib/species-vehicle-context";
@@ -357,84 +359,61 @@ function aggregateDomainSignals(signalData: SignalSummaryRow[]): Record<string, 
 }
 
 // ---------------------------------------------------------------------------
-// Key findings generation — uses existing signal data fields directly
+// TF type summary — computed from raw TF domain records
 // ---------------------------------------------------------------------------
 
-const DIR_ARROW: Record<string, string> = { up: "\u2191", down: "\u2193" };
-
-/** Format p-value compactly: p<.0001, p=.003 */
-function fmtP(p: number | null): string {
-  if (p == null) return "";
-  if (p < 0.0001) return "p<.0001";
-  if (p < 0.001) return `p=${p.toFixed(4).replace(/^0/, "")}`;
-  if (p < 0.01) return `p=${p.toFixed(3).replace(/^0/, "")}`;
-  return "";
+/** Per-specimen tumor type counts from raw TF domain data. */
+interface TfTypeSummary {
+  /** Total unique TFSTRESC values across all specimens */
+  uniqueTypeCount: number;
+  /** specimen (uppercase) → finding (lowercase) → record count */
+  bySpecimen: Map<string, Map<string, number>>;
 }
 
-/** Format Hedges' g compactly: |g|=7.8 */
-function fmtD(d: number | null): string {
-  if (d == null || d < 2.0) return "";
-  return `|d|=${d.toFixed(1)}`;
+function buildTfTypeSummary(rows: Record<string, unknown>[]): TfTypeSummary {
+  const bySpecimen = new Map<string, Map<string, number>>();
+  const uniqueTypes = new Set<string>();
+
+  for (const row of rows) {
+    const specimen = String(row.TFSPEC ?? "OTHER").toUpperCase();
+    const finding = String(row.TFSTRESC ?? "").toLowerCase();
+    if (!finding) continue;
+    uniqueTypes.add(finding);
+    let specMap = bySpecimen.get(specimen);
+    if (!specMap) { specMap = new Map(); bySpecimen.set(specimen, specMap); }
+    specMap.set(finding, (specMap.get(finding) ?? 0) + 1);
+  }
+
+  return { uniqueTypeCount: uniqueTypes.size, bySpecimen };
 }
 
-/** Compact clinical significance suffix: (p<.0001, d=7.8) */
-function clinSig(ep: EndpointAgg): string {
-  const parts = [fmtP(ep.minP), fmtD(ep.maxAbsD)].filter(Boolean);
-  return parts.length > 0 ? ` (${parts.join(", ")})` : "";
-}
+// ---------------------------------------------------------------------------
+// Key findings generation
+// ---------------------------------------------------------------------------
 
-/**
- * For MI/MA/OM/TF labels like "SPECIMEN — FINDING", extract a short display form.
- * MI/MA: "finding (specimen)" lowercase. OM: just specimen name. TF: finding portion.
- */
-function shortSpecimenLabel(label: string, domain: string): string {
-  const sep = label.indexOf(" \u2014 ");
-  if (sep < 0) return label.toLowerCase();
-  const specimen = label.substring(0, sep).trim().toLowerCase();
-  const finding = label.substring(sep + 3).trim().toLowerCase();
-  if (domain === "om") return specimen; // "kidney", "liver"
-  if (domain === "tf") return finding;  // "carcinoma, hepatocellular, malignant"
-  return `${finding} (${specimen})`; // MI/MA: "hypertrophy (liver)"
-}
-
-/** Generate key findings for a domain from its aggregated endpoints + mortality data. */
+/** Generate key findings for a domain. */
 function generateKeyFindings(
   domain: string,
-  endpoints: Map<string, EndpointAgg>,
+  _endpoints: Map<string, EndpointAgg>,
   _mortalityData?: StudyMortality,
+  tfSummary?: TfTypeSummary | null,
 ): string {
   const dom = domain.toLowerCase();
 
   // Only TF gets key findings — tumor types are important progression context.
-  // All other domains: findings belong in the Findings/Histopathology views,
-  // not the summary domain table. Context notes (DS, BW, OM) handle actionable info.
   if (dom !== "tf") return "";
 
-  // TF: show top 3 tumor types (ranked by adverse > TR > score, or all types if no signals)
-  const ranked = [...endpoints.entries()]
-    .filter(([, ep]) => ep.tr || ep.adverse)
-    .sort(([, a], [, b]) => {
-      if (a.adverse !== b.adverse) return a.adverse ? -1 : 1;
-      if (a.tr !== b.tr) return a.tr ? -1 : 1;
-      return b.maxScore - a.maxScore;
-    });
+  if (!tfSummary || tfSummary.uniqueTypeCount === 0) return "";
 
-  if (ranked.length === 0) {
-    if (endpoints.size > 0) {
-      return [...endpoints.keys()]
-        .map(label => shortSpecimenLabel(label, dom))
-        .slice(0, 3)
-        .join("; ");
-    }
-    return "";
+  const prefix = `${tfSummary.uniqueTypeCount} type${tfSummary.uniqueTypeCount !== 1 ? "s" : ""}`;
+  const groups: string[] = [];
+  for (const [specimen, findings] of tfSummary.bySpecimen) {
+    const items = [...findings.entries()]
+      .map(([name, count]) => `${name} (${count})`)
+      .join(", ");
+    groups.push(`${specimen}: ${items}`);
   }
-
-  return ranked.slice(0, 3).map(([label, ep]) => {
-    const dir = DIR_ARROW[ep.direction ?? ""] ?? "";
-    const name = shortSpecimenLabel(label, dom);
-    const sig = clinSig(ep);
-    return `${name} ${dir}${sig}`.trim();
-  }).join(", ");
+  return `${prefix} ${groups.join(" · ")}`;
 }
 
 
@@ -460,6 +439,7 @@ function DomainTable({
   normTier,
   normBwG,
   effectSizeSymbol,
+  tfTypeSummary,
 }: {
   studyId: string;
   domains: { name: string; label: string; row_count: number; subject_count?: number | null }[];
@@ -470,27 +450,19 @@ function DomainTable({
   normTier: number;
   normBwG: number;
   effectSizeSymbol: string;
+  tfTypeSummary?: TfTypeSummary | null;
 }) {
   const [showFolded, setShowFolded] = useState(false);
 
   const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
 
   /** Generate decision-context notes for domains where analysis settings matter. */
-  const generateContextNote = (dom: string, sig: DomainSignalInfo | undefined): string => {
+  const generateContextNote = (dom: string, _sig: DomainSignalInfo | undefined): string => {
     if (dom === "ds" && mortalityData?.has_mortality) {
       const allDeaths = [...mortalityData.deaths, ...mortalityData.accidentals];
       const deathsExcluded = allDeaths.filter(d => excludedSubjects.has(d.USUBJID)).length;
       if (deathsExcluded > 0) return `${deathsExcluded} excluded from terminal stats`;
       return "";
-    }
-    if (dom === "bw") {
-      // Tier-aware note when normalization data is available, fallback to signal-based
-      if (normTier >= 3) return `organ weights auto-set to ratio-to-brain (${effectSizeSymbol}=${normBwG.toFixed(2)})`;
-      if (normTier >= 2) return `organ weight ratios may be confounded (${effectSizeSymbol}=${normBwG.toFixed(2)})`;
-      if (sig) {
-        const hasBwDown = [...sig.endpoints.values()].some(ep => ep.adverse && ep.direction === "down");
-        if (hasBwDown) return "organ weights auto-set to ratio-to-brain";
-      }
     }
     if (dom === "om") {
       const methodLabel = organWeightMethod === "ratio-bw" ? "body-weight ratio"
@@ -524,9 +496,9 @@ function DomainTable({
       else tier = 4;
 
       const keyFindings = sig
-        ? generateKeyFindings(dom, sig.endpoints, mortalityData)
-        : dom === "ds"
-          ? generateKeyFindings(dom, new Map(), mortalityData)
+        ? generateKeyFindings(dom, sig.endpoints, mortalityData, tfTypeSummary)
+        : dom === "ds" || dom === "tf"
+          ? generateKeyFindings(dom, new Map(), mortalityData, tfTypeSummary)
           : "";
 
       const contextNote = generateContextNote(dom, sig);
@@ -551,7 +523,7 @@ function DomainTable({
       return b.rowCount - a.rowCount;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domains, domainSignals, mortalityData, excludedSubjects, organWeightMethod, normTier, normBwG, effectSizeSymbol]);
+  }, [domains, domainSignals, mortalityData, excludedSubjects, organWeightMethod, normTier, normBwG, effectSizeSymbol, tfTypeSummary]);
 
   const aboveFold = rows.filter(r => r.tier <= 3);
   const belowFold = rows.filter(r => r.tier > 3);
@@ -564,12 +536,6 @@ function DomainTable({
       // total_deaths only counts main-study non-accidental; use full arrays for real total
       const totalEvents = mortalityData.deaths.length + mortalityData.accidentals.length;
       return `${totalEvents} death${totalEvents !== 1 ? "s" : ""}`;
-    }
-    if (dom === "tf") {
-      // Count unique endpoint labels as proxy for tumor count
-      const sig = domainSignals[dom];
-      const count = sig ? sig.endpoints.size : 0;
-      return count > 0 ? `${count} type${count !== 1 ? "s" : ""}` : row.subjectCount != null ? String(row.subjectCount) : "\u2014";
     }
     return row.subjectCount != null ? String(row.subjectCount) : "\u2014";
   };
@@ -628,7 +594,7 @@ function DomainTable({
                     <span className="text-muted-foreground">
                       {row.keyFindings ? " · " : ""}
                       {row.contextNote}
-                      {(row.code.toLowerCase() === "ds" || row.code.toLowerCase() === "bw" || row.code.toLowerCase() === "om") && (
+                      {(row.code.toLowerCase() === "ds" || row.code.toLowerCase() === "om") && (
                         <button
                           className="ml-1 text-primary hover:underline"
                           onClick={() => {
@@ -771,6 +737,19 @@ function DetailsTab({
   const { excludedSubjects } = useScheduledOnly();
   const [organWeightMethod, setOrganWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
   const { effectSize: effectSizeMethod } = useStatMethods(studyId);
+
+  // Fetch TF domain records for tumor type summary (tiny payload — typically <50 records)
+  const hasTfDomain = domainData?.some(d => d.name.toLowerCase() === "tf") ?? false;
+  const { data: tfDomainData } = useQuery({
+    queryKey: ["domainData", studyId, "tf", 1, 1000],
+    queryFn: () => fetchDomainData(studyId, "tf", 1, 1000),
+    enabled: hasTfDomain,
+    staleTime: 5 * 60 * 1000,
+  });
+  const tfTypeSummary = useMemo(
+    () => tfDomainData?.rows ? buildTfTypeSummary(tfDomainData.rows) : null,
+    [tfDomainData],
+  );
 
   // Normalization engine — cache-only on study details (no backend fetch).
   // Data appears once the user visits the findings view.
@@ -1065,7 +1044,7 @@ function DetailsTab({
 
       {/* ── Domain summary table ─────────────────────────── */}
       <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen>
-        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)} />
+        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)} tfTypeSummary={tfTypeSummary} />
       </CollapsiblePane>
 
       {/* ── Data quality + Interpretation context (side by side) ── */}
