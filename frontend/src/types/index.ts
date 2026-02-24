@@ -61,6 +61,7 @@ export interface StudyMetadata {
   age_unit: string | null;             // AGEU — e.g., "WEEKS"
   sex_population: string | null;       // SEXPOP — e.g., "BOTH"
   supplier: string | null;             // SPLRNAM
+  pipeline_stage: string | null;      // "submitted" | "pre_submission" | "ongoing" | "planned"
   domain_count: number;
   domains: string[];
   dose_groups: DoseGroup[] | null;

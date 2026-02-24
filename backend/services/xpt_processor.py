@@ -247,6 +247,7 @@ def extract_full_ts_metadata(study: StudyInfo) -> StudyMetadata:
         age_unit=g("AGEU"),
         sex_population=g("SEXPOP"),
         supplier=g("SPLRNAM"),
+        pipeline_stage="submitted",  # Real SEND packages are submitted studies
         domain_count=len(study.xpt_files),
         domains=sorted(study.xpt_files.keys()),
         dose_groups=dose_groups_list,
