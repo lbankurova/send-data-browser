@@ -245,6 +245,30 @@ export function fetchCrossAnimalFlags(
   );
 }
 
+export interface StudyMetadataEnriched {
+  species: string | null;
+  strain: string | null;
+  route: string | null;
+  study_start: string | null;
+  study_end: string | null;
+  study_type: string | null;
+  study_design: string | null;
+  vehicle: string | null;
+  sponsor: string | null;
+  test_article: string | null;
+  last_dosing_day: number | null;
+  auto_detected_last_dosing_day: number | null;
+  last_dosing_day_override: number | null;
+}
+
+export function fetchStudyMetadataEnriched(
+  studyId: string,
+): Promise<StudyMetadataEnriched> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/study-metadata-enriched`,
+  );
+}
+
 export function fetchStaticChart(
   studyId: string,
   chartName: string

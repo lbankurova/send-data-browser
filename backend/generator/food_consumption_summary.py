@@ -540,11 +540,19 @@ def _get_high_dose_pct(findings: list[dict]) -> float | None:
     return None
 
 
-def _get_epoch_boundaries(study: StudyInfo) -> dict:
+def _get_epoch_boundaries(
+    study: StudyInfo,
+    last_dosing_day_override: int | None = None,
+) -> dict:
     """Derive epoch day boundaries from SE domain, falling back to TE.
+
+    When last_dosing_day_override is provided, it replaces the treatment_end
+    value from auto-detection.
 
     Returns {treatment_end: int, recovery_start: int | None}.
     """
+    result = None
+
     # Try SE first — per-subject element dates are the most precise source
     if "se" in study.xpt_files and "dm" in study.xpt_files:
         try:
@@ -568,12 +576,12 @@ def _get_epoch_boundaries(study: StudyInfo) -> dict:
                 recovery_start = int(rec["start_day"].min()) if not rec.empty else None
 
                 if treatment_end is not None:
-                    return {"treatment_end": treatment_end, "recovery_start": recovery_start}
+                    result = {"treatment_end": treatment_end, "recovery_start": recovery_start}
         except Exception:
             pass
 
     # Fallback: TE domain (planned durations)
-    if "te" in study.xpt_files:
+    if result is None and "te" in study.xpt_files:
         try:
             te_df, _ = read_xpt(study.xpt_files["te"])
             te_df.columns = [c.upper() for c in te_df.columns]
@@ -591,20 +599,31 @@ def _get_epoch_boundaries(study: StudyInfo) -> dict:
                         if treatment_days is None or days > treatment_days:
                             treatment_days = days
                 if treatment_days:
-                    return {"treatment_end": treatment_days, "recovery_start": None}
+                    result = {"treatment_end": treatment_days, "recovery_start": None}
         except Exception:
             pass
 
-    return {"treatment_end": 91, "recovery_start": None}
+    if result is None:
+        result = {"treatment_end": 91, "recovery_start": None}
+
+    # Apply override if provided — replaces treatment_end from any detection method
+    if last_dosing_day_override is not None:
+        result["treatment_end"] = last_dosing_day_override
+
+    return result
 
 
-def _label_periods(periods: list[dict], study: StudyInfo) -> None:
+def _label_periods(
+    periods: list[dict],
+    study: StudyInfo,
+    last_dosing_day_override: int | None = None,
+) -> None:
     """Add epoch and label keys to each period dict in-place.
 
     Uses SE domain for epoch boundaries (treatment_end, recovery_start),
     falling back to TE durations.
     """
-    bounds = _get_epoch_boundaries(study)
+    bounds = _get_epoch_boundaries(study, last_dosing_day_override=last_dosing_day_override)
     treatment_end = bounds["treatment_end"]
     recovery_start = bounds.get("recovery_start")
 
@@ -710,6 +729,7 @@ def build_food_consumption_summary_with_subjects(
     findings: list[dict],
     study: StudyInfo,
     early_death_subjects: dict[str, str] | None = None,
+    last_dosing_day_override: int | None = None,
 ) -> dict:
     """Full pipeline version: builds dose groups internally, merges subjects,
     then delegates to build_food_consumption_summary.
@@ -719,6 +739,9 @@ def build_food_consumption_summary_with_subjects(
     When early_death_subjects is provided, those subjects are excluded from
     period computation so moribund sacrifices don't create spurious
     single-subject periods.
+
+    When last_dosing_day_override is provided, it replaces the auto-detected
+    treatment end in epoch boundary detection.
     """
     from services.analysis.dose_groups import build_dose_groups
 
@@ -782,7 +805,7 @@ def build_food_consumption_summary_with_subjects(
     periods = _compute_periods(fw_food, bw_df)
 
     # Label periods with epoch names from TE domain
-    _label_periods(periods, study)
+    _label_periods(periods, study, last_dosing_day_override=last_dosing_day_override)
 
     # Overall assessment
     overall = _compute_overall_assessment(fw_findings, bw_findings, periods)
