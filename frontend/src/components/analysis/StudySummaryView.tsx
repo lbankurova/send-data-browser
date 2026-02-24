@@ -3,7 +3,6 @@ import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, FileText, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
@@ -440,6 +439,7 @@ function DomainTable({
   normBwG,
   effectSizeSymbol,
   tfTypeSummary,
+  interpretationNotes,
 }: {
   studyId: string;
   domains: { name: string; label: string; row_count: number; subject_count?: number | null }[];
@@ -451,27 +451,36 @@ function DomainTable({
   normBwG: number;
   effectSizeSymbol: string;
   tfTypeSummary?: TfTypeSummary | null;
+  interpretationNotes: import("@/lib/species-vehicle-context").ContextNote[];
 }) {
   const [showFolded, setShowFolded] = useState(false);
 
   const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
 
   /** Generate decision-context notes for domains where analysis settings matter. */
-  const generateContextNote = (dom: string, _sig: DomainSignalInfo | undefined): string => {
+  const generateContextNote = (dom: string, sig: DomainSignalInfo | undefined): string => {
+    const parts: string[] = [];
+
+    // Domain-specific decision notes
     if (dom === "ds" && mortalityData?.has_mortality) {
       const allDeaths = [...mortalityData.deaths, ...mortalityData.accidentals];
       const deathsExcluded = allDeaths.filter(d => excludedSubjects.has(d.USUBJID)).length;
-      if (deathsExcluded > 0) return `${deathsExcluded} excluded from terminal stats. Confirm selection in Context Panel`;
-      return "";
+      if (deathsExcluded > 0) parts.push(`${deathsExcluded} excluded from terminal stats. Confirm selection in Context Panel`);
     }
-    if (dom === "om") {
-      if (normTier >= 2) {
-        const tierLabel = getTierSeverityLabel(normTier);
-        return `BW effect: ${effectSizeSymbol} = ${normBwG.toFixed(2)} (Tier ${normTier} \u2014 ${tierLabel}). Confirm Organ Weight Method selection in Context Panel`;
-      }
-      return "";
+    if (dom === "om" && normTier >= 2) {
+      const tierLabel = getTierSeverityLabel(normTier);
+      parts.push(`BW effect: ${effectSizeSymbol} = ${normBwG.toFixed(2)} (Tier ${normTier} \u2014 ${tierLabel}). Confirm Organ Weight Method selection in Context Panel`);
     }
-    return "";
+
+    // Interpretation context notes scoped to this domain
+    const hasTrSignals = (sig?.trCount ?? 0) > 0;
+    for (const n of interpretationNotes) {
+      if (n.domain !== dom) continue;
+      if (n.requiresSignal && !hasTrSignals) continue;
+      parts.push(n.note);
+    }
+
+    return parts.join(". ");
   };
 
   const rows: DomainTableRow[] = useMemo(() => {
@@ -963,6 +972,17 @@ function DetailsTab({
                     <span>{pkData.dose_proportionality.interpretation ?? "Non-linear dose proportionality detected"}</span>
                   </div>
                 )}
+
+                {/* Study-level interpretation notes (cross-domain) */}
+                {interpretationNotes.filter(n => n.domain === null).map((n, i) => (
+                  <div key={i} className="flex items-start gap-1">
+                    {n.severity === "caution"
+                      ? <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0 text-amber-500" />
+                      : <Info className="mt-0.5 h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+                    }
+                    <span>{n.category}: {n.note}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -1013,15 +1033,12 @@ function DetailsTab({
 
       {/* ── Domain summary table ─────────────────────────── */}
       <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen>
-        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)} tfTypeSummary={tfTypeSummary} />
+        <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)} tfTypeSummary={tfTypeSummary} interpretationNotes={interpretationNotes} />
       </CollapsiblePane>
 
       {/* ── Data quality + Interpretation context (side by side) ── */}
       <CollapsiblePane title="Data quality" defaultOpen>
-        <div className={cn(
-          "grid grid-cols-1 gap-6",
-          interpretationNotes.length > 0 && "xl:grid-cols-2"
-        )}>
+        <div>
         {/* ── Data quality ─────────────────────────────────── */}
         <div>
           {/* Domain completeness — three-tier layout */}
@@ -1131,28 +1148,6 @@ function DetailsTab({
           )}
         </div>
 
-        {/* ── Interpretation context ────────────────────────── */}
-        {interpretationNotes.length > 0 && (
-          <div>
-            <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Interpretation context
-            </h3>
-            <div className="space-y-1 text-[10px]">
-              {interpretationNotes.map((n, i) => (
-                <div key={i} className="flex items-start gap-1.5">
-                  {n.severity === "caution"
-                    ? <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
-                    : <Info className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
-                  }
-                  <div>
-                    <span className="font-medium text-muted-foreground">{n.category}:</span>{" "}
-                    <span className="text-foreground">{n.note}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         </div>
       </CollapsiblePane>
       </div>
