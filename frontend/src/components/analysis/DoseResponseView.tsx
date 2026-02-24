@@ -54,7 +54,7 @@ import type { DoseResponseRow, RuleResult, SignalSummaryRow, NoaelSummaryRow } f
 import type { TimecourseResponse } from "@/types/timecourse";
 import type { ToxFinding } from "@/types/annotations";
 import { useStatMethods } from "@/hooks/useStatMethods";
-import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
+import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -674,7 +674,7 @@ export function DoseResponseView() {
               </span>
               {selectedSummary.max_effect_size != null && (
                 <span>
-                  <span className="text-muted-foreground">Max |d|: </span>
+                  <span className="text-muted-foreground">Max |{getEffectSizeSymbol(statMethods.effectSize)}|: </span>
                   <span className={cn(
                     "font-mono",
                     selectedSummary.max_effect_size >= 0.8
@@ -780,6 +780,7 @@ export function DoseResponseView() {
               signalSummary={signalSummary}
               onSelectEndpoint={selectEndpoint}
               effectSizeLabel={getEffectSizeLabel(statMethods.effectSize)}
+              effectSizeSymbol={getEffectSizeSymbol(statMethods.effectSize)}
             />
           )}
         </div>
@@ -959,7 +960,7 @@ function ChartOverviewContent({
               Effect size ({getEffectSizeLabel(chartStatMethods.effectSize)})
             </div>
             <EChartsWrapper
-              option={buildEffectSizeBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels)}
+              option={buildEffectSizeBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, getEffectSizeSymbol(chartStatMethods.effectSize))}
               style={{ width: "100%", height: 220 }}
             />
             {/* Legend — effect size */}
@@ -1843,9 +1844,10 @@ interface HypothesesTabProps {
   signalSummary: SignalSummaryRow[];
   onSelectEndpoint?: (label: string) => void;
   effectSizeLabel?: string;
+  effectSizeSymbol?: string;
 }
 
-function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSummaries, studyId, ruleResults, signalSummary, onSelectEndpoint, effectSizeLabel }: HypothesesTabProps) {
+function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSummaries, studyId, ruleResults, signalSummary, onSelectEndpoint, effectSizeLabel, effectSizeSymbol = "d" }: HypothesesTabProps) {
   const [intent, setIntent] = useState<HypothesisIntent>("shape");
   const [favorites, setFavorites] = useState<HypothesisIntent[]>(DEFAULT_FAVORITES);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -2024,7 +2026,7 @@ function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSumma
         )}
         {intent === "model" && <ModelPlaceholder />}
         {intent === "pareto" && (
-          <VolcanoScatter endpointSummaries={endpointSummaries} selectedEndpoint={selectedEndpoint} onSelectEndpoint={onSelectEndpoint} effectSizeLabel={effectSizeLabel} />
+          <VolcanoScatter endpointSummaries={endpointSummaries} selectedEndpoint={selectedEndpoint} onSelectEndpoint={onSelectEndpoint} effectSizeLabel={effectSizeLabel} effectSizeSymbol={effectSizeSymbol} />
         )}
         {intent === "correlation" && <CorrelationPlaceholder />}
         {intent === "outliers" && (
@@ -2037,6 +2039,7 @@ function HypothesesTabContent({ selectedEndpoint, selectedSummary, endpointSumma
             selectedSummary={selectedSummary}
             ruleResults={ruleResults}
             signalSummary={signalSummary}
+            effectSizeSymbol={effectSizeSymbol}
           />
         )}
       </div>
@@ -2172,11 +2175,13 @@ function VolcanoScatter({
   selectedEndpoint,
   onSelectEndpoint,
   effectSizeLabel = "Hedges' g",
+  effectSizeSymbol = "g",
 }: {
   endpointSummaries: EndpointSummary[];
   selectedEndpoint: string | null;
   onSelectEndpoint?: (label: string) => void;
   effectSizeLabel?: string;
+  effectSizeSymbol?: string;
 }) {
   const points = useMemo<VolcanoPoint[]>(() => {
     return endpointSummaries
@@ -2218,7 +2223,7 @@ function VolcanoScatter({
       </div>
 
       <EChartsWrapper
-        option={buildVolcanoScatterOption(points, selectedEndpoint, organSystems, effectSizeLabel)}
+        option={buildVolcanoScatterOption(points, selectedEndpoint, organSystems, effectSizeLabel, effectSizeSymbol)}
         style={{ width: "100%", height: 260 }}
         onClick={(params) => {
           if (params.name && onSelectEndpoint) {
@@ -2376,7 +2381,7 @@ function computeBiologicalGradient(ep: EndpointSummary): { level: 0 | 1 | 2 | 3 
   return { level: base as 0 | 1 | 2 | 3 | 4 | 5, evidence: `${patternLabel}${trendText}` };
 }
 
-function computeStrength(ep: EndpointSummary): { level: 0 | 1 | 2 | 3 | 4 | 5; evidence: string } {
+function computeStrength(ep: EndpointSummary, esSymbol = "d"): { level: 0 | 1 | 2 | 3 | 4 | 5; evidence: string } {
   const d = ep.max_effect_size != null ? Math.abs(ep.max_effect_size) : 0;
   let level: 0 | 1 | 2 | 3 | 4 | 5;
   if (d >= 1.2) level = 5;
@@ -2386,7 +2391,7 @@ function computeStrength(ep: EndpointSummary): { level: 0 | 1 | 2 | 3 | 4 | 5; e
   else level = 1;
 
   const pText = ep.min_p_value != null ? ` · p ${ep.min_p_value < 0.001 ? "< 0.001" : `= ${ep.min_p_value.toFixed(3)}`}` : "";
-  return { level, evidence: `|d| = ${d.toFixed(2)}${pText}` };
+  return { level, evidence: `|${esSymbol}| = ${d.toFixed(2)}${pText}` };
 }
 
 function computeConsistency(ep: EndpointSummary): { level: 0 | 1 | 2 | 3 | 4 | 5; evidence: string } {
@@ -2441,12 +2446,14 @@ function CausalityWorksheet({
   selectedSummary,
   ruleResults,
   signalSummary,
+  effectSizeSymbol = "d",
 }: {
   studyId: string | undefined;
   selectedEndpoint: string | null;
   selectedSummary: EndpointSummary | null;
   ruleResults: RuleResult[];
   signalSummary: SignalSummaryRow[];
+  effectSizeSymbol?: string;
 }) {
   // Load saved annotations for this study
   const { data: savedAnnotations } = useAnnotations<CausalAssessment>(studyId, "causal-assessment");
@@ -2501,7 +2508,7 @@ function CausalityWorksheet({
 
   // Compute auto-populated criteria
   const gradient = computeBiologicalGradient(selectedSummary);
-  const strength = computeStrength(selectedSummary);
+  const strength = computeStrength(selectedSummary, effectSizeSymbol);
   const consistency = computeConsistency(selectedSummary);
   const specificity = computeSpecificity(selectedSummary, signalSummary);
   const coherence = computeCoherence(selectedSummary, ruleResults);
