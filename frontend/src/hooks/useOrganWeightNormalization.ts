@@ -57,7 +57,7 @@ function toTriplets(stats: GroupStat[]): GroupStatsTriplet[] {
  *
  * Ties: latest day first, then males (larger absolute BW effects).
  */
-function extractBwGroupStats(findings: UnifiedFinding[]): GroupStatsTriplet[] {
+export function extractBwGroupStats(findings: UnifiedFinding[]): GroupStatsTriplet[] {
   // BW domain findings, exclude day 1 (pre-dose)
   const bwFindings = findings.filter(
     f => f.domain === "BW" && f.data_type === "continuous" && (f.day ?? 0) > 1,

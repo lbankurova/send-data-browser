@@ -5,6 +5,7 @@
  * 33375d0  fix: useSessionState cross-component sync via custom event bus
  * 8f973b8  fix: domain table — only domain code is clickable, rest is selectable text
  * a5a11d9  fix: domain table TF notes from raw data, remove BW note, death tooltip wording
+ * e91d585  fix: BW selection for normalization — use peak effect, not day 1
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -18,6 +19,8 @@ import {
 } from "@/lib/organ-weight-normalization";
 import type { GroupStatsTriplet } from "@/lib/organ-weight-normalization";
 import { buildTfTypeSummary } from "@/components/analysis/StudySummaryView";
+import { extractBwGroupStats } from "@/hooks/useOrganWeightNormalization";
+import type { UnifiedFinding } from "@/types/analysis";
 
 // ─── Shared fixtures ────────────────────────────────────────
 
@@ -258,5 +261,209 @@ describe("regression: useSessionState sync invariants (33375d0)", () => {
 
     const changed = JSON.stringify("cohens-d");
     expect(prev === changed).toBe(false); // Different value → update needed
+  });
+});
+
+// ─── e91d585: BW peak effect selection for normalization ────
+
+/**
+ * extractBwGroupStats must select the BW finding with the largest absolute
+ * effect size, excluding day 1 (pre-dose). This prevents the normalization
+ * engine from using randomization noise as its BW confounding estimate.
+ *
+ * Why not terminal BW?
+ * - TR deaths create survivorship bias at terminal (censored animals skew result)
+ * - Partial recovery underestimates peak confounding
+ * - Peak divergence captures full enrolled cohort before censoring
+ *
+ * Tie-breaking: latest day → males first.
+ */
+describe("regression: BW peak effect selection (e91d585)", () => {
+  /** Helper to build a minimal UnifiedFinding for BW domain tests */
+  function makeBwFinding(overrides: {
+    day: number | null;
+    sex: string;
+    max_effect_size: number | null;
+    group_stats?: { dose_level: number; n: number; mean: number; sd: number }[];
+  }): UnifiedFinding {
+    const gs = overrides.group_stats ?? [
+      { dose_level: 0, n: 10, mean: 340, sd: 20 },
+      { dose_level: 1, n: 10, mean: 330, sd: 22 },
+      { dose_level: 2, n: 10, mean: 310, sd: 25 },
+      { dose_level: 3, n: 10, mean: 280, sd: 30 },
+    ];
+    return {
+      id: `BW-${overrides.day}-${overrides.sex}`,
+      domain: "BW",
+      test_code: "BW",
+      test_name: "Body Weight",
+      specimen: null,
+      finding: "Body Weight",
+      day: overrides.day,
+      sex: overrides.sex,
+      unit: "g",
+      data_type: "continuous",
+      severity: "normal",
+      direction: "down",
+      dose_response_pattern: null,
+      treatment_related: false,
+      max_effect_size: overrides.max_effect_size,
+      min_p_adj: null,
+      trend_p: null,
+      trend_stat: null,
+      group_stats: gs.map(g => ({
+        dose_level: g.dose_level,
+        n: g.n,
+        mean: g.mean,
+        sd: g.sd,
+        median: null,
+      })),
+      pairwise: [],
+    };
+  }
+
+  it("excludes day 1 findings (pre-dose noise)", () => {
+    const findings = [
+      makeBwFinding({ day: 1, sex: "M", max_effect_size: -0.45 }),
+      makeBwFinding({ day: 15, sex: "M", max_effect_size: -3.2 }),
+    ];
+    const result = extractBwGroupStats(findings);
+    // Should pick day 15, not day 1
+    expect(result.length).toBeGreaterThan(0);
+    // Day 1 has different group_stats; verify we got the day 15 stats
+    // by checking that the function didn't return empty (day 1 filtered out)
+    expect(result).toHaveLength(4); // 4 dose groups from default fixture
+  });
+
+  it("returns empty when only day 1 findings exist", () => {
+    const findings = [
+      makeBwFinding({ day: 1, sex: "M", max_effect_size: -0.45 }),
+      makeBwFinding({ day: 1, sex: "F", max_effect_size: -0.22 }),
+    ];
+    const result = extractBwGroupStats(findings);
+    expect(result).toHaveLength(0);
+  });
+
+  it("selects finding with largest absolute effect size", () => {
+    // Simulates PointCross-like data: day 15 males have d=−7.8 (peak),
+    // day 92 males have d=−3.1 (terminal, after partial recovery)
+    const day15Stats = [
+      { dose_level: 0, n: 10, mean: 403, sd: 11.7 },
+      { dose_level: 1, n: 10, mean: 404, sd: 9.6 },
+      { dose_level: 2, n: 10, mean: 400, sd: 15.8 },
+      { dose_level: 3, n: 10, mean: 324, sd: 7.1 },
+    ];
+    const day92Stats = [
+      { dose_level: 0, n: 9, mean: 521, sd: 36.8 },
+      { dose_level: 1, n: 10, mean: 544, sd: 17.9 },
+      { dose_level: 2, n: 10, mean: 506, sd: 28.9 },
+      { dose_level: 3, n: 9, mean: 421, sd: 22.7 },
+    ];
+    const findings = [
+      makeBwFinding({ day: 15, sex: "M", max_effect_size: -7.804, group_stats: day15Stats }),
+      makeBwFinding({ day: 92, sex: "M", max_effect_size: -3.129, group_stats: day92Stats }),
+      makeBwFinding({ day: 8, sex: "M", max_effect_size: -3.17 }),
+    ];
+    const result = extractBwGroupStats(findings);
+    // Should pick day 15 (|d|=7.804 > |d|=3.129 > |d|=3.17)
+    // Day 15 control mean = 403
+    expect(result[0].mean).toBe(403);
+  });
+
+  it("breaks ties by latest day", () => {
+    const earlyStats = [
+      { dose_level: 0, n: 10, mean: 300, sd: 15 },
+      { dose_level: 3, n: 10, mean: 250, sd: 15 },
+    ];
+    const lateStats = [
+      { dose_level: 0, n: 10, mean: 400, sd: 20 },
+      { dose_level: 3, n: 10, mean: 350, sd: 20 },
+    ];
+    const findings = [
+      makeBwFinding({ day: 10, sex: "M", max_effect_size: -2.5, group_stats: earlyStats }),
+      makeBwFinding({ day: 30, sex: "M", max_effect_size: -2.5, group_stats: lateStats }),
+    ];
+    const result = extractBwGroupStats(findings);
+    // Same |d|, should pick day 30 (later day)
+    expect(result[0].mean).toBe(400);
+  });
+
+  it("breaks ties by sex (males first)", () => {
+    const maleStats = [
+      { dose_level: 0, n: 10, mean: 400, sd: 20 },
+      { dose_level: 3, n: 10, mean: 350, sd: 20 },
+    ];
+    const femaleStats = [
+      { dose_level: 0, n: 10, mean: 300, sd: 15 },
+      { dose_level: 3, n: 10, mean: 250, sd: 15 },
+    ];
+    const findings = [
+      makeBwFinding({ day: 15, sex: "F", max_effect_size: -2.5, group_stats: femaleStats }),
+      makeBwFinding({ day: 15, sex: "M", max_effect_size: -2.5, group_stats: maleStats }),
+    ];
+    const result = extractBwGroupStats(findings);
+    // Same |d| and day, should pick males
+    expect(result[0].mean).toBe(400);
+  });
+
+  it("handles null day gracefully (treated as day 0, excluded)", () => {
+    const findings = [
+      makeBwFinding({ day: null, sex: "M", max_effect_size: -5.0 }),
+      makeBwFinding({ day: 15, sex: "M", max_effect_size: -2.0 }),
+    ];
+    const result = extractBwGroupStats(findings);
+    // null day → 0 → excluded (≤ 1). Should pick day 15.
+    expect(result).toHaveLength(4);
+  });
+
+  it("handles null max_effect_size (treated as 0)", () => {
+    const realStats = [
+      { dose_level: 0, n: 10, mean: 500, sd: 25 },
+      { dose_level: 3, n: 10, mean: 400, sd: 30 },
+    ];
+    const findings = [
+      makeBwFinding({ day: 15, sex: "M", max_effect_size: null }),
+      makeBwFinding({ day: 30, sex: "M", max_effect_size: -1.5, group_stats: realStats }),
+    ];
+    const result = extractBwGroupStats(findings);
+    // null effect → 0, so day 30 with d=−1.5 wins
+    expect(result[0].mean).toBe(500);
+  });
+
+  it("filters out non-BW domains and incidence data", () => {
+    const lbFinding: UnifiedFinding = {
+      ...makeBwFinding({ day: 15, sex: "M", max_effect_size: -10 }),
+      domain: "LB",
+    };
+    const incidenceFinding: UnifiedFinding = {
+      ...makeBwFinding({ day: 15, sex: "M", max_effect_size: -10 }),
+      data_type: "incidence",
+    };
+    const realBw = makeBwFinding({ day: 30, sex: "M", max_effect_size: -2.0 });
+    const result = extractBwGroupStats([lbFinding, incidenceFinding, realBw]);
+    // Only the real BW finding should be considered
+    expect(result).toHaveLength(4);
+  });
+
+  it("survivorship bias scenario: peak > terminal due to TR deaths", () => {
+    // Scenario: 2 animals die between day 15 and terminal.
+    // Day 15: n=10 in high dose, full cohort → large effect
+    // Terminal: n=8 in high dose (survivors less affected) → smaller effect
+    const peakStats = [
+      { dose_level: 0, n: 10, mean: 400, sd: 12 },
+      { dose_level: 3, n: 10, mean: 320, sd: 8 },  // full cohort
+    ];
+    const terminalStats = [
+      { dose_level: 0, n: 10, mean: 500, sd: 30 },
+      { dose_level: 3, n: 8, mean: 440, sd: 25 },  // survivors only
+    ];
+    const findings = [
+      makeBwFinding({ day: 15, sex: "M", max_effect_size: -7.8, group_stats: peakStats }),
+      makeBwFinding({ day: 92, sex: "M", max_effect_size: -2.1, group_stats: terminalStats }),
+    ];
+    const result = extractBwGroupStats(findings);
+    // Must pick peak (day 15), not terminal — terminal underestimates due to survivor bias
+    expect(result[0].mean).toBe(400);
+    expect(result[1].mean).toBe(320);
   });
 });

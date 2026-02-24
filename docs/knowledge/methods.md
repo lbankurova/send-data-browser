@@ -352,9 +352,16 @@ This table documents which statistical test is applied to each endpoint type in 
 
 **Data source:** Reuses `useFindings(studyId)` — BW and OM group_stats already cached by React Query. Zero extra API calls.
 
+**BW timepoint selection (e91d585):** The normalization engine selects the BW finding with the **peak absolute effect size** (max |d|) across all timepoints, **excluding day 1** (pre-dose randomization noise). This differs from the regulatory convention of using terminal BW, for three reasons:
+1. **Survivorship bias:** TR deaths remove the most severely affected animals before terminal sacrifice. Terminal BW is computed on a self-selected subset of survivors, underestimating the true dose-group effect.
+2. **Partial recovery:** If animals partially recover by terminal, the terminal effect size underestimates the peak confounding the organ weight system experienced during treatment.
+3. **Full-cohort signal:** Early/mid-study timepoints capture all enrolled animals before censoring. The peak divergence (e.g., day 15 males d=−7.8 in PointCross) is the most conservative measure of BW confounding for organ weight normalization decisions.
+
+Tie-breaking: latest day first, then males (males typically show larger absolute BW effects and are the conservative pick). Implementation: `extractBwGroupStats()` in `hooks/useOrganWeightNormalization.ts`.
+
 **Integration points:**
-- Study Details: tier-based auto-set replaces simple BW-adverse check; domain table notes show tier + g value.
-- Study Details Context Panel: normalization summary with BW g, tier, brain g, Why? rationale.
+- Study Details: tier-based auto-set replaces simple BW-adverse check; domain table OM note shows tier + g value.
+- Study Details Context Panel: normalization summary with tier-specific guidance (Tier 2: caution, Tier 3: brain auto-selected, Tier 4: ANCOVA recommended).
 - Findings View: OrganContextPanel pane, FindingsContextPanel OM annotation.
 - Syndrome Engine: `getSyndromeTermReport` adds normalization annotation for OM terms; `computeAdversity` uses B-7 BW confounding factor.
 
