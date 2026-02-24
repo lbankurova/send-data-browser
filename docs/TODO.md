@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 3 | 5 | Spec'd but not implemented |
-| Gap | 13 | 4 | Missing capability, no spec exists |
+| Gap | 14 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **27** | **38** | |
+| **Total open** | **28** | **38** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -208,3 +208,9 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Approach:** Implement an MCP server that exposes Chrome DevTools Protocol actions (navigate, click, read DOM, screenshot). Claude Code connects via MCP tool, enabling ad-hoc integration checks during development without heavyweight E2E infrastructure.
 - **Status:** Open (not critical — unit tests cover math; this catches wiring/interaction bugs)
 - **Owner hint:** infrastructure
+
+### GAP-20: Validate Study Summary right column content by pipeline stage
+- **Files:** `frontend/src/components/analysis/StudySummaryView.tsx` (Zone B — right column of header)
+- **Issue:** The right column now shows Stage, NOAEL, LOAEL, target organs, exposure at NOAEL, HED/MRSD, and dose proportionality. Some of these values may not be available or meaningful at all pipeline stages (e.g., pre-submission studies may not have final NOAEL/LOAEL; ongoing studies have no derived endpoints). Need to audit which fields make sense at each stage and either hide unavailable fields or show placeholders (e.g., "Pending" or "Not yet determined"). Also check whether insights/commentary text in the context panel needs stage-aware phrasing (e.g., "Proposed NOAEL" vs "NOAEL" for pre-submission).
+- **Status:** Open
+- **Owner hint:** ux-designer + frontend-dev
