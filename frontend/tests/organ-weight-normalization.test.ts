@@ -267,8 +267,16 @@ describe("getOrganCorrelationCategory", () => {
     expect(getOrganCorrelationCategory("BRAIN")).toBe(OrganCorrelationCategory.BRAIN);
   });
 
-  it("classifies testes as REPRODUCTIVE", () => {
-    expect(getOrganCorrelationCategory("TESTES")).toBe(OrganCorrelationCategory.REPRODUCTIVE);
+  it("classifies testes as GONADAL", () => {
+    expect(getOrganCorrelationCategory("TESTES")).toBe(OrganCorrelationCategory.GONADAL);
+  });
+
+  it("classifies prostate as ANDROGEN_DEPENDENT", () => {
+    expect(getOrganCorrelationCategory("PROSTATE")).toBe(OrganCorrelationCategory.ANDROGEN_DEPENDENT);
+  });
+
+  it("classifies ovary as FEMALE_REPRODUCTIVE", () => {
+    expect(getOrganCorrelationCategory("OVARY")).toBe(OrganCorrelationCategory.FEMALE_REPRODUCTIVE);
   });
 
   it("defaults unknown organs to MODERATE_BW", () => {
@@ -687,5 +695,135 @@ describe("buildNormalizationRationale", () => {
     const r = buildNormalizationRationale(4, null);
     expect(r).toContain("brain weight not collected");
     expect(r).toContain("ratio to BW retained as fallback");
+  });
+});
+
+// ─── decideNormalization — reproductive organs ──────────────
+
+describe("decideNormalization — reproductive organs", () => {
+  // GONADAL
+  it("testes + BW decreased (bwG=1.5) → absolute, warning about artifactual BW-ratio", () => {
+    const d = decideNormalization(1.5, 0.1, "TESTES", "RAT_SPRAGUE_DAWLEY", null);
+    expect(d.mode).toBe("absolute");
+    expect(d.confidence).toBe("high");
+    expect(d.showAlternatives).toBe(false);
+    expect(d.brainAffected).toBe(false);
+    expect(d.warnings.some(w => w.includes("artifactual"))).toBe(true);
+  });
+
+  it("testes + BW unchanged (bwG=0.2) → absolute, no BW-related warning", () => {
+    const d = decideNormalization(0.2, 0.1, "TESTES", "RAT_SPRAGUE_DAWLEY", null);
+    expect(d.mode).toBe("absolute");
+    expect(d.confidence).toBe("high");
+    expect(d.warnings.some(w => w.includes("artifactual"))).toBe(false);
+  });
+
+  it("testes + BW and testes both decreased → absolute, both independent signals", () => {
+    const d = decideNormalization(1.8, 0.1, "TESTIS", "RAT_SPRAGUE_DAWLEY", null);
+    expect(d.mode).toBe("absolute");
+    expect(d.rationale.some(r => r.includes("body-weight-spared"))).toBe(true);
+  });
+
+  // ANDROGEN_DEPENDENT
+  it("prostate + BW unchanged → absolute, hormonal context warning", () => {
+    const d = decideNormalization(0.3, 0.1, "PROSTATE", "RAT_SPRAGUE_DAWLEY", null);
+    expect(d.mode).toBe("absolute");
+    expect(d.confidence).toBe("high");
+    expect(d.warnings.some(w => w.includes("testosterone/LH"))).toBe(true);
+  });
+
+  it("seminal vesicle + BW decreased → absolute, hormonal warning present", () => {
+    const d = decideNormalization(1.3, 0.1, "SEMVES", "RAT_SPRAGUE_DAWLEY", null);
+    expect(d.mode).toBe("absolute");
+    expect(d.warnings.some(w => w.includes("testosterone/LH"))).toBe(true);
+    expect(d.rationale.some(r => r.includes("androgen-dependent"))).toBe(true);
+  });
+
+  // Brain interaction
+  it("testes + brain affected (brainG tier 3) → still absolute (NOT ancova)", () => {
+    const d = decideNormalization(1.5, 1.2, "TESTES", "RAT_SPRAGUE_DAWLEY", null);
+    expect(d.mode).toBe("absolute");
+    expect(d.brainAffected).toBe(false);
+  });
+
+  // FEMALE_REPRODUCTIVE
+  it("ovary + brain unaffected → brain_weight, confidence low, cycle warning", () => {
+    const d = decideNormalization(0.8, 0.2, "OVARY", "RAT_SPRAGUE_DAWLEY", null);
+    expect(d.mode).toBe("brain_weight");
+    expect(d.confidence).toBe("low");
+    expect(d.showAlternatives).toBe(true);
+    expect(d.warnings.some(w => w.includes("Estrous cycle"))).toBe(true);
+  });
+
+  it("ovary + brain affected → absolute, confidence low", () => {
+    const d = decideNormalization(1.5, 1.2, "OVARIES", "RAT_SPRAGUE_DAWLEY", null);
+    expect(d.mode).toBe("absolute");
+    expect(d.confidence).toBe("low");
+    expect(d.brainAffected).toBe(true);
+  });
+
+  it("uterus any scenario → absolute, confidence low", () => {
+    const d = decideNormalization(0.5, 0.1, "UTERUS", "RAT_SPRAGUE_DAWLEY", null);
+    expect(d.mode).toBe("absolute");
+    expect(d.confidence).toBe("low");
+    expect(d.showAlternatives).toBe(true);
+  });
+
+  it("FEMALE_REPRODUCTIVE always showAlternatives true", () => {
+    const ovary = decideNormalization(0.2, 0.1, "OVARY", "RAT_SPRAGUE_DAWLEY", null);
+    const uterus = decideNormalization(1.5, 0.1, "UTERUS", "RAT_SPRAGUE_DAWLEY", null);
+    expect(ovary.showAlternatives).toBe(true);
+    expect(uterus.showAlternatives).toBe(true);
+  });
+});
+
+// ─── assessSecondaryToBodyWeight — reproductive overrides ───
+
+describe("assessSecondaryToBodyWeight — reproductive overrides", () => {
+  it("testes at tier 3 → isSecondary false (never secondary-to-BW)", () => {
+    const ctx: NormalizationContext = {
+      organ: "TESTES", setcd: "3", activeMode: "absolute", tier: 3,
+      bwG: 1.3, brainG: 0.1, brainAffected: false,
+      effectDecomposition: null, rationale: [], warnings: [], userOverridden: false,
+    };
+    const r = assessSecondaryToBodyWeight(ctx);
+    expect(r.isSecondary).toBe(false);
+    expect(r.confidence).toBe("high");
+    expect(r.rationale).toContain("never secondary to BW.");
+  });
+
+  it("prostate at tier 3 → isSecondary false, rationale mentions androgen/stress", () => {
+    const ctx: NormalizationContext = {
+      organ: "PROSTATE", setcd: "3", activeMode: "absolute", tier: 3,
+      bwG: 1.5, brainG: 0.1, brainAffected: false,
+      effectDecomposition: null, rationale: [], warnings: [], userOverridden: false,
+    };
+    const r = assessSecondaryToBodyWeight(ctx);
+    expect(r.isSecondary).toBe(false);
+    expect(r.confidence).toBe("medium");
+    expect(r.rationale).toContain("stress-mediated HPG disruption");
+  });
+
+  it("ovary at tier 3 → isSecondary false, confidence low", () => {
+    const ctx: NormalizationContext = {
+      organ: "OVARY", setcd: "3", activeMode: "absolute", tier: 3,
+      bwG: 1.3, brainG: 0.1, brainAffected: false,
+      effectDecomposition: null, rationale: [], warnings: [], userOverridden: false,
+    };
+    const r = assessSecondaryToBodyWeight(ctx);
+    expect(r.isSecondary).toBe(false);
+    expect(r.confidence).toBe("low");
+    expect(r.rationale).toContain("estrous cycle variability");
+  });
+
+  it("non-reproductive organ at tier 3 → unchanged behavior (isSecondary true, low confidence)", () => {
+    const ctx: NormalizationContext = {
+      organ: "KIDNEY", setcd: "3", activeMode: "brain_weight", tier: 3,
+      bwG: 1.3, brainG: 0.1, brainAffected: false,
+      effectDecomposition: null, rationale: [], warnings: [], userOverridden: false,
+    };
+    const r = assessSecondaryToBodyWeight(ctx);
+    expect(r.isSecondary).toBe(true);
+    expect(r.confidence).toBe("low");
   });
 });
