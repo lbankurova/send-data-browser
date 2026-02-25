@@ -67,6 +67,7 @@ class StudyMetadata(BaseModel):
     pipeline_stage: str | None = None          # "submitted" | "pre_submission" | "ongoing" | "planned"
     domain_count: int = 0
     domains: list[str] = []
+    has_estrous_data: bool = False            # True if FE/EO/RE domain XPT present
     dose_groups: list[DoseGroupSchema] | None = None
 
 

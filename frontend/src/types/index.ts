@@ -64,6 +64,7 @@ export interface StudyMetadata {
   pipeline_stage: string | null;      // "submitted" | "pre_submission" | "ongoing" | "planned"
   domain_count: number;
   domains: string[];
+  has_estrous_data: boolean;
   dose_groups: DoseGroup[] | null;
 }
 

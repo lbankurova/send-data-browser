@@ -123,8 +123,8 @@ describe("Phase 1: v0.2.0 threshold corrections", () => {
     expect(checkMagnitudeFloor(food, "FW")).not.toBeNull(); // g=0.3 < 0.5, FC-1=0.08 < 0.10 → blocked
   });
 
-  test("organ weight subclasses: reproductive 5%, general 10%, immune 10%", () => {
-    // Reproductive organ (testis) — FC-1=0.06 ≥ 0.05 → passes
+  test("organ weight subclasses: gonadal 5%, general 10%, immune 10%", () => {
+    // Gonadal organ (testis) — FC-1=0.06 ≥ 0.05 → passes
     const testis = ep({
       testCode: "WEIGHT", endpoint_label: "TESTIS — TESTIS (WEIGHT)",
       maxEffectSize: 0.5, maxFoldChange: 0.94, direction: "down",
@@ -144,6 +144,63 @@ describe("Phase 1: v0.2.0 threshold corrections", () => {
       maxEffectSize: 0.5, maxFoldChange: 0.94, direction: "down",
     });
     expect(checkMagnitudeFloor(thymus, "OM")).not.toBeNull();
+  });
+
+  test("prostate floor: g=1.0, fcDelta=0.10 (higher CV organs)", () => {
+    // g=0.9 < 1.0 AND FC-1=0.08 < 0.10 → blocked
+    const prostate = ep({
+      testCode: "WEIGHT", endpoint_label: "PROSTATE — PROSTATE (WEIGHT)",
+      maxEffectSize: 0.9, maxFoldChange: 0.92, direction: "down",
+    });
+    expect(checkMagnitudeFloor(prostate, "OM")).not.toBeNull();
+
+    // g=1.1 ≥ 1.0 → passes
+    const prostate2 = ep({
+      testCode: "WEIGHT", endpoint_label: "PROSTATE — PROSTATE (WEIGHT)",
+      maxEffectSize: 1.1, maxFoldChange: 0.92, direction: "down",
+    });
+    expect(checkMagnitudeFloor(prostate2, "OM")).toBeNull();
+  });
+
+  test("ovary floor: g=1.5, fcDelta=0.15 (high variability)", () => {
+    // g=1.2 < 1.5 AND FC-1=0.12 < 0.15 → blocked
+    const ovary = ep({
+      testCode: "WEIGHT", endpoint_label: "OVARY — OVARY (WEIGHT)",
+      maxEffectSize: 1.2, maxFoldChange: 0.88, direction: "down",
+    });
+    expect(checkMagnitudeFloor(ovary, "OM")).not.toBeNull();
+
+    // g=1.6 ≥ 1.5 → passes
+    const ovary2 = ep({
+      testCode: "WEIGHT", endpoint_label: "OVARY — OVARY (WEIGHT)",
+      maxEffectSize: 1.6, maxFoldChange: 0.88, direction: "down",
+    });
+    expect(checkMagnitudeFloor(ovary2, "OM")).toBeNull();
+  });
+
+  test("uterus floor: g=1.5, fcDelta=0.15 (cycle-dominated variability)", () => {
+    // g=1.4 < 1.5 AND FC-1=0.10 < 0.15 → blocked
+    const uterus = ep({
+      testCode: "WEIGHT", endpoint_label: "UTERUS — UTERUS (WEIGHT)",
+      maxEffectSize: 1.4, maxFoldChange: 0.90, direction: "down",
+    });
+    expect(checkMagnitudeFloor(uterus, "OM")).not.toBeNull();
+
+    // FC-1=0.20 ≥ 0.15 → passes on FC
+    const uterus2 = ep({
+      testCode: "WEIGHT", endpoint_label: "UTERUS — UTERUS (WEIGHT)",
+      maxEffectSize: 1.4, maxFoldChange: 0.80, direction: "down",
+    });
+    expect(checkMagnitudeFloor(uterus2, "OM")).toBeNull();
+  });
+
+  test("seminal vesicles use prostate floor (androgen-dependent)", () => {
+    // g=0.9 < 1.0 AND FC-1=0.08 < 0.10 → blocked (prostate floor)
+    const semves = ep({
+      testCode: "WEIGHT", endpoint_label: "SEMVES — SEMINAL VESICLES (WEIGHT)",
+      maxEffectSize: 0.9, maxFoldChange: 0.92, direction: "down",
+    });
+    expect(checkMagnitudeFloor(semves, "OM")).not.toBeNull();
   });
 
   test("no floor for unknown test codes → passes through", () => {
