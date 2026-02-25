@@ -791,7 +791,7 @@ function DetailsTab({
   const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
   useEffect(() => {
     if (normalization.highestTier >= 3 && organWeightMethod === "absolute") {
-      setOrganWeightMethod("ratio-brain");
+      setOrganWeightMethod(normalization.worstBrainG != null ? "ratio-brain" : "ratio-bw");
       return;
     }
     // Fallback: signal-based auto-set when normalization data not yet cached
@@ -852,8 +852,14 @@ function DetailsTab({
       ? formatDuration(meta.dosing_duration).replace(" weeks", "wk").replace(" days", "d")
       : null;
   const studyTypeLabel = meta.study_type?.toLowerCase().replace(/\btoxicity\b/, "").replace(/\brepeat dose\b/, "repeat-dose").trim() || null;
+  const recDur = studyCtx?.recoveryPeriodDays != null
+    ? (studyCtx.recoveryPeriodDays >= 7
+        ? `${Math.round(studyCtx.recoveryPeriodDays / 7)}wk rec`
+        : `${studyCtx.recoveryPeriodDays}d rec`)
+    : null;
   const routeLabel = meta.route?.toLowerCase() || null;
-  const subtitleParts = [speciesStrain, [durationLabel, studyTypeLabel].filter(Boolean).join(" "), routeLabel].filter((x): x is string => !!x);
+  const designSegment = [[durationLabel, studyTypeLabel].filter(Boolean).join(" "), recDur].filter(Boolean).join(", ") || null;
+  const subtitleParts = [speciesStrain, designSegment, routeLabel].filter((x): x is string => !!x);
 
   // Dose group summary for profile
   const nGroups = doseGroups.filter(dg => !dg.is_recovery).length;
@@ -910,12 +916,8 @@ function DetailsTab({
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* ── Profile block — Identity + Conclusions (frozen header) ── */}
       <section className="shrink-0 border-b px-4 pb-4 pt-4">
-        <div className="flex items-start gap-1.5">
-          {/* Zone A: Study identity (60%) */}
-          <div className="w-[55%] min-w-0">
-            <div className="flex items-baseline gap-1.5 text-sm">
-              <span className="font-semibold">{meta.study_id}</span>
-              <span className="text-xs text-muted-foreground">
+            <div className="flex items-baseline gap-1.5 text-xs font-semibold uppercase tracking-wider">
+              <span>
                 {subtitleParts.map((p, i) => (
                   <span key={i}>
                     {i > 0 && <span className="mx-1.5 text-border">|</span>}
@@ -924,9 +926,19 @@ function DetailsTab({
                 ))}
                 <span className="mx-1.5 text-border">|</span>
                 {nGroups} groups, {mainStudyN + recoveryTotal + tkTotal} subjects
+                {meta.pipeline_stage && (
+                  <>
+                    <span className="mx-1.5 text-border">|</span>
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: meta.pipeline_stage === "submitted" ? "#16a34a" : "#9333ea" }}
+                    />
+                    {" "}{meta.pipeline_stage.replace(/_/g, " ")}
+                  </>
+                )}
               </span>
             </div>
-            <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
+            <div className="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
               <div>
                 Groups: {doseLabels.join(", ")}
               </div>
@@ -945,19 +957,9 @@ function DetailsTab({
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Zone B: NOAEL & conclusions (40%) */}
-          {(noaelLabel || targetOrganCount > 0) && (
-            <div className="w-[45%] min-w-0 px-2 pb-2 pt-0.5">
-              {/* Line 1: Stage | NOAEL | LOAEL */}
-              <div className="flex items-baseline gap-1.5 text-xs">
-                {meta.pipeline_stage && (
-                  <span className="font-semibold">
-                    Stage: {meta.pipeline_stage.charAt(0).toUpperCase() + meta.pipeline_stage.slice(1).replace(/_/g, " ")}
-                  </span>
-                )}
-                {meta.pipeline_stage && noaelLabel && <span className="text-border">|</span>}
+            {/* NOAEL | LOAEL | supporting counts */}
+            {(noaelLabel || targetOrganCount > 0) && (
+              <div className="mt-3 flex items-baseline gap-1.5 text-xs">
                 {noaelLabel && (
                   <>
                     <span className="font-semibold">NOAEL: {noaelLabel}</span>
@@ -968,64 +970,58 @@ function DetailsTab({
                 {loaelLabel && (
                   <span className="font-semibold">LOAEL: {loaelLabel}</span>
                 )}
+                {(noaelLabel || loaelLabel) && (targetOrganCount > 0 || domainsWithSignals > 0 || noaelConfidence != null) && <span className="text-border">|</span>}
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  {targetOrganCount > 0 && <>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</>}
+                  {targetOrganCount > 0 && domainsWithSignals > 0 && " · "}
+                  {domainsWithSignals > 0 && <>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</>}
+                  {(targetOrganCount > 0 || domainsWithSignals > 0) && noaelConfidence != null && " · "}
+                  {noaelConfidence != null && <>{Math.round(noaelConfidence * 100)}% confidence</>}
+                </span>
               </div>
-              <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
-                {/* Target organs + domains */}
-                <div className="flex flex-wrap gap-x-3">
-                  {targetOrganCount > 0 && <span>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</span>}
-                  {domainsWithSignals > 0 && <span>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</span>}
-                  {noaelConfidence != null && <span>{Math.round(noaelConfidence * 100)}% confidence</span>}
+            )}
+            {/* Exposure at NOAEL/LOAEL */}
+            {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (() => {
+              const exp = pkData.noael_exposure ?? pkData.loael_exposure;
+              const expLabel = pkData.noael_exposure ? "At NOAEL" : "At LOAEL";
+              if (!exp) return null;
+              const parts: string[] = [];
+              if (exp.cmax) parts.push(`Cmax ${exp.cmax.mean.toPrecision(3)} ${exp.cmax.unit}`);
+              if (exp.auc) parts.push(`AUC ${exp.auc.mean.toPrecision(3)} ${exp.auc.unit}`);
+              if (parts.length === 0) return null;
+              return (
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  <span className="font-medium">{expLabel}:</span> {parts.join(" \u00b7 ")}
                 </div>
-
-                {/* Exposure at NOAEL */}
-                {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (() => {
-                  const exp = pkData.noael_exposure ?? pkData.loael_exposure;
-                  const expLabel = pkData.noael_exposure ? "At NOAEL" : "At LOAEL";
-                  if (!exp) return null;
-                  const parts: string[] = [];
-                  if (exp.cmax) parts.push(`Cmax ${exp.cmax.mean.toPrecision(3)} ${exp.cmax.unit}`);
-                  if (exp.auc) parts.push(`AUC ${exp.auc.mean.toPrecision(3)} ${exp.auc.unit}`);
-                  if (parts.length === 0) return null;
-                  return (
-                    <div>
-                      <span className="font-medium">{expLabel}:</span> {parts.join(" \u00b7 ")}
-                    </div>
-                  );
-                })()}
-
-                {/* HED / MRSD */}
-                {pkData?.hed && pkData.hed.noael_status !== "at_control" && (
-                  <div>
-                    <span className="font-medium">HED:</span> {pkData.hed.hed_mg_kg} mg/kg
-                    {" \u00b7 "}
-                    <span className="font-medium">MRSD:</span> {pkData.hed.mrsd_mg_kg} mg/kg
-                  </div>
-                )}
-
-                {/* Dose proportionality warning */}
-                {pkData?.dose_proportionality &&
-                  pkData.dose_proportionality.assessment !== "linear" &&
-                  pkData.dose_proportionality.assessment !== "insufficient_data" && (
-                  <div className="flex items-start gap-1 text-amber-700">
-                    <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-                    <span>{pkData.dose_proportionality.interpretation ?? "Non-linear dose proportionality detected"}</span>
-                  </div>
-                )}
-
-                {/* Study-level interpretation notes (cross-domain) */}
-                {interpretationNotes.filter(n => n.domain === null).map((n, i) => (
-                  <div key={i} className="flex items-start gap-1">
-                    {n.severity === "caution"
-                      ? <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0 text-amber-500" />
-                      : <Info className="mt-0.5 h-2.5 w-2.5 shrink-0 text-muted-foreground" />
-                    }
-                    <span>{n.category}: {n.note}</span>
-                  </div>
-                ))}
+              );
+            })()}
+            {/* HED / MRSD */}
+            {pkData?.hed && pkData.hed.noael_status !== "at_control" && (
+              <div className="mt-0.5 text-[10px] text-muted-foreground">
+                <span className="font-medium">HED:</span> {pkData.hed.hed_mg_kg} mg/kg
+                {" \u00b7 "}
+                <span className="font-medium">MRSD:</span> {pkData.hed.mrsd_mg_kg} mg/kg
               </div>
-            </div>
-          )}
-        </div>
+            )}
+            {/* Dose proportionality warning */}
+            {pkData?.dose_proportionality &&
+              pkData.dose_proportionality.assessment !== "linear" &&
+              pkData.dose_proportionality.assessment !== "insufficient_data" && (
+              <div className="mt-0.5 flex items-start gap-1 text-[10px] text-muted-foreground">
+                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0 text-amber-500" />
+                <span>{pkData.dose_proportionality.interpretation ?? "Non-linear dose proportionality detected"}</span>
+              </div>
+            )}
+            {/* Study-level interpretation notes (cross-domain) */}
+            {interpretationNotes.filter(n => n.domain === null).map((n, i) => (
+              <div key={i} className="mt-0.5 flex items-start gap-1 text-[10px]">
+                {n.severity === "caution"
+                  ? <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0 text-amber-500" />
+                  : <Info className="mt-0.5 h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+                }
+                <span className="text-muted-foreground">{n.category}: {n.note}</span>
+              </div>
+            ))}
       </section>
 
       {/* ── Scrollable body with collapsible sections ──── */}

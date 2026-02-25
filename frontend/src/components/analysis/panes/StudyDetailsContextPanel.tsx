@@ -1,9 +1,8 @@
 import { useState, useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
-import { useStudyContext } from "@/hooks/useStudyContext";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
-import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
+import { getTierSeverityLabel, buildNormalizationRationale } from "@/lib/organ-weight-normalization";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
@@ -71,41 +70,11 @@ interface StudyNote {
   lastEdited?: string;
 }
 
-// ── Recovery Period Display ─────────────────────────────────
-
-function RecoveryPeriodDisplay({
-  recoveryPeriod,
-  dosingDurationWeeks,
-}: {
-  recoveryPeriod: number | null | undefined;
-  dosingDurationWeeks: number | null | undefined;
-}) {
-  const recDays = recoveryPeriod;
-  const dosingDays = dosingDurationWeeks
-    ? Math.round(dosingDurationWeeks * 7)
-    : null;
-
-  const valueText = (() => {
-    if (dosingDays && recDays) {
-      return `Day ${dosingDays + 1}\u2013${dosingDays + recDays} (${recDays} days)`;
-    }
-    return recDays ? `${recDays} days` : "unknown";
-  })();
-
-  return (
-    <SettingsRow label="Recovery period">
-      <span className="pl-1 text-[10px] text-muted-foreground">{valueText}</span>
-    </SettingsRow>
-  );
-}
-
 // ── Main Component ───────────────────────────────────────────
 
 export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const { data: meta, isLoading: metaLoading } = useStudyMetadata(studyId);
-  const { data: studyCtx } = useStudyContext(studyId);
   const { data: mortalityData } = useStudyMortality(studyId);
-  const [normWhyOpen, setNormWhyOpen] = useState(false);
   // Study notes via annotation API
   const { data: studyNotes } = useAnnotations<StudyNote>(studyId, "study-notes");
   const saveNote = useSaveAnnotation<StudyNote>(studyId, "study-notes");
@@ -179,7 +148,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
 
   // Recovery detection
   const hasRecovery = meta.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
-  const recoveryPeriod = studyCtx?.recoveryPeriodDays;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -235,17 +203,14 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={setOrganWeightMethod}
           />
         </SettingsRow>
-        <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
-          {organWeightMethod === "absolute" && "Standard; preferred when BW is not significantly affected"}
-          {organWeightMethod === "ratio-bw" && "Normalizes for body size; unreliable when BW is a treatment effect"}
-          {organWeightMethod === "ratio-brain" && "Preferred when BW is significantly affected (brain is BW-resistant)"}
-        </div>
-
-        {/* Normalization summary — shown when tier ≥ 2 and data cached */}
+        {/* Normalization measurements + rationale — shown when tier ≥ 2 and data cached */}
         {normalization.state && normalization.highestTier >= 2 && (() => {
           const { highestTier, worstBwG, worstBrainG, state } = normalization;
           const tierLabel = getTierSeverityLabel(highestTier);
-          const brainOk = worstBrainG == null || Math.abs(worstBrainG) < 0.5;
+          const brainTier = worstBrainG == null ? null
+            : Math.abs(worstBrainG) < 0.5 ? 1
+            : Math.abs(worstBrainG) < 1.0 ? 2
+            : Math.abs(worstBrainG) < 2.0 ? 3 : 4;
           // Count organs at elevated tiers
           let elevatedCount = 0;
           if (state) {
@@ -255,56 +220,37 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               }
             }
           }
-          // Get worst-case decision rationale
-          let worstRationale: string[] = [];
-          if (state) {
-            let worstTier = 0;
-            for (const organMap of state.decisions.values()) {
-              for (const d of organMap.values()) {
-                if (d.tier > worstTier) {
-                  worstTier = d.tier;
-                  worstRationale = d.rationale;
-                }
-              }
-            }
-          }
-          const isAutoSelected = highestTier >= 3 && organWeightMethod === "ratio-brain";
+          const autoMethod = highestTier >= 3
+            ? (worstBrainG != null ? "ratio-brain" : "ratio-bw")
+            : null;
+          const isAutoSelected = autoMethod != null && organWeightMethod === autoMethod;
+          const methodLabel = organWeightMethod === "ratio-brain" ? "ratio to brain"
+            : organWeightMethod === "ratio-bw" ? "ratio to BW"
+            : "absolute";
+          const rationale = buildNormalizationRationale(
+            highestTier, worstBrainG, isAutoSelected,
+          );
           return (
-            <div className="mb-1 rounded border border-amber-200 bg-amber-50/50 px-2 py-1.5 text-[10px]">
+            <div className="mb-0.5 space-y-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-muted-foreground">BW effect:</span>
-                <span className="font-mono font-medium">g = {worstBwG.toFixed(2)}</span>
-                <span className="text-muted-foreground">(Tier {highestTier} — {tierLabel})</span>
+                <span>BW effect:</span>
+                <span className="font-mono font-medium text-foreground">g = {worstBwG.toFixed(2)}</span>
+                <span>(Tier {highestTier} — {tierLabel})</span>
               </div>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-muted-foreground">Brain weight:</span>
-                <span className="font-mono font-medium">
+                <span>Brain weight:</span>
+                <span className="font-mono font-medium text-foreground">
                   g = {worstBrainG != null ? worstBrainG.toFixed(2) : "n/a"}
                 </span>
-                {worstBrainG != null && (
-                  <span className={brainOk ? "text-green-700" : "text-amber-700"}>
-                    {brainOk ? "unaffected \u2713" : "\u26A0 affected"}
-                  </span>
+                {brainTier != null && (
+                  <span>(Tier {brainTier} — {getTierSeverityLabel(brainTier)})</span>
                 )}
               </div>
-              <div className="mt-0.5 text-muted-foreground">
-                {isAutoSelected ? "Auto-selected" : "Manual override"}
-                {" \u00B7 "}{elevatedCount} organ{elevatedCount !== 1 ? "s" : ""} at Tier 2+
-                {" \u00B7 "}
-                <button
-                  className="text-primary underline hover:text-primary/80"
-                  onClick={() => setNormWhyOpen(!normWhyOpen)}
-                >
-                  {normWhyOpen ? "Hide" : "Why?"}
-                </button>
+              <div>
+                {isAutoSelected ? "Auto-selected" : "User-selected"}
+                {`: ${methodLabel} for `}{elevatedCount} organ{elevatedCount !== 1 ? "s" : ""} at Tier 2+
               </div>
-              {normWhyOpen && worstRationale.length > 0 && (
-                <ol className="mt-1 list-inside list-decimal space-y-0.5 border-t border-amber-200 pt-1 text-muted-foreground">
-                  {worstRationale.map((r, i) => (
-                    <li key={i}>{r}</li>
-                  ))}
-                </ol>
-              )}
+              {rationale && <div>{rationale}</div>}
             </div>
           );
         })()}
@@ -328,10 +274,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       {hasRecovery && meta.dose_groups && meta.dose_groups.length > 0 && (() => {
         return (
           <CollapsiblePane title="Recovery">
-            <RecoveryPeriodDisplay
-              recoveryPeriod={recoveryPeriod}
-              dosingDurationWeeks={studyCtx?.dosingDurationWeeks}
-            />
             <SettingsRow label="Treatment period">
               <SettingsSelect
                 value={recoveryPooling}
