@@ -107,10 +107,14 @@ async def save_annotation(study_id: str, schema_type: str, entity_key: str, payl
     old_annotation = data.get(entity_key)
 
     # Merge payload
-    annotation = payload.model_dump()
-    annotation["pathologist"] = "User"
-    annotation["reviewDate"] = datetime.now(timezone.utc).isoformat()
+    incoming = payload.model_dump()
+    incoming["pathologist"] = "User"
+    incoming["reviewDate"] = datetime.now(timezone.utc).isoformat()
 
+    # Merge into existing annotation so sibling fields are preserved
+    existing = data.get(entity_key, {})
+    existing.update(incoming)
+    annotation = existing
     data[entity_key] = annotation
 
     # Write back

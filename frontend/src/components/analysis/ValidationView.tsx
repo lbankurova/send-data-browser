@@ -28,7 +28,7 @@ export type RecordEvidence =
   | { type: "value-correction-multi"; from: string; candidates: string[] }
   | { type: "code-mapping"; value: string; code: string }
   | { type: "range-check"; lines: { label: string; value: string }[] }
-  | { type: "missing-value"; variable: string; derivation?: string; suggested?: string }
+  | { type: "missing-value"; variable: string; derivation?: string; suggested?: string; lines?: { label: string; value: string }[] }
   | { type: "metadata"; lines: { label: string; value: string }[] }
   | { type: "cross-domain"; lines: { label: string; value: string }[] };
 
@@ -157,7 +157,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const { data: catalogData } = useValidationCatalog(studyId);
   const selectedRule = useMemo<ValidationRuleResult | null>(() => {
     if (!viewSelection || viewSelection._view !== "validation") return null;
-    if (viewSelection.mode !== "rule") return null;
+    if (viewSelection.mode !== "rule" && viewSelection.mode !== "issue") return null;
     // First try triggered results (most detail for triggered rules)
     const fromResults = validationData?.rules?.find((r) => r.rule_id === viewSelection.rule_id);
     if (fromResults) return fromResults;

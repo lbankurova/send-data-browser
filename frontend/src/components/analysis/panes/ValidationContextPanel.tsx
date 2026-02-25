@@ -901,11 +901,13 @@ function MissingValueEvidence({
   variable,
   derivation,
   suggested,
+  lines,
   studyId,
 }: {
   variable: string;
   derivation?: string;
   suggested?: string;
+  lines?: { label: string; value: string }[];
   studyId?: string;
 }) {
   if (suggested) {
@@ -923,6 +925,18 @@ function MissingValueEvidence({
             className="text-muted-foreground"
           />
         )}
+      </div>
+    );
+  }
+  if (lines && lines.length > 0) {
+    return (
+      <div className="space-y-0.5 text-[11px]">
+        {lines.map((line, i) => (
+          <div key={i} className="flex gap-2">
+            <span className="shrink-0 text-muted-foreground">{line.label}:</span>
+            <span className="font-mono">{line.value || "\u2014"}</span>
+          </div>
+        ))}
       </div>
     );
   }
@@ -1122,6 +1136,7 @@ function FindingSection({
             variable={evidence.variable}
             derivation={evidence.derivation}
             suggested={evidence.suggested}
+            lines={evidence.lines}
             studyId={studyId}
           />
         );
@@ -1678,7 +1693,7 @@ export function ValidationContextPanel({ selection, studyId, setSelection }: Pro
   const currentKey = selection ? `${selection.mode}:${selection.rule_id}:${issueId}` : "";
 
   // Push to history when selection changes (not from nav buttons)
-  useMemo(() => {
+  useEffect(() => {
     if (!selection) return;
     const lastEntry = history[historyIndex];
     const lastIssueId = lastEntry?.mode === "issue" ? lastEntry.issue_id : "";

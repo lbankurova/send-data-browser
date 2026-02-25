@@ -319,11 +319,20 @@ export const EVIDENCE_TYPE_DEFINITIONS: EvidenceTypeDef[] = [
 
 const ruleMap = new Map(VALIDATION_RULE_CATALOG.map((r) => [r.id, r]));
 
-/** Look up a custom rule definition by ID. Returns undefined for CORE rules. */
+/** Look up a custom rule definition by ID. Returns undefined for CORE rules.
+ *  Handles domain-qualified IDs like "FDA-001-LB" by stripping the suffix. */
 export function getValidationRuleDef(
   ruleId: string,
 ): ValidationRuleDef | undefined {
-  return ruleMap.get(ruleId);
+  const exact = ruleMap.get(ruleId);
+  if (exact) return exact;
+  // Strip domain suffix: "FDA-001-LB" → "FDA-001"
+  const lastDash = ruleId.lastIndexOf("-");
+  if (lastDash > 0) {
+    const base = ruleId.slice(0, lastDash);
+    return ruleMap.get(base);
+  }
+  return undefined;
 }
 
 const tierMap = new Map(FIX_TIER_DEFINITIONS.map((t) => [t.tier, t]));
