@@ -141,19 +141,25 @@ export type OrganCorrelationCategory =
   | "moderate_bw"
   | "weak_bw"
   | "brain"
-  | "reproductive";
+  | "gonadal"
+  | "androgen_dependent"
+  | "female_reproductive";
 
 export const OrganCorrelationCategory = {
   /** Liver, thyroid — r > 0.50 with BW */
   STRONG_BW: "strong_bw" as const,
   /** Heart, kidney, spleen, lung — r 0.30–0.50 with BW */
   MODERATE_BW: "moderate_bw" as const,
-  /** Adrenals, ovaries, thymus, pituitary — r < 0.30 with BW */
+  /** Adrenals, thymus, pituitary — r < 0.30 with BW */
   WEAK_BW: "weak_bw" as const,
   /** Brain itself — never normalize to itself */
   BRAIN: "brain" as const,
-  /** Testes, epididymides, prostate, uterus, seminal vesicles */
-  REPRODUCTIVE: "reproductive" as const,
+  /** Testes — BW-spared (Creasy 2013), always absolute */
+  GONADAL: "gonadal" as const,
+  /** Epididymides, prostate, seminal vesicles — androgen-dependent */
+  ANDROGEN_DEPENDENT: "androgen_dependent" as const,
+  /** Ovaries, uterus — estrous-cycle-dominated, high variability */
+  FEMALE_REPRODUCTIVE: "female_reproductive" as const,
 } as const;
 
 export const ORGAN_CATEGORIES: Record<string, OrganCorrelationCategory> = {
@@ -167,17 +173,17 @@ export const ORGAN_CATEGORIES: Record<string, OrganCorrelationCategory> = {
   LUNGS:     OrganCorrelationCategory.MODERATE_BW,
   ADRENAL:   OrganCorrelationCategory.WEAK_BW,
   ADRENALS:  OrganCorrelationCategory.WEAK_BW,
-  OVARY:     OrganCorrelationCategory.WEAK_BW,
-  OVARIES:   OrganCorrelationCategory.WEAK_BW,
   THYMUS:    OrganCorrelationCategory.WEAK_BW,
   PITUITARY: OrganCorrelationCategory.WEAK_BW,
   BRAIN:     OrganCorrelationCategory.BRAIN,
-  TESTES:    OrganCorrelationCategory.REPRODUCTIVE,
-  TESTIS:    OrganCorrelationCategory.REPRODUCTIVE,
-  EPIDID:    OrganCorrelationCategory.REPRODUCTIVE,
-  PROSTATE:  OrganCorrelationCategory.REPRODUCTIVE,
-  UTERUS:    OrganCorrelationCategory.REPRODUCTIVE,
-  SEMVES:    OrganCorrelationCategory.REPRODUCTIVE,
+  TESTES:    OrganCorrelationCategory.GONADAL,
+  TESTIS:    OrganCorrelationCategory.GONADAL,
+  EPIDID:    OrganCorrelationCategory.ANDROGEN_DEPENDENT,
+  PROSTATE:  OrganCorrelationCategory.ANDROGEN_DEPENDENT,
+  SEMVES:    OrganCorrelationCategory.ANDROGEN_DEPENDENT,
+  OVARY:     OrganCorrelationCategory.FEMALE_REPRODUCTIVE,
+  OVARIES:   OrganCorrelationCategory.FEMALE_REPRODUCTIVE,
+  UTERUS:    OrganCorrelationCategory.FEMALE_REPRODUCTIVE,
 };
 
 // ─── Core Functions ─────────────────────────────────────────
@@ -275,6 +281,11 @@ export function getBrainTier(
   return { tier: 1, label: "unaffected" };
 }
 
+/** Compute BW-effect tier from Hedges' g (informational for reproductive organs). */
+function computeBwTier(bwG: number): 1 | 2 | 3 | 4 {
+  return bwG < 0.5 ? 1 : bwG < 1.0 ? 2 : bwG < 2.0 ? 3 : 4;
+}
+
 /**
  * Tiered normalization decision engine (spec §4.4).
  *
@@ -294,6 +305,43 @@ export function decideNormalization(
   const rationale: string[] = [];
   const warnings: string[] = [];
 
+  // ── GONADAL: testes — always absolute, BW-spared (Creasy 2013) ──
+  if (category === OrganCorrelationCategory.GONADAL) {
+    rationale.push(
+      `${organ} is body-weight-spared (Creasy 2013, Bailey 2004). ` +
+      `Testes weight is conserved until extreme inanition (~70% BW loss). ` +
+      `Body weight ratios are always misleading for this organ.`,
+    );
+    if (bwG >= 1.0) {
+      warnings.push(
+        `Body weight decreased (g = ${bwG.toFixed(2)}) but testes are BW-spared — ` +
+        `expect artifactual increase in BW-ratio. Use absolute weight only.`,
+      );
+    }
+    return {
+      mode: "absolute", tier: computeBwTier(bwG), confidence: "high",
+      rationale, warnings, showAlternatives: false,
+      brainAffected: false, userOverridden: false,
+    };
+  }
+
+  // ── ANDROGEN_DEPENDENT: epididymides, prostate, seminal vesicles ──
+  if (category === OrganCorrelationCategory.ANDROGEN_DEPENDENT) {
+    rationale.push(
+      `${organ} weight is androgen-dependent (Creasy 2013). ` +
+      `Changes reflect testosterone/LH status, not body mass scaling.`,
+    );
+    warnings.push(
+      `Interpret ${organ} weight changes in context of testosterone/LH levels ` +
+      `and histopathology of testes and secondary sex organs.`,
+    );
+    return {
+      mode: "absolute", tier: computeBwTier(bwG), confidence: "high",
+      rationale, warnings, showAlternatives: false,
+      brainAffected: false, userOverridden: false,
+    };
+  }
+
   // ── GUARD: Brain weight not collected ──
   if (brainG === null && bwG >= 0.5) {
     warnings.push(
@@ -305,6 +353,47 @@ export function decideNormalization(
   // ── CHECK: Is brain weight itself affected? (species-calibrated) ──
   const brainTierResult = getBrainTier(brainG, speciesStrain);
   const brainAffected = brainTierResult?.tier === 3;
+
+  // Tier 2 brain: potentially affected — warn but don't force ANCOVA
+  if (brainTierResult?.tier === 2) {
+    warnings.push(
+      `Brain weight potentially affected (g = ${brainG!.toFixed(2)}). ` +
+      `Report both brain-normalized and absolute organ weights.`,
+    );
+  }
+
+  // ── FEMALE_REPRODUCTIVE: ovaries, uterus — cycle-dominated ──
+  if (category === OrganCorrelationCategory.FEMALE_REPRODUCTIVE) {
+    const isOvary = /ovar/i.test(organ);
+    const usesBrain = isOvary && !brainAffected && brainG !== null;
+    rationale.push(
+      `${organ} weight is dominated by estrous cycle variability (CV 25–40%). ` +
+      `Normalization confidence is inherently low without cycle staging data.`,
+    );
+    if (isOvary && usesBrain) {
+      rationale.push(
+        `Ovary has weak BW correlation — brain weight normalization used as least-confounded option.`,
+      );
+    }
+    if (isOvary && !usesBrain) {
+      rationale.push(
+        `Ovary: brain ${brainAffected ? "affected" : "not collected"} — absolute weight reported.`,
+      );
+    }
+    warnings.push(
+      `Estrous cycle staging not available. Interpret ${organ} weight changes with caution — ` +
+      `stress-mediated HPG axis disruption may confound results.`,
+    );
+    return {
+      mode: usesBrain ? "brain_weight" : "absolute",
+      tier: computeBwTier(bwG),
+      confidence: "low",
+      rationale, warnings, showAlternatives: true,
+      brainAffected, userOverridden: false,
+    };
+  }
+
+  // ── Brain affected early return (non-reproductive organs only) ──
   if (brainAffected) {
     rationale.push(
       `Brain weight shows significant treatment effect (g = ${brainG!.toFixed(2)}). ` +
@@ -323,14 +412,6 @@ export function decideNormalization(
     };
   }
 
-  // Tier 2 brain: potentially affected — warn but don't force ANCOVA
-  if (brainTierResult?.tier === 2) {
-    warnings.push(
-      `Brain weight potentially affected (g = ${brainG!.toFixed(2)}). ` +
-      `Report both brain-normalized and absolute organ weights.`,
-    );
-  }
-
   // ── ORGAN-SPECIFIC OVERRIDES (Bailey et al., 2004) ──
   if (category === OrganCorrelationCategory.WEAK_BW && brainG !== null) {
     rationale.push(
@@ -339,7 +420,7 @@ export function decideNormalization(
     );
     return {
       mode: "brain_weight",
-      tier: bwG < 0.5 ? 1 : bwG < 1.0 ? 2 : bwG < 2.0 ? 3 : 4,
+      tier: computeBwTier(bwG),
       confidence: "high", rationale, warnings,
       showAlternatives: bwG >= 0.5, brainAffected: false, userOverridden: false,
     };
@@ -349,7 +430,7 @@ export function decideNormalization(
     rationale.push("Brain weight is the organ being measured — cannot normalize to itself.");
     return {
       mode: bwG < 1.0 ? "body_weight" : "ancova",
-      tier: bwG < 0.5 ? 1 : bwG < 1.0 ? 2 : bwG < 2.0 ? 3 : 4,
+      tier: computeBwTier(bwG),
       confidence: "high", rationale,
       warnings: ["EPA (1998): Any brain weight change is biologically significant. " +
                  "Do not dismiss via body weight ratio."],
@@ -441,6 +522,36 @@ export function assessSecondaryToBodyWeight(
 ): SecondaryToBWResult {
   if (!normCtx) {
     return { isSecondary: false, confidence: "high", rationale: "No normalization context." };
+  }
+
+  // ── Reproductive organ overrides (B-7) ──
+  const organCategory = ORGAN_CATEGORIES[normCtx.organ.toUpperCase()];
+
+  if (organCategory === OrganCorrelationCategory.GONADAL) {
+    return {
+      isSecondary: false,
+      confidence: "high",
+      rationale: "Testes are body-weight-spared (conserved until ~70% BW loss; Creasy 2013). " +
+        "Testes weight changes are never secondary to BW.",
+    };
+  }
+
+  if (organCategory === OrganCorrelationCategory.ANDROGEN_DEPENDENT && normCtx.tier >= 3) {
+    return {
+      isSecondary: false,
+      confidence: "medium",
+      rationale: `${normCtx.organ} weight is androgen-dependent. Changes may be secondary to ` +
+        `stress-mediated HPG disruption, not BW scaling.`,
+    };
+  }
+
+  if (organCategory === OrganCorrelationCategory.FEMALE_REPRODUCTIVE) {
+    return {
+      isSecondary: false,
+      confidence: "low",
+      rationale: `${normCtx.organ} weight is dominated by estrous cycle variability. ` +
+        `BW confounding assessment not applicable without cycle staging data.`,
+    };
   }
 
   // Phase 2+: use effect decomposition
