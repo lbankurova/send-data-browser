@@ -716,6 +716,64 @@ export function mapStudyType(studyType: string | null): string | null {
   return "GENERAL";
 }
 
+// ─── Unified Rationale Line ─────────────────────────────────
+
+/**
+ * Build a single narrative rationale line for the organ weight normalization
+ * dropdown in the Study Details Context Panel.
+ *
+ * Returns `null` for Tier 1 (no rationale needed).
+ *
+ * @param highestTier — worst-case tier across all organs × groups (1–4)
+ * @param worstBrainG — worst-case brain Hedges' g, null if brain not collected
+ * @param isAutoSelected — true when current method matches what auto-selection would choose
+ */
+export function buildNormalizationRationale(
+  highestTier: number,
+  worstBrainG: number | null,
+  isAutoSelected: boolean,
+): string | null {
+  if (highestTier <= 1) return null;
+
+  const brainNa = worstBrainG == null;
+  const brainOk = !brainNa && Math.abs(worstBrainG!) < 0.5;
+  const brainAffected = !brainNa && Math.abs(worstBrainG!) >= 0.5;
+  const brainGFormatted = brainNa ? null : `g\u00A0=\u00A0${Math.abs(worstBrainG!).toFixed(2)}`;
+
+  if (highestTier === 2) {
+    if (brainOk) {
+      return "BW moderately affected (Tier 2) \u2014 brain ratio available as cross-check.";
+    }
+    if (brainAffected) {
+      return `BW moderately affected (Tier 2) \u2014 brain also affected (${brainGFormatted}); neither ratio fully reliable. ANCOVA recommended.`;
+    }
+    // brain n/a
+    return "BW moderately affected (Tier 2) \u2014 brain weight not collected; no cross-check available.";
+  }
+
+  // Tier 3 or 4
+  const tierWord = highestTier === 3 ? "significantly" : "severely";
+  const tierNum = highestTier as 3 | 4;
+
+  if (brainNa) {
+    // No prefix — system can't claim auto-selected when it fell back
+    return `BW ${tierWord} affected (Tier ${tierNum}) \u2014 brain weight not collected; ratio to BW retained as fallback. ANCOVA with baseline BW recommended.`;
+  }
+
+  const prefix = isAutoSelected ? "Auto-selected: " : "User-selected: ";
+
+  if (brainOk) {
+    if (tierNum === 3) {
+      return `${prefix}BW ${tierWord} affected (Tier ${tierNum}) \u2014 brain unaffected and BW-resistant.`;
+    }
+    // Tier 4
+    return `${prefix}BW ${tierWord} affected (Tier ${tierNum}) \u2014 ratio to brain as best available. ANCOVA with baseline BW recommended.`;
+  }
+
+  // brainAffected at Tier 3/4
+  return `${prefix}BW ${tierWord} affected (Tier ${tierNum}) \u2014 brain normally BW-resistant, but also shows treatment effect (${brainGFormatted}). ANCOVA with baseline BW recommended.`;
+}
+
 // ─── Tier Label Helpers ─────────────────────────────────────
 
 /** Get severity word for a tier */
