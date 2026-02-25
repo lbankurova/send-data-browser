@@ -361,7 +361,7 @@ Tie-breaking: latest day first, then males (males typically show larger absolute
 
 **Integration points:**
 - Study Details: tier-based auto-set replaces simple BW-adverse check; domain table OM note shows tier + g value.
-- Study Details Context Panel: normalization summary with tier-specific guidance (Tier 2: caution, Tier 3: brain auto-selected, Tier 4: ANCOVA recommended).
+- Study Details Context Panel: unified rationale line replacing fragmented subtitle/measurements/why display; brain-n/a fallback to ratio-to-BW. Function: `buildNormalizationRationale()` in `lib/organ-weight-normalization.ts`.
 - Findings View: OrganContextPanel pane, FindingsContextPanel OM annotation.
 - Syndrome Engine: `getSyndromeTermReport` adds normalization annotation for OM terms; `computeAdversity` uses B-7 BW confounding factor.
 
