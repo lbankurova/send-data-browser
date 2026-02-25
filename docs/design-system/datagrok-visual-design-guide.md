@@ -459,6 +459,21 @@ All class strings: `ty.*` from `design-tokens.ts`.
 
 **Monospace (`font-mono`):** p-values, effect sizes, rule/issue/subject IDs, domain codes, any formatted number with `tabular-nums`. NOT for labels, descriptions, headers, buttons.
 
+### 2.1 Context Panel Typography Hierarchy
+
+Font sizes in context panel panes encode **information hierarchy**, not just visual preference. Each tier is deliberately sized relative to its neighbors. Changing a size without understanding the tier relationship destroys the hierarchy.
+
+| Tier | Size | Ratio | Role | Examples |
+|------|------|-------|------|----------|
+| Control | `text-xs` (12px) | 1.0× | Interactive elements the user acts on | SettingsRow label, FilterSelect dropdown, setting names |
+| Supporting | `text-[10px]` (10px) | 0.83× | Values, explanatory text, secondary controls | Auto-detected values, method descriptions, override checkbox/input, explanatory notes below settings |
+| Micro | `text-[9px]` (9px) | 0.75× | Categorical identity, tertiary metadata | Domain labels, tier pills, badge text |
+
+**Spacing proportionality rules:**
+- Vertical padding should be proportional to the text size it surrounds. `py-1` (8px) is balanced for `text-xs` (12px) but generous for `text-[10px]` (10px). Use `py-0.5` (4px) for supporting-tier text.
+- Explanatory text below a setting uses `mb-0.5` (2px) — just enough to separate from the next setting without creating a visual gap equal to the setting row itself.
+- Indented sub-controls (e.g., override inputs) use `ml-5` (20px) — approximately 2× the supporting-tier line height, signaling visual subordination.
+
 ---
 
 ## 3. Spacing
