@@ -203,6 +203,7 @@ export function useOrganWeightNormalization(
       studyType,
       studyId ?? "",
       effectSizeMethod,
+      meta.has_estrous_data ?? false,
     );
   }, [findingsData, meta, studyId, effectSizeMethod]);
 

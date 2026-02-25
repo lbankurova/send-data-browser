@@ -299,6 +299,7 @@ export function decideNormalization(
   organ: string,
   speciesStrain: string,
   studyType: string | null,
+  hasEstrousData = false,
 ): NormalizationDecision {
   const category = ORGAN_CATEGORIES[organ.toUpperCase()] ?? OrganCorrelationCategory.MODERATE_BW;
   const profile = SPECIES_STRAIN_PROFILES[speciesStrain];
@@ -367,8 +368,11 @@ export function decideNormalization(
     const isOvary = /ovar/i.test(organ);
     const usesBrain = isOvary && !brainAffected && brainG !== null;
     rationale.push(
-      `${organ} weight is dominated by estrous cycle variability (CV 25–40%). ` +
-      `Normalization confidence is inherently low without cycle staging data.`,
+      hasEstrousData
+        ? `${organ} weight is dominated by estrous cycle variability (CV 25–40%). ` +
+          `Estrous cycle staging data available — confidence upgraded to medium.`
+        : `${organ} weight is dominated by estrous cycle variability (CV 25–40%). ` +
+          `Normalization confidence is inherently low without cycle staging data.`,
     );
     if (isOvary && usesBrain) {
       rationale.push(
@@ -380,16 +384,16 @@ export function decideNormalization(
         `Ovary: brain ${brainAffected ? "affected" : "not collected"} — absolute weight reported.`,
       );
     }
-    warnings.push(
-      `Estrous cycle staging not available. Interpret ${organ} weight changes with caution — ` +
-      `stress-mediated HPG axis disruption may confound results.`,
-    );
+    if (!hasEstrousData) {
+      warnings.push(
+        `Estrous cycle staging not available. Interpret ${organ} weight changes with caution — ` +
+        `stress-mediated HPG axis disruption may confound results.`,
+      );
+    }
     return {
       mode: usesBrain ? "brain_weight" : "absolute",
       tier: computeBwTier(bwG),
-      // TODO: When has_estrous_data is available from study metadata,
-      // upgrade confidence from "low" to "medium" for FEMALE_REPRODUCTIVE.
-      confidence: "low",
+      confidence: hasEstrousData ? "medium" : "low",
       rationale, warnings, showAlternatives: true,
       brainAffected, userOverridden: false,
     };
@@ -643,6 +647,7 @@ export function computeStudyNormalization(
   studyType: string | null,
   studyId: string,
   effectSizeMethod: EffectSizeMethod = "hedges-g",
+  hasEstrousData = false,
 ): StudyNormalizationState {
   const bwGByGroup = new Map<string, HedgesGResult>();
   const brainGByGroup = new Map<string, HedgesGResult | null>();
@@ -724,6 +729,7 @@ export function computeStudyNormalization(
         organUpper,
         speciesStrain,
         studyType,
+        hasEstrousData,
       );
       organDecisions.set(doseKey, decision);
 
