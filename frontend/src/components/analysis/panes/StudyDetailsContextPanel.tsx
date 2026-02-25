@@ -14,14 +14,6 @@ import { FilterSelect } from "@/components/ui/FilterBar";
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function formatDuration(iso: string): string {
-  const wMatch = iso.match(/^P(\d+)W$/);
-  if (wMatch) return `${wMatch[1]} weeks`;
-  const dMatch = iso.match(/^P(\d+)D$/);
-  if (dMatch) return `${dMatch[1]} days`;
-  return iso;
-}
-
 function SettingsRow({
   label,
   children,
@@ -152,21 +144,13 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Sticky header */}
-      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <h3 className="text-sm font-semibold">Study: {studyId}</h3>
-        {(meta.dosing_duration || meta.species) && (
-          <p className="mt-0.5 text-[10px] text-muted-foreground">
-            {[
-              meta.dosing_duration ? formatDuration(meta.dosing_duration) : null,
-              meta.species?.toLowerCase(),
-            ].filter(Boolean).join(" · ")}
-          </p>
-        )}
+      <div className="sticky top-0 z-10 flex shrink-0 items-center border-b bg-muted/30 px-4 py-[15px]">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Study-level settings</h3>
       </div>
 
       <div className="flex-1 overflow-auto">
-      {/* ── Analysis settings ───────────────────────────── */}
-      <CollapsiblePane title="Analysis settings">
+      {/* ── Analysis methods ─────────────────────────────── */}
+      <CollapsiblePane title="Analysis methods">
         {/* Control group */}
         {controlGroups.length > 0 && (
           <>
@@ -268,13 +252,11 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={setAdversityThreshold}
           />
         </SettingsRow>
-      </CollapsiblePane>
 
-      {/* ── Subject population — recovery period settings ─────── */}
-      {hasRecovery && meta.dose_groups && meta.dose_groups.length > 0 && (() => {
-        return (
-          <CollapsiblePane title="Recovery">
-            <SettingsRow label="Treatment period">
+        {/* Recovery pooling — inline, only when study has recovery arms */}
+        {hasRecovery && (
+          <>
+            <SettingsRow label="Recovery pooling">
               <SettingsSelect
                 value={recoveryPooling}
                 options={[
@@ -290,92 +272,88 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 ? "Recovery arms included in treatment-period statistics (recommended)"
                 : "Recovery animals excluded from treatment-period statistics"}
             </div>
-          </CollapsiblePane>
-        );
-      })()}
+          </>
+        )}
 
-      {/* ── Statistical methods ────────────────────────── */}
-      <CollapsiblePane title="Statistical methods">
-        <div className="space-y-0.5">
-          <SettingsRow label="Pairwise test">
-            <SettingsSelect
-              value={pairwiseTest}
-              options={[
-                { value: "dunnett", label: "Dunnett" },
-                { value: "williams", label: "Williams", disabled: true },
-                { value: "steel", label: "Steel", disabled: true },
-              ]}
-              onChange={setPairwiseTest}
-            />
-          </SettingsRow>
-          <SettingsRow label="Multiplicity">
-            <SettingsSelect
-              value={multiplicity}
-              options={
-                pairwiseTest === "dunnett"
-                  ? [
-                      { value: "dunnett-fwer", label: "Dunnett FWER (built-in)" },
-                      { value: "bonferroni", label: "Bonferroni" },
-                      { value: "holm-sidak", label: "Holm-Sidak", disabled: true },
-                      { value: "bh-fdr", label: "BH-FDR", disabled: true },
-                    ]
-                  : [
-                      { value: "dunnett-fwer", label: "Dunnett FWER" },
-                      { value: "bonferroni", label: "Bonferroni" },
-                      { value: "holm-sidak", label: "Holm-Sidak", disabled: true },
-                      { value: "bh-fdr", label: "BH-FDR", disabled: true },
-                    ]
-              }
-              onChange={setMultiplicity}
-            />
-          </SettingsRow>
-          <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
-            {multiplicity === "dunnett-fwer" && pairwiseTest === "dunnett"
-              ? "FWER-controlled many-to-one. Incidence: Fisher exact, no correction."
-              : multiplicity === "bonferroni"
-                ? "Bonferroni: min(p \u00d7 k, 1.0) applied to raw Welch t-test p-values"
-                : "Separate correction needed. Incidence: Fisher exact, no correction."}
-          </div>
-          <SettingsRow label="Trend test">
-            <SettingsSelect
-              value={trendTest}
-              options={[
-                { value: "jonckheere", label: "Jonckheere-Terpstra" },
-                { value: "cuzick", label: "Cuzick", disabled: true },
-                { value: "williams-trend", label: "Williams (parametric)", disabled: true },
-              ]}
-              onChange={setTrendTest}
-            />
-          </SettingsRow>
-          <SettingsRow label="Incidence trend">
-            <SettingsSelect
-              value={incidenceTrend}
-              options={[
-                { value: "cochran-armitage", label: "Cochran-Armitage (approx.)" },
-                { value: "logistic-slope", label: "Logistic regression", disabled: true },
-              ]}
-              onChange={setIncidenceTrend}
-            />
-          </SettingsRow>
-          <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
-            Chi-square linear contrast approximation with ordinal dose scores
-          </div>
-          <SettingsRow label="Effect size">
-            <SettingsSelect
-              value={effectSize}
-              options={[
-                { value: "hedges-g", label: "Hedges' g" },
-                { value: "cohens-d", label: "Cohen's d (uncorrected)" },
-                { value: "glass-delta", label: "Glass's delta" },
-              ]}
-              onChange={setEffectSize}
-            />
-          </SettingsRow>
-          <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
-            {effectSize === "hedges-g" && "Bias-corrected for small samples (J = 1 \u2212 3/(4df \u2212 1))"}
-            {effectSize === "cohens-d" && "Uncorrected pooled SD. May overestimate for small n."}
-            {effectSize === "glass-delta" && "Uses control SD only. Preferred when treatment affects variance."}
-          </div>
+        {/* Pairwise test */}
+        <SettingsRow label="Pairwise test">
+          <SettingsSelect
+            value={pairwiseTest}
+            options={[
+              { value: "dunnett", label: "Dunnett" },
+              { value: "williams", label: "Williams", disabled: true },
+              { value: "steel", label: "Steel", disabled: true },
+            ]}
+            onChange={setPairwiseTest}
+          />
+        </SettingsRow>
+        <SettingsRow label="Multiplicity">
+          <SettingsSelect
+            value={multiplicity}
+            options={
+              pairwiseTest === "dunnett"
+                ? [
+                    { value: "dunnett-fwer", label: "Dunnett FWER (built-in)" },
+                    { value: "bonferroni", label: "Bonferroni" },
+                    { value: "holm-sidak", label: "Holm-Sidak", disabled: true },
+                    { value: "bh-fdr", label: "BH-FDR", disabled: true },
+                  ]
+                : [
+                    { value: "dunnett-fwer", label: "Dunnett FWER" },
+                    { value: "bonferroni", label: "Bonferroni" },
+                    { value: "holm-sidak", label: "Holm-Sidak", disabled: true },
+                    { value: "bh-fdr", label: "BH-FDR", disabled: true },
+                  ]
+            }
+            onChange={setMultiplicity}
+          />
+        </SettingsRow>
+        <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
+          {multiplicity === "dunnett-fwer" && pairwiseTest === "dunnett"
+            ? "FWER-controlled many-to-one. Incidence: Fisher exact, no correction."
+            : multiplicity === "bonferroni"
+              ? "Bonferroni: min(p \u00d7 k, 1.0) applied to raw Welch t-test p-values"
+              : "Separate correction needed. Incidence: Fisher exact, no correction."}
+        </div>
+        <SettingsRow label="Trend test">
+          <SettingsSelect
+            value={trendTest}
+            options={[
+              { value: "jonckheere", label: "Jonckheere-Terpstra" },
+              { value: "cuzick", label: "Cuzick", disabled: true },
+              { value: "williams-trend", label: "Williams (parametric)", disabled: true },
+            ]}
+            onChange={setTrendTest}
+          />
+        </SettingsRow>
+        <SettingsRow label="Incidence trend">
+          <SettingsSelect
+            value={incidenceTrend}
+            options={[
+              { value: "cochran-armitage", label: "Cochran-Armitage (approx.)" },
+              { value: "logistic-slope", label: "Logistic regression", disabled: true },
+            ]}
+            onChange={setIncidenceTrend}
+          />
+        </SettingsRow>
+        <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
+          Chi-square linear contrast approximation with ordinal dose scores
+        </div>
+        <SettingsRow label="Effect size">
+          <SettingsSelect
+            value={effectSize}
+            options={[
+              { value: "hedges-g", label: "Hedges' g" },
+              { value: "cohens-d", label: "Cohen's d (uncorrected)" },
+              { value: "glass-delta", label: "Glass's delta" },
+            ]}
+            onChange={setEffectSize}
+          />
+        </SettingsRow>
+        <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
+          {effectSize === "hedges-g" && "Bias-corrected for small samples (J = 1 \u2212 3/(4df \u2212 1))"}
+          {effectSize === "cohens-d" && "Uncorrected pooled SD. May overestimate for small n."}
+          {effectSize === "glass-delta" && "Uses control SD only. Preferred when treatment affects variance."}
         </div>
       </CollapsiblePane>
 
