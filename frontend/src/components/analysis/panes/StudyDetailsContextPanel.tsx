@@ -185,7 +185,7 @@ function RecoveryOverrideSection({
           if (effectiveChecked && effectiveLastDosingDay != null && recDays) {
             return (
               <div>
-                Override: Day {effectiveLastDosingDay + 1}\u2013{effectiveLastDosingDay + recDays} ({recDays} days)
+                <span className="font-medium">Recovery period:</span> Override: Day {effectiveLastDosingDay + 1}{"\u2013"}{effectiveLastDosingDay + recDays} ({recDays} days)
               </div>
             );
           }
@@ -193,7 +193,7 @@ function RecoveryOverrideSection({
             return (
               <div className="flex items-start gap-1 text-amber-700">
                 <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-                <span>Auto-detection failed \u2014 override recommended</span>
+                <span><span className="font-medium">Recovery period:</span> Auto-detection failed {"\u2014"} override recommended</span>
               </div>
             );
           }
@@ -201,9 +201,9 @@ function RecoveryOverrideSection({
             ? Math.round(dosingDurationWeeks * 7)
             : autoDetected;
           if (dosingDays && recDays) {
-            return <div>Auto-detected: Day {dosingDays + 1}\u2013{dosingDays + recDays} ({recDays} days)</div>;
+            return <div><span className="font-medium">Recovery period:</span> Auto-detected: Day {dosingDays + 1}{"\u2013"}{dosingDays + recDays} ({recDays} days)</div>;
           }
-          return <div>Auto-detected: {recDays ? `${recDays} days` : "detected"}</div>;
+          return <div><span className="font-medium">Recovery period:</span> Auto-detected: {recDays ? `${recDays} days` : "detected"}</div>;
         })()}
       </div>
 
@@ -268,7 +268,7 @@ function RecoveryOverrideSection({
           {/* Success feedback */}
           {regenerate.isSuccess && !regenerate.isPending && (
             <div className="text-[10px] text-green-600">
-              Re-analysis complete \u2014 {regenerate.data?.findings_count ?? 0} findings updated
+              Re-analysis complete {"\u2014"} {regenerate.data?.findings_count ?? 0} findings updated
             </div>
           )}
 
@@ -509,79 +509,39 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
         </SettingsRow>
       </CollapsiblePane>
 
-      {/* ── Subject population — edge-case settings ─────── */}
-      {meta.dose_groups && meta.dose_groups.length > 0 && (() => {
-        const dgs = meta.dose_groups;
-        const recovN = dgs.reduce((s, dg) => s + (dg.recovery_n ?? 0), 0);
-        const tkN = dgs.reduce((s, dg) => s + (dg.tk_count ?? 0), 0);
-        const hasRec = recovN > 0;
-        const hasTk = tkN > 0;
-        if (!hasRec && !hasTk) return null;
+      {/* ── Subject population — recovery period settings ─────── */}
+      {hasRecovery && meta.dose_groups && meta.dose_groups.length > 0 && (() => {
         return (
           <CollapsiblePane title="Subject population">
-            <div className="space-y-0.5 text-[10px] text-muted-foreground">
-              {hasRec && (
-                <div>Recovery: {recovN} — pooled with main during treatment</div>
-              )}
-              {hasTk && (
-                <div>TK satellite: {tkN} — excluded from all analyses</div>
-              )}
-              {hasRec && (
-                <div className="mt-1.5 border-t pt-1.5 text-[10px] text-muted-foreground">
-                  <span className="font-medium text-foreground">Treatment-period N per group: </span>
-                  {dgs.filter(dg => !dg.is_recovery).map((dg) => {
-                    const pooled = dg.pooled_n_total ?? dg.n_total;
-                    const isPooled = pooled > dg.n_total;
-                    return (
-                      <span key={dg.armcd} className="mr-2 tabular-nums">
-                        {dg.label.split(",")[0]}: {pooled}
-                        {isPooled && (
-                          <span className="text-muted-foreground/60"> (+{pooled - dg.n_total}R)</span>
-                        )}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
+            <RecoveryOverrideSection
+              studyId={studyId}
+              recoveryPeriod={recoveryPeriod}
+              dosingDurationWeeks={studyCtx?.dosingDurationWeeks}
+            />
+            {meta.dose_groups && (() => {
+              const arms = meta.dose_groups
+                .filter((dg) => dg.recovery_armcd)
+                .map((dg) => dg.recovery_armcd!);
+              return arms.length > 0 ? (
+                <div className="mt-0.5 text-[10px] text-muted-foreground">Arms: {arms.join(", ")}</div>
+              ) : null;
+            })()}
+            <SettingsRow label="Treatment period">
+              <SettingsSelect
+                value={recoveryPooling}
+                options={[
+                  { value: "pool", label: "Pool with main study" },
+                  { value: "separate", label: "Analyze separately" },
+                ]}
+                onChange={setRecoveryPooling}
+                confirmMessage="Changing pooling mode will affect all treatment-period statistics. Continue?"
+              />
+            </SettingsRow>
+            <div className="mb-1 text-[10px] leading-snug text-muted-foreground">
+              {recoveryPooling === "pool"
+                ? "Recovery animals pooled with main study during treatment (recommended)"
+                : "Recovery animals excluded from treatment-period statistics"}
             </div>
-
-            {/* Recovery period settings */}
-            {hasRecovery && (
-              <div className="mt-1.5 border-t pt-1.5">
-                <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
-                  Recovery period
-                </div>
-                <RecoveryOverrideSection
-                  studyId={studyId}
-                  recoveryPeriod={recoveryPeriod}
-                  dosingDurationWeeks={studyCtx?.dosingDurationWeeks}
-                />
-                {meta.dose_groups && (() => {
-                  const arms = meta.dose_groups
-                    .filter((dg) => dg.recovery_armcd)
-                    .map((dg) => dg.recovery_armcd!);
-                  return arms.length > 0 ? (
-                    <div className="mt-0.5 text-[10px] text-muted-foreground">Arms: {arms.join(", ")}</div>
-                  ) : null;
-                })()}
-                <SettingsRow label="Treatment period">
-                  <SettingsSelect
-                    value={recoveryPooling}
-                    options={[
-                      { value: "pool", label: "Pool with main study" },
-                      { value: "separate", label: "Analyze separately" },
-                    ]}
-                    onChange={setRecoveryPooling}
-                    confirmMessage="Changing pooling mode will affect all treatment-period statistics. Continue?"
-                  />
-                </SettingsRow>
-                <div className="mb-1 text-[10px] leading-snug text-muted-foreground">
-                  {recoveryPooling === "pool"
-                    ? "Recovery animals pooled with main study during treatment (recommended)"
-                    : "Recovery animals excluded from treatment-period statistics"}
-                </div>
-              </div>
-            )}
           </CollapsiblePane>
         );
       })()}

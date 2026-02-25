@@ -1091,7 +1091,7 @@ function DiscriminatingEvidenceRow({ disc, differential }: {
               : `, found ${actualArrow}`}
         </span>
         {diffText && (
-          <span className="ml-1 text-muted-foreground/60"> \u2192 {diffText}</span>
+          <span className="ml-1 text-muted-foreground/60"> {"\u2192"} {diffText}</span>
         )}
       </span>
       <span className="shrink-0 text-[9px] text-muted-foreground">

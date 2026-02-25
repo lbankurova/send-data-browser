@@ -19,15 +19,15 @@ import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import type { LesionSeverityRow } from "@/types/analysis-views";
-import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
 import {
+  getNeutralHeatColor,
   deriveSpecimenSummaries,
   deriveSpecimenReviewStatus,
-} from "@/components/analysis/HistopathologyView";
+} from "@/lib/histopathology-helpers";
 import type {
   SpecimenSummary,
   SpecimenReviewStatus,
-} from "@/components/analysis/HistopathologyView";
+} from "@/lib/histopathology-helpers";
 import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { rail } from "@/lib/design-tokens";
 import { useRailKeyboard } from "@/hooks/useRailKeyboard";
@@ -395,7 +395,7 @@ export function SpecimenRailMode() {
             <option value="organ">Sort: Organ</option>
             <option value="severity">Sort: Severity</option>
             <option value="incidence">Sort: Incidence</option>
-            <option value="alpha">Sort: A\u2013Z</option>
+            <option value="alpha">Sort: A–Z</option>
           </FilterSelect>
           <FilterSelect
             value={doseTrendFilter}

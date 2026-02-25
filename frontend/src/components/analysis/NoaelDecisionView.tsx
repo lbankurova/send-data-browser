@@ -253,13 +253,13 @@ function SafetyMarginCalculator({ pkData }: { pkData: PkIntegration }) {
               {cmaxMargin != null && isFinite(cmaxMargin) && cmaxMargin > 0 && (
                 <div>
                   <span className="text-muted-foreground">C<sub>max</sub>{marginSuffix}: </span>
-                  <span className="font-semibold">{cmaxMargin.toFixed(1)}\u00d7</span>
+                  <span className="font-semibold">{cmaxMargin.toFixed(1)}×</span>
                 </div>
               )}
               {aucMargin != null && isFinite(aucMargin) && aucMargin > 0 && (
                 <div>
                   <span className="text-muted-foreground">AUC{marginSuffix}: </span>
-                  <span className="font-semibold">{aucMargin.toFixed(1)}\u00d7</span>
+                  <span className="font-semibold">{aucMargin.toFixed(1)}×</span>
                 </div>
               )}
             </div>

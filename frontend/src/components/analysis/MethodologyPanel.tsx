@@ -174,7 +174,7 @@ export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMetho
         {/* Signal score */}
         <MethodSection title="Signal score formula">
           <div>
-            Weighted composite score (0\u20131.0) combining four components:
+            Weighted composite score (0–1.0) combining four components:
           </div>
           <div className="mt-1 rounded bg-muted/30 px-2 py-1 font-mono text-[9px]">
             0.35 &times; p-value + 0.20 &times; trend + 0.25 &times; effect + 0.20 &times; pattern
@@ -204,7 +204,7 @@ export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMetho
         {/* NOAEL */}
         <MethodSection title="NOAEL determination">
           <div>
-            NOAEL = highest dose level with no adverse effects. Confidence score (0\u20131.0) starts at 1.0,
+            NOAEL = highest dose level with no adverse effects. Confidence score (0–1.0) starts at 1.0,
             penalized by:
           </div>
           <div className="space-y-0.5 mt-1">
