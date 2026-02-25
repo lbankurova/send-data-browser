@@ -775,6 +775,27 @@ describe("decideNormalization — reproductive organs", () => {
     expect(ovary.showAlternatives).toBe(true);
     expect(uterus.showAlternatives).toBe(true);
   });
+
+  // hasEstrousData confidence upgrade
+  it("ovary + hasEstrousData → confidence medium, no cycle warning", () => {
+    const d = decideNormalization(0.8, 0.2, "OVARY", "RAT_SPRAGUE_DAWLEY", null, true);
+    expect(d.mode).toBe("brain_weight");
+    expect(d.confidence).toBe("medium");
+    expect(d.warnings.some(w => w.includes("Estrous cycle staging not available"))).toBe(false);
+    expect(d.rationale.some(r => r.includes("confidence upgraded to medium"))).toBe(true);
+  });
+
+  it("uterus + hasEstrousData → confidence medium", () => {
+    const d = decideNormalization(0.5, 0.1, "UTERUS", "RAT_SPRAGUE_DAWLEY", null, true);
+    expect(d.mode).toBe("absolute");
+    expect(d.confidence).toBe("medium");
+  });
+
+  it("ovary without hasEstrousData → confidence low (default)", () => {
+    const d = decideNormalization(0.8, 0.2, "OVARY", "RAT_SPRAGUE_DAWLEY", null, false);
+    expect(d.confidence).toBe("low");
+    expect(d.warnings.some(w => w.includes("Estrous cycle staging not available"))).toBe(true);
+  });
 });
 
 // ─── assessSecondaryToBodyWeight — reproductive overrides ───

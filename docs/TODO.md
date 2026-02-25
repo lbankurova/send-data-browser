@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 3 | 5 | Spec'd but not implemented |
-| Gap | 14 | 4 | Missing capability, no spec exists |
+| Gap | 15 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **28** | **38** | |
+| **Total open** | **29** | **38** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -191,9 +191,9 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Owner hint:** backend-dev (database), frontend-dev (integration into interpretation layer)
 
 ### ~~GAP-18: Auto-select organ weight method — full spec implementation~~
-- **Files:** `frontend/src/lib/organ-weight-normalization.ts` (NEW), `frontend/src/hooks/useOrganWeightNormalization.ts` (NEW), `frontend/src/components/analysis/StudySummaryView.tsx`, `frontend/src/components/analysis/panes/StudyDetailsContextPanel.tsx`, `frontend/src/components/analysis/panes/OrganContextPanel.tsx`, `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`, `frontend/src/components/analysis/panes/SyndromeContextPanel.tsx`, `frontend/src/lib/cross-domain-syndromes.ts`, `frontend/src/lib/syndrome-interpretation.ts`
-- **Resolution:** Phase 1 of Organ Weight Normalization Auto-Selection Engine implemented. Hedges' g decision engine with 4-tier BW confounding classification, species/strain profiles (12 entries), Bailey et al. organ correlation categories (21 entries), full UI integration (Study Details view + Findings view context panels), syndrome engine integration (OM term annotation + B-7 secondary-to-BW adversity factor). 55 unit tests. Phase 2 (ANCOVA backend) and Phase 3 (Bayesian mediation) deferred.
-- **Status:** ~~Resolved~~ (Phase 1 complete)
+- **Files:** `frontend/src/lib/organ-weight-normalization.ts`, `frontend/src/hooks/useOrganWeightNormalization.ts`, `frontend/src/components/analysis/panes/OrganContextPanel.tsx`, `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`, `frontend/src/lib/cross-domain-syndromes.ts`, `frontend/src/lib/syndrome-ecetoc.ts`, `backend/models/schemas.py`, `backend/services/xpt_processor.py`
+- **Resolution:** Phase 1 + Phase 2 (reproductive normalization) complete. Phase 1: Hedges' g decision engine, 4-tier BW confounding, species/strain profiles, Bailey et al. organ categories, full UI integration, syndrome engine integration. Phase 2: 3 reproductive sub-categories (gonadal, androgen-dependent, female reproductive), per-organ magnitude floors (4 calibrated tiers), B-7 overrides with XS08 gate, estrous domain detection (backend), hasEstrousData confidence upgrade (frontend wiring), category-aware UI banners, normalization alternatives table. 852 tests total. Phase 3 (ANCOVA backend) and Phase 4 (Bayesian mediation) deferred.
+- **Status:** ~~Resolved~~ (Phase 1 + Phase 2 complete)
 - **Owner hint:** ux-designer → frontend-dev
 
 ### GAP-19: Recovery period validation — move override to validation view
@@ -214,3 +214,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Issue:** The right column now shows Stage, NOAEL, LOAEL, target organs, exposure at NOAEL, HED/MRSD, and dose proportionality. Some of these values may not be available or meaningful at all pipeline stages (e.g., pre-submission studies may not have final NOAEL/LOAEL; ongoing studies have no derived endpoints). Need to audit which fields make sense at each stage and either hide unavailable fields or show placeholders (e.g., "Pending" or "Not yet determined"). Also check whether insights/commentary text in the context panel needs stage-aware phrasing (e.g., "Proposed NOAEL" vs "NOAEL" for pre-submission).
 - **Status:** Open
 - **Owner hint:** ux-designer + frontend-dev
+
+### GAP-21: TS domain parser for estrous cycle stage distribution
+- **Files:** `backend/services/xpt_processor.py` (new parser), `frontend/src/lib/organ-weight-normalization.ts` (consumer)
+- **Issue:** Backend detects FE/EO/RE domain presence (boolean `has_estrous_data`) and frontend uses it to upgrade FEMALE_REPRODUCTIVE confidence from "low" to "medium". However, no parser exists to extract estrous cycle staging data from these domains (e.g., cycle stage distribution per animal, cycle regularity metrics). This data would enable: (a) cycle-stage-adjusted organ weight statistics, (b) individual animal cycle-phase assignment for context in organ weight interpretation, (c) further confidence upgrades when cycle data is high-quality. This is a major feature requiring a new findings module, not a simple wiring task.
+- **Blocked on:** Study data with FE/EO/RE domains for development and testing (PointCross has none)
+- **Status:** Open (deferred — requires reproductive study data)
+- **Owner hint:** backend-dev (parser), frontend-dev (UI integration)
