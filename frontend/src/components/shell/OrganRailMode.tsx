@@ -359,7 +359,7 @@ export function OrganRailMode() {
           <option value="evidence">Sort: Evidence (default)</option>
           <option value="adverse">Sort: Adverse count</option>
           <option value="effect">Sort: Effect size</option>
-          <option value="alpha">Sort: A\u2013Z</option>
+          <option value="alpha">Sort: A–Z</option>
         </select>
         <FilterShowingLine
           className="mt-0.5"

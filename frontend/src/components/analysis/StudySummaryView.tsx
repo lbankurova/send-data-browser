@@ -14,6 +14,7 @@ import { useInsights } from "@/hooks/useInsights";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { generateStudyReport } from "@/lib/report-generator";
+import { useValidationResults } from "@/hooks/useValidationResults";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState } from "@/hooks/useSessionState";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
@@ -761,6 +762,7 @@ function DetailsTab({
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const { data: studyCtx } = useStudyContext(studyId);
   const { data: crossFlags } = useCrossAnimalFlags(studyId);
+  const { data: valData, isLoading: valLoading } = useValidationResults(studyId);
   const { data: pkData } = usePkIntegration(studyId);
   const { excludedSubjects } = useScheduledOnly();
   const [organWeightMethod, setOrganWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
@@ -1076,13 +1078,25 @@ function DetailsTab({
       {/* ── Data quality ── */}
       <CollapsiblePane
         title="Data quality"
-        defaultOpen
-        headerRight={missingRequired.length > 0 ? (
-          <span
-            className="border-l-4 pl-1.5 font-medium text-foreground"
-            style={{ borderLeftColor: "#DC2626" }}
-          >
-            {missingRequired.length} required domain{missingRequired.length !== 1 ? "s" : ""} missing
+        defaultOpen={false}
+        headerRight={(missingRequired.length > 0 || (valData?.summary.errors ?? 0) > 0) ? (
+          <span className="flex items-center gap-3">
+            {missingRequired.length > 0 && (
+              <span
+                className="border-l-4 pl-1.5 font-medium text-foreground"
+                style={{ borderLeftColor: "#DC2626" }}
+              >
+                {missingRequired.length} required domain{missingRequired.length !== 1 ? "s" : ""} missing
+              </span>
+            )}
+            {(valData?.summary.errors ?? 0) > 0 && (
+              <span
+                className="border-l-4 pl-1.5 font-medium text-foreground"
+                style={{ borderLeftColor: "#DC2626" }}
+              >
+                {valData!.summary.errors} validation error{valData!.summary.errors !== 1 ? "s" : ""}
+              </span>
+            )}
           </span>
         ) : undefined}
       >
@@ -1162,6 +1176,31 @@ function DetailsTab({
           {allWarnings.length > 0 && (
             <AnomaliesList warnings={allWarnings} flaggedAnimals={flaggedAnimals.filter(a => a.flag)} />
           )}
+
+          {/* Validation issues */}
+          <div className="text-[10px] text-muted-foreground">
+            <span className="font-medium">Validation issues:</span>
+            {valLoading && <span className="ml-1">loading&hellip;</span>}
+            {!valLoading && !valData && <span className="ml-1">not available</span>}
+            {valData && valData.summary.total_issues === 0 && (
+              <span className="ml-1">no issues found</span>
+            )}
+            {valData && valData.summary.total_issues > 0 && (
+              <span className="ml-1 tabular-nums">
+                {valData.summary.errors > 0 && <span className="border-b-[1.5px] border-dashed border-[#DC2626] pb-px">{valData.summary.errors} error{valData.summary.errors !== 1 ? "s" : ""}</span>}
+                {valData.summary.errors > 0 && valData.summary.warnings > 0 && " · "}
+                {valData.summary.warnings > 0 && <>{valData.summary.warnings} warning{valData.summary.warnings !== 1 ? "s" : ""}</>}
+                {(valData.summary.errors > 0 || valData.summary.warnings > 0) && valData.summary.info > 0 && " · "}
+                {valData.summary.info > 0 && <>{valData.summary.info} info</>}
+              </span>
+            )}
+            <Link
+              to={`/studies/${studyId}/validation`}
+              className="ml-1.5 text-primary hover:underline"
+            >
+              Review all &rarr;
+            </Link>
+          </div>
         </div>
       </CollapsiblePane>
       </div>
