@@ -48,7 +48,7 @@ export interface NormalizationContext {
   bwG: number;
   /** Hedges' g for brain weight, null if brain not collected */
   brainG: number | null;
-  /** True if brain weight itself is treatment-affected (|brainG| >= 0.8) */
+  /** True if brain weight itself is treatment-affected (species-calibrated: tier 3) */
   brainAffected: boolean;
   /**
    * Effect decomposition (populated in Phase 2+; null in Phase 1).
@@ -107,6 +107,8 @@ export interface StrainProfile {
   brainCv: [number, number];
   /** Expected brain weight range (g) */
   brainWtG: [number, number];
+  /** Species-calibrated brain tier thresholds: [potentiallyAffectedFloor, affectedFloor] */
+  brainTierThresholds: [number, number];
 }
 
 /** B-7 assessment result: is an organ weight change secondary to BW loss? */
@@ -119,18 +121,18 @@ export interface SecondaryToBWResult {
 // ─── Constants ──────────────────────────────────────────────
 
 export const SPECIES_STRAIN_PROFILES: Record<string, StrainProfile> = {
-  RAT_SPRAGUE_DAWLEY:  { bwCv: [8, 15],  brainCv: [2, 5],  brainWtG: [1.9, 2.2] },
-  RAT_WISTAR:          { bwCv: [7, 12],  brainCv: [2, 5],  brainWtG: [1.8, 2.1] },
-  RAT_FISCHER_344:     { bwCv: [5, 10],  brainCv: [2, 4],  brainWtG: [1.8, 2.0] },
-  RAT_LONG_EVANS:      { bwCv: [8, 14],  brainCv: [2, 5],  brainWtG: [1.9, 2.2] },
-  MOUSE_CD1:           { bwCv: [8, 15],  brainCv: [3, 6],  brainWtG: [0.45, 0.55] },
-  MOUSE_C57BL6:        { bwCv: [6, 12],  brainCv: [3, 5],  brainWtG: [0.42, 0.50] },
-  MOUSE_BALBC:         { bwCv: [6, 10],  brainCv: [3, 5],  brainWtG: [0.40, 0.48] },
-  DOG_BEAGLE:          { bwCv: [10, 20], brainCv: [4, 8],  brainWtG: [72, 85] },
-  NHP_CYNOMOLGUS:      { bwCv: [15, 30], brainCv: [5, 12], brainWtG: [55, 75] },
-  NHP_RHESUS:          { bwCv: [15, 25], brainCv: [5, 10], brainWtG: [80, 110] },
-  RABBIT_NZW:          { bwCv: [10, 18], brainCv: [4, 7],  brainWtG: [10, 12] },
-  MINIPIG_GOTTINGEN:   { bwCv: [10, 20], brainCv: [5, 10], brainWtG: [40, 65] },
+  RAT_SPRAGUE_DAWLEY:  { bwCv: [8, 15],  brainCv: [2, 5],  brainWtG: [1.9, 2.2], brainTierThresholds: [0.5, 1.0] },
+  RAT_WISTAR:          { bwCv: [7, 12],  brainCv: [2, 5],  brainWtG: [1.8, 2.1], brainTierThresholds: [0.5, 1.0] },
+  RAT_FISCHER_344:     { bwCv: [5, 10],  brainCv: [2, 4],  brainWtG: [1.8, 2.0], brainTierThresholds: [0.5, 1.0] },
+  RAT_LONG_EVANS:      { bwCv: [8, 14],  brainCv: [2, 5],  brainWtG: [1.9, 2.2], brainTierThresholds: [0.5, 1.0] },
+  MOUSE_CD1:           { bwCv: [8, 15],  brainCv: [3, 6],  brainWtG: [0.45, 0.55], brainTierThresholds: [0.5, 1.0] },
+  MOUSE_C57BL6:        { bwCv: [6, 12],  brainCv: [3, 5],  brainWtG: [0.42, 0.50], brainTierThresholds: [0.5, 1.0] },
+  MOUSE_BALBC:         { bwCv: [6, 10],  brainCv: [3, 5],  brainWtG: [0.40, 0.48], brainTierThresholds: [0.5, 1.0] },
+  DOG_BEAGLE:          { bwCv: [10, 20], brainCv: [4, 8],  brainWtG: [72, 85], brainTierThresholds: [0.8, 1.5] },
+  NHP_CYNOMOLGUS:      { bwCv: [15, 30], brainCv: [5, 12], brainWtG: [55, 75], brainTierThresholds: [1.0, 2.0] },
+  NHP_RHESUS:          { bwCv: [15, 25], brainCv: [5, 10], brainWtG: [80, 110], brainTierThresholds: [1.0, 2.0] },
+  RABBIT_NZW:          { bwCv: [10, 18], brainCv: [4, 7],  brainWtG: [10, 12], brainTierThresholds: [0.8, 1.5] },
+  MINIPIG_GOTTINGEN:   { bwCv: [10, 20], brainCv: [5, 10], brainWtG: [40, 65], brainTierThresholds: [0.8, 1.5] },
 };
 
 // Using string union + const object instead of enum (erasableSyntaxOnly)
@@ -249,6 +251,30 @@ export function getOrganCorrelationCategory(omtestcd: string): OrganCorrelationC
   return ORGAN_CATEGORIES[omtestcd.toUpperCase()] ?? OrganCorrelationCategory.MODERATE_BW;
 }
 
+/** Default brain tier thresholds (rodent) for unknown species */
+const DEFAULT_BRAIN_TIER_THRESHOLDS: [number, number] = [0.5, 1.0];
+
+export type BrainTierLabel = "unaffected" | "potentially affected" | "affected";
+
+/**
+ * Species-calibrated brain weight tier assessment.
+ *
+ * Returns null if brainG is null (brain not collected).
+ * Falls back to rodent thresholds for unknown species.
+ */
+export function getBrainTier(
+  brainG: number | null,
+  speciesStrain: string,
+): { tier: 1 | 2 | 3; label: BrainTierLabel } | null {
+  if (brainG == null) return null;
+  const profile = SPECIES_STRAIN_PROFILES[speciesStrain];
+  const [t2Floor, t3Floor] = profile?.brainTierThresholds ?? DEFAULT_BRAIN_TIER_THRESHOLDS;
+  const abs = Math.abs(brainG);
+  if (abs >= t3Floor) return { tier: 3, label: "affected" };
+  if (abs >= t2Floor) return { tier: 2, label: "potentially affected" };
+  return { tier: 1, label: "unaffected" };
+}
+
 /**
  * Tiered normalization decision engine (spec §4.4).
  *
@@ -276,8 +302,9 @@ export function decideNormalization(
     );
   }
 
-  // ── CHECK: Is brain weight itself affected? ──
-  const brainAffected = brainG !== null && Math.abs(brainG) >= 0.8;
+  // ── CHECK: Is brain weight itself affected? (species-calibrated) ──
+  const brainTierResult = getBrainTier(brainG, speciesStrain);
+  const brainAffected = brainTierResult?.tier === 3;
   if (brainAffected) {
     rationale.push(
       `Brain weight shows significant treatment effect (g = ${brainG!.toFixed(2)}). ` +
@@ -294,6 +321,14 @@ export function decideNormalization(
       mode: "ancova", tier: 4, confidence: "high",
       rationale, warnings, showAlternatives: true, brainAffected: true, userOverridden: false,
     };
+  }
+
+  // Tier 2 brain: potentially affected — warn but don't force ANCOVA
+  if (brainTierResult?.tier === 2) {
+    warnings.push(
+      `Brain weight potentially affected (g = ${brainG!.toFixed(2)}). ` +
+      `Report both brain-normalized and absolute organ weights.`,
+    );
   }
 
   // ── ORGAN-SPECIFIC OVERRIDES (Bailey et al., 2004) ──
@@ -726,21 +761,28 @@ export function mapStudyType(studyType: string | null): string | null {
  *
  * @param highestTier — worst-case tier across all organs × groups (1–4)
  * @param worstBrainG — worst-case brain Hedges' g, null if brain not collected
+ * @param speciesStrain — species/strain key for species-calibrated brain thresholds
  */
 export function buildNormalizationRationale(
   highestTier: number,
   worstBrainG: number | null,
+  speciesStrain: string = "UNKNOWN",
 ): string | null {
   if (highestTier <= 1) return null;
 
+  const brainTierResult = getBrainTier(worstBrainG, speciesStrain);
   const brainNa = worstBrainG == null;
-  const brainOk = !brainNa && Math.abs(worstBrainG!) < 0.5;
-  const brainAffected = !brainNa && Math.abs(worstBrainG!) >= 0.5;
+  const brainOk = brainTierResult?.tier === 1;
+  const brainPotentiallyAffected = brainTierResult?.tier === 2;
+  const brainAffected = brainTierResult?.tier === 3;
   const brainGFormatted = brainNa ? null : `g\u00A0=\u00A0${Math.abs(worstBrainG!).toFixed(2)}`;
 
   if (highestTier === 2) {
     if (brainOk) {
       return "BW moderately affected (Tier 2) \u2014 brain ratio available as cross-check.";
+    }
+    if (brainPotentiallyAffected) {
+      return `BW moderately affected (Tier 2) \u2014 brain potentially affected (${brainGFormatted}); interpret ratios with caution.`;
     }
     if (brainAffected) {
       return `BW moderately affected (Tier 2) \u2014 brain also affected (${brainGFormatted}); neither ratio fully reliable. ANCOVA recommended.`;
@@ -763,6 +805,10 @@ export function buildNormalizationRationale(
     }
     // Tier 4
     return `BW ${tierWord} affected (Tier ${tierNum}) \u2014 ratio to brain as best available. ANCOVA with baseline BW recommended.`;
+  }
+
+  if (brainPotentiallyAffected) {
+    return `BW ${tierWord} affected (Tier ${tierNum}) \u2014 brain potentially affected (${brainGFormatted}); report both ratios. ANCOVA recommended.`;
   }
 
   // brainAffected at Tier 3/4
