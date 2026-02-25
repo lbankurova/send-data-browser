@@ -792,7 +792,7 @@ describe("assessSecondaryToBodyWeight — reproductive overrides", () => {
     expect(r.rationale).toContain("never secondary to BW.");
   });
 
-  it("prostate at tier 3 → isSecondary false, rationale mentions androgen/stress", () => {
+  it("prostate at tier 3 without XS08 → isSecondary false, confidence low", () => {
     const ctx: NormalizationContext = {
       organ: "PROSTATE", setcd: "3", activeMode: "absolute", tier: 3,
       bwG: 1.5, brainG: 0.1, brainAffected: false,
@@ -800,8 +800,20 @@ describe("assessSecondaryToBodyWeight — reproductive overrides", () => {
     };
     const r = assessSecondaryToBodyWeight(ctx);
     expect(r.isSecondary).toBe(false);
+    expect(r.confidence).toBe("low");
+    expect(r.rationale).toContain("no stress syndrome (XS08)");
+  });
+
+  it("prostate at tier 3 with XS08 → isSecondary false, confidence medium, mentions stress", () => {
+    const ctx: NormalizationContext = {
+      organ: "PROSTATE", setcd: "3", activeMode: "absolute", tier: 3,
+      bwG: 1.5, brainG: 0.1, brainAffected: false,
+      effectDecomposition: null, rationale: [], warnings: [], userOverridden: false,
+    };
+    const r = assessSecondaryToBodyWeight(ctx, ["XS08"]);
+    expect(r.isSecondary).toBe(false);
     expect(r.confidence).toBe("medium");
-    expect(r.rationale).toContain("stress-mediated HPG disruption");
+    expect(r.rationale).toContain("Stress syndrome (XS08) detected");
   });
 
   it("ovary at tier 3 → isSecondary false, confidence low", () => {

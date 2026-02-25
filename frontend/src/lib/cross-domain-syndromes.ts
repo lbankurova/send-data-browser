@@ -1329,19 +1329,29 @@ for (const entry of ENDPOINT_CLASS_FLOORS) {
 }
 
 // Organ weight floors — by specimen name (OM domain has testCode=WEIGHT for all)
-const ORGAN_WEIGHT_REPRODUCTIVE: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.05 };
+// Per-organ calibration: §4.2 reproductive normalization spec (Creasy 2013, Sellers 2007)
+const ORGAN_WEIGHT_GONADAL: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.05 };   // testes, epididymides — CV 5–15%
+const ORGAN_WEIGHT_PROSTATE: MagnitudeFloor = { minG: 1.0, minFcDelta: 0.10 };   // prostate, seminal vesicles — CV 10–20%
+const ORGAN_WEIGHT_OVARY: MagnitudeFloor = { minG: 1.5, minFcDelta: 0.15 };      // ovaries — CV 25–40%
+const ORGAN_WEIGHT_UTERUS: MagnitudeFloor = { minG: 1.5, minFcDelta: 0.15 };     // uterus — CV 30–50%
 const ORGAN_WEIGHT_GENERAL: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.10 };
 // Immune organs use same threshold as general (0.10) but are tracked separately
 // for future ratio_policy (adrenal: organ:brain per Bailey 2004)
 const ORGAN_WEIGHT_IMMUNE: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.10 };
 
-const REPRO_ORGAN_KEYWORDS = ["testis", "epididymis", "ovary", "uterus", "prostate", "seminal"];
+const GONADAL_KEYWORDS = ["testis", "testes", "epididymis", "epididymides"];
+const PROSTATE_KEYWORDS = ["prostate", "seminal"];
+const OVARY_KEYWORDS = ["ovary", "ovaries"];
+const UTERUS_KEYWORDS = ["uterus"];
 const IMMUNE_ORGAN_KEYWORDS = ["thymus", "adrenal"];
 
 /** Determine organ weight floor subclass from the endpoint label. */
 function getOrganWeightFloor(ep: EndpointSummary): MagnitudeFloor {
   const label = (ep.specimen ?? ep.endpoint_label ?? "").toLowerCase();
-  if (REPRO_ORGAN_KEYWORDS.some((kw) => label.includes(kw))) return ORGAN_WEIGHT_REPRODUCTIVE;
+  if (GONADAL_KEYWORDS.some((kw) => label.includes(kw))) return ORGAN_WEIGHT_GONADAL;
+  if (PROSTATE_KEYWORDS.some((kw) => label.includes(kw))) return ORGAN_WEIGHT_PROSTATE;
+  if (OVARY_KEYWORDS.some((kw) => label.includes(kw))) return ORGAN_WEIGHT_OVARY;
+  if (UTERUS_KEYWORDS.some((kw) => label.includes(kw))) return ORGAN_WEIGHT_UTERUS;
   if (IMMUNE_ORGAN_KEYWORDS.some((kw) => label.includes(kw))) return ORGAN_WEIGHT_IMMUNE;
   return ORGAN_WEIGHT_GENERAL;
 }

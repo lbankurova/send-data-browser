@@ -387,6 +387,8 @@ export function decideNormalization(
     return {
       mode: usesBrain ? "brain_weight" : "absolute",
       tier: computeBwTier(bwG),
+      // TODO: When has_estrous_data is available from study metadata,
+      // upgrade confidence from "low" to "medium" for FEMALE_REPRODUCTIVE.
       confidence: "low",
       rationale, warnings, showAlternatives: true,
       brainAffected, userOverridden: false,
@@ -519,6 +521,7 @@ export function decideNormalization(
 // @field FIELD-52 — adversity.secondaryToBW
 export function assessSecondaryToBodyWeight(
   normCtx: NormalizationContext | undefined,
+  allDetectedSyndromeIds?: string[],
 ): SecondaryToBWResult {
   if (!normCtx) {
     return { isSecondary: false, confidence: "high", rationale: "No normalization context." };
@@ -537,11 +540,20 @@ export function assessSecondaryToBodyWeight(
   }
 
   if (organCategory === OrganCorrelationCategory.ANDROGEN_DEPENDENT && normCtx.tier >= 3) {
+    const xs08Detected = allDetectedSyndromeIds?.includes("XS08") ?? false;
+    if (xs08Detected) {
+      return {
+        isSecondary: false,
+        confidence: "medium",
+        rationale: `${normCtx.organ} weight is androgen-dependent. Stress syndrome (XS08) detected — ` +
+          `changes likely secondary to stress-mediated HPG disruption, not BW scaling.`,
+      };
+    }
     return {
       isSecondary: false,
-      confidence: "medium",
-      rationale: `${normCtx.organ} weight is androgen-dependent. Changes may be secondary to ` +
-        `stress-mediated HPG disruption, not BW scaling.`,
+      confidence: "low",
+      rationale: `${normCtx.organ} weight is androgen-dependent. BW Tier ${normCtx.tier} ` +
+        `but no stress syndrome (XS08) detected — cause of weight change uncertain.`,
     };
   }
 

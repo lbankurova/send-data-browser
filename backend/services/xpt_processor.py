@@ -217,6 +217,11 @@ def extract_full_ts_metadata(study: StudyInfo) -> StudyMetadata:
         except Exception:
             pass
 
+    # Detect estrous/fertility domain presence (FE, EO, RE)
+    domain_codes = set(study.xpt_files.keys())
+    estrous_domains = {"fe", "eo", "re"}
+    has_estrous = bool(domain_codes & estrous_domains)
+
     return StudyMetadata(
         study_id=study.study_id,
         title=g("STITLE"),
@@ -250,5 +255,6 @@ def extract_full_ts_metadata(study: StudyInfo) -> StudyMetadata:
         pipeline_stage="pre_submission",  # Default for studies under review
         domain_count=len(study.xpt_files),
         domains=sorted(study.xpt_files.keys()),
+        has_estrous_data=has_estrous,
         dose_groups=dose_groups_list,
     )
