@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
@@ -8,14 +7,11 @@ import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
-import { useRegenerate } from "@/hooks/useRegenerate";
 import { useSessionState } from "@/hooks/useSessionState";
 import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSelect } from "@/components/ui/FilterBar";
-import { fetchStudyMetadataEnriched } from "@/lib/analysis-view-api";
-import type { StudyMetadataEnriched } from "@/lib/analysis-view-api";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -75,207 +71,31 @@ interface StudyNote {
   lastEdited?: string;
 }
 
-interface AnalysisSettings {
-  last_dosing_day_override: number | null;
-}
+// ── Recovery Period Display ─────────────────────────────────
 
-// ── Recovery Override Sub-component ─────────────────────────
-
-function RecoveryOverrideSection({
-  studyId,
+function RecoveryPeriodDisplay({
   recoveryPeriod,
   dosingDurationWeeks,
 }: {
-  studyId: string;
   recoveryPeriod: number | null | undefined;
   dosingDurationWeeks: number | null | undefined;
 }) {
-  // Server state: analysis settings annotation
-  const { data: settingsData } = useAnnotations<AnalysisSettings>(studyId, "analysis-settings");
-  const saveSettings = useSaveAnnotation<AnalysisSettings>(studyId, "analysis-settings");
-  const regenerate = useRegenerate(studyId);
-
-  // Enriched metadata: contains last_dosing_day from generator
-  const { data: enrichedMeta } = useQuery<StudyMetadataEnriched>({
-    queryKey: ["study-metadata-enriched", studyId],
-    queryFn: () => fetchStudyMetadataEnriched(studyId),
-    enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const autoDetected = enrichedMeta?.auto_detected_last_dosing_day ?? null;
-  const serverOverride = settingsData?.["settings"]?.last_dosing_day_override ?? null;
-  const isOverrideActive = serverOverride != null;
-
-  // Local UI state for the override input
-  const [overrideChecked, setOverrideChecked] = useState<boolean | null>(null);
-  const [overrideValue, setOverrideValue] = useState<string>("");
-
-  // Derive effective checked state: local UI state takes precedence, falls back to server
-  const effectiveChecked = overrideChecked ?? isOverrideActive;
-
-  // Initialize override value from server when it loads
-  const displayValue = overrideValue || (serverOverride != null ? String(serverOverride) : (autoDetected != null ? String(autoDetected) : ""));
-
-  const isReanalyzing = regenerate.isPending || saveSettings.isPending;
-
-  // Compute the effective last dosing day and recovery range display
-  const effectiveLastDosingDay = effectiveChecked && displayValue
-    ? parseInt(displayValue, 10)
-    : autoDetected;
   const recDays = recoveryPeriod;
+  const dosingDays = dosingDurationWeeks
+    ? Math.round(dosingDurationWeeks * 7)
+    : null;
 
-  // Check if current input differs from server state (needs re-analysis)
-  const inputDay = displayValue ? parseInt(displayValue, 10) : null;
-  const needsReanalysis = effectiveChecked
-    ? inputDay != null && inputDay !== serverOverride
-    : isOverrideActive; // unchecking means we need to clear the override
-
-  const handleReanalyze = () => {
-    if (isReanalyzing) return;
-
-    const newOverride = effectiveChecked && inputDay != null ? inputDay : null;
-
-    saveSettings.mutate(
-      {
-        entityKey: "settings",
-        data: { last_dosing_day_override: newOverride },
-      },
-      {
-        onSuccess: () => {
-          regenerate.mutate(undefined, {
-            onSuccess: () => {
-              // Reset local state — server is now the source of truth
-              setOverrideChecked(null);
-              setOverrideValue("");
-            },
-          });
-        },
-      },
-    );
-  };
-
-  const handleReset = () => {
-    setOverrideChecked(false);
-    setOverrideValue("");
-    // Immediately clear override and re-analyze
-    saveSettings.mutate(
-      {
-        entityKey: "settings",
-        data: { last_dosing_day_override: null },
-      },
-      {
-        onSuccess: () => {
-          regenerate.mutate(undefined, {
-            onSuccess: () => {
-              setOverrideChecked(null);
-              setOverrideValue("");
-            },
-          });
-        },
-      },
-    );
-  };
-
-  // Build the recovery period value text
-  const recoveryValueText = (() => {
-    if (effectiveChecked && effectiveLastDosingDay != null && recDays) {
-      return `Override: Day ${effectiveLastDosingDay + 1}\u2013${effectiveLastDosingDay + recDays} (${recDays} days)`;
-    }
-    if (autoDetected == null) return null; // handled separately as warning
-    const dosingDays = dosingDurationWeeks
-      ? Math.round(dosingDurationWeeks * 7)
-      : autoDetected;
+  const valueText = (() => {
     if (dosingDays && recDays) {
-      return `Auto-detected: Day ${dosingDays + 1}\u2013${dosingDays + recDays} (${recDays} days)`;
+      return `Day ${dosingDays + 1}\u2013${dosingDays + recDays} (${recDays} days)`;
     }
-    return `Auto-detected: ${recDays ? `${recDays} days` : "detected"}`;
+    return recDays ? `${recDays} days` : "unknown";
   })();
 
   return (
-    <>
-      {/* Recovery period — SettingsRow layout */}
-      {autoDetected == null ? (
-        <div className="flex items-start gap-1 py-1 text-[10px] text-amber-700">
-          <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-          <span>Recovery period: auto-detection failed {"\u2014"} override recommended</span>
-        </div>
-      ) : (
-        <SettingsRow label="Recovery period">
-          <span className="text-[10px] text-muted-foreground">{recoveryValueText}</span>
-        </SettingsRow>
-      )}
-
-      {/* Override checkbox */}
-      <label className="flex items-center gap-2 py-0.5 text-[10px]">
-        <input
-          type="checkbox"
-          checked={effectiveChecked}
-          onChange={(e) => {
-            setOverrideChecked(e.target.checked);
-            if (e.target.checked && !overrideValue) {
-              setOverrideValue(
-                serverOverride != null ? String(serverOverride) : (autoDetected != null ? String(autoDetected) : ""),
-              );
-            }
-          }}
-          className="h-3 w-3 rounded border-gray-300"
-          disabled={isReanalyzing}
-        />
-        <span className={effectiveChecked ? "text-foreground" : "text-muted-foreground"}>
-          Override last dosing day
-        </span>
-      </label>
-
-      {/* Override input + actions (shown when checked) */}
-      {effectiveChecked && (
-        <div className="ml-5 space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground">Last dosing day:</span>
-            <input
-              type="number"
-              min={1}
-              className="w-16 rounded border bg-background px-1.5 py-0.5 text-[10px] tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
-              value={displayValue}
-              onChange={(e) => setOverrideValue(e.target.value)}
-              disabled={isReanalyzing}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              className="flex items-center gap-1 rounded bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-              disabled={!needsReanalysis || isReanalyzing}
-              onClick={handleReanalyze}
-            >
-              {isReanalyzing && <Loader2 className="h-3 w-3 animate-spin" />}
-              {isReanalyzing ? "Re-analyzing..." : "Re-analyze"}
-            </button>
-            {isOverrideActive && (
-              <button
-                className="text-[10px] text-primary underline hover:text-primary/80 disabled:opacity-50"
-                onClick={handleReset}
-                disabled={isReanalyzing}
-              >
-                Reset to auto-detected
-              </button>
-            )}
-          </div>
-
-          {regenerate.isSuccess && !regenerate.isPending && (
-            <div className="text-[10px] text-green-600">
-              Re-analysis complete {"\u2014"} {regenerate.data?.findings_count ?? 0} findings updated
-            </div>
-          )}
-
-          {regenerate.isError && (
-            <div className="text-[10px] text-red-600">
-              Re-analysis failed. Try again.
-            </div>
-          )}
-        </div>
-      )}
-    </>
+    <SettingsRow label="Recovery period">
+      <span className="pl-1 text-[10px] text-muted-foreground">{valueText}</span>
+    </SettingsRow>
   );
 }
 
@@ -415,7 +235,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={setOrganWeightMethod}
           />
         </SettingsRow>
-        <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
+        <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
           {organWeightMethod === "absolute" && "Standard; preferred when BW is not significantly affected"}
           {organWeightMethod === "ratio-bw" && "Normalizes for body size; unreliable when BW is a treatment effect"}
           {organWeightMethod === "ratio-brain" && "Preferred when BW is significantly affected (brain is BW-resistant)"}
@@ -508,8 +328,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       {hasRecovery && meta.dose_groups && meta.dose_groups.length > 0 && (() => {
         return (
           <CollapsiblePane title="Recovery">
-            <RecoveryOverrideSection
-              studyId={studyId}
+            <RecoveryPeriodDisplay
               recoveryPeriod={recoveryPeriod}
               dosingDurationWeeks={studyCtx?.dosingDurationWeeks}
             />
@@ -524,9 +343,9 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 confirmMessage="Changing pooling mode will affect all treatment-period statistics. Continue?"
               />
             </SettingsRow>
-            <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
+            <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
               {recoveryPooling === "pool"
-                ? "Recovery animals pooled with main study during treatment (recommended)"
+                ? "Recovery arms included in treatment-period statistics (recommended)"
                 : "Recovery animals excluded from treatment-period statistics"}
             </div>
           </CollapsiblePane>
@@ -568,7 +387,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               onChange={setMultiplicity}
             />
           </SettingsRow>
-          <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
+          <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
             {multiplicity === "dunnett-fwer" && pairwiseTest === "dunnett"
               ? "FWER-controlled many-to-one. Incidence: Fisher exact, no correction."
               : multiplicity === "bonferroni"
@@ -596,7 +415,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               onChange={setIncidenceTrend}
             />
           </SettingsRow>
-          <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
+          <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
             Chi-square linear contrast approximation with ordinal dose scores
           </div>
           <SettingsRow label="Effect size">
@@ -610,7 +429,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               onChange={setEffectSize}
             />
           </SettingsRow>
-          <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
+          <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
             {effectSize === "hedges-g" && "Bias-corrected for small samples (J = 1 \u2212 3/(4df \u2212 1))"}
             {effectSize === "cohens-d" && "Uncorrected pooled SD. May overestimate for small n."}
             {effectSize === "glass-delta" && "Uses control SD only. Preferred when treatment affects variance."}
