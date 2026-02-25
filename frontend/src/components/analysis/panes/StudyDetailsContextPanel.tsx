@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
-import { getTierSeverityLabel, buildNormalizationRationale } from "@/lib/organ-weight-normalization";
+import { getTierSeverityLabel, buildNormalizationRationale, getBrainTier } from "@/lib/organ-weight-normalization";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
@@ -191,10 +191,13 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
         {normalization.state && normalization.highestTier >= 2 && (() => {
           const { highestTier, worstBwG, worstBrainG, state } = normalization;
           const tierLabel = getTierSeverityLabel(highestTier);
-          const brainTier = worstBrainG == null ? null
-            : Math.abs(worstBrainG) < 0.5 ? 1
-            : Math.abs(worstBrainG) < 1.0 ? 2
-            : Math.abs(worstBrainG) < 2.0 ? 3 : 4;
+          const speciesStrain = state?.speciesStrain ?? "UNKNOWN";
+          const brainTierResult = worstBrainG != null
+            ? getBrainTier(worstBrainG, speciesStrain)
+            : null;
+          const brainTier = brainTierResult?.tier ?? null;
+          const brainTierLabel = brainTierResult?.label ?? null;
+          const usesDogThresholds = speciesStrain === "RABBIT_NZW" || speciesStrain === "MINIPIG_GOTTINGEN";
           // Count organs at elevated tiers
           let elevatedCount = 0;
           if (state) {
@@ -211,7 +214,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           const methodLabel = organWeightMethod === "ratio-brain" ? "ratio to brain"
             : organWeightMethod === "ratio-bw" ? "ratio to BW"
             : "absolute";
-          const rationale = buildNormalizationRationale(highestTier, worstBrainG);
+          const rationale = buildNormalizationRationale(highestTier, worstBrainG, speciesStrain);
           return (
             <div className="mb-0.5 space-y-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
               <div className="flex items-baseline gap-1.5">
@@ -224,8 +227,8 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 <span className="font-mono font-medium text-foreground">
                   g = {worstBrainG != null ? worstBrainG.toFixed(2) : "n/a"}
                 </span>
-                {brainTier != null && (
-                  <span>(Tier {brainTier} — {getTierSeverityLabel(brainTier)})</span>
+                {brainTier != null && brainTierLabel != null && (
+                  <span>({brainTierLabel}{usesDogThresholds ? " (dog thresholds)" : ""})</span>
                 )}
               </div>
               <div>
