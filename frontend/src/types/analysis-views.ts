@@ -123,7 +123,7 @@ export type SignalViewSelection =
   | { level: "organ"; organSystem: string }
   | { level: "endpoint"; endpoint: SignalSelection };
 
-// --- NOAEL & Decision (View 5) ---
+// --- NOAEL Determination (View 5) ---
 
 export interface NoaelSummaryRow {
   sex: string;

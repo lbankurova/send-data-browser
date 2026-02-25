@@ -77,13 +77,13 @@ Within evidence panels, `ViewSection` components stack vertically — some "fixe
 
 **Persistence**: `localStorage` key `pcc.sections.{viewKey}` stores `{ sectionId: height }`. Only sections the user explicitly drags are persisted. On next mount, saved heights are used for initial sizing but do not block auto-fit — the hook always re-measures and adjusts.
 
-Used in 5 views: DoseResponseView (2 fixed), TargetOrgansView (2 fixed), HistopathologyView (1 fixed), NoaelDecisionView (1 fixed), ValidationView (1 fixed).
+Used in 5 views: DoseResponseView (2 fixed), TargetOrgansView (2 fixed), HistopathologyView (1 fixed), NoaelDeterminationView (1 fixed), ValidationView (1 fixed).
 
 ### Routing
 
 React Router 7 (`createBrowserRouter`) defines a single layout route with `<Layout />` as the element and all view routes as children rendered via `<Outlet />`. There is no nested routing -- all routes are flat children of the layout.
 
-Five analysis views are **code-split** via `React.lazy()` with `<Suspense>` fallback (a centered `Loader2` spinner): DoseResponseViewWrapper, TargetOrgansViewWrapper, HistopathologyViewWrapper, NoaelDecisionViewWrapper, ValidationViewWrapper. These are loaded on first navigation to the respective route. Eagerly-loaded routes (AppLandingPage, StudySummaryViewWrapper, CenterPanel, AdverseEffectsView) remain in the main bundle.
+Five analysis views are **code-split** via `React.lazy()` with `<Suspense>` fallback (a centered `Loader2` spinner): DoseResponseViewWrapper, TargetOrgansViewWrapper, HistopathologyViewWrapper, NoaelDeterminationViewWrapper, ValidationViewWrapper. These are loaded on first navigation to the respective route. Eagerly-loaded routes (AppLandingPage, StudySummaryViewWrapper, CenterPanel, AdverseEffectsView) remain in the main bundle.
 
 Route resolution determines which component renders in the center panel. The `ContextPanel` component independently reads `useLocation()` and `useParams()` to decide which context panel variant to show.
 
@@ -111,7 +111,7 @@ Center panel components write to the appropriate context on user interaction (ro
 | `/studies/:studyId/dose-response` | `DoseResponseViewWrapper` | View 2: dose-response charts + grid | `ViewSelectionContext` (`_view: "dose-response"`) |
 | `/studies/:studyId/target-organs` | `TargetOrgansViewWrapper` | View 3: organ cards + evidence grid | `ViewSelectionContext` (`_view: "target-organs"`) |
 | `/studies/:studyId/histopathology` | `HistopathologyViewWrapper` | View 4: severity heatmap + lesion grid | `ViewSelectionContext` (`_view: "histopathology"`) |
-| `/studies/:studyId/noael-decision` | `NoaelDecisionViewWrapper` | View 5: NOAEL banner + adversity matrix | `ViewSelectionContext` (`_view: "noael"`) |
+| `/studies/:studyId/noael-determination` | `NoaelDeterminationViewWrapper` | View 5: NOAEL banner + adversity matrix | `ViewSelectionContext` (`_view: "noael"`) |
 | `/studies/:studyId/validation` | `ValidationViewWrapper` | Validation rules + affected records | `ViewSelectionContext` (`_view: "validation"`) |
 | `/studies/:studyId/analyses/:analysisType` | `PlaceholderAnalysisView` | Catch-all for unimplemented analysis types | None |
 
@@ -164,7 +164,7 @@ Center panel components write to the appropriate context on user interaction (ro
 The `ContextPanel` component (`components/panels/ContextPanel.tsx`) uses route-based pattern matching to decide what to render. It checks `location.pathname` against regex patterns in priority order:
 
 1. `/studies/:id/analyses/adverse-effects` -- renders `AdverseEffectsContextPanel` (reads `FindingSelectionContext`)
-2. `/studies/:id/noael-decision` -- renders `NoaelContextPanelWrapper` (reads `ViewSelectionContext`, filters for `_view === "noael"`)
+2. `/studies/:id/noael-determination` -- renders `NoaelContextPanelWrapper` (reads `ViewSelectionContext`, filters for `_view === "noael"`)
 3. `/studies/:id/target-organs` -- renders `TargetOrgansContextPanelWrapper`
 4. `/studies/:id/dose-response` -- renders `DoseResponseContextPanelWrapper`
 5. `/studies/:id/histopathology` -- renders `HistopathologyContextPanelWrapper`
@@ -181,14 +181,14 @@ Each wrapper function reads the shared `ViewSelectionContext`, casts the selecti
 Each analysis view's context panel includes "Related views" links that use `navigate()` with `location.state` to carry selection context across view boundaries. The receiving view reads `location.state` in a `useEffect` hook, applies the relevant filter/selection, then clears the state via `window.history.replaceState({}, "")` to prevent re-application on refresh.
 
 **State payloads passed via `navigate()`**:
-- `{ organ_system }` — received by Target Organs (sets selected organ), Histopathology (sets specimen filter), NOAEL & Decision (sets organ_system filter)
+- `{ organ_system }` — received by Target Organs (sets selected organ), Histopathology (sets specimen filter), NOAEL Determination (sets organ_system filter)
 - `{ endpoint_label, organ_system }` — received by Dose-Response (sets organ_system filter + endpoint search)
 
 **Cross-view link patterns (from context panel panes)**:
 
-- Dose-Response context panel links to: Target Organs, Histopathology, NOAEL & Decision
-- Target Organs context panel links to: Dose-Response, Histopathology, NOAEL & Decision
-- Histopathology context panel links to: Target Organs, Dose-Response, NOAEL & Decision
+- Dose-Response context panel links to: Target Organs, Histopathology, NOAEL Determination
+- Target Organs context panel links to: Dose-Response, Histopathology, NOAEL Determination
+- Histopathology context panel links to: Target Organs, Dose-Response, NOAEL Determination
 - NOAEL context panel links to: Dose-Response, Target Organs, Histopathology
 
 **Findings-to-Heatmap navigation (within View 1)**:
@@ -221,7 +221,7 @@ Left sidebar navigation tree. Structure:
 - **Home** node (depth 0) -- navigates to `/`
 - **Studies** section header (uppercase label)
   - **Study: {studyId}** node (depth 1) -- click navigates to `/studies/:studyId` and expands subtree
-    - Analysis view nodes (depth 2): Dose-response, Target organs, Histopathology, NOAEL & decision, Validation (from `ANALYSIS_VIEWS` array, excluding `study-summary`)
+    - Analysis view nodes (depth 2): Dose-response, Target organs, Histopathology, NOAEL determination, Validation (from `ANALYSIS_VIEWS` array, excluding `study-summary`)
     - Separator
     - **Domains** folder node (depth 2) -- toggle expands domain categories
       - Category nodes (depth 3): e.g., "Clinical observations (3)" -- toggle expands individual domains

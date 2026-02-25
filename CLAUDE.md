@@ -100,7 +100,7 @@ After implementing a feature from a spec in `docs/incoming/`, run the full revie
 - **State**: TanStack React Query (5 min stale), React Context for selections
 - **Tables**: TanStack React Table (client-side sorting in analysis views, server-side pagination in domain views)
 - **Layout**: Three-panel Datagrok-style (Left: `BrowsingTree`, Center: route-dependent, Right: `ContextPanel`)
-- **Routes**: React Router 7 in `App.tsx` — 8 routes (landing, study summary, domain browser, adverse effects, dose-response, histopathology, NOAEL decision, validation). Target organs route redirects to parent. All done.
+- **Routes**: React Router 7 in `App.tsx` — 8 routes (landing, study summary, domain browser, adverse effects, dose-response, histopathology, NOAEL determination, validation). Target organs route redirects to parent. All done.
 - **Views**: 5 analysis views use two-panel master-detail layout (rail + evidence panel with tabs). See `docs/views/*.md` for each.
 
 > Full routes table and module inventory: `docs/reference/claude-md-archive.md`

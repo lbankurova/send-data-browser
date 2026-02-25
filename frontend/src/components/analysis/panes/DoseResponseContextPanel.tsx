@@ -356,11 +356,11 @@ export function DoseResponseContextPanel({
               e.preventDefault();
               if (studyId) {
                 if (selection.organ_system) navigateTo({ organSystem: selection.organ_system });
-                navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: selection.organ_system } });
+                navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`, { state: { organ_system: selection.organ_system } });
               }
             }}
           >
-            View NOAEL decision &#x2192;
+            View NOAEL determination &#x2192;
           </a>
         </div>
       </CollapsiblePane>
