@@ -519,7 +519,7 @@ Empty state: "No other endpoints in this organ system."
 Cross-view navigation links in `text-[11px]`:
 - "View study summary: {titleCase(organ_system)}" (only if `organ_system` present in selection) -- navigates to `/studies/{studyId}` with `state: { organ_system }`
 - "View histopathology" -- navigates to `/studies/{studyId}/histopathology` with `state: { organ_system }`
-- "View NOAEL decision" -- navigates to `/studies/{studyId}/noael-decision` with `state: { organ_system }`
+- "View NOAEL determination" -- navigates to `/studies/{studyId}/noael-determination` with `state: { organ_system }`
 
 All links: `block text-primary hover:underline`, arrow suffix (`&#x2192;`).
 
@@ -630,7 +630,7 @@ Accepts `location.state` with `{ organ_system?, endpoint_label? }`:
 |------|--------|-------------|
 | Context panel > Related views | Click "View study summary" | `/studies/{studyId}` with `state: { organ_system }` |
 | Context panel > Related views | Click "View histopathology" | `/studies/{studyId}/histopathology` with `state: { organ_system }` |
-| Context panel > Related views | Click "View NOAEL decision" | `/studies/{studyId}/noael-decision` with `state: { organ_system }` |
+| Context panel > Related views | Click "View NOAEL determination" | `/studies/{studyId}/noael-determination` with `state: { organ_system }` |
 
 ---
 

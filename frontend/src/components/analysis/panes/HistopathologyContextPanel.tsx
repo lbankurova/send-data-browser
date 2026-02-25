@@ -16,12 +16,12 @@ import {
   deriveSpecimenSummaries,
   deriveSexLabel,
   deriveSpecimenReviewStatus,
-} from "@/components/analysis/HistopathologyView";
-import type { SpecimenReviewStatus } from "@/components/analysis/HistopathologyView";
+  getNeutralHeatColor,
+} from "@/lib/histopathology-helpers";
+import type { SpecimenReviewStatus } from "@/lib/histopathology-helpers";
 import { aggregateByFinding } from "@/lib/finding-aggregation";
 import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 import type { PathologyReview } from "@/types/annotations";
-import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { deriveRecoveryAssessments, MIN_RECOVERY_N, verdictArrow, formatRecoveryFraction } from "@/lib/recovery-assessment";
@@ -845,11 +845,11 @@ function SpecimenOverviewPane({
               e.preventDefault();
               if (studyId) {
                 navigateTo({ organSystem: specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: specimen } });
+                navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`, { state: { organ_system: specimen } });
               }
             }}
           >
-            View NOAEL decision &#x2192;
+            View NOAEL determination &#x2192;
           </a>
         </div>
       </CollapsiblePane>
@@ -1930,11 +1930,11 @@ function FindingDetailPane({
               e.preventDefault();
               if (studyId) {
                 navigateTo({ organSystem: selection.specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`, { state: { organ_system: selection.specimen } });
+                navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`, { state: { organ_system: selection.specimen } });
               }
             }}
           >
-            View NOAEL decision &#x2192;
+            View NOAEL determination &#x2192;
           </a>
         </div>
       </CollapsiblePane>

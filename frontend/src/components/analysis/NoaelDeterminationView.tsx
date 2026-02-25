@@ -1569,11 +1569,11 @@ function SignalMetricsTabInline({ signalData, selection, onSelect, effectSizeSym
   );
 }
 
-// ─── Main: NoaelDecisionView ───────────────────────────────
+// ─── Main: NoaelDeterminationView ──────────────────────────
 
 type EvidenceTab = "overview" | "matrix" | "signal-matrix" | "metrics" | "rules";
 
-export function NoaelDecisionView() {
+export function NoaelDeterminationView() {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
   const { selection: studySelection, navigateTo } = useStudySelection();
@@ -1582,7 +1582,7 @@ export function NoaelDecisionView() {
   const { data: aeData, isLoading: aeLoading, error: aeError } = useAdverseEffectSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: pkData } = usePkIntegration(studyId);
-  const { data: signalData } = useStudySignalSummary(studyId);
+  const { data: signalData, isLoading: signalLoading } = useStudySignalSummary(studyId);
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const esSymbol = getEffectSizeSymbol(useStatMethods(studyId).effectSize);
 
@@ -1740,8 +1740,8 @@ export function NoaelDecisionView() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Top section: banner + bars — scrollable when content exceeds available space */}
-      <div className="min-h-0 shrink overflow-y-auto">
+      {/* Top section: banner + bars — scrollable, capped at 45% so evidence panel always visible */}
+      <div className="max-h-[45%] min-h-0 shrink overflow-y-auto">
         {/* NOAEL Banner */}
         {noaelData && studyId && (
           <NoaelBanner
@@ -1844,13 +1844,18 @@ export function NoaelDecisionView() {
                 recovery={organRecovery}
               />
             )}
-            {activeTab === "signal-matrix" && signalData && selectedOrgan && (() => {
+            {activeTab === "signal-matrix" && (() => {
+              if (signalLoading) return <div className="flex flex-1 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+              if (!signalData || !selectedOrgan) return <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">No signal data available.</div>;
               const targetOrgan = targetOrgans?.find(o => o.organ_system === selectedOrgan);
-              if (!targetOrgan) return null;
+              if (!targetOrgan) return <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">{titleCase(selectedOrgan)} is not classified as a target organ.</div>;
               const organSignalData = signalData.filter(r => r.organ_system === selectedOrgan);
+              if (organSignalData.length === 0) return <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">No signal data for {titleCase(selectedOrgan)}.</div>;
               return <SignalMatrixTabInline signalData={organSignalData} targetOrgan={targetOrgan} selection={localSignalSel} onSelect={setLocalSignalSel} effectSizeSymbol={esSymbol} />;
             })()}
-            {activeTab === "metrics" && signalData && selectedOrgan && (() => {
+            {activeTab === "metrics" && (() => {
+              if (signalLoading) return <div className="flex flex-1 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+              if (!signalData || !selectedOrgan) return <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">No signal data available.</div>;
               const organSignalData = signalData.filter(r => r.organ_system === selectedOrgan);
               return <SignalMetricsTabInline signalData={organSignalData} selection={localSignalSel} onSelect={setLocalSignalSel} effectSizeSymbol={esSymbol} />;
             })()}

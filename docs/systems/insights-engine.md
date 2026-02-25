@@ -826,7 +826,7 @@ NOAEL_Confidence = 1.0
 
 **Range**: 0.0 to 1.0 (clamped). Stored as `noael_confidence` in `noael_summary.json`.
 
-**Frontend display**: NOAEL Decision View banner shows confidence as percentage with color coding (green ≥ 80%, yellow ≥ 60%, red < 60%). The signals-panel-engine emits a `noael.low.confidence` rule (priority 930) when confidence < 0.6.
+**Frontend display**: NOAEL Determination View banner shows confidence as percentage with color coding (green ≥ 80%, yellow ≥ 60%, red < 60%). The signals-panel-engine emits a `noael.low.confidence` rule (priority 930) when confidence < 0.6.
 
 **Note**: The `pathology_disagreement` penalty is reserved (always 0) because PathologyReview annotation data is not available at generation time. Production should compute this from annotation records.
 

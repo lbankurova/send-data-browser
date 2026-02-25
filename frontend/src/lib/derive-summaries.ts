@@ -1,6 +1,6 @@
 /**
  * Shared derivation functions for adverse-effect endpoint/organ summaries.
- * Extracted from NoaelDecisionView so FindingsRail and NOAEL view can share them.
+ * Extracted from NoaelDeterminationView so FindingsRail and NOAEL view can share them.
  */
 
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";

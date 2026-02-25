@@ -1,7 +1,7 @@
-# NOAEL Decision View
+# NOAEL Determination View
 
-**Route:** `/studies/:studyId/noael-decision`
-**Component:** `NoaelDecisionView.tsx` (wrapped by `NoaelDecisionViewWrapper.tsx`)
+**Route:** `/studies/:studyId/noael-determination`
+**Component:** `NoaelDeterminationView.tsx` (wrapped by `NoaelDeterminationViewWrapper.tsx`)
 **Scientific question:** "What is the NOAEL and what are the dose-limiting adverse findings?"
 **Role:** Definitive results and conclusions view. Absorbs signal content from the former Study Summary Signals tab to provide a complete picture: NOAEL determination, study-level statements, protective signals, adversity assessment, signal matrix, metrics, and rule inspection -- all scoped to the selected organ. Two-panel master-detail layout with persistent NOAEL banner, shell-level organ rail, and a 5-tab evidence panel.
 
@@ -14,7 +14,7 @@ The view lives in the center panel of the 3-panel shell:
 ```
 +--[260px]--+----------[flex-1]----------+--[280px]--+
 |            |                            |            |
-| Browsing   |  NOAEL Decision View       | Context    |
+| Browsing   |  NOAEL Determination View  | Context    |
 | Tree       |  (this document)           | Panel      |
 |            |                            |            |
 +------------+----------------------------+------------+
@@ -124,7 +124,7 @@ Shown between the safety margin calculator and organ header when PK data indicat
 
 ## Study Statements Bar (conditional)
 
-**Component:** `StudyStatementsBar` (defined inline in `NoaelDecisionView.tsx`)
+**Component:** `StudyStatementsBar` (defined inline in `NoaelDeterminationView.tsx`)
 
 Rendered immediately after the NOAEL Banner. Only renders when at least one of `statements`, `studyModifiers`, or `studyCaveats` is non-empty.
 
@@ -165,7 +165,7 @@ Each caveat: `flex items-start gap-2 text-xs leading-relaxed text-foreground/80`
 
 ## Protective Signals Bar (conditional)
 
-**Component:** `ProtectiveSignalsBar` (defined inline in `NoaelDecisionView.tsx`)
+**Component:** `ProtectiveSignalsBar` (defined inline in `NoaelDeterminationView.tsx`)
 
 Rendered after the StudyStatementsBar. Only renders when `aggregateProtectiveFindings(rules)` produces at least one finding.
 
@@ -205,7 +205,7 @@ Findings are classified via `classifyProtectiveSignal()` from `lib/protective-si
 
 ## Organ Selection (shell-level rail)
 
-The NOAEL view does **not** embed its own organ rail. Instead, it declares a preference for the shell-level organ rail via `useRailModePreference("organ")` in `NoaelDecisionViewWrapper`. The organ rail (`OrganRailMode` in `components/shell/`) provides organ selection, search, and sorting — shared with the study summary and target organs contexts.
+The NOAEL view does **not** embed its own organ rail. Instead, it declares a preference for the shell-level organ rail via `useRailModePreference("organ")` in `NoaelDeterminationViewWrapper`. The organ rail (`OrganRailMode` in `components/shell/`) provides organ selection, search, and sorting — shared with the study summary and target organs contexts.
 
 The selected organ flows from `StudySelectionContext` (`studySelection.organSystem`). Organ items, sorting, and search are managed by `OrganRailMode` (see `docs/systems/navigation-and-layout.md`).
 
@@ -350,9 +350,9 @@ Row cap: 200 rows with truncation message ("Showing first 200 of {N} rows. Use f
 
 ## Signal Matrix Tab
 
-**Component:** `SignalMatrixTabInline` (defined inline in `NoaelDecisionView.tsx`)
+**Component:** `SignalMatrixTabInline` (defined inline in `NoaelDeterminationView.tsx`)
 
-Shows the `OrganGroupedHeatmap` (from `charts/OrganGroupedHeatmap.tsx`) in `singleOrganMode`, scoped to the selected organ. Only renders when `signalData` and `selectedOrgan` are present, and a matching `TargetOrganRow` exists.
+Shows the `OrganGroupedHeatmap` (from `charts/OrganGroupedHeatmap.tsx`) in `singleOrganMode`, scoped to the selected organ. Handles loading, missing data, non-target organs, and empty signal data with appropriate empty states.
 
 ### Filter Bar
 
@@ -372,7 +372,7 @@ Selection state: local `SignalSelection | null` (`localSignalSel`), shared with 
 
 ## Metrics Tab
 
-**Component:** `SignalMetricsTabInline` (defined inline in `NoaelDecisionView.tsx`)
+**Component:** `SignalMetricsTabInline` (defined inline in `NoaelDeterminationView.tsx`)
 
 Full sortable TanStack React Table showing signal metrics for the selected organ. Signal data is pre-filtered to `signalData.filter(r => r.organ_system === selectedOrgan)`.
 
@@ -439,7 +439,7 @@ The `RuleInspectorTab` includes:
 
 ## Context Panel (Right Sidebar — 280px)
 
-Route-detected: when pathname matches `/studies/{studyId}/noael-decision`, shows `NoaelContextPanel`.
+Route-detected: when pathname matches `/studies/{studyId}/noael-determination`, shows `NoaelContextPanel`.
 
 The `NoaelContextPanelWrapper` in `ContextPanel.tsx` fetches `aeData` and `ruleResults` via hooks and passes as props. Selection flows from `ViewSelectionContext`. The context panel also fetches NOAEL data directly via `useNoaelSummary(studyId)` to generate narrative text (not passed as a prop from the wrapper).
 
@@ -454,15 +454,32 @@ Panes:
 
 Note: NOAEL summary table and confidence factors were removed (RED-02) — the persistent banner already shows sex x NOAEL x LOAEL x confidence numerics. Duplicating them in the context panel added no interpretive value.
 
-### With Selection
+### Organ-Selected State (no endpoint)
+
+Shown when an organ is selected via the shell rail but no endpoint is selected.
+
+Header: sticky, organ name (`text-sm font-semibold` via `titleCase()`) + `CollapseAllButtons`. Below: `{totalCount} signals · {N} domain(s)`. `TierCountBadges` for tier filtering.
+
+Panes:
+1. **Organ insights** (default open) — `InsightsList` with organ-scoped rules. `onEndpointClick` navigates to dose-response view with organ_system state.
+2. **Contributing endpoints** (default open, conditional — when endpoints exist) — table with columns: Endpoint, Dom (`DomainLabel`), Signal (right, mono), p (right, mono). Rows are clickable → navigate to dose-response with organ_system state.
+3. **Evidence breakdown** (default open, conditional) — domains list (`DomainLabel` per domain), significant count (N/total), treatment-related count, sex comparison (Males/Females sig counts).
+4. **Related views** (default closed) — "View histopathology: {Organ}", "View dose-response", "View study summary" (all with organ_system state).
+
+### Endpoint-Selected State
 
 Header: sticky, endpoint name (`text-sm font-semibold`) + `CollapseAllButtons`. Below: sex + dose level info. `TierCountBadges` for tier filtering.
 
 Panes (ordered per design system priority — insights -> stats -> annotation -> navigation):
 1. **Insights** (default open) — `InsightsList` with endpoint-scoped rules + `tierFilter` from header badges
-2. **Adversity rationale** (default open) — dose-level rows for selected endpoint + sex, with p-value, effect size, severity text colored via `getSeverityDotColor()`. Empty state: "No data for selected endpoint."
-3. **Tox Assessment** — `ToxFindingForm` keyed by endpoint_label, with `systemSuggestion` derived from the best row (preferring adverse) via `deriveToxSuggestion()`
-4. **Related views** (default closed) — "View dose-response" (passes endpoint_label + organ_system), "View study summary" (passes organ_system), "View histopathology" (passes organ_system)
+2. **Statistics** (default open, conditional — when `selectedSignalRow` exists) — key-value pairs: Signal score (clickable `SignalScorePopover`), Direction, Best p-value, Trend p-value, Effect size, Dose-response pattern, Severity, Treatment-related
+3. **Adversity rationale** (default open) — dose-level rows for selected endpoint + sex, with p-value, effect size, severity text colored via `getSeverityDotColor()`. Empty state: "No data for selected endpoint."
+4. **Source records** (conditional — when `studyId` and `selectedSignalRow`) — `SourceRecordsExpander` component with domain, test code, sex, and dose level from selection
+5. **Other findings in {organ}** (default open) — correlations table showing other endpoints in the same organ system. Columns: Endpoint, Dom (`DomainLabel`), Signal (right, mono), p (right, mono). Rows clickable → navigate to dose-response. Empty state: "No correlations in this organ system."
+6. **Tox Assessment** — `ToxFindingForm` keyed by endpoint_label, with `systemSuggestion` derived from the best row (preferring adverse) via `deriveToxSuggestion()`
+7. **Related views** (default closed) — "View dose-response" (passes endpoint_label + organ_system), "View study summary" (passes organ_system), "View histopathology" (passes organ_system)
+8. **Audit trail** (conditional — when `studyId`) — `AuditTrailPanel` filtered by endpoint_label
+9. **Methodology** — `MethodologyPanel` with active effect size method from study-level stat methods
 
 ---
 
@@ -598,4 +615,9 @@ usePkIntegration(studyId)         --> pkData
 | No endpoints for organ (overview) | "No endpoints for this organ." |
 | No rows after filter (matrix or metrics) | "No rows match the current filters." |
 | >200 filtered rows (adversity grid) | Truncation message below grid |
-| Signal matrix: no matching target organ | Tab renders nothing (returns null) |
+| Signal matrix: loading | Centered spinner `Loader2` (animate-spin) |
+| Signal matrix: no signal data | "No signal data available." |
+| Signal matrix: no matching target organ | "{Organ} is not classified as a target organ." |
+| Signal matrix: no signal rows for organ | "No signal data for {Organ}." |
+| Metrics: loading | Centered spinner `Loader2` (animate-spin) |
+| Metrics: no signal data | "No signal data available." |

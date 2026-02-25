@@ -389,7 +389,7 @@ export function ContextPanel() {
   const isStudySummaryRoute =
     activeStudyId &&
     location.pathname === `/studies/${encodeURIComponent(activeStudyId)}`;
-  const isNoaelRoute = /\/studies\/[^/]+\/noael-decision/.test(location.pathname);
+  const isNoaelRoute = /\/studies\/[^/]+\/noael-determination/.test(location.pathname);
   const isDoseResponseRoute = /\/studies\/[^/]+\/dose-response/.test(location.pathname);
   const isHistopathologyRoute = /\/studies\/[^/]+\/histopathology/.test(location.pathname);
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);

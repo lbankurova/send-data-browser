@@ -50,7 +50,9 @@ Responsive: stacks vertically below 1200px (`max-[1200px]:flex-col`). Rail becom
 
 ---
 
-## Specimen Rail (left panel, resizable 300px default)
+## Specimen Rail (shell panel — SpecimenRailMode.tsx)
+
+**Note:** The specimen rail is implemented in `components/shell/SpecimenRailMode.tsx` (not inside HistopathologyView). It is rendered by the shell's polymorphic rail system (`ShellRailPanel`) when the rail mode preference is "specimen" (set by `HistopathologyViewWrapper`).
 
 Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWidth` comes from `useResizePanel(300, 180, 500)`. On narrow viewports: `max-[1200px]:h-[180px] max-[1200px]:!w-full max-[1200px]:border-b max-[1200px]:overflow-x-auto`.
 
@@ -65,6 +67,8 @@ Each `SpecimenRailItem` is a `<button>` using design tokens from `rail` (`rail.i
 **Row 1 (name + quantitative indicators):** Specimen name (`text-xs font-semibold`, underscores replaced with spaces) + review status glyph (Confirmed: `✓`, Revised: `~`, Preliminary/In review: no glyph — `text-[9px] text-muted-foreground`) + `SparklineGlyph` (mini pattern visualization from `pattern.sparkline`) + max severity badge (`font-mono text-[9px]`, `getNeutralHeatColor(maxSeverity)` background) + max incidence badge (`font-mono text-[9px]`, `getNeutralHeatColor01(maxIncidence)` background) + finding count (`font-mono text-[9px]`) + adverse count with "A" suffix (`font-mono text-[9px]`).
 
 **Row 2 (organ system + domains):** `mt-0.5` — organ system label (`text-[10px] text-muted-foreground/60`, `titleCase(specimenToOrganSystem())`) + domain labels (`<DomainLabel>` for each domain).
+
+**Row 3 (syndrome badge, conditional):** `mt-0.5 text-[10px] text-muted-foreground/70` — link emoji + syndrome name. Only shown when `summary.pattern.syndrome` is detected.
 
 ### Sorting
 
@@ -100,9 +104,9 @@ Five sort modes available via `FilterSelect` dropdown:
 
 The rail header includes a filter bar with:
 - **Sort select**: 5 sort modes (see above)
-- **Min severity**: "Sev: all", "Sev 2+", "Sev 3+", "Sev 4+"
-- **Dose trend**: "Trend: all", "Moderate+", "Strong only"
-- **Adverse only**: checkbox labeled "Adv" — shows only specimens with `adverseCount > 0`
+- **Min severity**: Numeric threshold from `GlobalFilterContext` (`filters.minSeverity`). FilterShowingLine displays as "Severity {N}+".
+- **Dose trend**: `FilterSelect` with options: "Pattern: all" (`any`), "Dose-dependent" (MONOTONIC_UP/DOWN/THRESHOLD), "Non-background" (excludes CONTROL_ONLY/NO_PATTERN), "Has syndrome" (syndrome detected)
+- **Adverse only**: checkbox — shows only specimens with `adverseCount > 0`
 - **Search** (`FilterSearch`): case-insensitive substring match on specimen name
 
 A `FilterShowingLine` displays active filter summary when any filter is active (e.g., `Showing: "liver" · Severity 2+ · Adverse only · 5/42`).
@@ -729,7 +733,7 @@ Panes:
 4. **Lab correlates** — organ-relevant lab test correlations from `useSpecimenLabCorrelation`
 5. **Laterality** (conditional) — laterality distribution for paired organs
 6. **Pathology Review** — `PathologyReviewForm` (specimen-level, keyed by `specimen:{name}`)
-7. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL decision" links
+7. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL determination" links
 
 Review status is derived via `deriveSpecimenReviewStatus(findingNames, pathReviews)` where `pathReviews` is fetched by the wrapper and passed through.
 
@@ -751,7 +755,7 @@ Panes in order (follows design system priority: insights > stats > related > ann
 9. **Laterality** (conditional) — laterality distribution for paired organs (left/right/bilateral counts)
 10. **Pathology review** — `PathologyReviewForm` (not wrapped in CollapsiblePane, uses own form state)
 11. **Tox Assessment** — `ToxFindingForm` keyed by finding (not wrapped in CollapsiblePane)
-12. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL decision" links
+12. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL determination" links
 
 ---
 
@@ -782,10 +786,10 @@ Panes in order (follows design system priority: insights > stats > related > ann
 | Selected subject | Local (SubjectHeatmap) | `useState<string \| null>` — column highlight in SubjectHeatmap |
 | Label column width | Local (SubjectHeatmap) | `useResizePanel(124, 100, 400)` — finding label column width |
 | Rail width | Local | `MasterDetailLayout` — default 300px, resizable 180-500px |
-| Rail sort | Local (SpecimenRail) | `useState<"signal" \| "organ" \| "severity" \| "incidence" \| "alpha">` (default "signal") |
-| Rail min sev filter | Local (SpecimenRail) | `useState<number>` (default 0) |
-| Rail adverse only | Local (SpecimenRail) | `useState<boolean>` (default false) |
-| Rail dose trend filter | Local (SpecimenRail) | `useState<"any" \| "moderate" \| "strong">` (default "any") |
+| Rail sort | Local (SpecimenRailMode) | `useState<"signal" \| "organ" \| "severity" \| "incidence" \| "alpha">` (default "signal") |
+| Rail min sev filter | Global | `GlobalFilterContext` (`filters.minSeverity`) — shared across views |
+| Rail adverse only | Global | `GlobalFilterContext` (`filters.adverseOnly`) — shared across views |
+| Rail dose trend filter | Local (SpecimenRailMode) | `useState<"any" \| "dose-dependent" \| "non-background" \| "syndrome">` (default "any") |
 | Specimen rules | Derived | `useMemo` — rules filtered to selected specimen, shared between SpecimenHeader and OverviewTab |
 | Finding clinical | Derived | `useMemo` — Map<finding, {clinicalClass, catalogId}> from ruleResults for clinical catalog lookup |
 | Finding consistency | Derived | `useMemo` — Map<finding, PatternClassification> from `classifyFindingPattern()` per finding |
@@ -881,7 +885,7 @@ useSpecimenLabCorrelation(studyId, specimen) ──> labCorrelation (composite h
 |--------|-------------|-------------|
 | "View study summary" | `/studies/{studyId}` | `{ organ_system: specimen }` |
 | "View dose-response" | `/studies/{studyId}/dose-response` | `{ organ_system: specimen }` |
-| "View NOAEL decision" | `/studies/{studyId}/noael-decision` | `{ organ_system: specimen }` |
+| "View NOAEL determination" | `/studies/{studyId}/noael-determination` | `{ organ_system: specimen }` |
 
 ### Internal (within the view)
 | Action | Effect |

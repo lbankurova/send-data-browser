@@ -39,7 +39,7 @@ Routes (React Router 7, defined in `App.tsx`):
 | `/studies/:studyId/dose-response` | DoseResponseViewWrapper | Done |
 | `/studies/:studyId/target-organs` | TargetOrgansViewWrapper | Done |
 | `/studies/:studyId/histopathology` | HistopathologyViewWrapper | Done |
-| `/studies/:studyId/noael-decision` | NoaelDecisionViewWrapper | Done |
+| `/studies/:studyId/noael-determination` | NoaelDeterminationViewWrapper | Done |
 | `/studies/:studyId/validation` | ValidationViewWrapper | Done |
 
 ---
@@ -69,7 +69,7 @@ Routes (React Router 7, defined in `App.tsx`):
 - `components/analysis/DoseResponseView.tsx` — View 2: Dose-Response (two-panel: organ-grouped endpoint rail + evidence panel with evidence/hypotheses/metrics tabs; time-course toggle in evidence tab)
 - `components/analysis/TargetOrgansView.tsx` — View 3: Target Organs (two-panel: organ rail with signal metrics + evidence panel with Evidence/Hypotheses/Metrics tabs, 5 organ-level tools)
 - `components/analysis/HistopathologyView.tsx` — View 4: Histopathology (two-panel: specimen rail + evidence panel with overview/severity matrix tabs)
-- `components/analysis/NoaelDecisionView.tsx` — View 5: NOAEL & Decision (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
+- `components/analysis/NoaelDeterminationView.tsx` — View 5: NOAEL Determination (two-panel: persistent NOAEL banner, organ rail + evidence panel with overview/adversity matrix tabs)
 - `hooks/useClinicalObservations.ts` — hook for CL timecourse data from temporal API (used by Dose-Response time-course toggle for CL endpoints)
 - `components/analysis/panes/*ContextPanel.tsx` — context panels for each view
 - `components/analysis/panes/InsightsList.tsx` — organ-grouped signal synthesis with tiered insights (Critical/Notable/Observed)

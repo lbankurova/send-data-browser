@@ -8,7 +8,7 @@ const ANALYSIS_LABELS: Record<string, string> = {
   reversibility: "Reversibility Assessment",
   "dose-response": "Dose-response & Causality",
   histopathology: "Histopathology",
-  "noael-decision": "NOAEL & Decision",
+  "noael-determination": "NOAEL Determination",
 };
 
 export function PlaceholderAnalysisView() {

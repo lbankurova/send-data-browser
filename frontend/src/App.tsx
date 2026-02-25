@@ -12,7 +12,7 @@ const FindingsViewWrapper = lazy(() => import("@/components/analysis/findings/Fi
 // Lazy-loaded analysis views (code-split into separate chunks)
 const DoseResponseViewWrapper = lazy(() => import("@/components/analysis/DoseResponseViewWrapper").then(m => ({ default: m.DoseResponseViewWrapper })));
 const HistopathologyViewWrapper = lazy(() => import("@/components/analysis/HistopathologyViewWrapper").then(m => ({ default: m.HistopathologyViewWrapper })));
-const NoaelDecisionViewWrapper = lazy(() => import("@/components/analysis/NoaelDecisionViewWrapper").then(m => ({ default: m.NoaelDecisionViewWrapper })));
+const NoaelDeterminationViewWrapper = lazy(() => import("@/components/analysis/NoaelDeterminationViewWrapper").then(m => ({ default: m.NoaelDeterminationViewWrapper })));
 const ValidationViewWrapper = lazy(() => import("@/components/analysis/ValidationViewWrapper").then(m => ({ default: m.ValidationViewWrapper })));
 
 
@@ -65,8 +65,12 @@ const router = createBrowserRouter([
         element: <LazyRoute><HistopathologyViewWrapper /></LazyRoute>,
       },
       {
+        path: "/studies/:studyId/noael-determination",
+        element: <LazyRoute><NoaelDeterminationViewWrapper /></LazyRoute>,
+      },
+      {
         path: "/studies/:studyId/noael-decision",
-        element: <LazyRoute><NoaelDecisionViewWrapper /></LazyRoute>,
+        element: <Navigate to="../noael-determination" replace />,
       },
       {
         path: "/studies/:studyId/validation",

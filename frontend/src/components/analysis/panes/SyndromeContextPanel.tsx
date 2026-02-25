@@ -804,8 +804,8 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
             View histopathology &#x2192;
           </a>
           <a href="#" className="block text-primary hover:underline"
-             onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`); }}>
-            View NOAEL decision &#x2192;
+             onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`); }}>
+            View NOAEL determination &#x2192;
           </a>
           <a href="#" className="block text-primary hover:underline"
              onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`); }}>

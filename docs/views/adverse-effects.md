@@ -1,7 +1,7 @@
 # Findings View (formerly Adverse Effects)
 
 **Route:** `/studies/:studyId/findings` (primary). Legacy redirects: `/studies/:studyId/adverse-effects` and `/studies/:studyId/analyses/adverse-effects` both redirect to `/findings`.
-**Wrapper:** `FindingsViewWrapper.tsx` (in `components/analysis/findings/`) — sets `useRailModePreference("findings")`, renders `FindingsView`
+**Wrapper:** `FindingsViewWrapper.tsx` (in `components/analysis/findings/`) — sets `useRailModePreference("organ")`, renders `FindingsView`
 **Component:** `FindingsView.tsx` (in `components/analysis/findings/`)
 **Scientific question:** "What are all the findings and how do they compare across dose groups?"
 **Role:** Dynamic server-side adverse effects analysis. Two-zone layout (quadrant scatter + sortable findings table), with FindingsRail in the left panel and detailed context panel.
@@ -239,7 +239,7 @@ Navigation links to other views. Explicitly passed `defaultOpen={false}`. Contai
 |-----------|-------------|
 | View histopathology → | `/studies/{studyId}/histopathology` |
 | View dose-response → | `/studies/{studyId}/dose-response` |
-| View NOAEL decision → | `/studies/{studyId}/noael-decision` |
+| View NOAEL determination → | `/studies/{studyId}/noael-determination` |
 | View study summary → | `/studies/{studyId}` |
 
 Links: `block text-primary hover:underline`, use `<a href="#">` with `onClick` handler calling `navigate()`. Wrapped in `space-y-1 text-[11px]`.
@@ -258,50 +258,34 @@ Shown when `selectedGroupType === "syndrome"`. Displays cross-domain syndrome in
 
 **Component:** `SyndromeContextPanel` (`panes/SyndromeContextPanel.tsx`)
 
-#### Header
-- `sticky top-0 z-10 border-b bg-background px-4 py-3`
-- Syndrome name: `text-sm font-semibold`
-- CollapseAllButtons (right side, no close button)
+#### Header (sticky, with verdict)
+- `sticky top-0 z-10 border-b bg-background px-4 py-3` with severity-dependent left border accent
+- Syndrome name: `text-sm font-semibold` + `CollapseAllButtons` (right side)
 - Subtitle: `{syndromeId} · {N} endpoints · {N} domains · Detected in: {sexes}`
-- Dual badges: Pattern confidence + Mechanism certainty (neutral gray badges per design system)
-- `CertaintyBadge` has tooltip explaining what CONFIRMED/UNCERTAIN/PATTERN ONLY means
-
-#### Verdict card (always visible, not in CollapsiblePane)
-`border-b px-4 py-3` container with 2×2 grid:
-
-| Cell | Content |
-|------|---------|
-| Confidence | Neutral gray badge with detection confidence (HIGH/MODERATE/LOW) |
-| Recovery | Text: recovery status (recovered, partial, not recovered, not examined, mixed) |
-| NOAEL impact | Text: "Capped at dose level N" or "No mortality impact" |
-| Mechanism | `CertaintyBadge` with tooltip |
-
-- When mechanism is UNCERTAIN: key discriminator text from `SYNDROME_INTERPRETATIONS` is surfaced as a paragraph below the grid (`text-[10px] text-foreground/70`)
-- Conditional mortality callout: shown when `treatmentRelatedDeaths > 0`, `bg-muted/30` with warning icon and death count
+- **Verdict lines** (conditional, when `syndromeInterp` available — replaces the separate verdict card):
+  - Line 1: Severity label (`SEVERITY_LABELS[overallSeverity]`) with severity accent class
+  - Line 2: Mechanism certainty text (with tooltip) · Recovery status text
+  - Line 3: Treatment-related · Adverse classification · optional "NOAEL capped by mortality"
+  - Line 4 (XS09 only): Organ proportionality narrative
+- Loading state: "Loading interpretation…" when `syndromeInterp` not yet available
 
 #### Pane order (top to bottom)
 
 | # | Pane | Default | Condition |
 |---|------|---------|-----------|
-| 1 | Certainty assessment | open | `discriminatingEvidence.length > 0` |
-| 2 | Evidence summary | open | always |
-| 3 | Differential | open | syndrome has a differential pair (XS01↔XS02, XS04↔XS05, XS07↔XS08, XS08↔XS09) |
-| 4 | Histopathology context | closed | `histopathContext.length > 0` |
-| 5 | Clinical observations | closed | `clinicalObservationSupport.assessment !== "no_cl_data"` |
-| 6 | Recovery | closed | `syndromeInterp` available |
-| 7 | Mortality context | closed | `treatmentRelatedDeaths > 0` |
-| 8 | Food consumption | closed | `available && bwFwAssessment !== "not_applicable"` |
-| 9 | Organ proportionality | open | `xs09Active && organProportionality?.available` |
-| 10 | ECETOC assessment | closed | `syndromeInterp && detected` |
-| 11 | Translational confidence | closed | `tier !== "insufficient_data"` |
-| 12 | Interpretation | closed | syndrome has authored interpretation text |
-| 13 | Related views | closed | always |
+| 1 | Evidence | open | `syndromeInterp` available |
+| 2 | Dose-response & recovery | open | `syndromeInterp && detected` |
+| 3 | Histopathology | open | `syndromeInterp && hasHistopath` (includes XS01 tumor progression cross-ref and tumor confounder checks) |
+| 4 | Food consumption | open when applicable | `syndromeInterp && showFoodConsumption` (open when `available && bwFwAssessment !== "not_applicable"`) |
+| 5 | Organ proportionality | open | `syndromeInterp && xs09Active && organProportionality?.available` |
+| 6 | Clinical observations | closed | `syndromeInterp && hasClinicalFindings` (headerRight: "{N} correlating") |
+| 7 | Mortality | closed | `syndromeInterp && hasMortality` (headerRight: red border-l death count + NOAEL cap note) |
+| 8 | Translational confidence | closed | `syndromeInterp && hasTranslational` (headerRight: tier label, capitalize) |
+| 9 | Reference | closed | always (contains description, regulatory significance, key discriminator, separator, then 4 navigation links) |
 
 **Food consumption pane:** Narrative replaces generic "at high dose" with actual dose label from `dose_groups` (e.g., "at 200 mg/kg"). Food efficiency entries show actual dose labels.
 
-**Related views pane:** 5 navigation links (dose-response, histopathology, NOAEL decision, validation, study summary). Same pattern as endpoint context panel Related Views.
-
-**Removed panes:** Member Endpoints (redundant with rail), Study Design (generic species/strain/route caveats).
+**Reference pane:** Contains syndrome interpretation text (description, regulatory significance, key discriminator) + 4 navigation links (dose-response, histopathology, NOAEL determination, study summary).
 
 ---
 
@@ -328,7 +312,7 @@ Shown when `selectedGroupType === "syndrome"`. Displays cross-domain syndrome in
 | Excluded endpoints | Local (via event bus) | `_findingsExcludedCallback` — Ctrl+click exclusion |
 | Scheduled-only mode | Shared | `useScheduledOnly()` — toggles statistics to scheduled variants when early deaths present |
 | Collapse all | Local (context panel) | `useCollapseAll()` hook — provides expandGen/collapseGen counters |
-| Rail mode | Shared | `useRailModePreference("findings")` — set by wrapper |
+| Rail mode | Shared | `useRailModePreference("organ")` — set by wrapper |
 | Analytics | Derived (composite) | `FindingsAnalyticsProvider` — bundles endpoint summaries, syndromes, lab matches, signal scores for child components |
 
 ---
@@ -369,7 +353,7 @@ useFindings(studyId, 1, 10000, ALL_FILTERS)
 The "Related views" pane in the context panel provides navigation links to:
 - Histopathology view
 - Dose-response view
-- NOAEL decision view
+- NOAEL determination view
 - Study summary view
 
 All links use `react-router-dom` `navigate()` for client-side navigation.
