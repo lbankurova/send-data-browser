@@ -196,11 +196,11 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** ~~Resolved~~ (Phase 1 complete)
 - **Owner hint:** ux-designer → frontend-dev
 
-### GAP-19: Recovery start day override — visual verification + generator test
-- **Files:** `frontend/src/components/analysis/panes/StudyDetailsContextPanel.tsx`, `backend/routers/analysis_views.py`, `backend/generator/generate.py`, `backend/services/analysis/override_reader.py`
-- **Issue:** Full implementation landed (annotations schema, generator pipeline threading, regenerate endpoint, functional UI) but needs: (1) visual verification of the override UI (checkbox, number input, re-analyze button, reset link, spinner states, success/error feedback); (2) manual test of the full round-trip (set override → save annotation → trigger regeneration → verify data refreshes); (3) the generator takes ~60s for PointCross, so the regenerate endpoint may need a progress indicator or timeout handling for larger studies.
-- **Status:** Open (visual verification required by user)
-- **Owner hint:** user (visual), frontend-dev (UX polish)
+### GAP-19: Recovery period validation — move override to validation view
+- **Files:** `docs/incoming/arch-overhaul/recovery-validation-spec.md`, `backend/generator/generate.py`, `backend/services/analysis/override_reader.py`, `backend/services/analysis/phase_filter.py`
+- **Issue:** The recovery period override UI (checkbox + number input in Recovery pane) was removed — it allowed arbitrary values without proper validation against actual XPT data bounds. Recovery detection failures and boundary corrections should be handled as part of the SEND data validation process, surfaced as blocking issues in the import confirmation dialog. See `recovery-validation-spec.md` for the full spec. Backend override infrastructure (`override_reader.py`, `useRegenerate` hook, regenerate endpoint, annotation schema field `last_dosing_day_override`) remains in place and can be reused.
+- **Status:** Open (spec ready, not implemented)
+- **Owner hint:** backend-dev (validation rules), frontend-dev (validation view integration)
 
 ### GAP-17: Chrome MCP server for E2E / integration testing
 - **Files:** N/A (new infrastructure)
