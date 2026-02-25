@@ -177,45 +177,43 @@ function RecoveryOverrideSection({
     );
   };
 
+  // Build the recovery period value text
+  const recoveryValueText = (() => {
+    if (effectiveChecked && effectiveLastDosingDay != null && recDays) {
+      return `Override: Day ${effectiveLastDosingDay + 1}\u2013${effectiveLastDosingDay + recDays} (${recDays} days)`;
+    }
+    if (autoDetected == null) return null; // handled separately as warning
+    const dosingDays = dosingDurationWeeks
+      ? Math.round(dosingDurationWeeks * 7)
+      : autoDetected;
+    if (dosingDays && recDays) {
+      return `Auto-detected: Day ${dosingDays + 1}\u2013${dosingDays + recDays} (${recDays} days)`;
+    }
+    return `Auto-detected: ${recDays ? `${recDays} days` : "detected"}`;
+  })();
+
   return (
     <>
-      {/* Recovery period range display */}
-      <div className="space-y-0 text-[10px] text-muted-foreground">
-        {(() => {
-          if (effectiveChecked && effectiveLastDosingDay != null && recDays) {
-            return (
-              <div>
-                <span className="font-medium">Recovery period:</span> Override: Day {effectiveLastDosingDay + 1}{"\u2013"}{effectiveLastDosingDay + recDays} ({recDays} days)
-              </div>
-            );
-          }
-          if (autoDetected == null) {
-            return (
-              <div className="flex items-start gap-1 text-amber-700">
-                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-                <span><span className="font-medium">Recovery period:</span> Auto-detection failed {"\u2014"} override recommended</span>
-              </div>
-            );
-          }
-          const dosingDays = dosingDurationWeeks
-            ? Math.round(dosingDurationWeeks * 7)
-            : autoDetected;
-          if (dosingDays && recDays) {
-            return <div><span className="font-medium">Recovery period:</span> Auto-detected: Day {dosingDays + 1}{"\u2013"}{dosingDays + recDays} ({recDays} days)</div>;
-          }
-          return <div><span className="font-medium">Recovery period:</span> Auto-detected: {recDays ? `${recDays} days` : "detected"}</div>;
-        })()}
-      </div>
+      {/* Recovery period — SettingsRow layout */}
+      {autoDetected == null ? (
+        <div className="flex items-start gap-1 py-1 text-[10px] text-amber-700">
+          <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+          <span>Recovery period: auto-detection failed {"\u2014"} override recommended</span>
+        </div>
+      ) : (
+        <SettingsRow label="Recovery period">
+          <span className="text-[10px] text-muted-foreground">{recoveryValueText}</span>
+        </SettingsRow>
+      )}
 
-      {/* Override checkbox + input */}
-      <label className="mt-1 flex items-center gap-2 text-[10px]">
+      {/* Override checkbox */}
+      <label className="flex items-center gap-2 py-0.5 text-[10px]">
         <input
           type="checkbox"
           checked={effectiveChecked}
           onChange={(e) => {
             setOverrideChecked(e.target.checked);
             if (e.target.checked && !overrideValue) {
-              // Pre-fill with auto-detected value or server override
               setOverrideValue(
                 serverOverride != null ? String(serverOverride) : (autoDetected != null ? String(autoDetected) : ""),
               );
@@ -231,7 +229,7 @@ function RecoveryOverrideSection({
 
       {/* Override input + actions (shown when checked) */}
       {effectiveChecked && (
-        <div className="ml-5 mt-1 space-y-1.5">
+        <div className="ml-5 space-y-1.5">
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-muted-foreground">Last dosing day:</span>
             <input
@@ -244,7 +242,6 @@ function RecoveryOverrideSection({
             />
           </div>
 
-          {/* Re-analyze + Reset actions */}
           <div className="flex items-center gap-2">
             <button
               className="flex items-center gap-1 rounded bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
@@ -265,14 +262,12 @@ function RecoveryOverrideSection({
             )}
           </div>
 
-          {/* Success feedback */}
           {regenerate.isSuccess && !regenerate.isPending && (
             <div className="text-[10px] text-green-600">
               Re-analysis complete {"\u2014"} {regenerate.data?.findings_count ?? 0} findings updated
             </div>
           )}
 
-          {/* Error feedback */}
           {regenerate.isError && (
             <div className="text-[10px] text-red-600">
               Re-analysis failed. Try again.
@@ -420,7 +415,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={setOrganWeightMethod}
           />
         </SettingsRow>
-        <div className="mb-1 text-[10px] leading-snug text-muted-foreground">
+        <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
           {organWeightMethod === "absolute" && "Standard; preferred when BW is not significantly affected"}
           {organWeightMethod === "ratio-bw" && "Normalizes for body size; unreliable when BW is a treatment effect"}
           {organWeightMethod === "ratio-brain" && "Preferred when BW is significantly affected (brain is BW-resistant)"}
@@ -512,20 +507,12 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       {/* ── Subject population — recovery period settings ─────── */}
       {hasRecovery && meta.dose_groups && meta.dose_groups.length > 0 && (() => {
         return (
-          <CollapsiblePane title="Subject population">
+          <CollapsiblePane title="Recovery">
             <RecoveryOverrideSection
               studyId={studyId}
               recoveryPeriod={recoveryPeriod}
               dosingDurationWeeks={studyCtx?.dosingDurationWeeks}
             />
-            {meta.dose_groups && (() => {
-              const arms = meta.dose_groups
-                .filter((dg) => dg.recovery_armcd)
-                .map((dg) => dg.recovery_armcd!);
-              return arms.length > 0 ? (
-                <div className="mt-0.5 text-[10px] text-muted-foreground">Arms: {arms.join(", ")}</div>
-              ) : null;
-            })()}
             <SettingsRow label="Treatment period">
               <SettingsSelect
                 value={recoveryPooling}
@@ -537,7 +524,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 confirmMessage="Changing pooling mode will affect all treatment-period statistics. Continue?"
               />
             </SettingsRow>
-            <div className="mb-1 text-[10px] leading-snug text-muted-foreground">
+            <div className="mb-0.5 text-[10px] leading-snug text-muted-foreground">
               {recoveryPooling === "pool"
                 ? "Recovery animals pooled with main study during treatment (recommended)"
                 : "Recovery animals excluded from treatment-period statistics"}

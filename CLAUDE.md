@@ -62,85 +62,19 @@ These rules are non-negotiable. No agent may override, reinterpret, or skip them
 
 3. **CLAUDE.md hard rules must be checked directly.** The reviewer must re-read the Design Decisions section of this file and verify each hard rule is satisfied. Checking against view specs or design guides is NOT sufficient — those documents may have been incorrectly modified. CLAUDE.md is the source of truth for hard rules.
 
-4. **View spec changes that affect UI/UX require explicit user approval.** No agent may modify view specs (`docs/views/*.md`) in ways that affect the UI or UX without the user's prior explicit approval. Agents must propose changes, then stop and wait for approval before writing. Self-approving is never permitted. Agents may NOT infer, add implicit meaning, or "improve" the design on their own — vague instructions like "improve the design" require the user to approve every individual change. **Exceptions:** (a) Changes explicitly requested or directly required to implement a user-requested feature do not need separate approval. "Change the color to X", "remove element Y", "add a filter for Z" are explicit enough to proceed. "Make it look better" or "clean up the view" are not. (b) Designing from scratch (new view, new spec) is not subject to this rule — there's nothing to protect yet. (c) The user can grant blanket approval for a scope of work (e.g., "redesign this UX, come up with a version you think is better"). Blanket approval covers the stated scope; it does not extend beyond it.
+4. **View spec changes that affect UI/UX require explicit user approval.** No agent may modify view specs (`docs/views/*.md`) in ways that affect the UI or UX without the user's prior explicit approval. Agents must propose changes, then stop and wait for approval before writing. Self-approving is never permitted. Agents may NOT infer, add implicit meaning, or "improve" the design on their own — vague instructions like "improve the design" require the user to approve every individual change. **Exceptions:** (a) Changes explicitly requested or directly required to implement a user-requested feature do not need separate approval. (b) Designing from scratch (new view, new spec) is not subject to this rule. (c) The user can grant blanket approval for a scope of work.
 
 5. **Never add Claude as a co-author.** Do not include `Co-Authored-By` lines in commit messages. All commits are authored by the user.
 
-6. **Reuse before reinventing.** When implementing a new spec, before writing any new or custom logic the agent must: (a) search the codebase for existing hooks, functions, derived data, and generated JSON that already compute the needed values; (b) read `docs/knowledge/methods.md`, `docs/knowledge/field-contracts.md`, `docs/knowledge/species-profiles.md`, and `docs/knowledge/vehicle-profiles.md` to understand what analytical data, field semantics, and reference data are already available. Only after confirming that no existing source provides the needed data may the agent write new computation logic. Duplicating or re-deriving data that already exists elsewhere is a defect.
+6. **Reuse before reinventing.** Before writing new logic: (a) search the codebase for existing hooks, functions, derived data, and generated JSON that already compute the needed values; (b) read `docs/knowledge/methods-index.md` and `docs/knowledge/field-contracts-index.md` to check if the computation already exists — drill into the full `methods.md` / `field-contracts.md` only for relevant entries; (c) read `docs/knowledge/species-profiles.md` and `docs/knowledge/vehicle-profiles.md` for reference data. Only after confirming no existing source provides the data may the agent write new logic. Duplicating or re-deriving existing data is a defect.
 
 ## Agent Commit Protocol
 
-Before committing changes that alter system or view behavior:
-1. **Run `npm test`.** All pipeline assertions must pass. If a test fails, the fix is wrong — do not commit. If the fix intentionally changes behavior, update the test first and explain why.
-2. **Update the affected spec.** If you changed how a system or view works, update the corresponding `docs/systems/*.md` or `docs/views/*.md` to match. Specs must reflect code, not the other way around.
-3. **Mark MANIFEST.md.** Set "Last validated" to today for any spec you updated. If you can't update the spec, mark it `STALE — <reason>` in MANIFEST.
-4. **Check `docs/incoming/`** for feature specs that conflict with your changes. If a conflict exists, ask the user before committing.
-5. **Update the issue tracker.** Mark resolved items in `docs/incoming/arch-overhaul/spec-cleanup-b66dfd0.md` with strikethrough + commit hash. Update the summary counts and per-view table. This is mandatory for every commit — no exceptions.
-6. **Update knowledge docs when analytical logic changes.** If your commit adds, removes, or modifies a statistical test, algorithmic method, classification algorithm, scoring formula, or external data dependency, update the corresponding entry in `docs/knowledge/methods.md` or `docs/knowledge/dependencies.md`. New method → new entry with stable ID. Changed parameters/thresholds → update the existing entry. Removed method → delete the entry. If your commit adds, removes, or modifies a computed field at the engine→UI boundary (any function annotated with `// @field FIELD-XX`), update `docs/knowledge/field-contracts.md`. New field → new FIELD-XX entry + `@field` annotation in source. Changed invariants/type/nullability → update the entry. Removed field → delete the entry and its `@field` annotation. If your commit changes a backend generator output field that the frontend consumes, update `docs/knowledge/api-field-contracts.md`. Skip this step for commits that only touch UI, docs, or tests without changing analytical logic or field contracts.
-
-7. **Use existing UI components — never reinvent.** Before committing, verify that every UI primitive used in new or changed code (selects, dialogs, tooltips, popovers, badges, buttons, etc.) uses the project's defined component from `components/ui/` (shadcn/Radix). If code uses a raw HTML element (`<select>`, `<dialog>`, `<tooltip>`) or a hand-rolled equivalent where a shadcn component exists, replace it before committing. This applies to both new code and code you're already touching — if you modify a file and notice a raw `<select>` next to your changes, fix it in the same commit.
-
-**When fixing a data pipeline bug:** Write the failing test FIRST, then apply the fix, then confirm all tests pass. This is non-negotiable for changes to: `derive-summaries.ts`, `lab-clinical-catalog.ts`, `cross-domain-syndromes.ts`, `findings-rail-engine.ts`, `syndrome-interpretation.ts`, `SyndromeContextPanel.tsx`, `recovery-classification.ts`, `finding-nature.ts`, `protective-signal.ts`, classification.py, or any findings_*.py module.
-
-**Agent verification boundaries.** Agents verify logic: `npm test`, `npm run build`, grep-based static checks. Agents do NOT verify visuals — no browser access. Never claim visual verification was performed. If a change affects rendering, state explicitly: "Visual verification required by user." This is non-negotiable.
+Before committing, run every item in `docs/checklists/COMMIT-CHECKLIST.md`. Every item must pass.
 
 ## Post-Implementation Review Protocol
 
-After implementing a feature from a spec in `docs/incoming/`, the agent **must** perform a completeness review before considering the work done. The review checks both structural completeness (does the feature exist?) and behavioral correctness (does it activate under the right conditions?).
-
-### Step 0: Run the spec's own verification checklist
-
-Many specs include a verification/gate checklist (often the final section, e.g., "§11 Verification Checklist"). If the spec has one, **run it first** — it was written by the spec author to catch the most important gaps. Every item must be evaluated as PASS, FAIL, or N/A with a file:line reference. Do not skip items or mark them as PASS without reading the corresponding code.
-
-### Step 1: Four-dimension requirement trace
-
-After the spec's checklist (if any), re-read the spec section by section. For every requirement, decompose it into four dimensions and verify each against the code:
-
-| Dimension | Question | What to check |
-|-----------|----------|---------------|
-| **WHAT** | Does the right thing happen? | Feature exists, function is called, UI element renders |
-| **WHEN** | Does it trigger under exactly the right conditions? | Every "when", "if", "only when" clause in the spec has a matching code condition |
-| **UNLESS** | Is it suppressed when it should be? | Every "unless", "not when", "hidden when", "at least one" clause has a negation guard |
-| **HOW** | Does the exact format, text, styling match? | See HOW sub-checks below |
-
-**The most common failure mode is WHEN/UNLESS.** A feature that exists but activates unconditionally when the spec says "only when X" is a behavioral gap. Always extract the full conditional logic from spec text and verify it against the code's `if`/`&&`/`||` expressions.
-
-**HOW sub-checks** — when a spec defines presentation details, verify each:
-
-| Sub-check | What to compare | Example failures |
-|-----------|----------------|------------------|
-| **Text content** | Exact wording, labels, suffixes, prefixes | Missing "(worst case)" suffix, bare label instead of "Group N (dose mg/kg)" |
-| **Text layout** | Line breaks, indentation, multi-line structure, separators | Tooltip lines missing 2-space indent, flat list instead of primary/others split |
-| **Typography** | `text-[size]`, `font-weight`, `text-color`, opacity modifiers | `text-muted-foreground/60` instead of `text-muted-foreground`, wrong font-weight |
-| **Spacing** | Margins, padding, gaps (Tailwind `mx-`, `px-`, `gap-`) | `mx-0.5` instead of `mx-1.5`, missing `py-1.5` |
-| **Visual elements** | Icons, markers, symbols, SVG paths, borders, separators | `✕` vs `▼` swapped, missing dashed stroke line, wrong separator character |
-| **Sort/order** | Column order, row sort direction, priority ranking | Column before instead of after, ascending-first instead of descending-first |
-
-When the spec includes a code snippet or className string, compare it **character by character** against the implementation. A single missing class or wrong Tailwind modifier is a gap.
-
-### Step 2: Data reuse audit
-
-For every new function, computation, or derived value introduced by the implementation, verify it does not duplicate logic that already exists elsewhere in the codebase. Specifically:
-- Search for existing hooks, utility functions, generated JSON fields, and derived-summary functions that already compute the same or equivalent value.
-- Cross-reference `docs/knowledge/methods.md` and `docs/knowledge/field-contracts.md` for existing analytical methods and field semantics.
-- If the implementation re-derives a value that an existing source already provides, flag it as a gap: "DUPLICATION — [new code location] recomputes [value] already available from [existing source]."
-- Every new computation must be justified: either no existing source provides it, or the existing source is unsuitable (with documented reason).
-
-### Step 3: Create todo items for all gaps
-
-Every gap gets a todo item with: the spec section reference, which dimension failed (WHAT/WHEN/UNLESS/HOW), the exact spec quote, the code's actual behavior, and the file:line reference.
-
-### Step 4: Document decision points
-
-If the implementation chose one approach over alternatives described in the spec (e.g., "Option A vs Option B"), record the choice and rationale.
-
-### Step 5: Flag cross-spec integration gaps
-
-If the spec references other specs or views that need changes (e.g., "add column to NOAEL view"), create a todo for each.
-
-### Step 6: Present the full gap list to the user
-
-Present before moving on, so they can prioritize or dismiss items.
+After implementing a feature from a spec in `docs/incoming/`, run the full review at `docs/checklists/POST-IMPLEMENTATION-REVIEW.md` before considering the work done. This is mandatory and must be run automatically — the user should not have to ask for it.
 
 ## Architecture
 
@@ -173,55 +107,38 @@ Present before moving on, so they can prioritize or dismiss items.
 
 ### Dual Syndrome Engines (not duplicated)
 Two files both detect "syndromes" but at different abstraction levels — do not merge:
-- **`syndrome-rules.ts`** (543 lines, 14 rules) — **Histopathology-specific.** Input: `Map<organ, LesionSeverityRow[]>`. Matches morphological finding text (necrosis, hypertrophy, etc.) via substring/token overlap. Consumed by: HistopathologyView, HistopathologyContextPanel, SpecimenRailMode.
-- **`cross-domain-syndromes.ts`** (972 lines, 9 rules XS01–XS09) — **Cross-domain.** Input: `EndpointSummary[]` spanning LB/BW/MI/MA/OM/CL. Matches via structured term dictionaries (test codes, canonical labels, specimen+finding pairs) with compound required logic. Consumed by: FindingsView, FindingsRail, scatter chart, context panels, lab-clinical-catalog, FindingsAnalyticsContext.
-
-Zero consumer overlap. Full investigation: `docs/incoming/arch-overhaul/lib-audit-results.md`.
+- **`syndrome-rules.ts`** (543 lines, 14 rules) — **Histopathology-specific.** Input: `Map<organ, LesionSeverityRow[]>`. Consumed by: HistopathologyView, HistopathologyContextPanel, SpecimenRailMode.
+- **`cross-domain-syndromes.ts`** (972 lines, 9 rules XS01–XS09) — **Cross-domain.** Input: `EndpointSummary[]` spanning LB/BW/MI/MA/OM/CL. Consumed by: FindingsView, FindingsRail, scatter chart, context panels, lab-clinical-catalog, FindingsAnalyticsContext.
 
 ## Design Decisions
 
-- **SubjectProfilePanel design is frozen.** The individual animal panel (`SubjectProfilePanel.tsx`) design — header layout, BW sparkline, lab table with vs-ctrl column, CL timeline with inconsistency flag, histopath hierarchy with COD detection, normal tissue collapse, and all visual treatments — requires explicit user approval before any changes. This includes typography, spacing, color, badges, sort order, column layout, and empty states. Functional bug fixes that don't affect the visual design are exempt. This is a hard rule.
-- **No breadcrumb navigation in context panel panes.** Use `< >` icon buttons at the top of the context panel for back/forward navigation between pane modes. This mirrors Datagrok's native context panel behavior. If breadcrumbs are added later, update this section and the implementation accordingly.
-- **Mode 2 (issue pane) never recreates rule context.** No rationale, no "how to fix" guidance, no standard references. Those belong in Mode 1. The issue pane shows only: record identity, finding evidence, action buttons, and review form. The rule ID is a clickable link back to Mode 1, with a one-line summary from "how to fix" for quick reference.
-- **Domain labels — neutral text only.** Domain codes (LB, BW, MI, MA, OM, CL, etc.) are categorical identity and must never be color-coded. Render as neutral text: `text-[9px] font-semibold text-muted-foreground`. Never use colored text, dot badges, outline pills, or bordered badges for domain labels. This is a hard rule — do not change it. Note: existing code still uses `getDomainBadgeColor()` in some views — update incrementally.
-- **No colored badges for categorical identity.** Color encodes signal strength (p-value, effect size, signal score) — measured values that vary with data. Categorical identity NEVER gets color. Categorical identity includes: dose group, domain, sex, severity level (Error/Warning/Info), fix status, review status, workflow state, and any other fixed label or classification. All categorical badges use neutral gray (`bg-gray-100 text-gray-600 border-gray-200`). The text label alone communicates the category. This applies everywhere — tables, context panels, headers, legends. This is a hard rule — can only be overridden after explicit user confirmation.
-- **Canonical tab bar pattern.** All views use: active indicator `h-0.5 bg-primary` underline, active text `text-foreground`, inactive text `text-muted-foreground`, padding `px-4 py-1.5`, tab text `text-xs font-medium`. Tab bar container includes `bg-muted/30`. This is a hard rule — all views must use this exact pattern.
-- **Evidence panel background.** All evidence panels (right of rail, left of context panel) use `bg-muted/5` for subtle visual distinction from the crisp-white context panel.
-- **Rail header font-weight.** All rail headers use `font-semibold` (not `font-medium`). Full class: `text-xs font-semibold uppercase tracking-wider text-muted-foreground`.
-- **Grid evidence color strategy — interaction-driven.** P-value and effect size columns in data grids use interaction-driven color: neutral `text-muted-foreground` at rest, `#DC2626` on row hover/selection via the `ev` CSS class. Never always-on color in grids. This follows §1.11 "evidence whispers in text."
-- **Context panel pane ordering.** Annotation forms (Tox Assessment, Pathology Review) come before navigation links (Related Views). Full priority: insights → stats/details → related items → annotation → navigation.
-- **Evidence tab naming.** All views with an evidence/overview tab in the evidence panel use the label "Evidence" (not "Overview") for cross-view consistency.
-- **Data label casing — two-tier strategy.** Organ system names (stored as `organ_system` in data, e.g., `"hepatic"`, `"general"`, `"musculoskeletal"`) are always plain English words, so they get `titleCase()` from `severity-colors.ts` everywhere they are displayed. All other data-sourced labels — endpoint_label, finding, specimen, severity, dose_response_pattern — are displayed as raw values from the data, because they may contain clinical abbreviations (ALT, AST, WBC, SGOT) that `titleCase()` would mangle (e.g., ALT → Alt). The `organName()` function in `signals-panel-engine.ts` does the same transformation with a special case for "general" → "General (systemic)" and is used in the signals engine text generation.
-- **Visual hierarchy: Position > Grouping > Typography > Color.** Position and grouping do the heavy lifting; color is a supporting tool. This is the priority order for communicating structure. Color is always the *last* resort, not the first.
-- **One saturated color family per column at rest.** At rest, any given column/zone may contain at most one saturated color family. Everything else must be neutral, outlined, muted, or interaction-only. This single rule eliminates most visual noise.
-- **Color budget: ≤10% saturated pixels at rest.** A grayscale screenshot of any view must still communicate the essential hierarchy. Only conclusions visually "shout." Per-screen budget: 1 dominant color (status), 1 secondary accent (interaction/selection), unlimited neutrals.
-- **Information hierarchy — six categories.** Every derived information element belongs to exactly one: Decision, Finding, Qualifier, Caveat, Evidence, or Context. Mixing categories in one visual unit (e.g., a finding + caveat in the same sentence) is forbidden. Present them separately with distinct visual treatment.
-- **Emphasis tier system.** Tier 1 (always colored at rest) = conclusions: TARGET ORGAN, Critical flags, tier dots. Tier 2 (visible, muted) = labels: "adverse" outline badge, direction arrows. Tier 3 (on interaction only) = evidence: p-values, effect sizes, signal score fills. Lower tiers never compete with higher tiers.
-- **No decision red repetition per row.** `#DC2626` (status/conclusion color) must not appear more than once in any single table row. Table density lint: if >30% of rows contain red at rest, the view has alarm fatigue.
-- **Heatmap matrices use neutral grayscale heat by default.** All heatmap/matrix views use a 5-step neutral gray ramp (`#E5E7EB` → `#D1D5DB` → `#9CA3AF` → `#6B7280` → `#4B5563`) as the default color scheme. Color is always-on at rest (not hover-only). Shared function `getNeutralHeatColor()` in `severity-colors.ts`. Legend goes below the matrix.
-- **The system computes what it can.** Don't make users derive conclusions from raw data. If a statistical comparison, count, or summary can be computed, show the result directly.
-- **Dose group display — two components, one rule.** Table column headers use `DoseHeader` (short dose label + colored underline). Row/cell values use `DoseLabel` (colored left-border pipe + short dose-only label like "Control" or "20 mg/kg" + full group name as `tooltip`, e.g., "Group 3, 20 mg/kg PCDRUG"). Both components live in `components/ui/DoseLabel.tsx`. Never render raw dose group strings ("Group N, dose DRUG") in table cells — always use `DoseLabel` with a short label and full-name tooltip. This is a hard rule.
-- **Table column layout — content-hugging with absorber.** Data tables must read like prose, not disconnected columns separated by whitespace. The primary label ("what") and its metrics ("so what") form a tight reading unit. Implementation: all columns except one designated **absorber** column use `width: 1px; white-space: nowrap` so the browser shrinks them to fit content (the wider of header or cell values). The absorber column (typically the last, lowest-priority column like "Also in" or a notes field) has no width constraint and absorbs remaining space. The Finding + metrics cluster reads left-to-right as a single line of meaning. Manual column resize overrides this with an explicit width. `max-width` caps prevent any column from growing beyond its role.
+- **SubjectProfilePanel design is frozen.** The individual animal panel (`SubjectProfilePanel.tsx`) design requires explicit user approval before any changes. Functional bug fixes that don't affect the visual design are exempt. This is a hard rule.
+- **No breadcrumb navigation in context panel panes.** Use `< >` icon buttons for back/forward navigation. Mirrors Datagrok's native context panel behavior.
+- **Mode 2 (issue pane) never recreates rule context.** No rationale, no "how to fix" guidance, no standard references. Those belong in Mode 1. The issue pane shows only: record identity, finding evidence, action buttons, and review form.
+- **Domain labels — neutral text only.** Domain codes are categorical identity and must never be color-coded. Render as: `text-[9px] font-semibold text-muted-foreground`. This is a hard rule.
+- **No colored badges for categorical identity.** Color encodes signal strength (measured values). Categorical identity (dose group, domain, sex, severity level, fix status, review status, workflow state) NEVER gets color. All categorical badges use neutral gray (`bg-gray-100 text-gray-600 border-gray-200`). This is a hard rule.
+- **Canonical tab bar pattern.** Active: `h-0.5 bg-primary` underline, `text-foreground`. Inactive: `text-muted-foreground`. Padding: `px-4 py-1.5`. Text: `text-xs font-medium`. Container: `bg-muted/30`. This is a hard rule.
+- **Evidence panel background.** All evidence panels use `bg-muted/5`.
+- **Rail header font-weight.** `text-xs font-semibold uppercase tracking-wider text-muted-foreground`.
+- **Grid evidence color strategy — interaction-driven.** P-value and effect size columns: neutral at rest, `#DC2626` on hover/selection via `ev` CSS class. Never always-on color in grids.
+- **Context panel pane ordering.** Priority: insights → stats/details → related items → annotation → navigation.
+- **Evidence tab naming.** Use "Evidence" (not "Overview") for cross-view consistency.
+- **Data label casing — two-tier strategy.** Organ system names get `titleCase()`. All other data-sourced labels display as raw values (may contain clinical abbreviations like ALT, AST).
+- **Visual hierarchy: Position > Grouping > Typography > Color.** Color is always the last resort.
+- **One saturated color family per column at rest.** Everything else: neutral, outlined, muted, or interaction-only.
+- **Color budget: ≤10% saturated pixels at rest.** Only conclusions visually "shout."
+- **Information hierarchy — six categories.** Decision, Finding, Qualifier, Caveat, Evidence, Context. Never mix in one visual unit.
+- **Emphasis tier system.** Tier 1 (colored at rest) = conclusions. Tier 2 (visible, muted) = labels. Tier 3 (on interaction) = evidence.
+- **No decision red repetition per row.** `#DC2626` at most once per table row.
+- **Heatmap matrices use neutral grayscale heat.** 5-step gray ramp, always-on. `getNeutralHeatColor()` in `severity-colors.ts`.
+- **The system computes what it can.** Show computed results, not raw data for users to derive.
+- **Dose group display — two components.** `DoseHeader` for column headers, `DoseLabel` for row/cell values. Both in `components/ui/DoseLabel.tsx`. Never render raw dose group strings. This is a hard rule.
+- **Table column layout — content-hugging with absorber.** All columns except one absorber use `width: 1px; white-space: nowrap`. Absorber absorbs remaining space.
+- **Pre-edit hierarchy analysis required for typography/spacing changes.** Before changing any font size, margin, or padding: (1) document the current hierarchy — what is primary (control-tier), supporting, and micro; (2) verify the proposed change preserves the tier relationships; (3) check that spacing is proportional to the text size it surrounds. Font sizes encode information hierarchy, not just visual style. Treating text as interchangeable "lorem ipsum" is a defect. See `docs/design-system/datagrok-visual-design-guide.md` §2.1 for the tier table.
 
 ## UI Casing Conventions
 
-- **Sentence case** for all UI text by default: labels, descriptions, tooltips, column headers, section headers (L2+), status text, placeholder text, dropdown options, error messages, notifications
-- **Sentence case** for all buttons. Exceptions: OK, SAVE, RUN
-- **Title Case** for L1 page/view headers, dialog headers/titles, and context action labels in right-click context menus
-- **Never use Title Case** for section headers within panes, table column headers, filter labels, or form field labels
-
-**Examples:**
-```
-Button:             Revert, Apply fix, Accept, Fix ▾, Apply suggestion, Flag
-Button (exception): OK, SAVE, RUN
-Button (long):      Flag for review, Generate report, Generate validation report
-L1 header:          SEND Validation, Study: PointCross
-Dialog header:      Export Settings, Confirm Deletion
-Section header:     Rule detail, Review progress, Suggested fix
-Column header:      Issue ID, Review status, Assigned to
-Dropdown option:    Not reviewed, Accept all, Mapping applied
-Context menu:       Export to CSV, Copy Issue ID, Open in Domain Viewer
-```
+See `docs/reference/ui-casing-conventions.md` for the full casing guide with examples.
 
 ## TypeScript Conventions
 
@@ -243,56 +160,14 @@ Pre-generated by `python -m generator.generate PointCross`. Outputs 8 JSON files
 
 ## Color Schemes
 
-All color functions implemented in `lib/severity-colors.ts` (p-value, signal score, severity, dose groups, sex). Hex values in `docs/reference/claude-md-archive.md` and `docs/design-system/datagrok-visual-design-guide.md`.
-
----
+All color functions implemented in `lib/severity-colors.ts`. Hex values in `docs/reference/claude-md-archive.md` and `docs/design-system/datagrok-visual-design-guide.md`.
 
 ## Implementation Status
 
-**All 5 build steps complete.** 7 analysis views (Study Summary, Adverse Effects, Dose-Response, Histopathology, NOAEL Decision, Validation, plus HTML Report). Real validation engine (14 YAML rules, 2 check types). All FEAT-01 through FEAT-09 incoming features implemented. See system specs (`docs/systems/*.md`) and view specs (`docs/views/*.md`) for current architecture. Detailed implementation notes archived in `docs/reference/claude-md-archive.md`.
+**All 5 build steps complete.** 7 analysis views + HTML Report. Real validation engine (14 YAML rules, 2 check types). All FEAT-01 through FEAT-09 implemented. See `docs/reference/implementation-status.md` for the full real/stub/missing breakdown.
 
 **Data nullability note:** `lesion_severity_summary.json`: `avg_severity` is null for 550/728 rows — always null-guard with `?? 0`.
 
----
-
-## What's Real vs. Demo
-
-Full migration guide with file paths and line numbers: `docs/reference/demo-stub-guide.md`
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Statistical analysis pipeline (generator/) | **Real** | Computes actual statistics from XPT data |
-| Signal scoring & rule engine | **Real** | Rules R01-R17 derive from actual data patterns |
-| HTML report generator (frontend) | **Real** | Fetches live data, builds complete standalone report |
-| All 7 analysis views (UI) | **Real** | Fully interactive, data-driven UI components |
-| Context panels & insights synthesis | **Real** | Rule synthesis, organ grouping, tier classification |
-| ToxFinding / PathologyReview forms | **Real** | Functional forms, persist via API (storage is file-based) |
-| Annotation API contract | **Real** | GET/PUT endpoints, 4 schema types — only storage backend needs changing |
-| React Query data hooks | **Real** | All hooks are production-ready, no mocking |
-| Landing page | **Real** | Shows all discovered studies, no demo entries |
-| Validation engine & rules | **Real** | 14 YAML rules (7 SD + 7 FDA), Python engine reads XPT data, optional CDISC CORE, API serves results via hooks |
-| Import section | **Real** | Drag-and-drop .zip upload, backend extraction, auto-registration |
-| Delete study | **Real** | Context menu delete with confirmation, removes all dirs |
-| Treatment arms | **Real** | Dynamic ARMCD detection from TX/DM, treatment arms table in details |
-| Multi-study support | **Real** | ALLOWED_STUDIES empty, all studies in send/ served |
-| Export (CSV/Excel) | **Stub** | alert() placeholder |
-| Share | **Stub** | Disabled menu item, no implementation |
-| Authentication | **Missing** | No auth anywhere, hardcoded "User" identity |
-| Database storage | **Missing** | Annotations use JSON files on disk |
-
----
-
 ## Interactivity Rule
 
-**Every UI element must be interactive and produce a visible result.** Users click through this prototype to evaluate the design. If something looks clickable, it must do something.
-
-- **Dropdowns**: Every option must be selectable and produce a visible state change. Selecting "Accepted" in a status dropdown must update the status badge in the table with the correct color. Selecting a resolution must persist and display.
-- **Buttons**: Clicking SAVE must show visual feedback (brief success flash or state change). Clicking APPLY FIX must update the relevant fields (status, resolution, comment) as specified.
-- **Filters**: Selecting a filter value must actually filter the table rows.
-- **Tables**: Row clicks must trigger the correct pane mode switch and highlight the row.
-- **Text inputs**: Values entered in Assigned To, Comment, Value fields must persist within the session.
-- **Empty states**: When no data matches (e.g., filter returns zero results, no rule selected), show meaningful placeholder text — never a blank area.
-
-**Exception**: Features requiring backend architecture we are not reimplementing (e.g., writing corrected values back to SEND datasets). For these, **simulate the result**: update UI state as if the fix was applied (change status, populate fields, show confirmation), but don't build real data transformation logic.
-
-**Rule of thumb**: If a user can interact with it, it must respond. If it can't respond meaningfully, show an appropriate empty state or confirmation message. No dead clicks, no unresponsive controls, no orphaned UI elements.
+See `docs/reference/interactivity-rule.md` for the full interactivity requirements.
