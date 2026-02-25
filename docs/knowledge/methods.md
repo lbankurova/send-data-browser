@@ -347,7 +347,7 @@ This table documents which statistical test is applied to each endpoint type in 
 - **4-tier BW classification:** Tier 1 (g<0.5, routine), Tier 2 (0.5–1.0, caution), Tier 3 (1.0–2.0, auto-switch to brain), Tier 4 (≥2.0, ANCOVA needed).
 - **Organ correlation categories (Bailey et al. 2004):** STRONG_BW (liver, thyroid), MODERATE_BW (heart, kidney, spleen, lung), WEAK_BW (adrenals, thymus — always prefer brain), BRAIN (can't normalize to itself), REPRODUCTIVE.
 - **Species/strain profiles:** 12 entries with BW CV and brain CV ranges (rat SD, rat Wistar, mouse C57BL/6, etc.).
-- **Brain affected check:** |brain g| ≥ 0.8 → brain normalization may be unreliable.
+- **Brain affected check (species-calibrated 3-tier):** `getBrainTier(brainG, speciesStrain)` returns tier 1 (unaffected), 2 (potentially affected), or 3 (affected). Tier 3 → brain normalization unreliable, forces ANCOVA. Tier 2 → warning only, report both brain-normalized and absolute. Thresholds: Rodents [0.5, 1.0], Dogs [0.8, 1.5], NHPs [1.0, 2.0], Rabbit/Minipig [0.8, 1.5] (dog thresholds — no species-specific literature).
 - **B-7 secondary assessment:** `assessSecondaryToBodyWeight(normCtx)` — Phase 1 heuristic: tier ≥ 3 → secondary with low confidence.
 
 **Data source:** Reuses `useFindings(studyId)` — BW and OM group_stats already cached by React Query. Zero extra API calls.

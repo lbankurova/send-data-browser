@@ -17,6 +17,7 @@ import {
   getTierSeverityLabel,
   modeToSessionValue,
   buildNormalizationRationale,
+  getBrainTier,
 } from "@/lib/organ-weight-normalization";
 import type { NormalizationContext, GroupStatsTriplet } from "@/lib/organ-weight-normalization";
 
@@ -150,6 +151,100 @@ describe("decideNormalization", () => {
     const d = decideNormalization(0.6, 0.1, "LIVER", "NHP_CYNOMOLGUS", null);
     expect(d.tier).toBe(2);
     expect(d.rationale.some(r => r.includes("body weight change"))).toBe(true);
+  });
+
+  it("dog brainG=0.9 → tier 2 (potentially affected), NOT ANCOVA, has warning", () => {
+    const d = decideNormalization(1.5, 0.9, "KIDNEY", "DOG_BEAGLE", null);
+    expect(d.brainAffected).toBe(false);
+    expect(d.mode).not.toBe("ancova");
+    expect(d.warnings.some(w => w.includes("Brain weight potentially affected"))).toBe(true);
+  });
+
+  it("dog brainG=1.6 → tier 3 (affected), ANCOVA", () => {
+    const d = decideNormalization(1.5, 1.6, "KIDNEY", "DOG_BEAGLE", null);
+    expect(d.brainAffected).toBe(true);
+    expect(d.tier).toBe(4);
+    expect(d.mode).toBe("ancova");
+  });
+});
+
+// ─── getBrainTier ───────────────────────────────────────────
+
+describe("getBrainTier", () => {
+  // Rodent boundaries: [0.5, 1.0]
+  it("rodent g=0.4 → tier 1 (unaffected)", () => {
+    const r = getBrainTier(0.4, "RAT_SPRAGUE_DAWLEY");
+    expect(r).not.toBeNull();
+    expect(r!.tier).toBe(1);
+    expect(r!.label).toBe("unaffected");
+  });
+
+  it("rodent g=0.7 → tier 2 (potentially affected)", () => {
+    const r = getBrainTier(0.7, "RAT_SPRAGUE_DAWLEY");
+    expect(r!.tier).toBe(2);
+    expect(r!.label).toBe("potentially affected");
+  });
+
+  it("rodent g=1.2 → tier 3 (affected)", () => {
+    const r = getBrainTier(1.2, "RAT_SPRAGUE_DAWLEY");
+    expect(r!.tier).toBe(3);
+    expect(r!.label).toBe("affected");
+  });
+
+  // Dog boundaries: [0.8, 1.5]
+  it("dog g=0.6 → tier 1 (unaffected)", () => {
+    const r = getBrainTier(0.6, "DOG_BEAGLE");
+    expect(r!.tier).toBe(1);
+    expect(r!.label).toBe("unaffected");
+  });
+
+  it("dog g=1.0 → tier 2 (potentially affected)", () => {
+    const r = getBrainTier(1.0, "DOG_BEAGLE");
+    expect(r!.tier).toBe(2);
+    expect(r!.label).toBe("potentially affected");
+  });
+
+  it("dog g=1.8 → tier 3 (affected)", () => {
+    const r = getBrainTier(1.8, "DOG_BEAGLE");
+    expect(r!.tier).toBe(3);
+    expect(r!.label).toBe("affected");
+  });
+
+  // NHP boundaries: [1.0, 2.0]
+  it("NHP g=0.8 → tier 1 (unaffected)", () => {
+    const r = getBrainTier(0.8, "NHP_CYNOMOLGUS");
+    expect(r!.tier).toBe(1);
+    expect(r!.label).toBe("unaffected");
+  });
+
+  it("NHP g=1.5 → tier 2 (potentially affected)", () => {
+    const r = getBrainTier(1.5, "NHP_CYNOMOLGUS");
+    expect(r!.tier).toBe(2);
+    expect(r!.label).toBe("potentially affected");
+  });
+
+  it("NHP g=2.5 → tier 3 (affected)", () => {
+    const r = getBrainTier(2.5, "NHP_CYNOMOLGUS");
+    expect(r!.tier).toBe(3);
+    expect(r!.label).toBe("affected");
+  });
+
+  // Unknown species → rodent fallback
+  it("unknown species → rodent fallback thresholds", () => {
+    const r = getBrainTier(0.7, "UNKNOWN");
+    expect(r!.tier).toBe(2);
+    expect(r!.label).toBe("potentially affected");
+  });
+
+  // null brainG → null
+  it("null brainG → null", () => {
+    expect(getBrainTier(null, "RAT_SPRAGUE_DAWLEY")).toBeNull();
+  });
+
+  // Negative g values (uses absolute)
+  it("negative g values use absolute value", () => {
+    const r = getBrainTier(-1.2, "RAT_SPRAGUE_DAWLEY");
+    expect(r!.tier).toBe(3);
   });
 });
 
@@ -519,10 +614,17 @@ describe("buildNormalizationRationale", () => {
     expect(r).toContain("brain ratio available as cross-check");
   });
 
-  it("Tier 2, brain affected → ANCOVA recommended", () => {
-    const r = buildNormalizationRationale(2, 0.6);
-    expect(r).toContain("brain also affected");
+  it("Tier 2, brain potentially affected (rodent) → interpret with caution", () => {
+    const r = buildNormalizationRationale(2, 0.6, "RAT_SPRAGUE_DAWLEY");
+    expect(r).toContain("brain potentially affected");
     expect(r).toContain("0.60");
+    expect(r).toContain("interpret ratios with caution");
+  });
+
+  it("Tier 2, brain affected (rodent g=1.2) → ANCOVA recommended", () => {
+    const r = buildNormalizationRationale(2, 1.2, "RAT_SPRAGUE_DAWLEY");
+    expect(r).toContain("brain also affected");
+    expect(r).toContain("1.20");
     expect(r).toContain("ANCOVA recommended");
   });
 
@@ -539,10 +641,17 @@ describe("buildNormalizationRationale", () => {
     expect(r).toContain("brain unaffected and BW-resistant");
   });
 
-  it("Tier 3, brain affected → treatment effect note", () => {
-    const r = buildNormalizationRationale(3, 0.7);
-    expect(r).toContain("also shows treatment effect");
+  it("Tier 3, brain potentially affected (rodent g=0.7) → report both ratios", () => {
+    const r = buildNormalizationRationale(3, 0.7, "RAT_SPRAGUE_DAWLEY");
+    expect(r).toContain("brain potentially affected");
     expect(r).toContain("0.70");
+    expect(r).toContain("ANCOVA recommended");
+  });
+
+  it("Tier 3, brain affected (rodent g=1.2) → treatment effect note", () => {
+    const r = buildNormalizationRationale(3, 1.2, "RAT_SPRAGUE_DAWLEY");
+    expect(r).toContain("also shows treatment effect");
+    expect(r).toContain("1.20");
     expect(r).toContain("ANCOVA with baseline BW recommended");
   });
 
@@ -561,10 +670,17 @@ describe("buildNormalizationRationale", () => {
     expect(r).toContain("ANCOVA with baseline BW recommended");
   });
 
-  it("Tier 4, brain affected → treatment effect note", () => {
-    const r = buildNormalizationRationale(4, 0.8);
-    expect(r).toContain("also shows treatment effect");
+  it("Tier 4, brain potentially affected (rodent g=0.8) → report both ratios", () => {
+    const r = buildNormalizationRationale(4, 0.8, "RAT_SPRAGUE_DAWLEY");
+    expect(r).toContain("brain potentially affected");
     expect(r).toContain("0.80");
+    expect(r).toContain("ANCOVA recommended");
+  });
+
+  it("Tier 4, brain affected (rodent g=1.5) → treatment effect note", () => {
+    const r = buildNormalizationRationale(4, 1.5, "RAT_SPRAGUE_DAWLEY");
+    expect(r).toContain("also shows treatment effect");
+    expect(r).toContain("1.50");
   });
 
   it("Tier 4, brain n/a → fallback language", () => {
