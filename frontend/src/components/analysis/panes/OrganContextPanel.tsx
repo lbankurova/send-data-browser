@@ -452,8 +452,9 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
           moderate_bw: "Moderate BW correlation (heart, kidney, spleen, lung)",
           weak_bw: "Weak BW correlation — brain normalization preferred (adrenals, thymus)",
           brain: "Brain organ — cannot normalize to itself",
-          reproductive: "Reproductive organ — specialized interpretation",
-          unknown: "Unknown correlation category",
+          gonadal: "Gonadal (testes) — BW-spared, absolute weight only",
+          androgen_dependent: "Androgen-dependent — correlate with hormonal status",
+          female_reproductive: "Female reproductive — cycle-dominated, low confidence",
         };
         const modeLabels: Record<string, string> = {
           absolute: "Absolute weight",
@@ -493,7 +494,7 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
                 </div>
               )}
               <div className="text-[9px] text-muted-foreground/60">
-                Ref: Bailey et al. 2004, Sellers et al. 2007
+                Ref: Bailey et al. 2004, Sellers et al. 2007, Creasy 2013
               </div>
             </div>
           </CollapsiblePane>

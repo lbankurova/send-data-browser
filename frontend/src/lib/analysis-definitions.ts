@@ -25,6 +25,6 @@ export const ANALYSIS_VIEWS: AnalysisView[] = [
   { key: "findings", label: "Findings", implemented: true },
   { key: "dose-response", label: "Dose-Response", implemented: true },
   { key: "histopathology", label: "Histopathology", implemented: true },
-  { key: "noael-decision", label: "NOAEL & decision", implemented: true },
+  { key: "noael-determination", label: "NOAEL determination", implemented: true },
   { key: "validation", label: "Validation", implemented: true },
 ];

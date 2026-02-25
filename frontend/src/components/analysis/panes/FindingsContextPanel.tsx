@@ -22,6 +22,7 @@ import { RecoveryPane } from "./RecoveryPane";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
+import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/organ-weight-normalization";
 import { useStatMethods } from "@/hooks/useStatMethods";
 
 export function FindingsContextPanel() {
@@ -173,10 +174,73 @@ export function FindingsContextPanel() {
           statistics={activeStatistics!}
           effectSize={context.effect_size}
         />
-        {/* Normalization annotation for OM domain endpoints at tier >= 2 */}
+        {/* Normalization annotation for OM domain endpoints */}
         {selectedFinding.domain === "OM" && (() => {
           const specimen = selectedFinding.specimen?.toUpperCase() ?? "";
+          const category = specimen ? getOrganCorrelationCategory(specimen) : null;
           const normCtx = specimen ? normalization.getContext(specimen) : null;
+
+          // Reproductive organs always show category-specific messaging
+          if (category === OrganCorrelationCategory.GONADAL) {
+            return (
+              <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                <div className="font-semibold text-amber-800">
+                  Testes — absolute weight primary (BW-spared)
+                </div>
+                <div className="mt-0.5 text-amber-700">
+                  Absolute weight is the primary endpoint for testes.
+                  Body weight ratios are not appropriate (Creasy 2013).
+                </div>
+                {normCtx && normCtx.tier >= 2 && (
+                  <div className="mt-1 font-semibold text-amber-800">
+                    BW-ratio testes weight will appear artificially increased
+                    (BW Tier {normCtx.tier}, g = {normCtx.bwG.toFixed(2)}).
+                  </div>
+                )}
+              </div>
+            );
+          }
+          if (category === OrganCorrelationCategory.ANDROGEN_DEPENDENT) {
+            const organName = specimen ? specimen.charAt(0) + specimen.slice(1).toLowerCase() : "Organ";
+            return (
+              <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                <div className="font-semibold text-amber-800">
+                  {organName} — androgen-dependent, not BW-dependent
+                </div>
+                <div className="mt-0.5 text-amber-700">
+                  Weight reflects androgen status. Correlate with histopathology
+                  and testes findings.
+                </div>
+                <button
+                  className="mt-1 text-[9px] text-blue-600 hover:underline"
+                  onClick={() => {
+                    // Navigate to MI domain findings for this organ
+                    navigate(`/study/${studyId}/findings`, {
+                      state: { domain: "MI", specimen: specimen },
+                    });
+                  }}
+                >
+                  View MI findings for {organName} &rarr;
+                </button>
+              </div>
+            );
+          }
+          if (category === OrganCorrelationCategory.FEMALE_REPRODUCTIVE) {
+            const organName = specimen ? specimen.charAt(0) + specimen.slice(1).toLowerCase() : "Organ";
+            return (
+              <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                <div className="font-semibold text-amber-800">
+                  {organName} — low confidence (estrous cycle variability)
+                </div>
+                <div className="mt-0.5 text-amber-700">
+                  Low confidence — estrous cycle stage not controlled.
+                  Interpret with caution (CV 25–50%).
+                </div>
+              </div>
+            );
+          }
+
+          // Non-reproductive organs: show BW confounding at tier >= 2
           if (!normCtx || normCtx.tier < 2) return null;
           const modeLabels: Record<string, string> = {
             absolute: "absolute weight",
@@ -198,6 +262,74 @@ export function FindingsContextPanel() {
                 Active normalization: {modeLabels[normCtx.activeMode] ?? normCtx.activeMode}
                 {normCtx.tier === 4 && " — ANCOVA recommended for definitive assessment"}
               </div>
+            </div>
+          );
+        })()}
+        {/* Normalization alternatives for OM domain (G2: grayed for GONADAL, G5: side-by-side for FEMALE) */}
+        {selectedFinding.domain === "OM" && (() => {
+          const specimen = selectedFinding.specimen?.toUpperCase() ?? "";
+          const cat = specimen ? getOrganCorrelationCategory(specimen) : null;
+          const decision = specimen ? normalization.getDecision(specimen) : null;
+          // Show alternatives for: GONADAL (grayed ratios), FEMALE_REPRODUCTIVE (always), tier >= 2 (showAlternatives)
+          const shouldShow = cat === OrganCorrelationCategory.GONADAL
+            || cat === OrganCorrelationCategory.FEMALE_REPRODUCTIVE
+            || (decision?.showAlternatives ?? false);
+          if (!shouldShow) return null;
+          const isGonadal = cat === OrganCorrelationCategory.GONADAL;
+          const gs = selectedFinding.group_stats;
+          const controlGs = gs.find(g => g.dose_level === 0 || g.dose_level === 1);
+          const highestGs = gs.length > 0 ? gs[gs.length - 1] : null;
+          if (!controlGs || !highestGs || highestGs.dose_level === controlGs.dose_level) return null;
+          const ratioGrayed = isGonadal ? "opacity-40" : "";
+          return (
+            <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
+              <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Normalization alternatives (high dose vs control)
+              </div>
+              <table className="w-full">
+                <thead>
+                  <tr className="text-[9px] text-muted-foreground">
+                    <th className="py-0.5 text-left font-medium">Metric</th>
+                    <th className="py-0.5 text-right font-medium">Control</th>
+                    <th className="py-0.5 text-right font-medium">High dose</th>
+                    <th className="py-0.5 text-right font-medium">{"\u0394"}%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="py-0.5">Absolute (g)</td>
+                    <td className="py-0.5 text-right font-mono">{controlGs.mean?.toFixed(3) ?? "\u2014"}</td>
+                    <td className="py-0.5 text-right font-mono">{highestGs.mean?.toFixed(3) ?? "\u2014"}</td>
+                    <td className="py-0.5 text-right font-mono">
+                      {controlGs.mean && highestGs.mean
+                        ? `${(((highestGs.mean - controlGs.mean) / controlGs.mean) * 100).toFixed(1)}%`
+                        : "\u2014"}
+                    </td>
+                  </tr>
+                  <tr className={ratioGrayed}>
+                    <td className="py-0.5">
+                      Ratio-to-BW
+                      {isGonadal && <span className="ml-1 text-[8px] text-amber-600">(not appropriate)</span>}
+                    </td>
+                    <td className="py-0.5 text-right font-mono">{controlGs.mean_relative?.toFixed(4) ?? "\u2014"}</td>
+                    <td className="py-0.5 text-right font-mono">{highestGs.mean_relative?.toFixed(4) ?? "\u2014"}</td>
+                    <td className="py-0.5 text-right font-mono">
+                      {controlGs.mean_relative && highestGs.mean_relative
+                        ? `${(((highestGs.mean_relative - controlGs.mean_relative) / controlGs.mean_relative) * 100).toFixed(1)}%`
+                        : "\u2014"}
+                    </td>
+                  </tr>
+                  <tr className={ratioGrayed}>
+                    <td className="py-0.5">
+                      Ratio-to-brain
+                      {isGonadal && <span className="ml-1 text-[8px] text-amber-600">(not appropriate)</span>}
+                    </td>
+                    <td className="py-0.5 text-right font-mono text-muted-foreground" colSpan={3}>
+                      Not computed (Phase 2)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           );
         })()}
@@ -274,11 +406,11 @@ export function FindingsContextPanel() {
             onClick={(e) => {
               e.preventDefault();
               if (studyId) {
-                navigate(`/studies/${encodeURIComponent(studyId)}/noael-decision`);
+                navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`);
               }
             }}
           >
-            View NOAEL decision &#x2192;
+            View NOAEL determination &#x2192;
           </a>
           <a
             href="#"
