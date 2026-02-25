@@ -501,91 +501,75 @@ describe("modeToSessionValue", () => {
 describe("buildNormalizationRationale", () => {
   // Tier 1 — always null regardless of brain state
   it("Tier 1, brain OK → null", () => {
-    expect(buildNormalizationRationale(1, 0.1, false)).toBeNull();
+    expect(buildNormalizationRationale(1, 0.1)).toBeNull();
   });
 
   it("Tier 1, brain affected → null", () => {
-    expect(buildNormalizationRationale(1, 0.6, false)).toBeNull();
+    expect(buildNormalizationRationale(1, 0.6)).toBeNull();
   });
 
   it("Tier 1, brain n/a → null", () => {
-    expect(buildNormalizationRationale(1, null, false)).toBeNull();
+    expect(buildNormalizationRationale(1, null)).toBeNull();
   });
 
-  // Tier 2 — no prefix, three brain variants
+  // Tier 2 — three brain variants
   it("Tier 2, brain OK → cross-check available", () => {
-    const r = buildNormalizationRationale(2, 0.2, false);
+    const r = buildNormalizationRationale(2, 0.2);
     expect(r).toContain("Tier 2");
     expect(r).toContain("brain ratio available as cross-check");
-    expect(r).not.toMatch(/^Auto-selected/);
-    expect(r).not.toMatch(/^User-selected/);
   });
 
   it("Tier 2, brain affected → ANCOVA recommended", () => {
-    const r = buildNormalizationRationale(2, 0.6, false);
+    const r = buildNormalizationRationale(2, 0.6);
     expect(r).toContain("brain also affected");
     expect(r).toContain("0.60");
     expect(r).toContain("ANCOVA recommended");
   });
 
   it("Tier 2, brain n/a → no cross-check", () => {
-    const r = buildNormalizationRationale(2, null, false);
+    const r = buildNormalizationRationale(2, null);
     expect(r).toContain("brain weight not collected");
     expect(r).toContain("no cross-check available");
   });
 
-  // Tier 3 — auto-selected prefix when applicable
-  it("Tier 3, brain OK, auto → Auto-selected prefix", () => {
-    const r = buildNormalizationRationale(3, 0.2, true);
-    expect(r).toMatch(/^Auto-selected:/);
+  // Tier 3 — three brain variants
+  it("Tier 3, brain OK → significantly affected, brain unaffected", () => {
+    const r = buildNormalizationRationale(3, 0.2);
     expect(r).toContain("significantly affected (Tier 3)");
     expect(r).toContain("brain unaffected and BW-resistant");
   });
 
-  it("Tier 3, brain affected, auto → Auto-selected, treatment effect note", () => {
-    const r = buildNormalizationRationale(3, 0.7, true);
-    expect(r).toMatch(/^Auto-selected:/);
+  it("Tier 3, brain affected → treatment effect note", () => {
+    const r = buildNormalizationRationale(3, 0.7);
     expect(r).toContain("also shows treatment effect");
     expect(r).toContain("0.70");
     expect(r).toContain("ANCOVA with baseline BW recommended");
   });
 
-  it("Tier 3, brain n/a → no prefix, fallback language", () => {
-    const r = buildNormalizationRationale(3, null, false);
-    expect(r).not.toMatch(/^Auto-selected/);
-    expect(r).not.toMatch(/^User-selected/);
+  it("Tier 3, brain n/a → fallback language", () => {
+    const r = buildNormalizationRationale(3, null);
     expect(r).toContain("brain weight not collected");
     expect(r).toContain("ratio to BW retained as fallback");
     expect(r).toContain("ANCOVA with baseline BW recommended");
   });
 
-  // Tier 4 — auto-selected prefix when applicable
-  it("Tier 4, brain OK, auto → ratio to brain as best available", () => {
-    const r = buildNormalizationRationale(4, 0.2, true);
-    expect(r).toMatch(/^Auto-selected:/);
+  // Tier 4 — three brain variants
+  it("Tier 4, brain OK → ratio to brain as best available", () => {
+    const r = buildNormalizationRationale(4, 0.2);
     expect(r).toContain("severely affected (Tier 4)");
     expect(r).toContain("ratio to brain as best available");
     expect(r).toContain("ANCOVA with baseline BW recommended");
   });
 
-  it("Tier 4, brain affected, auto → treatment effect note", () => {
-    const r = buildNormalizationRationale(4, 0.8, true);
-    expect(r).toMatch(/^Auto-selected:/);
+  it("Tier 4, brain affected → treatment effect note", () => {
+    const r = buildNormalizationRationale(4, 0.8);
     expect(r).toContain("also shows treatment effect");
     expect(r).toContain("0.80");
   });
 
-  it("Tier 4, brain n/a → no prefix, fallback language", () => {
-    const r = buildNormalizationRationale(4, null, false);
-    expect(r).not.toMatch(/^Auto-selected/);
+  it("Tier 4, brain n/a → fallback language", () => {
+    const r = buildNormalizationRationale(4, null);
     expect(r).toContain("brain weight not collected");
     expect(r).toContain("ratio to BW retained as fallback");
-  });
-
-  // Manual override at Tier 3 → "User-selected" prefix
-  it("Tier 3, brain OK, manual override → User-selected prefix", () => {
-    const r = buildNormalizationRationale(3, 0.2, false);
-    expect(r).toMatch(/^User-selected:/);
-    expect(r).toContain("brain unaffected and BW-resistant");
   });
 });

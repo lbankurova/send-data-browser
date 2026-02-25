@@ -726,12 +726,10 @@ export function mapStudyType(studyType: string | null): string | null {
  *
  * @param highestTier — worst-case tier across all organs × groups (1–4)
  * @param worstBrainG — worst-case brain Hedges' g, null if brain not collected
- * @param isAutoSelected — true when current method matches what auto-selection would choose
  */
 export function buildNormalizationRationale(
   highestTier: number,
   worstBrainG: number | null,
-  isAutoSelected: boolean,
 ): string | null {
   if (highestTier <= 1) return null;
 
@@ -756,22 +754,19 @@ export function buildNormalizationRationale(
   const tierNum = highestTier as 3 | 4;
 
   if (brainNa) {
-    // No prefix — system can't claim auto-selected when it fell back
     return `BW ${tierWord} affected (Tier ${tierNum}) \u2014 brain weight not collected; ratio to BW retained as fallback. ANCOVA with baseline BW recommended.`;
   }
 
-  const prefix = isAutoSelected ? "Auto-selected: " : "User-selected: ";
-
   if (brainOk) {
     if (tierNum === 3) {
-      return `${prefix}BW ${tierWord} affected (Tier ${tierNum}) \u2014 brain unaffected and BW-resistant.`;
+      return `BW ${tierWord} affected (Tier ${tierNum}) \u2014 brain unaffected and BW-resistant.`;
     }
     // Tier 4
-    return `${prefix}BW ${tierWord} affected (Tier ${tierNum}) \u2014 ratio to brain as best available. ANCOVA with baseline BW recommended.`;
+    return `BW ${tierWord} affected (Tier ${tierNum}) \u2014 ratio to brain as best available. ANCOVA with baseline BW recommended.`;
   }
 
   // brainAffected at Tier 3/4
-  return `${prefix}BW ${tierWord} affected (Tier ${tierNum}) \u2014 brain normally BW-resistant, but also shows treatment effect (${brainGFormatted}). ANCOVA with baseline BW recommended.`;
+  return `BW ${tierWord} affected (Tier ${tierNum}) \u2014 brain normally BW-resistant, but also shows treatment effect (${brainGFormatted}). ANCOVA with baseline BW recommended.`;
 }
 
 // ─── Tier Label Helpers ─────────────────────────────────────

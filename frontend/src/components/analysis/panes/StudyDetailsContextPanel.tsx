@@ -211,9 +211,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           const methodLabel = organWeightMethod === "ratio-brain" ? "ratio to brain"
             : organWeightMethod === "ratio-bw" ? "ratio to BW"
             : "absolute";
-          const rationale = buildNormalizationRationale(
-            highestTier, worstBrainG, isAutoSelected,
-          );
+          const rationale = buildNormalizationRationale(highestTier, worstBrainG);
           return (
             <div className="mb-0.5 space-y-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
               <div className="flex items-baseline gap-1.5">
