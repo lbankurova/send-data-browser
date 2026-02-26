@@ -339,7 +339,7 @@ export function decideNormalization(
     );
     return {
       mode: "absolute", tier: computeBwTier(bwG), confidence: "high",
-      rationale, warnings, showAlternatives: false,
+      rationale, warnings, showAlternatives: true,
       brainAffected: false, userOverridden: false,
     };
   }

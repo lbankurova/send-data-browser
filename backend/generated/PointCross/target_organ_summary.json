@@ -1,7 +1,7 @@
 [
   {
     "organ_system": "general",
-    "evidence_score": 1.289,
+    "evidence_score": 1.305,
     "n_endpoints": 61,
     "n_domains": 8,
     "domains": [
@@ -22,7 +22,7 @@
   },
   {
     "organ_system": "hematologic",
-    "evidence_score": 0.894,
+    "evidence_score": 0.895,
     "n_endpoints": 65,
     "n_domains": 4,
     "domains": [
@@ -31,7 +31,7 @@
       "MI",
       "OM"
     ],
-    "max_signal_score": 0.855,
+    "max_signal_score": 0.857,
     "n_significant": 39,
     "n_treatment_related": 35,
     "target_organ_flag": true,
@@ -39,7 +39,7 @@
   },
   {
     "organ_system": "hepatic",
-    "evidence_score": 0.786,
+    "evidence_score": 0.789,
     "n_endpoints": 39,
     "n_domains": 5,
     "domains": [
@@ -88,13 +88,13 @@
   },
   {
     "organ_system": "metabolic",
-    "evidence_score": 0.563,
+    "evidence_score": 0.562,
     "n_endpoints": 8,
     "n_domains": 1,
     "domains": [
       "LB"
     ],
-    "max_signal_score": 0.671,
+    "max_signal_score": 0.668,
     "n_significant": 6,
     "n_treatment_related": 3,
     "target_organ_flag": true,
