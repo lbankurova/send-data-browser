@@ -119,10 +119,11 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       col.accessor("day", {
         header: () => {
           const hasCl = findings.some(f => f.domain === "CL");
-          if (!hasCl) return "Day";
+          const baseTooltip = "Longitudinal domains: actual study day. Terminal domains: most frequent observation day (mode).";
+          if (!hasCl) return <span title={baseTooltip}>Day</span>;
           const labels: Record<ClDayMode, { label: string; tooltip: string }> = {
-            mode:           { label: "Day",         tooltip: "Most frequent observation day. Click to change. CL rows: peak prevalence day." },
-            first_observed: { label: "Day (onset)", tooltip: "First observed day. Click to change. CL rows: earliest observation." },
+            mode:           { label: "Day",         tooltip: `${baseTooltip} CL rows: peak prevalence day (mode). Click to change.` },
+            first_observed: { label: "Day (onset)", tooltip: `${baseTooltip} CL rows: earliest observation day (onset). Click to change.` },
           };
           const { label, tooltip } = labels[clDayMode];
           return (
