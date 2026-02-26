@@ -84,13 +84,13 @@ Rules sorted by `sortMode` callback, then secondary sort by `records_affected` d
 
 Always visible at the top of the center panel (all states: loading, no results, no rule, clean rule, disabled rule, main view).
 
-Shows: `{total} rules · {enabled} enabled · {triggered} triggered` (left) + `Last run: {N}m ago` (right). Uses `text-[10px] text-muted-foreground`.
+Shows: `{total} rules · {enabled} enabled · {triggered} triggered` (left) + `Last run: {N}m ago ({elapsed}s)` (right). Uses `text-[10px] text-muted-foreground`.
 
 ---
 
 ## Rule Header (conditional)
 
-Shown when a rule is selected. Displays: `[rule_id] [severity-tag] [domain] [description] {record_count} rec`. Severity tag uses colored border: `#dc2626` (Error), `#d97706` (Warning), `#16a34a` (Info).
+Shown when a rule is selected. Displays: `[rule_id] [severity-tag] [domain] [description] {record_count} rec`. Severity tag: `border-l-2 pl-1.5 text-[10px] font-semibold text-gray-600` with colored `borderLeftColor`: `#dc2626` (Error), `#d97706` (Warning), `#16a34a` (Info).
 
 ---
 
@@ -126,17 +126,17 @@ TanStack React Table (`useReactTable`) with client-side sorting and column resiz
 
 - Wrapper `<thead>`: `sticky top-0 z-10 bg-background`
 - Row `<tr>`: `border-b bg-muted/30`
-- Header cells `<th>`: `relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`
+- Header cells `<th>`: `relative cursor-pointer select-none px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground`
 
 ### Columns
 
 | Column | Header | Width | Cell Rendering |
 |--------|--------|-------|----------------|
-| issue_id | Issue ID | 90px | `font-mono text-xs text-primary cursor-pointer` -- clickable, selects record in context panel |
-| subject_id | Subject | 70px | `font-mono text-xs` |
-| visit | Visit | 70px | `text-xs`, em dash if empty |
+| issue_id | Issue ID | 170px | `font-mono text-xs text-primary cursor-pointer` -- clickable, selects record in context panel |
+| subject_id | Subject | 110px | `font-mono text-xs` |
+| visit | Visit | 90px | `text-xs`, em dash if empty |
 | actual_value | Key value | absorber | `font-mono text-xs` (absorber column) |
-| expected_value | Expected | 130px | `font-mono text-xs text-muted-foreground`, em dash if empty |
+| expected_value | Expected | 200px | `font-mono text-xs text-muted-foreground`, em dash if empty |
 | fixStatus | Fix status | 110px | `StatusBadge` component with `FIX_STATUS_STYLES` |
 | reviewStatus | Review status | 110px | `StatusBadge` component with `REVIEW_STATUS_STYLES` |
 | assignedTo | Assigned to | 100px | `text-xs`, em dash if empty |

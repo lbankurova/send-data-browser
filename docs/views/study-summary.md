@@ -50,48 +50,46 @@ The Study Summary View itself is split into two tabs with a shared tab bar:
 
 ## Tab 1: Study Details
 
-Full-width scrollable content. Padding `p-4`. Contains five sections in vertical stack: Study Profile Block (with Conclusions Strip), Provenance Warnings (conditional), Study Timeline (in card), Data Quality | Interpretation Context (side-by-side grid at xl), and Domain Table.
+Fixed header + scrollable body. The profile block is a frozen `shrink-0 border-b` section; everything below scrolls in `flex-1 overflow-auto`. Contains sections in vertical stack: Study Profile Block (two-column), Provenance Warnings (conditional), Study Timeline (in card), Domain Table (in CollapsiblePane), and Data Quality (in CollapsiblePane, default closed).
 
 ### Study Profile Block
 
-Dense narrative header at the top of the tab. No section header — renders directly.
+Dense two-column header pinned at top. Container: `shrink-0 border-b px-4 pb-4 pt-4`. Layout: `flex items-start gap-1.5`.
 
-**Line 1 — Study ID:** `text-sm font-semibold` — displays `meta.study_id`.
+**Zone A — Study identity (55% width):**
 
-**Line 2 — Subtitle:** `text-[10px] text-muted-foreground` — species/strain, duration + study type, route, joined with ` · `. Example: `"Sprague-Dawley rat · 4wk repeat-dose · oral gavage"`. Duration formatted as `{N}wk` or `{N}d`. Study type has "toxicity" stripped and "repeat dose" hyphenated.
+- **Line 1:** `flex items-baseline gap-1.5 text-sm` — Study ID (`font-semibold`) + subtitle parts (`text-xs text-muted-foreground`, lowercase, separated by `|` dividers). Ends with `{nGroups} groups, {totalSubjects} subjects`.
+- **Line 2:** `mt-1 space-y-0.5 text-[10px] text-muted-foreground` — "Groups: {doseLabels}" comma-joined ascending.
+- **Line 3:** Arms breakdown — "Arms: Main: {N}" with optional ` · Recovery: {N}` and ` · TK satellite: {N}`.
+- **Line 4 (conditional):** TK/Recovery notes — "TK satellite subjects excluded from toxicology endpoints" and/or recovery pooling note ("Recovery arms included in treatment-period statistics" or "Recovery arms excluded from treatment-period statistics").
 
-**Line 3 — Group summary:** `mt-0.5 text-[10px] text-muted-foreground` — `"{nGroups} groups: {doseLabels}" · "{perGroupM}M + {perGroupF}F/group"`. Dose labels sorted ascending: "Control, 5 mg/kg, 20 mg/kg, 80 mg/kg". Per-group sex counts only shown if both > 0.
+**Zone B — NOAEL & conclusions (45% width, conditional):** Only rendered when NOAEL or target organ data is available. Container: `w-[45%] min-w-0 px-2 pb-2 pt-0.5`.
 
-**Line 4 — Subject breakdown:** `mt-0.5 text-[10px] text-muted-foreground` — `"Main study: {N} ({M}M, {F}F)"`. Followed by:
-- TK satellite count (if any): ` · TK satellite: {N}` — count rendered in `tabular-nums font-semibold`, with `text-amber-600` if TK subjects exceed 10% of total population.
-- Recovery (if any): ` · Recovery: {N}, {period} (Groups {list}) — pooled during treatment` — all recovery info on one line: count, period label, group list, pooling note. Groups are 1-indexed.
+- **Line 1 — Stage/NOAEL/LOAEL:** `flex items-baseline gap-1.5 text-xs` — pipeline stage (`font-semibold`, title-cased with underscores replaced), NOAEL (`font-semibold`), LOAEL (`font-semibold`), separated by `|` dividers. Sex qualifier in `text-[10px] text-muted-foreground`.
+- **Metrics block:** `mt-1 space-y-0.5 text-[10px] text-muted-foreground`:
+  - Target organs + domains with signals + confidence: `flex flex-wrap gap-x-3`.
+  - Exposure at NOAEL (conditional): `"At NOAEL: Cmax {mean} {unit} · AUC {mean} {unit}"`. Label switches to "At LOAEL" when only LOAEL exposure available.
+  - HED/MRSD (conditional): When PK `hed` data available and `noael_status !== "at_control"`. Format: `"HED: {hed_mg_kg} mg/kg · MRSD: {mrsd_mg_kg} mg/kg"`.
+  - Dose proportionality warning (conditional): `text-amber-700` with `AlertTriangle` icon.
+  - Study-level interpretation notes: Filtered by `domain === null`. Each with severity-dependent icon (`AlertTriangle` for caution, `Info` for info). Format: `{category}: {note}`.
 
-**Conclusions strip (conditional):** Rendered below identity when NOAEL or target organ data is available. Contained in `rounded-md bg-muted/10 p-3 mt-3`.
-
-- **NOAEL/LOAEL + metrics row:** `flex flex-wrap items-baseline gap-x-6 gap-y-1`:
-  - NOAEL: `text-xs font-semibold` — "NOAEL: {dose}". Sex qualifier `(M+F)` in `text-[10px] text-muted-foreground`.
-  - LOAEL: inline after NOAEL — `text-[10px] text-muted-foreground` — "LOAEL: {dose}".
-  - Target organs / domains with signals / confidence: `flex flex-wrap gap-x-3 text-[10px] text-muted-foreground`. Each segment conditional.
-- **Exposure at NOAEL (conditional):** Shows when PK data available with NOAEL or LOAEL exposure. Format: `"At NOAEL: Cmax {mean} {unit} · AUC {mean} {unit}"`. Label switches to "At LOAEL" when only LOAEL exposure available. Data from `usePkIntegration`.
-- **HED/MRSD (conditional):** Shows when PK `hed` data available and `noael_status !== "at_control"`. Format: `"HED: {hed_mg_kg} mg/kg · MRSD: {mrsd_mg_kg} mg/kg"`.
-- **Dose proportionality warning (conditional):** Amber icon + interpretation text when assessment is not "linear" and not "insufficient_data".
-
-**Data sources:** `useStudyMetadata` (species, strain, route, dose_groups, study_type, dosing_duration), `useStudyContext` (dosingDurationWeeks, recoveryPeriodDays), `useNoaelSummary` (NOAEL/LOAEL values, confidence), `useTargetOrganSummary` (target organ count), signal data (domain signal count).
+**Data sources:** `useStudyMetadata` (species, strain, route, dose_groups, study_type, dosing_duration, pipeline_stage), `useStudyContext` (dosingDurationWeeks, recoveryPeriodDays), `useNoaelSummary` (NOAEL/LOAEL values, confidence), `useTargetOrganSummary` (target organ count), signal data (domain signal count), `usePkIntegration`, `getInterpretationContext()` (species/vehicle/route notes).
 
 ### Study Timeline
 
 **Component:** `StudyTimeline` from `components/analysis/charts/StudyTimeline.tsx`.
 
-Spacious SVG swimlane visualization showing study design, phases, and death events as horizontal dosing lanes. Only renders when `doseGroups.length > 0` and `studyCtx.dosingDurationWeeks` is available. Wrapped in `mb-6` section. The component self-wraps in a card container (`rounded-md border p-3`). No `maxHeight` cap — the SVG scales naturally with its 900px viewBox.
+Spacious SVG swimlane visualization showing study design, phases, and death events as horizontal dosing lanes. Only renders when `doseGroups.length > 0` and `studyCtx.dosingDurationWeeks` is available. Wrapped in `mb-6` section. The component self-wraps in a card container (`rounded-md border p-3`). No `maxHeight` cap — the SVG scales naturally with its 1050px viewBox.
 
 **Props:** `doseGroups`, `dosingDurationWeeks`, `recoveryPeriodDays`, `treatmentRelatedDeaths` (`mortalityData.deaths` — backend-classified TR), `accidentalDeaths` (`mortalityData.accidentals` — backend-classified incidental), `excludedSubjects`.
 
 **SVG layout constants:**
-- `LANE_HEIGHT = 20` (spec: 18–20px), `ROW_PITCH = 38` (top-to-top lane spacing; gap = 18px for sub-labels)
-- `LEFT_MARGIN = 180` (spec: 140–180px, wider for enriched labels), `RIGHT_MARGIN = 20` (spec: 16–24px)
-- `TOP_MARGIN = 24`, `BOTTOM_AXIS_HEIGHT = 30`, `TK_LANE_HEIGHT = 10` (spec: 8–10px, thinner than main), `TK_LANE_GAP = 14`
-- `DEATH_R = 3.5`, `DEATH_OFFSET_ABOVE = 3` (spec: 2–4px above bar)
-- Total width: 900 (viewBox), responsive via `width="100%"`. No `maxHeight` style — scales proportionally.
+- `SVG_WIDTH = 1050`, `LEFT_MARGIN = 90`, `RIGHT_MARGIN = 467` (annotation area)
+- `ROW_PITCH = 34`, `LANE_HEIGHT = 20`
+- `TOP_MARGIN = 24`, `BOTTOM_AXIS_HEIGHT = 30`, `TK_LANE_HEIGHT = 10`, `TK_LANE_GAP = 14`
+- `DEATH_R = 3.5`, `DEATH_OFFSET_ABOVE = 3`
+- Chart width = `SVG_WIDTH - LEFT_MARGIN - RIGHT_MARGIN`. Annotation area starts at `SVG_WIDTH - RIGHT_MARGIN + ANNOT_GAP`.
+- Responsive via `width="100%"`. No `maxHeight` style — scales proportionally.
 
 **Elements:**
 
@@ -131,67 +129,41 @@ Spacious SVG swimlane visualization showing study design, phases, and death even
 
 ### Provenance Warnings (conditional)
 
-Rendered between the Profile Block and the Study Timeline. Only shown when filtered provenance warnings exist (excludes Prov-001..004, which are shown in Data Quality). Container: `mb-4 space-y-0.5`.
+Rendered between the Profile Block and the Study Timeline. Only shown when filtered provenance warnings exist (excludes Prov-001..004 and Prov-006, which are shown in Data Quality). Container: `border-b px-4 py-3 space-y-0.5`.
 
 Each message: `flex items-start gap-2 text-[10px] leading-snug`. Icon: `AlertTriangle` (amber-500). Text: `text-amber-700`. Includes a "Configure →" link button that scrolls to the context panel.
 
-### Data Quality + Interpretation Context (two-column grid)
-
-These two sections are wrapped in a responsive grid container:
-```
-<div className="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-  <section>Data Quality</section>
-  <section>Interpretation Context (conditional)</section>
-</div>
-```
-
-The `xl:grid-cols-2` class only applies when Interpretation Context has notes — otherwise uses single column (full width for Data Quality). `gap-6` provides inter-section spacing.
-
 ### Data Quality
 
-Section wrapper `mb-4`. Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` with `border-b pb-0.5 mb-2`.
+Wrapped in `CollapsiblePane` with `title="Data quality"` and `defaultOpen={false}`. Header right shows exception badges (conditional): missing required domain count and/or validation error count, each with `border-l-4` red accent + `font-medium text-foreground`.
 
-Contains four sub-sections:
+Contains sub-sections in `space-y-2`:
 
-#### Domain completeness
+#### Domain completeness (exception-only display)
 
-Sub-header: `text-[10px] font-medium text-muted-foreground` — "Domain completeness".
+Sub-header: `text-[10px] font-medium text-muted-foreground` — "Domain completeness ({domainProfile.label})". Appends `"— no exceptions noted"` when both required and optional are present.
 
-Three-tier layout (`space-y-0.5 text-[10px]`):
-
-1. **Required row:** Label `"Required:"` (`w-14 shrink-0 text-muted-foreground`) + domain codes (BW, CL, DS, DM, EX, LB, MI, OM, FW). Present domains: `text-green-700` with checkmark. Missing: `text-red-600` with cross.
-2. **Optional row:** Label `"Optional:"` + domain codes (MA, TF, PP, PC, EG, VS). Present: `text-green-700` with checkmark. Missing: `text-foreground/60` with cross.
-3. **Missing impact notes (conditional):** `text-amber-700` with `AlertTriangle` icon. Lists missing required domains with impact notes (e.g., "MI missing — histopath cross-reference unavailable", "OM missing — organ weight analysis unavailable").
+- **Missing required (conditional):** `border-l-4` red accent, `font-medium text-foreground` — "Missing required: {codes}" with impact notes (e.g., "— histopath cross-reference unavailable" for MI, "— organ weight analysis unavailable" for OM). Optional missing shown below in `text-muted-foreground`.
+- **Only optional missing (conditional):** `text-muted-foreground` — "Optional not submitted: {codes}".
 
 #### Tissue battery (conditional — from `useCrossAnimalFlags`)
 
-Sub-header: `text-[10px] font-medium text-muted-foreground` — "Tissue battery".
+Sub-header: `text-[10px] font-medium text-muted-foreground` — "Tissue battery:" with inline reference counts (Terminal + Recovery tissue counts per sex) and `"— all animals meet expected count"` when no issues.
 
-- **Reference counts:** Terminal and recovery tissue counts per sex from `battery.reference_batteries`. Format: `"Terminal: {N} tissues (control M) · {N} tissues (control F)"`, `"Recovery: {N} tissues (control M) · {N} tissues (control F)"`. Style: `text-[10px] text-muted-foreground`.
 - **Study-level note** (if present): `text-[10px] text-muted-foreground`.
-- **Flagged animals status:** If flagged count > 0: amber warning — `"{N} animals below expected tissue count"` with `AlertTriangle`. If 0: green check — `"All animals meet expected tissue count"` with `CheckCircle2`.
-
-#### TK satellites (conditional — only if `tkTotal > 0`)
-
-Single line: `text-[10px] text-muted-foreground` — `"TK satellite: {N} subjects excluded from all toxicology analyses"`. Per-group breakdown remains in the arms table TK column. Amber >10% threshold warning stays in the profile block.
+- **Flagged animals (conditional):** `text-amber-700` with `AlertTriangle` — `"{N} animal(s) below expected tissue count"`.
 
 #### Anomalies (conditional — only if warnings exist)
 
-Sub-header: `text-[10px] font-medium text-muted-foreground` — "Anomalies".
+Component: `AnomaliesList`. Combines provenance warnings (all with `icon === "warning"`) and flagged animals (from tissue battery with `flag === true`). Each item: `text-[10px] text-amber-700` with `AlertTriangle` icon. Capped at 5 items with "+{N} more" expand button.
 
-Component: `AnomaliesList`. Combines provenance warnings (all with `icon === "warning"`) and flagged animals (from tissue battery with `flag === true`). Each item: `text-[10px] text-amber-700` with `AlertTriangle` icon.
+#### Validation issues
 
-- Warning items: `{message}` text.
-- Flagged animal items: `"{animal_id} ({sex}) — {completion_pct}% tissue completion"`.
-- Capped at 5 items with "+{N} more" expand button.
-
-**No issues state:** When no quality issues exist (no warnings, no battery, no TK, no missing required), shows: `"No quality issues detected."` in `text-[10px] text-muted-foreground`.
+Always rendered. `text-[10px] text-muted-foreground`. Shows loading state, "not available", "no issues found", or counts by severity (errors with `border-b-[1.5px] border-dashed border-[#DC2626]`, warnings, info). Includes "Review all →" link to `/studies/{studyId}/validation`.
 
 ### Domains ({count})
 
-Signal-prioritized domain table with key findings and clinical significance metrics.
-
-**Section header:** `text-xs font-semibold uppercase tracking-wider text-muted-foreground` with `border-b pb-0.5 mb-2`.
+Wrapped in `CollapsiblePane` with `title="Domains ({count})"` and `defaultOpen`.
 
 **Component:** `DomainTable` — aggregates signal data per domain, sorts by adversity tier, and generates key findings text.
 
@@ -220,8 +192,8 @@ Signal-prioritized domain table with key findings and clinical significance metr
 Within tier: sort by adverse count desc, then TR count desc, then row count desc.
 
 **Below-fold toggle:** `text-[10px] text-primary hover:underline`:
-- Collapsed: `"+ {N} more domains (no findings)"`
-- Expanded: `"Hide structural domains"`
+- Collapsed: `"+ {N} more domains"`
+- Expanded: `"Restore compact view"`
 
 **Key findings generation** (`generateKeyFindings`):
 - **DS domain:** Uses mortality data — groups deaths by cause, formats as `"{N} {cause}"` joined by comma.
@@ -235,35 +207,13 @@ Within tier: sort by adverse count desc, then TR count desc, then row count desc
 
 **Auto-set organ weight method:** Uses the organ weight normalization engine (`useOrganWeightNormalization(studyId, false)`). The hook is called with `fetchEnabled: false` — reads from React Query cache only, no backend fetch. Data populates once the user visits the adverse effects view (where `useFindingsAnalyticsLocal` triggers the actual API call). When cached normalization data is available and `highestTier >= 3` (large BW effect, g >= 1.0) and current `organWeightMethod === "absolute"`, auto-sets to `"ratio-brain"`. **Fallback:** When normalization data is not yet cached (`highestTier` defaults to 1), falls back to signal-based heuristic: if any BW domain signal is adverse + direction "down", auto-sets to `"ratio-brain"`. User can manually override in context panel. See `lib/organ-weight-normalization.ts` for the tiered decision engine.
 
-### Interpretation Context
+### Interpretation Context (relocated)
 
-Second column in the Data Quality grid (above Domains table). Only rendered when interpretation notes exist.
-
-**Section header:** `text-xs font-semibold uppercase tracking-wider text-muted-foreground` with `border-b pb-0.5 mb-2`.
-
-**Content:** `space-y-1 text-[10px]`. Each note: `flex items-start gap-1.5` with severity-dependent icon:
-- `caution`: `AlertTriangle` in `text-amber-500`
-- `info`: `Info` in `text-muted-foreground`
-
-Note format: `<category>: <note>` — category in `font-medium text-muted-foreground`, note in `text-foreground`.
+**Note:** Interpretation context notes are no longer rendered as a separate section. Study-level notes (those with `domain === null`) are now displayed inline in the Profile Block's Zone B conclusions area, with severity-dependent icons (`AlertTriangle` for caution, `Info` for info) and format `{category}: {note}`.
 
 **Data source:** `getInterpretationContext()` from `lib/species-vehicle-context.ts`. Static lookup tables derived from `docs/knowledge/species-profiles.md` and `docs/knowledge/vehicle-profiles.md`. Returns notes filtered by the study's species, strain, vehicle, and route.
 
-**BW confounding note (conditional):** When `useOrganWeightNormalization` reports `highestTier >= 2`, a caution note is appended:
-- Tier 2: `"Moderate BW effect (g=X.XX). Organ-to-BW ratios should be interpreted with caution for high-dose groups."`
-- Tier 3: `"Large BW effect (g=X.XX). Brain-weight normalization auto-selected for organ weights."`
-- Tier 4: `"Severe BW effect (g=X.XX). ANCOVA recommended for definitive organ weight assessment."`
-Rendered with `AlertTriangle` icon, category `"Body weight"`, severity `"caution"`.
-
-**Species notes (selected examples):**
-- Rat: preferred hepatotoxicity markers (SDH/GLDH), QTc not translational, nephrotoxicity qualification markers
-- Dog: QTc gold-standard, emesis reflex, ALT specificity
-- Monkey: immune concordance, cortisol variability, QTc relevant
-- Mouse: hepatitis concordance, low cardiac concordance
-
-**Strain notes:** Fischer 344 MCL incidence caution, Sprague-Dawley mammary adenoma background.
-
-**Vehicle notes:** Corn oil (lipid elevation), PEG400 (renal), DMSO (hemolysis), saline/MC/CMC (no confounds).
+**BW confounding note:** Shown in context panel's normalization summary (Analysis Settings pane) rather than in the Details tab.
 
 **Route notes:** Oral gavage GI stress, IV injection site reactions, inhalation respiratory background, SC tissue reactions.
 
@@ -319,45 +269,37 @@ Route-detected: when pathname matches `/studies/{studyId}`, shows `StudyDetailsC
 
 **Component:** `components/analysis/panes/StudyDetailsContextPanel.tsx`
 
-**Header:**
-- Study ID: `text-sm font-semibold` — "Study: {studyId}"
-- Subtitle: `mt-0.5 text-[10px] text-muted-foreground` — duration + species joined with ` · `
+**Header:** `sticky top-0 z-10 flex shrink-0 items-center border-b bg-muted/30 px-4 py-[15px]` — generic label `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Study-level settings".
 
-**Pane container:** `space-y-3` wrapper around all panes for consistent inter-pane spacing.
+**Layout:** `flex h-full flex-col overflow-hidden` with scrollable body `flex-1 overflow-auto`.
 
-**Pane 1: Analysis settings (default open)**
+**Pane 1: Analysis methods (default open)**
 
-`CollapsiblePane` with `variant="margin"`. Contains configurable analysis parameters:
+Single `CollapsiblePane` containing all configurable analysis and statistical parameters. Settings use `SettingsRow` + `SettingsSelect` components. Explanatory text below each dropdown in `pl-[7.75rem] text-[10px] leading-snug text-muted-foreground`.
 
 | Setting | Control | Notes |
 |---------|---------|-------|
-| Primary comparator | `<select>` dropdown | Lists control groups (dose_level === 0, non-recovery). Change triggers confirm dialog. Shows amber warning if multiple control groups detected or recovery controls excluded. |
-| Organ weight method | `<select>` dropdown | Options: Absolute (default), Ratio to BW, Ratio to brain. Explanatory note below changes with selection. When normalization `highestTier >= 2` **and** `normalization.state` is non-null (cache-only — data available only after visiting adverse effects view), an additional summary block appears below the dropdown showing: BW effect g + tier label, brain weight g + affected/unaffected status, auto/manual status + organ count at elevated tiers, and expandable `[Why?]` rationale with numbered decision strings. See `useOrganWeightNormalization(studyId, false)` hook. |
-| Adversity threshold | `<select>` dropdown | Options: Grade >= 1, Grade >= 2, Grade >= 2 or dose-dep (default), Custom. |
+| Primary comparator | `SettingsSelect` dropdown | Lists control groups (dose_level === 0, non-recovery). Change triggers confirm dialog: "Changing comparator will recalculate all statistics. Continue?" Shows amber warning (`AlertTriangle` + `text-amber-700`) if multiple control groups detected or recovery controls excluded. |
+| Organ weight method | `SettingsSelect` dropdown | Options: Absolute (default), Ratio to BW, Ratio to brain. When normalization `highestTier >= 2` **and** `normalization.state` is non-null (cache-only — data available only after visiting adverse effects view), an additional summary block appears below the dropdown showing: BW effect g + tier label, brain weight g + brain tier label (with dog thresholds note for rabbit/minipig), auto/manual status + organ count at elevated tiers, and normalization rationale string. See `useOrganWeightNormalization(studyId, false)` hook. |
+| Adversity threshold | `SettingsSelect` dropdown | Options: Grade >= 1, Grade >= 2, Grade >= 2 or dose-dep (default), Custom. |
+| Recovery pooling | `SettingsSelect` dropdown | Conditional — only when `hasRecovery`. Options: Pool with main study, Analyze separately. Confirm dialog: "Changing pooling mode will affect all treatment-period statistics. Continue?" Explanatory text varies by selection. |
+| Pairwise test | `SettingsSelect` dropdown | Options: Dunnett, Williams (disabled), Steel (disabled). |
+| Multiplicity | `SettingsSelect` dropdown | Options vary by pairwise test selection. Dunnett: Dunnett FWER (built-in), Bonferroni, Holm-Sidak (disabled), BH-FDR (disabled). Explanatory text varies by selection. |
+| Trend test | `SettingsSelect` dropdown | Options: Jonckheere-Terpstra, Cuzick (disabled), Williams parametric (disabled). |
+| Incidence trend | `SettingsSelect` dropdown | Options: Cochran-Armitage (approx.), Logistic regression (disabled). Explanatory text: "Chi-square linear contrast approximation with ordinal dose scores". |
+| Effect size | `SettingsSelect` dropdown | Options: Hedges' g, Cohen's d (uncorrected), Glass's delta. Explanatory text varies by selection. |
 
-All settings persist via `useSessionState` with study-scoped keys (e.g., `pcc.{studyId}.controlGroup`).
+All settings persist via `useSessionState` with study-scoped keys (e.g., `pcc.{studyId}.controlGroup`, `pcc.{studyId}.organWeightMethod`, etc.).
 
-**Pane 2: Subject population (conditional — only if recovery or TK)**
-
-`CollapsiblePane` with `variant="margin"`. Only renders when `hasRecovery || hasTk`. Contains:
-- Recovery line: `"Recovery: {N} — pooled with main during treatment"` (if recovery exists)
-- TK line: `"TK satellite: {N} — excluded from all analyses"` (if TK exists)
-- Treatment-period N per group (if recovery exists): pooled counts with `(+NR)` suffix for groups with recovery animals
-- **Recovery period settings (conditional):** Only shown if study has recovery arms. Day range auto-detected, recovery arm codes listed. Treatment period pooling dropdown (Pool with main study / Analyze separately). Override recovery start day checkbox.
-
-**Pane 3: Statistical methods**
-
-Separate `CollapsiblePane` with `variant="margin"`. Pairwise test (Dunnett), multiplicity correction, trend test (Jonckheere-Terpstra), incidence trend (Cochran-Armitage), effect size (Hedges' g). All with explanatory sub-text.
-
-**Pane 4: Mortality**
+**Pane 2: Mortality**
 
 `MortalityInfoPane` component. Shows `headerRight` summary: `"{N} deaths · {included} included · {excluded} excluded"`. Per-subject table with inclusion toggle, override comments.
 
-**Pane 5: Study notes (default open if note exists)**
+**Pane 3: Study notes (default open if note exists)**
 
-`CollapsiblePane` with `variant="margin"`. Title "Study notes" with `headerRight` showing count: `"1 note"` or `"none"` (right-aligned, `text-[9px] font-medium`). Contains:
+`CollapsiblePane`. Title "Study notes" with `headerRight` showing count: `"1 note"` or `"none"`. `defaultOpen={!!currentNote}`. Contains:
 - Textarea: 4 rows, `text-xs`, placeholder "Add study-level notes..."
-- Save button: `rounded bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground`, disabled when unchanged or saving.
+- Save button: `rounded bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50`, disabled when unchanged or saving.
 - Last edited timestamp: `text-[9px] text-muted-foreground/60` below save button.
 - Persists via annotation API (`useAnnotations<StudyNote>` / `useSaveAnnotation<StudyNote>`).
 
@@ -382,7 +324,7 @@ Separate `CollapsiblePane` with `variant="margin"`. Pairwise test (Dunnett), mul
 | Insights | Server | `useInsights` hook — cross-study intelligence (19 rules, 0-18) |
 | PK integration | Server | `usePkIntegration` hook — exposure at NOAEL/LOAEL, HED/MRSD, dose proportionality |
 | Interpretation notes | Derived | `getInterpretationContext()` from `lib/species-vehicle-context.ts` — species/strain/vehicle/route context notes |
-| Analysis settings | Session-persisted | `useSessionState` per setting (controlGroup, organWeightMethod, adversityThreshold, pairwiseTest, trendTest, incidenceTest, recoveryOverride) — managed in context panel |
+| Analysis methods | Session-persisted | `useSessionState` per setting (controlGroup, organWeightMethod, adversityThreshold, recoveryPooling, pairwiseTest, trendTest, incidenceTrend, multiplicity, effectSize) — all in single "Analysis methods" pane in context panel |
 | Excluded subjects | Context | `useScheduledOnly` — early death subjects from mortality data |
 
 ---
@@ -412,9 +354,8 @@ usePkIntegration(studyId)       ──> pkData (exposure, HED/MRSD, dose proport
          │  │   Conclusions  │  │  Priority filtering │ │
          │  │  Prov warnings │  │                     │ │
          │  │  StudyTimeline │  └─────────────────────┘ │
-         │  │  Data quality  │                          │
-         │  │  | Interp ctx  │                          │
          │  │  DomainTable   │                          │
+         │  │  Data quality  │                          │
          │  └────────────────┘                          │
          └──────────────────────────────────────────────┘
                          │
@@ -422,9 +363,7 @@ usePkIntegration(studyId)       ──> pkData (exposure, HED/MRSD, dose proport
                          ▼
               StudyDetailsContextPanel
               (always — no conditional modes)
-              ├── Analysis settings pane
-              ├── Subject population (conditional)
-              ├── Statistical methods pane
+              ├── Analysis methods pane (all settings merged)
               ├── Mortality pane
               └── Study notes pane
 ```
