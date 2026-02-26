@@ -802,17 +802,23 @@ function RailFiltersSection({
 
 // NORM_MODE_SHORT and NORM_TIER_COLOR imported from organ-weight-normalization.ts
 
-/** Highest normalization tier across dose groups for an organ.
- *  card.key is organ_system (lowercase); NormalizationContext.organ is SEND specimen (uppercase). */
+/** Highest normalization tier across dose groups for organs in this card.
+ *  Matches OM endpoint specimens against NormalizationContext.organ (both SEND specimen names). */
 function computeOrganNormSummary(
-  organKey: string,
+  endpoints: EndpointWithSignal[],
   contexts: NormalizationContext[],
 ): { tier: number; mode: string; modeShort: string } | null {
-  const key = organKey.toUpperCase();
+  // Collect unique OM specimens from this card's endpoints
+  const omSpecimens = new Set<string>();
+  for (const ep of endpoints) {
+    if (ep.domain === "OM" && ep.specimen) omSpecimens.add(ep.specimen.toUpperCase());
+  }
+  if (omSpecimens.size === 0) return null;
+
   let bestTier = 0;
   let bestMode = "absolute";
   for (const ctx of contexts) {
-    if (ctx.organ === key && ctx.tier > bestTier) {
+    if (omSpecimens.has(ctx.organ) && ctx.tier > bestTier) {
       bestTier = ctx.tier;
       bestMode = ctx.activeMode;
     }
@@ -887,7 +893,7 @@ function CardSection({
 
   // Compute normalization summary for organ grouping mode (highest tier across dose groups)
   const organNorm = grouping === "organ" && normalizationContexts
-    ? computeOrganNormSummary(card.key, normalizationContexts)
+    ? computeOrganNormSummary(card.endpoints, normalizationContexts)
     : null;
 
   return (
