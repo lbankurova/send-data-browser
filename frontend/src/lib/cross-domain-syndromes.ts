@@ -71,6 +71,8 @@ export interface DirectionalGateConfig {
   action: "reject" | "strong_against" | "weak_against";
   /** Condition under which reject softens to strong_against */
   overrideCondition?: string;
+  /** Domain of the gated term — enables ANCOVA direction resolution for OM gates (SE-7). */
+  domain?: string;
 }
 
 /** REM-09: Result of directional gate evaluation. */
@@ -81,6 +83,8 @@ export interface DirectionalGateResult {
   overrideReason?: "direct_lesion" | "timecourse";
   certaintyCap?: "mechanism_uncertain" | "pattern_only";
   explanation: string;
+  /** True when gate direction was determined from ANCOVA decomposition. */
+  ancovaSource?: boolean;
 }
 
 export interface CrossDomainSyndrome {
@@ -340,7 +344,7 @@ const XS02_TERMS: SyndromeTermMatch[] = [
   },
   {
     organWeightTerms: { specimen: ["liver"] },
-    domain: "OM", direction: "up", role: "supporting",
+    domain: "OM", direction: "up", role: "supporting", tag: "LIVER_WT",
   },
   {
     specimenTerms: {
@@ -433,7 +437,7 @@ const XS04_TERMS: SyndromeTermMatch[] = [
   },
   {
     organWeightTerms: { specimen: ["spleen"] },
-    domain: "OM", direction: "down", role: "supporting",
+    domain: "OM", direction: "down", role: "supporting", tag: "SPLEEN_WT",
   },
 ];
 
@@ -457,7 +461,7 @@ const XS05_TERMS: SyndromeTermMatch[] = [
   },
   {
     organWeightTerms: { specimen: ["spleen"] },
-    domain: "OM", direction: "up", role: "supporting",
+    domain: "OM", direction: "up", role: "supporting", tag: "SPLEEN_WT",
   },
   // REM-13: Split into two distinct terms — EMH and hemosiderin/pigment
   // are separate diagnostic findings with different mechanistic significance
@@ -525,7 +529,7 @@ const XS07_TERMS: SyndromeTermMatch[] = [
   // === SUPPORTING ===
   {
     organWeightTerms: { specimen: ["spleen"] },
-    domain: "OM", direction: "down", role: "supporting",
+    domain: "OM", direction: "down", role: "supporting", tag: "SPLEEN_WT",
   },
   {
     specimenTerms: {
@@ -577,7 +581,7 @@ const XS09_TERMS: SyndromeTermMatch[] = [
   },
   {
     organWeightTerms: { specimen: [] },  // any specimen
-    domain: "OM", direction: "down", role: "supporting",
+    domain: "OM", direction: "down", role: "supporting", tag: "OM_WT",
   },
   {
     specimenTerms: {
@@ -955,11 +959,19 @@ export const DIRECTIONAL_GATES: Record<string, DirectionalGateConfig[]> = {
       overrideCondition: "MI_MARROW_HYPOCELLULARITY",
     },
   ],
+  XS05: [
+    { term: "SPLEEN_WT", expectedDirection: "up", action: "weak_against", domain: "OM" },
+  ],
   XS07: [
     { term: "LYMPH", expectedDirection: "down", action: "strong_against" },
   ],
   XS08: [
     { term: "LYMPH", expectedDirection: "down", action: "weak_against" },
+    { term: "ADRENAL_WT", expectedDirection: "up", action: "weak_against", domain: "OM" },
+    { term: "THYMUS_WT", expectedDirection: "down", action: "weak_against", domain: "OM" },
+  ],
+  XS09: [
+    { term: "OM_WT", expectedDirection: "down", action: "weak_against", domain: "OM" },
   ],
 };
 
@@ -971,6 +983,7 @@ function evaluateDirectionalGates(
   syndromeId: string,
   endpoints: EndpointSummary[],
   _hasMarrowHypocellularity: boolean = false,
+  normalizationContexts?: NormalizationContext[],
 ): DirectionalGateResult {
   const gates = DIRECTIONAL_GATES[syndromeId];
   if (!gates) return { gateFired: false, action: "none", overrideApplied: false, explanation: "" };
@@ -990,8 +1003,23 @@ function evaluateDirectionalGates(
       const isSignificant = ep.minPValue != null && ep.minPValue < 0.05;
       if (!isSignificant) continue;
 
+      // SE-7: Resolve effective direction — use ANCOVA directG for OM gates when available
+      let effectiveDirection = ep.direction;
+      let ancovaUsed = false;
+      if (gate.domain === "OM" && normalizationContexts) {
+        const specimen = (ep.specimen ?? "").toUpperCase();
+        const normCtx = normalizationContexts.find(c => c.organ === specimen);
+        if (normCtx?.effectDecomposition) {
+          const { directG, directP } = normCtx.effectDecomposition;
+          if (directP < 0.10) {  // Relaxed threshold — gate is a flag, not a finding
+            effectiveDirection = directG > 0 ? "up" : directG < 0 ? "down" : ep.direction;
+            ancovaUsed = effectiveDirection !== ep.direction;
+          }
+        }
+      }
+
       // Check if direction is opposite to expected
-      if (ep.direction && ep.direction !== gate.expectedDirection) {
+      if (effectiveDirection && effectiveDirection !== gate.expectedDirection) {
         // Gate fires!
         if (gate.action === "reject" && gate.overrideCondition && _hasMarrowHypocellularity) {
           // Override: soften reject to strong_against
@@ -1003,6 +1031,7 @@ function evaluateDirectionalGates(
             certaintyCap: "mechanism_uncertain",
             explanation: `${gate.term} ${ep.direction === "up" ? "↑" : "↓"} contradicts ${syndromeId}; ` +
               `retained as differential — direct marrow lesion overrides peripheral signal.`,
+            ancovaSource: ancovaUsed || undefined,
           };
         }
 
@@ -1011,13 +1040,17 @@ function evaluateDirectionalGates(
           gate.action === "strong_against" ? "pattern_only" :
           "mechanism_uncertain";
 
+        const dirArrow = effectiveDirection === "up" ? "↑" : "↓";
+        const source = ancovaUsed ? " (ANCOVA direct effect)" : "";
+
         return {
           gateFired: true,
           action: gate.action,
           overrideApplied: false,
           certaintyCap: cap,
-          explanation: `${gate.term} ${ep.direction === "up" ? "↑" : "↓"} contradicts expected ` +
+          explanation: `${gate.term} ${dirArrow}${source} contradicts expected ` +
             `${gate.expectedDirection === "up" ? "↑" : "↓"} for ${syndromeId}.`,
+          ancovaSource: ancovaUsed || undefined,
         };
       }
       break;
@@ -1035,9 +1068,10 @@ function evaluateDirectionalGates(
 function applyDirectionalGates(
   syndromes: CrossDomainSyndrome[],
   endpoints: EndpointSummary[],
+  normalizationContexts?: NormalizationContext[],
 ): CrossDomainSyndrome[] {
   return syndromes.map((s) => {
-    const gate = evaluateDirectionalGates(s.id, endpoints);
+    const gate = evaluateDirectionalGates(s.id, endpoints, false, normalizationContexts);
     if (!gate.gateFired) return s;
     return { ...s, directionalGate: gate };
   });
@@ -1045,12 +1079,22 @@ function applyDirectionalGates(
 
 // ─── Main detection function ──────────────────────────────
 
-/** Detect syndromes from a set of endpoints, tagging with sex if provided. */
+/**
+ * Detect syndromes from a set of endpoints, tagging with sex if provided.
+ *
+ * SE-1/SE-2: normalizationContexts is accepted here for call-chain consistency
+ * (the caller forwards it to applyDirectionalGates for SE-7 ANCOVA gate evaluation)
+ * but the detection path itself intentionally does NOT use it. Detection is
+ * pure pattern-matching — ANCOVA corrections are applied as post-processing
+ * via directional gates, and magnitude floors belong in the reporting path.
+ */
 function detectFromEndpoints(
   endpoints: EndpointSummary[],
   sex: string | null,
-  _normalizationContexts?: NormalizationContext[],
+  normalizationContexts?: NormalizationContext[],
 ): CrossDomainSyndrome[] {
+  // SE-1/SE-2: Detection path is normalization-unaware by design (see doc above)
+  void normalizationContexts;
   const results: CrossDomainSyndrome[] = [];
 
   for (const syndrome of SYNDROME_DEFINITIONS) {
@@ -1224,8 +1268,8 @@ export function detectCrossDomainSyndromes(
     });
   });
 
-  // REM-09: Apply directional gates as post-processing
-  return applyDirectionalGates(results, endpoints);
+  // REM-09: Apply directional gates as post-processing (SE-7: ANCOVA-aware)
+  return applyDirectionalGates(results, endpoints, normalizationContexts);
 }
 
 // ─── Near-miss analysis (for Organ Context Panel) ─────────
