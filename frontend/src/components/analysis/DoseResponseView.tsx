@@ -54,6 +54,7 @@ import type { DoseResponseRow, RuleResult, SignalSummaryRow, NoaelSummaryRow } f
 import type { TimecourseResponse } from "@/types/timecourse";
 import type { ToxFinding } from "@/types/annotations";
 import { useStatMethods } from "@/hooks/useStatMethods";
+import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { checkNonMonotonic } from "@/lib/endpoint-confidence";
 import type { GroupStat, PairwiseResult } from "@/types/analysis";
@@ -821,6 +822,7 @@ function ChartOverviewContent({
   collapseGen,
 }: ChartOverviewProps) {
   const chartStatMethods = useStatMethods(studyId);
+  const normalization = useOrganWeightNormalization(studyId, true, chartStatMethods.effectSize);
   const chartRowRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [splitPct, setSplitPct] = useState(50); // default 50/50
@@ -989,6 +991,16 @@ function ChartOverviewContent({
           <div className="flex min-w-0 flex-1 flex-col px-2 py-1.5">
             <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Effect size ({getEffectSizeLabel(chartStatMethods.effectSize)})
+              {selectedSummary?.domain === "OM" && (() => {
+                const specimen = selectedSummary.test_code?.toUpperCase() ?? "";
+                const normCtx = specimen ? normalization.getContext(specimen) : null;
+                if (!normCtx || normCtx.tier < 2) return null;
+                const modeLabel = normCtx.activeMode === "body_weight" ? "Ratio-to-BW"
+                  : normCtx.activeMode === "brain_weight" ? "Ratio-to-brain"
+                  : normCtx.activeMode === "ancova" ? "ANCOVA-adjusted"
+                  : "Absolute weight";
+                return <span className="normal-case"> &mdash; {modeLabel}</span>;
+              })()}
             </div>
             <EChartsWrapper
               option={buildEffectSizeBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, getEffectSizeSymbol(chartStatMethods.effectSize))}
