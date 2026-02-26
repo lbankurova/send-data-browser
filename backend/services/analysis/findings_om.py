@@ -21,6 +21,7 @@ from services.analysis.williams import williams_from_group_stats
 from services.analysis.normalization import (
     get_organ_category, decide_metric, compute_hedges_g, compute_bw_tier,
 )
+from services.analysis.ancova import ancova_from_dose_groups
 
 
 def _compute_metric_stats(
@@ -312,6 +313,20 @@ def compute_om_findings(
                 "pooled_df": williams_result.pooled_df,
             }
 
+        # ── ANCOVA (Phase 2): when tier >= 3 or brain affected ──
+        ancova_dict = None
+        if norm_decision["tier"] >= 3 or brain_affected:
+            ancova_result = ancova_from_dose_groups(
+                dose_groups_subj=dose_groups_subj,
+                dose_levels=[int(dl) for dl in dose_levels],
+                terminal_bw=terminal_bw,
+            )
+            if ancova_result is not None:
+                ancova_dict = ancova_result
+                # When ANCOVA succeeds at tier >= 4, it becomes the recommended metric
+                if norm_decision["tier"] >= 4:
+                    norm_decision["metric"] = "ancova"
+
         # ── Compute alternatives (stats on other metrics) ──
         alternatives: dict = {}
         metric_map = {
@@ -395,6 +410,7 @@ def compute_om_findings(
                 "brain_hedges_g": round(brain_g_val, 4) if brain_g_val is not None else None,
             },
             "williams": williams_dict,
+            "ancova": ancova_dict,
             "alternatives": alternatives if alternatives else None,
         })
 
