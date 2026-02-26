@@ -1139,13 +1139,13 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `{ mode, tier, confidence, rationale[], warnings[], brainAffected, userOverridden }`
 **Scope:** per-organ × per-dose-group
 **Source:** `organ-weight-normalization.ts:decideNormalization()`, hook `useOrganWeightNormalization(studyId)`
-**Consumers:** StudySummaryView (auto-set), StudyDetailsContextPanel (summary), OrganContextPanel (pane), FindingsContextPanel (OM annotation), SyndromeContextPanel (term annotation, B-7), syndrome-interpretation.ts (B-7 adversity factor)
+**Consumers:** StudySummaryView (auto-set), StudyDetailsContextPanel (summary), OrganContextPanel (pane), FindingsContextPanel (OM annotation + NormalizationHeatmap), DoseResponseView (chart metric subtitle), FindingsRail (organ card norm indicator), SyndromeContextPanel (term annotation, B-7), syndrome-interpretation.ts (B-7 adversity factor)
 
 **Invariants:**
 - `tier` is 1–4, monotonically increasing with |BW Hedges' g|.
 - `mode` is one of `"absolute"`, `"body_weight"`, `"brain_weight"`, `"ancova"`.
 - `rationale` is non-empty for tier >= 2.
-- `effectDecomposition` is always null in Phase 1.
+- `effectDecomposition` populated when ANCOVA data available (tier >= 3 or brain affected); null otherwise.
 - Session state `organWeightMethod` auto-set only when tier >= 3 and current value is `"absolute"`.
 
 **Null means:** Insufficient BW or OM data (< 2 dose groups, no OM domain findings).

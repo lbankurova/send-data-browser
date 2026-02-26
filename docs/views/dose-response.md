@@ -193,6 +193,7 @@ Container: `ViewSection` component with `mode="fixed"`, title "Charts". Height m
 
 - Header: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` -- "Effect size ({method label})" where method label is dynamic from `getEffectSizeLabel(statMethods.effectSize)` (default: "Hedges' g"). For OM domain endpoints with normalization tier ≥ 2, appends " — {metric}" in `normal-case` (e.g., "Ratio-to-BW", "Ratio-to-brain", "ANCOVA-adjusted", "Absolute weight") via `useOrganWeightNormalization` hook lookup on the specimen's `test_code`.
 - Container: `<EChartsWrapper style={{ width: "100%", height: 220 }}>`
+- Y-axis metric subtitle (OM domain, tier >= 2): `metricSubtitle` parameter renders as `yAxis.name` centered at `nameGap: 35`, `fontSize: 9`, `color: "#9CA3AF"`. Shows e.g., "Computed from body-weight", "Computed from ancova".
 - Reference lines: markLine on first series -- dashed lines at d=0.5 (`#d1d5db`), d=0.8 (`#9ca3af`, labeled "d=0.8"), d=-0.5, d=-0.8 (labeled "d=-0.8")
 - Bar: one series per sex, `barMaxWidth: 30`, sex-colored fill, `opacity: 0.8`
 

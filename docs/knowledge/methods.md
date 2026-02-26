@@ -362,12 +362,17 @@ Tie-breaking: latest day first, then males (males typically show larger absolute
 **Integration points:**
 - Study Details: tier-based auto-set replaces simple BW-adverse check; domain table OM note shows tier + g value.
 - Study Details Context Panel: unified rationale line replacing fragmented subtitle/measurements/why display; brain-n/a fallback to ratio-to-BW. Function: `buildNormalizationRationale()` in `lib/organ-weight-normalization.ts`.
-- Findings View: OrganContextPanel pane, FindingsContextPanel OM annotation.
+- Findings View: OrganContextPanel pane, FindingsContextPanel OM annotation, NormalizationHeatmap (organ × dose-group matrix with tier colors).
+- Findings View empty state: NormalizationHeatmap shown when OM normalization data present (tier >= 2).
+- Dose-Response View: effect size bar chart y-axis shows metric subtitle for OM endpoints (e.g., "Computed from body-weight").
+- Findings Rail: organ group cards show normalization mode abbreviation + tier-colored underline via shared `NORM_MODE_SHORT` / `NORM_TIER_COLOR`.
 - Syndrome Engine: `getSyndromeTermReport` adds normalization annotation for OM terms; `computeAdversity` uses B-7 BW confounding factor.
+
+**Shared display constants:** `NORM_MODE_SHORT` and `NORM_TIER_COLOR` exported from `lib/organ-weight-normalization.ts` (consumed by FindingsRail and NormalizationHeatmap).
 
 **References:** Bailey SA et al. Toxicol Pathol 2004;32:448. Sellers RS et al. Toxicol Pathol 2007;35:751. Lazic SE et al. Sci Rep 2020;10:6625.
 
-**Phase 2 (deferred):** ANCOVA backend (Python statsmodels), effect decomposition (directG vs totalG), per-group heatmap UI. Phase 3 (deferred): Bayesian mediation (PyMC).
+**Phase 2 (ANCOVA):** DONE — `backend/services/analysis/ancova.py` (Python statsmodels). Effect decomposition (directG vs totalG) populated in `NormalizationContext.effectDecomposition`. UI: `ANCOVADecompositionPane` in FindingsContextPanel. Phase 3 (deferred): Bayesian mediation (PyMC).
 
 ---
 
