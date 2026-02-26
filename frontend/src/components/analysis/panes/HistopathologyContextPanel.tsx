@@ -27,9 +27,11 @@ import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { deriveRecoveryAssessments, MIN_RECOVERY_N, verdictArrow, formatRecoveryFraction } from "@/lib/recovery-assessment";
 import type { RecoveryAssessment, RecoveryDoseAssessment } from "@/lib/recovery-assessment";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
-import { classifyRecovery, CLASSIFICATION_LABELS, CLASSIFICATION_BORDER } from "@/lib/recovery-classification";
+import { classifyRecovery, classifySpecimenRecovery, CLASSIFICATION_LABELS, CLASSIFICATION_BORDER, CLASSIFICATION_PRIORITY } from "@/lib/recovery-classification";
 import type { RecoveryClassification } from "@/lib/recovery-classification";
-import { classifyFindingNature } from "@/lib/finding-nature";
+import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
+import type { FindingNatureInfo } from "@/lib/finding-nature";
+import { titleCase } from "@/lib/severity-colors";
 import { getHistoricalControl, classifyVsHCD, queryHistoricalControl, classifyControlVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
 import type { HistoricalControlData, HistoricalControlResult, HCDStatus } from "@/lib/mock-historical-controls";
 import { useStudyContext } from "@/hooks/useStudyContext";
@@ -124,6 +126,100 @@ function LabCorrelatesPane({
         <p className="mt-1 text-[9px] text-muted-foreground/50">
           {"\u24D8"} Tests from CL/LB domains mapped to {organLabel}.
         </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Recovery Assessment Pane (specimen-level) ──────────────────────────────
+
+function RecoveryAssessmentPane({
+  recoveryClassifications,
+  specimenRecoveryClassification,
+  onFindingClick,
+}: {
+  recoveryClassifications: Array<{ finding: string; classification: RecoveryClassification; findingNature?: FindingNatureInfo }>;
+  specimenRecoveryClassification: RecoveryClassification | undefined;
+  onFindingClick: (finding: string) => void;
+}) {
+  // Count concerning classifications
+  const concerningCount = recoveryClassifications.filter(
+    (c) =>
+      c.classification.classification === "INCOMPLETE_RECOVERY" ||
+      c.classification.classification === "DELAYED_ONSET_POSSIBLE" ||
+      c.classification.classification === "PATTERN_ANOMALY",
+  ).length;
+
+  // Sort by classification priority (most concerning first)
+  const sorted = [...recoveryClassifications].sort(
+    (a, b) =>
+      CLASSIFICATION_PRIORITY[a.classification.classification] -
+      CLASSIFICATION_PRIORITY[b.classification.classification],
+  );
+
+  // Deduplicate missing inputs across all classifications
+  const allMissing = [...new Set(recoveryClassifications.flatMap((c) => c.classification.inputsMissing))];
+
+  return (
+    <div className="space-y-2">
+      {/* Specimen-level summary */}
+      {specimenRecoveryClassification && (
+        <div className={cn("py-1 pl-2", CLASSIFICATION_BORDER[specimenRecoveryClassification.classification])}>
+          <div className="text-[11px] font-medium">
+            {CLASSIFICATION_LABELS[specimenRecoveryClassification.classification]} ({specimenRecoveryClassification.confidence} confidence)
+          </div>
+          <div className="mt-0.5 text-[10px] text-muted-foreground">
+            {concerningCount > 0
+              ? `${concerningCount} of ${recoveryClassifications.length} findings show incomplete or delayed recovery.`
+              : `${recoveryClassifications.length} findings assessed \u2014 no concerning recovery patterns.`}
+          </div>
+        </div>
+      )}
+
+      {/* Findings table */}
+      <table className="w-full text-[10px]">
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Finding</th>
+            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Nature</th>
+            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Classification</th>
+            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Confidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map(({ finding, classification, findingNature }) => {
+            const isProliferative = findingNature?.nature === "proliferative";
+            return (
+              <tr
+                key={finding}
+                className="cursor-pointer border-b border-dashed transition-colors hover:bg-muted/40"
+                onClick={() => onFindingClick(finding)}
+              >
+                <td className="max-w-[120px] truncate py-1 font-medium" title={finding}>
+                  {finding}
+                </td>
+                <td className="py-1 text-muted-foreground" title={findingNature ? reversibilityLabel(findingNature) : undefined}>
+                  {findingNature ? titleCase(findingNature.nature) : "\u2014"}
+                </td>
+                <td className={cn("py-1", isProliferative ? "text-muted-foreground/40" : "text-muted-foreground")}>
+                  {isProliferative ? "not applicable" : CLASSIFICATION_LABELS[classification.classification]}
+                </td>
+                <td className={cn("py-1 text-right", isProliferative ? "text-muted-foreground/40" : "text-muted-foreground")}>
+                  {isProliferative ? "\u2014" : classification.confidence}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {/* Missing inputs */}
+      {allMissing.length > 0 && (
+        <div className="border-l border-border/40 pl-2 text-[10px] text-muted-foreground/50">
+          {allMissing.map((m) => (
+            <div key={m}>{m.replace(/_/g, " ")} not available</div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -671,6 +767,86 @@ function SpecimenOverviewPane({
     [specimenData]
   );
 
+  // ── Recovery assessment (specimen-level) ─────────────────────
+  const specimenHasRecoveryFlag = useMemo(
+    () => subjData?.subjects?.some((s) => s.is_recovery) ?? false,
+    [subjData],
+  );
+
+  const recoveryClassifications = useMemo(() => {
+    if (!specimenHasRecoveryFlag || !subjData?.subjects) return null;
+    if (findingNames.length === 0) return null;
+    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days);
+
+    // Build per-finding clinical catalog lookup
+    const findingClinicalMap = new Map<string, { clinicalClass: string; catalogId: string }>();
+    const specLower = specimen.toLowerCase();
+    for (const r of ruleResults) {
+      const cc = r.params?.clinical_class;
+      const cid = r.params?.catalog_id;
+      if (!cc || !cid) continue;
+      const rSpec = (r.params?.specimen ?? "").toLowerCase();
+      if (rSpec !== specLower) continue;
+      const finding = r.params?.finding ?? "";
+      if (finding && !findingClinicalMap.has(finding)) {
+        findingClinicalMap.set(finding, { clinicalClass: cc as string, catalogId: cid as string });
+      }
+    }
+
+    return assessments.map((assessment) => {
+      const finding = assessment.finding;
+      const clinical = findingClinicalMap.get(finding);
+      const findingLower = finding.toLowerCase();
+      const findingRulesLocal = ruleResults.filter(
+        (r) =>
+          (r.params?.finding && (r.params.finding as string).toLowerCase().includes(findingLower)) &&
+          (r.params?.specimen && (r.params.specimen as string).toLowerCase() === specLower),
+      );
+      const isAdverse = findingRulesLocal.some(
+        (r) =>
+          r.rule_id === "R04" || r.rule_id === "R12" || r.rule_id === "R13" ||
+          (r.rule_id === "R10" && r.severity === "warning"),
+      );
+      const trend = trendDataSpec?.find(
+        (t: { finding: string; specimen: string }) => t.finding === finding && t.specimen === specimen,
+      );
+      const findingLat = subjData?.subjects ? aggregateFindingLaterality(subjData.subjects, finding) : null;
+      const findingPattern = classifyFindingPattern(specimenData, finding, trend?.ca_trend_p ?? null, null, false, findingLat);
+      const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
+      const findingNature = classifyFindingNature(finding);
+
+      const signalClass: "adverse" | "warning" | "normal" = isAdverse
+        ? "adverse"
+        : clinical
+          ? "warning"
+          : "normal";
+
+      const classification = classifyRecovery(assessment, {
+        isAdverse,
+        doseConsistency,
+        doseResponsePValue: trend?.ca_trend_p ?? null,
+        clinicalClass: clinical?.clinicalClass ?? null,
+        signalClass,
+        findingNature,
+        historicalControlIncidence: null,
+        crossDomainCorroboration: null,
+        recoveryPeriodDays: subjData?.recovery_days ?? null,
+      });
+
+      return { finding, classification, findingNature };
+    });
+  }, [specimenHasRecoveryFlag, subjData, findingNames, ruleResults, specimen, trendDataSpec, specimenData]);
+
+  const specimenRecoveryClassification = useMemo(() => {
+    if (!recoveryClassifications || recoveryClassifications.length === 0) return undefined;
+    return classifySpecimenRecovery(recoveryClassifications.map((c) => c.classification));
+  }, [recoveryClassifications]);
+
+  // ── Selection handler for recovery finding clicks ──────────
+  const handleRecoveryFindingClick = useCallback((finding: string) => {
+    navigateTo({ specimen, endpoint: finding });
+  }, [navigateTo, specimen]);
+
   if (!summary) {
     return (
       <div className="p-4 text-xs text-muted-foreground">
@@ -773,6 +949,17 @@ function SpecimenOverviewPane({
             <LabCorrelatesPane correlations={labCorrelation.correlations} isLoading={labCorrelation.isLoading} specimen={specimen} />
           </CollapsiblePane>
         </div>
+      )}
+
+      {/* Recovery assessment (specimen-level) */}
+      {specimenHasRecoveryFlag && recoveryClassifications && recoveryClassifications.length > 0 && (
+        <CollapsiblePane title="Recovery assessment" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <RecoveryAssessmentPane
+            recoveryClassifications={recoveryClassifications}
+            specimenRecoveryClassification={specimenRecoveryClassification}
+            onFindingClick={handleRecoveryFindingClick}
+          />
+        </CollapsiblePane>
       )}
 
       {/* Laterality note (paired organs only) */}
