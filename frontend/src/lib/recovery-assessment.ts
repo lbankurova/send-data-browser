@@ -329,9 +329,9 @@ export function deriveRecoveryAssessments(
   thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
   recoveryPeriodDays?: number | null,
 ): RecoveryAssessment[] {
-  // Split subjects into main and recovery arms
-  const mainSubjects = subjects.filter((s) => !s.is_recovery);
-  const recoverySubjects = subjects.filter((s) => s.is_recovery);
+  // Split subjects into main and recovery arms (exclude satellite/TK)
+  const mainSubjects = subjects.filter((s) => !s.is_recovery && !s.is_satellite);
+  const recoverySubjects = subjects.filter((s) => s.is_recovery && !s.is_satellite);
 
   if (recoverySubjects.length === 0) return [];
 

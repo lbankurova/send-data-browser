@@ -1,5 +1,5 @@
 import { StripSep } from "@/components/ui/SectionHeader";
-import type { FindingTableRow, HeatmapData } from "@/components/analysis/HistopathologyView";
+import type { FindingTableRow, HeatmapData } from "@/lib/histopathology-helpers";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 
 interface MatrixSelectionZoneProps {

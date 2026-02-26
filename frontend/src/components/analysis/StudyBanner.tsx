@@ -26,16 +26,21 @@ interface StudyBannerProps {
  * Matches MortalityBanner pattern: bg-muted/30, text-[11px], border-b border-border/40.
  */
 export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjectCount, mortality, crossAnimalFlags }: StudyBannerProps) {
-  const { species, strain, dosingDurationWeeks, route, glpCompliant } = studyContext;
+  const { species, strain, dosingDurationWeeks, recoveryPeriodDays, route, glpCompliant } = studyContext;
 
   // Format: "Sprague-Dawley rat" or just "Rat" if no strain
   const speciesStrain = strain
     ? `${titleCase(strain)} ${species.toLowerCase()}`
     : titleCase(species);
 
-  // Format: "13-week oral gavage" or "oral gavage" if no duration
+  // Format: "13-week, 2wk rec oral gavage" or "oral gavage" if no duration
+  const recSuffix = recoveryPeriodDays != null
+    ? (recoveryPeriodDays >= 7
+        ? `, ${Math.round(recoveryPeriodDays / 7)}wk rec`
+        : `, ${recoveryPeriodDays}d rec`)
+    : "";
   const durationRoute = dosingDurationWeeks != null
-    ? `${Math.round(dosingDurationWeeks)}-week ${route.toLowerCase()}`
+    ? `${Math.round(dosingDurationWeeks)}-week${recSuffix} ${route.toLowerCase()}`
     : route.toLowerCase();
 
   // Mortality header text: "1 TR death at 200 mg/kg day 90 — NOAEL ≤ 20 mg/kg"

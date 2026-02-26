@@ -17,24 +17,16 @@ async function fetchJson<T>(path: string): Promise<T> {
 
 export function fetchFindings(
   studyId: string,
-  page: number,
-  pageSize: number,
-  filters: FindingsFilters
+  _page: number,
+  _pageSize: number,
+  _filters: FindingsFilters
 ): Promise<FindingsResponse> {
-  const params = new URLSearchParams({
-    page: String(page),
-    page_size: String(pageSize),
-  });
-  if (filters.domain) params.set("domain", filters.domain);
-  if (filters.sex) params.set("sex", filters.sex);
-  if (filters.severity) params.set("severity", filters.severity);
-  if (filters.search) params.set("search", filters.search);
-  if (filters.organ_system) params.set("organ_system", filters.organ_system);
-  if (filters.endpoint_label) params.set("endpoint_label", filters.endpoint_label);
-  if (filters.dose_response_pattern) params.set("dose_response_pattern", filters.dose_response_pattern);
-
+  // Pre-generated: all findings served at once from static JSON.
+  // Filtering and pagination are handled client-side by useFindingsAnalyticsLocal.
+  // Parameters kept for API compatibility but ignored — the pre-generated file
+  // contains all findings in FindingsResponse format.
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects?${params}`
+    `/studies/${encodeURIComponent(studyId)}/analysis/unified-findings`
   );
 }
 
