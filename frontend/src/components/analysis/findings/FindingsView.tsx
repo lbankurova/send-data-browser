@@ -153,10 +153,30 @@ export function FindingsView() {
     if (studyId) selectStudy(studyId);
   }, [studyId, selectStudy]);
 
+  // Shared analytics derivation — single source of truth for all findings consumers
+  // (hoisted above handleEndpointSelect so `data` is available for synchronous selection)
+  const { analytics, data, isLoading, error } = useFindingsAnalyticsLocal(studyId);
+  const { endpoints: endpointSummaries, syndromes, organCoherence, labMatches,
+          signalScores: signalScoreMap, endpointSexes } = analytics;
+
   // Rail endpoint click → select finding in table
+  // Synchronous: set activeEndpoint AND select the best finding in the same
+  // render batch so the table never shows a stale selection from a different endpoint.
   const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
     setActiveEndpoint(endpointLabel);
-  }, []);
+    if (endpointLabel && data?.findings?.length) {
+      const epFindings = data.findings.filter(
+        (f) => (f.endpoint_label ?? f.finding) === endpointLabel,
+      );
+      if (epFindings.length > 0) {
+        selectFinding(pickBestFinding(epFindings));
+        return;
+      }
+    }
+    if (!endpointLabel) {
+      selectFinding(null);
+    }
+  }, [data, selectFinding]);
 
   // Register event bus callback
   useEffect(() => {
@@ -175,12 +195,9 @@ export function FindingsView() {
     return () => setFindingsRailCallback(null);
   }, [handleEndpointSelect, handleRestoreEndpoint]);
 
-  // Shared analytics derivation — single source of truth for all findings consumers
-  const { analytics, data, isLoading, error } = useFindingsAnalyticsLocal(studyId);
-  const { endpoints: endpointSummaries, syndromes, organCoherence, labMatches,
-          signalScores: signalScoreMap, endpointSexes } = analytics;
-
-  // Auto-select first finding when endpoint is selected
+  // Auto-select fallback: when data arrives while activeEndpoint is already set
+  // (e.g., after initial load or stat method change). The synchronous path in
+  // handleEndpointSelect handles the normal rail/scatter click case.
   useEffect(() => {
     if (activeEndpoint && data?.findings?.length) {
       const epFindings = data.findings.filter((f) => (f.endpoint_label ?? f.finding) === activeEndpoint);

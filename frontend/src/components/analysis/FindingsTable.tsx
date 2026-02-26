@@ -306,7 +306,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                   "cursor-pointer border-b transition-colors hover:bg-accent/50",
                   isPrimary && "bg-primary/15 font-medium",
                   isSecondary && "bg-accent/40",
-                  isSelected && !isSibling && "bg-accent font-medium",
+                  // Only show selected-row highlight for non-sibling rows when no
+                  // endpoint is active — prevents stale highlight from a previous
+                  // endpoint bleeding through during state transitions.
+                  isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
                 )}
                 data-selected={isSelected || undefined}
                 onClick={() => selectFinding(row.original)}
