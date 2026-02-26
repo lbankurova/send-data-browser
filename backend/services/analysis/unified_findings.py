@@ -211,8 +211,10 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
 
     # Step 3: Assign IDs and classify
     for i, finding in enumerate(all_findings):
-        # Deterministic ID from content
-        id_str = f"{finding['domain']}_{finding['test_code']}_{finding.get('day', '')}_{finding['sex']}"
+        # Deterministic ID from content — include specimen for domains that use it
+        # (OM, MI, MA, TF, CL all share test_code across specimens)
+        specimen_part = finding.get("specimen") or ""
+        id_str = f"{finding['domain']}_{finding['test_code']}_{specimen_part}_{finding.get('day', '')}_{finding['sex']}"
         finding["id"] = hashlib.md5(id_str.encode()).hexdigest()[:12]
 
         # Classify
