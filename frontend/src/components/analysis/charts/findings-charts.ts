@@ -44,6 +44,10 @@ export interface QuadrantPoint {
   noaelDoseValue?: number | null;
   noaelDoseUnit?: string | null;
   hasEarlyDeathExclusion?: boolean;
+  /** ECI NOAEL contribution weight (1.0=determining, 0.7=contributing, 0.3=supporting) */
+  noaelWeight?: number;
+  /** ECI NOAEL contribution label */
+  noaelWeightLabel?: string;
 }
 
 export function prepareQuadrantPoints(
@@ -128,6 +132,8 @@ export function prepareQuadrantPoints(
         noaelDoseValue: ep.noaelDoseValue,
         noaelDoseUnit: ep.noaelDoseUnit,
         hasEarlyDeathExclusion: ep.hasEarlyDeathExclusion,
+        noaelWeight: ep.endpointConfidence?.noaelContribution.weight,
+        noaelWeightLabel: ep.endpointConfidence?.noaelContribution.label,
       };
     });
 }
@@ -165,14 +171,28 @@ export function buildFindingsQuadrantOption(
 
     // NOAEL tint: warm rose for low-NOAEL dots (below-lowest or at-lowest)
     const isLowNoael = pt.noaelTier === "below-lowest" || pt.noaelTier === "at-lowest";
+    // ECI NOAEL weight encoding
+    const nw = pt.noaelWeight;
+    const isDetermining = nw === 1.0;
+    const isContributing = nw === 0.7;
+    const isSupporting = nw === 0.3;
 
     // Opacity: clinical 0.75, coherent 0.65, adverse 0.65, default 0.5
     let opacity = isSelected ? 1 : isClinical ? 0.75 : (pt.coherenceSize || isAdverse) ? 0.65 : 0.5;
+    if (isContributing && !isSelected) opacity = 0.8;
     if (isOutOfScope) opacity = 0.15;
 
-    // Dot color: low NOAEL → warm rose, clinical → dark gray, default → gray
+    // Dot color: determining → warm rose (same as low NOAEL), contributing → gray filled, supporting → transparent (outline only)
     let dotColor: string;
-    if (isLowNoael) {
+    if (isDetermining) {
+      dotColor = isLowNoael && pt.noaelTier === "below-lowest"
+        ? "rgba(248,113,113,0.7)"
+        : "rgba(248,113,113,0.5)";
+    } else if (isContributing) {
+      dotColor = "#9CA3AF";
+    } else if (isSupporting) {
+      dotColor = "transparent";
+    } else if (isLowNoael) {
       dotColor = pt.noaelTier === "below-lowest"
         ? "rgba(248,113,113,0.6)"
         : "rgba(248,113,113,0.4)";
@@ -181,6 +201,12 @@ export function buildFindingsQuadrantOption(
     } else {
       dotColor = "#9CA3AF";
     }
+
+    // Border: supporting gets gray outline, contributing gets subtle border
+    let borderColor = isSelected ? "#1F2937" : isClinical ? "#6B7280" : hasExclusion ? "#9CA3AF" : "transparent";
+    let borderWidth = isSelected ? 2 : isClinical ? 1 : hasExclusion ? 1 : 0;
+    if (isSupporting && !isSelected) { borderColor = "#9CA3AF"; borderWidth = 1; }
+    else if (isContributing && !isSelected && !isClinical) { borderColor = "#9CA3AF"; borderWidth = 1; }
 
     return {
       value: [pt.x, pt.y],
@@ -192,8 +218,8 @@ export function buildFindingsQuadrantOption(
       itemStyle: {
         color: dotColor,
         opacity,
-        borderColor: isSelected ? "#1F2937" : isClinical ? "#6B7280" : hasExclusion ? "#9CA3AF" : "transparent",
-        borderWidth: isSelected ? 2 : isClinical ? 1 : hasExclusion ? 1 : 0,
+        borderColor,
+        borderWidth,
         borderType: hasExclusion && !isSelected && !isClinical ? "dashed" as const : "solid" as const,
       },
       emphasis: isOutOfScope
@@ -276,6 +302,10 @@ export function buildFindingsQuadrantOption(
           lines.push(`<div style="font-size:9px;margin-top:2px${meta.noaelTier === "at-lowest" ? ";color:#DC2626" : ""}">NOAEL ${doseLabel}</div>`);
         } else {
           lines.push(`<div style="font-size:9px;margin-top:2px;color:#9CA3AF">NOAEL n/a</div>`);
+        }
+        // ECI NOAEL weight
+        if (meta.noaelWeightLabel) {
+          lines.push(`<div style="font-size:9px;color:#6B7280">NOAEL role: ${meta.noaelWeightLabel}</div>`);
         }
         return lines.join("");
       },

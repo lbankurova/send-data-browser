@@ -17,7 +17,9 @@ import { useMemo } from "react";
 import { useFindings } from "@/hooks/useFindings";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useStatMethods } from "@/hooks/useStatMethods";
+import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
+import { attachEndpointConfidence } from "@/lib/endpoint-confidence";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
@@ -68,6 +70,7 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
   const { data, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
   const { useScheduledOnly: isScheduledOnly } = useScheduledOnly();
   const statMethods = useStatMethods(studyId);
+  const { data: studyMeta } = useStudyMetadata(studyId ?? "");
 
   // Active findings: swapped when scheduled-only is active
   const scheduledFindings = useMemo(() => {
@@ -104,8 +107,10 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
         }
       }
     }
+    // ECI: attach endpoint confidence integrity assessment
+    attachEndpointConfidence(summaries, activeFindings, studyMeta?.has_estrous_data ?? false);
     return summaries;
-  }, [activeFindings, data?.dose_groups]);
+  }, [activeFindings, data?.dose_groups, studyMeta?.has_estrous_data]);
 
   const organCoherence = useMemo(() => deriveOrganCoherence(endpointSummaries), [endpointSummaries]);
   const syndromes = useMemo(() => detectCrossDomainSyndromes(endpointSummaries), [endpointSummaries]);

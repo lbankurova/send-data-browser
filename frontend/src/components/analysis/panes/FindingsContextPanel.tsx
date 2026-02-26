@@ -24,6 +24,86 @@ import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/organ-weight-normalization";
 import { useStatMethods } from "@/hooks/useStatMethods";
+import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
+
+// ─── Decomposed Confidence Display ─────────────────────────
+
+function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
+  const cls = level === "high"
+    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : level === "moderate"
+      ? "bg-amber-50 text-amber-700 border-amber-200"
+      : "bg-red-50 text-red-700 border-red-200";
+  return (
+    <span className={`inline-block rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase ${cls}`}>
+      {level}
+    </span>
+  );
+}
+
+function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
+  const { integrated } = eci;
+  // Only show decomposition when integrated differs from statistical
+  if (integrated.integrated === integrated.statistical && integrated.integrated === "high") {
+    return null;
+  }
+
+  const dims: { label: string; level: ConfidenceLevel; reason?: string }[] = [
+    { label: "Statistical evidence", level: integrated.statistical },
+    {
+      label: "Biological plausibility",
+      level: integrated.biological,
+      reason: eci.normCaveat?.reason,
+    },
+    {
+      label: "Dose-response quality",
+      level: integrated.doseResponse,
+      reason: eci.nonMonotonic.triggered ? eci.nonMonotonic.rationale ?? undefined : undefined,
+    },
+    {
+      label: "Trend test validity",
+      level: integrated.trendValidity,
+      reason: eci.trendCaveat.triggered ? eci.trendCaveat.rationale ?? undefined : undefined,
+    },
+  ];
+
+  return (
+    <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
+      <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Confidence decomposition
+      </div>
+      <div className="space-y-1">
+        {dims.map((d) => (
+          <div key={d.label} className="flex items-start gap-2">
+            <ConfidenceBadge level={d.level} />
+            <div className="min-w-0 flex-1">
+              <span className="font-medium">{d.label}</span>
+              {d.reason && d.level !== "high" && (
+                <span className="ml-1 text-muted-foreground">&mdash; {d.reason}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1.5 border-t pt-1.5">
+        <span className="text-[9px] font-semibold text-muted-foreground">Integrated: </span>
+        <ConfidenceBadge level={integrated.integrated} />
+        {integrated.limitingFactor !== "None" && (
+          <span className="ml-1 text-muted-foreground">
+            (limited by {integrated.limitingFactor})
+          </span>
+        )}
+      </div>
+      {/* NOAEL contribution weight */}
+      {eci.noaelContribution.weight > 0 && (
+        <div className="mt-1 text-[9px] text-muted-foreground">
+          NOAEL weight: {eci.noaelContribution.weight} ({eci.noaelContribution.label})
+          {eci.noaelContribution.requiresCorroboration && " — requires corroboration"}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -332,6 +412,13 @@ export function FindingsContextPanel() {
               </table>
             </div>
           );
+        })()}
+        {/* Decomposed confidence display (ECI — SPEC-ECI-AMD-002) */}
+        {(() => {
+          const endpointLabel = selectedFinding.endpoint_label ?? selectedFinding.finding;
+          const ep = analytics.endpoints.find((e) => e.endpoint_label === endpointLabel);
+          if (!ep?.endpointConfidence) return null;
+          return <DecomposedConfidencePane eci={ep.endpointConfidence} />;
         })()}
       </CollapsiblePane>
 
