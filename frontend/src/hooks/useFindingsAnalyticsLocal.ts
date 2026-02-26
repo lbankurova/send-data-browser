@@ -18,6 +18,7 @@ import { useFindings } from "@/hooks/useFindings";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
+import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
 import { attachEndpointConfidence } from "@/lib/endpoint-confidence";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
@@ -72,6 +73,10 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
   const statMethods = useStatMethods(studyId);
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");
 
+  // Organ weight normalization — shared React Query key with findings, zero extra API calls.
+  // Provides NormalizationContext[] for syndrome magnitude floors and B-7 adversity.
+  const normalization = useOrganWeightNormalization(studyId, true, statMethods.effectSize);
+
   // Active findings: swapped when scheduled-only is active
   const scheduledFindings = useMemo(() => {
     if (!data?.findings?.length) return [];
@@ -112,8 +117,12 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
     return summaries;
   }, [activeFindings, data?.dose_groups, studyMeta?.has_estrous_data]);
 
+  const normContexts = normalization.state?.contexts;
   const organCoherence = useMemo(() => deriveOrganCoherence(endpointSummaries), [endpointSummaries]);
-  const syndromes = useMemo(() => detectCrossDomainSyndromes(endpointSummaries), [endpointSummaries]);
+  const syndromes = useMemo(
+    () => detectCrossDomainSyndromes(endpointSummaries, normContexts),
+    [endpointSummaries, normContexts],
+  );
   const labMatches = useMemo(
     () => evaluateLabRules(endpointSummaries, organCoherence, syndromes),
     [endpointSummaries, organCoherence, syndromes],
@@ -167,7 +176,8 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
     activeEffectSizeMethod: statMethods.effectSize,
     activeMultiplicityMethod: statMethods.multiplicity,
     hasWelchPValues: welchAvailable,
-  }), [endpointSummaries, syndromes, organCoherence, labMatches, signalScores, endpointSexes, statMethods.effectSize, statMethods.multiplicity, welchAvailable]);
+    normalizationContexts: normContexts,
+  }), [endpointSummaries, syndromes, organCoherence, labMatches, signalScores, endpointSexes, statMethods.effectSize, statMethods.multiplicity, welchAvailable, normContexts]);
 
   return { analytics, data, isLoading, error: error as Error | null };
 }
