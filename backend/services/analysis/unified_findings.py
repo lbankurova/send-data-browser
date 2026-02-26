@@ -18,17 +18,12 @@ from services.analysis.findings_ma import compute_ma_findings
 from services.analysis.findings_tf import compute_tf_findings
 from services.analysis.findings_cl import compute_cl_findings
 from services.analysis.findings_ds import compute_ds_findings
-from services.analysis.classification import (
-    classify_severity, classify_dose_response, determine_treatment_related,
-    compute_max_fold_change,
-)
 from services.analysis.correlations import compute_correlations
 from services.analysis.mortality import get_early_death_subjects
-from services.analysis.phase_filter import get_terminal_subjects, IN_LIFE_DOMAINS
-from generator.organ_map import get_organ_system
-
-TERMINAL_DOMAINS = {"MI", "MA", "OM", "TF", "DS"}
-LB_DOMAIN = "LB"
+from services.analysis.phase_filter import get_terminal_subjects
+from services.analysis.findings_pipeline import (
+    process_findings, build_findings_map,
+)
 
 
 def _sanitize_floats(obj):
@@ -63,50 +58,48 @@ def _get_xpt_max_mtime(study: StudyInfo) -> float:
     return max(mtimes) if mtimes else 0
 
 
-def _get_code_max_mtime() -> float:
-    """Get the most recent mtime across files that affect compute_adverse_effects output.
+def _get_code_content_hash() -> str:
+    """Content-hash of all Python files that affect compute_adverse_effects output.
 
-    Explicit list — only files that are transitively imported by the computation.
-    Editing unrelated files (insights.py, provenance.py, subject_context.py, etc.)
-    no longer invalidates the cache.
+    Hashes all .py files under services/analysis/ and generator/ — any code change
+    in these directories invalidates the cache. This is broader than a manual dep list
+    but eliminates the class of bugs where a new/renamed module isn't tracked.
+
+    Explicitly excludes routers/, tests/, and services/study_discovery.py which
+    affect request handling but not computation output. Unnecessary invalidation
+    (editing an unrelated file in the glob) is safe — stale results are not.
     """
     analysis_dir = Path(__file__).parent
     generator_dir = analysis_dir.parent.parent / "generator"
 
-    _CACHE_DEPS = [
-        analysis_dir / "unified_findings.py",
-        analysis_dir / "dose_groups.py",
-        analysis_dir / "findings_lb.py",
-        analysis_dir / "findings_bw.py",
-        analysis_dir / "findings_om.py",
-        analysis_dir / "findings_mi.py",
-        analysis_dir / "findings_ma.py",
-        analysis_dir / "findings_tf.py",
-        analysis_dir / "findings_cl.py",
-        analysis_dir / "findings_ds.py",
-        analysis_dir / "classification.py",
-        analysis_dir / "correlations.py",
-        analysis_dir / "mortality.py",
-        analysis_dir / "statistics.py",
-        analysis_dir / "supp_qualifiers.py",
-        analysis_dir / "phase_filter.py",
-        analysis_dir / "normalization.py",
-        analysis_dir / "williams.py",
-        generator_dir / "organ_map.py",
-    ]
+    hasher = hashlib.md5()
+    py_files = sorted([
+        *analysis_dir.glob("**/*.py"),
+        *generator_dir.glob("**/*.py"),
+    ])
+    for py_file in py_files:
+        hasher.update(py_file.read_bytes())
+    return hasher.hexdigest()
 
-    mtimes = [f.stat().st_mtime for f in _CACHE_DEPS if f.exists()]
-    return max(mtimes) if mtimes else 0
+
+def _code_hash_path(study_id: str) -> Path:
+    cache_dir = CACHE_DIR / study_id
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir / "adverse_effects.code_hash"
 
 
 def _is_cache_valid(study: StudyInfo) -> bool:
-    """Check if cached JSON is newer than all relevant XPT files and code."""
+    """Check if cached JSON is newer than XPT files and code content is unchanged."""
     cp = _cache_path(study.study_id)
-    if not cp.exists():
+    hp = _code_hash_path(study.study_id)
+    if not cp.exists() or not hp.exists():
         return False
+    # Data freshness: cache newer than all XPT files
     cache_mtime = cp.stat().st_mtime
     data_fresh = cache_mtime > _get_xpt_max_mtime(study)
-    code_fresh = cache_mtime > _get_code_max_mtime()
+    # Code freshness: stored hash matches current code content
+    stored_hash = hp.read_text().strip()
+    code_fresh = stored_hash == _get_code_content_hash()
     return data_fresh and code_fresh
 
 
@@ -145,121 +138,37 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     all_findings.extend(compute_cl_findings(study, subjects))
     all_findings.extend(compute_ds_findings(study, subjects))
 
-    # Pass 2 — scheduled-only stats for terminal + LB domains
+    # Pass 2 — build scheduled-only map for terminal + LB domains
+    scheduled_map = None
     if excluded_set:
-        scheduled_findings_map: dict[tuple, dict] = {}
-        for sched_f in compute_mi_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
-        for sched_f in compute_ma_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
-        for sched_f in compute_om_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
-        for sched_f in compute_tf_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
-        for sched_f in compute_lb_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
-        for sched_f in compute_ds_findings(study, subjects, excluded_subjects=excluded_set):
-            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
-            scheduled_findings_map[key] = sched_f
+        sched_findings = []
+        sched_findings.extend(compute_mi_findings(study, subjects, excluded_subjects=excluded_set))
+        sched_findings.extend(compute_ma_findings(study, subjects, excluded_subjects=excluded_set))
+        sched_findings.extend(compute_om_findings(study, subjects, excluded_subjects=excluded_set))
+        sched_findings.extend(compute_tf_findings(study, subjects, excluded_subjects=excluded_set))
+        sched_findings.extend(compute_lb_findings(study, subjects, excluded_subjects=excluded_set))
+        sched_findings.extend(compute_ds_findings(study, subjects, excluded_subjects=excluded_set))
+        scheduled_map = build_findings_map(sched_findings, "scheduled")
 
-        for finding in all_findings:
-            key = (finding["domain"], finding["test_code"], finding["sex"], finding.get("day"))
-            sched = scheduled_findings_map.get(key)
-            if sched:
-                finding["scheduled_group_stats"] = sched["group_stats"]
-                finding["scheduled_pairwise"] = sched["pairwise"]
-                finding["scheduled_direction"] = sched.get("direction")
-                finding["n_excluded"] = n_excluded
-            elif finding["domain"] in TERMINAL_DOMAINS or finding["domain"] == LB_DOMAIN:
-                # Finding exists in Pass 1 but not Pass 2 — all subjects were
-                # early deaths at this timepoint.  Attach empty arrays so the
-                # frontend knows "this finding has no data under scheduled-only".
-                finding["scheduled_group_stats"] = []
-                finding["scheduled_pairwise"] = []
-                finding["scheduled_direction"] = None
-                finding["n_excluded"] = n_excluded
-
-    # Pass 3 — separate (main-only) stats for in-life domains
-    # When recovery pooling is set to "separate", the frontend swaps group_stats
-    # with these pre-computed main-only variants (recovery animals excluded).
+    # Pass 3 — build separate (main-only) map for in-life domains
+    separate_map = None
     has_recovery = subjects["is_recovery"].any()
     if has_recovery:
         main_only_subs = get_terminal_subjects(subjects)
-        separate_map: dict[tuple, dict] = {}
+        sep_findings = []
+        sep_findings.extend(compute_bw_findings(study, main_only_subs))
+        sep_findings.extend(compute_lb_findings(study, main_only_subs))
+        sep_findings.extend(compute_cl_findings(study, main_only_subs))
+        separate_map = build_findings_map(sep_findings, "separate")
 
-        def _sep_key(f: dict) -> tuple:
-            return (f["domain"], f["test_code"], f["sex"], f.get("day"))
+    # Shared enrichment pipeline (classification, fold change, labels, etc.)
+    all_findings = process_findings(all_findings, scheduled_map, separate_map, n_excluded)
 
-        for sep_f in compute_bw_findings(study, main_only_subs):
-            separate_map[_sep_key(sep_f)] = sep_f
-        for sep_f in compute_lb_findings(study, main_only_subs):
-            separate_map[_sep_key(sep_f)] = sep_f
-        for sep_f in compute_cl_findings(study, main_only_subs):
-            separate_map[_sep_key(sep_f)] = sep_f
-
-        for finding in all_findings:
-            if finding["domain"] in IN_LIFE_DOMAINS:
-                key = _sep_key(finding)
-                sep = separate_map.get(key)
-                if sep:
-                    finding["separate_group_stats"] = sep["group_stats"]
-                    finding["separate_pairwise"] = sep["pairwise"]
-                    finding["separate_direction"] = sep.get("direction")
-                else:
-                    finding["separate_group_stats"] = []
-                    finding["separate_pairwise"] = []
-                    finding["separate_direction"] = None
-
-    # Step 3: Assign IDs and classify
-    for i, finding in enumerate(all_findings):
-        # Deterministic ID from content — include specimen for domains that use it
-        # (OM, MI, MA, TF, CL all share test_code across specimens)
+    # API-specific: assign deterministic IDs
+    for finding in all_findings:
         specimen_part = finding.get("specimen") or ""
         id_str = f"{finding['domain']}_{finding['test_code']}_{specimen_part}_{finding.get('day', '')}_{finding['sex']}"
         finding["id"] = hashlib.md5(id_str.encode()).hexdigest()[:12]
-
-        # Classify
-        finding["severity"] = classify_severity(finding)
-        dr_result = classify_dose_response(
-            finding.get("group_stats", []),
-            finding.get("data_type", "continuous"),
-        )
-        finding["dose_response_pattern"] = dr_result["pattern"]
-        finding["pattern_confidence"] = dr_result.get("confidence")
-        finding["onset_dose_level"] = dr_result.get("onset_dose_level")
-        finding["treatment_related"] = determine_treatment_related(finding)
-
-        # Fold change (continuous endpoints only) — direction-aligned
-        finding["max_fold_change"] = compute_max_fold_change(
-            finding.get("group_stats", []),
-            direction=finding.get("direction"),
-        ) if finding.get("data_type") == "continuous" else None
-
-        # Max incidence across treated dose groups (incidence endpoints only)
-        if finding.get("data_type") == "incidence":
-            treated_gs = [gs for gs in finding.get("group_stats", []) if gs.get("dose_level", 0) > 0]
-            incidences = [gs["incidence"] for gs in treated_gs if gs.get("incidence") is not None]
-            finding["max_incidence"] = round(max(incidences), 4) if incidences else None
-        else:
-            finding["max_incidence"] = None
-
-        # Enrich with organ_system and endpoint_label (same logic as generator)
-        finding["organ_system"] = get_organ_system(
-            finding.get("specimen"),
-            finding.get("test_code"),
-            finding.get("domain"),
-        )
-        test_name = finding.get("test_name", finding.get("test_code", ""))
-        specimen = finding.get("specimen")
-        if specimen and finding.get("domain") in ("MI", "MA", "CL", "OM", "TF"):
-            finding["endpoint_label"] = f"{specimen} \u2014 {test_name}"
-        else:
-            finding["endpoint_label"] = test_name
 
     # Step 4: Correlations
     correlations = compute_correlations(all_findings)
@@ -321,9 +230,10 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
         "summary": summary,
     })
 
-    # Cache
+    # Cache result + code content hash
     with open(cp, "w") as f:
         json.dump(result, f)
+    _code_hash_path(study.study_id).write_text(_get_code_content_hash())
     print(f"Adverse effects cached: {len(all_findings)} findings, "
           f"{severity_counts['adverse']} adverse, {severity_counts['warning']} warning")
 

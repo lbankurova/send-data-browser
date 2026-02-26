@@ -24,61 +24,61 @@
           "finding": "Creatinine",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01263
+          "p_value": 0.01278
         },
         {
           "finding": "Large Unstained Cells",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01103
+          "p_value": 0.01108
         },
         {
           "finding": "Ery. Mean Corpuscular Hemoglobin",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00506
+          "p_value": 0.00515
         },
         {
           "finding": "Ery. Mean Corpuscular Volume",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00711
+          "p_value": 0.00722
         },
         {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00054
+          "p_value": 0.00053
         },
         {
           "finding": "Erythrocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00279
+          "p_value": 0.00271
         },
         {
           "finding": "Urea Nitrogen",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01754
+          "p_value": 0.01762
         },
         {
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00151
+          "p_value": 0.00152
         },
         {
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.00441
+          "p_value": 0.00435
         },
         {
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03836
+          "p_value": 0.03831
         },
         {
           "finding": "VACUOLIZATION",
@@ -122,25 +122,25 @@
           "finding": "Activated Partial Thromboplastin Time",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.0071
+          "p_value": 0.00726
         },
         {
           "finding": "Glucose",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00432
+          "p_value": 0.00424
         },
         {
           "finding": "Potassium",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.03956
+          "p_value": 0.03952
         },
         {
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00714
+          "p_value": 0.00707
         },
         {
           "finding": "VACUOLIZATION",
@@ -186,85 +186,85 @@
           "finding": "Activated Partial Thromboplastin Time",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.0071
+          "p_value": 0.00726
         },
         {
           "finding": "Creatinine",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01263
+          "p_value": 0.01278
         },
         {
           "finding": "Glucose",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00432
+          "p_value": 0.00424
         },
         {
           "finding": "Potassium",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.03956
+          "p_value": 0.03952
         },
         {
           "finding": "Large Unstained Cells",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01103
+          "p_value": 0.01108
         },
         {
           "finding": "Ery. Mean Corpuscular Hemoglobin",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00506
+          "p_value": 0.00515
         },
         {
           "finding": "Ery. Mean Corpuscular Volume",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00711
+          "p_value": 0.00722
         },
         {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00054
+          "p_value": 0.00053
         },
         {
           "finding": "Erythrocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00279
+          "p_value": 0.00271
         },
         {
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00714
+          "p_value": 0.00707
         },
         {
           "finding": "Urea Nitrogen",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01754
+          "p_value": 0.01762
         },
         {
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00151
+          "p_value": 0.00152
         },
         {
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.00441
+          "p_value": 0.00435
         },
         {
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03836
+          "p_value": 0.03831
         },
         {
           "finding": "VACUOLIZATION",

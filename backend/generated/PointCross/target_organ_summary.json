@@ -1,7 +1,7 @@
 [
   {
     "organ_system": "general",
-    "evidence_score": 1.305,
+    "evidence_score": 1.291,
     "n_endpoints": 61,
     "n_domains": 8,
     "domains": [
@@ -31,7 +31,7 @@
       "MI",
       "OM"
     ],
-    "max_signal_score": 0.855,
+    "max_signal_score": 0.856,
     "n_significant": 39,
     "n_treatment_related": 35,
     "target_organ_flag": true,
@@ -74,13 +74,13 @@
   },
   {
     "organ_system": "neurological",
-    "evidence_score": 0.619,
+    "evidence_score": 0.616,
     "n_endpoints": 2,
     "n_domains": 1,
     "domains": [
       "OM"
     ],
-    "max_signal_score": 0.728,
+    "max_signal_score": 0.721,
     "n_significant": 2,
     "n_treatment_related": 2,
     "target_organ_flag": true,
@@ -94,7 +94,7 @@
     "domains": [
       "LB"
     ],
-    "max_signal_score": 0.669,
+    "max_signal_score": 0.668,
     "n_significant": 6,
     "n_treatment_related": 3,
     "target_organ_flag": true,
