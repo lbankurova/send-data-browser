@@ -420,6 +420,7 @@ export function buildEffectSizeBarOption(
   sexColors: Record<string, string>,
   sexLabels: Record<string, string>,
   effectSizeSymbol = "g",
+  metricSubtitle?: string,
 ): EChartsOption {
   const categories = mergedPoints.map((p) => String(p.dose_label));
 
@@ -491,6 +492,12 @@ export function buildEffectSizeBarOption(
       type: "value",
       axisLabel: axisLabel(),
       splitLine: splitLineStyle(),
+      ...(metricSubtitle ? {
+        name: metricSubtitle,
+        nameLocation: "middle" as const,
+        nameGap: 35,
+        nameTextStyle: { fontSize: 9, color: "#9CA3AF" },
+      } : {}),
     },
     tooltip: {
       ...baseTooltip(),

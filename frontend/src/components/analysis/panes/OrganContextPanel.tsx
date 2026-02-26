@@ -27,6 +27,7 @@ import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization
 import { useNormalizationOverrides } from "@/hooks/useNormalizationOverrides";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getTierSeverityLabel, getOrganCorrelationCategory } from "@/lib/organ-weight-normalization";
+import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import type { FindingsFilters, UnifiedFinding, NormalizationOverride } from "@/types/analysis";
 
 // ─── Constants ─────────────────────────────────────────────
@@ -684,6 +685,17 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
           </CollapsiblePane>
         );
       })()}
+
+      {/* Pane 1c: NORMALIZATION HEATMAP (all organs at a glance, only when normalization tier >= 2) */}
+      {analytics.normalizationContexts && analytics.normalizationContexts.length > 0
+        && analytics.normalizationContexts.some(c => c.tier >= 2) && (
+        <CollapsiblePane title="Normalization overview" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <NormalizationHeatmap
+            contexts={analytics.normalizationContexts.filter(c => c.tier >= 2)}
+            onOrganClick={(organ) => selectGroup("organ", organ)}
+          />
+        </CollapsiblePane>
+      )}
 
       {/* Pane 2: ORGAN NOAEL */}
       <CollapsiblePane title="Organ NOAEL" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
