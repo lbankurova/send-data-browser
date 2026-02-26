@@ -4,6 +4,7 @@ import type { EndpointSummary, OrganCoherence } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import type { EffectSizeMethod, MultiplicityMethod } from "@/lib/stat-method-transforms";
+import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 
 export interface FindingsAnalytics {
   endpoints: EndpointSummary[];
@@ -19,6 +20,8 @@ export interface FindingsAnalytics {
   activeMultiplicityMethod?: MultiplicityMethod;
   /** Whether the data includes Welch p-values (enables Bonferroni dropdown). */
   hasWelchPValues?: boolean;
+  /** Organ weight normalization contexts (for syndrome B-7 assessment + OM magnitude floors). */
+  normalizationContexts?: NormalizationContext[];
 }
 
 const defaultValue: FindingsAnalytics = {

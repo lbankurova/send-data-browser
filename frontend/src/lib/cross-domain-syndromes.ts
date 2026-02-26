@@ -10,6 +10,7 @@
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
+import { checkMagnitudeFloorOM } from "@/lib/organ-weight-normalization";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -1048,6 +1049,7 @@ function applyDirectionalGates(
 function detectFromEndpoints(
   endpoints: EndpointSummary[],
   sex: string | null,
+  _normalizationContexts?: NormalizationContext[],
 ): CrossDomainSyndrome[] {
   const results: CrossDomainSyndrome[] = [];
 
@@ -1184,13 +1186,14 @@ function detectFromEndpoints(
 
 export function detectCrossDomainSyndromes(
   endpoints: EndpointSummary[],
+  normalizationContexts?: NormalizationContext[],
 ): CrossDomainSyndrome[] {
   // Check if any endpoint has sex-divergent directions
   const hasDivergent = endpoints.some(ep => hasSexDivergence(ep));
 
   let results: CrossDomainSyndrome[];
   if (!hasDivergent) {
-    results = detectFromEndpoints(endpoints, null);
+    results = detectFromEndpoints(endpoints, null, normalizationContexts);
   } else {
   // Collect unique sexes from divergent endpoints
   const allSexes = new Set<string>();
@@ -1204,7 +1207,7 @@ export function detectCrossDomainSyndromes(
   const allResults: CrossDomainSyndrome[] = [];
   for (const sex of [...allSexes].sort()) {
     const sexEndpoints = endpoints.map(ep => projectToSex(ep, sex));
-    allResults.push(...detectFromEndpoints(sexEndpoints, sex));
+    allResults.push(...detectFromEndpoints(sexEndpoints, sex, normalizationContexts));
   }
 
   results = deduplicateSyndromes(allResults);
@@ -1425,6 +1428,7 @@ export function checkMagnitudeFloor(
   ep: EndpointSummary,
   domain: string,
   allEndpoints?: EndpointSummary[],
+  normalizationContexts?: NormalizationContext[],
 ): string | null {
   // Determine floor: look up by testCode, then by domain for OM/BW
   const code = ep.testCode?.toUpperCase() ?? "";
@@ -1446,6 +1450,23 @@ export function checkMagnitudeFloor(
 
   const absG = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : null;
   const absFcDelta = ep.maxFoldChange != null ? Math.abs(ep.maxFoldChange - 1.0) : null;
+
+  // OM domain with normalization context: use normalization-aware floor check.
+  // Phase 1: same pass/fail as raw, adds BW confounding annotation.
+  // Phase 2+: uses ANCOVA directG instead of raw g — may change pass/fail.
+  if (domain === "OM" && normalizationContexts) {
+    const specimen = (ep.specimen ?? "").toUpperCase();
+    const normCtx = normalizationContexts.find(c => c.organ === specimen);
+    if (normCtx) {
+      const result = checkMagnitudeFloorOM(absG, absFcDelta, normCtx, floor);
+      if (result.pass) return null;
+      const parts: string[] = [];
+      if (absG != null) parts.push(`|g|=${absG.toFixed(2)} < ${floor.minG}`);
+      if (absFcDelta != null) parts.push(`|FC-1|=${absFcDelta.toFixed(2)} < ${floor.minFcDelta}`);
+      const base = parts.join(", ") || "below magnitude floor";
+      return result.annotation ? `${base} — ${result.annotation}` : base;
+    }
+  }
 
   // Must fail BOTH checks to be blocked (either criterion sufficient)
   const passesG = absG != null && absG >= floor.minG;
@@ -1552,7 +1573,8 @@ export function getSyndromeTermReport(
 
         // REM-27: Check magnitude floor — significant but biologically trivial → not_significant
         // Phase 2: pass full endpoint list for RETIC conditional override
-        const floorNote = checkMagnitudeFloor(ep, term.domain, endpoints);
+        // OWN §10: normalization-aware floor for OM domain (ANCOVA directG in Phase 2+)
+        const floorNote = checkMagnitudeFloor(ep, term.domain, endpoints, normalizationContexts);
 
         if (isSignificant && !floorNote) {
           entry.status = "matched";
