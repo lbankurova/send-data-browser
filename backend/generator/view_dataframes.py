@@ -297,6 +297,7 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
                 "specimen": finding.get("specimen"),
                 "finding": finding.get("finding"),
                 "max_fold_change": finding.get("max_fold_change"),
+                "max_incidence": finding.get("max_incidence"),
             }
             _propagate_scheduled_fields(row, finding)
             rows.append(row)

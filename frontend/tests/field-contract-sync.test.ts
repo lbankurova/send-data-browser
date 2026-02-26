@@ -97,6 +97,53 @@ describe("field-contract-sync", () => {
     expect(orphaned).toEqual([]);
   });
 
+  test("every computed field in unified_findings.json is registered in Source of Truth Registry", () => {
+    // Identity/metadata fields — structural, not computed
+    const EXEMPT_FIELDS = new Set([
+      "id", "study_id", "domain", "test_code", "test_name", "finding",
+      "specimen", "sex", "day", "day_first", "unit", "data_type",
+      "endpoint_label", "endpoint_type", "organ_name", "n_excluded",
+      // Raw data arrays (not computed summaries)
+      "raw_values", "raw_subject_values",
+      // Domain-specific metadata (not universal computed fields)
+      "behavior", "isNeoplastic", "williams", "normalization", "ancova",
+      "alternatives", "avg_severity",
+      // Scheduled/separate metadata
+      "scheduled_min_p_adj", "scheduled_max_effect_size", "scheduled_trend_p",
+    ]);
+
+    // Parse the Source of Truth Registry table from field-contracts.md
+    const content = fs.readFileSync(FIELD_CONTRACTS, "utf-8");
+    const registryStart = content.indexOf("## Source of Truth Registry");
+    expect(registryStart).toBeGreaterThan(-1);
+
+    const registrySection = content.slice(registryStart);
+    const registeredFields = new Set<string>();
+    const tableRowRe = /^\|\s*`([^`]+)`\s*\|/gm;
+    let m: RegExpExecArray | null;
+    while ((m = tableRowRe.exec(registrySection)) !== null) {
+      registeredFields.add(m[1]);
+    }
+    expect(registeredFields.size).toBeGreaterThan(0);
+
+    // Read first entry from generated JSON
+    const jsonPath = path.join(ROOT, "backend/generated/PointCross/unified_findings.json");
+    if (!fs.existsSync(jsonPath)) return; // skip if not generated yet
+    const findings = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    const firstEntry = Array.isArray(findings) ? findings[0] : findings.findings?.[0];
+    if (!firstEntry) return;
+
+    const allKeys = Object.keys(firstEntry);
+    const unregistered: string[] = [];
+    for (const key of allKeys) {
+      if (EXEMPT_FIELDS.has(key)) continue;
+      if (!registeredFields.has(key)) {
+        unregistered.push(`"${key}" found in unified_findings.json but not in Source of Truth Registry`);
+      }
+    }
+    expect(unregistered).toEqual([]);
+  });
+
   test("FIELD IDs are sequentially allocated with no gaps", () => {
     const allIds = new Set([...docIds, ...codeIds]);
     const numbers = [...allIds]

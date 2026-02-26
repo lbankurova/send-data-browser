@@ -202,11 +202,6 @@ export function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSumm
 
 export function mapFindingsToRows(findings: UnifiedFinding[]): AdverseEffectSummaryRow[] {
   return findings.map((f) => {
-    const treatedStats = (f.group_stats ?? []).filter((g) => g.dose_level > 0);
-    const maxInc = treatedStats.reduce<number | null>((max, g) => {
-      if (g.incidence == null) return max;
-      return max === null ? g.incidence : Math.max(max, g.incidence);
-    }, null);
     return {
       endpoint_label: f.endpoint_label ?? f.finding,
       endpoint_type: f.data_type,
@@ -224,7 +219,7 @@ export function mapFindingsToRows(findings: UnifiedFinding[]): AdverseEffectSumm
       test_code: f.test_code,
       specimen: f.specimen,
       finding: f.finding,
-      max_incidence: maxInc,
+      max_incidence: f.max_incidence ?? null,
       max_fold_change: f.max_fold_change ?? null,
     };
   });
@@ -234,7 +229,7 @@ export function mapFindingsToRows(findings: UnifiedFinding[]): AdverseEffectSumm
 // @field FIELD-09 — direction (max |Cohen's d| driven)
 // @field FIELD-13 — maxEffectSize (signed Cohen's d)
 // @field FIELD-14 — minPValue (most significant pairwise)
-// @field FIELD-15 — maxFoldChange (direction-aligned, REM-01 override)
+// @field FIELD-15 — maxFoldChange (direction-aligned from backend)
 // @field FIELD-16 — treatmentRelated (OR across rows)
 // @field FIELD-17 — pattern (follows strongest signal row)
 // @field FIELD-31 — controlStats / worstTreatedStats (group stats)
@@ -438,13 +433,6 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
           });
           if (worst.mean != null) {
             ep.worstTreatedStats = { n: worst.n, mean: worst.mean, sd: worst.sd ?? 0, doseLevel: worst.dose_level };
-            // REM-01: Override fold change with direction-aligned ratio from group stats
-            // Backend max_fold_change picks the dose with largest absolute deviation regardless of direction,
-            // which can return >1.0 for a ↓ endpoint if a different dose shows a larger increase.
-            // Use the direction-aligned worst treated dose's ratio to control instead.
-            if (ctrl.mean !== 0) {
-              ep.maxFoldChange = Math.round((worst.mean / ctrl.mean) * 100) / 100;
-            }
           }
         }
       }
