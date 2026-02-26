@@ -184,10 +184,11 @@ def decide_metric(
             "confidence": "high",
         }
 
-    # ── Brain affected → ANCOVA (Phase 1: use absolute as fallback) ──
+    # ── Brain affected → ANCOVA recommended (absolute fallback;
+    #    overridden to "ancova" by findings_om.py when ANCOVA succeeds) ──
     if brain_affected:
         return {
-            "metric": "absolute",  # Phase 1 fallback
+            "metric": "absolute",
             "category": category,
             "tier": 4,
             "confidence": "high",
@@ -230,9 +231,10 @@ def decide_metric(
             "confidence": "medium",
         }
 
-    # Tier 4: severe BW effect — absolute as Phase 1 fallback
+    # Tier 4: severe BW effect — absolute as fallback (overridden to "ancova"
+    # by findings_om.py when ANCOVA runs successfully)
     return {
-        "metric": "absolute",  # Phase 2: ANCOVA
+        "metric": "absolute",
         "category": category,
         "tier": 4,
         "confidence": "high",

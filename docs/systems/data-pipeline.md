@@ -403,7 +403,11 @@ relative = np.where(tbw > 0, (organ_weight / tbw) * 100, np.nan)
 |-------|---------|
 | `mean_relative` | `round(float(np.mean(rel_vals)), 4)` (null if no terminal BW data) |
 
-**Pairwise, trend, direction:** Identical to LB. Operates on absolute organ weight values.
+**Normalization-aware stats pipeline** (SPEC-NST-AMD-000): Stats run on the biologically recommended metric per organ category — absolute, ratio-to-BW (`value / terminal_bw * 100`), or ratio-to-brain (`value / brain_wt`). The `decide_metric()` function in `normalization.py` selects the metric based on organ category (7 categories) and BW/brain Hedges' g tiers. Alternative metrics are computed for all available modes. Williams' step-down test runs alongside JT and Dunnett's.
+
+**ANCOVA** (Phase 2, `ancova.py`): When normalization tier >= 3 or brain is affected, a one-way ANCOVA (`organ_weight ~ C(dose_group) + body_weight`) is precomputed via OLS. Outputs: adjusted LS means at overall mean BW, pairwise t-tests (treated vs control), slope homogeneity test (interaction model), and effect decomposition (total/direct/indirect with Hedges' g for the direct effect). At tier >= 4, `recommended_metric` is overridden to `"ancova"`.
+
+**Output fields:** `normalization` (recommended_metric, organ_category, tier, confidence, bw_hedges_g, brain_hedges_g), `williams` (direction, constrained_means, step_down_results, minimum_effective_dose, pooled_variance, pooled_df), `ancova` (adjusted_means, pairwise, slope, slope_homogeneity, effect_decomposition, model_r_squared, mse), `alternatives` (per-metric group_stats + pairwise + trend).
 
 **test_code:** `str(testcd)` or `"OMWT"` if no OMTESTCD. **test_name:** `"{specimen} ({testcd})"` or `str(specimen)` if testcd is `"OMWT"`. **day:** Always `None` (terminal).
 

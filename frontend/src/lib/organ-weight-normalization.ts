@@ -4,8 +4,9 @@
  * Detects BW confounding via standardized effect size, selects normalization strategy
  * (absolute / body weight / brain weight), and provides rationale.
  *
- * Phase 2 (ANCOVA) and Phase 3 (Bayesian mediation) are deferred.
- * effectDecomposition is always null in Phase 1.
+ * Phase 2 (ANCOVA) is implemented — effectDecomposition is populated from
+ * precomputed ANCOVA data when available (tier >= 3 or brain affected).
+ * Phase 3 (Bayesian mediation) is deferred.
  *
  * References:
  *   Bailey SA et al. Toxicol Pathol 2004;32:448

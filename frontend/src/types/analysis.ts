@@ -77,6 +77,8 @@ export interface UnifiedFinding {
   williams?: WilliamsTestResult | null;
   /** Normalization decision metadata (OM domain only). */
   normalization?: NormalizationMetadata | null;
+  /** ANCOVA results (OM domain, tier >= 3 or brain affected). */
+  ancova?: ANCOVAResult | null;
   /** Alternative metric stats for OM endpoints. */
   alternatives?: Record<string, AlternativeMetricStats> | null;
 }
@@ -112,6 +114,54 @@ export interface AlternativeMetricStats {
   pairwise: PairwiseResult[];
   trend_p: number | null;
   trend_stat: number | null;
+}
+
+export interface ANCOVAAdjustedMean {
+  group: number;
+  raw_mean: number;
+  adjusted_mean: number;
+  n: number;
+  se: number;
+}
+
+export interface ANCOVAPairwise {
+  group: number;
+  difference: number;
+  se: number;
+  t_statistic: number;
+  p_value: number;
+  significant: boolean;
+}
+
+export interface ANCOVAEffectDecomposition {
+  group: number;
+  total_effect: number;
+  direct_effect: number;
+  indirect_effect: number;
+  proportion_direct: number;
+  direct_g: number;
+  direct_p: number;
+}
+
+export interface ANCOVAResult {
+  adjusted_means: ANCOVAAdjustedMean[];
+  pairwise: ANCOVAPairwise[];
+  slope: {
+    estimate: number;
+    se: number;
+    t_statistic: number;
+    p_value: number;
+  };
+  slope_homogeneity: {
+    f_statistic: number | null;
+    p_value: number | null;
+    homogeneous: boolean;
+  };
+  effect_decomposition: ANCOVAEffectDecomposition[];
+  model_r_squared: number;
+  mse: number;
+  use_organ_free_bw: boolean;
+  covariate_mean: number;
 }
 
 export interface AnalysisSummary {
