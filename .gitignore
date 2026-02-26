@@ -21,15 +21,8 @@ send/*
 *.png
 *.zip
 
-# Audit/tracker files (local working docs)
-docs/incoming/arch-overhaul/*-audit-*.md
-docs/incoming/arch-overhaul/spec-cleanup-*.md
-docs/incoming/arch-overhaul/AUDIT-REPORT.md
-docs/incoming/arch-overhaul/design-system-improvement-suggestions.md
-docs/incoming/arch-overhaul/design-system-as-built.md
-docs/incoming/arch-overhaul/design-system-redline.md
-docs/incoming/arch-overhaul/lib-audit-results.md
-docs/incoming/arch-overhaul/spec-audit-tracker.md
+# Incoming specs — local work-in-progress; pull from GitHub, never push
+docs/incoming/
 docs/views/histopathology-audit*.md
 
 # Knowledge docs (local research, generated references, external docs)
