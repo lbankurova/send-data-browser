@@ -19,6 +19,7 @@ import { ContextPane } from "./ContextPane";
 import { OrganContextPanel } from "./OrganContextPanel";
 import { SyndromeContextPanel } from "./SyndromeContextPanel";
 import { RecoveryPane } from "./RecoveryPane";
+import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
@@ -265,7 +266,7 @@ function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
-  const { selectedFindingId, selectedFinding, endpointSexes, selectedGroupType, selectedGroupKey } = useFindingSelection();
+  const { selectedFindingId, selectedFinding, endpointSexes, selectedGroupType, selectedGroupKey, selectGroup } = useFindingSelection();
   const { analytics } = useFindingsAnalyticsLocal(studyId);
   const { data: context, isLoading } = useFindingContext(
     studyId,
@@ -348,13 +349,25 @@ export function FindingsContextPanel() {
       return <FindingsAnalyticsProvider value={analytics}><SyndromeContextPanel syndromeId={selectedGroupKey} /></FindingsAnalyticsProvider>;
     }
 
-    // Priority 3: empty state
+    // Priority 3: empty state — show normalization heatmap when OM data present
+    const normContexts = analytics.normalizationContexts;
+    const hasNormData = normContexts && normContexts.length > 0 && normContexts.some(c => c.tier >= 2);
     return (
       <div className="p-4">
         <h3 className="mb-2 text-sm font-semibold">Findings</h3>
         <p className="text-xs text-muted-foreground">
           Select a finding row to view detailed analysis.
         </p>
+        {hasNormData && (
+          <div className="mt-3">
+            <CollapsiblePane title="Normalization overview" defaultOpen variant="margin">
+              <NormalizationHeatmap
+                contexts={normContexts.filter(c => c.tier >= 2)}
+                onOrganClick={(organ) => selectGroup("organ", organ)}
+              />
+            </CollapsiblePane>
+          </div>
+        )}
       </div>
     );
   }

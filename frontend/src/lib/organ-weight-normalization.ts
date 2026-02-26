@@ -967,3 +967,21 @@ export function modeToSessionValue(mode: NormalizationDecision["mode"]): string 
     case "ancova": return "ratio-brain"; // Phase 1: best available fallback
   }
 }
+
+// ─── Shared Display Constants ────────────────────────────────
+
+/** Short abbreviation for each normalization mode. */
+export const NORM_MODE_SHORT: Record<string, string> = {
+  absolute: "ABS",
+  body_weight: "BW",
+  brain_weight: "Brain",
+  ancova: "ANCOVA",
+};
+
+/** Tier-based color for normalization indicator display. */
+export const NORM_TIER_COLOR: Record<number, string> = {
+  1: "#10B981", // green
+  2: "#F59E0B", // amber
+  3: "#F97316", // orange
+  4: "#EF4444", // red
+};

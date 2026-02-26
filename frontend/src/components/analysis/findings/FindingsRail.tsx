@@ -47,6 +47,7 @@ import type {
 import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import type { ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
+import { NORM_MODE_SHORT, NORM_TIER_COLOR } from "@/lib/organ-weight-normalization";
 import { formatPValue, titleCase, getDirectionSymbol } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -799,19 +800,7 @@ function RailFiltersSection({
 
 // ─── Group Card ────────────────────────────────────────────
 
-const NORM_MODE_SHORT: Record<string, string> = {
-  absolute: "ABS",
-  body_weight: "BW",
-  brain_weight: "Brain",
-  ancova: "ANCOVA",
-};
-
-const TIER_COLOR: Record<number, string> = {
-  1: "#10B981", // green
-  2: "#F59E0B", // amber
-  3: "#F97316", // orange
-  4: "#EF4444", // red
-};
+// NORM_MODE_SHORT and NORM_TIER_COLOR imported from organ-weight-normalization.ts
 
 /** Highest normalization tier across dose groups for an organ.
  *  card.key is organ_system (lowercase); NormalizationContext.organ is SEND specimen (uppercase). */
@@ -1083,7 +1072,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm 
       {organNorm && (
         <span
           className="shrink-0 text-[9px] font-medium text-muted-foreground pb-px"
-          style={{ borderBottom: `1.5px dashed ${TIER_COLOR[organNorm.tier] ?? "#9ca3af"}` }}
+          style={{ borderBottom: `1.5px dashed ${NORM_TIER_COLOR[organNorm.tier] ?? "#9ca3af"}` }}
         >
           Norm: {organNorm.modeShort}
         </span>

@@ -1003,7 +1003,16 @@ function ChartOverviewContent({
               })()}
             </div>
             <EChartsWrapper
-              option={buildEffectSizeBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, getEffectSizeSymbol(chartStatMethods.effectSize))}
+              option={buildEffectSizeBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, getEffectSizeSymbol(chartStatMethods.effectSize),
+                (() => {
+                  if (selectedSummary?.domain !== "OM") return undefined;
+                  const specimen = selectedSummary.test_code?.toUpperCase() ?? "";
+                  const normCtx = specimen ? normalization.getContext(specimen) : null;
+                  if (!normCtx || normCtx.tier < 2) return undefined;
+                  const metric = normCtx.activeMode.replace(/_/g, "-");
+                  return `Computed from ${metric}`;
+                })()
+              )}
               style={{ width: "100%", height: 220 }}
             />
             {/* Legend — effect size */}
