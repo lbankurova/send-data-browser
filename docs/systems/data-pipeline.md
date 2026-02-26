@@ -550,22 +550,28 @@ Follows the MI incidence pattern: counts unique USUBJID per dose group, Fisher's
 
 ### Phase 3: Classification & Enrichment
 
-**File:** `generator/domain_stats.py::compute_all_findings()` (enrichment loop) and `services/analysis/classification.py` (classification functions)
+**File:** `services/analysis/findings_pipeline.py::process_findings()` (shared enrichment orchestrator) and `services/analysis/classification.py` (classification functions)
 
-After all domain findings are collected, each finding is enriched:
+**Called by:** `generator/domain_stats.py::compute_all_findings()` and `services/analysis/unified_findings.py::compute_adverse_effects()`
+
+After all domain findings are collected (Pass 1), pass variants are merged and findings are enriched via `process_findings()`:
+
+1. **Pass 2 merge** (`attach_scheduled_stats`): Early-death-excluded stats for terminal + LB domains
+2. **Pass 3 merge** (`attach_separate_stats`): Recovery-excluded stats for in-life domains
+3. **Enrichment** (`enrich_findings`): Per-finding classification with safe defaults and error handling
+
+Key merging uses `finding_key(f)` which includes `specimen` for terminal domains (MI/MA/OM/TF/DS) to avoid collisions between organs sharing the same test_code. Pass variant maps are built via `build_findings_map()` with collision detection.
 
 ```python
-for finding in all_findings:
-    finding["severity"] = classify_severity(finding)
-    finding["dose_response_pattern"] = classify_dose_response(finding["group_stats"], finding["data_type"])
-    finding["treatment_related"] = determine_treatment_related(finding)
-    finding["organ_system"] = get_organ_system(finding["specimen"], finding["test_code"], finding["domain"])
-    finding["organ_name"] = get_organ_name(finding["specimen"], finding["test_code"])
-    finding["endpoint_label"] = ...  # see below
-    finding["endpoint_type"] = _classify_endpoint_type(finding["domain"], finding["test_code"])
-    finding["anova_p"] = ...  # approximated from min_p_adj for continuous, else None
-    finding["jt_p"] = ...     # same as trend_p
+# Shared enrichment (findings_pipeline.py)
+all_findings = process_findings(all_findings, scheduled_map, separate_map, n_excluded)
+# Per-finding: severity, dose_response_pattern, treatment_related,
+#   max_fold_change, max_incidence, organ_system, endpoint_label
 ```
+
+After `process_findings()`, callers add their own extras:
+- **Generator** (`domain_stats.py`): ANOVA, Dunnett's, JT from raw values; organ_name; endpoint_type
+- **Live API** (`unified_findings.py`): deterministic finding IDs
 
 #### Severity Classification
 
@@ -1189,7 +1195,7 @@ activeFindings                         ← consumed by all downstream useMemo ch
 | File | What It Does | Key Functions |
 |------|-------------|---------------|
 | `generator/generate.py` | CLI entry point; orchestrates pipeline, writes JSON | `generate(study_id)`, `_sanitize(obj)`, `_write_json(path, data)` |
-| `generator/domain_stats.py` | Collects all domain findings, enriches with classification | `compute_all_findings(study)`, `_anova_p()`, `_dunnett_p()`, `_jonckheere_terpstra_p()`, `_kruskal_p()`, `_compute_fw_findings()`, `_classify_endpoint_type()` |
+| `generator/domain_stats.py` | Collects all domain findings, calls shared pipeline, adds ANOVA/Dunnett/JT | `compute_all_findings(study)`, `_anova_p()`, `_dunnett_p()`, `_jonckheere_terpstra_p()`, `_kruskal_p()`, `_compute_fw_findings()`, `_classify_endpoint_type()` |
 | `generator/view_dataframes.py` | Assembles 7 view-specific JSON structures from findings | `build_study_signal_summary()`, `build_target_organ_summary()`, `build_dose_response_metrics()`, `build_organ_evidence_detail()`, `build_lesion_severity_summary()`, `build_adverse_effect_summary()`, `build_noael_summary()`, `_compute_signal_score()`, `_compute_noael_confidence()` |
 | `generator/scores_and_rules.py` | Evaluates 17 rules (R01-R17), emits structured results | `evaluate_rules(findings, target_organs, noael_summary, dose_groups)`, `_build_finding_context()`, `_emit()`, `_emit_organ()`, `_emit_study()` |
 | `generator/organ_map.py` | Organ system resolution (specimen/test_code/domain -> system) | `get_organ_system(specimen, test_code, domain)`, `get_organ_name(specimen, test_code)` |
@@ -1207,7 +1213,8 @@ activeFindings                         ← consumed by all downstream useMemo ch
 | `services/analysis/statistics.py` | Pure function wrappers for all statistical tests | `dunnett_pairwise()`, `welch_pairwise()`, `welch_t_test()`, `fisher_exact_2x2()`, `trend_test()`, `trend_test_incidence()`, `cohens_d()`, `spearman_correlation()`, `severity_trend()`, `bonferroni_correct()`, `mann_whitney_u()` |
 | `services/analysis/classification.py` | Finding classification (severity, pattern, treatment-related) | `classify_severity(finding)`, `classify_dose_response(group_stats, data_type)`, `determine_treatment_related(finding)` |
 | `services/analysis/send_knowledge.py` | Static SEND domain knowledge tables | `BIOMARKER_MAP`, `ORGAN_SYSTEM_MAP`, `THRESHOLDS`, `DOMAIN_EFFECT_THRESHOLDS` |
-| `services/analysis/unified_findings.py` | On-demand adverse effects orchestrator with caching | `compute_adverse_effects(study)` |
+| `services/analysis/findings_pipeline.py` | Shared enrichment pipeline (pass merging, classification, labels) | `finding_key(f)`, `build_findings_map(findings, label)`, `process_findings(base, scheduled_map, separate_map, n_excluded)`, `enrich_findings(findings)`, `attach_scheduled_stats()`, `attach_separate_stats()` |
+| `services/analysis/unified_findings.py` | On-demand adverse effects orchestrator with content-hash caching | `compute_adverse_effects(study)` |
 | `services/analysis/correlations.py` | Cross-finding Spearman correlations | `compute_correlations(findings, max_pairs=50)` |
 | `services/analysis/context_panes.py` | Per-finding context pane data for 5 panes | `build_finding_context(finding, all_findings, correlations, dose_groups)` |
 | `services/analysis/insights.py` | Rule-based insight generators for context panes | `treatment_summary_insights()`, `statistics_insights()`, `dose_response_insights()`, `correlations_insights()`, `effect_size_insights()` |
