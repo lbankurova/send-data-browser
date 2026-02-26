@@ -22,6 +22,7 @@ from services.analysis.normalization import (
     get_organ_category, decide_metric, compute_hedges_g, compute_bw_tier,
 )
 from services.analysis.ancova import ancova_from_dose_groups
+from services.analysis.day_utils import mode_day
 
 
 def _compute_metric_stats(
@@ -94,6 +95,7 @@ def compute_om_findings(
 
     om_df, _ = read_xpt(study.xpt_files["om"])
     om_df.columns = [c.upper() for c in om_df.columns]
+    om_df["OMDY"] = pd.to_numeric(om_df.get("OMDY", pd.Series(dtype=float)), errors="coerce")
 
     main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
@@ -391,7 +393,7 @@ def compute_om_findings(
             "test_name": finding_name,
             "specimen": str(specimen),
             "finding": finding_name,
-            "day": None,
+            "day": mode_day(grp, "OMDY"),
             "sex": str(sex),
             "unit": unit,
             "data_type": "continuous",

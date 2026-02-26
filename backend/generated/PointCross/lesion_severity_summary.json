@@ -31786,63 +31786,9 @@
     "modifier_counts": {
       "focal/multifocal": 1
     },
-    "scheduled_group_stats": [
-      {
-        "dose_level": 0,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      },
-      {
-        "dose_level": 1,
-        "n": 10,
-        "affected": 1,
-        "incidence": 0.1,
-        "avg_severity": 2.0,
-        "modifier_counts": {
-          "focal/multifocal": 1
-        }
-      },
-      {
-        "dose_level": 2,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      },
-      {
-        "dose_level": 3,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      }
-    ],
-    "scheduled_pairwise": [
-      {
-        "dose_level": 1,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      },
-      {
-        "dose_level": 2,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      },
-      {
-        "dose_level": 3,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      }
-    ],
-    "scheduled_direction": "none",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -31868,63 +31814,9 @@
     "modifier_counts": {
       "focal/multifocal": 1
     },
-    "scheduled_group_stats": [
-      {
-        "dose_level": 0,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      },
-      {
-        "dose_level": 1,
-        "n": 10,
-        "affected": 1,
-        "incidence": 0.1,
-        "avg_severity": 2.0,
-        "modifier_counts": {
-          "focal/multifocal": 1
-        }
-      },
-      {
-        "dose_level": 2,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      },
-      {
-        "dose_level": 3,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      }
-    ],
-    "scheduled_pairwise": [
-      {
-        "dose_level": 1,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      },
-      {
-        "dose_level": 2,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      },
-      {
-        "dose_level": 3,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      }
-    ],
-    "scheduled_direction": "none",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -31947,63 +31839,9 @@
       "chronic; focal/multifocal"
     ],
     "n_with_modifiers": 2,
-    "scheduled_group_stats": [
-      {
-        "dose_level": 0,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      },
-      {
-        "dose_level": 1,
-        "n": 10,
-        "affected": 1,
-        "incidence": 0.1,
-        "avg_severity": 2.0,
-        "modifier_counts": {
-          "focal/multifocal": 1
-        }
-      },
-      {
-        "dose_level": 2,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      },
-      {
-        "dose_level": 3,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      }
-    ],
-    "scheduled_pairwise": [
-      {
-        "dose_level": 1,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      },
-      {
-        "dose_level": 2,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      },
-      {
-        "dose_level": 3,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      }
-    ],
-    "scheduled_direction": "none",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -32026,63 +31864,9 @@
       "chronic; focal/multifocal"
     ],
     "n_with_modifiers": 2,
-    "scheduled_group_stats": [
-      {
-        "dose_level": 0,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      },
-      {
-        "dose_level": 1,
-        "n": 10,
-        "affected": 1,
-        "incidence": 0.1,
-        "avg_severity": 2.0,
-        "modifier_counts": {
-          "focal/multifocal": 1
-        }
-      },
-      {
-        "dose_level": 2,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      },
-      {
-        "dose_level": 3,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0,
-        "avg_severity": null
-      }
-    ],
-    "scheduled_pairwise": [
-      {
-        "dose_level": 1,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      },
-      {
-        "dose_level": 2,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      },
-      {
-        "dose_level": 3,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": null,
-        "risk_ratio": null
-      }
-    ],
-    "scheduled_direction": "none",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -33899,56 +33683,9 @@
     "avg_severity": null,
     "severity_status": "present_ungraded",
     "severity": "normal",
-    "scheduled_group_stats": [
-      {
-        "dose_level": 0,
-        "n": 9,
-        "affected": 1,
-        "incidence": 0.1111
-      },
-      {
-        "dose_level": 1,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0
-      },
-      {
-        "dose_level": 2,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0
-      },
-      {
-        "dose_level": 3,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0
-      }
-    ],
-    "scheduled_pairwise": [
-      {
-        "dose_level": 1,
-        "p_value": 0.4736842105263158,
-        "p_value_adj": 0.4736842105263158,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      },
-      {
-        "dose_level": 2,
-        "p_value": 0.4736842105263158,
-        "p_value_adj": 0.4736842105263158,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      },
-      {
-        "dose_level": 3,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      }
-    ],
-    "scheduled_direction": "down",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -33965,56 +33702,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
-    "scheduled_group_stats": [
-      {
-        "dose_level": 0,
-        "n": 9,
-        "affected": 1,
-        "incidence": 0.1111
-      },
-      {
-        "dose_level": 1,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0
-      },
-      {
-        "dose_level": 2,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0
-      },
-      {
-        "dose_level": 3,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0
-      }
-    ],
-    "scheduled_pairwise": [
-      {
-        "dose_level": 1,
-        "p_value": 0.4736842105263158,
-        "p_value_adj": 0.4736842105263158,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      },
-      {
-        "dose_level": 2,
-        "p_value": 0.4736842105263158,
-        "p_value_adj": 0.4736842105263158,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      },
-      {
-        "dose_level": 3,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      }
-    ],
-    "scheduled_direction": "down",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -34031,56 +33721,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
-    "scheduled_group_stats": [
-      {
-        "dose_level": 0,
-        "n": 9,
-        "affected": 1,
-        "incidence": 0.1111
-      },
-      {
-        "dose_level": 1,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0
-      },
-      {
-        "dose_level": 2,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0
-      },
-      {
-        "dose_level": 3,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0
-      }
-    ],
-    "scheduled_pairwise": [
-      {
-        "dose_level": 1,
-        "p_value": 0.4736842105263158,
-        "p_value_adj": 0.4736842105263158,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      },
-      {
-        "dose_level": 2,
-        "p_value": 0.4736842105263158,
-        "p_value_adj": 0.4736842105263158,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      },
-      {
-        "dose_level": 3,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      }
-    ],
-    "scheduled_direction": "down",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {
@@ -34097,56 +33740,9 @@
     "avg_severity": null,
     "severity_status": "absent",
     "severity": "normal",
-    "scheduled_group_stats": [
-      {
-        "dose_level": 0,
-        "n": 9,
-        "affected": 1,
-        "incidence": 0.1111
-      },
-      {
-        "dose_level": 1,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0
-      },
-      {
-        "dose_level": 2,
-        "n": 10,
-        "affected": 0,
-        "incidence": 0.0
-      },
-      {
-        "dose_level": 3,
-        "n": 9,
-        "affected": 0,
-        "incidence": 0.0
-      }
-    ],
-    "scheduled_pairwise": [
-      {
-        "dose_level": 1,
-        "p_value": 0.4736842105263158,
-        "p_value_adj": 0.4736842105263158,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      },
-      {
-        "dose_level": 2,
-        "p_value": 0.4736842105263158,
-        "p_value_adj": 0.4736842105263158,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      },
-      {
-        "dose_level": 3,
-        "p_value": 1.0,
-        "p_value_adj": 1.0,
-        "odds_ratio": 0.0,
-        "risk_ratio": 0.0
-      }
-    ],
-    "scheduled_direction": "down",
+    "scheduled_group_stats": [],
+    "scheduled_pairwise": [],
+    "scheduled_direction": null,
     "n_excluded": 2
   },
   {

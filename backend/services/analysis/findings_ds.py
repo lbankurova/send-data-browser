@@ -6,6 +6,7 @@ import pandas as pd
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 from services.analysis.statistics import fisher_exact_2x2, trend_test_incidence
+from services.analysis.day_utils import mode_day
 
 
 DEATH_TERMS = {
@@ -42,6 +43,7 @@ def compute_ds_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
 
     ds_df, _ = read_xpt(study.xpt_files["ds"])
     ds_df.columns = [c.upper() for c in ds_df.columns]
+    ds_df["DSSTDY"] = pd.to_numeric(ds_df.get("DSSTDY", pd.Series(dtype=float)), errors="coerce")
 
     # Must have DSDECOD (decoded disposition term)
     if "DSDECOD" not in ds_df.columns:
@@ -134,7 +136,7 @@ def compute_ds_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
             "test_name": "Mortality",
             "specimen": None,
             "finding": "Mortality",
-            "day": None,
+            "day": mode_day(sex_deaths, "DSSTDY"),
             "sex": str(sex),
             "unit": None,
             "data_type": "incidence",

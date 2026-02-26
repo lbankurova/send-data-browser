@@ -1,7 +1,7 @@
 [
   {
     "organ_system": "general",
-    "evidence_score": 1.305,
+    "evidence_score": 1.277,
     "n_endpoints": 61,
     "n_domains": 8,
     "domains": [
@@ -31,7 +31,7 @@
       "MI",
       "OM"
     ],
-    "max_signal_score": 0.857,
+    "max_signal_score": 0.856,
     "n_significant": 39,
     "n_treatment_related": 35,
     "target_organ_flag": true,
@@ -80,7 +80,7 @@
     "domains": [
       "OM"
     ],
-    "max_signal_score": 0.729,
+    "max_signal_score": 0.73,
     "n_significant": 2,
     "n_treatment_related": 2,
     "target_organ_flag": true,
@@ -88,13 +88,13 @@
   },
   {
     "organ_system": "metabolic",
-    "evidence_score": 0.562,
+    "evidence_score": 0.563,
     "n_endpoints": 8,
     "n_domains": 1,
     "domains": [
       "LB"
     ],
-    "max_signal_score": 0.668,
+    "max_signal_score": 0.67,
     "n_significant": 6,
     "n_treatment_related": 3,
     "target_organ_flag": true,
@@ -139,7 +139,7 @@
       "OM",
       "VS"
     ],
-    "max_signal_score": 0.524,
+    "max_signal_score": 0.525,
     "n_significant": 3,
     "n_treatment_related": 3,
     "target_organ_flag": true,

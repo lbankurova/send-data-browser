@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -50,6 +50,12 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
 
+  // CL day-mode toggle state
+  type ClDayMode = "mode" | "first_observed";
+  const [clDayMode, setClDayMode] = useState<ClDayMode>("mode");
+  const [dayMenu, setDayMenu] = useState<{ x: number; y: number } | null>(null);
+  const dayMenuRef = useRef<HTMLDivElement>(null);
+
   // When grouping switches to "finding" (endpoint mode), sort by endpoint name ascending
   const prevGroupingRef = useRef(activeGrouping);
   useEffect(() => {
@@ -58,6 +64,16 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     }
     prevGroupingRef.current = activeGrouping;
   }, [activeGrouping, setSorting]);
+
+  // Close day-mode menu on outside click
+  useEffect(() => {
+    if (!dayMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (dayMenuRef.current && !dayMenuRef.current.contains(e.target as Node)) setDayMenu(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [dayMenu]);
 
   const columns = useMemo(
     () => [
@@ -101,10 +117,27 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       }),
       col.accessor("sex", { header: "Sex" }),
       col.accessor("day", {
-        header: "Day",
-        cell: (info) => (
-          <span className="text-muted-foreground">{info.getValue() ?? "\u2014"}</span>
-        ),
+        header: () => {
+          const hasCl = findings.some(f => f.domain === "CL");
+          if (!hasCl) return "Day";
+          const labels: Record<ClDayMode, { label: string; tooltip: string }> = {
+            mode:           { label: "Day",         tooltip: "Most frequent observation day. Click to change. CL rows: peak prevalence day." },
+            first_observed: { label: "Day (onset)", tooltip: "First observed day. Click to change. CL rows: earliest observation." },
+          };
+          const { label, tooltip } = labels[clDayMode];
+          return (
+            <span title={tooltip}>
+              {label} <span className="text-muted-foreground/40">{"\u25BE"}</span>
+            </span>
+          );
+        },
+        cell: (info) => {
+          const row = info.row.original;
+          const val = (row.domain === "CL" && clDayMode === "first_observed")
+            ? row.day_first ?? row.day
+            : row.day;
+          return <span className="text-muted-foreground">{val ?? "\u2014"}</span>;
+        },
       }),
       ...doseGroups.map((dg, idx) => {
         // Short labels: control → "C", non-zero → numeric only
@@ -209,7 +242,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, findings, clDayMode]
   );
 
   const table = useReactTable({
@@ -260,6 +293,12 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                   className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={colStyle(header.id)}
                   onDoubleClick={header.column.getToggleSortingHandler()}
+                  onClick={header.id === "day" ? (e) => {
+                    if (findings.some(f => f.domain === "CL")) {
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setDayMenu({ x: rect.left, y: rect.bottom + 2 });
+                    }
+                  } : undefined}
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                   {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
@@ -340,6 +379,27 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       {findings.length === 0 && (
         <div className="p-4 text-center text-xs text-muted-foreground">
           No findings match the current filters.
+        </div>
+      )}
+      {dayMenu && (
+        <div ref={dayMenuRef} className="fixed z-50 min-w-[190px] rounded border bg-popover py-0.5 shadow-md"
+          style={{ left: dayMenu.x, top: dayMenu.y }}>
+          {([
+            { value: "mode" as const, label: "Most frequent", desc: "Peak prevalence day (mode)" },
+            { value: "first_observed" as const, label: "First observed", desc: "Onset day (earliest)" },
+          ]).map((opt) => (
+            <button key={opt.value} type="button"
+              className={cn("flex w-full items-baseline gap-1.5 px-2 py-1 text-left hover:bg-accent/50",
+                clDayMode === opt.value && "bg-accent/30")}
+              onClick={() => { setClDayMode(opt.value); setDayMenu(null); }}>
+              <span className="w-3 shrink-0 text-[10px] text-muted-foreground">{clDayMode === opt.value ? "\u2713" : ""}</span>
+              <span className="text-[11px] font-medium">{opt.label}</span>
+              <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+            </button>
+          ))}
+          <div className="mt-0.5 border-t border-border/40 px-2 py-1">
+            <span className="text-[9px] italic text-muted-foreground/50">Applies to CL rows only</span>
+          </div>
         </div>
       )}
     </div>
