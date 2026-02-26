@@ -22,7 +22,6 @@ from services.analysis.classification import (
     compute_max_fold_change,
 )
 from services.analysis.correlations import compute_correlations
-from services.analysis.context_panes import build_finding_context
 from services.analysis.mortality import get_early_death_subjects
 from generator.organ_map import get_organ_system
 
@@ -63,9 +62,37 @@ def _get_xpt_max_mtime(study: StudyInfo) -> float:
 
 
 def _get_code_max_mtime() -> float:
-    """Get the most recent mtime across analysis Python source files."""
-    code_dir = Path(__file__).parent
-    mtimes = [f.stat().st_mtime for f in code_dir.glob("*.py") if f.is_file()]
+    """Get the most recent mtime across files that affect compute_adverse_effects output.
+
+    Explicit list — only files that are transitively imported by the computation.
+    Editing unrelated files (insights.py, provenance.py, subject_context.py, etc.)
+    no longer invalidates the cache.
+    """
+    analysis_dir = Path(__file__).parent
+    generator_dir = analysis_dir.parent.parent / "generator"
+
+    _CACHE_DEPS = [
+        analysis_dir / "unified_findings.py",
+        analysis_dir / "dose_groups.py",
+        analysis_dir / "findings_lb.py",
+        analysis_dir / "findings_bw.py",
+        analysis_dir / "findings_om.py",
+        analysis_dir / "findings_mi.py",
+        analysis_dir / "findings_ma.py",
+        analysis_dir / "findings_tf.py",
+        analysis_dir / "findings_cl.py",
+        analysis_dir / "classification.py",
+        analysis_dir / "correlations.py",
+        analysis_dir / "mortality.py",
+        analysis_dir / "statistics.py",
+        analysis_dir / "supp_qualifiers.py",
+        analysis_dir / "phase_filter.py",
+        analysis_dir / "normalization.py",
+        analysis_dir / "williams.py",
+        generator_dir / "organ_map.py",
+    ]
+
+    mtimes = [f.stat().st_mtime for f in _CACHE_DEPS if f.exists()]
     return max(mtimes) if mtimes else 0
 
 

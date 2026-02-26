@@ -1,7 +1,7 @@
 [
   {
     "organ_system": "general",
-    "evidence_score": 1.324,
+    "evidence_score": 1.289,
     "n_endpoints": 61,
     "n_domains": 8,
     "domains": [
@@ -16,13 +16,13 @@
     ],
     "max_signal_score": 0.844,
     "n_significant": 44,
-    "n_treatment_related": 43,
+    "n_treatment_related": 42,
     "target_organ_flag": true,
     "max_severity": 2.6
   },
   {
     "organ_system": "hematologic",
-    "evidence_score": 0.892,
+    "evidence_score": 0.894,
     "n_endpoints": 65,
     "n_domains": 4,
     "domains": [
@@ -31,15 +31,15 @@
       "MI",
       "OM"
     ],
-    "max_signal_score": 0.857,
-    "n_significant": 38,
-    "n_treatment_related": 34,
+    "max_signal_score": 0.855,
+    "n_significant": 39,
+    "n_treatment_related": 35,
     "target_organ_flag": true,
     "max_severity": 2.5
   },
   {
     "organ_system": "hepatic",
-    "evidence_score": 0.769,
+    "evidence_score": 0.786,
     "n_endpoints": 39,
     "n_domains": 5,
     "domains": [
@@ -50,8 +50,8 @@
       "TF"
     ],
     "max_signal_score": 0.86,
-    "n_significant": 17,
-    "n_treatment_related": 15,
+    "n_significant": 18,
+    "n_treatment_related": 16,
     "target_organ_flag": true,
     "max_severity": 3.0
   },
@@ -74,13 +74,13 @@
   },
   {
     "organ_system": "neurological",
-    "evidence_score": 0.618,
+    "evidence_score": 0.619,
     "n_endpoints": 2,
     "n_domains": 1,
     "domains": [
       "OM"
     ],
-    "max_signal_score": 0.727,
+    "max_signal_score": 0.729,
     "n_significant": 2,
     "n_treatment_related": 2,
     "target_organ_flag": true,
@@ -88,13 +88,13 @@
   },
   {
     "organ_system": "metabolic",
-    "evidence_score": 0.562,
+    "evidence_score": 0.563,
     "n_endpoints": 8,
     "n_domains": 1,
     "domains": [
       "LB"
     ],
-    "max_signal_score": 0.663,
+    "max_signal_score": 0.671,
     "n_significant": 6,
     "n_treatment_related": 3,
     "target_organ_flag": true,
@@ -176,7 +176,7 @@
   },
   {
     "organ_system": "reproductive",
-    "evidence_score": 0.183,
+    "evidence_score": 0.148,
     "n_endpoints": 14,
     "n_domains": 4,
     "domains": [
@@ -186,8 +186,8 @@
       "TF"
     ],
     "max_signal_score": 0.587,
-    "n_significant": 2,
-    "n_treatment_related": 2,
+    "n_significant": 1,
+    "n_treatment_related": 1,
     "target_organ_flag": false,
     "max_severity": 4.0
   },

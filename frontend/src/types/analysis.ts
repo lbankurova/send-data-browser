@@ -73,6 +73,45 @@ export interface UnifiedFinding {
   behavior?: "BENIGN" | "MALIGNANT" | "UNCERTAIN";
   /** True for all TF (tumor) domain findings — categorically different from non-neoplastic. */
   isNeoplastic?: boolean;
+  /** Williams' test results (OM domain only). */
+  williams?: WilliamsTestResult | null;
+  /** Normalization decision metadata (OM domain only). */
+  normalization?: NormalizationMetadata | null;
+  /** Alternative metric stats for OM endpoints. */
+  alternatives?: Record<string, AlternativeMetricStats> | null;
+}
+
+export interface WilliamsStepDownResult {
+  dose_label: string;
+  test_statistic: number;
+  critical_value: number;
+  p_value: number;
+  significant: boolean;
+}
+
+export interface WilliamsTestResult {
+  direction: string;
+  constrained_means: number[];
+  step_down_results: WilliamsStepDownResult[];
+  minimum_effective_dose: string | null;
+  pooled_variance: number;
+  pooled_df: number;
+}
+
+export interface NormalizationMetadata {
+  recommended_metric: string;
+  organ_category: string;
+  tier: number;
+  confidence: string;
+  bw_hedges_g: number;
+  brain_hedges_g: number | null;
+}
+
+export interface AlternativeMetricStats {
+  group_stats: GroupStat[];
+  pairwise: PairwiseResult[];
+  trend_p: number | null;
+  trend_stat: number | null;
 }
 
 export interface AnalysisSummary {

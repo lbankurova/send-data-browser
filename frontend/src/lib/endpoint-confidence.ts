@@ -12,7 +12,7 @@
  * on every UnifiedFinding.
  */
 
-import type { GroupStat, PairwiseResult, UnifiedFinding } from "@/types/analysis";
+import type { GroupStat, PairwiseResult, UnifiedFinding, WilliamsTestResult } from "@/types/analysis";
 import type { EndpointSummary } from "./derive-summaries";
 import {
   getOrganCorrelationCategory,
@@ -63,11 +63,29 @@ export interface NormalizationCaveat {
   };
 }
 
+export interface TrendConcordanceResult {
+  triggered: boolean;
+  jtSignificant: boolean;
+  jtPValue: number | null;
+  williamsSignificant: boolean;
+  williamsMinEffectiveDose: string | null;
+  williamsHighestDoseTestStat: number | null;
+  williamsHighestDoseCritVal: number | null;
+  discordanceType: "jt_only" | "williams_only" | "concordant" | null;
+  rationale: string | null;
+  consequences: {
+    trendEvidenceDowngraded: boolean;
+    confidencePenalty: number;
+    additionalNOAELCaveat: boolean;
+  };
+}
+
 export interface IntegratedConfidence {
   statistical: ConfidenceLevel;
   biological: ConfidenceLevel;
   doseResponse: ConfidenceLevel;
   trendValidity: ConfidenceLevel;
+  trendConcordance: ConfidenceLevel;
   integrated: ConfidenceLevel;
   limitingFactor: string;
 }
@@ -83,6 +101,7 @@ export interface NOAELContribution {
 export interface EndpointConfidenceResult {
   nonMonotonic: NonMonotonicFlag;
   trendCaveat: TrendTestCaveat;
+  trendConcordance: TrendConcordanceResult;
   normCaveat: NormalizationCaveat | null;
   integrated: IntegratedConfidence;
   noaelContribution: NOAELContribution;
@@ -338,6 +357,116 @@ export function checkTrendTestValidity(
   };
 }
 
+// ─── Mechanism 2c: Trend Test Concordance ─────────────────────
+
+const NOT_TRIGGERED_CONCORDANCE: TrendConcordanceResult = {
+  triggered: false,
+  jtSignificant: false,
+  jtPValue: null,
+  williamsSignificant: false,
+  williamsMinEffectiveDose: null,
+  williamsHighestDoseTestStat: null,
+  williamsHighestDoseCritVal: null,
+  discordanceType: null,
+  rationale: null,
+  consequences: {
+    trendEvidenceDowngraded: false,
+    confidencePenalty: 0,
+    additionalNOAELCaveat: false,
+  },
+};
+
+/**
+ * Check concordance between JT trend test and Williams' step-down test.
+ *
+ * Fires when JT is significant but Williams' finds no minimum effective dose.
+ * This pattern indicates JT may be inflated by variance heterogeneity or
+ * non-monotonic dose-response.
+ */
+// @field FIELD-60 — JT/Williams' trend concordance check (Mechanism 2c)
+export function checkTrendConcordance(
+  trendP: number | null,
+  williams: WilliamsTestResult | null | undefined,
+  alpha: number = 0.05,
+): TrendConcordanceResult {
+  if (trendP == null || !williams) return NOT_TRIGGERED_CONCORDANCE;
+
+  const jtSig = trendP < alpha;
+  const williamsSig = williams.minimum_effective_dose != null;
+
+  // Only fire on JT-significant / Williams-not-significant
+  if (jtSig && !williamsSig) {
+    const highestDose = williams.step_down_results[0];
+    return {
+      triggered: true,
+      jtSignificant: true,
+      jtPValue: trendP,
+      williamsSignificant: false,
+      williamsMinEffectiveDose: null,
+      williamsHighestDoseTestStat: highestDose?.test_statistic ?? null,
+      williamsHighestDoseCritVal: highestDose?.critical_value ?? null,
+      discordanceType: "jt_only",
+      rationale:
+        `Trend test discordance: Jonckheere-Terpstra is significant ` +
+        `(p=${trendP.toExponential(2)}) but Williams' test ` +
+        `is not significant at the highest dose` +
+        (highestDose
+          ? ` (t\u0303=${highestDose.test_statistic.toFixed(2)}, ` +
+            `cv=${highestDose.critical_value.toFixed(2)})`
+          : "") +
+        `. This pattern indicates the JT result may be driven by ` +
+        `rank inflation from variance heterogeneity ` +
+        `or non-monotonic dose-response.`,
+      consequences: {
+        trendEvidenceDowngraded: true,
+        confidencePenalty: 1,
+        additionalNOAELCaveat: true,
+      },
+    };
+  }
+
+  // Williams-only significant (unusual — flag for review but no caveat)
+  if (!jtSig && williamsSig) {
+    const highestDose = williams.step_down_results[0];
+    return {
+      triggered: false,
+      jtSignificant: false,
+      jtPValue: trendP,
+      williamsSignificant: true,
+      williamsMinEffectiveDose: williams.minimum_effective_dose,
+      williamsHighestDoseTestStat: highestDose?.test_statistic ?? null,
+      williamsHighestDoseCritVal: highestDose?.critical_value ?? null,
+      discordanceType: "williams_only",
+      rationale:
+        "Williams' significant without JT — unusual; review for floor/ceiling effects.",
+      consequences: {
+        trendEvidenceDowngraded: false,
+        confidencePenalty: 0,
+        additionalNOAELCaveat: false,
+      },
+    };
+  }
+
+  // Concordant (both sig or both not sig)
+  const highestDose = williams.step_down_results[0];
+  return {
+    triggered: false,
+    jtSignificant: jtSig,
+    jtPValue: trendP,
+    williamsSignificant: williamsSig,
+    williamsMinEffectiveDose: williams.minimum_effective_dose,
+    williamsHighestDoseTestStat: highestDose?.test_statistic ?? null,
+    williamsHighestDoseCritVal: highestDose?.critical_value ?? null,
+    discordanceType: "concordant",
+    rationale: null,
+    consequences: {
+      trendEvidenceDowngraded: false,
+      confidencePenalty: 0,
+      additionalNOAELCaveat: false,
+    },
+  };
+}
+
 // ─── Mechanism 1: Normalization Confidence Ceiling ───────────
 
 /**
@@ -430,13 +559,14 @@ function deriveStatisticalConfidence(ep: EndpointSummary): ConfidenceLevel {
 }
 
 /**
- * Combine all 4 confidence dimensions into an integrated assessment.
- * Integrated = min(statistical, biological, doseResponse, trendValidity).
+ * Combine all 5 confidence dimensions into an integrated assessment.
+ * Integrated = min(statistical, biological, doseResponse, trendValidity, trendConcordance).
  */
-// @field FIELD-57 — 4-dimension integrated confidence
+// @field FIELD-57 — 5-dimension integrated confidence
 export function integrateConfidence(
   nonMonoFlag: NonMonotonicFlag,
   trendCaveat: TrendTestCaveat,
+  concordance: TrendConcordanceResult,
   normCaveat: NormalizationCaveat | null,
   ep: EndpointSummary,
 ): IntegratedConfidence {
@@ -460,11 +590,17 @@ export function integrateConfidence(
       trendCaveat.consequences.confidencePenalty > 0 ? "low" : "moderate";
   }
 
+  // Trend concordance: from JT/Williams' concordance check
+  const trendConcordance: ConfidenceLevel = concordance.triggered
+    ? "moderate"
+    : "high";
+
   const integrated = minConfidence(
     statistical,
     biological,
     doseResponse,
     trendValidity,
+    trendConcordance,
   );
 
   // Determine limiting factor
@@ -473,6 +609,7 @@ export function integrateConfidence(
     { name: "Biological plausibility", level: biological },
     { name: "Dose-response quality", level: doseResponse },
     { name: "Trend test validity", level: trendValidity },
+    { name: "Trend concordance", level: trendConcordance },
   ];
   const limiters = dims.filter((d) => d.level === integrated);
   const nonStatLimiter = limiters.find(
@@ -493,6 +630,7 @@ export function integrateConfidence(
     biological,
     doseResponse,
     trendValidity,
+    trendConcordance,
     integrated,
     limitingFactor:
       integrated === "high" && statistical === "high" ? "None" : limitingFactor,
@@ -513,6 +651,7 @@ export function computeNOAELContribution(
   nonMonoFlag: NonMonotonicFlag,
   normCaveat: NormalizationCaveat | null,
   trendCaveat: TrendTestCaveat,
+  concordance: TrendConcordanceResult,
   treatmentRelated: boolean,
   isAdverse: boolean,
 ): NOAELContribution {
@@ -532,6 +671,8 @@ export function computeNOAELContribution(
     caveats.push(nonMonoFlag.rationale);
   if (trendCaveat.triggered && trendCaveat.rationale)
     caveats.push(trendCaveat.rationale);
+  if (concordance.triggered && concordance.rationale)
+    caveats.push(concordance.rationale);
 
   let weight: 0.3 | 0.7 | 1.0;
   let label: "determining" | "contributing" | "supporting";
@@ -576,13 +717,16 @@ export function computeEndpointConfidence(
   hasEstrousData: boolean,
   miFindings: EndpointSummary[],
   ep: EndpointSummary,
+  williams?: WilliamsTestResult | null,
 ): EndpointConfidenceResult {
   const nonMonotonic = checkNonMonotonic(groupStats, pairwise, pattern);
   const trendCaveat = checkTrendTestValidity(groupStats, trendP);
+  const concordance = checkTrendConcordance(trendP, williams);
   const normCaveat = getNormalizationCaveat(organ, hasEstrousData, miFindings);
   const integrated = integrateConfidence(
     nonMonotonic,
     trendCaveat,
+    concordance,
     normCaveat,
     ep,
   );
@@ -591,6 +735,7 @@ export function computeEndpointConfidence(
     nonMonotonic,
     normCaveat,
     trendCaveat,
+    concordance,
     ep.treatmentRelated,
     ep.worstSeverity === "adverse",
   );
@@ -598,6 +743,7 @@ export function computeEndpointConfidence(
   return {
     nonMonotonic,
     trendCaveat,
+    trendConcordance: concordance,
     normCaveat,
     integrated,
     noaelContribution,
@@ -649,6 +795,7 @@ export function attachEndpointConfidence(
       hasEstrousData,
       miSummaries,
       ep,
+      f.williams,
     );
 
     ep.endpointConfidence = result;

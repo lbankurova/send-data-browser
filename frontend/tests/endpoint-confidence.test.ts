@@ -8,6 +8,7 @@ import type { EndpointSummary } from "@/lib/derive-summaries";
 import {
   checkNonMonotonic,
   checkTrendTestValidity,
+  checkTrendConcordance,
   getNormalizationCaveat,
   integrateConfidence,
   computeNOAELContribution,
@@ -17,6 +18,7 @@ import {
 import type {
   NonMonotonicFlag,
   TrendTestCaveat,
+  TrendConcordanceResult,
   NormalizationCaveat,
   IntegratedConfidence,
   ConfidenceLevel,
@@ -199,6 +201,14 @@ describe("checkTrendTestValidity (§12.2)", () => {
 
 // ─── §12.3 Confidence Integration ────────────────────────────
 
+const noConcordance: TrendConcordanceResult = {
+  triggered: false, jtSignificant: false, jtPValue: null,
+  williamsSignificant: false, williamsMinEffectiveDose: null,
+  williamsHighestDoseTestStat: null, williamsHighestDoseCritVal: null,
+  discordanceType: null, rationale: null,
+  consequences: { trendEvidenceDowngraded: false, confidencePenalty: 0, additionalNOAELCaveat: false },
+};
+
 describe("integrateConfidence (§12.3)", () => {
   const noFlag: NonMonotonicFlag = {
     triggered: false, peakDoseLevel: null, peakEffect: null,
@@ -214,7 +224,7 @@ describe("integrateConfidence (§12.3)", () => {
 
   it("TC-14: all HIGH → HIGH, limiting=None", () => {
     const ep = makeEp({ minPValue: 0.001, maxEffectSize: 1.5, pattern: "linear" });
-    const result = integrateConfidence(noFlag, noTrend, null, ep);
+    const result = integrateConfidence(noFlag, noTrend, noConcordance, null, ep);
     expect(result.integrated).toBe("high");
     expect(result.limitingFactor).toBe("None");
   });
@@ -226,7 +236,7 @@ describe("integrateConfidence (§12.3)", () => {
       ceilingOnTR: "moderate",
       escapeConditions: { tsDomainPresent: false, confirmatoryMIPresent: false },
     };
-    const result = integrateConfidence(noFlag, noTrend, norm, ep);
+    const result = integrateConfidence(noFlag, noTrend, noConcordance, norm, ep);
     expect(result.integrated).toBe("moderate");
     expect(result.biological).toBe("moderate");
     expect(result.limitingFactor).toBe("Biological plausibility");
@@ -240,7 +250,7 @@ describe("integrateConfidence (§12.3)", () => {
       rationale: "Non-mono",
       consequences: { patternReclassified: true, newPattern: "inconsistent", a1Downgrade: true, confidencePenalty: 1 },
     };
-    const result = integrateConfidence(flag, noTrend, null, ep);
+    const result = integrateConfidence(flag, noTrend, noConcordance, null, ep);
     expect(result.doseResponse).toBe("moderate");
     expect(result.integrated).toBe("moderate");
     expect(result.limitingFactor).toBe("Dose-response quality");
@@ -253,7 +263,7 @@ describe("integrateConfidence (§12.3)", () => {
       sdRatio: 2.5, rationale: "SD ratio exceeded",
       consequences: { trendEvidenceDowngraded: true, confidencePenalty: 0, additionalCaveat: true },
     };
-    const result = integrateConfidence(noFlag, trend, null, ep);
+    const result = integrateConfidence(noFlag, trend, noConcordance, null, ep);
     expect(result.trendValidity).toBe("moderate");
     expect(result.integrated).toBe("moderate");
     expect(result.limitingFactor).toBe("Trend test validity");
@@ -301,7 +311,7 @@ describe("integrateConfidence (§12.3)", () => {
     // doseResponse=LOW because of compound firing (non-mono+trend), but the
     // plan says "confidencePenalty: 1" for non-mono. Let me just test what the
     // spec says: integrated=LOW, limited by dose-response.
-    const result = integrateConfidence(flag, trend, norm, ep);
+    const result = integrateConfidence(flag, trend, noConcordance, norm, ep);
     // With our implementation: stat=HIGH, bio=MODERATE, dr=MODERATE, trend=MODERATE
     // integrated = MODERATE. Spec says LOW.
     // The discrepancy is because spec TC-18's "LOW" for doseResponse assumes
@@ -313,7 +323,7 @@ describe("integrateConfidence (§12.3)", () => {
   it("TC-19: statistical MODERATE → MODERATE", () => {
     // p=0.04, g=0.6, informative pattern → moderate statistical
     const ep = makeEp({ minPValue: 0.04, maxEffectSize: 0.6, pattern: "linear" });
-    const result = integrateConfidence(noFlag, noTrend, null, ep);
+    const result = integrateConfidence(noFlag, noTrend, noConcordance, null, ep);
     expect(result.statistical).toBe("moderate");
     expect(result.integrated).toBe("moderate");
     expect(result.limitingFactor).toBe("Statistical evidence");
@@ -335,7 +345,7 @@ describe("integrateConfidence (§12.3)", () => {
       rationale: "Var-het",
       consequences: { trendEvidenceDowngraded: true, confidencePenalty: 0, additionalCaveat: true },
     };
-    const result = integrateConfidence(flag, trend, norm, ep);
+    const result = integrateConfidence(flag, trend, noConcordance, norm, ep);
     expect(result.integrated).toBe("moderate");
   });
 });
@@ -358,12 +368,12 @@ describe("computeNOAELContribution (§12.4)", () => {
   function ic(level: ConfidenceLevel): IntegratedConfidence {
     return {
       statistical: level, biological: level, doseResponse: level, trendValidity: level,
-      integrated: level, limitingFactor: "None",
+      trendConcordance: level, integrated: level, limitingFactor: "None",
     };
   }
 
   it("TC-21: HIGH + no caveats → 1.0 determining", () => {
-    const result = computeNOAELContribution(ic("high"), noFlag, null, noTrend, true, true);
+    const result = computeNOAELContribution(ic("high"), noFlag, null, noTrend, noConcordance, true, true);
     expect(result.weight).toBe(1.0);
     expect(result.label).toBe("determining");
     expect(result.canSetNOAEL).toBe(true);
@@ -377,14 +387,14 @@ describe("computeNOAELContribution (§12.4)", () => {
     // because it's not triggered (no ceilingOnTR in this test case)
     const intConf: IntegratedConfidence = {
       statistical: "high", biological: "moderate", doseResponse: "high", trendValidity: "high",
-      integrated: "moderate", limitingFactor: "Biological plausibility",
+      trendConcordance: "high", integrated: "moderate", limitingFactor: "Biological plausibility",
     };
     const norm: NormalizationCaveat = {
       category: "female_reproductive", reason: "No staging",
       ceilingOnTR: "moderate",
       escapeConditions: { tsDomainPresent: false, confirmatoryMIPresent: false },
     };
-    const result = computeNOAELContribution(intConf, noFlag, norm, noTrend, true, true);
+    const result = computeNOAELContribution(intConf, noFlag, norm, noTrend, noConcordance, true, true);
     expect(result.weight).toBe(0.7);
     expect(result.label).toBe("contributing");
   });
@@ -394,7 +404,7 @@ describe("computeNOAELContribution (§12.4)", () => {
       ...noFlag, triggered: true, rationale: "Non-mono detected",
       consequences: { patternReclassified: true, newPattern: "inconsistent", a1Downgrade: true, confidencePenalty: 1 },
     };
-    const result = computeNOAELContribution(ic("high"), flag, null, noTrend, true, true);
+    const result = computeNOAELContribution(ic("high"), flag, null, noTrend, noConcordance, true, true);
     expect(result.weight).toBe(0.3);
     expect(result.label).toBe("supporting");
     expect(result.canSetNOAEL).toBe(false);
@@ -413,7 +423,7 @@ describe("computeNOAELContribution (§12.4)", () => {
       category: "female_reproductive", reason: "No staging", ceilingOnTR: "moderate",
       escapeConditions: { tsDomainPresent: false, confirmatoryMIPresent: false },
     };
-    const result = computeNOAELContribution(ic("moderate"), flag, norm, trend, true, true);
+    const result = computeNOAELContribution(ic("moderate"), flag, norm, trend, noConcordance, true, true);
     expect(result.weight).toBe(0.3);
     expect(result.label).toBe("supporting");
     expect(result.caveats.length).toBe(3);
@@ -424,9 +434,9 @@ describe("computeNOAELContribution (§12.4)", () => {
     // To get LOW we need statistical LOW (p>0.05 or g<0.5)
     const intConf: IntegratedConfidence = {
       statistical: "low", biological: "high", doseResponse: "high", trendValidity: "high",
-      integrated: "low", limitingFactor: "Statistical evidence",
+      trendConcordance: "high", integrated: "low", limitingFactor: "Statistical evidence",
     };
-    const result = computeNOAELContribution(intConf, noFlag, null, noTrend, true, true);
+    const result = computeNOAELContribution(intConf, noFlag, null, noTrend, noConcordance, true, true);
     expect(result.weight).toBe(0.3);
     expect(result.label).toBe("supporting");
   });
@@ -440,7 +450,7 @@ describe("computeNOAELContribution (§12.4)", () => {
       ...noTrend, triggered: true, rationale: "Var-het",
       consequences: { trendEvidenceDowngraded: true, confidencePenalty: 0, additionalCaveat: true },
     };
-    const result = computeNOAELContribution(ic("moderate"), noFlag, norm, trend, true, true);
+    const result = computeNOAELContribution(ic("moderate"), noFlag, norm, trend, noConcordance, true, true);
     expect(result.weight).toBe(0.3);
     expect(result.label).toBe("supporting");
     expect(result.caveats.length).toBe(2);
@@ -457,26 +467,26 @@ describe("computeNOAELContribution (§12.4)", () => {
     // Spec says HIGH + trend only (1 caveat) = 0.7 contributing
     const intConf: IntegratedConfidence = {
       statistical: "high", biological: "high", doseResponse: "high", trendValidity: "moderate",
-      integrated: "moderate", limitingFactor: "Trend test validity",
+      trendConcordance: "high", integrated: "moderate", limitingFactor: "Trend test validity",
     };
     // Wait, if integrated=moderate then the code gives 0.7. But the spec says
     // integrated conf=HIGH with trend only. Let me re-read TC-27:
     // "Integrated Conf: HIGH, Non-Mono: No, Trend Caveat: Yes, Total Caveats: 1, Weight: 0.7"
     // So integrated=HIGH + 1 caveat (trend) → 0.7
-    const result = computeNOAELContribution(ic("high"), noFlag, null, trend, true, true);
+    const result = computeNOAELContribution(ic("high"), noFlag, null, trend, noConcordance, true, true);
     expect(result.weight).toBe(0.7);
     expect(result.label).toBe("contributing");
     expect(result.caveats.length).toBe(1);
   });
 
   it("not treatment-related → 0.0 excluded", () => {
-    const result = computeNOAELContribution(ic("high"), noFlag, null, noTrend, false, true);
+    const result = computeNOAELContribution(ic("high"), noFlag, null, noTrend, noConcordance, false, true);
     expect(result.weight).toBe(0.0);
     expect(result.label).toBe("excluded");
   });
 
   it("not adverse → 0.0 excluded", () => {
-    const result = computeNOAELContribution(ic("high"), noFlag, null, noTrend, true, false);
+    const result = computeNOAELContribution(ic("high"), noFlag, null, noTrend, noConcordance, true, false);
     expect(result.weight).toBe(0.0);
     expect(result.label).toBe("excluded");
   });
@@ -664,5 +674,83 @@ describe("getNormalizationCaveat", () => {
     expect(result).not.toBe(null);
     expect(result!.ceilingOnTR).toBe(null);
     expect(result!.reason).toContain("both available");
+  });
+});
+
+// ─── Mechanism 2c: Trend Concordance ─────────────────────────
+
+describe("checkTrendConcordance (Mechanism 2c)", () => {
+  it("TC-37: JT sig + Williams not sig → fires (jt_only)", () => {
+    const result = checkTrendConcordance(0.0003, {
+      direction: "increase",
+      constrained_means: [0.35, 0.35, 0.52, 0.52],
+      step_down_results: [
+        { dose_label: "200 mg/kg", test_statistic: 1.52, critical_value: 1.87, p_value: 0.98, significant: false },
+      ],
+      minimum_effective_dose: null,
+      pooled_variance: 0.025,
+      pooled_df: 36,
+    });
+    expect(result.triggered).toBe(true);
+    expect(result.discordanceType).toBe("jt_only");
+    expect(result.consequences.confidencePenalty).toBe(1);
+    expect(result.rationale).toContain("discordance");
+  });
+
+  it("TC-38: both significant → concordant, no caveat", () => {
+    const result = checkTrendConcordance(0.001, {
+      direction: "increase",
+      constrained_means: [1.0, 1.5, 2.0, 2.5],
+      step_down_results: [
+        { dose_label: "High", test_statistic: 8.5, critical_value: 1.87, p_value: 0.0001, significant: true },
+      ],
+      minimum_effective_dose: "Low",
+      pooled_variance: 0.01,
+      pooled_df: 36,
+    });
+    expect(result.triggered).toBe(false);
+    expect(result.discordanceType).toBe("concordant");
+  });
+
+  it("TC-39: both not significant → concordant, no caveat", () => {
+    const result = checkTrendConcordance(0.15, {
+      direction: "increase",
+      constrained_means: [5.0, 5.0, 5.0, 5.0],
+      step_down_results: [
+        { dose_label: "High", test_statistic: 0.5, critical_value: 1.87, p_value: 0.6, significant: false },
+      ],
+      minimum_effective_dose: null,
+      pooled_variance: 0.25,
+      pooled_df: 36,
+    });
+    expect(result.triggered).toBe(false);
+    expect(result.discordanceType).toBe("concordant");
+  });
+
+  it("TC-40: Williams sig + JT not sig → unusual (williams_only)", () => {
+    const result = checkTrendConcordance(0.08, {
+      direction: "increase",
+      constrained_means: [1.0, 1.2, 1.5, 2.0],
+      step_down_results: [
+        { dose_label: "High", test_statistic: 3.5, critical_value: 1.87, p_value: 0.001, significant: true },
+      ],
+      minimum_effective_dose: "High",
+      pooled_variance: 0.01,
+      pooled_df: 36,
+    });
+    expect(result.triggered).toBe(false);
+    expect(result.discordanceType).toBe("williams_only");
+    expect(result.consequences.confidencePenalty).toBe(0);
+  });
+
+  it("TC-41: null trend_p → not triggered", () => {
+    const result = checkTrendConcordance(null, null);
+    expect(result.triggered).toBe(false);
+    expect(result.discordanceType).toBe(null);
+  });
+
+  it("TC-42: no williams data → not triggered", () => {
+    const result = checkTrendConcordance(0.001, null);
+    expect(result.triggered).toBe(false);
   });
 });
