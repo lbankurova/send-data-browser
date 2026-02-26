@@ -36,7 +36,7 @@ useAnnotations() refetches -> form re-renders with saved values
 
 ### Schema Types
 
-Four annotation schemas, stored as four files per study:
+Annotation schemas stored as JSON files per study. The backend accepts 13 schema types (`VALID_SCHEMA_TYPES` in `annotations.py`); the primary user-facing schemas are:
 
 | Schema Type (URL slug) | File Name | Entity Key | Primary View | Purpose |
 |------------------------|-----------|------------|--------------|---------|
@@ -46,6 +46,7 @@ Four annotation schemas, stored as four files per study:
 | `validation-records` | `validation_records.json` | Issue ID string | Validation view (Mode 2) | Per-record review status for affected records |
 | `endpoint-bookmarks` | `endpoint_bookmarks.json` | Endpoint label string | View 2 (Dose-Response) | Star-toggle bookmarks for endpoints of interest |
 | `causal-assessment` | `causal_assessment.json` | Endpoint label string | View 2 (Dose-Response) Hypotheses tab | Bradford Hill causality worksheet: overrides, expert criteria, overall assessment |
+| `normalization-overrides` | `normalization_overrides.json` | Organ name (uppercase, e.g., `"LIVER"`) | Adverse Effects (OrganContextPanel) | User override of auto-selected organ weight normalization mode |
 
 ## Contracts
 
@@ -57,7 +58,7 @@ Four annotation schemas, stored as four files per study:
 | PUT | `/api/studies/{study_id}/annotations/{schema_type}/{entity_key}` | `AnnotationPayload` (arbitrary JSON body, `extra="allow"`) | `Annotation` (the saved object with server-injected fields) | Creates or updates a single annotation. Server adds `pathologist` and `reviewDate`. Creates directory if needed. |
 
 **Validation**:
-- `schema_type` must be one of: `validation-issues`, `tox-findings`, `pathology-reviews`, `validation-records`, `endpoint-bookmarks`, `causal-assessment`. Returns 400 otherwise.
+- `schema_type` must be one of the 13 values in `VALID_SCHEMA_TYPES` (see annotations.py). Returns 400 otherwise.
 - `study_id` must not contain `/`, `\`, or `..`. Returns 400 otherwise.
 - No auth checks on any endpoint.
 
@@ -161,6 +162,28 @@ Per-record review status for individual affected records within a validation rul
 
 **Used in**: Validation context panel (Mode 2 -- issue detail)
 
+#### 5. NormalizationOverride (`normalization-overrides`)
+
+User override of the auto-selected organ weight normalization mode. When a pathologist disagrees with the algorithmic normalization recommendation (e.g., the engine selects ratio-to-BW for liver but the pathologist prefers ANCOVA based on the study's specific BW trajectory), they can override the mode with a required reason. The override applies to all dose groups for that organ.
+
+| Field | Type | Allowed Values | Default | Source |
+|-------|------|----------------|---------|--------|
+| `organ` | string | Uppercase specimen name (e.g., `"LIVER"`) | — | Derived from entity key |
+| `mode` | string | `"absolute"`, `"body_weight"`, `"brain_weight"`, `"ancova"` | — | User input (button selector) |
+| `reason` | string | free text (required) | `""` | User input (textarea) |
+| `pathologist` | string | — | `"User"` | Server-injected |
+| `reviewDate` | string (ISO datetime) | — | current UTC time | Server-injected |
+
+**Entity key**: Organ name (uppercase, e.g., `"LIVER"`, `"KIDNEY"`).
+
+**Hook**: `useNormalizationOverrides(studyId)` (`hooks/useNormalizationOverrides.ts`) — wraps `useAnnotations` + `useSaveAnnotation`. Returns: `getOverride(organ)`, `saveOverride(organ, mode, reason)`, `removeOverride(organ)`, `isSaving`.
+
+**Data flow**: `useOrganWeightNormalization` fetches overrides via `useAnnotations("normalization-overrides")` and applies them in `useMemo` via `applyOverrides()`. Sets `mode` + `userOverridden: true` on all dose-group decisions and contexts for the overridden organ. All 7 callers of the normalization hook automatically see overrides.
+
+**UI**: `NormalizationOverrideForm` sub-component in `OrganContextPanel.tsx`. Mode selector (pill buttons filtered by data availability), required reason textarea, Save/Cancel. Override indicator "(user override)" in amber-600.
+
+**Used in**: Adverse Effects view (OrganContextPanel, normalization pane)
+
 ### Frontend Hooks
 
 #### `useAnnotations<T>(studyId, schemaType)`
@@ -208,7 +231,7 @@ Both use `/api` base path (proxied by Vite dev server to backend). Both throw on
 - **No authentication**: All endpoints are unprotected. Any client can read/write any study's annotations.
 - **Hardcoded reviewer**: `reviewedBy` is always `"User"` (line 56 in `annotations.py`). There is no way to identify the actual user.
 - **No concurrency control**: Simultaneous writes to the same file produce last-write-wins behavior. No optimistic locking, no ETags.
-- **No audit trail**: Only the most recent `pathologist`/`reviewDate` is stored per annotation. Previous values are overwritten.
+- **Audit trail implemented**: `_append_audit_entry()` logs field-level diffs to `backend/annotations/{study_id}/audit_log.json` on every create/update. `GET /api/studies/{study_id}/audit-log` retrieves entries (filterable by `schema_type` and `entity_key`, most-recent-first, limit 200).
 
 **Production needs**:
 - Database storage with proper transactions and concurrency (replace file I/O in `annotations.py`)
@@ -229,6 +252,8 @@ Both use `/api` base path (proxied by Vite dev server to backend). Both throw on
 | `frontend/src/components/analysis/panes/PathologyReviewForm.tsx` | PathologyReview annotation form (peer review status, revised severity/diagnosis) |
 | `frontend/src/components/analysis/panes/ValidationIssueForm.tsx` | ValidationIssue annotation form (status, assigned to, resolution, disposition) |
 | `frontend/src/components/analysis/panes/ValidationRecordForm.tsx` | ValidationRecordReview annotation form (fix status, review status, justification, assigned to, comment) |
+| `frontend/src/hooks/useNormalizationOverrides.ts` | NormalizationOverride hook: wraps useAnnotations/useSaveAnnotation for `normalization-overrides` schema |
+| `frontend/src/components/analysis/panes/OrganContextPanel.tsx` | NormalizationOverrideForm sub-component (mode buttons, reason textarea, save/clear) |
 | `frontend/src/components/analysis/panes/CollapsiblePane.tsx` | Shared collapsible pane wrapper used by all annotation forms |
 
 ## Datagrok Notes

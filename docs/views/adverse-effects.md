@@ -196,7 +196,7 @@ Route-detected: when pathname matches regex `/\/studies\/[^/]+\/(findings|(analy
 
 Three selection priorities:
 1. **Endpoint selected** → endpoint-level panel (see "With Selection" below)
-2. **Group selected** (`selectedGroupType === "organ"`) → `OrganContextPanel` for the organ key
+2. **Group selected** (`selectedGroupType === "organ"`) → `OrganContextPanel` for the organ key. Panes include: Convergence, Organ weight normalization (tier >= 2 only, with override form — see below), Organ NOAEL, Related syndromes, Member endpoints
 3. **Syndrome selected** (`selectedGroupType === "syndrome"`) → `SyndromeContextPanel` for the syndrome ID
 4. **Nothing selected** → empty state:
    - Header: `text-sm font-semibold` -- "Findings" (`<h3>` with `mb-2`)
@@ -227,6 +227,16 @@ Three selection priorities:
 - **Normalization alternatives table** — high-dose vs control comparison across absolute, ratio-to-BW, and ratio-to-brain metrics with Δ% column. Shown for GONADAL (ratios grayed), FEMALE_REPRODUCTIVE (always), or when normalization engine recommends showing alternatives (tier ≥ 2).
 - **Williams' trend test comparison** (`WilliamsComparisonPane`) — side-by-side JT vs Williams' results with concordance verdict (concordant/discordant). Expandable step-down detail table showing per-dose test statistic (t̃), critical value, p-value, and significance. Only shown when `finding.williams` is present (OM domain).
 - **ANCOVA effect decomposition** (`ANCOVADecompositionPane`) — shown when `finding.ancova` is present (OM domain, tier >= 3 or brain affected). Displays: model R², slope homogeneity warning (amber when non-parallel), BW slope + p-value, per-dose-group decomposition table (total/direct/indirect effect, % direct, direct p-value with red highlight when p < 0.05), adjusted least-squares means at overall mean BW with raw comparison.
+
+**OrganContextPanel — Normalization override form (OWN §8):**
+
+The "Organ weight normalization" pane in `OrganContextPanel` (tier >= 2 only) includes a user override mechanism. Components: `NormalizationModeDisplay` (read-only summary: active mode, tier, BW/brain g, category, rationale) + `NormalizationOverrideForm` (edit form). Storage: `normalization-overrides` annotation schema keyed by organ name (uppercase).
+
+- **Collapsed state:** Two links — "Override mode" (opens edit form) and "Clear override" (removes override, only shown when active). "Saved" flash (green-600, 2s) after mutation.
+- **Expanded state:** Mode selector buttons (pill-shaped, `bg-primary` when active), filtered by data availability (brain-ratio hidden when no brain data, ANCOVA hidden when tier < 3). Required reason textarea (`text-[10px]`, 2 rows). Save button (`bg-primary`, disabled when reason empty or saving). Cancel link.
+- **Override indicator:** When `userOverridden === true`, label shows "(user override)" in amber-600 instead of "(auto-selected)".
+- **Data flow:** `useNormalizationOverrides(studyId)` hook wraps `useAnnotations` + `useSaveAnnotation` for the `normalization-overrides` schema. `useOrganWeightNormalization` fetches overrides via `useAnnotations` and applies them in `useMemo` via `applyOverrides()` — sets mode + `userOverridden: true` on all dose-group decisions/contexts for the organ. All 7 callers of the hook automatically see overrides.
+- **Audit trail:** Server-side via `_append_audit_entry()` in `annotations.py` — logs field-level diffs on every save.
 - **Decomposed confidence display** (`DecomposedConfidencePane`) — 5-dimension ECI breakdown: statistical evidence, biological plausibility, dose-response quality, trend test validity, trend concordance. Integrated confidence level with limiting factor. NOAEL contribution weight.
 
 #### Pane 2: Dose detail (default open)
