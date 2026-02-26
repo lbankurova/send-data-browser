@@ -275,7 +275,7 @@ def compute_om_findings(
             primary_arrays = abs_arrays
 
         # ── Run stats on recommended metric ──
-        pairwise, _, trend_result = _compute_metric_stats(
+        pairwise, primary_group_stats, trend_result = _compute_metric_stats(
             primary_arrays, [int(dl) for dl in dose_levels],
         )
 
@@ -339,10 +339,14 @@ def compute_om_findings(
 
         for metric_name, metric_arrays in metric_map.items():
             if metric_name == recommended_metric:
-                continue  # primary already computed
+                continue  # primary already computed — in top-level group_stats
             alt_pw, alt_gs, alt_trend = _compute_metric_stats(
                 metric_arrays, [int(dl) for dl in dose_levels],
             )
+            # Enrich absolute alternative with mean_relative for backward compat
+            if metric_name == "absolute":
+                for gs, gs_abs in zip(alt_gs, group_stats_absolute):
+                    gs["mean_relative"] = gs_abs.get("mean_relative")
             alternatives[metric_name] = {
                 "group_stats": alt_gs,
                 "pairwise": alt_pw,
@@ -391,7 +395,7 @@ def compute_om_findings(
             "sex": str(sex),
             "unit": unit,
             "data_type": "continuous",
-            "group_stats": group_stats_absolute,
+            "group_stats": primary_group_stats,
             "pairwise": pairwise,
             "trend_p": trend_result["p_value"],
             "trend_stat": trend_result["statistic"],
