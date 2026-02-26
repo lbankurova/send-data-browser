@@ -2,22 +2,17 @@
  * HistopathHypothesesTab — specimen-level exploratory tools.
  *
  * Toolbar of hypothesis-testing tools (severity distribution, treatment-related
- * assessment, peer comparison, dose-severity trend).
+ * assessment, dose-severity trend).
  * Extracted from HistopathologyView.tsx for modularity.
  */
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import type { ReactNode } from "react";
-import { Microscope, BarChart3, Users, TrendingUp, Search, Plus, Pin } from "lucide-react";
+import { Microscope, BarChart3, TrendingUp, Search, Plus, Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useStudyContext } from "@/hooks/useStudyContext";
-import { getHistoricalControl, classifyVsHCD, queryHistoricalControl, classifyControlVsHCD, HCD_STATUS_LABELS, HCD_STATUS_SORT } from "@/lib/mock-historical-controls";
-import type { HistoricalControlResult, HCDStatus } from "@/lib/mock-historical-controls";
-import type { LesionSeverityRow } from "@/types/analysis-views";
 
 // ─── Types ──────────────────────────────────────────────────
 
-type SpecimenToolIntent = "severity" | "treatment" | "peer" | "doseTrend";
+type SpecimenToolIntent = "severity" | "treatment" | "doseTrend";
 
 interface SpecimenTool {
   value: SpecimenToolIntent;
@@ -30,7 +25,6 @@ interface SpecimenTool {
 const SPECIMEN_TOOLS: SpecimenTool[] = [
   { value: "severity", label: "Severity distribution", icon: BarChart3, available: true, description: "Severity grade distribution across dose groups for this specimen" },
   { value: "treatment", label: "Treatment-related assessment", icon: Microscope, available: true, description: "Evaluate whether findings are treatment-related or incidental" },
-  { value: "peer", label: "Peer comparison", icon: Users, available: true, description: "Compare against historical control incidence data (mock)" },
   { value: "doseTrend", label: "Dose-severity trend", icon: TrendingUp, available: true, description: "Severity and incidence changes across dose groups" },
 ];
 
@@ -70,12 +64,6 @@ function HypConfigLine({ items }: { items: [string, string][] }) {
         </span>
       ))}
     </div>
-  );
-}
-
-function HypProductionNote({ children }: { children: ReactNode }) {
-  return (
-    <p className="text-[11px] italic text-muted-foreground/60">{children}</p>
   );
 }
 
@@ -127,205 +115,6 @@ function TreatmentRelatedPlaceholder({ specimenName, selectedFinding }: { specim
   );
 }
 
-function PeerComparisonToolContent({
-  specimenName,
-  specimenData,
-  specimen,
-  studyId,
-}: {
-  specimenName: string;
-  specimenData?: LesionSeverityRow[];
-  specimen?: string;
-  studyId?: string;
-}) {
-  const { data: studyCtx } = useStudyContext(studyId);
-
-  // Compute control group incidence per finding
-  const peerRows = useMemo(() => {
-    if (!specimenData || !specimen) return [];
-
-    // Get unique findings
-    const findings = [...new Set(specimenData.filter(r => !r.dose_label.toLowerCase().includes("recovery")).map(r => r.finding))];
-
-    // Aggregate control group incidence per finding
-    const controlByFinding = new Map<string, { affected: number; n: number }>();
-    for (const r of specimenData) {
-      if (r.dose_label.toLowerCase().includes("recovery")) continue;
-      if (r.dose_level !== 0) continue; // Control group only
-      const existing = controlByFinding.get(r.finding);
-      if (existing) { existing.affected += r.affected; existing.n += r.n; }
-      else controlByFinding.set(r.finding, { affected: r.affected, n: r.n });
-    }
-
-    // If no dose_level 0 (no labeled control), try lowest dose
-    if (controlByFinding.size === 0) {
-      const minDose = Math.min(...specimenData.filter(r => !r.dose_label.toLowerCase().includes("recovery")).map(r => r.dose_level));
-      for (const r of specimenData) {
-        if (r.dose_label.toLowerCase().includes("recovery")) continue;
-        if (r.dose_level !== minDose) continue;
-        const existing = controlByFinding.get(r.finding);
-        if (existing) { existing.affected += r.affected; existing.n += r.n; }
-        else controlByFinding.set(r.finding, { affected: r.affected, n: r.n });
-      }
-    }
-
-    // Determine predominant sex for context-aware HCD lookup
-    const sexCounts = new Map<string, number>();
-    for (const r of specimenData) {
-      if (r.dose_label.toLowerCase().includes("recovery")) continue;
-      sexCounts.set(r.sex, (sexCounts.get(r.sex) ?? 0) + r.n);
-    }
-    const predominantSex: "M" | "F" = (sexCounts.get("F") ?? 0) > (sexCounts.get("M") ?? 0) ? "F" : "M";
-
-    // Look up HCD for each finding — context-aware when StudyContext available
-    const rows: Array<{
-      finding: string;
-      controlIncidence: number;
-      hcd: ReturnType<typeof getHistoricalControl>;
-      hcdResult: HistoricalControlResult | null;
-      status: HCDStatus;
-      contextLabel: string | null;
-    }> = [];
-
-    for (const finding of findings) {
-      const ctrl = controlByFinding.get(finding);
-      const controlInc = ctrl && ctrl.n > 0 ? ctrl.affected / ctrl.n : 0;
-
-      if (studyCtx) {
-        // Context-aware lookup (IMP-02)
-        const result = queryHistoricalControl({
-          finding, specimen, sex: predominantSex, context: studyCtx,
-        });
-        if (result) {
-          const cls = classifyControlVsHCD(controlInc, result);
-          const statusMap: Record<string, HCDStatus> = {
-            ABOVE: "above_range", WITHIN: "within_range", BELOW: "below_range",
-          };
-          rows.push({
-            finding, controlIncidence: controlInc, hcd: null,
-            hcdResult: result, status: statusMap[cls] ?? "no_data",
-            contextLabel: result.contextLabel,
-          });
-        } else {
-          rows.push({ finding, controlIncidence: controlInc, hcd: null, hcdResult: null, status: "no_data", contextLabel: null });
-        }
-      } else {
-        // Legacy lookup (no StudyContext)
-        const hcd = getHistoricalControl(finding, specimen.toLowerCase().replace(/_/g, " "));
-        const status: HCDStatus = hcd ? classifyVsHCD(controlInc, hcd) : "no_data";
-        rows.push({ finding, controlIncidence: controlInc, hcd, hcdResult: null, status, contextLabel: null });
-      }
-    }
-
-    // Sort: Above range first, then At upper, then others
-    rows.sort((a, b) => {
-      const sd = HCD_STATUS_SORT[a.status] - HCD_STATUS_SORT[b.status];
-      if (sd !== 0) return sd;
-      return b.controlIncidence - a.controlIncidence;
-    });
-
-    return rows;
-  }, [specimenData, specimen, studyCtx]);
-
-  if (peerRows.length === 0) {
-    return (
-      <div className="flex h-28 items-center justify-center rounded-md border bg-muted/30">
-        <p className="text-[11px] text-muted-foreground/50">No findings data for peer comparison.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <HypViewerPlaceholder icon={Users} viewerType="Peer Comparison" context={`${specimenName} vs. HCD`} />
-      <p className="text-xs text-muted-foreground">
-        Control group incidence compared against historical control data (HCD) for the same strain.
-        Findings with incidence above the HCD range may indicate treatment-related effects rather than spontaneous background.
-      </p>
-
-      {/* Peer comparison table */}
-      <table className="w-full text-[10px]">
-        <thead>
-          <tr className="border-b text-muted-foreground">
-            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Finding</th>
-            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Study ctrl</th>
-            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">HCD range</th>
-            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {peerRows.map((row) => {
-            const { finding, controlIncidence, hcd, hcdResult, status, contextLabel } = row;
-            const meanPct = hcdResult ? Math.round(hcdResult.meanIncidence * 100) : hcd ? Math.round(hcd.mean_incidence * 100) : null;
-            const rangeLow = hcdResult ? Math.round(hcdResult.range[0] * 100) : hcd ? Math.round(hcd.min_incidence * 100) : null;
-            const rangeHigh = hcdResult ? Math.round(hcdResult.range[1] * 100) : hcd ? Math.round(hcd.max_incidence * 100) : null;
-            const nStudies = hcdResult?.nStudies ?? hcd?.n_studies ?? null;
-            const hasData = hcdResult != null || hcd != null;
-            return (
-              <tr key={finding} className="border-b border-dashed">
-                <td className="max-w-[120px] truncate py-1 text-[11px] font-medium" title={finding}>
-                  {finding}
-                </td>
-                <td className="py-1 text-right font-mono text-muted-foreground">
-                  {Math.round(controlIncidence * 100)}%
-                </td>
-                <td className="py-1 text-right text-muted-foreground">
-                  {hasData ? (
-                    <span title={`n=${nStudies} studies, mean=${meanPct}%${contextLabel ? `\n${contextLabel}` : ""}`}>
-                      <span className="font-mono">{rangeLow}{"\u2013"}{rangeHigh}%</span>
-                      <br />
-                      <span className="text-[9px] text-muted-foreground/60">mean {meanPct}%, n={nStudies}</span>
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground/40">{"\u2014"}</span>
-                  )}
-                </td>
-                <td className="py-1 text-right">
-                  {status === "no_data" ? (
-                    <span className="text-muted-foreground/40">No data</span>
-                  ) : (
-                    <span className={cn(
-                      "text-[9px]",
-                      status === "above_range"
-                        ? "font-medium text-foreground"
-                        : status === "at_upper"
-                        ? "text-muted-foreground"
-                        : "text-muted-foreground/60",
-                    )}>
-                      {status === "above_range" && "\u25B2 "}
-                      {status === "at_upper" && "\u26A0 "}
-                      {HCD_STATUS_LABELS[status]}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {/* Source badge */}
-      {peerRows.some(r => r.hcdResult && !r.hcdResult.isMock) ? (
-        <div className="flex items-center gap-2">
-          <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700">published</span>
-          <span className="text-[9px] text-muted-foreground/50">
-            {peerRows.find(r => r.hcdResult && !r.hcdResult.isMock)?.hcdResult?.contextLabel ?? "Charles River reference data"}
-          </span>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">mock</span>
-          <span className="text-[9px] text-muted-foreground/50">Simulated historical control data (SD rat, 14-24 studies)</span>
-        </div>
-      )}
-
-      <HypProductionNote>
-        Production version will query facility-specific historical control database with strain, age, and laboratory matching.
-      </HypProductionNote>
-    </div>
-  );
-}
-
 function DoseSeverityTrendPlaceholder({ specimenName, selectedFinding }: { specimenName: string; selectedFinding?: string | null }) {
   const context = selectedFinding
     ? `${specimenName} \u00b7 Focus: ${selectedFinding}`
@@ -357,16 +146,10 @@ export function HistopathHypothesesTab({
   specimenName,
   findingCount,
   selectedFinding,
-  specimenData,
-  specimen,
-  studyId,
 }: {
   specimenName: string;
   findingCount: number;
   selectedFinding?: string | null;
-  specimenData?: LesionSeverityRow[];
-  specimen?: string;
-  studyId?: string;
 }) {
   const [intent, setIntent] = useState<SpecimenToolIntent>("severity");
 
@@ -549,14 +332,6 @@ export function HistopathHypothesesTab({
         )}
         {intent === "treatment" && (
           <TreatmentRelatedPlaceholder specimenName={specimenName} selectedFinding={selectedFinding} />
-        )}
-        {intent === "peer" && (
-          <PeerComparisonToolContent
-            specimenName={specimenName}
-            specimenData={specimenData}
-            specimen={specimen}
-            studyId={studyId}
-          />
         )}
         {intent === "doseTrend" && (
           <DoseSeverityTrendPlaceholder specimenName={specimenName} selectedFinding={selectedFinding} />

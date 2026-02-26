@@ -1,6 +1,12 @@
-"""API router for analyses endpoints."""
+"""API router for analyses endpoints.
 
+All three endpoints now serve from pre-generated unified_findings.json
+instead of computing adverse effects live on every request.
+"""
+
+import json
 import math
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -11,10 +17,11 @@ from models.analysis_schemas import (
     FindingContext,
 )
 from services.study_discovery import StudyInfo
-from services.analysis.unified_findings import compute_adverse_effects
 from services.analysis.context_panes import build_finding_context
 
 router = APIRouter(prefix="/api")
+
+GENERATED_DIR = Path(__file__).parent.parent / "generated"
 
 # Reference to studies (set at startup)
 _studies: dict[str, StudyInfo] = {}
@@ -39,6 +46,18 @@ def _get_study(study_id: str) -> StudyInfo:
     return _studies[study_id]
 
 
+def _load_unified_findings(study_id: str) -> dict:
+    """Load pre-generated unified_findings.json for a study."""
+    path = GENERATED_DIR / study_id / "unified_findings.json"
+    if not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Pre-generated data not found for study '{study_id}'. Run the generator first.",
+        )
+    with open(path, "r") as f:
+        return json.load(f)
+
+
 @router.get("/studies/{study_id}/analyses/adverse-effects", response_model=AdverseEffectsResponse)
 def get_adverse_effects(
     study_id: str,
@@ -52,8 +71,8 @@ def get_adverse_effects(
     endpoint_label: str | None = Query(None, description="Filter by endpoint label (exact match)"),
     dose_response_pattern: str | None = Query(None, description="Filter by dose-response pattern"),
 ):
-    study = _get_study(study_id)
-    data = compute_adverse_effects(study)
+    _get_study(study_id)  # validate study exists
+    data = _load_unified_findings(study_id)
 
     findings = data["findings"]
 
@@ -102,8 +121,8 @@ def get_adverse_effects(
 
 @router.get("/studies/{study_id}/analyses/adverse-effects/finding/{finding_id}", response_model=FindingContext)
 def get_finding_context(study_id: str, finding_id: str):
-    study = _get_study(study_id)
-    data = compute_adverse_effects(study)
+    _get_study(study_id)  # validate study exists
+    data = _load_unified_findings(study_id)
 
     # Find the specific finding
     finding = next((f for f in data["findings"] if f.get("id") == finding_id), None)
@@ -113,7 +132,7 @@ def get_finding_context(study_id: str, finding_id: str):
     context = build_finding_context(
         finding,
         data["findings"],
-        data["correlations"],
+        data.get("correlations", []),
         data["dose_groups"],
     )
 
@@ -122,6 +141,6 @@ def get_finding_context(study_id: str, finding_id: str):
 
 @router.get("/studies/{study_id}/analyses/adverse-effects/summary")
 def get_adverse_effects_summary(study_id: str):
-    study = _get_study(study_id)
-    data = compute_adverse_effects(study)
+    _get_study(study_id)  # validate study exists
+    data = _load_unified_findings(study_id)
     return data["summary"]

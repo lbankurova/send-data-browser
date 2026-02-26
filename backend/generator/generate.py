@@ -7,6 +7,7 @@ Usage:
 import json
 import math
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -136,31 +137,36 @@ def generate(study_id: str):
     dose_groups = dg_data["dose_groups"]
     print(f"  {len(findings)} findings across {len(set(f['domain'] for f in findings))} domains")
 
-    # Phase 1d: Tumor summary (cross-domain TF + MI progression detection)
-    print("Phase 1d: Computing tumor summary...")
-    tumor_summary = build_tumor_summary(findings, study)
+    # Phases 1c/1d/1e — independent computations, run in parallel
+    print("Phases 1c-1e: Subject context, tumor summary, food consumption (parallel)...")
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        fut_tumor = pool.submit(build_tumor_summary, findings, study)
+        fut_food = pool.submit(
+            build_food_consumption_summary_with_subjects,
+            findings, study, early_death_subjects=early_death_subjects,
+            last_dosing_day_override=last_dosing_day_override,
+        )
+        fut_ctx = pool.submit(build_subject_context, study)
+
+    # Collect results and write outputs (sequential for clean logging)
+    tumor_summary = fut_tumor.result()
     _write_json(out_dir / "tumor_summary.json", tumor_summary)
     if tumor_summary["has_tumors"]:
-        print(f"  {tumor_summary['total_tumor_types']} tumor types in {tumor_summary['total_tumor_animals']} animals")
-        print(f"  {len(tumor_summary['progression_sequences'])} progression sequences detected")
+        print(f"  1d: {tumor_summary['total_tumor_types']} tumor types in {tumor_summary['total_tumor_animals']} animals")
+        print(f"  1d: {len(tumor_summary['progression_sequences'])} progression sequences detected")
     else:
-        print("  No tumors found")
+        print("  1d: No tumors found")
 
-    # Phase 1e: Food consumption summary (cross-domain FW + BW food efficiency)
-    print("Phase 1e: Computing food consumption summary...")
-    food_summary = build_food_consumption_summary_with_subjects(
-        findings, study, early_death_subjects=early_death_subjects,
-        last_dosing_day_override=last_dosing_day_override,
-    )
+    food_summary = fut_food.result()
     _write_json(out_dir / "food_consumption_summary.json", food_summary)
     if food_summary.get("available"):
         n_periods = len(food_summary.get("periods", []))
         assessment = food_summary.get("overall_assessment", {}).get("assessment", "unknown")
-        print(f"  {n_periods} measurement period(s), assessment: {assessment}")
+        print(f"  1e: {n_periods} measurement period(s), assessment: {assessment}")
     else:
-        print("  No FW data available")
+        print("  1e: No FW data available")
 
-    # Phase 1f: Cross-animal flags (tissue battery, tumor linkage, recovery narratives)
+    # Phase 1f: Cross-animal flags (depends on tumor_summary from 1d)
     print("Phase 1f: Computing cross-animal flags...")
     try:
         cross_animal_flags = build_cross_animal_flags(
@@ -175,26 +181,23 @@ def generate(study_id: str):
         print(f"  WARNING: Cross-animal flags computation failed: {e}")
         cross_animal_flags = None
 
-    # Phase 1c: Build enriched subject context + provenance messages
-    print("Phase 1c: Building subject context...")
+    # Phase 1c results (may have failed in thread)
+    provenance_msgs = []
     try:
-        context_result = build_subject_context(study)
+        context_result = fut_ctx.result()
         provenance_msgs = generate_provenance_messages(context_result)
-        # Write subject context (one row per subject, as list of dicts)
         ctx_df = context_result["subject_context"]
         _write_json(out_dir / "subject_context.json", ctx_df.to_dict(orient="records"))
         _write_json(out_dir / "provenance_messages.json", provenance_msgs)
-        # Inject last_dosing_day metadata for frontend recovery override UI
         auto_detected = compute_last_dosing_day(study)
         effective = last_dosing_day_override if last_dosing_day_override is not None else auto_detected
         context_result["study_metadata"]["last_dosing_day"] = effective
         context_result["study_metadata"]["auto_detected_last_dosing_day"] = auto_detected
         context_result["study_metadata"]["last_dosing_day_override"] = last_dosing_day_override
         _write_json(out_dir / "study_metadata_enriched.json", context_result["study_metadata"])
-        print(f"  {len(ctx_df)} subjects, {len(provenance_msgs)} provenance messages")
+        print(f"  1c: {len(ctx_df)} subjects, {len(provenance_msgs)} provenance messages")
     except Exception as e:
-        print(f"  WARNING: Subject context failed: {e}")
-        provenance_msgs = []
+        print(f"  1c WARNING: Subject context failed: {e}")
 
     # Phase 2: Assemble view-specific data
     print("Phase 2: Assembling view DataFrames...")
@@ -207,56 +210,53 @@ def generate(study_id: str):
     noael = build_noael_summary(findings, dose_groups, mortality=mortality)
     finding_dose_trends = build_finding_dose_trends(findings, dose_groups)
 
-    # Phase 2b: PK integration (needs NOAEL dose level from Phase 2)
-    print("Phase 2b: Computing PK integration...")
-    pk_integration = build_pk_integration(study, dose_groups, noael)
+    # Phases 2b/3/4/5 — independent computations, run in parallel
+    print("Phases 2b/3/4/5: PK, rules, charts, unified findings (parallel)...")
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        fut_pk = pool.submit(build_pk_integration, study, dose_groups, noael)
+        fut_rules = pool.submit(evaluate_rules, findings, target_organs, noael, dose_groups)
+        fut_chart = pool.submit(generate_target_organ_bar_chart, target_organs)
+        fut_unified = pool.submit(compute_adverse_effects, study)
+
+        # Write Phase 2 view outputs while parallel computations run
+        print("Writing Phase 2 output files...")
+        _write_json(out_dir / "study_signal_summary.json", signal_summary)
+        _write_json(out_dir / "target_organ_summary.json", target_organs)
+        _write_json(out_dir / "dose_response_metrics.json", dose_response)
+        _write_json(out_dir / "organ_evidence_detail.json", organ_evidence)
+        _write_json(out_dir / "lesion_severity_summary.json", lesion_severity)
+        _write_json(out_dir / "adverse_effect_summary.json", adverse_effects)
+        _write_json(out_dir / "noael_summary.json", noael)
+        _write_json(out_dir / "finding_dose_trends.json", finding_dose_trends)
+
+    # Collect parallel results and write
+    pk_integration = fut_pk.result()
     _write_json(out_dir / "pk_integration.json", pk_integration)
     if pk_integration.get("available"):
         n_tk = pk_integration["tk_design"]["n_tk_subjects"]
         hed = pk_integration["hed"]["hed_mg_kg"] if pk_integration.get("hed") else None
         hed_str = f", HED={hed:.2f} mg/kg" if hed is not None else ""
-        print(f"  {n_tk} TK subjects{hed_str}")
+        print(f"  2b: {n_tk} TK subjects{hed_str}")
     else:
-        print("  No PC/PP data available")
+        print("  2b: No PC/PP data available")
 
-    # Phase 3: Signal scores + rules + adversity
-    print("Phase 3: Evaluating rules...")
-    rule_results = evaluate_rules(findings, target_organs, noael, dose_groups)
-    print(f"  {len(rule_results)} rules emitted")
-
-    # Phase 4: Static charts
-    print("Phase 4: Generating static charts...")
-    target_organ_html = generate_target_organ_bar_chart(target_organs)
-
-    # Write all outputs
-    print("Writing output files...")
-    _write_json(out_dir / "study_signal_summary.json", signal_summary)
-    _write_json(out_dir / "target_organ_summary.json", target_organs)
-    _write_json(out_dir / "dose_response_metrics.json", dose_response)
-    _write_json(out_dir / "organ_evidence_detail.json", organ_evidence)
-    _write_json(out_dir / "lesion_severity_summary.json", lesion_severity)
-    _write_json(out_dir / "adverse_effect_summary.json", adverse_effects)
-    _write_json(out_dir / "noael_summary.json", noael)
+    rule_results = fut_rules.result()
     _write_json(out_dir / "rule_results.json", rule_results)
-    _write_json(out_dir / "finding_dose_trends.json", finding_dose_trends)
+    print(f"  3: {len(rule_results)} rules emitted")
 
-    # Write static HTML
+    target_organ_html = fut_chart.result()
     static_dir.mkdir(parents=True, exist_ok=True)
-    target_bar_path = static_dir / "target_organ_bar.html"
-    with open(target_bar_path, "w") as f:
+    with open(static_dir / "target_organ_bar.html", "w") as f:
         f.write(target_organ_html)
-    print(f"  wrote static/target_organ_bar.html")
+    print("  4: wrote static/target_organ_bar.html")
 
-    # Phase 5: Pre-generate unified findings (full adverse effects + classification)
-    # This is the expensive computation that previously ran live on every API request.
-    # Pre-generating it eliminates the only remaining live-compute endpoint.
-    print("Phase 5: Pre-generating unified findings...")
-    ae_data = compute_adverse_effects(study)
+    ae_data = fut_unified.result()
     ae_findings = ae_data["findings"]
     unified = {
         "study_id": study_id,
         "dose_groups": ae_data["dose_groups"],
         "findings": ae_findings,
+        "correlations": ae_data["correlations"],
         "total_findings": len(ae_findings),
         "page": 1,
         "page_size": len(ae_findings),
@@ -264,7 +264,7 @@ def generate(study_id: str):
         "summary": ae_data["summary"],
     }
     _write_json(out_dir / "unified_findings.json", unified)
-    print(f"  {len(ae_findings)} findings pre-generated")
+    print(f"  5: {len(ae_findings)} findings pre-generated")
 
     print(f"\n=== Generation complete: {out_dir} ===")
     print(f"  Signal summary: {len(signal_summary)} rows")

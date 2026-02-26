@@ -728,6 +728,7 @@ async def get_histopath_subjects(
             "dose_level": int(row["dose_level"]),
             "dose_label": str(row["dose_label"]),
             "is_recovery": bool(row.get("is_recovery", False)),
+            "is_satellite": bool(row.get("is_satellite", False)),
             "findings": findings_by_subj.get(usubjid, {}),
             "disposition": disp_info[0],
             "disposition_day": disp_info[1],

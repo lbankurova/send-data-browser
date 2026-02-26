@@ -127,6 +127,7 @@ export interface SubjectHistopathEntry {
   dose_level: number;
   dose_label: string;
   is_recovery: boolean;
+  is_satellite?: boolean;
   findings: Record<string, { severity: string | null; severity_num: number; laterality?: string | null }>;
   disposition: string | null;
   disposition_day: number | null;

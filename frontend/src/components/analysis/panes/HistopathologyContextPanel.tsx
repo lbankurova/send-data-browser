@@ -32,7 +32,7 @@ import type { RecoveryClassification } from "@/lib/recovery-classification";
 import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
 import type { FindingNatureInfo } from "@/lib/finding-nature";
 import { titleCase } from "@/lib/severity-colors";
-import { getHistoricalControl, classifyVsHCD, queryHistoricalControl, classifyControlVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
+import { getHistoricalControl, classifyVsHCD, queryHistoricalControl, classifyControlVsHCD, HCD_STATUS_LABELS, HCD_STATUS_SORT } from "@/lib/mock-historical-controls";
 import type { HistoricalControlData, HistoricalControlResult, HCDStatus } from "@/lib/mock-historical-controls";
 import { useStudyContext } from "@/hooks/useStudyContext";
 // getFindingDoseConsistency removed — use classifyFindingPattern from pattern-classification.ts
@@ -221,6 +221,117 @@ function RecoveryAssessmentPane({
           ))}
         </div>
       )}
+
+      <p className="text-[10px] text-muted-foreground/50">
+        Classification method: Rule-based (5 categories)
+      </p>
+      <p className="text-[10px] italic text-muted-foreground/50">
+        Include historical controls (toggle disabled {"\u2014"} requires peer comparison data)
+      </p>
+    </div>
+  );
+}
+
+// ─── Peer Comparison Pane ────────────────────────────────────────────────────
+
+interface PeerRow {
+  finding: string;
+  controlIncidence: number;
+  hcd: ReturnType<typeof getHistoricalControl>;
+  hcdResult: HistoricalControlResult | null;
+  status: HCDStatus;
+  contextLabel: string | null;
+}
+
+function PeerComparisonPane({ peerRows }: { peerRows: PeerRow[] }) {
+  const hasMockSource = peerRows.some(r => r.hcdResult?.isMock !== false && r.hcd != null);
+  const hasPublishedSource = peerRows.some(r => r.hcdResult && !r.hcdResult.isMock);
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] text-muted-foreground">
+        Control group incidence compared against historical control data (HCD) for the same strain.
+        Findings above the HCD range may indicate treatment-related effects rather than spontaneous background.
+      </p>
+
+      <table className="w-full text-[10px]">
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Finding</th>
+            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Study ctrl</th>
+            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">HCD range</th>
+            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {peerRows.map((row) => {
+            const { finding, controlIncidence, hcd, hcdResult, status, contextLabel } = row;
+            const meanPct = hcdResult ? Math.round(hcdResult.meanIncidence * 100) : hcd ? Math.round(hcd.mean_incidence * 100) : null;
+            const rangeLow = hcdResult ? Math.round(hcdResult.range[0] * 100) : hcd ? Math.round(hcd.min_incidence * 100) : null;
+            const rangeHigh = hcdResult ? Math.round(hcdResult.range[1] * 100) : hcd ? Math.round(hcd.max_incidence * 100) : null;
+            const nStudies = hcdResult?.nStudies ?? hcd?.n_studies ?? null;
+            const hasData = hcdResult != null || hcd != null;
+            return (
+              <tr key={finding} className="border-b border-dashed">
+                <td className="max-w-[120px] truncate py-1 text-[11px] font-medium" title={finding}>
+                  {finding}
+                </td>
+                <td className="py-1 text-right font-mono text-muted-foreground">
+                  {Math.round(controlIncidence * 100)}%
+                </td>
+                <td className="py-1 text-right text-muted-foreground">
+                  {hasData ? (
+                    <span title={`n=${nStudies} studies, mean=${meanPct}%${contextLabel ? `\n${contextLabel}` : ""}`}>
+                      <span className="font-mono">{rangeLow}{"\u2013"}{rangeHigh}%</span>
+                      <br />
+                      <span className="text-[9px] text-muted-foreground/60">mean {meanPct}%, n={nStudies}</span>
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground/40">{"\u2014"}</span>
+                  )}
+                </td>
+                <td className="py-1 text-right">
+                  {status === "no_data" ? (
+                    <span className="text-muted-foreground/40">No data</span>
+                  ) : (
+                    <span className={cn(
+                      "text-[9px]",
+                      status === "above_range"
+                        ? "font-medium text-foreground"
+                        : status === "at_upper"
+                        ? "text-muted-foreground"
+                        : "text-muted-foreground/60",
+                    )}>
+                      {status === "above_range" && "\u25B2 "}
+                      {status === "at_upper" && "\u26A0 "}
+                      {HCD_STATUS_LABELS[status]}
+                    </span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {/* Source badge */}
+      {hasPublishedSource ? (
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700">published</span>
+          <span className="text-[9px] text-muted-foreground/50">
+            {peerRows.find(r => r.hcdResult && !r.hcdResult.isMock)?.hcdResult?.contextLabel ?? "Charles River reference data"}
+          </span>
+        </div>
+      ) : hasMockSource ? (
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">mock</span>
+          <span className="text-[9px] text-muted-foreground/50">Simulated historical control data (SD rat, 14-24 studies)</span>
+        </div>
+      ) : null}
+
+      <p className="text-[10px] italic text-muted-foreground/50">
+        Production version will query facility-specific historical control database with strain, age, and laboratory matching.
+      </p>
     </div>
   );
 }
@@ -842,6 +953,76 @@ function SpecimenOverviewPane({
     return classifySpecimenRecovery(recoveryClassifications.map((c) => c.classification));
   }, [recoveryClassifications]);
 
+  // ── Peer comparison data ────────────────────────────────────
+  const peerRows = useMemo((): PeerRow[] => {
+    if (!specimenData.length) return [];
+
+    // Get unique findings (excluding recovery)
+    const findings = [...new Set(specimenData.filter(r => !r.dose_label.toLowerCase().includes("recovery")).map(r => r.finding))];
+
+    // Aggregate control group incidence per finding
+    const controlByFinding = new Map<string, { affected: number; n: number }>();
+    for (const r of specimenData) {
+      if (r.dose_label.toLowerCase().includes("recovery")) continue;
+      if (r.dose_level !== 0) continue;
+      const existing = controlByFinding.get(r.finding);
+      if (existing) { existing.affected += r.affected; existing.n += r.n; }
+      else controlByFinding.set(r.finding, { affected: r.affected, n: r.n });
+    }
+
+    // If no dose_level 0, try lowest dose
+    if (controlByFinding.size === 0) {
+      const minDose = Math.min(...specimenData.filter(r => !r.dose_label.toLowerCase().includes("recovery")).map(r => r.dose_level));
+      for (const r of specimenData) {
+        if (r.dose_label.toLowerCase().includes("recovery")) continue;
+        if (r.dose_level !== minDose) continue;
+        const existing = controlByFinding.get(r.finding);
+        if (existing) { existing.affected += r.affected; existing.n += r.n; }
+        else controlByFinding.set(r.finding, { affected: r.affected, n: r.n });
+      }
+    }
+
+    // Determine predominant sex
+    const sexCounts = new Map<string, number>();
+    for (const r of specimenData) {
+      if (r.dose_label.toLowerCase().includes("recovery")) continue;
+      sexCounts.set(r.sex, (sexCounts.get(r.sex) ?? 0) + r.n);
+    }
+    const predominantSex: "M" | "F" = (sexCounts.get("F") ?? 0) > (sexCounts.get("M") ?? 0) ? "F" : "M";
+
+    // Look up HCD for each finding
+    const rows: PeerRow[] = [];
+    for (const finding of findings) {
+      const ctrl = controlByFinding.get(finding);
+      const controlInc = ctrl && ctrl.n > 0 ? ctrl.affected / ctrl.n : 0;
+
+      if (studyCtxSpec) {
+        const result = queryHistoricalControl({ finding, specimen, sex: predominantSex, context: studyCtxSpec });
+        if (result) {
+          const cls = classifyControlVsHCD(controlInc, result);
+          const statusMap: Record<string, HCDStatus> = {
+            ABOVE: "above_range", WITHIN: "within_range", BELOW: "below_range",
+          };
+          rows.push({ finding, controlIncidence: controlInc, hcd: null, hcdResult: result, status: statusMap[cls] ?? "no_data", contextLabel: result.contextLabel });
+        } else {
+          rows.push({ finding, controlIncidence: controlInc, hcd: null, hcdResult: null, status: "no_data", contextLabel: null });
+        }
+      } else {
+        const hcd = getHistoricalControl(finding, specimen.toLowerCase().replace(/_/g, " "));
+        const status: HCDStatus = hcd ? classifyVsHCD(controlInc, hcd) : "no_data";
+        rows.push({ finding, controlIncidence: controlInc, hcd, hcdResult: null, status, contextLabel: null });
+      }
+    }
+
+    rows.sort((a, b) => {
+      const sd = HCD_STATUS_SORT[a.status] - HCD_STATUS_SORT[b.status];
+      if (sd !== 0) return sd;
+      return b.controlIncidence - a.controlIncidence;
+    });
+
+    return rows;
+  }, [specimenData, specimen, studyCtxSpec]);
+
   // ── Selection handler for recovery finding clicks ──────────
   const handleRecoveryFindingClick = useCallback((finding: string) => {
     navigateTo({ specimen, endpoint: finding });
@@ -949,6 +1130,13 @@ function SpecimenOverviewPane({
             <LabCorrelatesPane correlations={labCorrelation.correlations} isLoading={labCorrelation.isLoading} specimen={specimen} />
           </CollapsiblePane>
         </div>
+      )}
+
+      {/* Peer comparison (specimen-level) */}
+      {peerRows.length > 0 && (
+        <CollapsiblePane title="Peer comparison" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <PeerComparisonPane peerRows={peerRows} />
+        </CollapsiblePane>
       )}
 
       {/* Recovery assessment (specimen-level) */}

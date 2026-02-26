@@ -2455,9 +2455,6 @@ export function HistopathologyView() {
               specimenName={selectedSummary.specimen.replace(/_/g, " ")}
               findingCount={findingSummaries.length}
               selectedFinding={selection?.finding}
-              specimenData={specimenData}
-              specimen={selectedSpecimen ?? undefined}
-              studyId={studyId}
             />
           )}
           {activeTab === "compare" && studyId && (

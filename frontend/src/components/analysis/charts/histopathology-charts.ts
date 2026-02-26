@@ -310,6 +310,7 @@ export function buildDoseIncidenceBarOption(
       data: yAxisInfo.categories,
       axisLabel: {
         fontSize: AXIS_LABEL_SIZE,
+        interval: 0, // Force all labels visible (ECharts auto-hides when dense)
         formatter: (_value: string, index: number) => {
           // Hide spacer label
           if (yAxisInfo.doseLabels[index] === "") return "";
@@ -578,6 +579,7 @@ export function buildDoseSeverityBarOption(
       data: yAxisInfo.categories,
       axisLabel: {
         fontSize: AXIS_LABEL_SIZE,
+        interval: 0,
         formatter: (_value: string, index: number) => {
           if (yAxisInfo.doseLabels[index] === "") return "";
           return yAxisInfo.showSexLabel
