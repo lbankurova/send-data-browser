@@ -1647,3 +1647,79 @@ HED rounded to 4 decimals. MRSD rounded to 4 decimals. Status: "established" if 
 **Alternatives considered:** Always exclude recovery (current legacy behavior — discards valid data). Per-endpoint toggle (deferred — pooling is the scientifically correct default).
 
 **References:** `docs/knowledge/recovery-animal-data-handling-spec.md`.
+
+---
+
+## Endpoint Confidence Integrity (ECI) — SPEC-ECI-AMD-002
+
+### CLASS-22 — Non-Monotonic Detection
+
+**Purpose:** Detect threshold-classified patterns where the effect peaks at an intermediate dose and reverses at the highest dose, indicating unreliable dose-response.
+
+**Implementation:** `frontend/src/lib/endpoint-confidence.ts:checkNonMonotonic()`. Pure function, no backend dependency.
+
+**Parameters:** Fires when ALL 4 criteria met: (1) pattern is threshold-type, (2) peak effect not at highest dose, (3) highest dose shows <50% of peak effect, (4) highest dose pairwise p > 0.05. Requires control + ≥2 treated groups.
+
+**Consequences:** Pattern reclassified to "inconsistent", A-1 downgrade, confidence penalty = 1.
+
+**Why this method:** A threshold pattern with reversal at the highest dose suggests a confound (e.g., toxicity-induced appetite suppression masking organ weight increase). The backend pattern classifier doesn't check for this within-threshold non-monotonicity.
+
+---
+
+### CLASS-23 — Trend Test Validity
+
+**Purpose:** Check whether Jonckheere-Terpstra trend test assumptions (variance homogeneity) hold.
+
+**Implementation:** `frontend/src/lib/endpoint-confidence.ts:checkTrendTestValidity()`.
+
+**Parameters:** Fires when EITHER: SD ratio (max treated SD / control SD) > 2.0, OR CV ratio (max group CV / min group CV) > 2.0 (groups with n≥3). Penalty = 1 when BOTH fire, 0 when only one fires.
+
+**Why this method:** JT trend test assumes comparable within-group variances. Heterogeneous variance inflates Type I error, making trend significance unreliable.
+
+---
+
+### CLASS-24 — Normalization Confidence Ceiling
+
+**Purpose:** Cap treatment-relatedness confidence for FEMALE_REPRODUCTIVE organ weight findings when estrous cycle is uncontrolled.
+
+**Implementation:** `frontend/src/lib/endpoint-confidence.ts:getNormalizationCaveat()`. Reuses `getOrganCorrelationCategory()` from `organ-weight-normalization.ts`.
+
+**Parameters:** Only fires for FEMALE_REPRODUCTIVE organs. Escape conditions: (1) estrous staging data present (TS domain), (2) confirmatory MI findings for the organ. Ceiling = "moderate" when neither escape condition met; null (no ceiling) when either or both present.
+
+**Why this method:** Female reproductive organ weights vary 25-50% with estrous cycle stage. Without cycle staging or histopath confirmation, a statistically significant weight change may be an artifact.
+
+---
+
+### CLASS-25 — Integrated Endpoint Confidence
+
+**Purpose:** Combine 4 confidence dimensions into a single integrated assessment per endpoint.
+
+**Implementation:** `frontend/src/lib/endpoint-confidence.ts:integrateConfidence()`.
+
+**Parameters:** Integrated = min(statistical, biological, doseResponse, trendValidity). Statistical confidence: p<0.01 + |g|≥0.8 + informative pattern → high; p<0.05 + |g|≥0.5 → moderate; else low. Biological from normalization caveat ceiling. Dose-response from non-monotonic penalty. Trend validity from variance check.
+
+**Why this method:** A single "high" in one dimension shouldn't override deficiencies in another. The min() aggregation ensures all dimensions must be adequate.
+
+---
+
+### CLASS-26 — NOAEL Contribution Weight
+
+**Purpose:** Assign a weight (1.0/0.7/0.3/0.0) to each endpoint for NOAEL derivation based on integrated confidence.
+
+**Implementation:** `frontend/src/lib/endpoint-confidence.ts:computeNOAELContribution()`.
+
+**Parameters:** Gate: must be TR + adverse. Weight mapping: low integrated OR non-monotonic OR ≥2 caveats → 0.3 (supporting); moderate OR 1 caveat → 0.7 (contributing); high + 0 caveats → 1.0 (determining); not TR/adverse → 0.0 (excluded).
+
+**Why this method:** Prevents low-quality endpoints from independently anchoring NOAEL. Contributing endpoints (0.7) require corroboration; supporting endpoints (0.3) are documented but don't constrain.
+
+---
+
+### CLASS-27 — Weighted NOAEL Derivation
+
+**Purpose:** Derive study-level NOAEL using endpoint contribution weights rather than treating all adverse endpoints equally.
+
+**Implementation:** `frontend/src/lib/endpoint-confidence.ts:deriveWeightedNOAEL()`.
+
+**Parameters:** Determining (1.0) endpoints constrain directly. Contributing (0.7) constrain only if corroborated by another ≥0.7 endpoint at same/lower dose. Supporting (0.3) documented but don't constrain. If no constraints, NOAEL = highest tested dose.
+
+**Why this method:** Equal weighting allows a single low-confidence endpoint to pull NOAEL down inappropriately. The weighted approach requires confidence proportional to NOAEL impact.
