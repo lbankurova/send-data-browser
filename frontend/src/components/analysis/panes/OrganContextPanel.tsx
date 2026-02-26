@@ -5,7 +5,7 @@
  * Displays: Convergence, Organ NOAEL, Related Syndromes, Member Endpoints.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useFindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
@@ -24,9 +24,10 @@ import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import { getSyndromeNearMissInfo } from "@/lib/cross-domain-syndromes";
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass, getClinicalTierCardBorderClass, getClinicalSeverityLabel } from "@/lib/lab-clinical-catalog";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
+import { useNormalizationOverrides } from "@/hooks/useNormalizationOverrides";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getTierSeverityLabel, getOrganCorrelationCategory } from "@/lib/organ-weight-normalization";
-import type { FindingsFilters, UnifiedFinding } from "@/types/analysis";
+import type { FindingsFilters, UnifiedFinding, NormalizationOverride } from "@/types/analysis";
 
 // ─── Constants ─────────────────────────────────────────────
 
@@ -216,6 +217,211 @@ interface OrganContextPanelProps {
   organKey: string;
 }
 
+// ─── Normalization mode labels ────────────────────────────
+const MODE_LABELS: Record<string, string> = {
+  absolute: "Absolute weight",
+  body_weight: "Ratio to body weight",
+  brain_weight: "Ratio to brain weight",
+  ancova: "ANCOVA-adjusted",
+};
+
+const MODE_OPTIONS: NormalizationOverride["mode"][] = [
+  "absolute", "body_weight", "brain_weight", "ancova",
+];
+
+// ─── Normalization display sub-component ─────────────────
+function NormalizationModeDisplay({
+  decision,
+  normalization,
+  categoryLabel,
+}: {
+  decision: NonNullable<ReturnType<ReturnType<typeof useOrganWeightNormalization>["getDecision"]>>;
+  normalization: ReturnType<typeof useOrganWeightNormalization>;
+  categoryLabel: string;
+}) {
+  return (
+    <>
+      <div className="text-xs">
+        <span className="font-semibold">Normalization: </span>
+        {MODE_LABELS[decision.mode] ?? decision.mode}
+        {decision.userOverridden
+          ? <span className="ml-1 text-[9px] font-medium text-amber-600">(user override)</span>
+          : " (auto-selected)"}
+      </div>
+      <div className="text-xs">
+        <span className="font-semibold">Tier: </span>
+        {decision.tier} — {getTierSeverityLabel(decision.tier)} BW effect
+      </div>
+      <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
+        <div>BW effect (worst group): g = {normalization.worstBwG.toFixed(2)}</div>
+        <div>
+          Brain weight: {normalization.worstBrainG != null
+            ? `g = ${normalization.worstBrainG.toFixed(2)} (${decision.brainAffected ? "affected" : "unaffected"})`
+            : "not collected"}
+        </div>
+        <div>Organ category: {categoryLabel}</div>
+      </div>
+      {decision.rationale.length > 0 && (
+        <div className="mt-2 border-t pt-2">
+          <div className="mb-1 text-[10px] font-semibold text-muted-foreground">Rationale</div>
+          <ul className="space-y-0.5 text-[10px] text-muted-foreground">
+            {decision.rationale.map((r, i) => (
+              <li key={i}>• {r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <div className="text-[9px] text-muted-foreground/60">
+        Ref: Bailey et al. 2004, Sellers et al. 2007, Creasy 2013
+      </div>
+    </>
+  );
+}
+
+// ─── Override form sub-component ──────────────────────────
+function NormalizationOverrideForm({
+  specimen,
+  currentAutoMode,
+  existingOverride,
+  hasBrainData,
+  hasAncovaData,
+  overrides,
+}: {
+  specimen: string;
+  currentAutoMode: string;
+  existingOverride: NormalizationOverride | null;
+  hasBrainData: boolean;
+  hasAncovaData: boolean;
+  overrides: ReturnType<typeof useNormalizationOverrides>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<NormalizationOverride["mode"]>(
+    existingOverride?.mode ?? (currentAutoMode as NormalizationOverride["mode"]),
+  );
+  const [reason, setReason] = useState(existingOverride?.reason ?? "");
+  const [saved, setSaved] = useState(false);
+
+  // Sync form state when specimen or override changes
+  useEffect(() => {
+    setSelectedMode(existingOverride?.mode ?? (currentAutoMode as NormalizationOverride["mode"]));
+    setReason(existingOverride?.reason ?? "");
+    setEditing(false);
+    setSaved(false);
+  }, [specimen, existingOverride, currentAutoMode]);
+
+  // Auto-clear saved flash
+  useEffect(() => {
+    if (saved) {
+      const t = setTimeout(() => setSaved(false), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [saved]);
+
+  const handleSave = async () => {
+    if (!reason.trim()) return;
+    await overrides.saveOverride(specimen, selectedMode, reason.trim());
+    setEditing(false);
+    setSaved(true);
+  };
+
+  const handleClear = async () => {
+    await overrides.removeOverride(specimen);
+    setEditing(false);
+    setSaved(false);
+  };
+
+  // Available modes — filter by data availability
+  const availableModes = MODE_OPTIONS.filter(m => {
+    if (m === "brain_weight" && !hasBrainData) return false;
+    if (m === "ancova" && !hasAncovaData) return false;
+    return true;
+  });
+
+  const isOverridden = existingOverride && existingOverride.reason !== "__cleared__";
+
+  return (
+    <div className="mt-2 border-t pt-2">
+      {!editing ? (
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            className="text-[10px] font-medium text-primary hover:underline"
+            onClick={() => setEditing(true)}
+          >
+            {isOverridden ? "Edit override" : "Override mode"}
+          </button>
+          {isOverridden && (
+            <button
+              type="button"
+              className="text-[10px] text-muted-foreground hover:text-destructive"
+              onClick={handleClear}
+            >
+              Clear override
+            </button>
+          )}
+          {saved && (
+            <span className="text-[10px] font-medium text-green-600">Saved</span>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="text-[10px] font-semibold text-muted-foreground">Override normalization mode</div>
+          <div className="flex flex-wrap gap-1">
+            {availableModes.map(m => (
+              <button
+                key={m}
+                type="button"
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  selectedMode === m
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+                onClick={() => setSelectedMode(m)}
+              >
+                {MODE_LABELS[m]}
+              </button>
+            ))}
+          </div>
+          <textarea
+            className="w-full rounded border border-border bg-background px-2 py-1 text-[10px] placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+            rows={2}
+            placeholder="Reason for override (required)"
+            value={reason}
+            onChange={e => setReason(e.target.value)}
+          />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={!reason.trim() || overrides.isSaving}
+              className="rounded bg-primary px-3 py-1 text-[10px] font-medium text-primary-foreground disabled:opacity-50"
+              onClick={handleSave}
+            >
+              {overrides.isSaving ? "Saving..." : "Save"}
+            </button>
+            <button
+              type="button"
+              className="text-[10px] text-muted-foreground hover:underline"
+              onClick={() => {
+                setEditing(false);
+                setSelectedMode(existingOverride?.mode ?? (currentAutoMode as NormalizationOverride["mode"]));
+                setReason(existingOverride?.reason ?? "");
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+          {isOverridden && existingOverride.reviewDate && (
+            <div className="text-[9px] text-muted-foreground/60">
+              Last overridden: {new Date(existingOverride.reviewDate).toLocaleString()}
+              {existingOverride.pathologist && ` by ${existingOverride.pathologist}`}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Map organ_system key → potential OM specimen names for normalization lookup */
 const ORGAN_SYSTEM_TO_SPECIMENS: Record<string, string[]> = {
   hepatic: ["LIVER"],
@@ -240,6 +446,7 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
   // Normalization engine — for "Organ weight normalization" pane
   const { effectSize } = useStatMethods(studyId);
   const normalization = useOrganWeightNormalization(studyId, true, effectSize);
+  const normOverrides = useNormalizationOverrides(studyId);
 
   // Use shared derivation — single source of truth (includes all fields)
   const organEndpoints = useMemo(
@@ -456,46 +663,23 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
           androgen_dependent: "Androgen-dependent — correlate with hormonal status",
           female_reproductive: "Female reproductive — cycle-dominated, low confidence",
         };
-        const modeLabels: Record<string, string> = {
-          absolute: "Absolute weight",
-          body_weight: "Ratio to body weight",
-          brain_weight: "Ratio to brain weight",
-          ancova: "ANCOVA (Phase 2)",
-        };
+        const existingOverride = normOverrides.getOverride(matchedSpecimen);
         return (
           <CollapsiblePane title="Organ weight normalization" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
             <div className="space-y-2">
-              <div className="text-xs">
-                <span className="font-semibold">Normalization: </span>
-                {modeLabels[bestDecision.mode] ?? bestDecision.mode}
-                {!bestDecision.userOverridden && " (auto-selected)"}
-              </div>
-              <div className="text-xs">
-                <span className="font-semibold">Tier: </span>
-                {bestDecision.tier} — {getTierSeverityLabel(bestDecision.tier)} BW effect
-              </div>
-              <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
-                <div>BW effect (worst group): g = {normalization.worstBwG.toFixed(2)}</div>
-                <div>
-                  Brain weight: {normalization.worstBrainG != null
-                    ? `g = ${normalization.worstBrainG.toFixed(2)} (${bestDecision.brainAffected ? "affected" : "unaffected"})`
-                    : "not collected"}
-                </div>
-                <div>Organ category: {categoryLabels[category] ?? category}</div>
-              </div>
-              {bestDecision.rationale.length > 0 && (
-                <div className="mt-2 border-t pt-2">
-                  <div className="mb-1 text-[10px] font-semibold text-muted-foreground">Rationale</div>
-                  <ul className="space-y-0.5 text-[10px] text-muted-foreground">
-                    {bestDecision.rationale.map((r, i) => (
-                      <li key={i}>• {r}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="text-[9px] text-muted-foreground/60">
-                Ref: Bailey et al. 2004, Sellers et al. 2007, Creasy 2013
-              </div>
+              <NormalizationModeDisplay
+                decision={bestDecision}
+                normalization={normalization}
+                categoryLabel={categoryLabels[category] ?? category}
+              />
+              <NormalizationOverrideForm
+                specimen={matchedSpecimen}
+                currentAutoMode={bestDecision.mode}
+                existingOverride={existingOverride}
+                hasBrainData={normalization.worstBrainG != null}
+                hasAncovaData={bestDecision.tier >= 3}
+                overrides={normOverrides}
+              />
             </div>
           </CollapsiblePane>
         );

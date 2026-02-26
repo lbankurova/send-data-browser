@@ -100,6 +100,16 @@ export interface WilliamsTestResult {
   pooled_df: number;
 }
 
+/** Persisted user override for organ weight normalization mode */
+export interface NormalizationOverride {
+  organ: string;
+  mode: "absolute" | "body_weight" | "brain_weight" | "ancova";
+  reason: string;
+  /** Set by backend on save */
+  pathologist?: string;
+  reviewDate?: string;
+}
+
 export interface NormalizationMetadata {
   recommended_metric: string;
   organ_category: string;

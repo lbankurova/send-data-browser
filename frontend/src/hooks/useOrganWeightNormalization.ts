@@ -17,6 +17,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFindings } from "@/lib/analysis-api";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
+import { useAnnotations } from "@/hooks/useAnnotations";
 import {
   computeStudyNormalization,
   buildSpeciesStrainKey,
@@ -29,7 +30,7 @@ import type {
   GroupStatsTriplet,
 } from "@/lib/organ-weight-normalization";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
-import type { FindingsFilters, UnifiedFinding, GroupStat, ANCOVAResult } from "@/types/analysis";
+import type { FindingsFilters, UnifiedFinding, GroupStat, ANCOVAResult, NormalizationOverride } from "@/types/analysis";
 
 const ALL_FILTERS: FindingsFilters = {
   domain: null, sex: null, severity: null, search: "",
@@ -187,6 +188,38 @@ function enrichWithAncova(
   }
 }
 
+/**
+ * Apply persisted user overrides to the computed normalization state.
+ * Mutates decisions and contexts in-place (called during useMemo).
+ */
+function applyOverrides(
+  state: StudyNormalizationState,
+  overrides: Record<string, NormalizationOverride>,
+): void {
+  for (const [organ, override] of Object.entries(overrides)) {
+    if (override.reason === "__cleared__") continue; // Skip cleared overrides
+    const organUpper = organ.toUpperCase();
+
+    // Override decisions for this organ (all dose groups)
+    const organDecisions = state.decisions.get(organUpper);
+    if (organDecisions) {
+      for (const d of organDecisions.values()) {
+        d.mode = override.mode;
+        d.userOverridden = true;
+        d.rationale = [...d.rationale, `User override: ${override.reason}`];
+      }
+    }
+
+    // Override contexts for this organ (all dose groups)
+    for (const ctx of state.contexts) {
+      if (ctx.organ === organUpper) {
+        ctx.activeMode = override.mode;
+        ctx.userOverridden = true;
+      }
+    }
+  }
+}
+
 export interface UseOrganWeightNormalizationResult {
   state: StudyNormalizationState | null;
   isLoading: boolean;
@@ -222,6 +255,9 @@ export function useOrganWeightNormalization(
     staleTime: 5 * 60 * 1000,
   });
   const { data: meta } = useStudyMetadata(studyId ?? "");
+  const { data: overrideData } = useAnnotations<NormalizationOverride>(
+    studyId, "normalization-overrides",
+  );
 
   const state = useMemo(() => {
     if (!findingsData?.findings?.length || !meta) return null;
@@ -253,8 +289,13 @@ export function useOrganWeightNormalization(
     // Enrich NormalizationContexts with ANCOVA effectDecomposition (Phase 2)
     enrichWithAncova(result, findings);
 
+    // Apply persisted user overrides (Phase F)
+    if (overrideData && Object.keys(overrideData).length > 0) {
+      applyOverrides(result, overrideData);
+    }
+
     return result;
-  }, [findingsData, meta, studyId, effectSizeMethod]);
+  }, [findingsData, meta, studyId, effectSizeMethod, overrideData]);
 
   const getDecision = useMemo(() => {
     return (organ: string, doseKey?: string): NormalizationDecision | null => {
