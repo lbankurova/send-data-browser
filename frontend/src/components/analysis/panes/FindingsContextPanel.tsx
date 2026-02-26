@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
@@ -25,6 +25,89 @@ import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization
 import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/organ-weight-normalization";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
+import type { UnifiedFinding } from "@/types/analysis";
+import { formatPValue } from "@/lib/severity-colors";
+
+// ─── Williams' Trend Test Comparison ────────────────────────
+
+function WilliamsComparisonPane({ finding }: { finding: UnifiedFinding }) {
+  const [showStepDown, setShowStepDown] = useState(false);
+  const williams = finding.williams;
+  if (!williams) return null;
+
+  const jtSignificant = finding.trend_p != null && finding.trend_p < 0.05;
+  const williamsSignificant = williams.step_down_results.some((r) => r.significant);
+  const concordant = jtSignificant === williamsSignificant;
+
+  return (
+    <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
+      <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Trend test comparison
+      </div>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="font-medium">Jonckheere-Terpstra</span>
+          <span className="font-mono text-[10px]">
+            p = {finding.trend_p != null ? formatPValue(finding.trend_p) : "\u2014"}
+            {jtSignificant && <span className="ml-1 text-red-600">*</span>}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-medium">Williams&apos; test</span>
+          <span className="font-mono text-[10px]">
+            {williams.minimum_effective_dose
+              ? `MED: ${williams.minimum_effective_dose}`
+              : "No MED detected"}
+            {williamsSignificant && <span className="ml-1 text-red-600">*</span>}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 border-t border-border/30 pt-0.5">
+          <span className={`inline-block h-1.5 w-1.5 rounded-full ${concordant ? "bg-emerald-500" : "bg-amber-500"}`} />
+          <span className="font-medium">{concordant ? "Concordant" : "Discordant"}</span>
+          {!concordant && (
+            <span className="text-muted-foreground">
+              &mdash; {jtSignificant ? "JT significant but Williams' not" : "Williams' significant but JT not"}
+            </span>
+          )}
+        </div>
+      </div>
+      {williams.step_down_results.length > 0 && (
+        <div className="mt-1.5">
+          <button
+            className="text-[9px] text-blue-600 hover:underline"
+            onClick={() => setShowStepDown(!showStepDown)}
+          >
+            {showStepDown ? "Hide" : "Show"} step-down detail
+          </button>
+          {showStepDown && (
+            <table className="mt-1 w-full">
+              <thead>
+                <tr className="text-[9px] text-muted-foreground">
+                  <th className="py-0.5 text-left font-medium">Dose</th>
+                  <th className="py-0.5 text-right font-medium">t&#x0303;</th>
+                  <th className="py-0.5 text-right font-medium">CV</th>
+                  <th className="py-0.5 text-right font-medium">p</th>
+                  <th className="py-0.5 text-right font-medium">Sig</th>
+                </tr>
+              </thead>
+              <tbody>
+                {williams.step_down_results.map((r) => (
+                  <tr key={r.dose_label} className={r.significant ? "text-red-600" : ""}>
+                    <td className="py-0.5">{r.dose_label}</td>
+                    <td className="py-0.5 text-right font-mono">{r.test_statistic.toFixed(3)}</td>
+                    <td className="py-0.5 text-right font-mono">{r.critical_value.toFixed(3)}</td>
+                    <td className="py-0.5 text-right font-mono">{formatPValue(r.p_value)}</td>
+                    <td className="py-0.5 text-right">{r.significant ? "Yes" : "No"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Decomposed Confidence Display ─────────────────────────
 
@@ -414,6 +497,10 @@ export function FindingsContextPanel() {
             </div>
           );
         })()}
+        {/* Williams' trend test comparison (OM domain only) */}
+        {selectedFinding.domain === "OM" && selectedFinding.williams && (
+          <WilliamsComparisonPane finding={selectedFinding} />
+        )}
         {/* Decomposed confidence display (ECI — SPEC-ECI-AMD-002) */}
         {(() => {
           const endpointLabel = selectedFinding.endpoint_label ?? selectedFinding.finding;
