@@ -62,6 +62,8 @@ export interface UnifiedFinding {
   organ_system?: string | null;
   endpoint_label?: string | null;
   max_fold_change?: number | null;
+  /** Max incidence across treated dose groups (incidence endpoints only). */
+  max_incidence?: number | null;
   group_stats: GroupStat[];
   pairwise: PairwiseResult[];
   /** Scheduled-only stats (early-death subjects excluded from terminal domains). */
