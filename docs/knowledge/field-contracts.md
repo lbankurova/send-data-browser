@@ -1267,3 +1267,36 @@ Source:      `endpoint-confidence.ts:checkTrendConcordance()`
 Methods:     Mechanism 2c — JT/Williams' concordance check (SPEC-WTC-AMD-003 §3.3)
 Invariants:  `triggered` true only when JT significant AND Williams' minimum_effective_dose is null. `discordanceType` is "jt_only" when triggered. `confidencePenalty` is always 1 when triggered.
 Null means:  `jtPValue: null` means no JT trend test was available. `williamsHighestDoseTestStat: null` means no Williams' test was run (non-OM endpoints).
+
+---
+
+## Source of Truth Registry
+
+Classifies every computed field in `unified_findings.json` by authoritative source. Frontend must not re-derive backend-authoritative fields from `group_stats` or `pairwise` — use the pre-computed value directly.
+
+| JSON Field | Source | Notes |
+|-----------|--------|-------|
+| `severity` | backend | `classify_severity()` |
+| `treatment_related` | backend | `determine_treatment_related()` |
+| `direction` | backend | Max \|Cohen's d\| selection |
+| `max_effect_size` | backend | Max \|Cohen's d\| across pairwise |
+| `min_p_adj` | backend | Min adjusted p-value |
+| `max_fold_change` | backend | Direction-aligned treated/control ratio |
+| `max_incidence` | backend | Max incidence across treated groups |
+| `dose_response_pattern` | backend | `classify_dose_response()` |
+| `pattern_confidence` | backend | DR classification confidence |
+| `onset_dose_level` | backend | First significant dose |
+| `organ_system` | backend | `get_organ_system()` mapping |
+| `anova_p` | backend | One-way ANOVA F-test |
+| `dunnett_p` | backend | Per-dose Dunnett's p-values |
+| `jt_p` | backend | Jonckheere-Terpstra trend |
+| `trend_p` | backend | Trend test p-value |
+| `trend_stat` | backend | Trend test statistic |
+| `group_stats` | backend-raw | Frontend reads for runtime method switching |
+| `pairwise` | backend-raw | Frontend reads for method switching |
+| `scheduled_group_stats` | backend-raw | Early-death-excluded stats |
+| `scheduled_pairwise` | backend-raw | Early-death-excluded pairwise |
+| `scheduled_direction` | backend-raw | Direction from scheduled-only pass |
+| `separate_group_stats` | backend-raw | Recovery-excluded stats |
+| `separate_pairwise` | backend-raw | Recovery-excluded pairwise |
+| `separate_direction` | backend-raw | Direction from main-only pass |

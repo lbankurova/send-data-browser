@@ -71,7 +71,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Albumin",
@@ -145,7 +146,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Albumin",
@@ -219,7 +221,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -293,7 +296,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -367,7 +371,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -441,7 +446,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -515,7 +521,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -589,7 +596,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Albumin/Globulin",
@@ -663,7 +671,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -737,7 +746,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -811,7 +821,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -885,7 +896,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -959,7 +971,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -1033,7 +1046,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alkaline Phosphatase",
@@ -1107,7 +1121,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -1181,7 +1196,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -1255,7 +1271,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -1329,7 +1346,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -1403,7 +1421,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -1477,7 +1496,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Alanine Aminotransferase",
@@ -1551,7 +1571,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -1625,7 +1646,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -1699,7 +1721,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -1773,7 +1796,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -1847,7 +1871,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -1921,7 +1946,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Aspartate Aminotransferase",
@@ -1995,7 +2021,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Basophils",
@@ -2069,7 +2096,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Basophils",
@@ -2143,7 +2171,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Basophils",
@@ -2217,7 +2246,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Basophils",
@@ -2291,7 +2321,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Basophils",
@@ -2365,7 +2396,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Basophils",
@@ -2439,7 +2471,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Cholesterol",
@@ -2513,7 +2546,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Cholesterol",
@@ -2587,7 +2621,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Cholesterol",
@@ -2661,7 +2696,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Cholesterol",
@@ -2735,7 +2771,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Cholesterol",
@@ -2809,7 +2846,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Cholesterol",
@@ -2883,7 +2921,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Creatinine",
@@ -2957,7 +2996,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Creatinine",
@@ -3031,7 +3071,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Creatinine",
@@ -3105,7 +3146,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Creatinine",
@@ -3179,7 +3221,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Creatinine",
@@ -3253,7 +3296,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Creatinine",
@@ -3327,7 +3371,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Eosinophils",
@@ -3401,7 +3446,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Eosinophils",
@@ -3475,7 +3521,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Eosinophils",
@@ -3549,7 +3596,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -3623,7 +3671,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -3697,7 +3746,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -3771,7 +3821,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -3845,7 +3896,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -3919,7 +3971,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Fibrinogen",
@@ -3993,7 +4046,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Glucose",
@@ -4067,7 +4121,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Glucose",
@@ -4141,7 +4196,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Glucose",
@@ -4215,7 +4271,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hematocrit",
@@ -4289,7 +4346,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hematocrit",
@@ -4363,7 +4421,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hematocrit",
@@ -4437,7 +4496,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hematocrit",
@@ -4511,7 +4571,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hematocrit",
@@ -4585,7 +4646,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hematocrit",
@@ -4659,7 +4721,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -4733,7 +4796,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -4807,7 +4871,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -4881,7 +4946,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -4955,7 +5021,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -5029,7 +5096,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Hemoglobin",
@@ -5103,7 +5171,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Potassium",
@@ -5177,7 +5246,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Potassium",
@@ -5251,7 +5321,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Potassium",
@@ -5325,7 +5396,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ketones",
@@ -5399,7 +5471,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ketones",
@@ -5473,7 +5546,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ketones",
@@ -5547,7 +5621,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Large Unstained Cells",
@@ -5621,7 +5696,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Large Unstained Cells",
@@ -5695,7 +5771,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Large Unstained Cells",
@@ -5769,7 +5846,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -5843,7 +5921,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -5917,7 +5996,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -5991,7 +6071,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -6065,7 +6146,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -6139,7 +6221,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Lymphocytes",
@@ -6213,7 +6296,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Hemoglobin",
@@ -6287,7 +6371,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Hemoglobin",
@@ -6361,7 +6446,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Hemoglobin",
@@ -6435,7 +6521,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -6509,7 +6596,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -6583,7 +6671,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -6657,7 +6746,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -6731,7 +6821,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -6805,7 +6896,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Ery. Mean Corpuscular Volume",
@@ -6879,7 +6971,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Monocytes",
@@ -6953,7 +7046,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Monocytes",
@@ -7027,7 +7121,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Monocytes",
@@ -7101,7 +7196,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Neutrophils",
@@ -7175,7 +7271,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Neutrophils",
@@ -7249,7 +7346,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Neutrophils",
@@ -7323,7 +7421,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Neutrophils",
@@ -7397,7 +7496,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Neutrophils",
@@ -7471,7 +7571,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Neutrophils",
@@ -7545,7 +7646,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "pH",
@@ -7619,7 +7721,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "pH",
@@ -7693,7 +7796,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "pH",
@@ -7767,7 +7871,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Phosphate",
@@ -7841,7 +7946,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Phosphate",
@@ -7915,7 +8021,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Phosphate",
@@ -7989,7 +8096,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Phosphate",
@@ -8063,7 +8171,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Phosphate",
@@ -8137,7 +8246,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Phosphate",
@@ -8211,7 +8321,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Platelets",
@@ -8285,7 +8396,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Platelets",
@@ -8359,7 +8471,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Platelets",
@@ -8433,7 +8546,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Prothrombin Time",
@@ -8452,7 +8566,7 @@
     "test_code": "PT",
     "specimen": null,
     "finding": "Prothrombin Time",
-    "max_fold_change": 1.24,
+    "max_fold_change": 0.93,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -8507,7 +8621,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Prothrombin Time",
@@ -8526,7 +8641,7 @@
     "test_code": "PT",
     "specimen": null,
     "finding": "Prothrombin Time",
-    "max_fold_change": 1.24,
+    "max_fold_change": 0.93,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -8581,7 +8696,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Prothrombin Time",
@@ -8600,7 +8716,7 @@
     "test_code": "PT",
     "specimen": null,
     "finding": "Prothrombin Time",
-    "max_fold_change": 1.24,
+    "max_fold_change": 0.93,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -8655,7 +8771,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -8729,7 +8846,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -8803,7 +8921,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -8877,7 +8996,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -8951,7 +9071,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -9025,7 +9146,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Erythrocytes",
@@ -9099,7 +9221,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Erythrocytes Distribution Width",
@@ -9173,7 +9296,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Erythrocytes Distribution Width",
@@ -9247,7 +9371,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Erythrocytes Distribution Width",
@@ -9321,7 +9446,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Reticulocytes",
@@ -9395,7 +9521,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Reticulocytes",
@@ -9469,7 +9596,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Reticulocytes",
@@ -9543,7 +9671,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Sodium",
@@ -9617,7 +9746,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Sodium",
@@ -9691,7 +9821,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Sodium",
@@ -9765,7 +9896,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Triglycerides",
@@ -9839,7 +9971,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Triglycerides",
@@ -9913,7 +10046,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Triglycerides",
@@ -9987,7 +10121,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Triglycerides",
@@ -10061,7 +10196,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Triglycerides",
@@ -10135,7 +10271,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Triglycerides",
@@ -10209,7 +10346,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Leukocytes",
@@ -10283,7 +10421,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Leukocytes",
@@ -10357,7 +10496,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Leukocytes",
@@ -10431,7 +10571,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Leukocytes",
@@ -10505,7 +10646,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Leukocytes",
@@ -10579,7 +10721,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Leukocytes",
@@ -10653,7 +10796,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10672,7 +10816,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.88
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10691,7 +10836,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.88
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10710,7 +10856,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.88
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10729,7 +10876,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.88
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10748,7 +10896,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.88
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10767,7 +10916,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.88
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10786,7 +10936,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.8
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10805,7 +10956,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.8
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10824,7 +10976,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.8
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10843,7 +10996,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.8
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10862,7 +11016,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.8
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10881,7 +11036,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.8
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10900,7 +11056,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.79
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10919,7 +11076,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.79
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10938,7 +11096,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.79
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10957,7 +11116,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10976,7 +11136,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -10995,7 +11156,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11014,7 +11176,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.8
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11033,7 +11196,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.8
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11052,7 +11216,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.8
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11071,7 +11236,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11090,7 +11256,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11109,7 +11276,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11128,7 +11296,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.77
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11147,7 +11316,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.77
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11166,7 +11336,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.77
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11185,7 +11356,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.84
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11204,7 +11376,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.84
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11223,7 +11396,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.84
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11242,7 +11416,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.79
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11261,7 +11436,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.79
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11280,7 +11456,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.79
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11299,7 +11476,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.78
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11318,7 +11496,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.78
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11337,7 +11516,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.78
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11356,7 +11536,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.78
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11375,7 +11556,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.78
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11394,7 +11576,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.78
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11413,7 +11596,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.84
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11432,7 +11616,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.84
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11451,7 +11636,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.84
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11470,7 +11656,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.78
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11489,7 +11676,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.78
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11508,7 +11696,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.78
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11527,7 +11716,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.83
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11546,7 +11736,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.83
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11565,7 +11756,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.83
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11584,7 +11776,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11603,7 +11796,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11622,7 +11816,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11641,7 +11836,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.86
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11660,7 +11856,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.86
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11679,7 +11876,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.86
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11698,7 +11896,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.84
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11717,7 +11916,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.84
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11736,7 +11936,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.84
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11755,7 +11956,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.94
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11774,7 +11976,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.94
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11793,7 +11996,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.94
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11812,7 +12016,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.83
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11831,7 +12036,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.83
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11850,7 +12056,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.83
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11869,7 +12076,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.83
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11888,7 +12096,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.83
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11907,7 +12116,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.83
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11926,7 +12136,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11945,7 +12156,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11964,7 +12176,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -11983,7 +12196,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.82
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -12002,7 +12216,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.82
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -12021,7 +12236,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.82
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -12040,7 +12256,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.82
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -12059,7 +12276,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.82
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -12078,7 +12296,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.82
+    "max_fold_change": 0.82,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -12097,7 +12316,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -12116,7 +12336,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "Body Weight",
@@ -12135,7 +12356,8 @@
     "test_code": "BW",
     "specimen": null,
     "finding": "Body Weight",
-    "max_fold_change": 0.81
+    "max_fold_change": 0.81,
+    "max_incidence": null
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -12213,7 +12435,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -12291,7 +12514,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -12369,7 +12593,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -12447,7 +12672,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -12525,7 +12751,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "BRAIN \u2014 BRAIN (WEIGHT)",
@@ -12603,7 +12830,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -12622,7 +12850,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
     "finding": "GLAND, ADRENAL (WEIGHT)",
-    "max_fold_change": 1.42,
+    "max_fold_change": 1.05,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -12681,7 +12909,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -12700,7 +12929,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
     "finding": "GLAND, ADRENAL (WEIGHT)",
-    "max_fold_change": 1.42,
+    "max_fold_change": 1.05,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -12759,7 +12988,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
@@ -12778,7 +13008,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, ADRENAL",
     "finding": "GLAND, ADRENAL (WEIGHT)",
-    "max_fold_change": 1.42,
+    "max_fold_change": 1.05,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -12837,7 +13067,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -12915,7 +13146,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -12993,7 +13225,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -13071,7 +13304,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -13149,7 +13383,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -13227,7 +13462,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
@@ -13305,7 +13541,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -13383,7 +13620,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -13461,7 +13699,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -13539,7 +13778,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -13558,7 +13798,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
     "finding": "GLAND, THYROID (WEIGHT)",
-    "max_fold_change": 0.79,
+    "max_fold_change": 0.8,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -13617,7 +13857,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -13636,7 +13877,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
     "finding": "GLAND, THYROID (WEIGHT)",
-    "max_fold_change": 0.79,
+    "max_fold_change": 0.8,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -13695,7 +13936,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
@@ -13714,7 +13956,7 @@
     "test_code": "WEIGHT",
     "specimen": "GLAND, THYROID",
     "finding": "GLAND, THYROID (WEIGHT)",
-    "max_fold_change": 0.79,
+    "max_fold_change": 0.8,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -13773,7 +14015,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -13851,7 +14094,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -13929,7 +14173,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -14007,7 +14252,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -14085,7 +14331,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -14163,7 +14410,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "HEART \u2014 HEART (WEIGHT)",
@@ -14241,7 +14489,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -14319,7 +14568,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -14397,7 +14647,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -14475,7 +14726,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -14553,7 +14805,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -14631,7 +14884,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "KIDNEY \u2014 KIDNEY (WEIGHT)",
@@ -14709,7 +14963,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "LIVER \u2014 LIVER (WEIGHT)",
@@ -14787,7 +15042,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "LIVER \u2014 LIVER (WEIGHT)",
@@ -14865,7 +15121,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "LIVER \u2014 LIVER (WEIGHT)",
@@ -14943,7 +15200,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "OVARY \u2014 OVARY (WEIGHT)",
@@ -14955,14 +15213,14 @@
     "sex": "F",
     "p_value": 0.956334,
     "effect_size": -0.3254,
-    "direction": "up",
+    "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "OVARY",
     "finding": "OVARY (WEIGHT)",
-    "max_fold_change": 1.38,
+    "max_fold_change": 0.96,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15021,7 +15279,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "OVARY \u2014 OVARY (WEIGHT)",
@@ -15033,14 +15292,14 @@
     "sex": "F",
     "p_value": 0.04743,
     "effect_size": 0.9385,
-    "direction": "up",
+    "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "OVARY",
     "finding": "OVARY (WEIGHT)",
-    "max_fold_change": 1.38,
+    "max_fold_change": 0.96,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15099,7 +15358,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "OVARY \u2014 OVARY (WEIGHT)",
@@ -15111,14 +15371,14 @@
     "sex": "F",
     "p_value": 0.067445,
     "effect_size": 1.0902,
-    "direction": "up",
+    "direction": "down",
     "severity": "adverse",
     "treatment_related": true,
     "dose_response_pattern": "threshold_increase",
     "test_code": "WEIGHT",
     "specimen": "OVARY",
     "finding": "OVARY (WEIGHT)",
-    "max_fold_change": 1.38,
+    "max_fold_change": 0.96,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15177,7 +15437,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "SPLEEN \u2014 SPLEEN (WEIGHT)",
@@ -15255,7 +15516,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "SPLEEN \u2014 SPLEEN (WEIGHT)",
@@ -15333,7 +15595,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "SPLEEN \u2014 SPLEEN (WEIGHT)",
@@ -15411,7 +15674,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "TESTIS \u2014 TESTIS (WEIGHT)",
@@ -15489,7 +15753,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "TESTIS \u2014 TESTIS (WEIGHT)",
@@ -15567,7 +15832,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "TESTIS \u2014 TESTIS (WEIGHT)",
@@ -15645,7 +15911,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "THYMUS \u2014 THYMUS (WEIGHT)",
@@ -15664,7 +15931,7 @@
     "test_code": "WEIGHT",
     "specimen": "THYMUS",
     "finding": "THYMUS (WEIGHT)",
-    "max_fold_change": 1.44,
+    "max_fold_change": 0.71,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15723,7 +15990,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "THYMUS \u2014 THYMUS (WEIGHT)",
@@ -15742,7 +16010,7 @@
     "test_code": "WEIGHT",
     "specimen": "THYMUS",
     "finding": "THYMUS (WEIGHT)",
-    "max_fold_change": 1.44,
+    "max_fold_change": 0.71,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15801,7 +16069,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "THYMUS \u2014 THYMUS (WEIGHT)",
@@ -15820,7 +16089,7 @@
     "test_code": "WEIGHT",
     "specimen": "THYMUS",
     "finding": "THYMUS (WEIGHT)",
-    "max_fold_change": 1.44,
+    "max_fold_change": 0.71,
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -15879,7 +16148,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": null
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -15965,7 +16235,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -16051,7 +16322,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -16137,7 +16409,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -16223,7 +16496,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -16309,7 +16583,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "BONE MARROW, FEMUR \u2014 FAT VACUOLES",
@@ -16395,7 +16670,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -16475,7 +16751,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -16555,7 +16832,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -16635,7 +16913,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -16715,7 +16994,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -16795,7 +17075,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 VACUOLIZATION",
@@ -16875,7 +17156,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 1.0
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -16949,7 +17231,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -17023,7 +17306,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -17097,7 +17381,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -17171,7 +17456,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -17245,7 +17531,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "GLAND, MAMMARY \u2014 ATROPHY",
@@ -17319,7 +17606,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 HYPERPLASIA",
@@ -17397,7 +17685,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.0
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 HYPERPLASIA",
@@ -17475,7 +17764,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.0
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 HYPERPLASIA",
@@ -17553,7 +17843,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.0
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -17633,7 +17924,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.3
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -17713,7 +18005,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.3
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -17793,7 +18086,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.3
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -17873,7 +18167,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.3
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -17953,7 +18248,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.3
   },
   {
     "endpoint_label": "HEART \u2014 INFLAMMATION",
@@ -18033,7 +18329,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.3
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -18119,7 +18416,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -18205,7 +18503,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -18291,7 +18590,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -18377,7 +18677,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -18463,7 +18764,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "KIDNEY \u2014 BASOPHILIC TUBULES",
@@ -18549,7 +18851,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -18626,7 +18929,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.9
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -18703,7 +19007,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.9
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -18780,7 +19085,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.9
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -18857,7 +19163,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -18934,7 +19241,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "LIVER \u2014 HYPERTROPHY",
@@ -19011,7 +19319,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -19096,7 +19405,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -19181,7 +19491,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -19266,7 +19577,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -19351,7 +19663,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -19436,7 +19749,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "PEYER'S PATCH \u2014 MINERALIZATION",
@@ -19521,7 +19835,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -19607,7 +19922,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.8
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -19693,7 +20009,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.8
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -19779,7 +20096,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.8
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -19865,7 +20183,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.8
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -19951,7 +20270,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.8
   },
   {
     "endpoint_label": "SPLEEN \u2014 PIGMENTATION",
@@ -20037,7 +20357,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.8
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 ENLARGED",
@@ -20107,7 +20428,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.0
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 ENLARGED",
@@ -20177,7 +20499,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.0
   },
   {
     "endpoint_label": "GLAND, ADRENAL \u2014 ENLARGED",
@@ -20247,7 +20570,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.0
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 ENLARGED",
@@ -20317,7 +20641,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.1
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 ENLARGED",
@@ -20387,7 +20712,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.1
   },
   {
     "endpoint_label": "GLAND, THYROID \u2014 ENLARGED",
@@ -20457,7 +20783,8 @@
       }
     ],
     "scheduled_direction": "down",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.1
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -20527,7 +20854,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -20597,7 +20925,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -20667,7 +20996,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.5
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -20737,7 +21067,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.4
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -20807,7 +21138,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.4
   },
   {
     "endpoint_label": "LIVER \u2014 ENLARGED",
@@ -20877,7 +21209,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.4
   },
   {
     "endpoint_label": "SKIN \u2014 MATTING",
@@ -20947,7 +21280,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.3
   },
   {
     "endpoint_label": "SKIN \u2014 MATTING",
@@ -21017,7 +21351,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.3
   },
   {
     "endpoint_label": "SKIN \u2014 MATTING",
@@ -21087,7 +21422,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.3
   },
   {
     "endpoint_label": "URINARY BLADDER \u2014 CONTENTS, DARK RED",
@@ -21157,7 +21493,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "URINARY BLADDER \u2014 CONTENTS, DARK RED",
@@ -21227,7 +21564,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "URINARY BLADDER \u2014 CONTENTS, DARK RED",
@@ -21297,7 +21635,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.6
   },
   {
     "endpoint_label": "UTERUS \u2014 CLEAR FLUID",
@@ -21367,7 +21706,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.4
   },
   {
     "endpoint_label": "UTERUS \u2014 CLEAR FLUID",
@@ -21437,7 +21777,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.4
   },
   {
     "endpoint_label": "UTERUS \u2014 CLEAR FLUID",
@@ -21507,7 +21848,8 @@
       }
     ],
     "scheduled_direction": "up",
-    "n_excluded": 2
+    "n_excluded": 2,
+    "max_incidence": 0.4
   },
   {
     "endpoint_label": "BEDDING WET",
@@ -21526,7 +21868,8 @@
     "test_code": "BEDDING WET",
     "specimen": null,
     "finding": "BEDDING WET",
-    "max_fold_change": null
+    "max_fold_change": null,
+    "max_incidence": 0.6667
   },
   {
     "endpoint_label": "BEDDING WET",
@@ -21545,7 +21888,8 @@
     "test_code": "BEDDING WET",
     "specimen": null,
     "finding": "BEDDING WET",
-    "max_fold_change": null
+    "max_fold_change": null,
+    "max_incidence": 0.6667
   },
   {
     "endpoint_label": "BEDDING WET",
@@ -21564,7 +21908,8 @@
     "test_code": "BEDDING WET",
     "specimen": null,
     "finding": "BEDDING WET",
-    "max_fold_change": null
+    "max_fold_change": null,
+    "max_incidence": 0.6667
   },
   {
     "endpoint_label": "RR Interval, Aggregate",

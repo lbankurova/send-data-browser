@@ -254,10 +254,19 @@ def compute_all_findings(
         finding["onset_dose_level"] = dr_result.get("onset_dose_level")
         finding["treatment_related"] = determine_treatment_related(finding)
 
-        # Fold change (continuous endpoints only)
+        # Fold change (continuous endpoints only) — direction-aligned
         finding["max_fold_change"] = compute_max_fold_change(
-            finding.get("group_stats", [])
+            finding.get("group_stats", []),
+            direction=finding.get("direction"),
         ) if finding.get("data_type") == "continuous" else None
+
+        # Max incidence across treated dose groups (incidence endpoints only)
+        if finding.get("data_type") == "incidence":
+            treated_gs = [gs for gs in finding.get("group_stats", []) if gs.get("dose_level", 0) > 0]
+            incidences = [gs["incidence"] for gs in treated_gs if gs.get("incidence") is not None]
+            finding["max_incidence"] = round(max(incidences), 4) if incidences else None
+        else:
+            finding["max_incidence"] = None
 
         # Add organ system
         finding["organ_system"] = get_organ_system(

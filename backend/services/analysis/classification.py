@@ -228,8 +228,13 @@ def classify_dose_response(group_stats: list[dict], data_type: str = "continuous
         return {"pattern": pattern, "confidence": None, "onset_dose_level": onset}
 
 
-def compute_max_fold_change(group_stats: list[dict]) -> float | None:
-    """Directional fold change (treated/control) for the dose with largest |deviation|.
+def compute_max_fold_change(group_stats: list[dict], direction: str | None = None) -> float | None:
+    """Direction-aligned fold change (treated/control) for the dose with largest deviation.
+
+    When direction is provided, only considers deviations in the expected direction:
+      - "down": only decreases (ratio < 1.0)
+      - "up":   only increases (ratio > 1.0)
+      - None:   largest absolute deviation (original behavior)
 
     Returns treated_mean / control_mean:
       > 1.0 for increases (e.g. 1.51×)
@@ -248,7 +253,12 @@ def compute_max_fold_change(group_stats: list[dict]) -> float | None:
         if treated_mean is None:
             continue
         ratio = treated_mean / control_mean
-        deviation = abs(ratio - 1.0)
+        if direction == "down":
+            deviation = max(0.0, 1.0 - ratio)
+        elif direction == "up":
+            deviation = max(0.0, ratio - 1.0)
+        else:
+            deviation = abs(ratio - 1.0)
         if deviation > max_dev:
             max_dev = deviation
             best_ratio = ratio

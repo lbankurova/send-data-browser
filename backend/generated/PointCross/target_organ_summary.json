@@ -1,7 +1,7 @@
 [
   {
     "organ_system": "general",
-    "evidence_score": 1.291,
+    "evidence_score": 1.305,
     "n_endpoints": 61,
     "n_domains": 8,
     "domains": [
@@ -22,7 +22,7 @@
   },
   {
     "organ_system": "hematologic",
-    "evidence_score": 0.894,
+    "evidence_score": 0.895,
     "n_endpoints": 65,
     "n_domains": 4,
     "domains": [
@@ -31,7 +31,7 @@
       "MI",
       "OM"
     ],
-    "max_signal_score": 0.856,
+    "max_signal_score": 0.855,
     "n_significant": 39,
     "n_treatment_related": 35,
     "target_organ_flag": true,
@@ -74,13 +74,13 @@
   },
   {
     "organ_system": "neurological",
-    "evidence_score": 0.618,
+    "evidence_score": 0.619,
     "n_endpoints": 2,
     "n_domains": 1,
     "domains": [
       "OM"
     ],
-    "max_signal_score": 0.727,
+    "max_signal_score": 0.728,
     "n_significant": 2,
     "n_treatment_related": 2,
     "target_organ_flag": true,
@@ -94,7 +94,7 @@
     "domains": [
       "LB"
     ],
-    "max_signal_score": 0.67,
+    "max_signal_score": 0.669,
     "n_significant": 6,
     "n_treatment_related": 3,
     "target_organ_flag": true,
@@ -139,7 +139,7 @@
       "OM",
       "VS"
     ],
-    "max_signal_score": 0.525,
+    "max_signal_score": 0.524,
     "n_significant": 3,
     "n_treatment_related": 3,
     "target_organ_flag": true,
