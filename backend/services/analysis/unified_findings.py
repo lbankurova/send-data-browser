@@ -17,6 +17,7 @@ from services.analysis.findings_mi import compute_mi_findings
 from services.analysis.findings_ma import compute_ma_findings
 from services.analysis.findings_tf import compute_tf_findings
 from services.analysis.findings_cl import compute_cl_findings
+from services.analysis.findings_ds import compute_ds_findings
 from services.analysis.classification import (
     classify_severity, classify_dose_response, determine_treatment_related,
     compute_max_fold_change,
@@ -26,7 +27,7 @@ from services.analysis.mortality import get_early_death_subjects
 from services.analysis.phase_filter import get_terminal_subjects, IN_LIFE_DOMAINS
 from generator.organ_map import get_organ_system
 
-TERMINAL_DOMAINS = {"MI", "MA", "OM", "TF"}
+TERMINAL_DOMAINS = {"MI", "MA", "OM", "TF", "DS"}
 LB_DOMAIN = "LB"
 
 
@@ -82,6 +83,7 @@ def _get_code_max_mtime() -> float:
         analysis_dir / "findings_ma.py",
         analysis_dir / "findings_tf.py",
         analysis_dir / "findings_cl.py",
+        analysis_dir / "findings_ds.py",
         analysis_dir / "classification.py",
         analysis_dir / "correlations.py",
         analysis_dir / "mortality.py",
@@ -141,6 +143,7 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     all_findings.extend(compute_ma_findings(study, subjects))
     all_findings.extend(compute_tf_findings(study, subjects))
     all_findings.extend(compute_cl_findings(study, subjects))
+    all_findings.extend(compute_ds_findings(study, subjects))
 
     # Pass 2 — scheduled-only stats for terminal + LB domains
     if excluded_set:
@@ -158,6 +161,9 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
             key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
             scheduled_findings_map[key] = sched_f
         for sched_f in compute_lb_findings(study, subjects, excluded_subjects=excluded_set):
+            key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
+            scheduled_findings_map[key] = sched_f
+        for sched_f in compute_ds_findings(study, subjects, excluded_subjects=excluded_set):
             key = (sched_f["domain"], sched_f["test_code"], sched_f["sex"], sched_f.get("day"))
             scheduled_findings_map[key] = sched_f
 
