@@ -9,7 +9,8 @@
  * only — no expensive backend call triggered. Data appears once the user
  * visits the findings view (cache populates), then persists for 5 min.
  *
- * Phase 1: Hedges' g from summary stats, tiered decisions, no ANCOVA.
+ * Phase 1: Hedges' g from summary stats, tiered decisions.
+ * Phase 2: Enriches contexts with ANCOVA effectDecomposition when available.
  */
 
 import { useMemo } from "react";
@@ -28,7 +29,7 @@ import type {
   GroupStatsTriplet,
 } from "@/lib/organ-weight-normalization";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
-import type { FindingsFilters, UnifiedFinding, GroupStat } from "@/types/analysis";
+import type { FindingsFilters, UnifiedFinding, GroupStat, ANCOVAResult } from "@/types/analysis";
 
 const ALL_FILTERS: FindingsFilters = {
   domain: null, sex: null, severity: null, search: "",
@@ -143,6 +144,49 @@ function extractOrganGroupStatsMap(findings: UnifiedFinding[]): Map<string, Grou
   return map;
 }
 
+/**
+ * Enrich NormalizationContexts with ANCOVA effectDecomposition from findings.
+ * When a finding has precomputed ANCOVA data, map each dose group's
+ * decomposition into the matching NormalizationContext.
+ */
+function enrichWithAncova(
+  state: StudyNormalizationState,
+  findings: UnifiedFinding[],
+): void {
+  const omWithAncova = findings.filter(
+    (f): f is UnifiedFinding & { ancova: ANCOVAResult } =>
+      f.domain === "OM" && f.ancova != null,
+  );
+  if (omWithAncova.length === 0) return;
+
+  for (const f of omWithAncova) {
+    const organ = f.specimen?.toUpperCase();
+    if (!organ) continue;
+
+    for (const decomp of f.ancova.effect_decomposition) {
+      const doseKey = String(decomp.group);
+      const ctx = state.contexts.find(
+        (c) => c.organ === organ && c.setcd === doseKey,
+      );
+      if (!ctx) continue;
+
+      ctx.effectDecomposition = {
+        totalEffect: decomp.total_effect,
+        directEffect: decomp.direct_effect,
+        indirectEffect: decomp.indirect_effect,
+        proportionDirect: decomp.proportion_direct,
+        directG: decomp.direct_g,
+        directP: decomp.direct_p,
+      };
+
+      // Update mode to 'ancova' when backend selected it as recommended
+      if (f.normalization?.recommended_metric === "ancova") {
+        ctx.activeMode = "ancova";
+      }
+    }
+  }
+}
+
 export interface UseOrganWeightNormalizationResult {
   state: StudyNormalizationState | null;
   isLoading: boolean;
@@ -194,7 +238,7 @@ export function useOrganWeightNormalization(
     const studyType = mapStudyType(meta.study_type);
     const controlDoseLevel = 0; // Standard SEND convention
 
-    return computeStudyNormalization(
+    const result = computeStudyNormalization(
       bwStats,
       brainStats,
       organMap,
@@ -205,6 +249,11 @@ export function useOrganWeightNormalization(
       effectSizeMethod,
       meta.has_estrous_data ?? false,
     );
+
+    // Enrich NormalizationContexts with ANCOVA effectDecomposition (Phase 2)
+    enrichWithAncova(result, findings);
+
+    return result;
   }, [findingsData, meta, studyId, effectSizeMethod]);
 
   const getDecision = useMemo(() => {

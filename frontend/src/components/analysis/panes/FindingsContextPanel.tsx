@@ -109,6 +109,79 @@ function WilliamsComparisonPane({ finding }: { finding: UnifiedFinding }) {
   );
 }
 
+// ─── ANCOVA Effect Decomposition ──────────────────────────
+
+function ANCOVADecompositionPane({ finding }: { finding: UnifiedFinding }) {
+  const ancova = finding.ancova;
+  if (!ancova) return null;
+
+  const slopeHomogeneous = ancova.slope_homogeneity.homogeneous;
+
+  return (
+    <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+          ANCOVA decomposition
+        </span>
+        <span className="text-[9px] text-muted-foreground">
+          R&sup2; = {ancova.model_r_squared.toFixed(2)}
+        </span>
+        {!slopeHomogeneous && (
+          <span className="text-[9px] font-medium text-amber-600">
+            Non-parallel slopes
+          </span>
+        )}
+      </div>
+
+      {/* Slope info */}
+      <div className="mb-1.5 flex items-center gap-3 text-muted-foreground">
+        <span>BW slope: <span className="font-mono">{ancova.slope.estimate.toFixed(4)}</span></span>
+        <span>p = <span className="font-mono">{formatPValue(ancova.slope.p_value)}</span></span>
+      </div>
+
+      {/* Effect decomposition per dose group */}
+      <table className="w-full">
+        <thead>
+          <tr className="text-[9px] text-muted-foreground">
+            <th className="py-0.5 text-left font-medium">Group</th>
+            <th className="py-0.5 text-right font-medium">Total</th>
+            <th className="py-0.5 text-right font-medium">Direct</th>
+            <th className="py-0.5 text-right font-medium">Indirect</th>
+            <th className="py-0.5 text-right font-medium">% direct</th>
+            <th className="py-0.5 text-right font-medium">p</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ancova.effect_decomposition.map((d) => (
+            <tr key={d.group} className={d.direct_p < 0.05 ? "text-red-600" : ""}>
+              <td className="py-0.5">{d.group}</td>
+              <td className="py-0.5 text-right font-mono">{d.total_effect.toFixed(3)}</td>
+              <td className="py-0.5 text-right font-mono">{d.direct_effect.toFixed(3)}</td>
+              <td className="py-0.5 text-right font-mono">{d.indirect_effect.toFixed(3)}</td>
+              <td className="py-0.5 text-right font-mono">{(d.proportion_direct * 100).toFixed(0)}%</td>
+              <td className="py-0.5 text-right font-mono">{formatPValue(d.direct_p)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Adjusted means */}
+      <div className="mt-1.5">
+        <div className="mb-0.5 text-[9px] text-muted-foreground">Adjusted means (at mean BW = {ancova.covariate_mean.toFixed(1)})</div>
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+          {ancova.adjusted_means.map((m) => (
+            <span key={m.group} className="font-mono">
+              <span className="text-muted-foreground">{m.group}:</span>{" "}
+              {m.adjusted_mean.toFixed(2)}
+              <span className="text-muted-foreground"> (raw {m.raw_mean.toFixed(2)})</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Decomposed Confidence Display ─────────────────────────
 
 function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
@@ -500,6 +573,10 @@ export function FindingsContextPanel() {
         {/* Williams' trend test comparison (OM domain only) */}
         {selectedFinding.domain === "OM" && selectedFinding.williams && (
           <WilliamsComparisonPane finding={selectedFinding} />
+        )}
+        {/* ANCOVA effect decomposition (OM domain, Phase 2) */}
+        {selectedFinding.domain === "OM" && selectedFinding.ancova && (
+          <ANCOVADecompositionPane finding={selectedFinding} />
         )}
         {/* Decomposed confidence display (ECI — SPEC-ECI-AMD-002) */}
         {(() => {
