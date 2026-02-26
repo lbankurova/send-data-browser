@@ -98,7 +98,7 @@ def _kruskal_p(group_values: list[np.ndarray]) -> float | None:
         return None
 
 
-TERMINAL_DOMAINS = {"MI", "MA", "OM", "TF"}  # Always collected at sacrifice
+TERMINAL_DOMAINS = {"MI", "MA", "OM", "TF", "DS"}  # Always collected at sacrifice
 LB_DOMAIN = "LB"  # Terminal timepoint only exclusion
 
 
@@ -171,6 +171,9 @@ def compute_all_findings(
             scheduled_findings_map[_sched_key(sched_f)] = sched_f
 
         for sched_f in compute_lb_findings(study, subjects, excluded_subjects=excluded_set, last_dosing_day=last_dosing_day):
+            scheduled_findings_map[_sched_key(sched_f)] = sched_f
+
+        for sched_f in compute_ds_findings(study, subjects, excluded_subjects=excluded_set):
             scheduled_findings_map[_sched_key(sched_f)] = sched_f
 
         # Merge scheduled stats into all_findings
