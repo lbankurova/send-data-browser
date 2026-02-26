@@ -63,6 +63,15 @@
 | `portability/dg-knowledge-gaps.md` | DG-01 through DG-15 platform research tasks |
 | `views/archive/target-organs.md` | Archived 2026-02-16 — view removed, route redirects to parent. Hooks (`useTargetOrganSummary`, `OrganRailMode`) still used by other views. |
 
+## Topic Hubs
+
+> **Purpose:** Holistic status documents per subsystem — what shipped, what didn't (and why), documented spec departures, file maps. Agents must consult relevant hubs before implementing (CLAUDE.md rule 7) and update them on commit (COMMIT-CHECKLIST item 8).
+
+| Asset | Subsystem | Last validated | Status |
+|-------|-----------|----------------|--------|
+| `incoming/arch-overhaul/TOPIC-organ-measurements.md` | Organ weight normalization, ANCOVA, Williams', ECI, NOAEL weighting | 2026-02-26 | Current |
+| `incoming/arch-overhaul/TOPIC-syndrome-engine.md` | Cross-domain syndrome detection, interpretation layer, ECETOC, translational confidence, OPI | 2026-02-26 | Current |
+
 ## Incoming Feature Specs
 
 Specs in `incoming/` represent pending or in-progress features. Specs in `incoming/archive/` are fully implemented.

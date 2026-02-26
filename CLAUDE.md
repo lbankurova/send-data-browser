@@ -68,6 +68,8 @@ These rules are non-negotiable. No agent may override, reinterpret, or skip them
 
 6. **Reuse before reinventing.** Before writing new logic: (a) search the codebase for existing hooks, functions, derived data, and generated JSON that already compute the needed values; (b) read `docs/knowledge/methods-index.md` and `docs/knowledge/field-contracts-index.md` to check if the computation already exists — drill into the full `methods.md` / `field-contracts.md` only for relevant entries; (c) read `docs/knowledge/species-profiles.md` and `docs/knowledge/vehicle-profiles.md` for reference data. Only after confirming no existing source provides the data may the agent write new logic. Duplicating or re-deriving existing data is a defect.
 
+7. **Consult TOPIC hubs before touching a subsystem.** Before implementing features, fixes, or refactors that touch a subsystem covered by a TOPIC hub (`docs/incoming/arch-overhaul/TOPIC-*.md`), read the hub first. TOPIC hubs document: what shipped, what intentionally didn't ship (and why), documented departures from specs, and the full file map. Skipping this step risks re-implementing existing logic, undoing deliberate decisions, or conflicting with documented departures. If no TOPIC hub exists for the subsystem, this rule does not apply.
+
 ## Agent Commit Protocol
 
 Before committing, run every item in `docs/checklists/COMMIT-CHECKLIST.md`. Every item must pass.
