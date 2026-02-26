@@ -1196,6 +1196,66 @@ Not:         [common misreadings that lead to bugs]
 | FIELD-45 – FIELD-48 | Rule synthesis & aggregation | 4 |
 | FIELD-49 – FIELD-50 | Statistical method transforms | 2 |
 | FIELD-51 – FIELD-52 | Organ weight normalization | 2 |
-| FIELD-53+ | Reserved for future fields | — |
+| FIELD-53 – FIELD-59 | Endpoint confidence integrity (ECI) | 7 |
 
-Total: 52 fields documented.
+Total: 59 fields documented.
+
+---
+
+## Endpoint Confidence Integrity (ECI)
+
+### FIELD-53 — `EndpointSummary.endpointConfidence`
+Type:        `EndpointConfidenceResult | undefined`
+Scope:       endpoint-level
+Source:      `endpoint-confidence.ts:attachEndpointConfidence()`
+Consumers:   FindingsContextPanel, FindingsRail (organ confidence), NoaelDeterminationView, FindingsQuadrantScatter, DoseResponseView
+Methods:     @CLASS-22, @CLASS-23, @CLASS-24, @CLASS-25, @CLASS-26
+Invariants:  Present on all endpoints after `attachEndpointConfidence()` runs. Never mutated after attachment.
+Null means:  ECI not yet computed (e.g., findings data unavailable).
+Not:         Not the same as CLASS-16 (rail confidence) — ECI is a 4-mechanism quality assessment, not a signal strength score.
+
+### FIELD-54 — `EndpointConfidenceResult.nonMonotonic`
+Type:        `NonMonotonicFlag`
+Scope:       endpoint-level
+Source:      `endpoint-confidence.ts:checkNonMonotonic()`
+Methods:     @CLASS-22
+Invariants:  `triggered: false` when pattern is not threshold-type or when all 4 criteria not met. When triggered: `peakDoseLevel`, `reversalRatio`, `rationale` are all non-null.
+Null means:  N/A (always present as part of `EndpointConfidenceResult`).
+
+### FIELD-55 — `EndpointConfidenceResult.trendCaveat`
+Type:        `TrendTestCaveat`
+Scope:       endpoint-level
+Source:      `endpoint-confidence.ts:checkTrendTestValidity()`
+Methods:     @CLASS-23
+Invariants:  `triggered: false` when trend_p is null or variance ratios ≤ 2.0. `sdRatio` and `cvRatio` populated even when not triggered (for transparency). Penalty = 1 only when both SD and CV criteria fire.
+Null means:  N/A (always present).
+
+### FIELD-56 — `EndpointConfidenceResult.normCaveat`
+Type:        `NormalizationCaveat | null`
+Scope:       endpoint-level
+Source:      `endpoint-confidence.ts:getNormalizationCaveat()`
+Methods:     @CLASS-24
+Invariants:  null for non-FEMALE_REPRODUCTIVE organs. `ceilingOnTR` is "moderate" only when neither escape condition (estrous data, confirmatory MI) is present.
+Null means:  Organ is not FEMALE_REPRODUCTIVE — no normalization concern.
+
+### FIELD-57 — `EndpointConfidenceResult.integrated`
+Type:        `IntegratedConfidence`
+Scope:       endpoint-level
+Source:      `endpoint-confidence.ts:integrateConfidence()`
+Methods:     @CLASS-25
+Invariants:  `integrated` = min(statistical, biological, doseResponse, trendValidity). `limitingFactor` is "None" only when `integrated` = "high" and all dimensions are "high".
+
+### FIELD-58 — `EndpointConfidenceResult.noaelContribution`
+Type:        `NOAELContribution`
+Scope:       endpoint-level
+Source:      `endpoint-confidence.ts:computeNOAELContribution()`
+Methods:     @CLASS-26
+Invariants:  `weight` is exactly 0.0, 0.3, 0.7, or 1.0. `canSetNOAEL` true iff weight ≥ 0.7. `requiresCorroboration` true iff weight = 0.7. `label` always matches weight (determining=1.0, contributing=0.7, supporting=0.3, excluded=0.0).
+
+### FIELD-59 — `WeightedNOAELResult`
+Type:        `WeightedNOAELResult`
+Scope:       study-level
+Source:      `endpoint-confidence.ts:deriveWeightedNOAEL()`
+Methods:     @CLASS-27
+Invariants:  `noael` is null only when LOAEL = lowest tested dose. `determiningEndpoints` contains only weight=1.0 endpoints. Contributing endpoints appear in constraints only if corroborated.
+Null means:  `noael: null` means LOAEL is at or below the lowest dose — no safe dose identified.

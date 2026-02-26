@@ -179,6 +179,7 @@ function downgradeConfidence(
  *   3. Highest dose shows <50% of peak effect
  *   4. Highest dose pairwise p > 0.05
  */
+// @field FIELD-54 — non-monotonic dose-response flag
 export function checkNonMonotonic(
   groupStats: GroupStat[],
   pairwise: PairwiseResult[],
@@ -249,6 +250,7 @@ export function checkNonMonotonic(
  *
  * Penalty = 1 when BOTH fire, 0 when only one fires.
  */
+// @field FIELD-55 — trend test variance homogeneity caveat
 export function checkTrendTestValidity(
   groupStats: GroupStat[],
   trendP: number | null,
@@ -344,6 +346,7 @@ export function checkTrendTestValidity(
  * Only fires for FEMALE_REPRODUCTIVE organs without escape conditions
  * (estrous staging or confirmatory microscopic findings).
  */
+// @field FIELD-56 — normalization confidence ceiling (FEMALE_REPRODUCTIVE)
 export function getNormalizationCaveat(
   organ: string,
   hasEstrousData: boolean,
@@ -430,6 +433,7 @@ function deriveStatisticalConfidence(ep: EndpointSummary): ConfidenceLevel {
  * Combine all 4 confidence dimensions into an integrated assessment.
  * Integrated = min(statistical, biological, doseResponse, trendValidity).
  */
+// @field FIELD-57 — 4-dimension integrated confidence
 export function integrateConfidence(
   nonMonoFlag: NonMonotonicFlag,
   trendCaveat: TrendTestCaveat,
@@ -503,6 +507,7 @@ export function integrateConfidence(
  * Gate: must be treatment-related AND adverse.
  * Weight: 1.0 (determining), 0.7 (contributing), 0.3 (supporting), 0.0 (excluded).
  */
+// @field FIELD-58 — NOAEL contribution weight + label
 export function computeNOAELContribution(
   integrated: IntegratedConfidence,
   nonMonoFlag: NonMonotonicFlag,
@@ -561,6 +566,7 @@ export function computeNOAELContribution(
  * Run all 4 ECI mechanisms for a single endpoint.
  * This is the main entry point wired into deriveEndpointSummaries().
  */
+// @field FIELD-53 — endpoint confidence integrity assessment (4 mechanisms + NOAEL weight)
 export function computeEndpointConfidence(
   groupStats: GroupStat[],
   pairwise: PairwiseResult[],
@@ -659,6 +665,7 @@ export function attachEndpointConfidence(
  * - Supporting (0.3): documented but does not constrain
  * - Excluded (0.0): not included
  */
+// @field FIELD-59 — study-level weighted NOAEL from ECI
 export function deriveWeightedNOAEL(
   endpoints: WeightedNOAELEndpoint[],
   doseLevels: number[],
