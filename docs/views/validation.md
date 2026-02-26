@@ -47,6 +47,7 @@ Rules are browsed in the shell's left rail panel, not in the center panel. The r
 
 ### Header
 - Label: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "VALIDATION RULES"
+- CSV export dropdown (left of RUN): `Download` icon + "CSV" label. Dropdown with two options: "All rules ({N})" exports full catalog, "Visible only ({N})" exports filtered subset (shown only when filters are active). Exports 8 columns: Rule ID, Severity, Domain, Category, Description, Records Affected, Status, Source.
 - RUN button (right-aligned): primary button, disabled during validation (`isValidating`)
 
 ### Search
@@ -376,8 +377,7 @@ Located at `panes/ValidationRecordForm.tsx`. A standalone record-level annotatio
 | Record column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.validation.recordColumnSizing", {})` |
 | Record filters | Local | `useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>` |
 | Expand/collapse all | Local | `useCollapseAll()` -- expandGen/collapseGen counters |
-| Validation results | Server | `useValidationResults(studyId)` -- React Query, 5min stale |
-| Validation catalog | Server | `useValidationCatalog(studyId)` -- all rules with full detail |
+| Validation catalog | Server | `useValidationCatalog(studyId)` -- all rules (triggered + clean + disabled) with full detail, scripts, summary. Single fetch; `useValidationResults` is NOT used in this view. |
 | Affected records | Server | `useAffectedRecords(studyId, ruleId)` -- React Query, 5min stale |
 | Record annotations | Server | `useAnnotations<ValidationRecordReview>(studyId, "validation-records")` |
 | Rule annotations | Server | `useAnnotations<ValidationIssue>(studyId, "validation-issues")` |
@@ -395,8 +395,7 @@ Located at `panes/ValidationRecordForm.tsx`. A standalone record-level annotatio
 ## Data Flow
 
 ```
-useValidationCatalog(studyId) ──> catalogData (all rules: triggered, clean, disabled)
-useValidationResults(studyId) ──> validationData (triggered rules + scripts)
+useValidationCatalog(studyId) ──> catalogData (all rules + scripts + summary)
                                       |
                     ┌─────────────────┴─────────────────┐
                     |                                     |
@@ -490,17 +489,13 @@ The `fixTier` value is assigned by the backend validation engine based on the ch
 ## Current Improvement Opportunities
 
 ### Records Table
-- Issue ID is a clickable link that changes context panel mode -- interaction not visually indicated beyond the primary color
 - No bulk actions (mark all as reviewed, accept all)
 - Page size hardcoded to 500 in the hook -- no pagination controls in the UI
 
 ### Context Panel
-- Navigation history is complex -- forward/back buttons with a state machine built via `useMemo` side-effect
-- Fix "APPLY" actions save annotations but do not modify the underlying XPT data (simulated result)
-- FindingSection has multiple sub-views (accept, enter value, script dialog) that reset on record change
-- Rule disposition form (`ValidationIssueForm`) and record review form (`InlineReviewSection`) use separate annotation stores (`validation-issues` and `validation-records`)
+- Fix "APPLY" actions save annotations but do not modify the underlying XPT data (deferred to production -- MF-05)
+- Rule disposition form (`ValidationIssueForm`, store `validation-issues`, keyed by ruleId) and per-record review form (`InlineReviewSection`, store `validation-records`, keyed by issueId) have no rollup: all records can be individually marked "Reviewed"+"Fixed" while the rule-level disposition stays "Not reviewed", and vice versa. Review Progress pane shows record counts but does not propagate to rule disposition.
 
 ### General
 - No keyboard navigation
-- No export option for validation results
 - No connection to the analysis views (e.g., clicking a finding in MI validation does not navigate to histopathology view)
