@@ -6,7 +6,7 @@
  */
 
 import type { UnifiedFinding, GroupStat } from "@/types/analysis";
-import type { RecoveryRow } from "@/lib/syndrome-interpretation";
+import type { RecoveryRow } from "@/lib/syndrome-interpretation-types";
 
 // ─── Types ──────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchFoodConsumptionSummary } from "@/lib/analysis-view-api";
-import type { FoodConsumptionSummaryResponse } from "@/lib/syndrome-interpretation";
+import type { FoodConsumptionSummaryResponse } from "@/lib/syndrome-interpretation-types";
 
 const EMPTY: FoodConsumptionSummaryResponse = {
   available: false,
