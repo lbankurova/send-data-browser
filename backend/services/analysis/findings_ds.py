@@ -32,7 +32,11 @@ def classify_disposition(dsdecod: str) -> str:
     return "unknown"
 
 
-def compute_ds_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
+def compute_ds_findings(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    excluded_subjects: set[str] | None = None,
+) -> list[dict]:
     """Compute mortality findings from DS domain.
 
     Identifies deaths/euthanasia from DSDECOD, creates incidence-based
@@ -50,6 +54,8 @@ def compute_ds_findings(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
         return []
 
     main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
+    if excluded_subjects:
+        main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
     ds_df = ds_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
 
     # Filter to death-related records
