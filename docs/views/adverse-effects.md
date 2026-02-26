@@ -196,12 +196,13 @@ Route-detected: when pathname matches regex `/\/studies\/[^/]+\/(findings|(analy
 
 Three selection priorities:
 1. **Endpoint selected** → endpoint-level panel (see "With Selection" below)
-2. **Group selected** (`selectedGroupType === "organ"`) → `OrganContextPanel` for the organ key. Panes include: Convergence, Organ weight normalization (tier >= 2 only, with override form — see below), Organ NOAEL, Related syndromes, Member endpoints
+2. **Group selected** (`selectedGroupType === "organ"`) → `OrganContextPanel` for the organ key. Panes include: Convergence, Organ weight normalization (tier >= 2 only, with override form — see below), Normalization overview heatmap (collapsed by default, tier >= 2), Organ NOAEL, Related syndromes, Member endpoints
 3. **Syndrome selected** (`selectedGroupType === "syndrome"`) → `SyndromeContextPanel` for the syndrome ID
 4. **Nothing selected** → empty state:
    - Header: `text-sm font-semibold` -- "Findings" (`<h3>` with `mb-2`)
    - Message: "Select a finding row to view detailed analysis."
    - `p-4 text-xs text-muted-foreground`
+   - **Normalization overview heatmap** (when OM normalization tier >= 2 contexts exist): `NormalizationHeatmap` in CollapsiblePane, open by default. Compact organ × dose-group matrix showing metric mode (ABS/BW/Brain/ANCOVA) with tier-colored badges. Click organ row → selects organ group.
 
 ### Loading State
 - `Skeleton` components: h-4 w-2/3, then h-20 w-full x3
