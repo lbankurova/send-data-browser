@@ -1196,9 +1196,9 @@ Not:         [common misreadings that lead to bugs]
 | FIELD-45 – FIELD-48 | Rule synthesis & aggregation | 4 |
 | FIELD-49 – FIELD-50 | Statistical method transforms | 2 |
 | FIELD-51 – FIELD-52 | Organ weight normalization | 2 |
-| FIELD-53 – FIELD-59 | Endpoint confidence integrity (ECI) | 7 |
+| FIELD-53 – FIELD-60 | Endpoint confidence integrity (ECI) | 8 |
 
-Total: 59 fields documented.
+Total: 60 fields documented.
 
 ---
 
@@ -1259,3 +1259,11 @@ Source:      `endpoint-confidence.ts:deriveWeightedNOAEL()`
 Methods:     @CLASS-27
 Invariants:  `noael` is null only when LOAEL = lowest tested dose. `determiningEndpoints` contains only weight=1.0 endpoints. Contributing endpoints appear in constraints only if corroborated.
 Null means:  `noael: null` means LOAEL is at or below the lowest dose — no safe dose identified.
+
+### FIELD-60 — `TrendConcordanceResult`
+Type:        `TrendConcordanceResult`
+Scope:       endpoint-level
+Source:      `endpoint-confidence.ts:checkTrendConcordance()`
+Methods:     Mechanism 2c — JT/Williams' concordance check (SPEC-WTC-AMD-003 §3.3)
+Invariants:  `triggered` true only when JT significant AND Williams' minimum_effective_dose is null. `discordanceType` is "jt_only" when triggered. `confidencePenalty` is always 1 when triggered.
+Null means:  `jtPValue: null` means no JT trend test was available. `williamsHighestDoseTestStat: null` means no Williams' test was run (non-OM endpoints).

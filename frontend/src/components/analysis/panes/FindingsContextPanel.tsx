@@ -61,6 +61,11 @@ function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
       level: integrated.trendValidity,
       reason: eci.trendCaveat.triggered ? eci.trendCaveat.rationale ?? undefined : undefined,
     },
+    {
+      label: "Trend concordance",
+      level: integrated.trendConcordance,
+      reason: eci.trendConcordance.triggered ? eci.trendConcordance.rationale ?? undefined : undefined,
+    },
   ];
 
   return (
