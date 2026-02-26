@@ -12,7 +12,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getNeutralHeatColor } from "@/components/analysis/HistopathologyView";
+import { getNeutralHeatColor } from "@/lib/histopathology-helpers";
 import { useSubjectComparison } from "@/hooks/useSubjectComparison";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";

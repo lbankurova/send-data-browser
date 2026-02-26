@@ -1,5 +1,5 @@
 import { StripSep } from "@/components/ui/SectionHeader";
-import type { FindingTableRow } from "@/components/analysis/HistopathologyView";
+import type { FindingTableRow } from "@/lib/histopathology-helpers";
 import { verdictArrow } from "@/lib/recovery-assessment";
 
 interface FindingsSelectionZoneProps {

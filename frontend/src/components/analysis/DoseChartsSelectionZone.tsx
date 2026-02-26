@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { StripSep } from "@/components/ui/SectionHeader";
-import type { FindingTableRow, HeatmapData } from "@/components/analysis/HistopathologyView";
+import type { FindingTableRow, HeatmapData } from "@/lib/histopathology-helpers";
 
 interface RecoveryHeatmap {
   doseLevels: number[];
