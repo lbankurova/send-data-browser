@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { FilterBar, FilterSelect } from "@/components/ui/FilterBar";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { useAnnotations } from "@/hooks/useAnnotations";
-import { useValidationResults } from "@/hooks/useValidationResults";
 import type { ValidationRuleResult } from "@/hooks/useValidationResults";
 import { useValidationCatalog } from "@/hooks/useValidationCatalog";
 import { useAffectedRecords } from "@/hooks/useAffectedRecords";
@@ -151,17 +150,12 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [recordFilters, setRecordFilters] = useState<{ fixStatus: string; reviewStatus: string; subjectId: string }>({ fixStatus: "", reviewStatus: "", subjectId: "" });
 
-  // Derive selected rule from viewSelection (set by rail via context)
-  const { data: validationData, isLoading: resultsLoading } = useValidationResults(studyId);
-  // Catalog has ALL rules (triggered + clean + disabled) with full detail
-  const { data: catalogData } = useValidationCatalog(studyId);
+  // Full catalog: triggered + clean + disabled rules, scripts, summary
+  const { data: catalogData, isLoading: resultsLoading } = useValidationCatalog(studyId);
   const selectedRule = useMemo<ValidationRuleResult | null>(() => {
     if (!viewSelection || viewSelection._view !== "validation") return null;
     if (viewSelection.mode !== "rule" && viewSelection.mode !== "issue") return null;
-    // First try triggered results (most detail for triggered rules)
-    const fromResults = validationData?.rules?.find((r) => r.rule_id === viewSelection.rule_id);
-    if (fromResults) return fromResults;
-    // Second: try full catalog (has detail for clean/disabled/CORE rules)
+    // Catalog has all rules (triggered + clean + disabled) with full detail
     const fromCatalog = catalogData?.rules?.find((r) => r.rule_id === viewSelection.rule_id);
     if (fromCatalog) return fromCatalog;
     // Last resort: reconstruct from viewSelection
@@ -180,7 +174,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
       source: viewSelection.rule_id.startsWith("CORE-") ? "core" as const : "custom" as const,
       status: viewSelection.records_affected > 0 ? "triggered" as const : "clean" as const,
     };
-  }, [viewSelection, validationData, catalogData]);
+  }, [viewSelection, catalogData]);
 
   // Catalog stats for header bar (catalogData already fetched above)
   const catalogStats = useMemo(() => {
@@ -379,7 +373,7 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
   }
 
   // ── No results state ──
-  if (!validationData) {
+  if (!catalogData) {
     return (
       <div className="flex h-full flex-col">
         <CatalogStatsBar stats={catalogStats} />

@@ -15,7 +15,6 @@ import {
 } from "@/components/analysis/ValidationView";
 import type { RuleDetail, AffectedRecord } from "@/components/analysis/ValidationView";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
-import { useValidationResults } from "@/hooks/useValidationResults";
 import { useValidationCatalog } from "@/hooks/useValidationCatalog";
 import { useAffectedRecords } from "@/hooks/useAffectedRecords";
 import type { ValidationRecordReview, ValidationRuleOverride } from "@/types/annotations";
@@ -474,8 +473,8 @@ function FixScriptDialog({
   onRun: (scriptKey: string, scope: "single" | "all") => void;
   recordAnnotations?: Record<string, ValidationRecordReview> | null;
 }) {
-  // Get scripts from validation results (React Query serves from cache)
-  const { data: validationData } = useValidationResults(studyId);
+  // Get scripts from validation catalog (React Query serves from cache)
+  const { data: validationData } = useValidationCatalog(studyId);
   const { data: affectedData } = useAffectedRecords(studyId, ruleId);
 
   const scripts = validationData?.scripts ?? [];
@@ -1001,7 +1000,7 @@ function FindingSection({
     studyId,
     "validation-records"
   );
-  const { data: validationData } = useValidationResults(studyId);
+  const { data: validationData } = useValidationCatalog(studyId);
   const { data: affectedData } = useAffectedRecords(studyId, record.rule_id);
   const allRecordsForRule = useMemo(() => (affectedData?.records ?? []).map(mapApiRecord), [affectedData]);
 
@@ -1610,8 +1609,8 @@ function IssueReview({
   selection: ValidationIssueViewSelection;
   studyId?: string;
 }) {
-  // Look up the full record from API data
-  const { data: validationData } = useValidationResults(studyId);
+  // Look up the full record from catalog data
+  const { data: validationData } = useValidationCatalog(studyId);
   const { data: affectedData } = useAffectedRecords(studyId, selection.rule_id);
 
   const record = useMemo(() => {
@@ -1723,18 +1722,12 @@ export function ValidationContextPanel({ selection, studyId, setSelection }: Pro
     setSelection({ ...next });
   };
 
-  const { data: validationData } = useValidationResults(studyId);
   const { data: catalogData } = useValidationCatalog(studyId);
   const detail = useMemo(() => {
     if (!selection) return null;
-    // Try triggered results first (most detailed for triggered rules)
-    const fromResults = validationData?.rules?.find(r => r.rule_id === selection.rule_id);
-    if (fromResults) return extractRuleDetail(fromResults);
-    // Fall back to full catalog (clean/disabled/CORE rules)
-    const fromCatalog = catalogData?.rules?.find(r => r.rule_id === selection.rule_id);
-    if (fromCatalog) return extractRuleDetail(fromCatalog);
-    return null;
-  }, [selection, validationData, catalogData]);
+    const rule = catalogData?.rules?.find(r => r.rule_id === selection.rule_id);
+    return rule ? extractRuleDetail(rule) : null;
+  }, [selection, catalogData]);
 
   if (!selection) {
     return (
