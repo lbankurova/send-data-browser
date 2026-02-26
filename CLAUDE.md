@@ -85,7 +85,7 @@ After implementing a feature from a spec in `docs/incoming/`, run the full revie
 - **Entry**: `main.py` — app setup, CORS (allows *), lifespan startup discovers studies
 - **Routers**: `studies.py` (domain browsing), `analyses.py` (dynamic adverse effects), `analysis_views.py` (pre-generated JSON), `validation.py` (validation engine), `annotations.py` (annotations CRUD) — all under `/api`
 - **Validation Engine**: `validation/` package — 14 YAML rules (7 SD + 7 FDA), 2 check types, optional CDISC CORE integration, SENDIG metadata. See `docs/systems/validation-engine.md`.
-- **Services**: `services/study_discovery.py`, `services/xpt_processor.py`, `services/analysis/` (statistical pipeline)
+- **Services**: `services/study_discovery.py`, `services/xpt_processor.py`, `services/analysis/` (statistical pipeline). Shared enrichment lives in `findings_pipeline.py` — both `generator/domain_stats.py` and `unified_findings.py` call `process_findings()` for classification, fold change, and labels.
 - **Generator**: `generator/generate.py` — reads .XPT, writes 8 JSON files + static charts to `generated/{study_id}/`
 - **Config**: `config.py` — paths, skip list, allowed studies filter
 
