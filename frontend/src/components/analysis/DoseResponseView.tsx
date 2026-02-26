@@ -1120,9 +1120,10 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, tcSecti
   // Detect recovery arms (uses cached React Query)
   const { data: meta } = useStudyMetadata(studyId ?? "");
   const hasRecovery = meta?.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
-  // For in-life domains, include recovery data when study has recovery arms
+  // For in-life domains, include recovery data only when pooling is "pool"
   const isInLifeDomain = ["BW", "LB", "FW", "BG", "EG", "VS"].includes(domain);
-  const includeRecovery = hasRecovery && isInLifeDomain;
+  const [recoveryPooling] = useSessionState(`pcc.${studyId}.recoveryPooling`, "pool");
+  const includeRecovery = hasRecovery && isInLifeDomain && recoveryPooling === "pool";
 
   // Continuous temporal data
   const { data: tcData, isLoading: tcLoading, error: tcError } = useTimecourseGroup(

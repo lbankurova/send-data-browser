@@ -69,6 +69,10 @@ export interface UnifiedFinding {
   scheduled_direction?: "up" | "down" | "none" | null;
   /** Number of early-death subjects excluded (0 for longitudinal domains). */
   n_excluded?: number;
+  /** Separate (main-only) stats — recovery animals excluded from in-life domains. */
+  separate_group_stats?: GroupStat[];
+  separate_pairwise?: PairwiseResult[];
+  separate_direction?: "up" | "down" | "none" | null;
   /** Tumor behavior classification (TF domain only). */
   behavior?: "BENIGN" | "MALIGNANT" | "UNCERTAIN";
   /** True for all TF (tumor) domain findings — categorically different from non-neoplastic. */

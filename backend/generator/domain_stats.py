@@ -28,6 +28,7 @@ from services.analysis.classification import (
 from generator.organ_map import get_organ_system, get_organ_name
 from services.analysis.phase_filter import (
     compute_last_dosing_day, get_treatment_subjects, filter_treatment_period_records,
+    get_terminal_subjects, IN_LIFE_DOMAINS,
 )
 
 
@@ -101,6 +102,13 @@ TERMINAL_DOMAINS = {"MI", "MA", "OM", "TF"}  # Always collected at sacrifice
 LB_DOMAIN = "LB"  # Terminal timepoint only exclusion
 
 
+def _sched_key(f: dict) -> tuple:
+    """Unique key for a finding — used to match pass variants."""
+    if f["domain"] in TERMINAL_DOMAINS:
+        return (f["domain"], f["test_code"], f["sex"], f.get("specimen"), f.get("day"))
+    return (f["domain"], f["test_code"], f["sex"], f.get("day"))
+
+
 def compute_all_findings(
     study: StudyInfo,
     early_death_subjects: dict[str, str] | None = None,
@@ -150,11 +158,6 @@ def compute_all_findings(
         # because they share test_code (e.g., all OM endpoints have test_code="WEIGHT")
         scheduled_findings_map: dict[tuple, dict] = {}
 
-        def _sched_key(f: dict) -> tuple:
-            if f["domain"] in TERMINAL_DOMAINS:
-                return (f["domain"], f["test_code"], f["sex"], f.get("specimen"), f.get("day"))
-            return (f["domain"], f["test_code"], f["sex"], f.get("day"))
-
         for sched_f in compute_mi_findings(study, subjects, excluded_subjects=excluded_set):
             scheduled_findings_map[_sched_key(sched_f)] = sched_f
 
@@ -197,6 +200,43 @@ def compute_all_findings(
     # Try FW domain (food/water consumption) — mirrors BW pattern
     if "fw" in study.xpt_files:
         all_findings.extend(_compute_fw_findings(study, subjects, last_dosing_day=last_dosing_day))
+
+    # Pass 3 — separate (main-only) stats for in-life domains
+    # Mirrors the scheduled-only pattern: pre-compute alternative stats so the
+    # frontend can swap at runtime when the recovery pooling toggle is set to "separate".
+    has_recovery = subjects["is_recovery"].any()
+    if has_recovery:
+        main_only_subs = get_terminal_subjects(subjects)
+        separate_map: dict[tuple, dict] = {}
+
+        for sep_f in compute_bw_findings(study, main_only_subs, last_dosing_day=last_dosing_day):
+            separate_map[_sched_key(sep_f)] = sep_f
+        for sep_f in compute_lb_findings(study, main_only_subs, last_dosing_day=last_dosing_day):
+            separate_map[_sched_key(sep_f)] = sep_f
+        for sep_f in compute_cl_findings(study, main_only_subs, last_dosing_day=last_dosing_day):
+            separate_map[_sched_key(sep_f)] = sep_f
+        for sep_f in compute_eg_findings(study, main_only_subs, last_dosing_day=last_dosing_day):
+            separate_map[_sched_key(sep_f)] = sep_f
+        for sep_f in compute_vs_findings(study, main_only_subs, last_dosing_day=last_dosing_day):
+            separate_map[_sched_key(sep_f)] = sep_f
+        for sep_f in compute_bg_findings(study, main_only_subs, last_dosing_day=last_dosing_day):
+            separate_map[_sched_key(sep_f)] = sep_f
+        if "fw" in study.xpt_files:
+            for sep_f in _compute_fw_findings(study, main_only_subs, last_dosing_day=last_dosing_day):
+                separate_map[_sched_key(sep_f)] = sep_f
+
+        for finding in all_findings:
+            if finding["domain"] in IN_LIFE_DOMAINS:
+                key = _sched_key(finding)
+                sep = separate_map.get(key)
+                if sep:
+                    finding["separate_group_stats"] = sep["group_stats"]
+                    finding["separate_pairwise"] = sep["pairwise"]
+                    finding["separate_direction"] = sep.get("direction")
+                else:
+                    finding["separate_group_stats"] = []
+                    finding["separate_pairwise"] = []
+                    finding["separate_direction"] = None
 
     # Enrich each finding
     for finding in all_findings:

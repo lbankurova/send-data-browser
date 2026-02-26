@@ -16,6 +16,7 @@
 import { useMemo } from "react";
 import { useFindings } from "@/hooks/useFindings";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
+import { useSessionState } from "@/hooks/useSessionState";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
@@ -39,6 +40,30 @@ export interface FindingsAnalyticsResult {
   data: FindingsResponse | undefined;
   isLoading: boolean;
   error: Error | null;
+}
+
+/**
+ * When recovery pooling is set to "separate", swap each in-life finding's
+ * group_stats with its separate_group_stats (main-only subjects, recovery
+ * animals excluded). Findings with empty separate_group_stats vanish.
+ * Terminal domains (MI, MA, OM, TF) have no separate variant — pass through.
+ */
+function applyRecoveryPoolingFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
+  const result: UnifiedFinding[] = [];
+  for (const f of findings) {
+    if (f.separate_group_stats && f.separate_group_stats.length === 0) continue;
+    if (f.separate_group_stats) {
+      result.push({
+        ...f,
+        group_stats: f.separate_group_stats,
+        pairwise: f.separate_pairwise ?? f.pairwise,
+        direction: f.separate_direction ?? f.direction,
+      });
+    } else {
+      result.push(f);
+    }
+  }
+  return result;
 }
 
 /**
@@ -70,6 +95,7 @@ function applyScheduledFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
 export function useFindingsAnalyticsLocal(studyId: string | undefined): FindingsAnalyticsResult {
   const { data, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
   const { useScheduledOnly: isScheduledOnly } = useScheduledOnly();
+  const [recoveryPooling] = useSessionState(`pcc.${studyId}.recoveryPooling`, "pool");
   const statMethods = useStatMethods(studyId);
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");
 
@@ -83,17 +109,25 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
     return isScheduledOnly ? applyScheduledFilter(data.findings) : data.findings;
   }, [data, isScheduledOnly]);
 
+  // Recovery pooling: swap in-life domain stats to main-only when "separate"
+  const pooledFindings = useMemo(() => {
+    if (!scheduledFindings.length) return [];
+    return recoveryPooling === "separate"
+      ? applyRecoveryPoolingFilter(scheduledFindings)
+      : scheduledFindings;
+  }, [scheduledFindings, recoveryPooling]);
+
   // Apply statistical method transforms: effect size → multiplicity
   const activeFindings = useMemo(() => {
-    if (!scheduledFindings.length) return [];
-    const afterEffect = applyEffectSizeMethod(scheduledFindings, statMethods.effectSize);
+    if (!pooledFindings.length) return [];
+    const afterEffect = applyEffectSizeMethod(pooledFindings, statMethods.effectSize);
     return applyMultiplicityMethod(afterEffect, statMethods.multiplicity);
-  }, [scheduledFindings, statMethods.effectSize, statMethods.multiplicity]);
+  }, [pooledFindings, statMethods.effectSize, statMethods.multiplicity]);
 
   // Detect Welch p-value availability for dropdown enablement
   const welchAvailable = useMemo(
-    () => checkWelchPValues(scheduledFindings),
-    [scheduledFindings],
+    () => checkWelchPValues(pooledFindings),
+    [pooledFindings],
   );
 
   const endpointSummaries = useMemo(() => {

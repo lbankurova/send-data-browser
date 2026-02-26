@@ -23,6 +23,7 @@ from services.analysis.classification import (
 )
 from services.analysis.correlations import compute_correlations
 from services.analysis.mortality import get_early_death_subjects
+from services.analysis.phase_filter import get_terminal_subjects, IN_LIFE_DOMAINS
 from generator.organ_map import get_organ_system
 
 TERMINAL_DOMAINS = {"MI", "MA", "OM", "TF"}
@@ -176,6 +177,37 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
                 finding["scheduled_pairwise"] = []
                 finding["scheduled_direction"] = None
                 finding["n_excluded"] = n_excluded
+
+    # Pass 3 — separate (main-only) stats for in-life domains
+    # When recovery pooling is set to "separate", the frontend swaps group_stats
+    # with these pre-computed main-only variants (recovery animals excluded).
+    has_recovery = subjects["is_recovery"].any()
+    if has_recovery:
+        main_only_subs = get_terminal_subjects(subjects)
+        separate_map: dict[tuple, dict] = {}
+
+        def _sep_key(f: dict) -> tuple:
+            return (f["domain"], f["test_code"], f["sex"], f.get("day"))
+
+        for sep_f in compute_bw_findings(study, main_only_subs):
+            separate_map[_sep_key(sep_f)] = sep_f
+        for sep_f in compute_lb_findings(study, main_only_subs):
+            separate_map[_sep_key(sep_f)] = sep_f
+        for sep_f in compute_cl_findings(study, main_only_subs):
+            separate_map[_sep_key(sep_f)] = sep_f
+
+        for finding in all_findings:
+            if finding["domain"] in IN_LIFE_DOMAINS:
+                key = _sep_key(finding)
+                sep = separate_map.get(key)
+                if sep:
+                    finding["separate_group_stats"] = sep["group_stats"]
+                    finding["separate_pairwise"] = sep["pairwise"]
+                    finding["separate_direction"] = sep.get("direction")
+                else:
+                    finding["separate_group_stats"] = []
+                    finding["separate_pairwise"] = []
+                    finding["separate_direction"] = None
 
     # Step 3: Assign IDs and classify
     for i, finding in enumerate(all_findings):
