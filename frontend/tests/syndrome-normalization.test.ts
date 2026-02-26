@@ -8,7 +8,7 @@
  * - Direction confounding annotation for high-tier OM terms
  */
 import { describe, test, expect } from "vitest";
-import { checkMagnitudeFloor, getSyndromeTermReport, detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
+import { checkMagnitudeFloor, getSyndromeTermReport, detectCrossDomainSyndromes, DIRECTIONAL_GATES } from "@/lib/cross-domain-syndromes";
 import { computeAdversity } from "@/lib/syndrome-ecetoc";
 import { assessSecondaryToBodyWeight } from "@/lib/organ-weight-normalization";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
@@ -431,5 +431,211 @@ describe("C4: direction confounding annotation for high-tier OM", () => {
         }
       }
     }
+  });
+});
+
+// ─── SE-8: OM directional gates ──────────────────────────────
+
+describe("SE-8: OM directional gates", () => {
+  test("XS05 spleen gate fires when spleen weight DOWN contradicts expected UP", () => {
+    // XS05 (hemolytic anemia): required = RBC↓ AND RETIC↑, supporting = spleen weight UP
+    // Gate: SPLEEN_WT expected UP → if endpoint is DOWN, gate fires weak_against
+    const endpoints = [
+      ep({ testCode: "RBC", domain: "LB", direction: "down", minPValue: 0.001, maxEffectSize: 2.0, worstSeverity: "adverse" }),
+      ep({ testCode: "RETIC", domain: "LB", direction: "up", minPValue: 0.001, maxEffectSize: 2.0, worstSeverity: "adverse" }),
+      ep({ testCode: "SPLEEN", domain: "OM", specimen: "SPLEEN", direction: "down", minPValue: 0.01, maxEffectSize: 1.2, maxFoldChange: 0.85, worstSeverity: "adverse" }),
+    ];
+    const results = detectCrossDomainSyndromes(endpoints);
+    const xs05 = results.find(s => s.id === "XS05");
+    expect(xs05).toBeDefined();
+    expect(xs05!.directionalGate?.gateFired).toBe(true);
+    expect(xs05!.directionalGate?.action).toBe("weak_against");
+    expect(xs05!.directionalGate?.certaintyCap).toBe("mechanism_uncertain");
+  });
+
+  test("XS08 thymus gate fires when thymus weight UP contradicts expected DOWN", () => {
+    // XS08 (stress): required = ADRENAL_WT↑ AND (BW↓ OR THYMUS_WT↓ OR LYMPH↓)
+    // Detection fires via ADRENAL↑ + BW↓ (2 domains satisfied).
+    // Gate: THYMUS_WT expected DOWN → if endpoint is UP, gate fires weak_against.
+    // The LYMPH gate doesn't fire because no LYMPH endpoint is present.
+    const endpoints = [
+      ep({ testCode: "ADRENAL", domain: "OM", specimen: "ADRENAL", direction: "up", minPValue: 0.001, maxEffectSize: 1.5, worstSeverity: "adverse" }),
+      ep({ testCode: "BW", endpoint_label: "body weight", domain: "BW", direction: "down", minPValue: 0.001, maxEffectSize: 2.0, worstSeverity: "adverse" }),
+      ep({ testCode: "THYMUS", domain: "OM", specimen: "THYMUS", direction: "up", minPValue: 0.005, maxEffectSize: 1.8, worstSeverity: "adverse" }),
+    ];
+    const results = detectCrossDomainSyndromes(endpoints);
+    const xs08 = results.find(s => s.id === "XS08");
+    expect(xs08).toBeDefined();
+    // LYMPH gate: no LYMPH endpoint → skipped
+    // ADRENAL_WT gate (expected UP): endpoint is UP → no fire
+    // THYMUS_WT gate (expected DOWN): endpoint is UP → fires!
+    expect(xs08!.directionalGate?.gateFired).toBe(true);
+    expect(xs08!.directionalGate?.action).toBe("weak_against");
+  });
+
+  test("XS09 wasting gate fires when organ weight UP contradicts expected DOWN", () => {
+    // XS09 (organ wasting): required = BW↓ (any), minDomains: 2
+    // Supporting: OM↓, MI atrophy. Need 2 domains to fire detection.
+    // Gate: OM_WT expected DOWN → if endpoint is UP, gate fires weak_against
+    const endpoints = [
+      ep({ testCode: "BW", endpoint_label: "body weight", domain: "BW", direction: "down", minPValue: 0.001, maxEffectSize: 2.5, worstSeverity: "adverse" }),
+      // MI atrophy provides the 2nd domain for detection
+      ep({ testCode: "ATROPHY", endpoint_label: "KIDNEY — ATROPHY", domain: "MI", specimen: "KIDNEY", finding: "atrophy", direction: "up", minPValue: 0.01, maxEffectSize: 1.5, worstSeverity: "warning" }),
+      // OM endpoint with opposite direction — triggers the gate
+      ep({ testCode: "LIVER", domain: "OM", specimen: "LIVER", direction: "up", minPValue: 0.01, maxEffectSize: 1.5, maxFoldChange: 1.2, worstSeverity: "adverse" }),
+    ];
+    const results = detectCrossDomainSyndromes(endpoints);
+    const xs09 = results.find(s => s.id === "XS09");
+    expect(xs09).toBeDefined();
+    expect(xs09!.directionalGate?.gateFired).toBe(true);
+    expect(xs09!.directionalGate?.action).toBe("weak_against");
+    expect(xs09!.directionalGate?.certaintyCap).toBe("mechanism_uncertain");
+  });
+
+  test("existing XS04/XS07 gates unchanged (regression)", () => {
+    // Verify the pre-existing gates still have their original configs
+    expect(DIRECTIONAL_GATES["XS04"]).toEqual([
+      { term: "RETIC", expectedDirection: "down", action: "reject", overrideCondition: "MI_MARROW_HYPOCELLULARITY" },
+    ]);
+    expect(DIRECTIONAL_GATES["XS07"]).toEqual([
+      { term: "LYMPH", expectedDirection: "down", action: "strong_against" },
+    ]);
+    // XS08 LYMPH gate still first in array
+    expect(DIRECTIONAL_GATES["XS08"]![0]).toEqual(
+      { term: "LYMPH", expectedDirection: "down", action: "weak_against" },
+    );
+  });
+});
+
+// ─── SE-7: ANCOVA direction reversal in gate evaluation ──────
+
+describe("SE-7: ANCOVA direction reversal in gate evaluation", () => {
+  test("XS09 ANCOVA reversal: endpoint DOWN but directG > 0 → gate fires", () => {
+    // XS09: OM_WT expected DOWN. Endpoint direction is DOWN (matches expected).
+    // But ANCOVA directG > 0 → effectiveDirection becomes "up" → gate fires.
+    // Need MI finding for 2nd domain to trigger detection.
+    const endpoints = [
+      ep({ testCode: "BW", endpoint_label: "body weight", domain: "BW", direction: "down", minPValue: 0.001, maxEffectSize: 2.5, worstSeverity: "adverse" }),
+      ep({ testCode: "LIVER", domain: "OM", specimen: "LIVER", direction: "down", minPValue: 0.01, maxEffectSize: 1.2, maxFoldChange: 0.85, worstSeverity: "adverse" }),
+      ep({ testCode: "ATROPHY", endpoint_label: "KIDNEY — ATROPHY", domain: "MI", specimen: "KIDNEY", finding: "atrophy", direction: "up", minPValue: 0.01, maxEffectSize: 1.5, worstSeverity: "warning" }),
+    ];
+    const ctxs = [makeNormCtx({
+      organ: "LIVER",
+      tier: 3,
+      bwG: 1.8,
+      activeMode: "ancova",
+      effectDecomposition: {
+        totalEffect: -2.5, directEffect: 1.1, indirectEffect: -3.6,
+        proportionDirect: -0.44, directG: 1.1, directP: 0.03,
+      },
+    })];
+
+    const results = detectCrossDomainSyndromes(endpoints, ctxs);
+    const xs09 = results.find(s => s.id === "XS09");
+    expect(xs09).toBeDefined();
+    expect(xs09!.directionalGate?.gateFired).toBe(true);
+    expect(xs09!.directionalGate?.action).toBe("weak_against");
+    expect(xs09!.directionalGate?.ancovaSource).toBe(true);
+    expect(xs09!.directionalGate?.explanation).toContain("ANCOVA direct effect");
+  });
+
+  test("XS05 ANCOVA reversal: endpoint UP but directG < 0 → gate fires", () => {
+    // XS05: SPLEEN_WT expected UP. Endpoint direction is UP (matches expected).
+    // But ANCOVA directG < 0 → effectiveDirection becomes "down" → gate fires.
+    const endpoints = [
+      ep({ testCode: "RBC", domain: "LB", direction: "down", minPValue: 0.001, maxEffectSize: 2.0, worstSeverity: "adverse" }),
+      ep({ testCode: "RETIC", domain: "LB", direction: "up", minPValue: 0.001, maxEffectSize: 2.0, worstSeverity: "adverse" }),
+      ep({ testCode: "SPLEEN", domain: "OM", specimen: "SPLEEN", direction: "up", minPValue: 0.01, maxEffectSize: 1.0, maxFoldChange: 1.1, worstSeverity: "adverse" }),
+    ];
+    const ctxs = [makeNormCtx({
+      organ: "SPLEEN",
+      tier: 3,
+      bwG: 1.5,
+      activeMode: "ancova",
+      effectDecomposition: {
+        totalEffect: 0.8, directEffect: -0.5, indirectEffect: 1.3,
+        proportionDirect: -0.63, directG: -0.5, directP: 0.04,
+      },
+    })];
+
+    const results = detectCrossDomainSyndromes(endpoints, ctxs);
+    const xs05 = results.find(s => s.id === "XS05");
+    expect(xs05).toBeDefined();
+    expect(xs05!.directionalGate?.gateFired).toBe(true);
+    expect(xs05!.directionalGate?.ancovaSource).toBe(true);
+  });
+
+  test("ANCOVA not significant (directP = 0.5): falls back to endpoint direction", () => {
+    // XS09: OM_WT expected DOWN. Endpoint DOWN matches expected.
+    // ANCOVA directG > 0 but directP = 0.5 (not significant) → falls back to endpoint direction.
+    // Gate should NOT fire since endpoint direction matches expected.
+    const endpoints = [
+      ep({ testCode: "BW", endpoint_label: "body weight", domain: "BW", direction: "down", minPValue: 0.001, maxEffectSize: 2.5, worstSeverity: "adverse" }),
+      ep({ testCode: "LIVER", domain: "OM", specimen: "LIVER", direction: "down", minPValue: 0.01, maxEffectSize: 1.2, maxFoldChange: 0.85, worstSeverity: "adverse" }),
+      ep({ testCode: "ATROPHY", endpoint_label: "KIDNEY — ATROPHY", domain: "MI", specimen: "KIDNEY", finding: "atrophy", direction: "up", minPValue: 0.01, maxEffectSize: 1.5, worstSeverity: "warning" }),
+    ];
+    const ctxs = [makeNormCtx({
+      organ: "LIVER",
+      tier: 3,
+      bwG: 1.8,
+      activeMode: "ancova",
+      effectDecomposition: {
+        totalEffect: -2.5, directEffect: 1.1, indirectEffect: -3.6,
+        proportionDirect: -0.44, directG: 1.1, directP: 0.5,
+      },
+    })];
+
+    const results = detectCrossDomainSyndromes(endpoints, ctxs);
+    const xs09 = results.find(s => s.id === "XS09");
+    expect(xs09).toBeDefined();
+    // Gate should NOT fire — ANCOVA not significant, endpoint matches expected direction
+    expect(xs09!.directionalGate).toBeUndefined();
+  });
+
+  test("no normalization contexts: OM gates work without ANCOVA (backward compat)", () => {
+    // XS09 with organ weight UP (contradicts expected DOWN) and no normCtxs
+    // Need MI finding for 2nd domain to trigger detection
+    const endpoints = [
+      ep({ testCode: "BW", endpoint_label: "body weight", domain: "BW", direction: "down", minPValue: 0.001, maxEffectSize: 2.5, worstSeverity: "adverse" }),
+      ep({ testCode: "ATROPHY", endpoint_label: "KIDNEY — ATROPHY", domain: "MI", specimen: "KIDNEY", finding: "atrophy", direction: "up", minPValue: 0.01, maxEffectSize: 1.5, worstSeverity: "warning" }),
+      ep({ testCode: "LIVER", domain: "OM", specimen: "LIVER", direction: "up", minPValue: 0.01, maxEffectSize: 1.5, maxFoldChange: 1.2, worstSeverity: "adverse" }),
+    ];
+
+    // Without normalization contexts
+    const results = detectCrossDomainSyndromes(endpoints);
+    const xs09 = results.find(s => s.id === "XS09");
+    expect(xs09).toBeDefined();
+    expect(xs09!.directionalGate?.gateFired).toBe(true);
+    expect(xs09!.directionalGate?.ancovaSource).toBeUndefined();
+  });
+});
+
+// ─── SE-1/SE-2: Detection path normalization-unaware ─────────
+
+describe("SE-1/SE-2: Detection path is normalization-unaware", () => {
+  test("detection produces identical syndrome IDs with and without normalization contexts", () => {
+    const endpoints = [
+      ep({ testCode: "ALT", domain: "LB", direction: "up", minPValue: 0.001, maxEffectSize: 3.0, maxFoldChange: 4.0, worstSeverity: "adverse" }),
+      ep({ testCode: "AST", domain: "LB", direction: "up", minPValue: 0.005, maxEffectSize: 2.0, maxFoldChange: 3.0, worstSeverity: "adverse" }),
+      ep({ testCode: "LIVER", domain: "OM", specimen: "LIVER", direction: "up", minPValue: 0.01, maxEffectSize: 1.2, maxFoldChange: 1.15, worstSeverity: "adverse" }),
+      ep({ testCode: "BW", endpoint_label: "body weight", domain: "BW", direction: "down", minPValue: 0.001, maxEffectSize: 2.0, worstSeverity: "adverse" }),
+      ep({ testCode: "KIDNEY", domain: "OM", specimen: "KIDNEY", direction: "down", minPValue: 0.01, maxEffectSize: 1.0, maxFoldChange: 0.9, worstSeverity: "adverse" }),
+    ];
+    const ctxs = [
+      makeNormCtx({ organ: "LIVER", tier: 3, bwG: 1.5, activeMode: "ancova",
+        effectDecomposition: { totalEffect: 2.0, directEffect: 1.5, indirectEffect: 0.5, proportionDirect: 0.75, directG: 1.5, directP: 0.01 },
+      }),
+      makeNormCtx({ organ: "KIDNEY", tier: 4, bwG: 2.0, activeMode: "ancova",
+        effectDecomposition: { totalEffect: -1.8, directEffect: -0.3, indirectEffect: -1.5, proportionDirect: 0.17, directG: 0.3, directP: 0.4 },
+      }),
+    ];
+
+    const without = detectCrossDomainSyndromes(endpoints);
+    const withCtxs = detectCrossDomainSyndromes(endpoints, ctxs);
+
+    // Same syndrome IDs detected (gate results may differ, but detection itself is identical)
+    const idsWithout = without.map(s => s.id).sort();
+    const idsWith = withCtxs.map(s => s.id).sort();
+    expect(idsWithout).toEqual(idsWith);
   });
 });
