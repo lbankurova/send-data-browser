@@ -7,6 +7,34 @@ import { ValidationRuleCard } from "./ValidationRuleCard";
 import type { ValidationRuleResult } from "@/hooks/useValidationResults";
 import type { ValidationRuleOverride } from "@/types/annotations";
 import { useSearchParams } from "react-router-dom";
+import { Download, ChevronDown } from "lucide-react";
+
+// ── CSV export ────────────────────────────────────────────────────────
+
+function escapeCsvField(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function downloadRulesCsv(rules: ValidationRuleResult[], filename: string) {
+  const headers = ["Rule ID", "Severity", "Domain", "Category", "Description", "Records Affected", "Status", "Source"];
+  const lines = [headers.join(",")];
+  for (const r of rules) {
+    lines.push([
+      r.rule_id, r.severity, r.domain, r.category, r.description,
+      String(r.records_affected), r.status ?? "", r.source,
+    ].map(escapeCsvField).join(","));
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 type SortMode = "evidence" | "domain" | "category" | "severity" | "source";
 type ShowFilter = "" | "triggered" | "clean" | "enabled" | "disabled";
@@ -28,6 +56,62 @@ function groupBy<T>(items: T[], keyFn: (item: T) => string): Map<string, T[]> {
     else map.set(key, [item]);
   }
   return map;
+}
+
+// ── Export dropdown ────────────────────────────────────────────────────
+
+function ExportDropdown({
+  allRules,
+  filteredRules,
+}: {
+  allRules: ValidationRuleResult[];
+  filteredRules: ValidationRuleResult[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const hasFilters = filteredRules.length !== allRules.length;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        className="flex h-6 items-center gap-1 rounded border bg-background px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+        onClick={() => setOpen(!open)}
+        title="Export CSV"
+      >
+        <Download className="h-3 w-3" />
+        CSV
+        <ChevronDown className="h-2.5 w-2.5" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-20 mt-1 min-w-[140px] rounded border bg-background py-1 shadow-md">
+          <button
+            className="flex w-full items-center px-3 py-1.5 text-left text-[11px] hover:bg-accent/50"
+            onClick={() => { downloadRulesCsv(allRules, "validation-all-rules.csv"); setOpen(false); }}
+          >
+            All rules ({allRules.length})
+          </button>
+          {hasFilters && (
+            <button
+              className="flex w-full items-center px-3 py-1.5 text-left text-[11px] hover:bg-accent/50"
+              onClick={() => { downloadRulesCsv(filteredRules, "validation-filtered-rules.csv"); setOpen(false); }}
+            >
+              Visible only ({filteredRules.length})
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ValidationRuleRail({
@@ -172,13 +256,16 @@ export function ValidationRuleRail({
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Validation rules
         </span>
-        <button
-          className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          disabled={isValidating}
-          onClick={() => runValidation()}
-        >
-          {isValidating ? "RUNNING..." : "RUN"}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <ExportDropdown allRules={rulesWithStatus} filteredRules={filtered} />
+          <button
+            className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            disabled={isValidating}
+            onClick={() => runValidation()}
+          >
+            {isValidating ? "RUNNING..." : "RUN"}
+          </button>
+        </div>
       </div>
 
       {/* Search */}
