@@ -46,6 +46,7 @@ import type {
 } from "@/lib/findings-rail-engine";
 import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import type { ConfidenceLevel } from "@/lib/endpoint-confidence";
+import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import { formatPValue, titleCase, getDirectionSymbol } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -506,6 +507,7 @@ export function FindingsRail({
               onRestoreEndpoint={onRestoreEndpoint}
               clinicalTierMap={clinicalTierMap}
               effectSizeLabel={getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")}
+              normalizationContexts={analytics.normalizationContexts}
             />
           ))
         )}
@@ -797,6 +799,39 @@ function RailFiltersSection({
 
 // ─── Group Card ────────────────────────────────────────────
 
+const NORM_MODE_SHORT: Record<string, string> = {
+  absolute: "ABS",
+  body_weight: "BW",
+  brain_weight: "Brain",
+  ancova: "ANCOVA",
+};
+
+const TIER_COLOR: Record<number, string> = {
+  1: "#10B981", // green
+  2: "#F59E0B", // amber
+  3: "#F97316", // orange
+  4: "#EF4444", // red
+};
+
+/** Highest normalization tier across dose groups for an organ.
+ *  card.key is organ_system (lowercase); NormalizationContext.organ is SEND specimen (uppercase). */
+function computeOrganNormSummary(
+  organKey: string,
+  contexts: NormalizationContext[],
+): { tier: number; mode: string; modeShort: string } | null {
+  const key = organKey.toUpperCase();
+  let bestTier = 0;
+  let bestMode = "absolute";
+  for (const ctx of contexts) {
+    if (ctx.organ === key && ctx.tier > bestTier) {
+      bestTier = ctx.tier;
+      bestMode = ctx.activeMode;
+    }
+  }
+  if (bestTier < 2) return null; // Only show indicator for tier >= 2
+  return { tier: bestTier, mode: bestMode, modeShort: NORM_MODE_SHORT[bestMode] ?? bestMode };
+}
+
 /** Best integrated confidence across TR endpoints in a group (organ mode).
  *  Non-TR endpoints are excluded — their low statistical confidence is expected
  *  and doesn't reflect organ evidence quality. */
@@ -835,6 +870,7 @@ function CardSection({
   onRestoreEndpoint,
   clinicalTierMap,
   effectSizeLabel,
+  normalizationContexts,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -853,10 +889,16 @@ function CardSection({
   onRestoreEndpoint?: (label: string) => void;
   clinicalTierMap?: Map<string, string>;
   effectSizeLabel?: string;
+  normalizationContexts?: NormalizationContext[];
 }) {
   // Compute organ confidence only for organ grouping mode
   const organConf = grouping === "organ"
     ? computeOrganConfidence(card.endpoints)
+    : null;
+
+  // Compute normalization summary for organ grouping mode (highest tier across dose groups)
+  const organNorm = grouping === "organ" && normalizationContexts
+    ? computeOrganNormSummary(card.key, normalizationContexts)
     : null;
 
   return (
@@ -871,6 +913,7 @@ function CardSection({
         onSelect={onHeaderSelect}
         onToggleExpand={onToggleExpand}
         organConfidence={organConf}
+        organNorm={organNorm}
       />
       {isExpanded && (
         <div>
@@ -912,6 +955,7 @@ function CardHeader({
   onSelect,
   onToggleExpand,
   organConfidence,
+  organNorm,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -922,6 +966,7 @@ function CardHeader({
   onSelect: () => void;
   onToggleExpand: () => void;
   organConfidence?: { level: ConfidenceLevel; limitingFactors: string[] } | null;
+  organNorm?: { tier: number; mode: string; modeShort: string } | null;
 }) {
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
 
@@ -938,7 +983,7 @@ function CardHeader({
       onClick={onSelect}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
-      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} />
+      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} />
       <span className="ml-auto font-mono text-[10px] text-muted-foreground">
         {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
       </span>
@@ -972,11 +1017,12 @@ const CONF_SHORT: Record<ConfidenceLevel, string> = {
   low: "Low",
 };
 
-function CardLabel({ grouping, value, syndromeLabel, organConfidence }: {
+function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm }: {
   grouping: GroupingMode;
   value: string;
   syndromeLabel?: string;
   organConfidence?: { level: ConfidenceLevel; limitingFactors: string[] } | null;
+  organNorm?: { tier: number; mode: string; modeShort: string } | null;
 }) {
   if (grouping === "domain") {
     const domainCode = value.toUpperCase();
@@ -1011,13 +1057,16 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence }: {
     );
   }
 
-  // Organ (default) — with confidence label + RAG dashed underline
+  // Organ (default) — with confidence label + normalization indicator
   const tooltipLines = [titleCase(value)];
   if (organConfidence) {
     tooltipLines.push(`Confidence: ${organConfidence.level}`);
     if (organConfidence.limitingFactors.length > 0) {
       tooltipLines.push(`Limited by: ${organConfidence.limitingFactors.join(", ")}`);
     }
+  }
+  if (organNorm) {
+    tooltipLines.push(`Normalization: ${organNorm.mode} (Tier ${organNorm.tier})`);
   }
 
   return (
@@ -1029,6 +1078,14 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence }: {
           style={{ borderBottom: `1.5px dashed ${RAG_COLOR[organConfidence.level]}` }}
         >
           Conf: {CONF_SHORT[organConfidence.level]}
+        </span>
+      )}
+      {organNorm && (
+        <span
+          className="shrink-0 text-[9px] font-medium text-muted-foreground pb-px"
+          style={{ borderBottom: `1.5px dashed ${TIER_COLOR[organNorm.tier] ?? "#9ca3af"}` }}
+        >
+          Norm: {organNorm.modeShort}
         </span>
       )}
     </span>

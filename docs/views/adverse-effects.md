@@ -63,6 +63,10 @@ The FilterBar contains:
 
 **Note:** The `FindingsFilterBar` component exists separately but is **not** used in the main FindingsView. Filtering is handled through the FindingsRail (left panel) which manages endpoint grouping, scoping, and exclusion. The center panel FilterBar only displays summary counts.
 
+**FindingsRail organ card indicators:** In organ grouping mode, organ group cards display up to two indicators:
+- **Organ confidence** — "Conf: High/Med/Low" with RAG-colored dashed underline (best integrated confidence across treatment-related endpoints).
+- **Normalization indicator** — "Norm: [mode]" (ABS/BW/Brain/ANCOVA) with tier-colored dashed underline (green T1, amber T2, orange T3, red T4). Only shown for OM organs at normalization tier ≥ 2. Computed as highest tier across dose groups for the organ.
+
 ---
 
 ## Quadrant Scatter
@@ -217,6 +221,12 @@ Three selection priorities:
 
 #### Pane 1: Evidence (default open)
 `EvidencePane` component — statistical evidence summary with finding data, analytics, statistics, and effect size context.
+
+**OM domain sub-sections (conditionally rendered after EvidencePane):**
+- **Normalization annotation** — category-specific messaging (GONADAL: absolute weight primary; ANDROGEN_DEPENDENT: androgen status correlation; FEMALE_REPRODUCTIVE: estrous cycle variability; non-reproductive organs at tier ≥ 2: BW confounding tier + active mode).
+- **Normalization alternatives table** — high-dose vs control comparison across absolute, ratio-to-BW, and ratio-to-brain metrics with Δ% column. Shown for GONADAL (ratios grayed), FEMALE_REPRODUCTIVE (always), or when normalization engine recommends showing alternatives (tier ≥ 2).
+- **Williams' trend test comparison** (`WilliamsComparisonPane`) — side-by-side JT vs Williams' results with concordance verdict (concordant/discordant). Expandable step-down detail table showing per-dose test statistic (t̃), critical value, p-value, and significance. Only shown when `finding.williams` is present (OM domain).
+- **Decomposed confidence display** (`DecomposedConfidencePane`) — 5-dimension ECI breakdown: statistical evidence, biological plausibility, dose-response quality, trend test validity, trend concordance. Integrated confidence level with limiting factor. NOAEL contribution weight.
 
 #### Pane 2: Dose detail (default open)
 `DoseDetailPane` component — dose-level detail table with statistics and dose-response data. Header right shows unit when available.
