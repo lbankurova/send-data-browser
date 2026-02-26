@@ -46,6 +46,7 @@ export interface UnifiedFinding {
   specimen: string | null;
   finding: string;
   day: number | null;
+  day_first?: number | null;
   sex: string;
   unit: string | null;
   data_type: "continuous" | "incidence";

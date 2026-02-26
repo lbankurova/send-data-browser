@@ -11,6 +11,7 @@ from services.analysis.statistics import (
 from services.analysis.supp_qualifiers import (
     load_supp_modifiers, aggregate_modifiers, count_distributions,
 )
+from services.analysis.day_utils import mode_day
 
 SEVERITY_SCORES = {"MINIMAL": 1, "MILD": 2, "MODERATE": 3, "MARKED": 4, "SEVERE": 5}
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE"}
@@ -27,6 +28,7 @@ def compute_mi_findings(
 
     mi_df, _ = read_xpt(study.xpt_files["mi"])
     mi_df.columns = [c.upper() for c in mi_df.columns]
+    mi_df["MIDY"] = pd.to_numeric(mi_df.get("MIDY", pd.Series(dtype=float)), errors="coerce")
 
     main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
@@ -181,7 +183,7 @@ def compute_mi_findings(
             "test_name": finding_str,
             "specimen": str(specimen),
             "finding": finding_str,
-            "day": None,
+            "day": mode_day(grp, "MIDY"),
             "sex": str(sex),
             "unit": None,
             "data_type": "incidence",

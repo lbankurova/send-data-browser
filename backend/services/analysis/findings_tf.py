@@ -13,6 +13,7 @@ import pandas as pd
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 from services.analysis.statistics import fisher_exact_2x2, trend_test_incidence
+from services.analysis.day_utils import mode_day
 
 
 # Morphology term → cell type for combination analysis
@@ -75,6 +76,7 @@ def compute_tf_findings(
 
     tf_df, _ = read_xpt(study.xpt_files["tf"])
     tf_df.columns = [c.upper() for c in tf_df.columns]
+    tf_df["TFDY"] = pd.to_numeric(tf_df.get("TFDY", pd.Series(dtype=float)), errors="coerce")
 
     main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
@@ -187,7 +189,7 @@ def compute_tf_findings(
             "test_name": finding_str,
             "specimen": str(specimen),
             "finding": finding_str,
-            "day": None,
+            "day": mode_day(grp, "TFDY"),
             "sex": str(sex),
             "unit": None,
             "data_type": "incidence",

@@ -8,6 +8,7 @@ from services.analysis.statistics import fisher_exact_2x2, trend_test_incidence
 from services.analysis.supp_qualifiers import (
     load_supp_modifiers, aggregate_modifiers, count_distributions,
 )
+from services.analysis.day_utils import mode_day
 
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE"}
 
@@ -23,6 +24,7 @@ def compute_ma_findings(
 
     ma_df, _ = read_xpt(study.xpt_files["ma"])
     ma_df.columns = [c.upper() for c in ma_df.columns]
+    ma_df["MADY"] = pd.to_numeric(ma_df.get("MADY", pd.Series(dtype=float)), errors="coerce")
 
     main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
@@ -149,7 +151,7 @@ def compute_ma_findings(
             "test_name": finding_str,
             "specimen": str(specimen),
             "finding": finding_str,
-            "day": None,
+            "day": mode_day(grp, "MADY"),
             "sex": str(sex),
             "unit": None,
             "data_type": "incidence",

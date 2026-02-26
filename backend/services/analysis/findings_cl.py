@@ -8,6 +8,7 @@ from services.analysis.statistics import fisher_exact_2x2, trend_test_incidence
 from services.analysis.phase_filter import (
     get_treatment_subjects, filter_treatment_period_records,
 )
+from services.analysis.day_utils import mode_day, min_day
 
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE", "NONE"}
 
@@ -23,6 +24,7 @@ def compute_cl_findings(
 
     cl_df, _ = read_xpt(study.xpt_files["cl"])
     cl_df.columns = [c.upper() for c in cl_df.columns]
+    cl_df["CLDY"] = pd.to_numeric(cl_df.get("CLDY", pd.Series(dtype=float)), errors="coerce")
 
     # Include recovery animals for treatment-period pooling
     treatment_subs = get_treatment_subjects(subjects)
@@ -123,7 +125,8 @@ def compute_cl_findings(
             "test_name": finding_str,
             "specimen": None,
             "finding": finding_str,
-            "day": None,
+            "day": mode_day(grp, "CLDY"),
+            "day_first": min_day(grp, "CLDY"),
             "sex": str(sex),
             "unit": None,
             "data_type": "incidence",
