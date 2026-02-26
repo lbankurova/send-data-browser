@@ -4,7 +4,13 @@
  * Tests the core logic: when any early-death subject is excluded and scheduled
  * stats exist, return scheduled stats; otherwise return base stats. Falls back
  * to base stats when no scheduled data is available.
+ *
+ * Also includes a data contract test that reads the generated unified_findings.json
+ * and verifies every terminal domain has scheduled stats wired — this catches
+ * "domain X was never plugged into the exclusion pipeline" gaps.
  */
+import fs from "fs";
+import path from "path";
 import { describe, it, expect } from "vitest";
 import type { UnifiedFinding, GroupStat, PairwiseResult } from "@/types/analysis";
 
@@ -524,5 +530,101 @@ describe("Re-initialization guard (HMR stability)", () => {
     const keyWithRecovery = computeInitKey(earlyDeaths, trIds, new Set([...trIds, "PC201708-4113"]));
     const keyWithoutRecovery = computeInitKey(earlyDeaths, trIds, trIds);
     expect(keyWithRecovery).not.toBe(keyWithoutRecovery);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// Data contract: every terminal domain in generated JSON has scheduled stats
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Reads the generated unified_findings.json and checks that every domain
+ * classified as "terminal" has scheduled_group_stats and n_excluded fields
+ * when early deaths exist. This is the test that catches "domain X was
+ * added after the exclusion system and never wired in."
+ */
+describe("Data contract — terminal domain exclusion coverage", () => {
+  const TERMINAL_DOMAINS = new Set(["MI", "MA", "OM", "TF", "DS"]);
+  const LB_DOMAIN = "LB";
+
+  const jsonPath = path.resolve(__dirname, "../../backend/generated/PointCross/unified_findings.json");
+  const mortalityPath = path.resolve(__dirname, "../../backend/generated/PointCross/study_mortality.json");
+
+  // Skip if generated data doesn't exist (CI without backend generation)
+  const hasData = fs.existsSync(jsonPath) && fs.existsSync(mortalityPath);
+
+  it.skipIf(!hasData)("study has early-death subjects (precondition)", () => {
+    const mortality = JSON.parse(fs.readFileSync(mortalityPath, "utf-8"));
+    const earlyDeaths = mortality.early_death_subjects ?? {};
+    expect(Object.keys(earlyDeaths).length).toBeGreaterThan(0);
+  });
+
+  it.skipIf(!hasData)("every terminal domain finding has n_excluded set", () => {
+    const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    const findings: UnifiedFinding[] = data.findings;
+
+    for (const domain of TERMINAL_DOMAINS) {
+      const domainFindings = findings.filter(f => f.domain === domain);
+      if (domainFindings.length === 0) continue; // domain not present in this study
+
+      for (const f of domainFindings) {
+        expect(f.n_excluded, `${domain} finding "${f.finding}" (sex=${f.sex}) missing n_excluded`).toBeDefined();
+        expect(typeof f.n_excluded, `${domain} finding "${f.finding}" n_excluded should be number`).toBe("number");
+      }
+    }
+  });
+
+  it.skipIf(!hasData)("every terminal domain finding has scheduled_group_stats", () => {
+    const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    const findings: UnifiedFinding[] = data.findings;
+
+    for (const domain of TERMINAL_DOMAINS) {
+      const domainFindings = findings.filter(f => f.domain === domain);
+      if (domainFindings.length === 0) continue;
+
+      for (const f of domainFindings) {
+        expect(
+          f.scheduled_group_stats,
+          `${domain} finding "${f.finding}" (sex=${f.sex}) missing scheduled_group_stats`,
+        ).toBeDefined();
+        expect(Array.isArray(f.scheduled_group_stats)).toBe(true);
+      }
+    }
+  });
+
+  it.skipIf(!hasData)("LB findings have scheduled_group_stats", () => {
+    const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    const findings: UnifiedFinding[] = data.findings;
+    const lbFindings = findings.filter(f => f.domain === LB_DOMAIN);
+
+    expect(lbFindings.length).toBeGreaterThan(0);
+    for (const f of lbFindings) {
+      expect(
+        f.scheduled_group_stats,
+        `LB finding "${f.finding}" (sex=${f.sex}, day=${f.day}) missing scheduled_group_stats`,
+      ).toBeDefined();
+    }
+  });
+
+  it.skipIf(!hasData)("longitudinal domains (BW, CL) do NOT have scheduled_group_stats", () => {
+    const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    const findings: UnifiedFinding[] = data.findings;
+
+    for (const domain of ["BW", "CL"]) {
+      const domainFindings = findings.filter(f => f.domain === domain);
+      for (const f of domainFindings) {
+        expect(
+          f.scheduled_group_stats,
+          `${domain} is longitudinal — should not have scheduled_group_stats`,
+        ).toBeUndefined();
+      }
+    }
+  });
+
+  it.skipIf(!hasData)("DS mortality finding exists in unified findings", () => {
+    const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    const findings: UnifiedFinding[] = data.findings;
+    const dsFindings = findings.filter(f => f.domain === "DS");
+    expect(dsFindings.length, "DS domain should have at least one finding").toBeGreaterThan(0);
   });
 });
