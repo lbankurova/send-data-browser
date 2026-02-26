@@ -43,10 +43,6 @@ function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
 
 function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
   const { integrated } = eci;
-  // Only show decomposition when integrated differs from statistical
-  if (integrated.integrated === integrated.statistical && integrated.integrated === "high") {
-    return null;
-  }
 
   const dims: { label: string; level: ConfidenceLevel; reason?: string }[] = [
     { label: "Statistical evidence", level: integrated.statistical },

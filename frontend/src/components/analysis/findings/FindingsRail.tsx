@@ -45,6 +45,7 @@ import type {
   SignalSummaryStats,
 } from "@/lib/findings-rail-engine";
 import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
+import type { ConfidenceLevel } from "@/lib/endpoint-confidence";
 import { formatPValue, titleCase, getDirectionSymbol } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -796,6 +797,26 @@ function RailFiltersSection({
 
 // ─── Group Card ────────────────────────────────────────────
 
+/** Best integrated confidence across TR endpoints in a group (organ mode).
+ *  Non-TR endpoints are excluded — their low statistical confidence is expected
+ *  and doesn't reflect organ evidence quality. */
+function computeOrganConfidence(endpoints: EndpointWithSignal[]): { level: ConfidenceLevel; limitingFactors: string[] } | null {
+  const ORDER: Record<ConfidenceLevel, number> = { high: 2, moderate: 1, low: 0 };
+  let best: ConfidenceLevel | null = null;
+  const factors = new Set<string>();
+  for (const ep of endpoints) {
+    const eci = ep.endpointConfidence;
+    if (!eci || !ep.treatmentRelated) continue;
+    const level = eci.integrated.integrated;
+    if (best === null || ORDER[level] > ORDER[best]) best = level;
+    if (eci.integrated.limitingFactor !== "None" && level !== "high") {
+      factors.add(eci.integrated.limitingFactor);
+    }
+  }
+  if (best === null) return null;
+  return { level: best, limitingFactors: [...factors] };
+}
+
 function CardSection({
   card,
   grouping,
@@ -833,6 +854,11 @@ function CardSection({
   clinicalTierMap?: Map<string, string>;
   effectSizeLabel?: string;
 }) {
+  // Compute organ confidence only for organ grouping mode
+  const organConf = grouping === "organ"
+    ? computeOrganConfidence(card.endpoints)
+    : null;
+
   return (
     <div>
       <CardHeader
@@ -844,6 +870,7 @@ function CardSection({
         showFilteredCount={showFilteredCount}
         onSelect={onHeaderSelect}
         onToggleExpand={onToggleExpand}
+        organConfidence={organConf}
       />
       {isExpanded && (
         <div>
@@ -884,6 +911,7 @@ function CardHeader({
   showFilteredCount,
   onSelect,
   onToggleExpand,
+  organConfidence,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -893,6 +921,7 @@ function CardHeader({
   showFilteredCount: boolean;
   onSelect: () => void;
   onToggleExpand: () => void;
+  organConfidence?: { level: ConfidenceLevel; limitingFactors: string[] } | null;
 }) {
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
 
@@ -909,7 +938,7 @@ function CardHeader({
       onClick={onSelect}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
-      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} />
+      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} />
       <span className="ml-auto font-mono text-[10px] text-muted-foreground">
         {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
       </span>
@@ -931,7 +960,24 @@ function CardHeader({
 
 // ─── Card Label Variants ───────────────────────────────────
 
-function CardLabel({ grouping, value, syndromeLabel }: { grouping: GroupingMode; value: string; syndromeLabel?: string }) {
+const RAG_COLOR: Record<ConfidenceLevel, string> = {
+  high: "#10B981",
+  moderate: "#F59E0B",
+  low: "#EF4444",
+};
+
+const CONF_SHORT: Record<ConfidenceLevel, string> = {
+  high: "High",
+  moderate: "Med",
+  low: "Low",
+};
+
+function CardLabel({ grouping, value, syndromeLabel, organConfidence }: {
+  grouping: GroupingMode;
+  value: string;
+  syndromeLabel?: string;
+  organConfidence?: { level: ConfidenceLevel; limitingFactors: string[] } | null;
+}) {
   if (grouping === "domain") {
     const domainCode = value.toUpperCase();
     return (
@@ -965,8 +1011,28 @@ function CardLabel({ grouping, value, syndromeLabel }: { grouping: GroupingMode;
     );
   }
 
-  // Organ (default)
-  return <span className="min-w-0 truncate font-semibold" title={titleCase(value)}>{titleCase(value)}</span>;
+  // Organ (default) — with confidence label + RAG dashed underline
+  const tooltipLines = [titleCase(value)];
+  if (organConfidence) {
+    tooltipLines.push(`Confidence: ${organConfidence.level}`);
+    if (organConfidence.limitingFactors.length > 0) {
+      tooltipLines.push(`Limited by: ${organConfidence.limitingFactors.join(", ")}`);
+    }
+  }
+
+  return (
+    <span className="flex min-w-0 items-center gap-1.5 font-semibold" title={tooltipLines.join("\n")}>
+      <span className="truncate">{titleCase(value)}</span>
+      {organConfidence && (
+        <span
+          className="shrink-0 text-[9px] font-medium text-muted-foreground pb-px"
+          style={{ borderBottom: `1.5px dashed ${RAG_COLOR[organConfidence.level]}` }}
+        >
+          Conf: {CONF_SHORT[organConfidence.level]}
+        </span>
+      )}
+    </span>
+  );
 }
 
 

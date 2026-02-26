@@ -6,6 +6,7 @@
  */
 import type { EChartsOption } from "echarts";
 import type { CustomSeriesRenderItemAPI, CustomSeriesRenderItemParams } from "echarts";
+import type { NonMonotonicFlag } from "@/lib/endpoint-confidence";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
 
 // ─── Shared constants ────────────────────────────────────────
@@ -72,6 +73,7 @@ export function buildDoseResponseLineOption(
   sexColors: Record<string, string>,
   sexLabels: Record<string, string>,
   noaelLabel?: string | null,
+  nonMonoFlag?: NonMonotonicFlag | null,
 ): EChartsOption {
   const categories = mergedPoints.map((p) => String(p.dose_label));
 
@@ -178,6 +180,48 @@ export function buildDoseResponseLineOption(
       },
       data: [{ xAxis: noaelLabel }],
     };
+  }
+
+  // Non-monotonic flag: highlight peak dose with amber markArea + annotation
+  if (nonMonoFlag?.triggered && nonMonoFlag.peakDoseLevel != null && series.length > 0) {
+    const peakPt = mergedPoints.find((p) => p.dose_level === nonMonoFlag.peakDoseLevel);
+    if (peakPt) {
+      const peakLabel = String(peakPt.dose_label);
+      const firstLine = series[0] as Record<string, unknown>;
+      firstLine.markArea = {
+        silent: true,
+        data: [[
+          { xAxis: peakLabel, itemStyle: { color: "rgba(217, 119, 6, 0.08)" } },
+          { xAxis: peakLabel },
+        ]],
+      };
+
+      // Add a small annotation at the top
+      const reversalPct = nonMonoFlag.reversalRatio != null
+        ? `${(nonMonoFlag.reversalRatio * 100).toFixed(0)}%`
+        : "";
+      const firstLineMarkLine = firstLine.markLine as Record<string, unknown> | undefined;
+      const existingData = (firstLineMarkLine?.data as unknown[] | undefined) ?? [];
+      firstLine.markLine = {
+        ...firstLineMarkLine,
+        silent: true,
+        symbol: "none",
+        data: [
+          ...existingData,
+          {
+            xAxis: peakLabel,
+            lineStyle: { color: "#D97706", type: "dotted", width: 1.5 },
+            label: {
+              formatter: `Peak (reversal ${reversalPct})`,
+              position: "insideEndTop",
+              fontSize: REF_LINE_LABEL_SIZE,
+              color: "#D97706",
+              fontWeight: 500,
+            },
+          },
+        ],
+      };
+    }
   }
 
   return {

@@ -55,6 +55,8 @@ import type { TimecourseResponse } from "@/types/timecourse";
 import type { ToxFinding } from "@/types/annotations";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { checkNonMonotonic } from "@/lib/endpoint-confidence";
+import type { GroupStat, PairwiseResult } from "@/types/analysis";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -872,6 +874,35 @@ function ChartOverviewContent({
     setIncidenceScale(maxIncidence < 0.3 ? "compact" : "scaled");
   }, [maxIncidence]);
 
+  // Non-monotonic flag — compute from pairwise rows per sex, trigger if any sex fires
+  const nonMonoFlag = useMemo(() => {
+    if (!chartData || !selectedSummary || !pairwiseRows.length) return null;
+    const pattern = selectedSummary.dose_response_pattern;
+    for (const sex of chartData.sexes) {
+      const sexRows = pairwiseRows.filter((r) => r.sex === sex);
+      if (sexRows.length === 0) continue;
+      const groupStats: GroupStat[] = sexRows.map((r) => ({
+        dose_level: r.dose_level,
+        mean: r.mean,
+        sd: r.sd,
+        n: r.n ?? 0,
+        median: null,
+      }));
+      const pairwise: PairwiseResult[] = sexRows
+        .filter((r) => r.dose_level > 0)
+        .map((r) => ({
+          dose_level: r.dose_level,
+          p_value: r.p_value,
+          p_value_adj: null,
+          statistic: null,
+          cohens_d: r.effect_size,
+        }));
+      const flag = checkNonMonotonic(groupStats, pairwise, pattern);
+      if (flag.triggered) return flag;
+    }
+    return null;
+  }, [chartData, selectedSummary, pairwiseRows]);
+
   if (!chartData || !selectedEndpoint) {
     return (
       <div className="flex items-center justify-center p-12 text-xs text-muted-foreground">
@@ -918,7 +949,7 @@ function ChartOverviewContent({
           </div>
           {chartData.dataType === "continuous" ? (
             <EChartsWrapper
-              option={buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, noaelLabel)}
+              option={buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, noaelLabel, nonMonoFlag)}
               style={{ width: "100%", height: 220 }}
             />
           ) : (
