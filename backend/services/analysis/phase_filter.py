@@ -117,9 +117,6 @@ def compute_last_dosing_day(
 # Domains where treatment-period pooling applies (in-life, longitudinal)
 IN_LIFE_DOMAINS = {"BW", "LB", "CL", "FW", "BG", "EG", "VS"}
 
-# Domains where only main study animals are used (terminal sacrifice)
-TERMINAL_DOMAINS = {"MI", "MA", "OM", "TF"}
-
 
 def get_treatment_subjects(subjects: pd.DataFrame) -> pd.DataFrame:
     """Return subjects for treatment-period analysis: main + recovery, excluding satellites.

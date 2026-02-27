@@ -2,11 +2,11 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
-import { AppLandingPage } from "@/components/panels/AppLandingPage";
-import { CenterPanel } from "@/components/panels/CenterPanel";
 import { PlaceholderAnalysisView } from "@/components/analysis/PlaceholderAnalysisView";
-import { StudySummaryViewWrapper } from "@/components/analysis/StudySummaryViewWrapper";
 
+const AppLandingPage = lazy(() => import("@/components/panels/AppLandingPage").then(m => ({ default: m.AppLandingPage })));
+const CenterPanel = lazy(() => import("@/components/panels/CenterPanel").then(m => ({ default: m.CenterPanel })));
+const StudySummaryViewWrapper = lazy(() => import("@/components/analysis/StudySummaryViewWrapper").then(m => ({ default: m.StudySummaryViewWrapper })));
 const FindingsViewWrapper = lazy(() => import("@/components/analysis/findings/FindingsViewWrapper").then(m => ({ default: m.FindingsViewWrapper })));
 
 // Lazy-loaded analysis views (code-split into separate chunks)
@@ -32,11 +32,11 @@ const router = createBrowserRouter([
   {
     element: <Layout />,
     children: [
-      { path: "/", element: <AppLandingPage /> },
-      { path: "/studies/:studyId", element: <StudySummaryViewWrapper /> },
+      { path: "/", element: <LazyRoute><AppLandingPage /></LazyRoute> },
+      { path: "/studies/:studyId", element: <LazyRoute><StudySummaryViewWrapper /></LazyRoute> },
       {
         path: "/studies/:studyId/domains/:domainName",
-        element: <CenterPanel />,
+        element: <LazyRoute><CenterPanel /></LazyRoute>,
       },
       {
         path: "/studies/:studyId/findings",

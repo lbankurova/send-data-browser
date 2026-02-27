@@ -7,6 +7,7 @@ Usage:
 import json
 import math
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -79,6 +80,8 @@ def _count(data) -> str:
 def generate(study_id: str):
     """Run the full generation pipeline for a study."""
     print(f"=== Generating analysis data for {study_id} ===")
+    t_total = time.perf_counter()
+    timings: dict[str, float] = {}
 
     # Discover studies
     studies = discover_studies()
@@ -105,8 +108,12 @@ def generate(study_id: str):
     out_dir = OUTPUT_DIR / study_id
     static_dir = out_dir / "static"
 
+    def _tick(label: str):
+        timings[label] = time.perf_counter()
+
     # Phase 1a: Compute mortality summary (DS + DD domains) — must run before domain stats
     # so early_death_subjects can feed into dual-pass statistics
+    _tick("1a_start")
     print("Phase 1a: Computing mortality summary...")
     from services.analysis.dose_groups import build_dose_groups as _build_dg
     _dg_data = _build_dg(study)
@@ -128,7 +135,10 @@ def generate(study_id: str):
     if last_dosing_day_override is not None:
         print(f"  Override: last_dosing_day = {last_dosing_day_override}")
 
+    _tick("1a_end")
+
     # Phase 1b: Compute all findings with enriched stats (dual-pass for terminal domains)
+    _tick("1b_start")
     print("Phase 1b: Computing domain statistics...")
     findings, dg_data = compute_all_findings(
         study, early_death_subjects=early_death_subjects,
@@ -137,7 +147,10 @@ def generate(study_id: str):
     dose_groups = dg_data["dose_groups"]
     print(f"  {len(findings)} findings across {len(set(f['domain'] for f in findings))} domains")
 
+    _tick("1b_end")
+
     # Phases 1c/1d/1e — independent computations, run in parallel
+    _tick("1cde_start")
     print("Phases 1c-1e: Subject context, tumor summary, food consumption (parallel)...")
     with ThreadPoolExecutor(max_workers=3) as pool:
         fut_tumor = pool.submit(build_tumor_summary, findings, study)
@@ -166,7 +179,10 @@ def generate(study_id: str):
     else:
         print("  1e: No FW data available")
 
+    _tick("1cde_end")
+
     # Phase 1f: Cross-animal flags (depends on tumor_summary from 1d)
+    _tick("1f_start")
     print("Phase 1f: Computing cross-animal flags...")
     try:
         cross_animal_flags = build_cross_animal_flags(
@@ -180,6 +196,8 @@ def generate(study_id: str):
     except Exception as e:
         print(f"  WARNING: Cross-animal flags computation failed: {e}")
         cross_animal_flags = None
+
+    _tick("1f_end")
 
     # Phase 1c results (may have failed in thread)
     provenance_msgs = []
@@ -200,6 +218,7 @@ def generate(study_id: str):
         print(f"  1c WARNING: Subject context failed: {e}")
 
     # Phase 2: Assemble view-specific data
+    _tick("2_start")
     print("Phase 2: Assembling view DataFrames...")
     signal_summary = build_study_signal_summary(findings, dose_groups)
     target_organs = build_target_organ_summary(findings)
@@ -210,7 +229,10 @@ def generate(study_id: str):
     noael = build_noael_summary(findings, dose_groups, mortality=mortality)
     finding_dose_trends = build_finding_dose_trends(findings, dose_groups)
 
+    _tick("2_end")
+
     # Phases 2b/3/4/5 — independent computations, run in parallel
+    _tick("2b345_start")
     print("Phases 2b/3/4/5: PK, rules, charts, unified findings (parallel)...")
     with ThreadPoolExecutor(max_workers=4) as pool:
         fut_pk = pool.submit(build_pk_integration, study, dose_groups, noael)
@@ -266,10 +288,27 @@ def generate(study_id: str):
     _write_json(out_dir / "unified_findings.json", unified)
     print(f"  5: {len(ae_findings)} findings pre-generated")
 
-    print(f"\n=== Generation complete: {out_dir} ===")
+    _tick("2b345_end")
+
+    elapsed = time.perf_counter() - t_total
+    print(f"\n=== Generation complete: {out_dir} ({elapsed:.1f}s) ===")
     print(f"  Signal summary: {len(signal_summary)} rows")
     print(f"  Target organs: {len(target_organs)} organs")
     print(f"  Rule results: {len(rule_results)} rules")
+
+    # Phase timing breakdown
+    phases = [
+        ("1a Mortality", "1a"),
+        ("1b Domain stats", "1b"),
+        ("1c-e Parallel (ctx/tumor/food)", "1cde"),
+        ("1f Cross-animal flags", "1f"),
+        ("2  View DataFrames", "2"),
+        ("2b-5 Parallel (PK/rules/chart/unified)", "2b345"),
+    ]
+    print("\n  Phase timing:")
+    for label, key in phases:
+        dt = timings.get(f"{key}_end", 0) - timings.get(f"{key}_start", 0)
+        print(f"    {label:<42s} {dt:6.2f}s")
 
 
 if __name__ == "__main__":

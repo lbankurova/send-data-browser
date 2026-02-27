@@ -13,6 +13,7 @@ import fs from "fs";
 import path from "path";
 import { describe, it, expect } from "vitest";
 import type { UnifiedFinding, GroupStat, PairwiseResult } from "@/types/analysis";
+import { TERMINAL_DOMAINS, LB_DOMAIN } from "@/lib/send-constants";
 
 // ── Standalone helpers matching ScheduledOnlyContext logic ──
 
@@ -544,8 +545,6 @@ describe("Re-initialization guard (HMR stability)", () => {
  * added after the exclusion system and never wired in."
  */
 describe("Data contract — terminal domain exclusion coverage", () => {
-  const TERMINAL_DOMAINS = new Set(["MI", "MA", "OM", "TF", "DS"]);
-  const LB_DOMAIN = "LB";
 
   const jsonPath = path.resolve(__dirname, "../../backend/generated/PointCross/unified_findings.json");
   const mortalityPath = path.resolve(__dirname, "../../backend/generated/PointCross/study_mortality.json");
