@@ -579,13 +579,21 @@ export function integrateConfidence(
   // Biological: from normalization caveat
   const biological: ConfidenceLevel = normCaveat?.ceilingOnTR ?? "high";
 
-  // Dose-response: penalty from non-monotonic flag
-  const doseResponse: ConfidenceLevel = nonMonoFlag.triggered
-    ? downgradeConfidence(
-        statistical,
-        nonMonoFlag.consequences.confidencePenalty,
-      )
-    : "high";
+  // Dose-response: penalty from non-monotonic flag or backend non-monotonic pattern
+  let doseResponse: ConfidenceLevel;
+  if (nonMonoFlag.triggered) {
+    // Hidden reversal in threshold pattern — full penalty
+    doseResponse = downgradeConfidence(
+      statistical,
+      nonMonoFlag.consequences.confidencePenalty,
+    );
+  } else if (ep.pattern === "non_monotonic") {
+    // Backend already classified as non-monotonic — JT trend test is less
+    // informative for non-monotonic data, cap at moderate
+    doseResponse = "moderate";
+  } else {
+    doseResponse = "high";
+  }
 
   // Trend validity: from variance check
   let trendValidity: ConfidenceLevel = "high";
