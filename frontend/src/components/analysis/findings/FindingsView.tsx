@@ -16,7 +16,7 @@ import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
-import { formatPValue, formatEffectSize } from "@/lib/severity-colors";
+import { formatPValue, formatEffectSize, formatDoseShortLabel } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { UnifiedFinding } from "@/types/analysis";
 
@@ -395,11 +395,11 @@ export function FindingsView() {
           >
             <span>
               {mortalityData.total_deaths}TR death{mortalityData.total_deaths !== 1 ? "s" : ""}
-              {mortalityData.mortality_loael_label ? ` at ${mortalityData.mortality_loael_label}` : ""}
+              {mortalityData.mortality_loael_label ? ` at ${formatDoseShortLabel(mortalityData.mortality_loael_label)}` : ""}
             </span>
-            {isScheduledOnly && (
-              <span className="text-muted-foreground/60">(excl. from term.stats)</span>
-            )}
+            <span className="text-muted-foreground/60">
+              ({isScheduledOnly ? "excl. from term.stats" : "in term.stats"})
+            </span>
           </button>
         )}
         {data && (
