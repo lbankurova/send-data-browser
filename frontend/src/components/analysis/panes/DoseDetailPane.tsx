@@ -19,6 +19,9 @@ export function DoseDetailPane({ statistics, doseResponse }: Props) {
     : "Pairwise: Fisher\u2019s exact test (Bonferroni-adjusted)";
   const trendTestName = isContinuous ? "Jonckheere-Terpstra" : "Cochran-Armitage";
 
+  // Dose unit for bar labels
+  const doseUnit = statistics.rows.find(r => r.dose_unit)?.dose_unit ?? "";
+
   // Bar chart scaling
   const barValues = doseResponse.bars
     .map((b) => b.value)
@@ -113,12 +116,16 @@ export function DoseDetailPane({ statistics, doseResponse }: Props) {
 
           return (
             <div key={bar.dose_level} className="flex items-center gap-2">
-              <span className="w-[50px] shrink-0 truncate text-right text-[10px] text-muted-foreground">
-                {bar.dose_value != null ? bar.dose_value : bar.label}
-              </span>
+              <DoseLabel
+                level={bar.dose_level}
+                label={bar.dose_value != null && bar.dose_value > 0
+                  ? `${bar.dose_value} ${doseUnit}`.trim()
+                  : "Control"}
+                className="text-[10px]"
+              />
               <div className="flex-1">
                 <div
-                  className="h-4 rounded-sm bg-primary/30"
+                  className="h-2.5 rounded-sm bg-gray-300"
                   style={{ width: `${Math.max(pct, 2)}%` }}
                 />
               </div>
