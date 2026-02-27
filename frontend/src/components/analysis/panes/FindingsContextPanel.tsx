@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
@@ -21,97 +21,84 @@ import { SyndromeContextPanel } from "./SyndromeContextPanel";
 import { RecoveryPane } from "./RecoveryPane";
 import { EndpointSyndromePane } from "./EndpointSyndromePane";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
+import { ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/organ-weight-normalization";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
-import type { UnifiedFinding } from "@/types/analysis";
-import { formatPValue } from "@/lib/severity-colors";
+import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
+import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
+import { formatPValue, getDoseGroupColor } from "@/lib/severity-colors";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { verdictLabel } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 
-// ─── Williams' Trend Test Comparison ────────────────────────
+// ─── Williams' Step-Down Table (shared sub-component) ───────
 
-function WilliamsComparisonPane({ finding }: { finding: UnifiedFinding }) {
-  const [showStepDown, setShowStepDown] = useState(false);
-  const williams = finding.williams;
-  if (!williams) return null;
+function WilliamsStepDownTable({ results, finding, doseGroups }: {
+  results: { dose_label: string; test_statistic: number; critical_value: number; p_value: number; significant: boolean }[];
+  finding: UnifiedFinding;
+  doseGroups?: DoseGroup[];
+}) {
+  if (results.length === 0) return null;
 
-  const jtSignificant = finding.trend_p != null && finding.trend_p < 0.05;
-  const williamsSignificant = williams.step_down_results.some((r) => r.significant);
-  const concordant = jtSignificant === williamsSignificant;
+  // Build dose_level → display label from DoseGroup metadata
+  const dgMap = new Map<number, DoseGroup>();
+  if (doseGroups) {
+    for (const dg of doseGroups) dgMap.set(dg.dose_level, dg);
+  }
+
+  // Step-down results are highest→lowest treated; group_stats sorted by dose_level ascending
+  const treatedLevels = [...finding.group_stats]
+    .filter((g) => g.dose_level > 0)
+    .sort((a, b) => b.dose_level - a.dose_level); // highest first, matching step-down order
+
+  function doseInfo(idx: number) {
+    const level = treatedLevels[idx]?.dose_level ?? idx + 1;
+    const dg = dgMap.get(level);
+    const label = dg && dg.dose_value != null && dg.dose_value > 0
+      ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
+      : results[idx].dose_label;
+    return { level, label };
+  }
 
   return (
-    <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
-      <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Trend test comparison
-      </div>
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <span className="font-medium">Jonckheere-Terpstra</span>
-          <span className="font-mono text-[10px]">
-            p = {finding.trend_p != null ? formatPValue(finding.trend_p) : "\u2014"}
-            {jtSignificant && <span className="ml-1 text-red-600">*</span>}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="font-medium">Williams&apos; test</span>
-          <span className="font-mono text-[10px]">
-            {williams.minimum_effective_dose
-              ? `MED: ${williams.minimum_effective_dose}`
-              : "No MED detected"}
-            {williamsSignificant && <span className="ml-1 text-red-600">*</span>}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 border-t border-border/30 pt-0.5">
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${concordant ? "bg-emerald-500" : "bg-amber-500"}`} />
-          <span className="font-medium">{concordant ? "Concordant" : "Discordant"}</span>
-          {!concordant && (
-            <span className="text-muted-foreground">
-              &mdash; {jtSignificant ? "JT significant but Williams' not" : "Williams' significant but JT not"}
-            </span>
-          )}
-        </div>
-      </div>
-      {williams.step_down_results.length > 0 && (
-        <div className="mt-1.5">
-          <button
-            className="text-[9px] text-blue-600 hover:underline"
-            onClick={() => setShowStepDown(!showStepDown)}
-          >
-            {showStepDown ? "Hide" : "Show"} step-down detail
-          </button>
-          {showStepDown && (
-            <table className="mt-1 w-full">
-              <thead>
-                <tr className="text-[9px] text-muted-foreground">
-                  <th className="py-0.5 text-left font-medium">Dose</th>
-                  <th className="py-0.5 text-right font-medium">t&#x0303;</th>
-                  <th className="py-0.5 text-right font-medium">CV</th>
-                  <th className="py-0.5 text-right font-medium">p</th>
-                  <th className="py-0.5 text-right font-medium">Sig</th>
-                </tr>
-              </thead>
-              <tbody>
-                {williams.step_down_results.map((r) => (
-                  <tr key={r.dose_label} className={r.significant ? "text-red-600" : ""}>
-                    <td className="py-0.5">{r.dose_label}</td>
-                    <td className="py-0.5 text-right font-mono">{r.test_statistic.toFixed(3)}</td>
-                    <td className="py-0.5 text-right font-mono">{r.critical_value.toFixed(3)}</td>
-                    <td className="py-0.5 text-right font-mono">{formatPValue(r.p_value)}</td>
-                    <td className="py-0.5 text-right">{r.significant ? "Yes" : "No"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-    </div>
+    <table className="mt-1.5 w-full">
+      <thead>
+        <tr className="text-[9px] text-muted-foreground">
+          <th className="py-0.5 text-left font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>Group</th>
+          <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>t&#x0303;</th>
+          <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>CV</th>
+          <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>p</th>
+          <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>Sig</th>
+        </tr>
+      </thead>
+      <tbody>
+        {results.map((r, i) => {
+          const di = doseInfo(i);
+          return (
+            <tr key={r.dose_label} className={cn("border-t border-border/20", r.significant && "text-red-600")}>
+              <td className="py-0.5 pr-2" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                <span
+                  className="border-l-2 pl-1.5 font-mono whitespace-nowrap"
+                  style={{ borderLeftColor: getDoseGroupColor(di.level) }}
+                >
+                  {di.label}
+                </span>
+              </td>
+              <td className="py-0.5 text-right font-mono" style={{ width: "1px", whiteSpace: "nowrap" }}>{r.test_statistic.toFixed(3)}</td>
+              <td className="py-0.5 text-right font-mono" style={{ width: "1px", whiteSpace: "nowrap" }}>{r.critical_value.toFixed(3)}</td>
+              <td className="py-0.5 text-right font-mono" style={{ width: "1px", whiteSpace: "nowrap" }}>{formatPValue(r.p_value)}</td>
+              <td className="py-0.5 text-right" style={{ width: "1px", whiteSpace: "nowrap" }}>{r.significant ? "Yes" : "No"}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 
@@ -199,37 +186,360 @@ function confidenceLevelClass(level: ConfidenceLevel): string {
       : "font-semibold text-red-600";
 }
 
-function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
-  const { integrated } = eci;
-  const [expanded, setExpanded] = useState(false);
+const DIMENSION_TOOLTIPS: Record<string, string> = {
+  "Statistical evidence": "Strength of the statistical signal: p-value significance and effect size magnitude.",
+  "Biological plausibility": "Whether this finding is corroborated by related findings across domains (e.g., clinical chemistry supporting an organ weight change).",
+  "Dose-response quality": "Evaluates whether the dose-response pattern is consistent with a reliable treatment-related effect. Flags non-monotonic patterns (e.g., mid-dose peaks with high-dose reversals) where trend test interpretation may be less straightforward.",
+  "Trend test validity": "Whether the statistical assumptions of the trend test are met — specifically, comparable within-group variances across dose groups. When ANCOVA is available, this check uses ANCOVA diagnostics instead of raw variance.",
+  "Trend concordance": "Whether two independent trend tests (Jonckheere-Terpstra and Williams) agree on the presence and direction of a dose-related trend.",
+};
 
-  const dims: { label: string; level: ConfidenceLevel; reason?: string }[] = [
-    { label: "Statistical evidence", level: integrated.statistical },
+// ─── Dimension Expanded Content Renderers ───────────────────
+
+function doseLabel(level: number, doseGroups?: DoseGroup[]): string {
+  const dg = doseGroups?.find((g) => g.dose_level === level);
+  if (dg && dg.dose_value != null && dg.dose_value > 0) {
+    return `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim();
+  }
+  return `Level ${level}`;
+}
+
+function StatisticalEvidenceContent({ finding, doseGroups }: { finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
+  // Show worst significant p-value from pairwise and best effect size
+  const worstSigPairwise = finding.pairwise
+    .filter((p) => {
+      const pv = p.p_value_adj ?? p.p_value;
+      return pv != null && pv < 0.05;
+    })
+    .sort((a, b) => ((b.p_value_adj ?? b.p_value) ?? 1) - ((a.p_value_adj ?? a.p_value) ?? 1))[0];
+
+  const bestEffectSize = finding.pairwise.reduce<{ g: number; doseLevel: number } | null>((best, p) => {
+    const g = Math.abs(p.cohens_d ?? 0);
+    if (g > (best?.g ?? 0)) return { g, doseLevel: p.dose_level };
+    return best;
+  }, null);
+
+  const nonSigDoses = finding.pairwise
+    .filter((p) => {
+      const pv = p.p_value_adj ?? p.p_value;
+      return pv == null || pv >= 0.05;
+    })
+    .filter((p) => p.dose_level > 0)
+    .map((p) => doseLabel(p.dose_level, doseGroups));
+
+  return (
+    <div className="space-y-0.5 text-muted-foreground">
+      {worstSigPairwise && (
+        <div>
+          Dunnett&apos;s: p = {formatPValue((worstSigPairwise.p_value_adj ?? worstSigPairwise.p_value)!)} at {doseLabel(worstSigPairwise.dose_level, doseGroups)}
+        </div>
+      )}
+      {bestEffectSize && bestEffectSize.g > 0 && (
+        <div>Effect size: d = {bestEffectSize.g.toFixed(2)}</div>
+      )}
+      {nonSigDoses.length > 0 && (
+        <div>Not significant at {nonSigDoses.join(" or ")}</div>
+      )}
+      {!worstSigPairwise && (!bestEffectSize || bestEffectSize.g === 0) && nonSigDoses.length === 0 && (
+        <div>No significant pairwise comparisons.</div>
+      )}
+    </div>
+  );
+}
+
+function BiologicalPlausibilityContent({ eci, syndromes, finding }: { eci: EndpointConfidenceResult; syndromes: CrossDomainSyndrome[]; finding: UnifiedFinding }) {
+  const reason = eci.normCaveat?.reason;
+  const hasSyndromes = syndromes.length > 0;
+  const organ = finding.specimen ?? finding.organ_system ?? "";
+
+  // Compute organ-level convergence (unique domains across all syndromes for this organ)
+  const organDomains = useMemo(() => {
+    const domains = new Set<string>();
+    for (const syn of syndromes) {
+      for (const m of syn.matchedEndpoints) {
+        domains.add(m.domain);
+      }
+    }
+    return [...domains].sort();
+  }, [syndromes]);
+
+  return (
+    <div className="space-y-1 text-muted-foreground">
+      {hasSyndromes && syndromes.map((syn) => (
+        <div key={syn.id}>
+          <div>Part of {syn.name} ({syn.confidence.toLowerCase()}):</div>
+          <div className="pl-3 text-[9px]">
+            {syn.matchedEndpoints.map((m) => m.endpoint_label).join(", ")}
+          </div>
+        </div>
+      ))}
+      {hasSyndromes && organ && organDomains.length >= 2 && (
+        <div>{organDomains.length}-domain convergence in {organ}: {organDomains.join(", ")}</div>
+      )}
+      {!hasSyndromes && eci.integrated.biological === "high" && !reason && (
+        <div>No cross-domain corroboration or normalization concerns.</div>
+      )}
+      {reason && <div>{reason}</div>}
+    </div>
+  );
+}
+
+function DoseResponseQualityContent({ eci, finding, doseGroups }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
+  const { nonMonotonic } = eci;
+  const pattern = finding.dose_response_pattern ?? "";
+  const isThreshold = pattern.startsWith("threshold");
+  const isFlat = pattern === "flat" || pattern === "no_pattern" || pattern === "insufficient_data";
+
+  return (
+    <div className="space-y-0.5 text-muted-foreground">
+      {nonMonotonic.triggered ? (
+        <>
+          <div>
+            Threshold with high-dose reversal detected:
+            Effect peaks at {nonMonotonic.peakDoseLevel != null ? doseLabel(nonMonotonic.peakDoseLevel, doseGroups) : "—"} and reverses
+            ({nonMonotonic.reversalRatio != null ? `${(nonMonotonic.reversalRatio * 100).toFixed(0)}%` : "—"} of peak at highest dose).
+          </div>
+          <div>Trend test may overstate or understate the effect.</div>
+          {nonMonotonic.highestDosePValue != null && (
+            <div>Highest dose p = {formatPValue(nonMonotonic.highestDosePValue)} vs control.</div>
+          )}
+        </>
+      ) : eci.integrated.doseResponse === "moderate" ? (
+        <>
+          <div>Backend pattern classification: non_monotonic</div>
+          <div>
+            JT trend test assumes monotonic dose-response;
+            significance may not reflect the observed pattern shape.
+          </div>
+          <div>Consider examining individual dose-group contrasts (Dunnett&apos;s) rather than trend for this endpoint.</div>
+        </>
+      ) : isFlat ? (
+        <>
+          <div>Flat dose-response pattern (no treatment-related trend).</div>
+          <div>Statistical evidence dimension handles significance separately.</div>
+        </>
+      ) : isThreshold ? (
+        <>
+          <div>Threshold dose-response pattern</div>
+          {finding.pairwise && (() => {
+            const sigPw = finding.pairwise
+              .filter((p) => { const pv = p.p_value_adj ?? p.p_value; return pv != null && pv <= 0.05; })
+              .sort((a, b) => a.dose_level - b.dose_level);
+            const onset = sigPw[0];
+            return onset ? (
+              <div>Effect onset at {doseLabel(onset.dose_level, doseGroups)}</div>
+            ) : null;
+          })()}
+        </>
+      ) : (
+        <div>Monotonic dose-response confirmed.</div>
+      )}
+    </div>
+  );
+}
+
+function TrendTestValidityContent({ eci, finding }: { eci: EndpointConfidenceResult; finding: UnifiedFinding }) {
+  const { trendCaveat } = eci;
+  const hasValidAncova = finding.ancova != null
+    && finding.ancova.adjusted_means.length > 0
+    && finding.ancova.model_r_squared > 0;
+
+  if (hasValidAncova) {
+    return (
+      <div className="space-y-0.5 text-muted-foreground">
+        <div>
+          ANCOVA normalization available (R&sup2; = {finding.ancova!.model_r_squared.toFixed(2)})
+        </div>
+        <div>Raw variance check bypassed — body weight covariate accounts for between-group variance.</div>
+        <div>
+          BW slope homogeneity: p = {formatPValue(finding.ancova!.slope_homogeneity.p_value)} ({finding.ancova!.slope_homogeneity.homogeneous ? "assumption met" : "assumption not met"})
+        </div>
+      </div>
+    );
+  }
+
+  if (trendCaveat.triggered) {
+    return (
+      <div className="space-y-0.5 text-muted-foreground">
+        <div>Variance heterogeneity detected in raw group data:</div>
+        {trendCaveat.sdRatio != null && trendCaveat.sdRatio > 2.0 && (
+          <div>&nbsp;&nbsp;· SD ratio: {trendCaveat.sdRatio.toFixed(1)}&times; (control SD); threshold: 2.0&times;</div>
+        )}
+        {trendCaveat.cvRatio != null && trendCaveat.cvRatio > 2.0 && (
+          <div>&nbsp;&nbsp;· CV ratio: {trendCaveat.cvRatio.toFixed(1)}&times; (min group CV); threshold: 2.0&times;</div>
+        )}
+        <div className="mt-0.5">
+          JT trend test assumes comparable within-group variances across dose groups. Significance may be inflated.
+        </div>
+        {!hasValidAncova && (
+          <div className="mt-0.5">
+            Note: No ANCOVA normalization available for this endpoint.
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-0.5 text-muted-foreground">
+      <div>Within-group variance comparable across dose groups.</div>
+      {trendCaveat.sdRatio != null && (
+        <div>SD ratio: {trendCaveat.sdRatio.toFixed(1)}&times; (threshold: 2.0&times;)</div>
+      )}
+      {trendCaveat.cvRatio != null && (
+        <div>CV ratio: {trendCaveat.cvRatio.toFixed(1)}&times; (threshold: 2.0&times;)</div>
+      )}
+    </div>
+  );
+}
+
+function TrendConcordanceContent({ eci, finding, doseGroups }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
+  const [showStepDown, setShowStepDown] = useState(false);
+  const { trendConcordance } = eci;
+  const williams = finding.williams;
+
+  const jtSignificant = finding.trend_p != null && finding.trend_p < 0.05;
+  const williamsSignificant = williams?.step_down_results.some((r) => r.significant) ?? false;
+  const concordant = jtSignificant === williamsSignificant;
+
+  return (
+    <div className="space-y-0.5 text-muted-foreground">
+      <div className="flex items-center justify-between">
+        <span>Jonckheere-Terpstra</span>
+        <span className="font-mono">
+          p = {finding.trend_p != null ? formatPValue(finding.trend_p) : "\u2014"}{jtSignificant ? " *" : ""}
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span>Williams&apos; test</span>
+        <span className="font-mono">
+          {williams?.minimum_effective_dose
+            ? `MED: ${williams.minimum_effective_dose}`
+            : "No MED detected"}{williamsSignificant ? " *" : ""}
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5 border-t border-border/30 pt-0.5">
+        <span className={`inline-block h-1.5 w-1.5 rounded-full ${concordant ? "bg-emerald-500" : "bg-amber-500"}`} />
+        <span className="font-medium text-foreground">{concordant ? "Concordant" : "Discordant"}</span>
+        {!concordant && trendConcordance.rationale && (
+          <span className="text-muted-foreground text-[9px]">
+            {jtSignificant ? "JT significant but Williams' not" : "Williams' significant but JT not"}
+          </span>
+        )}
+      </div>
+      {williams && williams.step_down_results.length > 0 && (
+        <div className="mt-1">
+          <button
+            className="text-[9px] text-blue-600 hover:underline"
+            onClick={() => setShowStepDown((v) => !v)}
+          >
+            {showStepDown ? "Hide" : "Show"} step-down detail
+          </button>
+          {showStepDown && <WilliamsStepDownTable results={williams.step_down_results} finding={finding} doseGroups={doseGroups} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Decomposed Confidence Pane ────────────────────────
+
+interface DimDef {
+  key: string;
+  label: string;
+  level: ConfidenceLevel;
+  notApplicable: boolean;
+  renderContent: (() => React.ReactNode) | null;
+}
+
+function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[]; syndromes: CrossDomainSyndrome[] }) {
+  const { integrated } = eci;
+  const [showDecomp, setShowDecomp] = useState(false);
+  const [expandedDims, setExpandedDims] = useState<Set<string>>(new Set());
+  const dimRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
+
+  // Seed expandedDims with LOW dimensions when decomposition first shown
+  useEffect(() => {
+    if (showDecomp) {
+      const lowDims = new Set<string>();
+      const levels: Record<string, ConfidenceLevel> = {
+        "Statistical evidence": integrated.statistical,
+        "Biological plausibility": integrated.biological,
+        "Dose-response quality": integrated.doseResponse,
+        "Trend test validity": integrated.trendValidity,
+        "Trend concordance": integrated.trendConcordance,
+      };
+      for (const [key, level] of Object.entries(levels)) {
+        if (level === "low") lowDims.add(key);
+      }
+      if (lowDims.size > 0) setExpandedDims(lowDims);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDecomp]);
+
+  const toggleDim = useCallback((key: string) => {
+    setExpandedDims((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const expandAndScroll = useCallback((key: string) => {
+    setShowDecomp(true);
+    setExpandedDims((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+    // Scroll after render
+    requestAnimationFrame(() => {
+      dimRefs.current.get(key)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }, []);
+
+  // Not-applicable detection
+  const trendNA = finding.trend_p == null;
+  const concordanceNA = finding.trend_p == null || finding.williams == null;
+
+  const dims: DimDef[] = useMemo(() => [
     {
+      key: "Statistical evidence",
+      label: "Statistical evidence",
+      level: integrated.statistical,
+      notApplicable: false,
+      renderContent: () => <StatisticalEvidenceContent finding={finding} doseGroups={doseGroups} />,
+    },
+    {
+      key: "Biological plausibility",
       label: "Biological plausibility",
       level: integrated.biological,
-      reason: eci.normCaveat?.reason,
+      notApplicable: false,
+      renderContent: () => <BiologicalPlausibilityContent eci={eci} syndromes={syndromes} finding={finding} />,
     },
     {
+      key: "Dose-response quality",
       label: "Dose-response quality",
       level: integrated.doseResponse,
-      reason: eci.nonMonotonic.triggered
-        ? eci.nonMonotonic.rationale ?? undefined
-        : integrated.doseResponse !== "high"
-          ? "Non-monotonic pattern — trend test less informative"
-          : undefined,
+      notApplicable: false,
+      renderContent: () => <DoseResponseQualityContent eci={eci} finding={finding} doseGroups={doseGroups} />,
     },
     {
+      key: "Trend test validity",
       label: "Trend test validity",
       level: integrated.trendValidity,
-      reason: eci.trendCaveat.triggered ? eci.trendCaveat.rationale ?? undefined : undefined,
+      notApplicable: trendNA,
+      renderContent: trendNA ? null : () => <TrendTestValidityContent eci={eci} finding={finding} />,
     },
     {
+      key: "Trend concordance",
       label: "Trend concordance",
       level: integrated.trendConcordance,
-      reason: eci.trendConcordance.triggered ? eci.trendConcordance.rationale ?? undefined : undefined,
+      notApplicable: concordanceNA,
+      renderContent: concordanceNA ? null : () => <TrendConcordanceContent eci={eci} finding={finding} doseGroups={doseGroups} />,
     },
-  ];
+  ], [eci, finding, integrated, trendNA, concordanceNA]);
 
   return (
     <div className="mt-2 text-[10px]">
@@ -239,9 +549,21 @@ function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
         <span className={`uppercase ${confidenceLevelClass(integrated.integrated)}`}>
           {integrated.integrated}
         </span>
-        {integrated.limitingFactor !== "None" && (
+        {integrated.limitingFactors.length > 0 && (
           <span className="text-muted-foreground">
-            (limited by {integrated.limitingFactor})
+            (limited by{" "}
+            {integrated.limitingFactors.map((factor, i) => (
+              <span key={factor}>
+                {i > 0 && ", "}
+                <button
+                  className="text-primary cursor-pointer hover:underline"
+                  onClick={() => expandAndScroll(factor)}
+                >
+                  {factor}
+                </button>
+              </span>
+            ))}
+            )
           </span>
         )}
         {eci.noaelContribution.weight > 0 && (
@@ -258,28 +580,61 @@ function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
       {/* Toggle link */}
       <button
         className="mt-0.5 text-[9px] text-primary hover:underline"
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => setShowDecomp((v) => !v)}
       >
-        {expanded ? "Hide decomposition" : "Show decomposition"}
+        {showDecomp ? "Hide decomposition" : "Show decomposition"}
       </button>
 
-      {/* Expanded decomposition — 3-column table for alignment */}
-      {expanded && (
-        <table className="mt-1.5 text-[10px]">
+      {/* Expanded decomposition — per-dimension expandable rows */}
+      {showDecomp && (
+        <table className="mt-1.5 w-full text-[10px]">
           <tbody>
-            {dims.map((d) => (
-              <tr key={d.label}>
-                <td className={`py-0 pr-1.5 uppercase text-[9px] ${confidenceLevelClass(d.level)}`} style={{ width: "1px", whiteSpace: "nowrap" }}>
-                  {d.level}
-                </td>
-                <td className="py-0 pr-3 font-medium whitespace-nowrap">
-                  {d.label}
-                </td>
-                <td className="py-0 text-muted-foreground">
-                  {d.reason && d.level !== "high" ? d.reason : null}
-                </td>
-              </tr>
-            ))}
+            {dims.map((d) => {
+              const isExpanded = expandedDims.has(d.key);
+              const isExpandable = !d.notApplicable && d.renderContent != null;
+              return (
+                <Fragment key={d.key}>
+                  <tr
+                    ref={(el) => { if (el) dimRefs.current.set(d.key, el); }}
+                    className={isExpandable ? "cursor-pointer hover:bg-muted/20" : ""}
+                    onClick={isExpandable ? () => toggleDim(d.key) : undefined}
+                  >
+                    <td
+                      className={`py-0.5 pr-1.5 uppercase text-[9px] ${
+                        d.notApplicable ? "text-muted-foreground/50" : confidenceLevelClass(d.level)
+                      }`}
+                      style={{ width: "1px", whiteSpace: "nowrap" }}
+                    >
+                      {d.notApplicable ? "\u2014" : d.level}
+                    </td>
+                    <td
+                      className={`py-0.5 font-medium whitespace-nowrap ${d.notApplicable ? "text-muted-foreground/50" : ""}`}
+                      title={DIMENSION_TOOLTIPS[d.key]}
+                    >
+                      <span className="inline-flex items-center gap-0.5">
+                        {isExpandable ? (
+                          <ChevronRight className={cn("h-3 w-3 shrink-0 text-muted-foreground transition-transform", isExpanded && "rotate-90")} />
+                        ) : (
+                          <span className="inline-block h-3 w-3 shrink-0" />
+                        )}
+                        {d.label}
+                        {d.notApplicable && (
+                          <span className="ml-1 text-[9px] font-normal text-muted-foreground/50">(not applicable)</span>
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                  {isExpanded && d.renderContent && (
+                    <tr>
+                      <td />
+                      <td className="pb-1.5 pl-[14px] pt-0.5 text-[10px]">
+                        {d.renderContent()}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       )}
@@ -382,7 +737,7 @@ export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
   const { selectedFindingId, selectedFinding, endpointSexes, selectedGroupType, selectedGroupKey, selectGroup } = useFindingSelection();
-  const { analytics } = useFindingsAnalyticsLocal(studyId);
+  const { analytics, data: findingsData } = useFindingsAnalyticsLocal(studyId);
   const { data: context, isLoading } = useFindingContext(
     studyId,
     selectedFindingId
@@ -725,10 +1080,6 @@ export function FindingsContextPanel() {
             </div>
           );
         })()}
-        {/* Williams' trend test comparison (OM domain only) */}
-        {selectedFinding.domain === "OM" && selectedFinding.williams && (
-          <WilliamsComparisonPane finding={selectedFinding} />
-        )}
         {/* ANCOVA effect decomposition (OM domain, Phase 2) */}
         {selectedFinding.domain === "OM" && selectedFinding.ancova && (
           <ANCOVADecompositionPane finding={selectedFinding} />
@@ -738,7 +1089,7 @@ export function FindingsContextPanel() {
           const endpointLabel = selectedFinding.endpoint_label ?? selectedFinding.finding;
           const ep = analytics.endpoints.find((e) => e.endpoint_label === endpointLabel);
           if (!ep?.endpointConfidence) return null;
-          return <DecomposedConfidencePane eci={ep.endpointConfidence} />;
+          return <DecomposedConfidencePane eci={ep.endpointConfidence} finding={selectedFinding} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} />;
         })()}
       </CollapsiblePane>
 

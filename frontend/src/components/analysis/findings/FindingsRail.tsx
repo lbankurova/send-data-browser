@@ -839,8 +839,8 @@ function computeOrganConfidence(endpoints: EndpointWithSignal[]): { level: Confi
     if (!eci || !ep.treatmentRelated) continue;
     const level = eci.integrated.integrated;
     if (best === null || ORDER[level] > ORDER[best]) best = level;
-    if (eci.integrated.limitingFactor !== "None" && level !== "high") {
-      factors.add(eci.integrated.limitingFactor);
+    if (level !== "high") {
+      for (const f of eci.integrated.limitingFactors) factors.add(f);
     }
   }
   if (best === null) return null;

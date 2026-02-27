@@ -136,6 +136,7 @@ Two files both detect "syndromes" but at different abstraction levels — do not
 - **The system computes what it can.** Show computed results, not raw data for users to derive.
 - **Dose group display — two components.** `DoseHeader` for column headers, `DoseLabel` for row/cell values. Both in `components/ui/DoseLabel.tsx`. Never render raw dose group strings. This is a hard rule.
 - **Table column layout — content-hugging with absorber.** All columns except one absorber use `width: 1px; white-space: nowrap`. Absorber absorbs remaining space.
+- **Expandable row content aligns under the label text, not the chevron.** When a row has a chevron disclosure indicator, expanded/child content must be indented to align with the start of the label text (past the chevron + gap). The chevron is a navigation affordance, not a hierarchy anchor. This is a hard rule.
 - **Pre-edit hierarchy analysis required for typography/spacing changes.** Before changing any font size, margin, or padding: (1) document the current hierarchy — what is primary (control-tier), supporting, and micro; (2) verify the proposed change preserves the tier relationships; (3) check that spacing is proportional to the text size it surrounds. Font sizes encode information hierarchy, not just visual style. Treating text as interchangeable "lorem ipsum" is a defect. See `docs/design-system/datagrok-visual-design-guide.md` §2.1 for the tier table.
 
 ## UI Casing Conventions

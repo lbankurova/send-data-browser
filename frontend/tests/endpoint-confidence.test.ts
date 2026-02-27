@@ -226,7 +226,7 @@ describe("integrateConfidence (§12.3)", () => {
     const ep = makeEp({ minPValue: 0.001, maxEffectSize: 1.5, pattern: "linear" });
     const result = integrateConfidence(noFlag, noTrend, noConcordance, null, ep);
     expect(result.integrated).toBe("high");
-    expect(result.limitingFactor).toBe("None");
+    expect(result.limitingFactors).toEqual([]);
   });
 
   it("TC-15: biological MODERATE (ovary, no staging) → MODERATE", () => {
@@ -239,7 +239,7 @@ describe("integrateConfidence (§12.3)", () => {
     const result = integrateConfidence(noFlag, noTrend, noConcordance, norm, ep);
     expect(result.integrated).toBe("moderate");
     expect(result.biological).toBe("moderate");
-    expect(result.limitingFactor).toBe("Biological plausibility");
+    expect(result.limitingFactors).toContain("Biological plausibility");
   });
 
   it("TC-16: dose-response MODERATE (non-mono) → MODERATE", () => {
@@ -253,7 +253,7 @@ describe("integrateConfidence (§12.3)", () => {
     const result = integrateConfidence(flag, noTrend, noConcordance, null, ep);
     expect(result.doseResponse).toBe("moderate");
     expect(result.integrated).toBe("moderate");
-    expect(result.limitingFactor).toBe("Dose-response quality");
+    expect(result.limitingFactors).toContain("Dose-response quality");
   });
 
   it("TC-17: trend validity MODERATE (var-het, one criterion) → MODERATE", () => {
@@ -266,7 +266,7 @@ describe("integrateConfidence (§12.3)", () => {
     const result = integrateConfidence(noFlag, trend, noConcordance, null, ep);
     expect(result.trendValidity).toBe("moderate");
     expect(result.integrated).toBe("moderate");
-    expect(result.limitingFactor).toBe("Trend test validity");
+    expect(result.limitingFactors).toContain("Trend test validity");
   });
 
   it("TC-18: biological MODERATE + dose-response LOW → LOW", () => {
@@ -326,7 +326,7 @@ describe("integrateConfidence (§12.3)", () => {
     const result = integrateConfidence(noFlag, noTrend, noConcordance, null, ep);
     expect(result.statistical).toBe("moderate");
     expect(result.integrated).toBe("moderate");
-    expect(result.limitingFactor).toBe("Statistical evidence");
+    expect(result.limitingFactors).toContain("Statistical evidence");
   });
 
   it("TC-20: three dimensions tied at MODERATE", () => {
@@ -368,7 +368,7 @@ describe("computeNOAELContribution (§12.4)", () => {
   function ic(level: ConfidenceLevel): IntegratedConfidence {
     return {
       statistical: level, biological: level, doseResponse: level, trendValidity: level,
-      trendConcordance: level, integrated: level, limitingFactor: "None",
+      trendConcordance: level, integrated: level, limitingFactors: [],
     };
   }
 
@@ -387,7 +387,7 @@ describe("computeNOAELContribution (§12.4)", () => {
     // because it's not triggered (no ceilingOnTR in this test case)
     const intConf: IntegratedConfidence = {
       statistical: "high", biological: "moderate", doseResponse: "high", trendValidity: "high",
-      trendConcordance: "high", integrated: "moderate", limitingFactor: "Biological plausibility",
+      trendConcordance: "high", integrated: "moderate", limitingFactors: ["Biological plausibility"],
     };
     const norm: NormalizationCaveat = {
       category: "female_reproductive", reason: "No staging",
@@ -434,7 +434,7 @@ describe("computeNOAELContribution (§12.4)", () => {
     // To get LOW we need statistical LOW (p>0.05 or g<0.5)
     const intConf: IntegratedConfidence = {
       statistical: "low", biological: "high", doseResponse: "high", trendValidity: "high",
-      trendConcordance: "high", integrated: "low", limitingFactor: "Statistical evidence",
+      trendConcordance: "high", integrated: "low", limitingFactors: ["Statistical evidence"],
     };
     const result = computeNOAELContribution(intConf, noFlag, null, noTrend, noConcordance, true, true);
     expect(result.weight).toBe(0.3);
@@ -467,7 +467,7 @@ describe("computeNOAELContribution (§12.4)", () => {
     // Spec says HIGH + trend only (1 caveat) = 0.7 contributing
     const intConf: IntegratedConfidence = {
       statistical: "high", biological: "high", doseResponse: "high", trendValidity: "moderate",
-      trendConcordance: "high", integrated: "moderate", limitingFactor: "Trend test validity",
+      trendConcordance: "high", integrated: "moderate", limitingFactors: ["Trend test validity"],
     };
     // Wait, if integrated=moderate then the code gives 0.7. But the spec says
     // integrated conf=HIGH with trend only. Let me re-read TC-27:
