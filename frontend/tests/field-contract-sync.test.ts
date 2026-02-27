@@ -15,6 +15,7 @@
 import { describe, test, expect } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
+import { TERMINAL_DOMAINS, IN_LIFE_DOMAINS, LB_DOMAIN, SCHEDULED_DOMAINS } from "@/lib/send-constants";
 
 const ROOT = path.resolve(__dirname, "../..");
 const FIELD_CONTRACTS = path.join(
@@ -142,6 +143,38 @@ describe("field-contract-sync", () => {
       }
     }
     expect(unregistered).toEqual([]);
+  });
+
+  test("send-constants.ts TERMINAL_DOMAINS matches generated data domains", () => {
+    const jsonPath = path.join(ROOT, "backend/generated/PointCross/unified_findings.json");
+    if (!fs.existsSync(jsonPath)) return;
+    const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    const findings: Record<string, unknown>[] = data.findings ?? data;
+
+    // Every finding with scheduled_group_stats should be in TERMINAL_DOMAINS or LB
+    const domainsWithScheduled = new Set<string>();
+    for (const f of findings) {
+      if (f.scheduled_group_stats) {
+        domainsWithScheduled.add(f.domain as string);
+      }
+    }
+
+    // SCHEDULED_DOMAINS should cover all domains that have scheduled stats
+    const uncovered = [...domainsWithScheduled].filter(d => !SCHEDULED_DOMAINS.has(d));
+    expect(uncovered).toEqual([]);
+
+    // Every TERMINAL domain should appear in the data
+    const allDomains = new Set(findings.map((f) => f.domain as string));
+    for (const td of TERMINAL_DOMAINS) {
+      if (allDomains.has(td)) {
+        // Terminal domains should never be in IN_LIFE_DOMAINS
+        expect(IN_LIFE_DOMAINS.has(td)).toBe(false);
+      }
+    }
+
+    // LB_DOMAIN should be in SCHEDULED but not TERMINAL
+    expect(SCHEDULED_DOMAINS.has(LB_DOMAIN)).toBe(true);
+    expect(TERMINAL_DOMAINS.has(LB_DOMAIN)).toBe(false);
   });
 
   test("FIELD IDs are sequentially allocated with no gaps", () => {
