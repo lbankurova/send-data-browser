@@ -96,14 +96,16 @@ An `Info` icon (`h-3 w-3 cursor-help text-muted-foreground/50 hover:text-muted-f
 
 **Legend** (conditional — entries only appear when corresponding data exists in the current point set):
 
-| Symbol | Label | Default Color | Condition |
-|--------|-------|---------------|-----------|
-| `•` (U+2022, bullet) | warning/normal | `#9CA3AF` (gray) | `worstSeverity !== "adverse" && !clinicalSeverity` |
-| `●` (U+25CF, circle) | adverse | `#9CA3AF` (gray) | `worstSeverity === "adverse"` |
-| `◆` (U+25C6, diamond) | clinical S2+ | `#6B7280` (darker gray) | `clinicalSeverity` truthy (S2/S3/S4 from lab-clinical rules) |
-| `●` (U+25CF, circle) | NOAEL determining | `rgba(248,113,113,0.7)` (warm rose) | `noaelWeight === 1.0` |
-| `○` (U+25CB, outline) | NOAEL supporting | `#9CA3AF` (gray) | `noaelWeight === 0.3` |
-| `●` (U+25CF, circle) | low NOAEL | `rgba(248,113,113,0.7)` (warm rose) | `noaelTier` below/at-lowest, no ECI weight |
+Legend entries mirror the rendering priority cascade. Color encodes NOAEL role; size encodes severity; shape encodes clinical.
+
+| Symbol | Label | Color | Condition |
+|--------|-------|-------|-----------|
+| `●` (circle) | determining | `rgba(248,113,113,0.7)` (warm rose) | `noaelWeight === 1.0` |
+| `○` (outline) | supporting | `#9CA3AF` (gray outline) | `noaelWeight === 0.3` |
+| `●` (circle) | low NOAEL | `rgba(248,113,113,0.7)` (warm rose) | `noaelTier` below/at-lowest, no ECI weight |
+| `◆` (diamond) | clinical S2+ | `#6B7280` (darker gray) | `clinicalSeverity` truthy (S2/S3/S4) |
+| `•` (bullet) | normal | `#9CA3AF` (gray) | non-adverse, non-clinical, no NOAEL role |
+| `●` (circle) | adverse | `#9CA3AF` (gray) | adverse, non-clinical, no NOAEL role (plain adverse only) |
 
 Legend rendered as `flex items-center gap-2` inside `px-2 py-0.5` header. Each entry: `flex items-center gap-0.5 text-[8px] text-muted-foreground`, symbol span colored via inline `style={{ color }}` (fallback `#9CA3AF`).
 
