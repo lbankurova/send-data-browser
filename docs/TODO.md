@@ -134,10 +134,11 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ### MF-09: Syndrome membership indicator on rail & context panel
 - **Spec:** `docs/incoming/arch-overhaul/syndrome-membership-indicator-spec.md`
-- **Files:** `FindingsRail.tsx`, `FindingsContextPanel.tsx`, `docs/views/adverse-effects.md`
+- **Files:** `FindingsRail.tsx`, `FindingsContextPanel.tsx`, `EndpointSyndromePane.tsx`, `docs/views/adverse-effects.md`
 - **Issue:** Endpoints that belong to a fired syndrome (e.g., Body Weight → XS08, XS09) show no indicator in the rail (except in syndrome grouping mode) or context panel header. Users can't tell an endpoint is part of a syndrome, so they miss syndrome-specific context (e.g., food consumption pane in XS09). Fix: always show syndrome IDs on rail endpoint rows and add clickable syndrome links to the context panel sticky header.
-- **Status:** Open (spec ready)
+- **Status:** Partial — context panel Syndromes pane implemented (27e97ce). Rail indicator still open.
 - **Owner hint:** frontend-dev
+- **Remaining:** (1) Rail: show syndrome IDs on endpoint rows in non-syndrome grouping mode. (2) Sex display in EndpointSyndromePane: replace "F + M" with "both sexes".
 
 ### MF-08: No authentication system
 - **Issue:** No auth anywhere. Required for production.
