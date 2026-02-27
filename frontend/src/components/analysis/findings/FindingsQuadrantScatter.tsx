@@ -139,19 +139,19 @@ export function FindingsQuadrantScatter({
   //   Color  → NOAEL contribution (determining=rose, contributing=gray, supporting=outline)
   const legendEntries = useMemo(() => {
     const entries: { symbol: string; label: string; color?: string; stroke?: boolean }[] = [];
-    // Stroke: adverse
+    // Stroke: adverse (no fill — stroke IS the encoding)
     if (points.some((p) => p.worstSeverity === "adverse"))
-      entries.push({ symbol: "\u25CF", label: "adverse", color: "#374151", stroke: true });
-    // Shape: clinical
+      entries.push({ symbol: "\u25CF", label: "adverse", stroke: true });
+    // Shape: clinical (outline diamond — shape IS the encoding)
     if (points.some((p) => p.clinicalSeverity))
-      entries.push({ symbol: "\u25C6", label: "clinical S2+", color: "#6B7280" });
+      entries.push({ symbol: "\u25C7", label: "clinical S2+" });
     // Color: NOAEL contribution
     if (points.some((p) => p.noaelWeight === 1.0))
-      entries.push({ symbol: "\u25CF", label: "determining", color: "rgba(248,113,113,0.7)" });
+      entries.push({ symbol: "\u25CF", label: "NOAEL determining", color: "rgba(248,113,113,0.7)" });
     if (points.some((p) => p.noaelWeight === 0.7))
-      entries.push({ symbol: "\u25CF", label: "contributing" });
+      entries.push({ symbol: "\u25CF", label: "NOAEL contributing" });
     if (points.some((p) => p.noaelWeight === 0.3))
-      entries.push({ symbol: "\u25CB", label: "supporting" });
+      entries.push({ symbol: "\u25CB", label: "NOAEL supporting" });
     return entries;
   }, [points]);
 
@@ -166,12 +166,12 @@ export function FindingsQuadrantScatter({
   return (
     <div className="flex h-full flex-col">
       {/* Header: legend only */}
-      <div className="flex items-center px-2 py-0.5">
+      <div className="flex items-center justify-end px-2 pt-1 pb-3">
         <div className="flex items-center gap-2">
           {legendEntries.map((e, i) => (
             <span key={i} className="flex items-center gap-0.5 text-[8px] text-muted-foreground">
               <span style={{
-                color: e.stroke ? "#9CA3AF" : (e.color ?? "#9CA3AF"),
+                color: e.stroke ? "transparent" : (e.color ?? "#9CA3AF"),
                 ...(e.stroke ? { WebkitTextStroke: "1px #374151" } : {}),
               }}>{e.symbol}</span>{e.label}
             </span>

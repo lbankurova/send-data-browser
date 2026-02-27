@@ -159,9 +159,9 @@ export function buildFindingsQuadrantOption(
       pt.domain !== scopeFilter &&
       (pt as QuadrantPoint).endpoint_label !== scopeFilter;
 
-    // Symbol size: only the worst combination (clinical + adverse + determining) gets a bump
+    // Symbol size: adverse → 6, worst combo (adverse+clinical+determining) → 7, default → 5
     const isWorstCombo = isAdverse && isClinical && pt.noaelWeight === 1.0;
-    const symbolSize = isSelected ? 10 : isWorstCombo ? 7 : 5;
+    const symbolSize = isSelected ? 10 : isWorstCombo ? 7 : isAdverse ? 6 : 5;
 
     // Symbol shape: clinical S2+ → diamond, everything else → circle
     const symbol = isClinical ? "diamond" : "circle";
@@ -244,7 +244,7 @@ export function buildFindingsQuadrantOption(
       max: maxX,
       axisLabel: { fontSize: 9, color: "#9CA3AF", formatter: (v: number) => v.toFixed(2) },
       splitLine: { lineStyle: { color: "#F3F4F6", type: "dashed" } },
-      name: `|${effectSizeSymbol}|`,
+      name: `Effect, |${effectSizeSymbol}|`,
       nameLocation: "end",
       nameTextStyle: { fontSize: 9, color: "#9CA3AF" },
     },
@@ -252,9 +252,17 @@ export function buildFindingsQuadrantOption(
       type: "value",
       min: 0,
       max: maxY,
-      axisLabel: { fontSize: 9, color: "#9CA3AF", formatter: (v: number) => v.toFixed(2) },
+      axisLabel: {
+        fontSize: 9,
+        color: "#9CA3AF",
+        formatter: (v: number) => {
+          if (v === 0) return "1";
+          const p = Math.pow(10, -v);
+          return String(parseFloat(p.toPrecision(1)));
+        },
+      },
       splitLine: { lineStyle: { color: "#F3F4F6", type: "dashed" } },
-      name: "-log\u2081\u2080(p)",
+      name: "p-value",
       nameLocation: "end",
       nameTextStyle: { fontSize: 9, color: "#9CA3AF" },
     },
