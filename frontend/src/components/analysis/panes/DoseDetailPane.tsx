@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { getPValueColor, formatPValue } from "@/lib/severity-colors";
+import { getPValueColor, formatPValue, getSexColor } from "@/lib/severity-colors";
 import type { FindingContext } from "@/types/analysis";
 import { DoseLabel } from "@/components/ui/DoseLabel";
 
@@ -8,11 +8,13 @@ import { DoseLabel } from "@/components/ui/DoseLabel";
 interface Props {
   statistics: FindingContext["statistics"];
   doseResponse: FindingContext["dose_response"];
+  /** Sex of the selected finding — used for bar coloring (M=blue, F=pink). */
+  sex?: string;
 }
 
 // ─── Component ──────────────────────────────────────────────
 
-export function DoseDetailPane({ statistics, doseResponse }: Props) {
+export function DoseDetailPane({ statistics, doseResponse, sex }: Props) {
   const isContinuous = statistics.data_type === "continuous";
   const testLabel = isContinuous
     ? "Pairwise: Dunnett\u2019s test (adjusted)"
@@ -106,6 +108,25 @@ export function DoseDetailPane({ statistics, doseResponse }: Props) {
       {/* Test name label */}
       <div className="text-[9px] text-muted-foreground italic">{testLabel}</div>
 
+      {/* Significance summary footer */}
+      {(() => {
+        const sigDoses = statistics.rows
+          .filter(r => r.dose_level > 0 && r.p_value_adj != null && r.p_value_adj < 0.05)
+          .map(r => r.dose_value != null && r.dose_value > 0
+            ? `${r.dose_value} ${r.dose_unit ?? ""}`.trim()
+            : r.label);
+        const method = isContinuous ? "Dunnett\u2019s" : "Fisher\u2019s exact";
+        return sigDoses.length > 0 ? (
+          <div className="text-[10px] text-foreground/80">
+            Significant at {sigDoses.join(", ")} ({method}).
+          </div>
+        ) : (
+          <div className="text-[10px] text-muted-foreground">
+            No significant pairwise differences ({method}).
+          </div>
+        );
+      })()}
+
       {/* Bar chart (from old DoseResponsePane) */}
       <div className="space-y-1">
         {doseResponse.bars.map((bar) => {
@@ -113,20 +134,27 @@ export function DoseDetailPane({ statistics, doseResponse }: Props) {
             bar.value != null && maxVal > 0
               ? (Math.abs(bar.value) / maxVal) * 100
               : 0;
+          const barColor = sex === "M" || sex === "F" ? getSexColor(sex) : undefined;
 
           return (
             <div key={bar.dose_level} className="flex items-center gap-2">
-              <DoseLabel
-                level={bar.dose_level}
-                label={bar.dose_value != null && bar.dose_value > 0
-                  ? `${bar.dose_value} ${doseUnit}`.trim()
-                  : "Control"}
-                className="text-[10px]"
-              />
+              <span className="w-20 shrink-0 text-right">
+                <DoseLabel
+                  level={bar.dose_level}
+                  label={bar.dose_value != null && bar.dose_value > 0
+                    ? `${bar.dose_value} ${doseUnit}`.trim()
+                    : "Control"}
+                  align="right"
+                  className="text-[10px]"
+                />
+              </span>
               <div className="flex-1">
                 <div
-                  className="h-2.5 rounded-sm bg-gray-300"
-                  style={{ width: `${Math.max(pct, 2)}%` }}
+                  className="h-[2.5px] rounded-full"
+                  style={{
+                    width: `${Math.max(pct, 2)}%`,
+                    backgroundColor: barColor ?? "#d1d5db",
+                  }}
                 />
               </div>
               <span className="w-[55px] shrink-0 text-right font-mono text-[10px]">

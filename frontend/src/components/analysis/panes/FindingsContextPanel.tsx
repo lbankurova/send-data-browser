@@ -118,6 +118,26 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
 
   const slopeHomogeneous = ancova.slope_homogeneity.homogeneous;
 
+  // Punchline: compare ANCOVA-adjusted significance to raw Dunnett's
+  const punchlineParts: string[] = [];
+  for (const ap of ancova.pairwise) {
+    const raw = finding.pairwise.find(p => p.dose_level === ap.group);
+    if (!raw) continue;
+    const rawP = raw.p_value_adj ?? raw.p_value;
+    const rawSig = rawP != null && rawP < 0.05;
+    const ancovaP = ap.p_value;
+    const ancovaSig = ancovaP < 0.05;
+    const label = resolveDoseLabel(ap.group);
+    if (ancovaSig && rawSig) {
+      punchlineParts.push(`Confirms effect at ${label} (p${formatPValue(ancovaP) === "<0.0001" ? " < 0.0001" : " = " + formatPValue(ancovaP)})`);
+    } else if (ancovaSig && !rawSig) {
+      punchlineParts.push(`Reveals effect at ${label} (raw n.s. \u2192 p = ${formatPValue(ancovaP)})`);
+    } else if (!ancovaSig && rawSig) {
+      punchlineParts.push(`${label} reduced to ${ancovaP < 0.1 ? "borderline" : "n.s."} (p-adj = ${formatPValue(ancovaP)})`);
+    }
+  }
+  const punchline = punchlineParts.length > 0 ? punchlineParts.join(". ") + "." : null;
+
   return (
     <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
       <div className="mb-1.5 flex items-center gap-2">
@@ -133,6 +153,13 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
           </span>
         )}
       </div>
+
+      {/* Punchline: plain-English ANCOVA vs raw comparison */}
+      {punchline && (
+        <div className="mb-1.5 text-foreground/80">
+          {punchline}
+        </div>
+      )}
 
       {/* Slope info */}
       <div className="mb-1.5 flex items-center gap-3 text-muted-foreground">
@@ -1164,6 +1191,7 @@ export function FindingsContextPanel() {
         <DoseDetailPane
           statistics={activeStatistics!}
           doseResponse={context.dose_response}
+          sex={selectedFinding.sex}
         />
       </CollapsiblePane>
 

@@ -252,6 +252,23 @@ export function VerdictPane({
         })()
     : null;
 
+  // Directional flag: opposite sex directions (e.g., ↓ males, ↑ females)
+  const bySex = epSummary?.bySex;
+  const directionalFlag = (() => {
+    if (!bySex || bySex.size < 2) return null;
+    const entries = [...bySex.entries()].filter(([, s]) => s.direction === "up" || s.direction === "down");
+    if (entries.length < 2) return null;
+    const dirs = new Set(entries.map(([, s]) => s.direction));
+    if (dirs.size < 2) return null; // same direction
+    // Opposite directions detected
+    const parts = entries.map(([sex, s]) => {
+      const arrow = s.direction === "up" ? "\u2191" : "\u2193";
+      const label = sex === "M" ? "males" : sex === "F" ? "females" : sex;
+      return `${arrow} ${label}`;
+    });
+    return `Opposite direction: ${parts.join(", ")}`;
+  })();
+
   // Key numbers
   const isContinuous = statistics?.data_type === "continuous";
   const effectSize = finding.max_effect_size;
@@ -352,6 +369,13 @@ export function VerdictPane({
               : n.tier === "below-lowest" ? "< lowest dose" : "n/a";
             return <span key={sex}>{sex}: NOAEL {doseStr}</span>;
           })}
+        </div>
+      )}
+
+      {/* Line 4c -- Directional flag (opposite sex directions) */}
+      {directionalFlag && (
+        <div className="mt-0.5 text-[10px] font-medium text-amber-700">
+          {directionalFlag}
         </div>
       )}
 
