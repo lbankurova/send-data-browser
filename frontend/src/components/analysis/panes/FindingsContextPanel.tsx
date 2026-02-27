@@ -213,7 +213,11 @@ function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
     {
       label: "Dose-response quality",
       level: integrated.doseResponse,
-      reason: eci.nonMonotonic.triggered ? eci.nonMonotonic.rationale ?? undefined : undefined,
+      reason: eci.nonMonotonic.triggered
+        ? eci.nonMonotonic.rationale ?? undefined
+        : integrated.doseResponse !== "high"
+          ? "Non-monotonic pattern — trend test less informative"
+          : undefined,
     },
     {
       label: "Trend test validity",
