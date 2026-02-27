@@ -7,15 +7,22 @@ interface DoseLabelProps {
   label: string;
   /** Full group name shown as tooltip (e.g., "Group 3, 20 mg/kg PCDRUG") */
   tooltip?: string;
+  /** Pipe position: "left" (default) or "right". Right-align is used for bar chart labels. */
+  align?: "left" | "right";
   className?: string;
 }
 
-/** Renders a dose label with left border color-coded by dose level and optional tooltip. */
-export function DoseLabel({ level, label, tooltip, className }: DoseLabelProps) {
+/** Renders a dose label with border color-coded by dose level and optional tooltip. */
+export function DoseLabel({ level, label, tooltip, align = "left", className }: DoseLabelProps) {
+  const color = getDoseGroupColor(level);
   return (
     <span
-      className={cn("border-l-2 pl-1.5 font-mono text-[11px]", className)}
-      style={{ borderLeftColor: getDoseGroupColor(level) }}
+      className={cn(
+        "font-mono text-[11px]",
+        align === "right" ? "border-r-2 pr-1.5 text-right" : "border-l-2 pl-1.5",
+        className,
+      )}
+      style={align === "right" ? { borderRightColor: color } : { borderLeftColor: color }}
       title={tooltip}
     >
       {label}
