@@ -10,6 +10,7 @@
  */
 import { describe, it, expect } from "vitest";
 import type { UnifiedFinding, GroupStat, PairwiseResult } from "@/types/analysis";
+import { TERMINAL_DOMAINS } from "@/lib/send-constants";
 
 // ── Standalone filter matching useFindingsAnalyticsLocal logic ──
 
@@ -447,8 +448,6 @@ describe("Recovery pooling — all in-life domains", () => {
       expect(result[0].group_stats).toBe(SEPARATE_GROUP_STATS);
     });
   }
-
-  const TERMINAL_DOMAINS = ["MI", "MA", "OM", "TF"];
 
   for (const domain of TERMINAL_DOMAINS) {
     it(`passes through ${domain} domain unchanged`, () => {

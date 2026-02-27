@@ -9,14 +9,13 @@
 import { describe, test, expect } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
+import { TERMINAL_DOMAINS } from "@/lib/send-constants";
 
 const ROOT = path.resolve(__dirname, "../..");
 const UNIFIED_PATH = path.join(
   ROOT,
   "backend/generated/PointCross/unified_findings.json"
 );
-
-const TERMINAL_DOMAINS = new Set(["MI", "MA", "OM", "TF", "DS"]);
 
 /** Mirror of backend findings_pipeline.finding_key() */
 function findingKey(f: Record<string, unknown>): string {

@@ -26,7 +26,8 @@ from services.study_discovery import discover_studies
 from services.analysis.dose_groups import build_dose_groups
 from services.analysis.findings_tf import compute_tf_findings, _extract_cell_type
 from generator.tumor_summary import build_tumor_summary
-from generator.domain_stats import compute_all_findings, TERMINAL_DOMAINS
+from generator.domain_stats import compute_all_findings
+from services.analysis.findings_pipeline import TERMINAL_DOMAINS
 
 
 def _setup():

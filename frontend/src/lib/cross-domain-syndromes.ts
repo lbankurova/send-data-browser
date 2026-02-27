@@ -4,102 +4,52 @@
  * using structured term dictionaries with test codes, canonical labels,
  * specimen+finding matching, and compound required logic.
  *
- * Replaces the old substring matching approach to eliminate false positives
- * (e.g., "BONE MARROW, FEMUR - FIBROSIS" matching myelosuppression).
+ * Types live in cross-domain-syndrome-types.ts, static data in
+ * cross-domain-syndrome-data.ts. This file contains all engine logic
+ * and re-exports everything for backward-compatible imports.
  */
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import { checkMagnitudeFloorOM } from "@/lib/organ-weight-normalization";
+import type {
+  SyndromeTermMatch,
+  RequiredLogic,
+  SyndromeDefinition,
+  CrossDomainSyndrome,
+  EndpointMatch,
+  DirectionalGateResult,
+  MagnitudeFloor,
+  TermReportEntry,
+  SyndromeTermReport,
+} from "./cross-domain-syndrome-types";
+import {
+  SYNDROME_DEFINITIONS,
+  DIRECTIONAL_GATES,
+  ENDPOINT_CLASS_FLOORS,
+} from "./cross-domain-syndrome-data";
 
-// ─── Types ─────────────────────────────────────────────────
+// ─── Re-exports (backward compatibility) ──────────────────
 
-/** Structured term match definition — replaces substring matching. */
-export interface SyndromeTermMatch {
-  /** LBTESTCD values for LB domain matching (OR logic) */
-  testCodes?: string[];
-  /** Exact match after normalization (OR logic) */
-  canonicalLabels?: string[];
-  /** MI/MA: must match BOTH specimen AND finding */
-  specimenTerms?: {
-    specimen: string[];   // empty = any specimen
-    finding: string[];
-  };
-  /** OM: specimen + direction */
-  organWeightTerms?: {
-    specimen: string[];   // empty = any specimen
-  };
+export type {
+  SyndromeTermMatch,
+  RequiredLogic,
+  SyndromeDefinition,
+  EndpointMatch,
+  DirectionalGateConfig,
+  DirectionalGateResult,
+  CrossDomainSyndrome,
+  MagnitudeFloor,
+  TermReportEntry,
+  SyndromeTermReport,
+  SyndromeNearMissInfo,
+} from "./cross-domain-syndrome-types";
 
-  /** Required domain match */
-  domain: string;
-  /** Required direction match */
-  direction: "up" | "down" | "any";
-  /** Role in syndrome detection */
-  role: "required" | "supporting";
-  /** Optional tag for compound logic grouping */
-  tag?: string;
-}
-
-/** Compound required logic for syndrome definitions. */
-export type RequiredLogic =
-  | { type: "any" }                           // >=1 required term matches
-  | { type: "all" }                           // ALL required terms must match
-  | { type: "compound"; expression: string }; // custom: "ALP AND (GGT OR 5NT)"
-
-export interface SyndromeDefinition {
-  id: string;
-  name: string;
-  requiredLogic: RequiredLogic;
-  terms: SyndromeTermMatch[];
-  minDomains: number;
-}
-
-export interface EndpointMatch {
-  endpoint_label: string;
-  domain: string;
-  role: "required" | "supporting";
-  direction: string;
-  severity: string;
-  /** Sex this match came from. null = aggregate. */
-  sex?: string | null;
-}
-
-/** REM-09: Directional gate configuration per syndrome. */
-export interface DirectionalGateConfig {
-  term: string;           // tag to check (e.g., "RETIC", "LYMPH")
-  expectedDirection: "up" | "down";
-  action: "reject" | "strong_against" | "weak_against";
-  /** Condition under which reject softens to strong_against */
-  overrideCondition?: string;
-  /** Domain of the gated term — enables ANCOVA direction resolution for OM gates (SE-7). */
-  domain?: string;
-}
-
-/** REM-09: Result of directional gate evaluation. */
-export interface DirectionalGateResult {
-  gateFired: boolean;
-  action: "reject" | "strong_against" | "weak_against" | "none";
-  overrideApplied: boolean;
-  overrideReason?: "direct_lesion" | "timecourse";
-  certaintyCap?: "mechanism_uncertain" | "pattern_only";
-  explanation: string;
-  /** True when gate direction was determined from ANCOVA decomposition. */
-  ancovaSource?: boolean;
-}
-
-export interface CrossDomainSyndrome {
-  id: string;
-  name: string;
-  matchedEndpoints: EndpointMatch[];
-  requiredMet: boolean;
-  domainsCovered: string[];
-  confidence: "HIGH" | "MODERATE" | "LOW";
-  supportScore: number;
-  /** Which sexes this syndrome was detected in. Empty = aggregate (both). */
-  sexes: string[];
-  /** REM-09: Directional gate evaluation result, if applicable. */
-  directionalGate?: DirectionalGateResult;
-}
+export {
+  SYNDROME_DEFINITIONS,
+  DIRECTIONAL_GATES,
+  ENDPOINT_CLASS_FLOORS,
+} from "./cross-domain-syndrome-data";
 
 // ─── Normalization & parsing helpers ───────────────────────
 
@@ -156,7 +106,6 @@ function matchEndpoint(ep: EndpointSummary, term: SyndromeTermMatch): boolean {
 
   // 5. Match by specimen + finding (MI/MA domain)
   if (term.specimenTerms) {
-    // Get specimen and finding — prefer structured fields, fall back to parsing endpoint_label
     let specimen = ep.specimen;
     let finding = ep.finding;
     if (!specimen || !finding) {
@@ -169,7 +118,6 @@ function matchEndpoint(ep: EndpointSummary, term: SyndromeTermMatch): boolean {
     if (specimen && finding) {
       const normSpecimen = normalizeLabel(specimen);
       const normFinding = normalizeLabel(finding);
-      // Empty specimen array = match any specimen
       const specimenMatch = term.specimenTerms.specimen.length === 0 ||
         term.specimenTerms.specimen.some((s) => containsWord(normSpecimen, s));
       const findingMatch = term.specimenTerms.finding.some((f) => containsWord(normFinding, f));
@@ -179,14 +127,12 @@ function matchEndpoint(ep: EndpointSummary, term: SyndromeTermMatch): boolean {
 
   // 6. Match by organ weight specimen (OM domain)
   if (term.organWeightTerms) {
-    // For OM domain, try structured specimen first, then parse from endpoint_label
     let specimen = ep.specimen;
     if (!specimen) {
       const parsed = parseSpecimenFinding(ep.endpoint_label);
       specimen = parsed?.specimen ?? ep.endpoint_label;
     }
     const normSpecimen = normalizeLabel(specimen);
-    // Empty specimen array = match any organ weight
     if (term.organWeightTerms.specimen.length === 0 ||
         term.organWeightTerms.specimen.some((s) => containsWord(normSpecimen, s))) {
       return true;
@@ -267,452 +213,6 @@ function passesSupportingGate(ep: EndpointSummary): boolean {
   );
 }
 
-// ─── Term dictionaries per syndrome (XS01-XS09) ──────────
-
-const XS01_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED (need >=1) ===
-  {
-    testCodes: ["ALT", "ALAT"],
-    canonicalLabels: ["alanine aminotransferase"],
-    domain: "LB", direction: "up", role: "required", tag: "ALT",
-  },
-  {
-    testCodes: ["AST", "ASAT"],
-    canonicalLabels: ["aspartate aminotransferase"],
-    domain: "LB", direction: "up", role: "required", tag: "AST",
-  },
-  // === SUPPORTING ===
-  {
-    testCodes: ["SDH", "GLDH", "GDH"],
-    canonicalLabels: ["sorbitol dehydrogenase", "glutamate dehydrogenase"],
-    domain: "LB", direction: "up", role: "supporting",
-  },
-  {
-    testCodes: ["BILI", "TBILI"],
-    canonicalLabels: ["bilirubin", "total bilirubin"],
-    domain: "LB", direction: "up", role: "supporting",
-  },
-  {
-    organWeightTerms: { specimen: ["liver"] },
-    domain: "OM", direction: "any", role: "supporting",
-  },
-  {
-    specimenTerms: {
-      specimen: ["liver", "hepat"],
-      finding: ["necrosis", "apoptosis", "degeneration",
-                "single cell necrosis", "hepatocellular necrosis"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-  {
-    specimenTerms: {
-      specimen: ["liver", "hepat"],
-      finding: ["hypertrophy", "hepatocellular hypertrophy",
-                "centrilobular hypertrophy"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-];
-
-const XS02_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED (ALP AND (GGT OR 5NT)) ===
-  {
-    testCodes: ["ALP", "ALKP"],
-    canonicalLabels: ["alkaline phosphatase"],
-    domain: "LB", direction: "up", role: "required", tag: "ALP",
-  },
-  {
-    testCodes: ["GGT"],
-    canonicalLabels: ["gamma glutamyltransferase", "gamma gt"],
-    domain: "LB", direction: "up", role: "required", tag: "GGT",
-  },
-  {
-    testCodes: ["5NT"],
-    canonicalLabels: ["5 nucleotidase", "5' nucleotidase"],
-    domain: "LB", direction: "up", role: "required", tag: "5NT",
-  },
-  // === SUPPORTING ===
-  {
-    testCodes: ["BILI", "TBILI"],
-    canonicalLabels: ["bilirubin", "total bilirubin"],
-    domain: "LB", direction: "up", role: "supporting",
-  },
-  {
-    testCodes: ["CHOL"],
-    canonicalLabels: ["cholesterol", "total cholesterol"],
-    domain: "LB", direction: "up", role: "supporting",
-  },
-  {
-    organWeightTerms: { specimen: ["liver"] },
-    domain: "OM", direction: "up", role: "supporting", tag: "LIVER_WT",
-  },
-  {
-    specimenTerms: {
-      specimen: ["liver", "hepat"],
-      finding: ["bile duct hyperplasia", "cholangitis", "bile duct proliferation",
-                "bile plugs", "cholestasis", "bile duct"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-];
-
-const XS03_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED ===
-  // REM-12: CREAT is always required. BUN is required too but with compound logic:
-  // (CREAT AND BUN) OR (CREAT AND any supporting) — CREAT-alone is insufficient.
-  {
-    testCodes: ["CREAT", "CREA"],
-    canonicalLabels: ["creatinine"],
-    domain: "LB", direction: "up", role: "required", tag: "CREAT",
-  },
-  {
-    testCodes: ["BUN", "UREA"],
-    canonicalLabels: ["blood urea nitrogen", "urea nitrogen", "urea"],
-    domain: "LB", direction: "up", role: "required", tag: "BUN",
-  },
-  // === SUPPORTING (each tagged for compound expression reference) ===
-  {
-    organWeightTerms: { specimen: ["kidney"] },
-    domain: "OM", direction: "any", role: "supporting", tag: "KIDNEY_WT",
-  },
-  {
-    testCodes: ["SPGRAV", "SG", "UOSMO"],
-    canonicalLabels: ["specific gravity", "urine osmolality"],
-    domain: "LB", direction: "down", role: "supporting", tag: "URINE_SG",
-  },
-  {
-    specimenTerms: {
-      specimen: ["kidney"],
-      finding: ["tubular degeneration", "tubular necrosis", "tubular basophilia",
-                "tubular dilatation", "cast", "casts", "mineralization",
-                "regeneration", "papillary necrosis"],
-    },
-    domain: "MI", direction: "any", role: "supporting", tag: "MI_KIDNEY",
-  },
-];
-
-const XS04_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED (ANY(Neutrophils, Platelets, (RBC AND HGB))) ===
-  {
-    testCodes: ["NEUT", "ANC"],
-    canonicalLabels: ["neutrophils", "neutrophil count", "absolute neutrophil count"],
-    domain: "LB", direction: "down", role: "required", tag: "NEUT",
-  },
-  {
-    testCodes: ["PLAT", "PLT"],
-    canonicalLabels: ["platelets", "platelet count"],
-    domain: "LB", direction: "down", role: "required", tag: "PLAT",
-  },
-  {
-    testCodes: ["RBC"],
-    canonicalLabels: ["erythrocytes", "erythrocyte count", "red blood cells", "red blood cell count"],
-    domain: "LB", direction: "down", role: "required", tag: "RBC",
-  },
-  {
-    testCodes: ["HGB", "HB"],
-    canonicalLabels: ["hemoglobin"],
-    domain: "LB", direction: "down", role: "required", tag: "HGB",
-  },
-  // === SUPPORTING ===
-  {
-    specimenTerms: {
-      specimen: ["bone marrow"],
-      finding: ["hypocellularity", "hypocellular", "decreased cellularity",
-                "aplasia", "hypoplasia", "atrophy"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-  {
-    testCodes: ["RETIC", "RET"],
-    canonicalLabels: ["reticulocytes", "reticulocyte count"],
-    domain: "LB", direction: "down", role: "supporting", tag: "RETIC",
-  },
-  {
-    specimenTerms: {
-      specimen: ["spleen"],
-      finding: ["atrophy", "decreased extramedullary", "hypoplasia",
-                "lymphoid depletion"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-  {
-    organWeightTerms: { specimen: ["spleen"] },
-    domain: "OM", direction: "down", role: "supporting", tag: "SPLEEN_WT",
-  },
-];
-
-const XS05_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED (ALL: RBC down AND Reticulocytes up) ===
-  {
-    testCodes: ["RBC"],
-    canonicalLabels: ["erythrocytes", "erythrocyte count", "red blood cells"],
-    domain: "LB", direction: "down", role: "required", tag: "RBC",
-  },
-  {
-    testCodes: ["RETIC", "RET"],
-    canonicalLabels: ["reticulocytes", "reticulocyte count"],
-    domain: "LB", direction: "up", role: "required", tag: "RETIC",
-  },
-  // === SUPPORTING ===
-  {
-    testCodes: ["BILI", "TBILI"],
-    canonicalLabels: ["bilirubin", "total bilirubin"],
-    domain: "LB", direction: "up", role: "supporting",
-  },
-  {
-    organWeightTerms: { specimen: ["spleen"] },
-    domain: "OM", direction: "up", role: "supporting", tag: "SPLEEN_WT",
-  },
-  // REM-13: Split into two distinct terms — EMH and hemosiderin/pigment
-  // are separate diagnostic findings with different mechanistic significance
-  {
-    specimenTerms: {
-      specimen: ["spleen"],
-      finding: ["extramedullary hematopoiesis", "increased hematopoiesis", "congestion"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-  {
-    specimenTerms: {
-      specimen: ["spleen"],
-      finding: ["pigmentation", "hemosiderin", "hemosiderosis"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-  {
-    testCodes: ["HAPTO", "HPT"],
-    canonicalLabels: ["haptoglobin"],
-    domain: "LB", direction: "down", role: "supporting",
-  },
-];
-
-const XS06_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED ===
-  {
-    testCodes: ["PL", "PLIPID", "PHOSLPD"],
-    canonicalLabels: ["phospholipids"],
-    domain: "LB", direction: "up", role: "required", tag: "PHOS",
-  },
-  // === SUPPORTING ===
-  {
-    specimenTerms: {
-      specimen: [],  // any specimen
-      finding: ["foamy macrophage", "foamy macrophages", "vacuolation",
-                "lamellar bodies", "phospholipidosis"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-  {
-    organWeightTerms: { specimen: ["liver", "lung", "kidney", "spleen"] },
-    domain: "OM", direction: "up", role: "supporting",
-  },
-];
-
-const XS07_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED (REM-14: ANY of WBC↓, LYMPH↓, THYMUS_WT↓ per ICH S8) ===
-  {
-    testCodes: ["WBC"],
-    canonicalLabels: ["white blood cells", "white blood cell count", "leukocytes"],
-    domain: "LB", direction: "down", role: "required", tag: "WBC",
-  },
-  {
-    testCodes: ["LYMPH", "LYM"],
-    canonicalLabels: ["lymphocytes", "lymphocyte count"],
-    domain: "LB", direction: "down", role: "required", tag: "LYMPH",
-  },
-  // REM-14: Thymus weight raised to required — most sensitive indicator
-  // of immunosuppression (Pearse 2006). Still uses ANY logic with WBC/LYMPH.
-  {
-    organWeightTerms: { specimen: ["thymus"] },
-    domain: "OM", direction: "down", role: "required", tag: "THYMUS_WT",
-  },
-  // === SUPPORTING ===
-  {
-    organWeightTerms: { specimen: ["spleen"] },
-    domain: "OM", direction: "down", role: "supporting", tag: "SPLEEN_WT",
-  },
-  {
-    specimenTerms: {
-      specimen: ["spleen", "thymus", "lymph node"],
-      finding: ["lymphoid depletion", "atrophy", "decreased cellularity",
-                "lymphocytolysis", "necrosis", "apoptosis"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-];
-
-const XS08_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED (REM-12: ADRENAL_WT + at least one corroborating finding) ===
-  {
-    organWeightTerms: { specimen: ["adrenal"] },
-    domain: "OM", direction: "up", role: "required", tag: "ADRENAL_WT",
-  },
-  {
-    organWeightTerms: { specimen: ["thymus"] },
-    domain: "OM", direction: "down", role: "required", tag: "THYMUS_WT",
-  },
-  {
-    testCodes: ["LYMPH", "LYM"],
-    canonicalLabels: ["lymphocytes", "lymphocyte count"],
-    domain: "LB", direction: "down", role: "required", tag: "LYMPH",
-  },
-  {
-    canonicalLabels: ["body weight"],
-    domain: "BW", direction: "down", role: "required", tag: "BW",
-  },
-  // === SUPPORTING ===
-  {
-    testCodes: ["CORT"],
-    canonicalLabels: ["corticosterone", "cortisol"],
-    domain: "LB", direction: "up", role: "supporting",
-  },
-];
-
-const XS09_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED ===
-  {
-    canonicalLabels: ["body weight"],
-    domain: "BW", direction: "down", role: "required", tag: "BW",
-  },
-  // === SUPPORTING ===
-  {
-    canonicalLabels: ["food consumption", "food intake"],
-    domain: "BW", direction: "down", role: "supporting",
-  },
-  {
-    organWeightTerms: { specimen: [] },  // any specimen
-    domain: "OM", direction: "down", role: "supporting", tag: "OM_WT",
-  },
-  {
-    specimenTerms: {
-      specimen: [],  // any specimen
-      finding: ["atrophy", "wasting", "decreased size"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-];
-
-const XS10_TERMS: SyndromeTermMatch[] = [
-  // === REQUIRED (ANY: at least one ECG or VS finding) ===
-  {
-    testCodes: ["QTCBAG", "QTCFAG", "QTCVAG", "QTCAG"],
-    canonicalLabels: ["qtcb interval", "qtcf interval", "qtcv interval", "qtc interval"],
-    domain: "EG", direction: "any", role: "required", tag: "QTC",
-  },
-  {
-    testCodes: ["PRAG"],
-    canonicalLabels: ["pr interval"],
-    domain: "EG", direction: "any", role: "required", tag: "PR",
-  },
-  {
-    testCodes: ["RRAG"],
-    canonicalLabels: ["rr interval"],
-    domain: "EG", direction: "any", role: "required", tag: "RR",
-  },
-  {
-    testCodes: ["HR"],
-    canonicalLabels: ["heart rate"],
-    domain: "VS", direction: "any", role: "required", tag: "HR",
-  },
-  // === SUPPORTING ===
-  {
-    organWeightTerms: { specimen: ["heart"] },
-    domain: "OM", direction: "up", role: "supporting",
-  },
-  {
-    specimenTerms: {
-      specimen: ["heart"],
-      finding: ["cardiomyopathy", "myocyte degeneration", "necrosis",
-                "myocardial degeneration", "fibrosis", "vacuolation",
-                "myocardial necrosis", "inflammation"],
-    },
-    domain: "MI", direction: "any", role: "supporting",
-  },
-  {
-    testCodes: ["CTNI", "CTNT", "TNNI", "TNNT"],
-    canonicalLabels: ["troponin i", "troponin t", "cardiac troponin"],
-    domain: "LB", direction: "up", role: "supporting",
-  },
-];
-
-// ─── Syndrome definitions ─────────────────────────────────
-
-/** @internal Exported for reference generator. */
-export const SYNDROME_DEFINITIONS: SyndromeDefinition[] = [
-  {
-    id: "XS01",
-    name: "Hepatocellular injury",
-    requiredLogic: { type: "any" },
-    terms: XS01_TERMS,
-    minDomains: 2,
-  },
-  {
-    id: "XS02",
-    name: "Hepatobiliary / Cholestatic",
-    requiredLogic: { type: "compound", expression: "ALP AND (GGT OR 5NT)" },
-    terms: XS02_TERMS,
-    minDomains: 2,
-  },
-  {
-    id: "XS03",
-    name: "Nephrotoxicity",
-    // REM-12: CREAT alone insufficient — need BUN corroboration or any supporting marker
-    requiredLogic: { type: "compound", expression: "ANY((CREAT AND BUN), (CREAT AND KIDNEY_WT), (CREAT AND URINE_SG), (CREAT AND MI_KIDNEY))" },
-    terms: XS03_TERMS,
-    minDomains: 2,
-  },
-  {
-    id: "XS04",
-    name: "Myelosuppression",
-    requiredLogic: { type: "compound", expression: "ANY(NEUT, PLAT, (RBC AND HGB))" },
-    terms: XS04_TERMS,
-    minDomains: 1,
-  },
-  {
-    id: "XS05",
-    name: "Hemolytic anemia",
-    requiredLogic: { type: "all" },
-    terms: XS05_TERMS,
-    minDomains: 1,
-  },
-  {
-    id: "XS06",
-    name: "Phospholipidosis",
-    requiredLogic: { type: "any" },
-    terms: XS06_TERMS,
-    minDomains: 2,
-  },
-  {
-    id: "XS07",
-    name: "Immunotoxicity",
-    requiredLogic: { type: "any" },
-    terms: XS07_TERMS,
-    minDomains: 2,
-  },
-  {
-    id: "XS08",
-    name: "Stress response",
-    // REM-12: Adrenal weight alone is insufficient — need corroborating evidence
-    requiredLogic: { type: "compound", expression: "ADRENAL_WT AND (BW OR THYMUS_WT OR LYMPH)" },
-    terms: XS08_TERMS,
-    minDomains: 2,
-  },
-  {
-    id: "XS09",
-    name: "Target organ wasting",
-    requiredLogic: { type: "any" },
-    terms: XS09_TERMS,
-    minDomains: 2,
-  },
-  {
-    id: "XS10",
-    name: "Cardiovascular",
-    requiredLogic: { type: "any" },
-    terms: XS10_TERMS,
-    minDomains: 1,
-  },
-];
-
 // ─── Compound required logic evaluator ────────────────────
 
 /**
@@ -730,7 +230,6 @@ function evaluateRequiredLogic(
 
     case "all":
       // All required terms must match — checked by caller
-      // (caller passes all required tags; if all are in matchedTags, it's met)
       return true; // "all" is checked differently: caller verifies all tags are present
 
     case "compound":
@@ -866,9 +365,7 @@ function assignConfidence(
   else if (requiredMet && supportCount >= 1 && domainCount >= 2) base = "MODERATE";
 
   // Cap confidence when opposite-direction matches exist (BTM-1/2)
-  // ≥2 opposite → force LOW (strong counter-evidence)
   if (oppositeCount >= 2) return "LOW";
-  // ≥1 opposite → cap at MODERATE (some counter-evidence)
   if (oppositeCount >= 1 && base === "HIGH") return "MODERATE";
 
   return base;
@@ -949,31 +446,7 @@ function deduplicateSyndromes(syndromes: CrossDomainSyndrome[]): CrossDomainSynd
   return results;
 }
 
-// ─── REM-09: Directional gate definitions ─────────────────
-
-/** @internal Exported for reference generator. */
-export const DIRECTIONAL_GATES: Record<string, DirectionalGateConfig[]> = {
-  XS04: [
-    {
-      term: "RETIC", expectedDirection: "down", action: "reject",
-      overrideCondition: "MI_MARROW_HYPOCELLULARITY",
-    },
-  ],
-  XS05: [
-    { term: "SPLEEN_WT", expectedDirection: "up", action: "weak_against", domain: "OM" },
-  ],
-  XS07: [
-    { term: "LYMPH", expectedDirection: "down", action: "strong_against" },
-  ],
-  XS08: [
-    { term: "LYMPH", expectedDirection: "down", action: "weak_against" },
-    { term: "ADRENAL_WT", expectedDirection: "up", action: "weak_against", domain: "OM" },
-    { term: "THYMUS_WT", expectedDirection: "down", action: "weak_against", domain: "OM" },
-  ],
-  XS09: [
-    { term: "OM_WT", expectedDirection: "down", action: "weak_against", domain: "OM" },
-  ],
-};
+// ─── REM-09: Directional gate evaluation ──────────────────
 
 /**
  * REM-09: Evaluate directional gates for a detected syndrome.
@@ -1062,8 +535,7 @@ function evaluateDirectionalGates(
 
 /**
  * REM-09: Apply directional gates to detected syndromes as post-processing.
- * Marks syndromes with gate results but does NOT remove them from the array
- * (removal/certainty-capping happens in the interpretation layer).
+ * Marks syndromes with gate results but does NOT remove them from the array.
  */
 function applyDirectionalGates(
   syndromes: CrossDomainSyndrome[],
@@ -1183,12 +655,9 @@ function detectFromEndpoints(
 
     if ((requiredMet && meetsMinDomains) || (!requiredMet && supportCount >= 3)) {
       // Count opposite-direction matches for confidence capping (BTM-1/2).
-      // An "opposite" is a term whose identity matches an endpoint in the data,
-      // the endpoint is statistically significant, but the direction is wrong.
       let oppositeCount = 0;
       const allTerms = [...requiredTerms, ...supportingTerms];
       for (const term of allTerms) {
-        // Skip terms that already matched (correct direction)
         const alreadyMatched = matchedEndpoints.some((m) =>
           endpoints.some((ep) =>
             ep.endpoint_label === m.endpoint_label && matchEndpoint(ep, term),
@@ -1196,14 +665,13 @@ function detectFromEndpoints(
         );
         if (alreadyMatched) continue;
 
-        // Check identity match (ignoring direction) with significant p-value
         for (const ep of endpoints) {
           if (matchEndpointIdentity(ep, term)) {
             const isSignificant = ep.minPValue != null && ep.minPValue < 0.05;
             if (isSignificant && term.direction !== "any" && ep.direction !== term.direction) {
               oppositeCount++;
             }
-            break; // one identity match per term is enough
+            break;
           }
         }
       }
@@ -1274,15 +742,6 @@ export function detectCrossDomainSyndromes(
 
 // ─── Near-miss analysis (for Organ Context Panel) ─────────
 
-export interface SyndromeNearMissInfo {
-  /** Human-readable "Would require" text, e.g. "ALP↑ + GGT↑ or 5'NT↑" */
-  wouldRequire: string;
-  /** Tags of required terms that matched (e.g. ["ALP"]) */
-  matched: string[];
-  /** Tags of required terms that did NOT match (e.g. ["GGT", "5NT"]) */
-  missing: string[];
-}
-
 /**
  * For a syndrome that was NOT detected, analyze which required terms
  * partially matched against the available endpoints.
@@ -1291,7 +750,7 @@ export interface SyndromeNearMissInfo {
 export function getSyndromeNearMissInfo(
   syndromeId: string,
   endpoints: EndpointSummary[],
-): SyndromeNearMissInfo | null {
+): { wouldRequire: string; matched: string[]; missing: string[] } | null {
   const def = SYNDROME_DEFINITIONS.find((s) => s.id === syndromeId);
   if (!def) return null;
 
@@ -1323,49 +782,7 @@ export function getSyndromeNearMissInfo(
   return { wouldRequire, matched, missing };
 }
 
-// ─── REM-27: Magnitude floors per endpoint class ──────────
-
-export interface MagnitudeFloor {
-  /** Minimum |Hedges' g| to qualify as biologically meaningful */
-  minG: number;
-  /** Minimum |fold change - 1| to qualify (e.g. 0.10 = 10% change) */
-  minFcDelta: number;
-}
-
-/**
- * Endpoint class floor definitions. Test codes map to exactly one class.
- * v0.2.0: Split hematology into 5 subclasses, literature-backed thresholds.
- * Source: magnitude-floors-config.json + magnitude-floors-research-summary.md
- */
-/** @internal Exported for reference generator. */
-export const ENDPOINT_CLASS_FLOORS: { class: string; floor: MagnitudeFloor; testCodes: string[] }[] = [
-  // Hematology — erythroid (de Kort & Weber 2020: ≤10% = no histopath effect)
-  { class: "hematology_erythroid",      floor: { minG: 0.8, minFcDelta: 0.10 }, testCodes: ["RBC", "HGB", "HB", "HCT"] },
-  // Hematology — primary leukocytes (moderate CV ~15-25%)
-  { class: "hematology_leukocyte",      floor: { minG: 0.8, minFcDelta: 0.15 }, testCodes: ["WBC", "NEUT", "ANC", "LYMPH", "LYM"] },
-  // Hematology — rare leukocytes (high variance; concordance checked separately)
-  { class: "hematology_leukocyte_rare", floor: { minG: 0.8, minFcDelta: 0.30 }, testCodes: ["MONO", "EOS", "BASO"] },
-  // RBC indices (very tight CVs 2-4%; higher g threshold compensates)
-  { class: "hematology_indices",        floor: { minG: 1.0, minFcDelta: 0.05 }, testCodes: ["MCV", "MCH", "MCHC", "RDW"] },
-  // Platelets
-  { class: "platelets",                 floor: { minG: 0.8, minFcDelta: 0.15 }, testCodes: ["PLAT", "PLT"] },
-  // Reticulocytes (base floor; conditional override in checkMagnitudeFloor)
-  { class: "reticulocytes",             floor: { minG: 0.8, minFcDelta: 0.25 }, testCodes: ["RETIC", "RET", "RETI"] },
-  // Coagulation (moderate variability; preanalytical factors)
-  { class: "coagulation",               floor: { minG: 0.8, minFcDelta: 0.15 }, testCodes: ["PT", "APTT", "INR", "FIB", "FIBRINO"] },
-  // Liver enzymes (high inter-animal variability; 1.5x = screening threshold)
-  { class: "liver_enzymes",             floor: { minG: 0.5, minFcDelta: 0.50 }, testCodes: ["ALT", "ALAT", "AST", "ASAT", "ALP", "ALKP", "GGT", "SDH", "GLDH", "GDH", "5NT", "LDH"] },
-  // Renal markers
-  { class: "renal_markers",             floor: { minG: 0.5, minFcDelta: 0.20 }, testCodes: ["BUN", "UREA", "UREAN", "CREAT", "CREA"] },
-  // Clinical chemistry general
-  { class: "clinical_chemistry",        floor: { minG: 0.5, minFcDelta: 0.25 }, testCodes: ["GLUC", "CHOL", "BILI", "TBILI", "TRIG", "ALB", "GLOBUL", "PROT", "ALBGLOB", "TP"] },
-  // Electrolytes (homeostatically regulated, tight CVs)
-  { class: "electrolytes",              floor: { minG: 0.8, minFcDelta: 0.10 }, testCodes: ["SODIUM", "NA", "K", "CA", "PHOS", "CL", "MG"] },
-  // Body weight
-  { class: "body_weight",               floor: { minG: 0.5, minFcDelta: 0.05 }, testCodes: ["BW", "BWGAIN"] },
-  // Food consumption (own class — do NOT proxy with BW)
-  { class: "food_consumption",          floor: { minG: 0.5, minFcDelta: 0.10 }, testCodes: ["FOOD", "FC"] },
-];
+// ─── REM-27: Magnitude floors ──────────────────────────────
 
 // Pre-build lookup: testCode → MagnitudeFloor
 const MAGNITUDE_FLOOR_BY_CODE: Map<string, MagnitudeFloor> = new Map();
@@ -1382,8 +799,6 @@ const ORGAN_WEIGHT_PROSTATE: MagnitudeFloor = { minG: 1.0, minFcDelta: 0.10 };  
 const ORGAN_WEIGHT_OVARY: MagnitudeFloor = { minG: 1.5, minFcDelta: 0.15 };      // ovaries — CV 25–40%
 const ORGAN_WEIGHT_UTERUS: MagnitudeFloor = { minG: 1.5, minFcDelta: 0.15 };     // uterus — CV 30–50%
 const ORGAN_WEIGHT_GENERAL: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.10 };
-// Immune organs use same threshold as general (0.10) but are tracked separately
-// for future ratio_policy (adrenal: organ:brain per Bailey 2004)
 const ORGAN_WEIGHT_IMMUNE: MagnitudeFloor = { minG: 0.8, minFcDelta: 0.10 };
 
 const GONADAL_KEYWORDS = ["testis", "testes", "epididymis", "epididymides"];
@@ -1418,7 +833,6 @@ const PRIMARY_LEUKOCYTE_CODES = new Set(["WBC", "NEUT", "ANC", "LYMPH", "LYM"]);
 /**
  * Check if concordant anemia is present: ≥2 of RBC/HGB/HCT are ↓ AND
  * each meets the erythroid magnitude floor (|g| ≥ 0.8 OR |FC-1| ≥ 0.10).
- * v0.2.0: Catches regenerative anemia signals without allowing noisy RETIC-only triggers.
  */
 function hasConcordantAnemia(allEndpoints: EndpointSummary[]): boolean {
   let count = 0;
@@ -1426,7 +840,6 @@ function hasConcordantAnemia(allEndpoints: EndpointSummary[]): boolean {
     const code = ep.testCode?.toUpperCase() ?? "";
     if (!ERYTHROID_CODES.has(code)) continue;
     if (ep.direction !== "down") continue;
-    // Must meet erythroid floor
     const absG = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : null;
     const absFcDelta = ep.maxFoldChange != null ? Math.abs(ep.maxFoldChange - 1.0) : null;
     const passesG = absG != null && absG >= ERYTHROID_FLOOR.minG;
@@ -1439,8 +852,6 @@ function hasConcordantAnemia(allEndpoints: EndpointSummary[]): boolean {
 
 /**
  * Phase 3: Check if a rare leukocyte has concordant primary leukocyte shifting same direction.
- * v0.2.0: MONO/EOS/BASO require ≥1 of WBC/NEUT/LYMPH changing in same direction to be meaningful.
- * This eliminates "cute but meaningless" EOS/BASO blips (de Kort & Weber 2020).
  */
 function hasLeukocyteConcordance(
   direction: "up" | "down" | "none" | null | undefined,
@@ -1451,7 +862,6 @@ function hasLeukocyteConcordance(
     const code = ep.testCode?.toUpperCase() ?? "";
     if (!PRIMARY_LEUKOCYTE_CODES.has(code)) continue;
     if (ep.direction === direction) {
-      // Primary leukocyte shifting same direction — concordance met
       const isSignificant = ep.minPValue != null && ep.minPValue <= 0.05;
       const hasMeaningfulEffect = (ep.maxEffectSize != null && Math.abs(ep.maxEffectSize) >= 0.5) ||
         (ep.maxFoldChange != null && Math.abs(ep.maxFoldChange - 1.0) >= 0.05);
@@ -1464,8 +874,6 @@ function hasLeukocyteConcordance(
 /**
  * REM-27: Check if an endpoint meets the magnitude floor for its class.
  * Returns null if no floor applies (pass through), or a description string if blocked.
- * Phase 2: RETIC conditional override — relaxes from 25% to 15% when concordant anemia present.
- * Phase 3: Rare leukocyte concordance — MONO/EOS/BASO require primary leukocyte same direction.
  * @internal Exported for testing only.
  */
 export function checkMagnitudeFloor(
@@ -1474,11 +882,10 @@ export function checkMagnitudeFloor(
   allEndpoints?: EndpointSummary[],
   normalizationContexts?: NormalizationContext[],
 ): string | null {
-  // Determine floor: look up by testCode, then by domain for OM/BW
   const code = ep.testCode?.toUpperCase() ?? "";
   let floor = MAGNITUDE_FLOOR_BY_CODE.get(code);
 
-  // OM domain: use organ-specific floor (reproductive 5%, immune 10%, general 10%)
+  // OM domain: use organ-specific floor
   if (!floor && domain === "OM") floor = getOrganWeightFloor(ep);
   // BW domain fallback
   if (!floor && domain === "BW") floor = MAGNITUDE_FLOOR_BY_CODE.get("BW");
@@ -1487,7 +894,7 @@ export function checkMagnitudeFloor(
 
   if (!floor) return null; // No floor defined → pass through
 
-  // Phase 2: RETIC conditional override — relax floor when concordant anemia present
+  // Phase 2: RETIC conditional override
   if (RETIC_CODES.has(code) && allEndpoints && hasConcordantAnemia(allEndpoints)) {
     floor = RETIC_OVERRIDE_FLOOR;
   }
@@ -1495,9 +902,7 @@ export function checkMagnitudeFloor(
   const absG = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : null;
   const absFcDelta = ep.maxFoldChange != null ? Math.abs(ep.maxFoldChange - 1.0) : null;
 
-  // OM domain with normalization context: use normalization-aware floor check.
-  // Phase 1: same pass/fail as raw, adds BW confounding annotation.
-  // Phase 2+: uses ANCOVA directG instead of raw g — may change pass/fail.
+  // OM domain with normalization context: use normalization-aware floor check
   if (domain === "OM" && normalizationContexts) {
     const specimen = (ep.specimen ?? "").toUpperCase();
     const normCtx = normalizationContexts.find(c => c.organ === specimen);
@@ -1517,7 +922,7 @@ export function checkMagnitudeFloor(
   const passesFc = absFcDelta != null && absFcDelta >= floor.minFcDelta;
 
   if (passesG || passesFc) {
-    // Phase 3: Rare leukocyte concordance — even if floor passes, require primary concordance
+    // Phase 3: Rare leukocyte concordance
     if (RARE_LEUKOCYTE_CODES.has(code) && allEndpoints) {
       if (!hasLeukocyteConcordance(ep.direction, allEndpoints)) {
         return "rare leukocyte without primary concordance (MONO/EOS/BASO require WBC/NEUT/LYMPH same direction)";
@@ -1534,46 +939,6 @@ export function checkMagnitudeFloor(
 }
 
 // ─── Term report for Evidence Summary pane ────────────────
-
-export interface TermReportEntry {
-  label: string;        // "ALT ↑", "Bone marrow hypocellularity"
-  domain: string;       // "LB", "MI", "OM"
-  role: "required" | "supporting";
-  tag?: string;
-  status: "matched" | "trend" | "opposite" | "not_significant" | "not_measured";
-  matchedEndpoint?: string;  // endpoint_label if matched or found
-  pValue?: number | null;
-  severity?: string;
-  /** Direction of the found endpoint (for opposite status display) */
-  foundDirection?: "up" | "down" | "none" | null;
-  /** Sex tag when syndrome detected for one sex only (e.g. "M" or "F") */
-  sex?: string | null;
-  /** REM-27: Note when magnitude floor prevented a match (null = not applicable or passed) */
-  magnitudeFloorNote?: string | null;
-}
-
-export interface SyndromeTermReport {
-  requiredEntries: TermReportEntry[];
-  supportingEntries: TermReportEntry[];
-  requiredMetCount: number;
-  /** REM-25: How many required terms were met only by trend (p > α but biologically meaningful) */
-  requiredTrendCount: number;
-  requiredTotal: number;
-  supportingMetCount: number;
-  supportingTotal: number;
-  domainsCovered: string[];
-  missingDomains: string[];   // domains with terms but no matches
-  /** Count of "opposite" entries across required + supporting (active counter-evidence) */
-  oppositeCount: number;
-  /** Human-readable required logic expression (e.g. "any of (NEUT, PLAT, (RBC + HGB))") */
-  requiredLogicText: string;
-  /** Required logic type from syndrome definition */
-  requiredLogicType: "any" | "all" | "compound";
-  /** REM-26: Which clause of compound required logic was satisfied (null for simple logic) */
-  satisfiedClause: string | null;
-  /** REM-26: Tags of supporting terms that participated in compound required logic (promoted S→R) */
-  promotedSupportingTags: string[];
-}
 
 /**
  * Build a structured evidence report for the Evidence Summary pane.
@@ -1615,33 +980,28 @@ export function getSyndromeTermReport(
         const hasMeaningfulEffect = (ep.maxEffectSize != null && Math.abs(ep.maxEffectSize) >= 0.5) ||
           (ep.maxFoldChange != null && Math.abs(ep.maxFoldChange - 1.0) >= 0.05);
 
-        // REM-27: Check magnitude floor — significant but biologically trivial → not_significant
-        // Phase 2: pass full endpoint list for RETIC conditional override
-        // OWN §10: normalization-aware floor for OM domain (ANCOVA directG in Phase 2+)
+        // REM-27: Check magnitude floor
         const floorNote = checkMagnitudeFloor(ep, term.domain, endpoints, normalizationContexts);
 
         if (isSignificant && !floorNote) {
           entry.status = "matched";
         } else if (isSignificant && floorNote) {
-          // Statistically significant but below magnitude floor
           entry.status = "not_significant";
           entry.magnitudeFloorNote = floorNote;
           entry.matchedEndpoint = ep.endpoint_label;
           entry.pValue = ep.minPValue;
           entry.severity = ep.worstSeverity;
           entry.foundDirection = ep.direction;
-          break; // Don't set fullMatch
+          break;
         } else if (hasMeaningfulEffect) {
-          // Direction matches + biologically meaningful but not statistically significant
           entry.status = "trend";
         } else {
-          // Direction matches but negligible effect — treat as not significant
           entry.status = "not_significant";
           entry.matchedEndpoint = ep.endpoint_label;
           entry.pValue = ep.minPValue;
           entry.severity = ep.worstSeverity;
           entry.foundDirection = ep.direction;
-          break; // Don't set fullMatch — fall through to Pass 2 classification
+          break;
         }
 
         entry.matchedEndpoint = ep.endpoint_label;
@@ -1673,15 +1033,12 @@ export function getSyndromeTermReport(
       }
 
       if (!identityMatch) {
-        // No identity match at all → not measured
         entry.status = "not_measured";
       } else {
-        // Identity matched — check significance
         const isSignificant = identityMatch.minPValue != null && identityMatch.minPValue < 0.05;
         if (!isSignificant) {
           entry.status = "not_significant";
         } else {
-          // Significant but wrong direction (or failed severity gate) → opposite
           entry.status = "opposite";
         }
         entry.matchedEndpoint = identityMatch.endpoint_label;
@@ -1704,15 +1061,12 @@ export function getSyndromeTermReport(
   const requiredMetCount = requiredMatchedOnly + requiredTrendOnly;
   const supportingMetCount = supportingEntries.filter((e) => e.status === "matched" || e.status === "trend").length;
 
-  // Domains covered = domains with at least one checked term (status ≠ "not_measured")
-  // This includes matched, opposite, and not_significant — all indicate the domain was present
   const domainsCovered = [...new Set(
     [...requiredEntries, ...supportingEntries]
       .filter((e) => e.status !== "not_measured")
       .map((e) => e.domain),
   )].sort();
 
-  // Missing domains = domains with terms defined but none checked (all not_measured)
   const allTermDomains = [...new Set(def.terms.map((t) => t.domain))];
   const missingDomains = allTermDomains
     .filter((d) => !domainsCovered.includes(d))
@@ -1721,7 +1075,6 @@ export function getSyndromeTermReport(
   const oppositeCount = [...requiredEntries, ...supportingEntries]
     .filter((e) => e.status === "opposite").length;
 
-  // Required logic metadata for ARM display
   const allRequiredTags = [...new Set(
     requiredEntries.map((e) => e.tag).filter((t): t is string => !!t),
   )];
@@ -1731,7 +1084,6 @@ export function getSyndromeTermReport(
   let satisfiedClause: string | null = null;
   const promotedSupportingTags: string[] = [];
   if (def.requiredLogic.type === "compound") {
-    // Collect tags of all matched/trend entries (both required and supporting)
     const matchedTags = new Set<string>();
     for (const e of [...requiredEntries, ...supportingEntries]) {
       if ((e.status === "matched" || e.status === "trend") && e.tag) {
@@ -1743,7 +1095,6 @@ export function getSyndromeTermReport(
       satisfiedClause = detailed.clause
         .replace(/\bAND\b/g, "+")
         .replace(/\bOR\b/g, "or");
-      // Identify supporting tags that participate in the satisfied clause
       const supportingTagSet = new Set(
         supportingEntries.map((e) => e.tag).filter((t): t is string => !!t),
       );
@@ -1776,7 +1127,6 @@ export function getSyndromeTermReport(
 /**
  * Derive a human-readable display label from a SyndromeTermMatch.
  * Priority: testCodes → canonicalLabels → specimenTerms → organWeightTerms.
- * Direction appended as arrow: ↑ for "up", ↓ for "down", omitted for "any".
  */
 export function getTermDisplayLabel(term: SyndromeTermMatch): string {
   const dirArrow = term.direction === "up" ? " ↑" : term.direction === "down" ? " ↓" : "";
@@ -1785,7 +1135,6 @@ export function getTermDisplayLabel(term: SyndromeTermMatch): string {
     return term.testCodes[0] + dirArrow;
   }
   if (term.canonicalLabels && term.canonicalLabels.length > 0) {
-    // Title case the first canonical label
     const label = term.canonicalLabels[0]
       .split(" ")
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -1823,7 +1172,6 @@ function formatRequiredLogic(logic: RequiredLogic, allTags: string[]): string {
     case "all":
       return allTags.join(" + ");
     case "compound":
-      // Convert expression to readable: "ALP AND (GGT OR 5NT)" → "ALP + GGT or 5'NT"
       return logic.expression
         .replace(/\bAND\b/g, "+")
         .replace(/\bOR\b/g, "or")

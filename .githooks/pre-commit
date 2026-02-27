@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# Pre-commit hook: runs frontend tests and build before allowing a commit.
+# If either step fails, the commit is aborted.
+#
+# Setup: git config core.hooksPath .githooks
+#
+
+FRONTEND_DIR="C:/pg/pcc/frontend"
+
+echo "========================================"
+echo "  Pre-commit hook: running checks..."
+echo "========================================"
+echo ""
+
+# Step 1: Run Vitest tests
+echo "--- Step 1/2: Running frontend tests (npm test) ---"
+echo ""
+
+if (cd "$FRONTEND_DIR" && npm test); then
+    echo ""
+    echo "--- Tests passed. ---"
+    echo ""
+else
+    echo ""
+    echo "========================================"
+    echo "  COMMIT ABORTED: Frontend tests failed."
+    echo "  Fix the failing tests before committing."
+    echo "========================================"
+    exit 1
+fi
+
+# Step 2: Run TypeScript check + production build
+echo "--- Step 2/2: Running frontend build (npm run build) ---"
+echo ""
+
+if (cd "$FRONTEND_DIR" && npm run build); then
+    echo ""
+    echo "--- Build passed. ---"
+    echo ""
+else
+    echo ""
+    echo "========================================"
+    echo "  COMMIT ABORTED: Frontend build failed."
+    echo "  Fix TypeScript / build errors before committing."
+    echo "========================================"
+    exit 1
+fi
+
+echo "========================================"
+echo "  All pre-commit checks passed."
+echo "========================================"
+exit 0
