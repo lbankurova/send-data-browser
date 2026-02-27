@@ -190,21 +190,17 @@ function ANCOVADecompositionPane({ finding }: { finding: UnifiedFinding }) {
 
 // ─── Decomposed Confidence Display ─────────────────────────
 
-function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
-  const cls = level === "high"
-    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+function confidenceTextClass(level: ConfidenceLevel): string {
+  return level === "high"
+    ? "text-emerald-700 font-semibold"
     : level === "moderate"
-      ? "bg-amber-50 text-amber-700 border-amber-200"
-      : "bg-red-50 text-red-700 border-red-200";
-  return (
-    <span className={`inline-block rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase ${cls}`}>
-      {level}
-    </span>
-  );
+      ? "text-amber-700 font-semibold"
+      : "text-red-700 font-semibold";
 }
 
 function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
   const { integrated } = eci;
+  const [expanded, setExpanded] = useState(false);
 
   const dims: { label: string; level: ConfidenceLevel; reason?: string }[] = [
     { label: "Statistical evidence", level: integrated.statistical },
@@ -231,37 +227,51 @@ function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
   ];
 
   return (
-    <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
-      <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Confidence decomposition
-      </div>
-      <div className="space-y-1">
-        {dims.map((d) => (
-          <div key={d.label} className="flex items-start gap-2">
-            <ConfidenceBadge level={d.level} />
-            <div className="min-w-0 flex-1">
-              <span className="font-medium">{d.label}</span>
-              {d.reason && d.level !== "high" && (
-                <span className="ml-1 text-muted-foreground">&mdash; {d.reason}</span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-1.5 border-t pt-1.5">
-        <span className="text-[9px] font-semibold text-muted-foreground">Integrated: </span>
-        <ConfidenceBadge level={integrated.integrated} />
+    <div className="mt-2 text-[10px]">
+      {/* Collapsed summary line */}
+      <div className="flex items-baseline gap-1 flex-wrap">
+        <span className="text-muted-foreground">Confidence:</span>
+        <span className={`uppercase ${confidenceTextClass(integrated.integrated)}`}>
+          {integrated.integrated}
+        </span>
         {integrated.limitingFactor !== "None" && (
-          <span className="ml-1 text-muted-foreground">
+          <span className="text-muted-foreground">
             (limited by {integrated.limitingFactor})
           </span>
         )}
+        {eci.noaelContribution.weight > 0 && (
+          <>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground">
+              NOAEL weight: {eci.noaelContribution.weight} ({eci.noaelContribution.label})
+              {eci.noaelContribution.requiresCorroboration && " — requires corroboration"}
+            </span>
+          </>
+        )}
       </div>
-      {/* NOAEL contribution weight */}
-      {eci.noaelContribution.weight > 0 && (
-        <div className="mt-1 text-[9px] text-muted-foreground">
-          NOAEL weight: {eci.noaelContribution.weight} ({eci.noaelContribution.label})
-          {eci.noaelContribution.requiresCorroboration && " — requires corroboration"}
+
+      {/* Toggle link */}
+      <button
+        className="mt-0.5 text-[9px] text-primary hover:underline"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {expanded ? "Hide decomposition" : "Show decomposition"}
+      </button>
+
+      {/* Expanded decomposition */}
+      {expanded && (
+        <div className="mt-1.5 space-y-0.5">
+          {dims.map((d) => (
+            <div key={d.label} className="flex items-baseline gap-1.5">
+              <span className={`uppercase text-[9px] ${confidenceTextClass(d.level)}`} style={{ minWidth: "5ch" }}>
+                {d.level}
+              </span>
+              <span className="font-medium whitespace-nowrap">{d.label}</span>
+              {d.reason && d.level !== "high" && (
+                <span className="text-muted-foreground">&mdash; {d.reason}</span>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -495,6 +505,14 @@ export function FindingsContextPanel() {
     ? toxAnnotations[selectedFinding.endpoint_label ?? selectedFinding.finding]?.treatmentRelated === "Not Evaluated"
     : false;
 
+  // Look up ECI integrated confidence for the selected endpoint
+  const eciConfidence = useMemo(() => {
+    if (!selectedFinding || !analytics) return null;
+    const label = selectedFinding.endpoint_label ?? selectedFinding.finding;
+    const ep = analytics.endpoints.find((e) => e.endpoint_label === label);
+    return ep?.endpointConfidence?.integrated.integrated ?? null;
+  }, [selectedFinding, analytics]);
+
   return (
     <div>
       {/* Sticky header */}
@@ -520,6 +538,7 @@ export function FindingsContextPanel() {
           treatmentSummary={context.treatment_summary}
           endpointSexes={endpointSexes}
           notEvaluated={notEvaluated}
+          eciConfidence={eciConfidence}
         />
         {hasRecovery && !notEvaluated && (
           <RecoveryVerdictLine

@@ -273,9 +273,13 @@ export function checkNonMonotonic(
 export function checkTrendTestValidity(
   groupStats: GroupStat[],
   trendP: number | null,
+  hasValidAncova: boolean = false,
 ): TrendTestCaveat {
   // No trend test → no caveat
   if (trendP == null) return NOT_TRIGGERED_TREND;
+
+  // ANCOVA is the primary analysis — JT variance assumptions are irrelevant
+  if (hasValidAncova) return NOT_TRIGGERED_TREND;
 
   const sorted = [...groupStats].sort((a, b) => a.dose_level - b.dose_level);
   const control = sorted.find((g) => g.dose_level === 0);
@@ -718,9 +722,10 @@ export function computeEndpointConfidence(
   miFindings: EndpointSummary[],
   ep: EndpointSummary,
   williams?: WilliamsTestResult | null,
+  hasValidAncova: boolean = false,
 ): EndpointConfidenceResult {
   const nonMonotonic = checkNonMonotonic(groupStats, pairwise, pattern);
-  const trendCaveat = checkTrendTestValidity(groupStats, trendP);
+  const trendCaveat = checkTrendTestValidity(groupStats, trendP, hasValidAncova);
   const concordance = checkTrendConcordance(trendP, williams);
   const normCaveat = getNormalizationCaveat(organ, hasEstrousData, miFindings);
   const integrated = integrateConfidence(
@@ -786,6 +791,10 @@ export function attachEndpointConfidence(
     if (!f) continue;
 
     const organ = ep.specimen ?? ep.organ_system;
+    // ANCOVA ran successfully: adjusted means computed and model has an R²
+    const hasValidAncova = f.ancova != null
+      && f.ancova.adjusted_means.length > 0
+      && f.ancova.model_r_squared > 0;
     const result = computeEndpointConfidence(
       f.group_stats ?? [],
       f.pairwise ?? [],
@@ -796,6 +805,7 @@ export function attachEndpointConfidence(
       miSummaries,
       ep,
       f.williams,
+      hasValidAncova,
     );
 
     ep.endpointConfidence = result;
