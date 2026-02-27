@@ -386,14 +386,21 @@ export function FindingsView() {
       {/* Header */}
       <FilterBar>
         <span className="text-xs font-semibold">Findings</span>
+        {data && (
+          <span className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <span>{data.summary.total_adverse} adverse</span>
+            <span>{data.summary.total_warning} warning</span>
+            <span>{data.summary.total_normal} normal</span>
+          </span>
+        )}
         {mortalityData?.has_mortality && mortalityData.early_death_details.length > 0 && (
           <button
             type="button"
-            className="flex items-center gap-1 rounded border border-border/60 bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted/60"
+            className="ml-3 flex items-center gap-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
             onClick={() => setUseScheduledOnly(!isScheduledOnly)}
             title={isScheduledOnly ? "Click to include early-death subjects in terminal stats" : "Click to exclude early-death subjects from terminal stats"}
           >
-            <span>
+            <span className="inline-block border-l-2 pl-1.5 py-0.5" style={{ borderLeftColor: "#dc2626" }}>
               {mortalityData.total_deaths}TR death{mortalityData.total_deaths !== 1 ? "s" : ""}
               {mortalityData.mortality_loael_label ? ` at ${formatDoseShortLabel(mortalityData.mortality_loael_label)}` : ""}
             </span>
@@ -401,13 +408,6 @@ export function FindingsView() {
               ({isScheduledOnly ? "excl. from term.stats" : "in term.stats"})
             </span>
           </button>
-        )}
-        {data && (
-          <span className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span>{data.summary.total_adverse} adverse</span>
-            <span>{data.summary.total_warning} warning</span>
-            <span>{data.summary.total_normal} normal</span>
-          </span>
         )}
       </FilterBar>
 
