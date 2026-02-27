@@ -87,7 +87,7 @@ export interface IntegratedConfidence {
   trendValidity: ConfidenceLevel;
   trendConcordance: ConfidenceLevel;
   integrated: ConfidenceLevel;
-  limitingFactor: string;
+  limitingFactors: string[];
 }
 
 export interface NOAELContribution {
@@ -615,7 +615,7 @@ export function integrateConfidence(
     trendConcordance,
   );
 
-  // Determine limiting factor
+  // Determine limiting factors — all non-statistical dimensions at the integrated level
   const dims: { name: string; level: ConfidenceLevel }[] = [
     { name: "Statistical evidence", level: statistical },
     { name: "Biological plausibility", level: biological },
@@ -623,19 +623,22 @@ export function integrateConfidence(
     { name: "Trend test validity", level: trendValidity },
     { name: "Trend concordance", level: trendConcordance },
   ];
-  const limiters = dims.filter((d) => d.level === integrated);
-  const nonStatLimiter = limiters.find(
-    (d) => CONFIDENCE_ORDER[d.level] < CONFIDENCE_ORDER[statistical],
-  );
-  const limitingFactor =
-    limiters.length === 0
-      ? "None"
-      : limiters.length >= 3 && limiters.every((l) => l.level === integrated)
-        ? limiters
-            .filter((l) => l.name !== "Statistical evidence")
-            .map((l) => l.name)
-            .join(", ")
-        : (nonStatLimiter ?? limiters[0]).name;
+
+  let limitingFactors: string[];
+  if (integrated === "high" && statistical === "high") {
+    limitingFactors = [];
+  } else {
+    // Dimensions at the integrated (worst) level, excluding "Statistical evidence"
+    limitingFactors = dims
+      .filter((d) => d.level === integrated && d.name !== "Statistical evidence")
+      .map((d) => d.name);
+    // If no non-statistical limiter, include statistical
+    if (limitingFactors.length === 0) {
+      limitingFactors = dims
+        .filter((d) => d.level === integrated)
+        .map((d) => d.name);
+    }
+  }
 
   return {
     statistical,
@@ -644,8 +647,7 @@ export function integrateConfidence(
     trendValidity,
     trendConcordance,
     integrated,
-    limitingFactor:
-      integrated === "high" && statistical === "high" ? "None" : limitingFactor,
+    limitingFactors,
   };
 }
 
