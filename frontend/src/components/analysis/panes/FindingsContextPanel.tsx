@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
@@ -29,6 +29,10 @@ import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { UnifiedFinding } from "@/types/analysis";
 import { formatPValue } from "@/lib/severity-colors";
+import { useOrganRecovery } from "@/hooks/useOrganRecovery";
+import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
+import { verdictLabel } from "@/lib/recovery-assessment";
+import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 
 // ─── Williams' Trend Test Comparison ────────────────────────
 
@@ -264,6 +268,97 @@ function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
   );
 }
 
+// ─── Recovery verdict colors (text-only, no badge bg) ────
+
+const RECOVERY_VERDICT_CLASS: Partial<Record<RecoveryVerdict, string>> = {
+  reversed: "text-emerald-700",
+  reversing: "text-emerald-600",
+  persistent: "text-amber-700",
+  progressing: "text-red-700",
+  recovery_too_short: "text-blue-700",
+};
+
+// ─── Recovery verdict one-liner for the Verdict section ──
+
+function RecoveryVerdictLine({
+  finding,
+  onSeeDetails,
+}: {
+  finding: UnifiedFinding;
+  onSeeDetails: () => void;
+}) {
+  const { studyId } = useParams<{ studyId: string }>();
+  const isHistopath = finding.domain === "MI" || finding.domain === "MA";
+  const specimen = finding.specimen;
+
+  // Hooks must be called unconditionally
+  const specimens = useMemo(() => (specimen ? [specimen] : []), [specimen]);
+  const organRecovery = useOrganRecovery(studyId, specimens);
+  const { data: recoveryComp } = useRecoveryComparison(studyId);
+
+  if (isHistopath && specimen) {
+    if (organRecovery.isLoading) return null;
+    const label = `${specimen} \u2014 ${finding.finding}`;
+    const verdict = organRecovery.byEndpointLabel.get(label);
+    if (!verdict || verdict === "not_observed" || verdict === "no_data" || verdict === "not_examined") return null;
+    return (
+      <div className="mt-1.5 flex items-center gap-2 text-[10px]">
+        <span className="text-muted-foreground">Recovery:</span>
+        <span className={`font-medium ${RECOVERY_VERDICT_CLASS[verdict] ?? "text-muted-foreground"}`}>
+          {verdictLabel(verdict)}
+        </span>
+        <button className="text-[9px] text-primary hover:underline" onClick={onSeeDetails}>
+          See details
+        </button>
+      </div>
+    );
+  }
+
+  if (finding.data_type === "continuous" && recoveryComp?.available) {
+    const rows = recoveryComp.rows.filter(
+      (r) =>
+        r.test_code.toUpperCase() === finding.test_code.toUpperCase() &&
+        r.sex === finding.sex,
+    );
+    if (rows.length === 0) return null;
+
+    const hasComparable = rows.some((r) => r.terminal_effect != null && r.effect_size != null);
+    if (!hasComparable) return null;
+
+    const allReversing = rows.every(
+      (r) => r.terminal_effect != null && r.effect_size != null &&
+        Math.abs(r.effect_size) < Math.abs(r.terminal_effect) * 0.5,
+    );
+    const anyWorsening = rows.some(
+      (r) => r.terminal_effect != null && r.effect_size != null &&
+        Math.abs(r.effect_size) > Math.abs(r.terminal_effect) * 1.1,
+    );
+
+    const summaryText = allReversing
+      ? "Reversing (>50% reduction)"
+      : anyWorsening
+        ? "Persistent or worsening"
+        : "Partial recovery";
+    const summaryClass = allReversing
+      ? "text-emerald-700"
+      : anyWorsening
+        ? "text-amber-700"
+        : "text-muted-foreground";
+
+    return (
+      <div className="mt-1.5 flex items-center gap-2 text-[10px]">
+        <span className="text-muted-foreground">Recovery:</span>
+        <span className={`font-medium ${summaryClass}`}>{summaryText}</span>
+        <button className="text-[9px] text-primary hover:underline" onClick={onSeeDetails}>
+          See details
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
@@ -274,6 +369,7 @@ export function FindingsContextPanel() {
     selectedFindingId
   );
   const { data: noaelRows } = useEffectiveNoael(studyId);
+  const recoveryPaneRef = useRef<HTMLDivElement>(null);
   const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-finding");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
   const { useScheduledOnly: isScheduledOnly, hasEarlyDeaths } = useScheduledOnly();
@@ -425,6 +521,14 @@ export function FindingsContextPanel() {
           endpointSexes={endpointSexes}
           notEvaluated={notEvaluated}
         />
+        {hasRecovery && !notEvaluated && (
+          <RecoveryVerdictLine
+            finding={selectedFinding}
+            onSeeDetails={() => {
+              recoveryPaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }}
+          />
+        )}
       </div>
 
       <CollapsiblePane title="Evidence" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
@@ -649,6 +753,15 @@ export function FindingsContextPanel() {
         />
       </CollapsiblePane>
 
+      {/* Recovery insights — after dose detail for proximity to verdict summary */}
+      {hasRecovery && selectedFinding && (
+        <div ref={recoveryPaneRef}>
+          <CollapsiblePane title="Recovery" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+            <RecoveryPane finding={selectedFinding} />
+          </CollapsiblePane>
+        </div>
+      )}
+
       {/* Hide correlations pane when based on group means — useless rho=1.0 with n=4 */}
       {context.correlations.related.length > 0
         && context.correlations.related.some((c) => c.basis !== "group_means" && (c.n ?? 0) >= 10) && (
@@ -666,13 +779,6 @@ export function FindingsContextPanel() {
           selectedFindingId={selectedFindingId}
         />
       </CollapsiblePane>
-
-      {/* Recovery insights */}
-      {hasRecovery && selectedFinding && (
-        <CollapsiblePane title="Recovery" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <RecoveryPane finding={selectedFinding} />
-        </CollapsiblePane>
-      )}
 
       {/* Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>

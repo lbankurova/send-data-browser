@@ -265,7 +265,7 @@ export function EndpointSyndromePane({
               <div className="mt-0.5 text-[9px] text-muted-foreground">
                 This endpoint: {currentMatch.role}
                 {syn.sexes.length > 0 && (
-                  <> · {syn.sexes.length === 1 ? `${syn.sexes[0]} only` : syn.sexes.join(" + ")}</>
+                  <> · {syn.sexes.length === 1 ? `${syn.sexes[0]} only` : "both sexes"}</>
                 )}
               </div>
             )}
