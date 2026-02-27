@@ -19,6 +19,7 @@ import { ContextPane } from "./ContextPane";
 import { OrganContextPanel } from "./OrganContextPanel";
 import { SyndromeContextPanel } from "./SyndromeContextPanel";
 import { RecoveryPane } from "./RecoveryPane";
+import { EndpointSyndromePane } from "./EndpointSyndromePane";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
@@ -335,6 +336,15 @@ export function FindingsContextPanel() {
     return { dose_value: row.noael_dose_value, dose_unit: row.noael_dose_unit ?? "mg/kg" };
   })();
 
+  // Syndromes that include the currently selected endpoint
+  const endpointSyndromes = useMemo(() => {
+    if (!selectedFinding) return [];
+    const label = selectedFinding.endpoint_label ?? selectedFinding.finding;
+    return analytics.syndromes.filter((syn) =>
+      syn.matchedEndpoints.some((m) => m.endpoint_label === label)
+    );
+  }, [analytics.syndromes, selectedFinding]);
+
   // Priority 1: Endpoint selected → endpoint-level panel
   // Priority 2: Group selected → group-level panel
   // Priority 3: Nothing → empty state
@@ -599,6 +609,32 @@ export function FindingsContextPanel() {
           return <DecomposedConfidencePane eci={ep.endpointConfidence} />;
         })()}
       </CollapsiblePane>
+
+      {/* Syndrome context — only when endpoint participates in ≥1 syndrome */}
+      {endpointSyndromes.length > 0 && studyId && (
+        <CollapsiblePane
+          title="Syndromes"
+          defaultOpen
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+          headerRight={
+            <span className="text-[9px] text-muted-foreground">
+              {endpointSyndromes.length} syndrome{endpointSyndromes.length !== 1 ? "s" : ""}
+            </span>
+          }
+        >
+          <EndpointSyndromePane
+            studyId={studyId}
+            currentEndpointLabel={selectedFinding.endpoint_label ?? selectedFinding.finding}
+            syndromes={endpointSyndromes}
+            allSyndromeIds={analytics.syndromes.map((s) => s.id)}
+            endpoints={analytics.endpoints}
+            signalScores={analytics.signalScores}
+            normalizationContexts={analytics.normalizationContexts}
+            onViewSyndrome={(syndromeId) => selectGroup("syndrome", syndromeId)}
+          />
+        </CollapsiblePane>
+      )}
 
       <CollapsiblePane
         title="Dose detail"
