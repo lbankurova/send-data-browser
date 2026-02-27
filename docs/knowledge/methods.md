@@ -1669,6 +1669,8 @@ HED rounded to 4 decimals. MRSD rounded to 4 decimals. Status: "established" if 
 
 **Consequences:** Pattern reclassified to "inconsistent", A-1 downgrade, confidence penalty = 1.
 
+**Backend non-monotonic fallback:** When `checkNonMonotonic` doesn't fire (no hidden reversal) but the backend already classified the pattern as `non_monotonic`, `integrateConfidence()` caps dose-response quality at `"moderate"`. JT is a monotonic trend test; its significance is less informative for non-monotonic data.
+
 **Why this method:** A threshold pattern with reversal at the highest dose suggests a confound (e.g., toxicity-induced appetite suppression masking organ weight increase). The backend pattern classifier doesn't check for this within-threshold non-monotonicity.
 
 ---
@@ -1703,7 +1705,7 @@ HED rounded to 4 decimals. MRSD rounded to 4 decimals. Status: "established" if 
 
 **Implementation:** `frontend/src/lib/endpoint-confidence.ts:integrateConfidence()`.
 
-**Parameters:** Integrated = min(statistical, biological, doseResponse, trendValidity). Statistical confidence: p<0.01 + |g|≥0.8 + informative pattern → high; p<0.05 + |g|≥0.5 → moderate; else low. Biological from normalization caveat ceiling. Dose-response from non-monotonic penalty. Trend validity from variance check.
+**Parameters:** Integrated = min(statistical, biological, doseResponse, trendValidity, trendConcordance). Statistical confidence: p<0.01 + |g|≥0.8 + informative pattern → high; p<0.05 + |g|≥0.5 → moderate; else low. Biological from normalization caveat ceiling. Dose-response from non-monotonic penalty OR backend `non_monotonic` pattern (capped at moderate). Trend validity from variance check (bypassed when valid ANCOVA available). Trend concordance from JT/Williams' agreement.
 
 **Why this method:** A single "high" in one dimension shouldn't override deficiencies in another. The min() aggregation ensures all dimensions must be adequate.
 
