@@ -388,7 +388,7 @@ export function FindingsView() {
         <span className="text-xs font-semibold">Findings</span>
         {data && (
           <span className="flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span className="font-semibold">{data.summary.total_adverse} adverse</span>
+            <span className="font-semibold underline decoration-dashed underline-offset-2" style={{ textDecorationColor: "#dc2626" }}>{data.summary.total_adverse} adverse</span>
             <span>{data.summary.total_warning} warning</span>
             <span>{data.summary.total_normal} normal</span>
           </span>
@@ -400,7 +400,7 @@ export function FindingsView() {
             onClick={() => setUseScheduledOnly(!isScheduledOnly)}
             title={isScheduledOnly ? "Click to include early-death subjects in terminal stats" : "Click to exclude early-death subjects from terminal stats"}
           >
-            <span className="inline-block border-l-2 pl-1.5 font-semibold" style={{ borderLeftColor: "#dc2626" }}>
+            <span className="font-semibold underline decoration-dashed underline-offset-2" style={{ textDecorationColor: "#dc2626" }}>
               {mortalityData.total_deaths}TR death{mortalityData.total_deaths !== 1 ? "s" : ""}
               {mortalityData.mortality_loael_label ? ` at ${formatDoseShortLabel(mortalityData.mortality_loael_label)}` : ""}
             </span>
