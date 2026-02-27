@@ -134,17 +134,15 @@ export function FindingsQuadrantScatter({
   }, [selectedPt?.endpoint_label, selectedPt?.x, selectedPt?.rawP, onSelectedPointChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Legend: three independent encoding channels.
-  //   Color  → NOAEL contribution (determining=rose, contributing=gray, supporting=outline)
+  //   Stroke → adverse = dark stroke, non-adverse = no stroke
   //   Shape  → clinical S2+ = diamond, everything else = circle
-  //   Size   → adverse = large, warning/normal = small
+  //   Color  → NOAEL contribution (determining=rose, contributing=gray, supporting=outline)
   const legendEntries = useMemo(() => {
-    const entries: { symbol: string; label: string; color?: string }[] = [];
-    // Size
+    const entries: { symbol: string; label: string; color?: string; stroke?: boolean }[] = [];
+    // Stroke: adverse
     if (points.some((p) => p.worstSeverity === "adverse"))
-      entries.push({ symbol: "\u25CF", label: "adverse" });
-    if (points.some((p) => p.worstSeverity !== "adverse" && !p.clinicalSeverity))
-      entries.push({ symbol: "\u2022", label: "normal" });
-    // Shape
+      entries.push({ symbol: "\u25CF", label: "adverse", color: "#374151", stroke: true });
+    // Shape: clinical
     if (points.some((p) => p.clinicalSeverity))
       entries.push({ symbol: "\u25C6", label: "clinical S2+", color: "#6B7280" });
     // Color: NOAEL contribution
@@ -172,7 +170,10 @@ export function FindingsQuadrantScatter({
         <div className="flex items-center gap-2">
           {legendEntries.map((e, i) => (
             <span key={i} className="flex items-center gap-0.5 text-[8px] text-muted-foreground">
-              <span style={{ color: e.color ?? "#9CA3AF" }}>{e.symbol}</span>{e.label}
+              <span style={{
+                color: e.stroke ? "#9CA3AF" : (e.color ?? "#9CA3AF"),
+                ...(e.stroke ? { WebkitTextStroke: "1px #374151" } : {}),
+              }}>{e.symbol}</span>{e.label}
             </span>
           ))}
         </div>
