@@ -9,6 +9,7 @@
  */
 import { describe, test, expect } from "vitest";
 import { checkMagnitudeFloor, getSyndromeTermReport, detectCrossDomainSyndromes, DIRECTIONAL_GATES } from "@/lib/cross-domain-syndromes";
+import { computeOrganNormSummary } from "@/components/analysis/findings/FindingsRail";
 import { computeAdversity } from "@/lib/syndrome-ecetoc";
 import { assessSecondaryToBodyWeight } from "@/lib/organ-weight-normalization";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
@@ -21,6 +22,7 @@ import type {
   FoodConsumptionContext,
 } from "@/lib/syndrome-interpretation-types";
 import type { LesionSeverityRow } from "@/types/analysis-views";
+import type { EndpointWithSignal } from "@/lib/findings-rail-engine";
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -637,5 +639,82 @@ describe("SE-1/SE-2: Detection path is normalization-unaware", () => {
     const idsWithout = without.map(s => s.id).sort();
     const idsWith = withCtxs.map(s => s.id).sort();
     expect(idsWithout).toEqual(idsWith);
+  });
+});
+
+// ─── Regression: computeOrganNormSummary (7e1f19c) ─────────
+
+function epWithSignal(overrides: Partial<EndpointWithSignal> & { testCode: string }): EndpointWithSignal {
+  return { ...ep(overrides), signal: overrides.signal ?? 0 };
+}
+
+describe("computeOrganNormSummary — rail indicator", () => {
+  test("matches OM endpoint specimens against normalization contexts", () => {
+    const endpoints = [
+      epWithSignal({ testCode: "ALT", domain: "LB" }),
+      epWithSignal({ testCode: "LIVER", domain: "OM", specimen: "LIVER" }),
+    ];
+    const contexts = [
+      makeNormCtx({ organ: "LIVER", tier: 3, activeMode: "body_weight" }),
+    ];
+    const result = computeOrganNormSummary(endpoints, contexts);
+    expect(result).not.toBeNull();
+    expect(result!.tier).toBe(3);
+    expect(result!.mode).toBe("body_weight");
+    expect(result!.modeShort).toBe("BW");
+  });
+
+  test("returns null when no OM endpoints in card", () => {
+    const endpoints = [
+      epWithSignal({ testCode: "ALT", domain: "LB" }),
+      epWithSignal({ testCode: "AST", domain: "LB" }),
+    ];
+    const contexts = [
+      makeNormCtx({ organ: "LIVER", tier: 3 }),
+    ];
+    expect(computeOrganNormSummary(endpoints, contexts)).toBeNull();
+  });
+
+  test("returns null for tier < 2 (absolute mode, not worth showing)", () => {
+    const endpoints = [
+      epWithSignal({ testCode: "KIDNEY", domain: "OM", specimen: "KIDNEY" }),
+    ];
+    const contexts = [
+      makeNormCtx({ organ: "KIDNEY", tier: 1, activeMode: "absolute" }),
+    ];
+    expect(computeOrganNormSummary(endpoints, contexts)).toBeNull();
+  });
+
+  test("picks highest tier when multiple dose groups have different tiers", () => {
+    const endpoints = [
+      epWithSignal({ testCode: "LIVER", domain: "OM", specimen: "LIVER" }),
+    ];
+    const contexts = [
+      makeNormCtx({ organ: "LIVER", tier: 2, setcd: "2", activeMode: "body_weight" }),
+      makeNormCtx({ organ: "LIVER", tier: 4, setcd: "3", activeMode: "ancova" }),
+    ];
+    const result = computeOrganNormSummary(endpoints, contexts);
+    expect(result).not.toBeNull();
+    expect(result!.tier).toBe(4);
+    expect(result!.mode).toBe("ancova");
+  });
+
+  test("does NOT match organ system name against specimen (regression for 7e1f19c)", () => {
+    // The old bug: card.key was "hepatic" → toUpperCase → "HEPATIC", compared to ctx.organ "LIVER"
+    // This test verifies we match via endpoint specimens, not the organ system key
+    const endpoints = [
+      epWithSignal({ testCode: "LIVER", domain: "OM", organ_system: "hepatic", specimen: "LIVER" }),
+    ];
+    const contextsForLiver = [
+      makeNormCtx({ organ: "LIVER", tier: 3, activeMode: "body_weight" }),
+    ];
+    // Should match because endpoint.specimen is "LIVER" and ctx.organ is "LIVER"
+    expect(computeOrganNormSummary(endpoints, contextsForLiver)).not.toBeNull();
+
+    // Should NOT match if ctx.organ were "HEPATIC" (the organ system name)
+    const contextsForSystem = [
+      makeNormCtx({ organ: "HEPATIC", tier: 3, activeMode: "body_weight" }),
+    ];
+    expect(computeOrganNormSummary(endpoints, contextsForSystem)).toBeNull();
   });
 });
