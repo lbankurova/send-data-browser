@@ -94,20 +94,41 @@ An `Info` icon (`h-3 w-3 cursor-help text-muted-foreground/50 hover:text-muted-f
 
 **Component:** `FindingsQuadrantScatter` — interactive scatter plot of endpoints by statistical significance (p-value) vs effect size. Props include: endpoints, selectedEndpoint, organCoherence, syndromes, labMatches, scopeFilter, effectSizeSymbol (default `"g"`, dynamically set from active effect size method).
 
-**Legend** (conditional — entries only appear when corresponding data exists):
+**Legend** (conditional — entries only appear when corresponding data exists in the current point set):
 
-| Symbol | Label | Color | Condition |
-|--------|-------|-------|-----------|
-| `•` (bullet) | warning/normal | `#9CA3AF` (gray) | any non-adverse, non-clinical endpoint |
-| `●` (circle) | adverse | `#9CA3AF` (gray) | any adverse-severity endpoint |
-| `◆` (diamond) | clinical S2+ | `#6B7280` (darker gray) | clinicalSeverity truthy |
-| `●` (circle) | low NOAEL | `rgba(248,113,113,0.7)` (warm rose) | noaelTier = "below-lowest" or "at-lowest" |
+| Symbol | Label | Default Color | Condition |
+|--------|-------|---------------|-----------|
+| `•` (U+2022, bullet) | warning/normal | `#9CA3AF` (gray) | `worstSeverity !== "adverse" && !clinicalSeverity` |
+| `●` (U+25CF, circle) | adverse | `#9CA3AF` (gray) | `worstSeverity === "adverse"` |
+| `◆` (U+25C6, diamond) | clinical S2+ | `#6B7280` (darker gray) | `clinicalSeverity` truthy (S2/S3/S4 from lab-clinical rules) |
+| `●` (U+25CF, circle) | low NOAEL | `rgba(248,113,113,0.7)` (warm rose) | `noaelTier === "below-lowest" \|\| noaelTier === "at-lowest"` |
 
-Legend rendered as `flex items-center gap-2` with `text-[8px] text-muted-foreground` entries.
+Legend rendered as `flex items-center gap-2` inside `px-2 py-0.5` header. Each entry: `flex items-center gap-0.5 text-[8px] text-muted-foreground`, symbol span colored via inline `style={{ color }}` (fallback `#9CA3AF`).
+
+**Dot rendering** (`buildFindingsQuadrantOption` in `findings-charts.ts`):
+
+*Size hierarchy* (higher overrides lower): default 5 → adverse 6 → coherent organ (3+ domains) 7 → clinical S2+ 7 → selected 10. Emphasis (hover): 8.
+
+*Shape:* diamond for clinical S2+, circle for everything else.
+
+*Color — NOAEL weight encoding* (ECI contribution, highest priority first):
+- **Determining** (`noaelWeight=1.0`): warm rose — `rgba(248,113,113,0.7)` if below-lowest, `rgba(248,113,113,0.5)` otherwise
+- **Contributing** (`noaelWeight=0.7`): `#9CA3AF` (gray)
+- **Supporting** (`noaelWeight=0.3`): `transparent` (outline only)
+- **Low NOAEL** (no weight): `rgba(248,113,113,0.6)` if below-lowest, `rgba(248,113,113,0.4)` if at-lowest
+- **Clinical** (no NOAEL override): `#6B7280`
+- **Default**: `#9CA3AF`
+
+*Opacity:* selected 1.0, contributing 0.8, clinical 0.75, coherent/adverse 0.65, default 0.5, out-of-scope 0.15.
+
+*Border:* selected → `#1F2937` w2, clinical → `#6B7280` w1, early-death exclusion → `#9CA3AF` w1 dashed, supporting → `#9CA3AF` w1, contributing (non-clinical) → `#9CA3AF` w1, default → transparent.
+
+**Tooltip** (on hover): endpoint label (bold 11px), domain (colored by `getDomainHexColor`) + organ system, monospace `|symbol|=effectSize` + `p=value`, severity + TR label. Conditional lines: clinical severity + rule ID + fold change, syndrome name (link icon), early-death exclusion note, NOAEL tier + dose, NOAEL contribution label.
 
 **Interactions:**
-- Click dot: selects endpoint (fires `onSelect`)
+- Click dot: selects endpoint (fires `onSelect`); ignored for out-of-scope dots
 - Ctrl+click dot: excludes endpoint from rail (fires `onExclude`)
+- Hover syndrome member: highlights all dots in same syndrome (dispatchAction highlight/downplay)
 - Selected point details passed via `onSelectedPointChange`
 
 ---
