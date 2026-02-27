@@ -25,6 +25,8 @@ interface Props {
   treatmentSummary: FindingContext["treatment_summary"];
   endpointSexes?: Map<string, string[]>;
   notEvaluated?: boolean;
+  /** ECI integrated confidence — overrides the simple heuristic when available. */
+  eciConfidence?: "high" | "moderate" | "low" | null;
 }
 
 interface Verdict {
@@ -200,13 +202,19 @@ export function VerdictPane({
   treatmentSummary,
   endpointSexes,
   notEvaluated,
+  eciConfidence,
 }: Props) {
   const verdict = notEvaluated
     ? { icon: "\u2014", label: "Not evaluated", labelClass: "text-sm font-medium text-muted-foreground", severityWord: "" }
     : computeVerdict(treatmentSummary, analytics, finding);
 
   const patternSentence = notEvaluated ? null : buildPatternSentence(doseResponse, statistics);
-  const confidence = notEvaluated ? null : buildConfidenceLabel(finding, analytics);
+  // Prefer ECI integrated confidence over the simple heuristic
+  const confidence: EndpointConfidence | null = notEvaluated
+    ? null
+    : eciConfidence
+      ? eciConfidence.toUpperCase() as EndpointConfidence
+      : buildConfidenceLabel(finding, analytics);
 
   // Clinical match for this endpoint (Layer D)
   const clinicalMatch: LabClinicalMatch | null = (!notEvaluated && analytics?.labMatches.length)

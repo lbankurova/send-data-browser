@@ -18,7 +18,7 @@ All core logic, backend pipeline, and functional UI are implemented and tested.
 - **Python normalization port** — `normalization.py` mirrors frontend `decideNormalization()` for backend use
 
 ### Frontend Logic
-- **Endpoint Confidence Index (ECI)** — 5-dimension min-aggregation (statistical, biological, dose-response, non-monotonic, trend concordance)
+- **Endpoint Confidence Index (ECI)** — 5-dimension min-aggregation (statistical, biological, dose-response, non-monotonic, trend concordance). Trend test validity check bypassed when valid ANCOVA is available (JT variance assumptions irrelevant when ANCOVA is primary analysis)
 - **JT/Williams' concordance check** — 5th ECI dimension, step-down detail, discordance warnings
 - **NOAEL contribution weighting** — 0.0/0.3/0.7/1.0 weights from integrated confidence
 - **Weighted NOAEL derivation** — study-level NOAEL from weighted endpoint contributions
@@ -33,7 +33,7 @@ All core logic, backend pipeline, and functional UI are implemented and tested.
 - **FindingsContextPanel OM annotation** — BW confounding callout, category-specific messaging (GONADAL, ANDROGEN_DEPENDENT, FEMALE_REPRODUCTIVE), normalization alternatives table
 - **WilliamsComparisonPane** — JT vs Williams' comparison with step-down detail
 - **ANCOVADecompositionPane** — model R^2, slope homogeneity, per-dose decomposition table
-- **DecomposedConfidencePane** — 5-dimension ECI breakdown
+- **DecomposedConfidencePane** — 5-dimension ECI breakdown (collapsed by default, typography-only — no colored badges)
 - **DoseResponseView** — effect size chart y-axis metric subtitle ("Computed from body-weight" etc.)
 - **NormalizationOverrideForm** — per-organ mode override with reason, persisted via annotations API
 

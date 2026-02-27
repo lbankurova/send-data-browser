@@ -1227,7 +1227,7 @@ Type:        `TrendTestCaveat`
 Scope:       endpoint-level
 Source:      `endpoint-confidence.ts:checkTrendTestValidity()`
 Methods:     @CLASS-23
-Invariants:  `triggered: false` when trend_p is null or variance ratios ≤ 2.0. `sdRatio` and `cvRatio` populated even when not triggered (for transparency). Penalty = 1 only when both SD and CV criteria fire.
+Invariants:  `triggered: false` when trend_p is null, variance ratios ≤ 2.0, or a valid ANCOVA result is available (adjusted means computed, R² > 0). `sdRatio` and `cvRatio` populated even when not triggered (for transparency). Penalty = 1 only when both SD and CV criteria fire. ANCOVA bypass: when ANCOVA is the primary analysis, JT variance assumptions are irrelevant.
 Null means:  N/A (always present).
 
 ### FIELD-56 — `EndpointConfidenceResult.normCaveat`

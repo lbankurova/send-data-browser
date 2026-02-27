@@ -1223,6 +1223,8 @@ Severity tiers: S1 (Monitor), S2 (Concern), S3 (Adverse), S4 (Critical).
 
 **Why this method:** The findings rail sorts endpoints by signal strength. Confidence classification provides grouping within the rail (HIGH endpoints first). The three dimensions (significance, effect size, pattern) capture the essential information quality.
 
+**Display note:** When the 5-dimension ECI system (CLASS-22 through CLASS-26) is available for an endpoint, the VerdictPane uses the ECI integrated confidence level instead of this simpler heuristic. CLASS-16 serves as fallback when ECI data is not computed.
+
 **Alternatives considered:** Continuous score only (rail already uses METRIC-03 for sorting — confidence provides grouping). Binary (too coarse for a multi-tier rail).
 
 ---
@@ -1677,9 +1679,9 @@ HED rounded to 4 decimals. MRSD rounded to 4 decimals. Status: "established" if 
 
 **Implementation:** `frontend/src/lib/endpoint-confidence.ts:checkTrendTestValidity()`.
 
-**Parameters:** Fires when EITHER: SD ratio (max treated SD / control SD) > 2.0, OR CV ratio (max group CV / min group CV) > 2.0 (groups with n≥3). Penalty = 1 when BOTH fire, 0 when only one fires.
+**Parameters:** Fires when EITHER: SD ratio (max treated SD / control SD) > 2.0, OR CV ratio (max group CV / min group CV) > 2.0 (groups with n≥3). Penalty = 1 when BOTH fire, 0 when only one fires. **ANCOVA bypass:** When a valid ANCOVA result is available for the endpoint (adjusted means computed, model R² > 0), the check is skipped entirely — ANCOVA is the primary analysis and JT variance assumptions are irrelevant.
 
-**Why this method:** JT trend test assumes comparable within-group variances. Heterogeneous variance inflates Type I error, making trend significance unreliable.
+**Why this method:** JT trend test assumes comparable within-group variances. Heterogeneous variance inflates Type I error, making trend significance unreliable. For organ weight endpoints with ANCOVA, the covariate adjustment already accounts for the body-weight-driven variance heterogeneity that typically triggers this check.
 
 ---
 
