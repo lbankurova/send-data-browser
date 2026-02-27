@@ -400,7 +400,7 @@ export function FindingsView() {
             onClick={() => setUseScheduledOnly(!isScheduledOnly)}
             title={isScheduledOnly ? "Click to include early-death subjects in terminal stats" : "Click to exclude early-death subjects from terminal stats"}
           >
-            <span className="inline-block border-l-2 pl-1.5 py-0.5" style={{ borderLeftColor: "#dc2626" }}>
+            <span className="inline-block border-l-2 pl-1.5" style={{ borderLeftColor: "#dc2626" }}>
               {mortalityData.total_deaths}TR death{mortalityData.total_deaths !== 1 ? "s" : ""}
               {mortalityData.mortality_loael_label ? ` at ${formatDoseShortLabel(mortalityData.mortality_loael_label)}` : ""}
             </span>
