@@ -70,11 +70,11 @@ function WilliamsStepDownTable({ results, finding, doseGroups }: {
     <table className="mt-1.5 w-full">
       <thead>
         <tr className="text-[9px] text-muted-foreground">
-          <th className="py-0.5 text-left font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>Group</th>
-          <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>t&#x0303;</th>
-          <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>CV</th>
+          <th className="py-0.5 text-left font-medium" style={{ width: "1px", whiteSpace: "nowrap" }} title="Red = included in step-down testing.">Group</th>
+          <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }} title="Strength of dose effect vs. control. Significant when t̃ ≥ CV.">t&#x0303;</th>
+          <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }} title="Significance threshold for this study's design (α = 0.05).">CV</th>
           <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>p</th>
-          <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>Sig</th>
+          <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }} title="Significant at α = 0.05. Step-down from high dose: testing stops at first 'No'.">Sig</th>
         </tr>
       </thead>
       <tbody>
@@ -393,47 +393,72 @@ function TrendTestValidityContent({ eci, finding }: { eci: EndpointConfidenceRes
   );
 }
 
-function TrendConcordanceContent({ eci, finding, doseGroups }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
+function TrendConcordanceContent({ finding, doseGroups }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
   const [showStepDown, setShowStepDown] = useState(false);
-  const { trendConcordance } = eci;
   const williams = finding.williams;
 
   const jtSignificant = finding.trend_p != null && finding.trend_p < 0.05;
   const williamsSignificant = williams?.step_down_results.some((r) => r.significant) ?? false;
   const concordant = jtSignificant === williamsSignificant;
 
+  // Resolve MED to actual dose label
+  const medLabel = useMemo(() => {
+    if (!williams?.minimum_effective_dose || !doseGroups) return williams?.minimum_effective_dose ?? null;
+    // Step-down results are highest→lowest; find the MED entry and resolve its dose level
+    const treatedLevels = [...finding.group_stats]
+      .filter((g) => g.dose_level > 0)
+      .sort((a, b) => b.dose_level - a.dose_level);
+    const medIdx = williams.step_down_results.findIndex((r) => r.dose_label === williams.minimum_effective_dose);
+    if (medIdx >= 0 && treatedLevels[medIdx]) {
+      const dg = doseGroups.find((g) => g.dose_level === treatedLevels[medIdx].dose_level);
+      if (dg && dg.dose_value != null && dg.dose_value > 0) {
+        return `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim();
+      }
+    }
+    return williams.minimum_effective_dose;
+  }, [williams, doseGroups, finding.group_stats]);
+
+  // Concordance explanation
+  const concordanceNote = concordant
+    ? (jtSignificant
+      ? "Both the trend test (JT) and step-down test (Williams) identify a significant dose-related effect."
+      : "Neither test identifies a significant dose-related effect.")
+    : (jtSignificant
+      ? "The overall trend (JT) is significant, but Williams\u2019 step-down does not confirm an effect at any individual dose. May reflect variance heterogeneity or non-monotonic pattern."
+      : "Williams\u2019 step-down identifies effects at individual doses, but the overall trend (JT) is not significant. May indicate a threshold response below the trend test\u2019s sensitivity.");
+
   return (
     <div className="space-y-0.5 text-muted-foreground">
-      <div className="flex items-center justify-between">
-        <span>Jonckheere-Terpstra</span>
-        <span className="font-mono">
-          p = {finding.trend_p != null ? formatPValue(finding.trend_p) : "\u2014"}{jtSignificant ? " *" : ""}
-        </span>
-      </div>
-      <div className="flex items-center justify-between">
-        <span>Williams&apos; test</span>
-        <span className="font-mono">
-          {williams?.minimum_effective_dose
-            ? `MED: ${williams.minimum_effective_dose}`
-            : "No MED detected"}{williamsSignificant ? " *" : ""}
-        </span>
-      </div>
+      <table className="text-[10px]">
+        <tbody>
+          <tr>
+            <td className="pr-3 whitespace-nowrap" style={{ width: "1px" }}>Jonckheere-Terpstra</td>
+            <td className="font-mono whitespace-nowrap">
+              p = {finding.trend_p != null ? formatPValue(finding.trend_p) : "\u2014"}
+            </td>
+          </tr>
+          <tr>
+            <td className="pr-3 whitespace-nowrap" style={{ width: "1px" }}>Williams&apos; test</td>
+            <td className="font-mono whitespace-nowrap">
+              {medLabel
+                ? <span title="Minimum effective dose level — lowest dose significant in Williams' step-down.">MED: {medLabel}</span>
+                : "No MED detected"}
+            </td>
+          </tr>
+        </tbody>
+      </table>
       <div className="flex items-center gap-1.5 border-t border-border/30 pt-0.5">
         <span className={`inline-block h-1.5 w-1.5 rounded-full ${concordant ? "bg-emerald-500" : "bg-amber-500"}`} />
         <span className="font-medium text-foreground">{concordant ? "Concordant" : "Discordant"}</span>
-        {!concordant && trendConcordance.rationale && (
-          <span className="text-muted-foreground text-[9px]">
-            {jtSignificant ? "JT significant but Williams' not" : "Williams' significant but JT not"}
-          </span>
-        )}
       </div>
+      <div className="text-[9px]">{concordanceNote}</div>
       {williams && williams.step_down_results.length > 0 && (
         <div className="mt-1">
           <button
             className="text-[9px] text-blue-600 hover:underline"
             onClick={() => setShowStepDown((v) => !v)}
           >
-            {showStepDown ? "Hide" : "Show"} step-down detail
+            {showStepDown ? "Hide" : "Show"} Williams&apos; step-down detail
           </button>
           {showStepDown && <WilliamsStepDownTable results={williams.step_down_results} finding={finding} doseGroups={doseGroups} />}
         </div>
