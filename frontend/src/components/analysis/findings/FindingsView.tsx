@@ -2,17 +2,10 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Info, EyeOff } from "lucide-react";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
-import { useTumorSummary } from "@/hooks/useTumorSummary";
-import { useStudyContext } from "@/hooks/useStudyContext";
-import { useStudyMetadata } from "@/hooks/useStudyMetadata";
-import { usePkIntegration } from "@/hooks/usePkIntegration";
-import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { FilterBar } from "@/components/ui/FilterBar";
-import { StudyBanner } from "@/components/analysis/StudyBanner";
-import { MortalityBanner } from "@/components/analysis/MortalityBanner";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
@@ -88,20 +81,8 @@ export function FindingsView() {
   // Mortality data
   const { data: mortalityData } = useStudyMortality(studyId);
 
-  // Tumor summary for StudyBanner
-  const { data: tumorSummary } = useTumorSummary(studyId);
-
-  // Cross-animal flags for StudyBanner
-  const { data: crossAnimalFlags } = useCrossAnimalFlags(studyId);
-
-  // Study context for StudyBanner
-  const { data: studyContext } = useStudyContext(studyId);
-  const { data: studyMeta } = useStudyMetadata(studyId ?? "");
-  const { data: pkData } = usePkIntegration(studyId);
-  const doseGroupCount = studyMeta?.dose_groups?.length ?? 0;
-
   // Scheduled-only exclusion context
-  const { setEarlyDeathSubjects, useScheduledOnly: isScheduledOnly } = useScheduledOnly();
+  const { setEarlyDeathSubjects, useScheduledOnly: isScheduledOnly, setUseScheduledOnly } = useScheduledOnly();
 
   // Rail-provided state (single source of truth for filtering)
   const [visibleLabels, setVisibleLabels] = useState<Set<string> | null>(null);
@@ -402,13 +383,25 @@ export function FindingsView() {
   return (
     <FindingsAnalyticsProvider value={analytics}>
     <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
-      {/* Study context banner */}
-      {studyContext && <StudyBanner studyContext={studyContext} doseGroupCount={doseGroupCount} tumorCount={tumorSummary?.total_tumor_animals} tkSubjectCount={pkData?.tk_design?.n_tk_subjects} mortality={mortalityData} crossAnimalFlags={crossAnimalFlags} />}
-      {/* Mortality banner */}
-      {mortalityData && <MortalityBanner mortality={mortalityData} />}
       {/* Header */}
       <FilterBar>
         <span className="text-xs font-semibold">Findings</span>
+        {mortalityData?.has_mortality && mortalityData.early_death_details.length > 0 && (
+          <button
+            type="button"
+            className="flex items-center gap-1 rounded border border-border/60 bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted/60"
+            onClick={() => setUseScheduledOnly(!isScheduledOnly)}
+            title={isScheduledOnly ? "Click to include early-death subjects in terminal stats" : "Click to exclude early-death subjects from terminal stats"}
+          >
+            <span>
+              {mortalityData.total_deaths}TR death{mortalityData.total_deaths !== 1 ? "s" : ""}
+              {mortalityData.mortality_loael_label ? ` at ${mortalityData.mortality_loael_label}` : ""}
+            </span>
+            {isScheduledOnly && (
+              <span className="text-muted-foreground/60">(excl. from term.stats)</span>
+            )}
+          </button>
+        )}
         {data && (
           <span className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
             <span>{data.summary.total_adverse} adverse</span>
