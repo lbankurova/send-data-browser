@@ -46,7 +46,7 @@ Uses the shared `FilterBar` container component: `flex items-center gap-2 border
 
 The FilterBar contains (left to right):
 - "Findings" label: `text-xs font-semibold`
-- **Mortality toggle** (conditional — when `mortalityData.has_mortality && early_death_details.length > 0`): clickable button (`rounded border border-border/60 bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted/60`). Label: `"{N}TR death{s} at {mortality_loael_label}"`. When scheduled-only is active, appends `"(excl. from term.stats)"` in `text-muted-foreground/60`. Click toggles `setUseScheduledOnly(!isScheduledOnly)`.
+- **Mortality toggle** (conditional — when `mortalityData.has_mortality && early_death_details.length > 0`): clickable button (`rounded border border-border/60 bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted/60`). Label: `"{N}TR death{s} at {formatDoseShortLabel(mortality_loael_label)}"` (e.g., "1TR death at 200 mg/kg"). Status suffix always shown in `text-muted-foreground/60`: `"(excl. from term.stats)"` when excluded, `"(in term.stats)"` when included. Click toggles `setUseScheduledOnly(!isScheduledOnly)`.
 - Summary badges (right-aligned via `ml-auto`): `flex items-center gap-2 text-[10px] text-muted-foreground` — "{N} adverse", "{N} warning", "{N} normal"
 
 **Note:** The `FindingsFilterBar` component exists separately but is **not** used in the main FindingsView. Filtering is handled through the FindingsRail (left panel) which manages endpoint grouping, scoping, and exclusion. The center panel FilterBar displays summary counts and the mortality exclusion toggle.
