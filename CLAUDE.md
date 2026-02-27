@@ -70,6 +70,8 @@ These rules are non-negotiable. No agent may override, reinterpret, or skip them
 
 7. **Consult TOPIC hubs before touching a subsystem.** Before implementing features, fixes, or refactors that touch a subsystem covered by a TOPIC hub (`docs/incoming/arch-overhaul/TOPIC-*.md`), read the hub first. TOPIC hubs document: what shipped, what intentionally didn't ship (and why), documented departures from specs, and the full file map. Skipping this step risks re-implementing existing logic, undoing deliberate decisions, or conflicting with documented departures. If no TOPIC hub exists for the subsystem, this rule does not apply.
 
+8. **Circuit breaker on repeated failures.** If a command, build, test, or process fails 5 times consecutively with the same root cause, stop retrying. Report the failure clearly (what failed, what was tried, the error output) and ask the user to resolve it manually or provide guidance. Do not loop indefinitely on a broken step.
+
 ## Agent Commit Protocol
 
 Before committing, run every item in `docs/checklists/COMMIT-CHECKLIST.md`. Every item must pass.

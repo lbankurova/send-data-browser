@@ -73,6 +73,9 @@
 | `incoming/arch-overhaul/TOPIC-syndrome-engine.md` | Cross-domain syndrome detection, interpretation layer, ECETOC, translational confidence, OPI | 2026-02-26 | Current |
 | `incoming/arch-overhaul/TOPIC-data-pipeline.md` | Generator orchestration, shared enrichment, 12 domain modules, frontend transform chain | 2026-02-26 | Current |
 | `incoming/arch-overhaul/TOPIC-histopathology.md` | Histopathology view, 14 enhancements (3 phases), severity matrix, recovery classification, mock HCD, peer review | 2026-02-26 | Current |
+| `incoming/arch-overhaul/TOPIC-recovery-phase-detection.md` | Phase detection waterfall, treatment-period pooling, TK/satellite exclusion, recovery assessment engine, override mechanism | 2026-02-27 | Current |
+| `incoming/arch-overhaul/TOPIC-noael-determination.md` | NOAEL view (5 tabs), signal analysis, protective classification, narrative, PK integration, safety margins | 2026-02-27 | Current |
+| `incoming/arch-overhaul/TOPIC-study-intelligence.md` | Study Summary view, App Landing Page, study discovery, species/vehicle context, provenance, timeline, portfolio | 2026-02-27 | Current |
 
 ## Incoming Feature Specs
 

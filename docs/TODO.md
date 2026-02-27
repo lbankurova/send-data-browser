@@ -232,7 +232,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## TOPIC Hub Documentation (6 open)
+## TOPIC Hub Documentation (3 open)
 
 > Subsystems that need retrospective TOPIC hub docs (`docs/incoming/arch-overhaul/TOPIC-*.md`). Existing hubs: data-pipeline, organ-measurements, syndrome-engine. CLAUDE.md rule 7 requires agents to consult hubs before touching covered subsystems.
 
@@ -242,10 +242,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open
 - **Owner hint:** docs-agent
 
-### DOC-02: TOPIC hub — Recovery & Phase Detection
-- **Subsystem:** `dose_groups.py` (detection), `phase_filter.py`, `recovery-assessment.ts`, `recovery-classification.ts`, `RecoveryPane.tsx`, 12 domain modules (pooling integration)
-- **Why:** Pooling asymmetry (in-life domains only, terminal domains skip). TK satellite detection coupled in `dose_groups.py`. Detection waterfall (TA→TE→SE→SETCD/ARMCD) is fragile across studies. 3 specs drove implementation. ~1,800 LOC core + integration across all domain modules.
-- **Status:** Open
+### ~~DOC-02: TOPIC hub — Recovery & Phase Detection~~
+- ~~**Subsystem:** `dose_groups.py` (detection), `phase_filter.py`, `recovery-assessment.ts`, `recovery-classification.ts`, `RecoveryPane.tsx`, 12 domain modules (pooling integration)~~
+- ~~**Why:** Pooling asymmetry (in-life domains only, terminal domains skip). TK satellite detection coupled in `dose_groups.py`. Detection waterfall (TA→TE→SE→SETCD/ARMCD) is fragile across studies. 3 specs drove implementation. ~1,800 LOC core + integration across all domain modules.~~
+- **Status:** ~~Resolved~~ — `TOPIC-recovery-phase-detection.md` created
 - **Owner hint:** docs-agent
 
 ### DOC-03: TOPIC hub — Subject Profile & Cross-Animal Flags
@@ -254,16 +254,16 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open
 - **Owner hint:** docs-agent
 
-### DOC-04: TOPIC hub — NOAEL Determination
-- **Subsystem:** `NoaelDeterminationView.tsx` (2,003L), `NoaelContextPanel.tsx`, `noael-narrative.ts`, `protective-signal.ts`, signal matrix, adversity matrix
-- **Why:** ECI (5 mechanisms) entangled with TOPIC-organ-measurements. B-7 secondary-to-BW assessment conditional on organ type. Weighted NOAEL derivation couples normalization confidence to study-level NOAEL. Narrative is deliberately simple — agent might try to "improve" it.
-- **Status:** Open
+### ~~DOC-04: TOPIC hub — NOAEL Determination~~
+- ~~**Subsystem:** `NoaelDeterminationView.tsx` (2,003L), `NoaelContextPanel.tsx`, `noael-narrative.ts`, `protective-signal.ts`, signal matrix, adversity matrix~~
+- ~~**Why:** ECI (5 mechanisms) entangled with TOPIC-organ-measurements. B-7 secondary-to-BW assessment conditional on organ type. Weighted NOAEL derivation couples normalization confidence to study-level NOAEL. Narrative is deliberately simple — agent might try to "improve" it.~~
+- **Status:** ~~Resolved~~ — `TOPIC-noael-determination.md` created
 - **Owner hint:** docs-agent
 
-### DOC-05: TOPIC hub — Study Intelligence & Metadata
-- **Subsystem:** `StudySummaryView.tsx` (1,205L), `AppLandingPage.tsx`, `study_discovery.py`, species/vehicle profiles, subject context, provenance messages
-- **Why:** Species/vehicle profiles are stubs (mock data). Study timeline swimlane spec alignment unclear. 5 specs drove implementation. Treatment arms display is complex (multiple arm types, recovery vs. main). ~2,700 LOC.
-- **Status:** Open
+### ~~DOC-05: TOPIC hub — Study Intelligence & Metadata~~
+- ~~**Subsystem:** `StudySummaryView.tsx` (1,205L), `AppLandingPage.tsx`, `study_discovery.py`, species/vehicle profiles, subject context, provenance messages~~
+- ~~**Why:** Species/vehicle profiles are stubs (mock data). Study timeline swimlane spec alignment unclear. 5 specs drove implementation. Treatment arms display is complex (multiple arm types, recovery vs. main). ~2,700 LOC.~~
+- **Status:** ~~Resolved~~ — `TOPIC-study-intelligence.md` created
 - **Owner hint:** docs-agent
 
 ### DOC-06: TOPIC hub — Dose-Response View
