@@ -348,19 +348,19 @@
           }
         ],
         "animal_ids": [
-          "PC201708-4005",
-          "PC201708-4007"
+          "PC201708-4007",
+          "PC201708-4005"
         ],
         "animal_details": [
           {
-            "id": "PC201708-4005",
+            "id": "PC201708-4007",
             "sex": "M",
             "arm": "terminal",
             "death_day": null,
             "scheduled": true
           },
           {
-            "id": "PC201708-4007",
+            "id": "PC201708-4005",
             "sex": "M",
             "arm": "terminal",
             "death_day": null,
