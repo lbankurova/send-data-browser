@@ -33,7 +33,8 @@ The view itself uses a flex column layout (`flex h-full flex-col overflow-hidden
 +-----------------------------------------------------------+
 |  [Findings]                        N adverse N warning N normal |  <-- FilterBar
 +-----------------------------------------------------------+
-|  Quadrant scatter (ViewSection, resizable)                 |
+|  Section title · (count) · filters · ★ selected  | chips ℹ |  <-- ViewSection header
+|  Quadrant scatter (resizable)                              |
 |  (FindingsQuadrantScatter)                                 |
 +-----------------------------------------------------------+
 |  FindingsTable (TanStack React Table)                      |
@@ -73,7 +74,49 @@ The FilterBar contains:
 
 Rendered inside `ViewSection mode="fixed"` when endpoint summaries are available. Height managed by `useAutoFitSections` with "findings" section key (default ~40% viewport height, 80-2000px).
 
-**Component:** `FindingsQuadrantScatter` — interactive scatter plot of endpoints by statistical significance (p-value) vs effect size. Props include: endpoints, selectedEndpoint, organCoherence, syndromes, labMatches.
+### Section Title Bar
+
+The `ViewSection` header displays a dynamic title (left) and action area (right):
+
+**Title (left):** Composed in a `flex items-baseline gap-1.5` span:
+- **Scope label** — "All endpoints" (no scope), "{organName} endpoints" (organ scope), syndrome name (syndrome scope), or endpoint label (endpoint scope).
+- **Count** — `(plottable/total)` when they differ, `(plottable)` when equal. Styled `text-muted-foreground/50`.
+- **Filter labels** — active filter descriptions separated by ` · ` dividers. Styled `text-muted-foreground`.
+- **Selected point stats** (when a scatter dot is selected) — `★ {label} · {symbol}={effectSize} · p={pValue} ({testName})`. Label in `font-medium`, stats in `font-mono`, test name (Dunnett's for LB/BW/OM/FW, Fisher's otherwise) in `text-muted-foreground/60`.
+
+Metadata text uses `text-[10px] normal-case tracking-normal font-normal text-foreground`.
+
+**Action area (right):** Contains excluded endpoint chips and info tooltip (see below).
+
+### Excluded Endpoint Chips
+
+When endpoints are excluded via Ctrl+click on scatter dots, chips appear in the ViewSection `headerRight`:
+- Each chip: `inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground/70` with truncated label (`max-w-[80px]`) and `EyeOff` restore icon (`h-2.5 w-2.5 cursor-pointer hover:text-foreground`).
+- **Overflow:** When > 3 excluded, show first 2 labels + a "+{N} more" chip. The overflow chip's EyeOff clears all exclusions; individual chip EyeOff restores that single endpoint.
+
+### Info Tooltip
+
+An `Info` icon (`h-3 w-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground`) in the headerRight. Hover-with-delay (150ms hide delay) shows a tooltip (`absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover px-3 py-2 shadow-md`) explaining:
+- Dot semantics ("Each dot is one endpoint")
+- Axes (right = larger effect, up = more significant)
+- Reference lines (vertical at |effect| = 0.8, horizontal at p = 0.05)
+- Dot color (gray = higher doses only, warm rose = NOAEL below lowest tested dose)
+- Guidance ("Upper-right quadrant = investigate first")
+
+### Scatter Chart
+
+**Component:** `FindingsQuadrantScatter` — interactive scatter plot of endpoints by statistical significance (p-value) vs effect size. Props include: endpoints, selectedEndpoint, organCoherence, syndromes, labMatches, scopeFilter, effectSizeSymbol (default `"g"`, dynamically set from active effect size method).
+
+**Legend** (conditional — entries only appear when corresponding data exists):
+
+| Symbol | Label | Color | Condition |
+|--------|-------|-------|-----------|
+| `•` (bullet) | warning/normal | `#9CA3AF` (gray) | any non-adverse, non-clinical endpoint |
+| `●` (circle) | adverse | `#9CA3AF` (gray) | any adverse-severity endpoint |
+| `◆` (diamond) | clinical S2+ | `#6B7280` (darker gray) | clinicalSeverity truthy |
+| `●` (circle) | low NOAEL | `rgba(248,113,113,0.7)` (warm rose) | noaelTier = "below-lowest" or "at-lowest" |
+
+Legend rendered as `flex items-center gap-2` with `text-[8px] text-muted-foreground` entries.
 
 **Interactions:**
 - Click dot: selects endpoint (fires `onSelect`)
@@ -105,10 +148,10 @@ TanStack React Table (`useReactTable`) with client-side sorting and column resiz
 
 | Column | Header | Alignment | Cell Rendering |
 |--------|--------|-----------|----------------|
-| domain | Domain | Left | `DomainLabel` component: colored text only, `text-[9px] font-semibold` with domain-specific text color from `getDomainBadgeColor().text`. No background, no border. |
+| domain | Domain | Left | `DomainLabel` component: neutral monospace text, `font-mono text-[9px] font-semibold text-muted-foreground`. No color coding, no background, no border. Per CLAUDE.md hard rule: "Domain labels — neutral text only." |
 | finding | Finding | Left (absorber) | `overflow-hidden text-ellipsis whitespace-nowrap` div with `title` tooltip for full name. If specimen exists: "{specimen}: {finding}" with specimen in `text-muted-foreground` |
 | sex | Sex | Left | Plain text |
-| day | Day | Left | `text-muted-foreground`, em dash if null |
+| day | Day | Left | `text-muted-foreground`, em dash if null. **CL day mode toggle:** when CL findings exist, header shows a `▾` indicator and clicking it opens a dropdown to switch between "Most frequent" (peak prevalence mode, default) and "First observed" (onset day). Header text changes to "Day (onset)" in onset mode. Dropdown: `fixed z-50 min-w-[190px] rounded border bg-popover py-0.5 shadow-md` with checkmark on active item and "Applies to CL rows only" footer. Cell value: CL rows use `day_first` in onset mode, `day` otherwise. |
 
 ### Dynamic Dose-Group Columns (Center)
 
@@ -127,27 +170,18 @@ One column per dose group (from `data.dose_groups` array), rendered dynamically.
 | trend_p | Trend | Left | `ev font-mono text-muted-foreground` -- formatted via `formatPValue()`. Interaction-driven color via `ev` CSS class. |
 | direction | Dir | Left | Direction-specific color via `getDirectionColor()` + symbol via `getDirectionSymbol()` (see below) |
 | max_effect_size | Effect | Left | `ev font-mono text-muted-foreground` -- formatted via `formatEffectSize()`. Interaction-driven color via `ev` CSS class. |
-| severity | Severity | Left | Left-border badge: `inline-block border-l-2 pl-1.5 py-0.5 font-semibold text-gray-600` with colored left border from `getSeverityDotColor()` via inline `style` |
+| severity | Severity | Left | Left-border badge: `inline-block pl-1.5 py-0.5` with colored left border from `getSeverityDotColor()` via inline `style`. Border width and font weight vary by signal tier (see below). |
 
 **Note on p-value and effect-size columns:** Both p-value, trend, and effect-size cells use the `ev` CSS class for interaction-driven color: neutral `text-muted-foreground` at rest, `#DC2626` on row hover/selection. The `data-evidence=""` attribute is set on every `<td>`.
 
-**Note on severity badges:** The severity column uses a left-border badge with `getSeverityDotColor()` providing the `borderLeftColor` via inline style: adverse = `#dc2626`, warning = `#d97706`, normal = `#16a34a`. The text label is always gray (`text-gray-600`).
+**Note on severity badges:** The severity column uses a left-border badge with `getSeverityDotColor()` providing the `borderLeftColor` via inline style: adverse = `#dc2626`, warning = `#d97706`, normal = `#16a34a`. Border width and font weight scale with signal tier (`getSignalTier(signal)` from `findings-rail-engine.ts`):
 
-### Domain Label Colors
-
-The `DomainLabel` component renders text-only colored labels (no background) using `getDomainBadgeColor(domain).text`:
-
-| Domain | Text Color |
-|--------|-----------|
-| LB | `text-blue-700` |
-| BW | `text-emerald-700` |
-| OM | `text-purple-700` |
-| MI | `text-rose-700` |
-| MA | `text-orange-700` |
-| CL | `text-cyan-700` |
-| DS | `text-indigo-700` |
-| FW | `text-teal-700` |
-| Other | `text-gray-700` |
+| Condition | Signal | Border | Font |
+|-----------|--------|--------|------|
+| normal severity | any | `border-l` (1px) | `text-muted-foreground` |
+| tier 1 | < 4 | `border-l` (1px) | `text-gray-600` |
+| tier 2 | 4–7 | `border-l-2` (2px) | `font-medium text-gray-600` |
+| tier 3 | ≥ 8 | `border-l-4` (4px) | `font-semibold text-gray-600` |
 
 ### Direction Symbols and Colors
 
@@ -319,54 +353,69 @@ Shown when `selectedGroupType === "syndrome"`. Displays cross-domain syndrome in
 | Study selection | Shared via context | `SelectionContext` — synced on mount |
 | Table sorting | Session-persisted | `useSessionState<SortingState>("pcc.findings.sorting", [])` |
 | Column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {})` |
-| Findings data | Server | `useFindings(studyId, 1, 10000, ALL_FILTERS)` hook (React Query, 5 min stale) — fetches all findings with empty filters |
+| Findings + analytics | Server + derived | `useFindingsAnalyticsLocal(studyId)` — primary data hook. Wraps `useFindings(studyId, 1, 10000, ALL_FILTERS)` internally, then applies scheduled-only filter, recovery pooling filter, stat method overrides, and derives all analytics (see pipeline below). Returns `{ analytics, data, isLoading, error }`. |
 | Finding context | Server | `useFindingContext(studyId, findingId)` hook — loaded on selection |
 | Mortality data | Server | `useStudyMortality(studyId)` — early death subject data |
 | Tumor summary | Server | `useTumorSummary(studyId)` — tumor animal count |
 | Study context | Server | `useStudyContext(studyId)` — study metadata for banner |
-| Endpoint summaries | Derived | `deriveEndpointSummaries(findings)` — computed from raw findings data |
-| Cross-domain syndromes | Derived | `detectCrossDomainSyndromes(endpoints)` — XS01-XS09 |
-| Lab rule matches | Derived | `evaluateLabRules(endpoints)` — clinical catalog matches |
-| Signal scores | Derived | `withSignalScores(endpoints, ...)` — signal score computation |
-| Organ coherence | Derived | `deriveOrganCoherence(endpoints)` — for scatter coloring |
+| Scheduled-only mode | Shared | `useScheduledOnly()` — toggle in `MortalityBanner` excludes early-death treatment-group subjects from statistics. `useFindingsAnalyticsLocal` applies `applyScheduledFilter()` when active. |
+| Recovery pooling | Session-persisted | `useSessionState("pcc.{studyId}.recoveryPooling", "pool")` — "pool" (include recovery arms in treatment-period stats, default) or "separate" (exclude). Toggle in `StudyDetailsContextPanel` settings pane. `useFindingsAnalyticsLocal` applies `applyRecoveryPoolingFilter()` when "separate". |
 | Scatter section height | Local | `useAutoFitSections(containerRef, "findings", ...)` — resizable scatter panel |
 | Active endpoint | Local (via event bus) | `_findingsRailCallback` — endpoint selection from rail |
 | Excluded endpoints | Local (via event bus) | `_findingsExcludedCallback` — Ctrl+click exclusion |
-| Scheduled-only mode | Shared | `useScheduledOnly()` — toggles statistics to scheduled variants when early deaths present |
 | Collapse all | Local (context panel) | `useCollapseAll()` hook — provides expandGen/collapseGen counters |
 | Rail mode | Shared | `useRailModePreference("organ")` — set by wrapper |
-| Analytics | Derived (composite) | `FindingsAnalyticsProvider` — bundles endpoint summaries, syndromes, lab matches, signal scores for child components |
+| Analytics context | Derived (composite) | `FindingsAnalyticsProvider` — wraps entire view, makes analytics available via `useFindingsAnalytics()` context hook to all child components (scatter, table, rail, context panels) |
 
 ---
 
 ## Data Flow
 
 ```
-useFindings(studyId, 1, 10000, ALL_FILTERS)
-    --> { findings, dose_groups, summary, ... }
-                                  |
-                  deriveEndpointSummaries() → EndpointSummary[]
-                  detectCrossDomainSyndromes() → syndromes
-                  evaluateLabRules() → labMatches
-                  withSignalScores() → signal scores
-                                  |
-                    ┌──────────────┼──────────────┐
-                    │              │              │
-           FindingsQuadrant   FindingsTable   FindingsRail
-           Scatter (scatter)   (TanStack)     (left panel)
-                    │              │              │
-                    └──────┬───────┘              │
-                           │                      │
-                  FindingSelectionContext          │
-                    (endpoint or group)            │
-                           │                      │
-                  FindingsContextPanel             │
-                    /    |    |    \    \          │
-                Verdict Evid Dose Corr Related    │
-                           │                      │
-                  FindingsAnalyticsContext ────────┘
-                    (shared analytics data)
+useFindingsAnalyticsLocal(studyId)
+    │
+    ├── useFindings(studyId, 1, 10000, ALL_FILTERS) → raw findings
+    ├── useScheduledOnly() → filter early deaths
+    ├── useSessionState(recoveryPooling) → filter recovery arms
+    ├── useStatMethods() → effect size + multiplicity overrides
+    └── useOrganWeightNormalization() → OWN mode overrides
+                    │
+          Processing pipeline (in useMemo):
+          1. applyScheduledFilter()
+          2. applyRecoveryPoolingFilter()
+          3. applyEffectSizeMethod() + applyMultiplicityMethod()
+          4. mapFindingsToRows() + deriveEndpointSummaries()
+          5. computeEndpointNoaelMap()
+          6. attachEndpointConfidence()
+          7. deriveOrganCoherence()
+          8. detectCrossDomainSyndromes() (XS01-XS10)
+          9. evaluateLabRules()
+         10. withSignalScores()
+                    │
+          Returns: { analytics, data, isLoading, error }
+                    │
+    ┌── FindingsAnalyticsProvider (wraps entire view) ──┐
+    │                                                    │
+    │   ┌──────────────┼──────────────┐                  │
+    │   │              │              │                  │
+    │  FindingsQuadrant FindingsTable FindingsRail       │
+    │  Scatter          (TanStack)    (left panel)       │
+    │   │              │              │                  │
+    │   └──────┬───────┘              │                  │
+    │          │                      │                  │
+    │ FindingSelectionContext          │                  │
+    │   (endpoint or group)           │                  │
+    │          │                      │                  │
+    │ FindingsContextPanel            │                  │
+    │   /    |    |    \    \         │                  │
+    │ Verdict Evid Dose Corr Related  │                  │
+    │          │                      │                  │
+    │ useFindingsAnalytics() ─────────┘                  │
+    │   (context hook — reads from provider)             │
+    └────────────────────────────────────────────────────┘
 ```
+
+All child components access analytics (endpoints, syndromes, organ coherence, lab matches, signal scores, normalization contexts) via the `useFindingsAnalytics()` context hook rather than prop drilling.
 
 ---
 
