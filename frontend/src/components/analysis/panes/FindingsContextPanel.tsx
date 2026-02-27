@@ -24,6 +24,7 @@ import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DoseLabel } from "@/components/ui/DoseLabel";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/organ-weight-normalization";
@@ -104,9 +105,16 @@ function WilliamsStepDownTable({ results, finding, doseGroups }: {
 
 // ─── ANCOVA Effect Decomposition ──────────────────────────
 
-function ANCOVADecompositionPane({ finding }: { finding: UnifiedFinding }) {
+function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
   const ancova = finding.ancova;
   if (!ancova) return null;
+
+  const resolveDoseLabel = (level: number) => {
+    const dg = doseGroups?.find(g => g.dose_level === level);
+    return dg && dg.dose_value != null && dg.dose_value > 0
+      ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
+      : level === 0 ? "Control" : `Group ${level}`;
+  };
 
   const slopeHomogeneous = ancova.slope_homogeneity.homogeneous;
 
@@ -147,7 +155,9 @@ function ANCOVADecompositionPane({ finding }: { finding: UnifiedFinding }) {
         <tbody>
           {ancova.effect_decomposition.map((d) => (
             <tr key={d.group} className={d.direct_p < 0.05 ? "text-red-600" : ""}>
-              <td className="py-0.5">{d.group}</td>
+              <td className="py-0.5">
+                <DoseLabel level={d.group} label={resolveDoseLabel(d.group)} className="text-[10px]" />
+              </td>
               <td className="py-0.5 text-right font-mono">{d.total_effect.toFixed(3)}</td>
               <td className="py-0.5 text-right font-mono">{d.direct_effect.toFixed(3)}</td>
               <td className="py-0.5 text-right font-mono">{d.indirect_effect.toFixed(3)}</td>
@@ -163,10 +173,10 @@ function ANCOVADecompositionPane({ finding }: { finding: UnifiedFinding }) {
         <div className="mb-0.5 text-[9px] text-muted-foreground">Adjusted means (at mean BW = {ancova.covariate_mean.toFixed(1)})</div>
         <div className="flex flex-wrap gap-x-3 gap-y-0.5">
           {ancova.adjusted_means.map((m) => (
-            <span key={m.group} className="font-mono">
-              <span className="text-muted-foreground">{m.group}:</span>{" "}
-              {m.adjusted_mean.toFixed(2)}
-              <span className="text-muted-foreground"> (raw {m.raw_mean.toFixed(2)})</span>
+            <span key={m.group} className="inline-flex items-center gap-1 font-mono">
+              <DoseLabel level={m.group} label={resolveDoseLabel(m.group)} className="text-[10px]" />
+              <span>{m.adjusted_mean.toFixed(2)}</span>
+              <span className="text-muted-foreground">(raw {m.raw_mean.toFixed(2)})</span>
             </span>
           ))}
         </div>
@@ -1107,7 +1117,7 @@ export function FindingsContextPanel() {
         })()}
         {/* ANCOVA effect decomposition (OM domain, Phase 2) */}
         {selectedFinding.domain === "OM" && selectedFinding.ancova && (
-          <ANCOVADecompositionPane finding={selectedFinding} />
+          <ANCOVADecompositionPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
         )}
         {/* Decomposed confidence display (ECI — SPEC-ECI-AMD-002) */}
         {(() => {
@@ -1161,7 +1171,7 @@ export function FindingsContextPanel() {
       {hasRecovery && selectedFinding && (
         <div ref={recoveryPaneRef}>
           <CollapsiblePane title="Recovery" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-            <RecoveryPane finding={selectedFinding} />
+            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
           </CollapsiblePane>
         </div>
       )}

@@ -20,7 +20,9 @@ import type {
   RecoveryClassification,
   RecoveryContext,
 } from "@/lib/recovery-classification";
-import type { UnifiedFinding } from "@/types/analysis";
+import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
+import { DoseLabel } from "@/components/ui/DoseLabel";
+import { formatDoseShortLabel } from "@/lib/severity-colors";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Verdict badge colors ─────────────────────────────────
@@ -121,7 +123,14 @@ function HistopathRecoverySection({
         <div className="space-y-0.5">
           {assessment.assessments.map((da) => (
             <div key={da.doseLevel} className="flex items-center gap-2 text-[10px]">
-              <span className="w-12 text-muted-foreground">{da.doseGroupLabel.split(",")[0]}</span>
+              <span className="w-20 shrink-0">
+                <DoseLabel
+                  level={da.doseLevel}
+                  label={formatDoseShortLabel(da.doseGroupLabel)}
+                  tooltip={da.doseGroupLabel}
+                  className="text-[10px]"
+                />
+              </span>
               <VerdictBadge verdict={da.verdict} />
               <span className="font-mono text-muted-foreground">
                 {da.main.affected}/{da.main.examined} → {da.recovery.affected}/{da.recovery.examined}
@@ -144,8 +153,10 @@ function HistopathRecoverySection({
 
 function ContinuousRecoverySection({
   finding,
+  doseGroups,
 }: {
   finding: UnifiedFinding;
+  doseGroups?: DoseGroup[];
 }) {
   const { studyId } = useParams<{ studyId: string }>();
   const { data: recovery } = useRecoveryComparison(studyId);
@@ -187,14 +198,21 @@ function ContinuousRecoverySection({
       {/* Per-dose comparison table */}
       <div className="space-y-0.5">
         <div className="flex gap-2 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-          <span className="w-12">Dose</span>
+          <span className="w-20">Group</span>
           <span className="w-16 text-right">Recovery</span>
           <span className="w-16 text-right">Terminal</span>
           <span className="w-14 text-right">p-value</span>
         </div>
-        {rows.map((r) => (
+        {rows.map((r) => {
+          const dg = doseGroups?.find(g => g.dose_level === r.dose_level);
+          const doseLabel = dg && dg.dose_value != null && dg.dose_value > 0
+            ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
+            : r.dose_level === 0 ? "Control" : `Dose ${r.dose_level}`;
+          return (
           <div key={`${r.dose_level}-${r.sex}`} className="flex gap-2 text-[10px]">
-            <span className="w-12 text-muted-foreground">Dose {r.dose_level}</span>
+            <span className="w-20 shrink-0">
+              <DoseLabel level={r.dose_level} label={doseLabel} className="text-[10px]" />
+            </span>
             <span className="w-16 text-right font-mono">
               {r.effect_size != null ? (r.effect_size > 0 ? "+" : "") + r.effect_size.toFixed(2) + "g" : "\u2014"}
             </span>
@@ -205,7 +223,8 @@ function ContinuousRecoverySection({
               {r.p_value != null ? r.p_value.toFixed(3) : "\u2014"}
             </span>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Interpretation */}
@@ -312,9 +331,10 @@ function buildClassificationContext(
 
 interface RecoveryPaneProps {
   finding: UnifiedFinding;
+  doseGroups?: DoseGroup[];
 }
 
-export function RecoveryPane({ finding }: RecoveryPaneProps) {
+export function RecoveryPane({ finding, doseGroups }: RecoveryPaneProps) {
   const isHistopath = finding.domain === "MI" || finding.domain === "MA";
   const specimen = finding.specimen;
 
@@ -324,7 +344,7 @@ export function RecoveryPane({ finding }: RecoveryPaneProps) {
 
   // Continuous domains (LB, BW, etc.)
   if (finding.data_type === "continuous") {
-    return <ContinuousRecoverySection finding={finding} />;
+    return <ContinuousRecoverySection finding={finding} doseGroups={doseGroups} />;
   }
 
   return (
