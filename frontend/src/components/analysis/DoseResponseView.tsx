@@ -532,12 +532,11 @@ export function DoseResponseView() {
       }
     }
     // Otherwise auto-select top endpoint, scoped to organ if selected
-    const summaries = deriveEndpointSummaries(drData);
     const organFilter = studySelection.organSystem;
     const filtered = organFilter
-      ? summaries.filter((s) => s.organ_system === organFilter)
-      : summaries;
-    const top = filtered[0] ?? summaries[0];
+      ? endpointSummaries.filter((s) => s.organ_system === organFilter)
+      : endpointSummaries;
+    const top = filtered[0] ?? endpointSummaries[0];
     if (top) {
       selectEndpoint(top.endpoint_label);
     }
@@ -586,8 +585,7 @@ export function DoseResponseView() {
         selectEndpoint(state.endpoint_label);
       } else if (state.organ_system) {
         // Select first endpoint in that organ
-        const summaries = deriveEndpointSummaries(drData);
-        const first = summaries.find((s) => s.organ_system === state.organ_system);
+        const first = endpointSummaries.find((s) => s.organ_system === state.organ_system);
         if (first) {
           selectEndpoint(first.endpoint_label);
         }
