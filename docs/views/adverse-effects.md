@@ -27,7 +27,7 @@ The view itself uses a flex column layout (`flex h-full flex-col overflow-hidden
 
 ```
 +-----------------------------------------------------------+
-|  [Findings] N adv N warn N norm  |1TR death at 200mg/kg (excl.) |  <-- FilterBar
+|  [Findings] N adv  N warn  N norm   1TR death at 200mg/kg (excl.) |  <-- FilterBar
 +-----------------------------------------------------------+
 |  Section title · (count) · filters · ★ selected  | chips ℹ |  <-- ViewSection header
 |  Quadrant scatter (resizable)                              |
@@ -46,8 +46,8 @@ Uses the shared `FilterBar` container component: `flex items-center gap-2 border
 
 The FilterBar contains (left to right):
 - "Findings" label: `text-xs font-semibold`
-- **Summary counts:** `flex items-center gap-2 text-[10px] text-muted-foreground` — "{N} adverse", "{N} warning", "{N} normal"
-- **Mortality toggle** (conditional — when `mortalityData.has_mortality && early_death_details.length > 0`): clickable button (`ml-3 text-[10px] text-muted-foreground hover:text-foreground`). Red left border accent (`border-l-2 pl-1.5 py-0.5`, `borderLeftColor: #dc2626`). Label: `"{N}TR death{s} at {formatDoseShortLabel(mortality_loael_label)}"` (e.g., "1TR death at 200 mg/kg"). Status suffix in `text-muted-foreground/60`: `"(excl. from term.stats)"` when excluded, `"(in term.stats)"` when included. Click toggles `setUseScheduledOnly(!isScheduledOnly)`.
+- **Summary counts:** `flex items-center gap-2 text-[10px] text-muted-foreground` — adverse count is `font-semibold` with red dashed underline (`underline decoration-dashed decoration-2 underline-offset-2`, `textDecorationColor: #dc2626`); warning and normal counts are plain text.
+- **Mortality toggle** (conditional — when `mortalityData.has_mortality && early_death_details.length > 0`): clickable button (`ml-3 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground`). Label: `"{N}TR death{s} at {formatDoseShortLabel(mortality_loael_label)}"` (e.g., "1TR death at 200 mg/kg") — `font-semibold` with red dashed underline (same styling as adverse count). Status suffix in `text-muted-foreground/60`: `"(excl. from term.stats)"` when excluded, `"(in term.stats)"` when included. Click toggles `setUseScheduledOnly(!isScheduledOnly)`.
 
 **Note:** The `FindingsFilterBar` component exists separately but is **not** used in the main FindingsView. Filtering is handled through the FindingsRail (left panel) which manages endpoint grouping, scoping, and exclusion. The center panel FilterBar displays summary counts and the mortality exclusion toggle.
 
