@@ -71,6 +71,7 @@
 |-------|-----------|----------------|--------|
 | `incoming/arch-overhaul/TOPIC-organ-measurements.md` | Organ weight normalization, ANCOVA, Williams', ECI, NOAEL weighting | 2026-02-26 | Current |
 | `incoming/arch-overhaul/TOPIC-syndrome-engine.md` | Cross-domain syndrome detection, interpretation layer, ECETOC, translational confidence, OPI | 2026-02-26 | Current |
+| `incoming/arch-overhaul/TOPIC-data-pipeline.md` | Generator orchestration, shared enrichment, 12 domain modules, frontend transform chain | 2026-02-26 | Current |
 
 ## Incoming Feature Specs
 
