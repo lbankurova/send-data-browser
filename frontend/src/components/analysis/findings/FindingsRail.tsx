@@ -804,7 +804,7 @@ function RailFiltersSection({
 
 /** Highest normalization tier across dose groups for organs in this card.
  *  Matches OM endpoint specimens against NormalizationContext.organ (both SEND specimen names). */
-function computeOrganNormSummary(
+export function computeOrganNormSummary(
   endpoints: EndpointWithSignal[],
   contexts: NormalizationContext[],
 ): { tier: number; mode: string; modeShort: string } | null {
