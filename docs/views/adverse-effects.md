@@ -110,7 +110,7 @@ Legend rendered as `flex items-center gap-2` inside `px-2 py-0.5` header. Each e
 
 **Dot rendering** (`buildFindingsQuadrantOption` in `findings-charts.ts`):
 
-*Size:* uniform r=5 for all dots; selected gets r=10. Emphasis (hover): 7.
+*Size:* non-adverse r=5, adverse r=7, selected r=10. Emphasis (hover): 7.
 
 *Shape:* diamond for clinical S2+, circle for everything else.
 
@@ -123,7 +123,7 @@ Legend rendered as `flex items-center gap-2` inside `px-2 py-0.5` header. Each e
 - **Clinical** (no NOAEL override): `#6B7280`
 - **Default**: `#9CA3AF`
 
-*Opacity:* selected 1.0, contributing 0.8, clinical 0.75, adverse 0.65, default 0.5, out-of-scope 0.15.
+*Opacity:* uniform 0.7 at rest, selected 1.0, out-of-scope 0.15.
 
 *Border* (non-adverse dots): selected → `#1F2937` w2, supporting → `#9CA3AF` w1, contributing (non-clinical) → `#9CA3AF` w1, clinical → `#6B7280` w1, early-death exclusion → `#9CA3AF` w1 dashed, default → transparent.
 

@@ -159,8 +159,8 @@ export function buildFindingsQuadrantOption(
       pt.domain !== scopeFilter &&
       (pt as QuadrantPoint).endpoint_label !== scopeFilter;
 
-    // Symbol size: uniform r=5, only selected gets r=10
-    const symbolSize = isSelected ? 10 : 5;
+    // Symbol size: adverse gets a bump, selected is largest
+    const symbolSize = isSelected ? 10 : isAdverse ? 7 : 5;
 
     // Symbol shape: clinical S2+ → diamond, everything else → circle
     const symbol = isClinical ? "diamond" : "circle";
@@ -171,8 +171,8 @@ export function buildFindingsQuadrantOption(
     const isContributing = nw === 0.7;
     const isSupporting = nw === 0.3;
 
-    // Opacity
-    let opacity = isSelected ? 1 : isContributing ? 0.8 : isClinical ? 0.75 : isAdverse ? 0.65 : 0.5;
+    // Opacity: uniform 0.7 at rest, selected 1, out-of-scope dimmed
+    let opacity = isSelected ? 1 : 0.7;
     if (isOutOfScope) opacity = 0.15;
 
     // Fill color: NOAEL weight channel (determining=rose, contributing=gray, supporting=ghost)
