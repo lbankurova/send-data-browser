@@ -133,28 +133,27 @@ export function FindingsQuadrantScatter({
     }
   }, [selectedPt?.endpoint_label, selectedPt?.x, selectedPt?.rawP, onSelectedPointChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Legend entries — mirrors the rendering priority cascade in buildFindingsQuadrantOption.
-  // Color encodes NOAEL role (determining/supporting/low); size encodes severity; shape encodes clinical.
+  // Legend: three independent encoding channels.
+  //   Color  → NOAEL contribution (determining=rose, contributing=gray, supporting=outline)
+  //   Shape  → clinical S2+ = diamond, everything else = circle
+  //   Size   → adverse = large, warning/normal = small
   const legendEntries = useMemo(() => {
     const entries: { symbol: string; label: string; color?: string }[] = [];
-    // Color: NOAEL determining → warm rose filled
-    if (points.some((p) => p.noaelWeight === 1.0))
-      entries.push({ symbol: "\u25CF", label: "determining", color: "rgba(248,113,113,0.7)" });
-    // Color: NOAEL supporting → hollow outline
-    if (points.some((p) => p.noaelWeight === 0.3))
-      entries.push({ symbol: "\u25CB", label: "supporting" });
-    // Color: low NOAEL without ECI weight → warm rose
-    if (points.some((p) => (p.noaelTier === "below-lowest" || p.noaelTier === "at-lowest") && p.noaelWeight == null))
-      entries.push({ symbol: "\u25CF", label: "low NOAEL", color: "rgba(248,113,113,0.7)" });
-    // Shape: diamond = clinical S2+
-    if (points.some((p) => p.clinicalSeverity))
-      entries.push({ symbol: "\u25C6", label: "clinical S2+", color: "#6B7280" });
-    // Size: small dot = warning/normal, larger dot = adverse
+    // Size
+    if (points.some((p) => p.worstSeverity === "adverse"))
+      entries.push({ symbol: "\u25CF", label: "adverse" });
     if (points.some((p) => p.worstSeverity !== "adverse" && !p.clinicalSeverity))
       entries.push({ symbol: "\u2022", label: "normal" });
-    if (points.some((p) => p.worstSeverity === "adverse" && !p.clinicalSeverity && p.noaelWeight == null &&
-        p.noaelTier !== "below-lowest" && p.noaelTier !== "at-lowest"))
-      entries.push({ symbol: "\u25CF", label: "adverse" });
+    // Shape
+    if (points.some((p) => p.clinicalSeverity))
+      entries.push({ symbol: "\u25C6", label: "clinical S2+", color: "#6B7280" });
+    // Color: NOAEL contribution
+    if (points.some((p) => p.noaelWeight === 1.0))
+      entries.push({ symbol: "\u25CF", label: "determining", color: "rgba(248,113,113,0.7)" });
+    if (points.some((p) => p.noaelWeight === 0.7))
+      entries.push({ symbol: "\u25CF", label: "contributing" });
+    if (points.some((p) => p.noaelWeight === 0.3))
+      entries.push({ symbol: "\u25CB", label: "supporting" });
     return entries;
   }, [points]);
 
