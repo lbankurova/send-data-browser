@@ -110,7 +110,7 @@ Legend rendered as `flex items-center gap-2` inside `px-2 py-0.5` header. Each e
 
 **Dot rendering** (`buildFindingsQuadrantOption` in `findings-charts.ts`):
 
-*Size:* non-adverse r=5, adverse r=7, selected r=10. Emphasis (hover): 7.
+*Size:* uniform r=5; worst combination (adverse + clinical S2+ + NOAEL determining) r=7; selected r=10. Emphasis (hover): 7.
 
 *Shape:* diamond for clinical S2+, circle for everything else.
 

@@ -159,8 +159,9 @@ export function buildFindingsQuadrantOption(
       pt.domain !== scopeFilter &&
       (pt as QuadrantPoint).endpoint_label !== scopeFilter;
 
-    // Symbol size: adverse gets a bump, selected is largest
-    const symbolSize = isSelected ? 10 : isAdverse ? 7 : 5;
+    // Symbol size: only the worst combination (clinical + adverse + determining) gets a bump
+    const isWorstCombo = isAdverse && isClinical && pt.noaelWeight === 1.0;
+    const symbolSize = isSelected ? 10 : isWorstCombo ? 7 : 5;
 
     // Symbol shape: clinical S2+ → diamond, everything else → circle
     const symbol = isClinical ? "diamond" : "circle";
