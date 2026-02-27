@@ -30,13 +30,13 @@
 | Bug | 1 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
-| Missing feature | 3 | 5 | Spec'd but not implemented |
+| Missing feature | 4 | 5 | Spec'd but not implemented |
 | Gap | 15 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **29** | **38** | |
+| **Total open** | **30** | **38** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -114,7 +114,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Missing Features (4 open)
+## Missing Features (5 open)
 
 ### MF-03: Validation rules SEND-VAL-016, SEND-VAL-018
 - **Issue:** Visit day alignment (016) and domain-specific findings checks (018) not defined in YAML.
@@ -131,6 +131,13 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 ### ~~MF-06: Recovery arm analysis~~ ✅
 - **Issue:** Recovery subjects excluded from all computations. Separate analysis mode needed.
 - **Status:** Resolved (commits 4f6138f, 4181435, e51c67f) — phase-aware pooling (DATA-01), recovery toggle, 62 tests
+
+### MF-09: Syndrome membership indicator on rail & context panel
+- **Spec:** `docs/incoming/arch-overhaul/syndrome-membership-indicator-spec.md`
+- **Files:** `FindingsRail.tsx`, `FindingsContextPanel.tsx`, `docs/views/adverse-effects.md`
+- **Issue:** Endpoints that belong to a fired syndrome (e.g., Body Weight → XS08, XS09) show no indicator in the rail (except in syndrome grouping mode) or context panel header. Users can't tell an endpoint is part of a syndrome, so they miss syndrome-specific context (e.g., food consumption pane in XS09). Fix: always show syndrome IDs on rail endpoint rows and add clickable syndrome links to the context panel sticky header.
+- **Status:** Open (spec ready)
+- **Owner hint:** frontend-dev
 
 ### MF-08: No authentication system
 - **Issue:** No auth anywhere. Required for production.
@@ -221,3 +228,45 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Blocked on:** Study data with FE/EO/RE domains for development and testing (PointCross has none)
 - **Status:** Open (deferred — requires reproductive study data)
 - **Owner hint:** backend-dev (parser), frontend-dev (UI integration)
+
+---
+
+## TOPIC Hub Documentation (6 open)
+
+> Subsystems that need retrospective TOPIC hub docs (`docs/incoming/arch-overhaul/TOPIC-*.md`). Existing hubs: data-pipeline, organ-measurements, syndrome-engine. CLAUDE.md rule 7 requires agents to consult hubs before touching covered subsystems.
+
+### DOC-01: TOPIC hub — Validation Engine
+- **Subsystem:** `backend/validation/` package, `ValidationView.tsx`, `ValidationContextPanel.tsx`, 14 YAML rules, CDISC CORE integration
+- **Why:** Dual-engine architecture (custom + CORE) with precedence logic is a footgun. Rule cache invalidation subtle. Spec (`validation-unified-spec.md`) diverged from implementation on UI layout (three-tab → domain-rail). ~7,700 LOC across 29 files.
+- **Status:** Open
+- **Owner hint:** docs-agent
+
+### DOC-02: TOPIC hub — Recovery & Phase Detection
+- **Subsystem:** `dose_groups.py` (detection), `phase_filter.py`, `recovery-assessment.ts`, `recovery-classification.ts`, `RecoveryPane.tsx`, 12 domain modules (pooling integration)
+- **Why:** Pooling asymmetry (in-life domains only, terminal domains skip). TK satellite detection coupled in `dose_groups.py`. Detection waterfall (TA→TE→SE→SETCD/ARMCD) is fragile across studies. 3 specs drove implementation. ~1,800 LOC core + integration across all domain modules.
+- **Status:** Open
+- **Owner hint:** docs-agent
+
+### DOC-03: TOPIC hub — Subject Profile & Cross-Animal Flags
+- **Subsystem:** `SubjectProfilePanel.tsx` (920L, design frozen), `cross_animal_flags.py` (852L), `subject-profile-logic.ts`, tissue battery, tumor linkage, recovery narratives
+- **Why:** Design frozen per CLAUDE.md hard rule — agents need clear boundary between "functional bug fix" and "visual change." Tissue battery integration and cross-animal flag display partially wired. `individual-animal-view-spec.md` has unclear compliance status.
+- **Status:** Open
+- **Owner hint:** docs-agent
+
+### DOC-04: TOPIC hub — NOAEL Determination
+- **Subsystem:** `NoaelDeterminationView.tsx` (2,003L), `NoaelContextPanel.tsx`, `noael-narrative.ts`, `protective-signal.ts`, signal matrix, adversity matrix
+- **Why:** ECI (5 mechanisms) entangled with TOPIC-organ-measurements. B-7 secondary-to-BW assessment conditional on organ type. Weighted NOAEL derivation couples normalization confidence to study-level NOAEL. Narrative is deliberately simple — agent might try to "improve" it.
+- **Status:** Open
+- **Owner hint:** docs-agent
+
+### DOC-05: TOPIC hub — Study Intelligence & Metadata
+- **Subsystem:** `StudySummaryView.tsx` (1,205L), `AppLandingPage.tsx`, `study_discovery.py`, species/vehicle profiles, subject context, provenance messages
+- **Why:** Species/vehicle profiles are stubs (mock data). Study timeline swimlane spec alignment unclear. 5 specs drove implementation. Treatment arms display is complex (multiple arm types, recovery vs. main). ~2,700 LOC.
+- **Status:** Open
+- **Owner hint:** docs-agent
+
+### DOC-06: TOPIC hub — Dose-Response View
+- **Subsystem:** `DoseResponseView.tsx` (2,843L), `DoseResponseContextPanel.tsx`, endpoint picker removal, stat method coupling, timecourse
+- **Why:** Largest single view component. Endpoint picker was replaced by rail integration (major UX change, not documented). Stat method selection now coupled to normalization decisions for OM endpoints. Chart display metric auto-selected per normalization tier. ~2,800 LOC.
+- **Status:** Open
+- **Owner hint:** docs-agent
