@@ -190,12 +190,13 @@ function ANCOVADecompositionPane({ finding }: { finding: UnifiedFinding }) {
 
 // ─── Decomposed Confidence Display ─────────────────────────
 
-function confidenceTextClass(level: ConfidenceLevel): string {
+function confidenceLevelClass(level: ConfidenceLevel): string {
+  // High = nothing to see; moderate = semibold; low = semibold + bright
   return level === "high"
-    ? "text-emerald-700 font-semibold"
+    ? "text-muted-foreground"
     : level === "moderate"
-      ? "text-amber-700 font-semibold"
-      : "text-red-700 font-semibold";
+      ? "font-semibold text-foreground"
+      : "font-semibold text-red-600";
 }
 
 function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
@@ -231,7 +232,7 @@ function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
       {/* Collapsed summary line */}
       <div className="flex items-baseline gap-1 flex-wrap">
         <span className="text-muted-foreground">Confidence:</span>
-        <span className={`uppercase ${confidenceTextClass(integrated.integrated)}`}>
+        <span className={`uppercase ${confidenceLevelClass(integrated.integrated)}`}>
           {integrated.integrated}
         </span>
         {integrated.limitingFactor !== "None" && (
@@ -258,21 +259,25 @@ function DecomposedConfidencePane({ eci }: { eci: EndpointConfidenceResult }) {
         {expanded ? "Hide decomposition" : "Show decomposition"}
       </button>
 
-      {/* Expanded decomposition */}
+      {/* Expanded decomposition — 3-column table for alignment */}
       {expanded && (
-        <div className="mt-1.5 space-y-0.5">
-          {dims.map((d) => (
-            <div key={d.label} className="flex items-baseline gap-1.5">
-              <span className={`uppercase text-[9px] ${confidenceTextClass(d.level)}`} style={{ minWidth: "5ch" }}>
-                {d.level}
-              </span>
-              <span className="font-medium whitespace-nowrap">{d.label}</span>
-              {d.reason && d.level !== "high" && (
-                <span className="text-muted-foreground">&mdash; {d.reason}</span>
-              )}
-            </div>
-          ))}
-        </div>
+        <table className="mt-1.5 text-[10px]">
+          <tbody>
+            {dims.map((d) => (
+              <tr key={d.label}>
+                <td className={`py-0 pr-1.5 uppercase text-[9px] ${confidenceLevelClass(d.level)}`} style={{ width: "1px", whiteSpace: "nowrap" }}>
+                  {d.level}
+                </td>
+                <td className="py-0 pr-3 font-medium whitespace-nowrap">
+                  {d.label}
+                </td>
+                <td className="py-0 text-muted-foreground">
+                  {d.reason && d.level !== "high" ? d.reason : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
@@ -451,6 +456,14 @@ export function FindingsContextPanel() {
     );
   }, [analytics.syndromes, selectedFinding]);
 
+  // Look up ECI integrated confidence for the selected endpoint
+  const eciConfidence = useMemo(() => {
+    if (!selectedFinding || !analytics) return null;
+    const label = selectedFinding.endpoint_label ?? selectedFinding.finding;
+    const ep = analytics.endpoints.find((e) => e.endpoint_label === label);
+    return ep?.endpointConfidence?.integrated.integrated ?? null;
+  }, [selectedFinding, analytics]);
+
   // Priority 1: Endpoint selected → endpoint-level panel
   // Priority 2: Group selected → group-level panel
   // Priority 3: Nothing → empty state
@@ -504,14 +517,6 @@ export function FindingsContextPanel() {
   const notEvaluated = toxAnnotations && selectedFinding
     ? toxAnnotations[selectedFinding.endpoint_label ?? selectedFinding.finding]?.treatmentRelated === "Not Evaluated"
     : false;
-
-  // Look up ECI integrated confidence for the selected endpoint
-  const eciConfidence = useMemo(() => {
-    if (!selectedFinding || !analytics) return null;
-    const label = selectedFinding.endpoint_label ?? selectedFinding.finding;
-    const ep = analytics.endpoints.find((e) => e.endpoint_label === label);
-    return ep?.endpointConfidence?.integrated.integrated ?? null;
-  }, [selectedFinding, analytics]);
 
   return (
     <div>
