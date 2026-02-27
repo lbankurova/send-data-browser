@@ -100,17 +100,17 @@ Legend entries reflect three independent encoding channels:
 
 | Channel | Symbol | Label | Visual | Condition |
 |---------|--------|-------|--------|-----------|
-| Stroke | `●` (stroked circle) | adverse | dark stroke `#374151` 1.5px | `worstSeverity === "adverse"` |
-| Shape | `◆` (diamond) | clinical S2+ | diamond, `#6B7280` | `clinicalSeverity` truthy (S2/S3/S4) |
-| Color | `●` (filled) | determining | `rgba(248,113,113,0.7)` (warm rose) | `noaelWeight === 1.0` |
-| Color | `●` (filled) | contributing | `#9CA3AF` (gray) | `noaelWeight === 0.7` |
-| Color | `○` (outline) | supporting | gray outline, no fill | `noaelWeight === 0.3` |
+| Stroke | `●` (no fill, stroked) | adverse | transparent fill, `WebkitTextStroke: 1px #374151` | `worstSeverity === "adverse"` |
+| Shape | `◇` (outline diamond) | clinical S2+ | outline only, default `#9CA3AF` | `clinicalSeverity` truthy (S2/S3/S4) |
+| Color | `●` (filled) | NOAEL determining | `rgba(248,113,113,0.7)` (warm rose) | `noaelWeight === 1.0` |
+| Color | `●` (filled) | NOAEL contributing | `#9CA3AF` (gray) | `noaelWeight === 0.7` |
+| Color | `○` (outline) | NOAEL supporting | gray outline, no fill | `noaelWeight === 0.3` |
 
-Legend rendered as `flex items-center gap-2` inside `px-2 py-0.5` header. Each entry: `flex items-center gap-0.5 text-[8px] text-muted-foreground`, symbol span colored via inline `style={{ color }}` (fallback `#9CA3AF`). Adverse entry uses `WebkitTextStroke: 1px #374151` to render the stroked appearance.
+Legend rendered as `flex items-center gap-2` inside `px-2 pt-0.5 pb-3` header (extra bottom padding for breathing room above y-axis label). Each entry: `flex items-center gap-0.5 text-[8px] text-muted-foreground`, symbol span colored via inline `style={{ color }}` (fallback `#9CA3AF`). Adverse entry uses `color: transparent` + `WebkitTextStroke: 1px #374151` (no fill, stroke only). Clinical entry uses outline diamond `◇` (U+25C7) without color.
 
 **Dot rendering** (`buildFindingsQuadrantOption` in `findings-charts.ts`):
 
-*Size:* uniform r=5; worst combination (adverse + clinical S2+ + NOAEL determining) r=7; selected r=10. Emphasis (hover): 7.
+*Size:* default r=5; adverse r=6; worst combination (adverse + clinical S2+ + NOAEL determining) r=7; selected r=10. Emphasis (hover): 7.
 
 *Shape:* diamond for clinical S2+, circle for everything else.
 
@@ -128,6 +128,11 @@ Legend rendered as `flex items-center gap-2` inside `px-2 py-0.5` header. Each e
 *Border* (non-adverse dots): selected → `#1F2937` w2, supporting → `#9CA3AF` w1, contributing (non-clinical) → `#9CA3AF` w1, clinical → `#6B7280` w1, early-death exclusion → `#9CA3AF` w1 dashed, default → transparent.
 
 **Tooltip** (on hover): endpoint label (bold 11px), domain (colored by `getDomainHexColor`) + organ system, monospace `|symbol|=effectSize` + `p=value`, severity + TR label. Conditional lines: clinical severity + rule ID + fold change, syndrome name (link icon), early-death exclusion note, NOAEL tier + dose, NOAEL contribution label.
+
+**Axes:**
+- **x-axis:** `"Effect, |g|"` (dynamic symbol from active effect size method). Tick labels: `v.toFixed(2)`. Range: 0 to max × 1.1.
+- **y-axis:** `"p-value"`. Scale is -log₁₀(p) but tick labels show actual p-values (`10^(-v)`, formatted via `toPrecision(1)`). Range: 0 to max × 1.1. Mark line at p=0.05.
+- **Mark lines:** horizontal dashed at p=0.05 (`-log₁₀(0.05) ≈ 1.3`), vertical dashed at |g|=0.8.
 
 **Interactions:**
 - Click dot: selects endpoint (fires `onSelect`); ignored for out-of-scope dots
