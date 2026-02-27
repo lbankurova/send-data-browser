@@ -159,54 +159,54 @@ export function buildFindingsQuadrantOption(
       pt.domain !== scopeFilter &&
       (pt as QuadrantPoint).endpoint_label !== scopeFilter;
 
-    // Symbol size: selected > clinical > coherence > adverse > default
-    let symbolSize = 5;
-    if (isAdverse) symbolSize = 6;
-    if (pt.coherenceSize) symbolSize = 7;
-    if (isClinical) symbolSize = 7;
-    if (isSelected) symbolSize = 10;
+    // Symbol size: uniform r=5, only selected gets r=10
+    const symbolSize = isSelected ? 10 : 5;
 
-    // Symbol shape: clinical S2+ get diamond (persists in all states)
+    // Symbol shape: clinical S2+ → diamond, everything else → circle
     const symbol = isClinical ? "diamond" : "circle";
 
-    // NOAEL tint: warm rose for low-NOAEL dots (below-lowest or at-lowest)
-    const isLowNoael = pt.noaelTier === "below-lowest" || pt.noaelTier === "at-lowest";
-    // ECI NOAEL weight encoding
+    // ECI NOAEL weight encoding → fill color
     const nw = pt.noaelWeight;
     const isDetermining = nw === 1.0;
     const isContributing = nw === 0.7;
     const isSupporting = nw === 0.3;
 
-    // Opacity: clinical 0.75, coherent 0.65, adverse 0.65, default 0.5
-    let opacity = isSelected ? 1 : isClinical ? 0.75 : (pt.coherenceSize || isAdverse) ? 0.65 : 0.5;
-    if (isContributing && !isSelected) opacity = 0.8;
+    // Opacity
+    let opacity = isSelected ? 1 : isContributing ? 0.8 : isClinical ? 0.75 : isAdverse ? 0.65 : 0.5;
     if (isOutOfScope) opacity = 0.15;
 
-    // Dot color: determining → warm rose (same as low NOAEL), contributing → gray filled, supporting → transparent (outline only)
+    // Fill color: NOAEL weight channel (determining=rose, contributing=gray, supporting=ghost)
     let dotColor: string;
     if (isDetermining) {
-      dotColor = isLowNoael && pt.noaelTier === "below-lowest"
-        ? "rgba(248,113,113,0.7)"
-        : "rgba(248,113,113,0.5)";
+      dotColor = "rgba(248,113,113,0.7)";
     } else if (isContributing) {
       dotColor = "#9CA3AF";
     } else if (isSupporting) {
       dotColor = "transparent";
-    } else if (isLowNoael) {
-      dotColor = pt.noaelTier === "below-lowest"
-        ? "rgba(248,113,113,0.6)"
-        : "rgba(248,113,113,0.4)";
     } else if (isClinical) {
       dotColor = "#6B7280";
     } else {
       dotColor = "#9CA3AF";
     }
 
-    // Border: supporting gets gray outline, contributing gets subtle border
-    let borderColor = isSelected ? "#1F2937" : isClinical ? "#6B7280" : hasExclusion ? "#9CA3AF" : "transparent";
-    let borderWidth = isSelected ? 2 : isClinical ? 1 : hasExclusion ? 1 : 0;
-    if (isSupporting && !isSelected) { borderColor = "#9CA3AF"; borderWidth = 1; }
-    else if (isContributing && !isSelected && !isClinical) { borderColor = "#9CA3AF"; borderWidth = 1; }
+    // Stroke: adverse → dark stroke (severity channel); else → NOAEL/clinical/exclusion stroke
+    let borderColor: string;
+    let borderWidth: number;
+    if (isSelected) {
+      borderColor = "#1F2937"; borderWidth = 2;
+    } else if (isAdverse) {
+      borderColor = "#374151"; borderWidth = 1.5;
+    } else if (isSupporting) {
+      borderColor = "#9CA3AF"; borderWidth = 1;
+    } else if (isContributing && !isClinical) {
+      borderColor = "#9CA3AF"; borderWidth = 1;
+    } else if (isClinical) {
+      borderColor = "#6B7280"; borderWidth = 1;
+    } else if (hasExclusion) {
+      borderColor = "#9CA3AF"; borderWidth = 1;
+    } else {
+      borderColor = "transparent"; borderWidth = 0;
+    }
 
     return {
       value: [pt.x, pt.y],
@@ -220,12 +220,12 @@ export function buildFindingsQuadrantOption(
         opacity,
         borderColor,
         borderWidth,
-        borderType: hasExclusion && !isSelected && !isClinical ? "dashed" as const : "solid" as const,
+        borderType: hasExclusion && !isSelected && !isAdverse ? "dashed" as const : "solid" as const,
       },
       emphasis: isOutOfScope
         ? { disabled: true }
         : {
-            symbolSize: 8,
+            symbolSize: 7,
             itemStyle: {
               opacity: 0.8,
               borderColor: "#6B7280",

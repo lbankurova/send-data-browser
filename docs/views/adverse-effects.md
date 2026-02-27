@@ -100,32 +100,32 @@ Legend entries reflect three independent encoding channels:
 
 | Channel | Symbol | Label | Visual | Condition |
 |---------|--------|-------|--------|-----------|
-| Size | `●` (large circle) | adverse | larger dot | `worstSeverity === "adverse"` |
-| Size | `•` (small bullet) | normal | smaller dot | non-adverse, non-clinical |
+| Stroke | `●` (stroked circle) | adverse | dark stroke `#374151` 1.5px | `worstSeverity === "adverse"` |
 | Shape | `◆` (diamond) | clinical S2+ | diamond, `#6B7280` | `clinicalSeverity` truthy (S2/S3/S4) |
 | Color | `●` (filled) | determining | `rgba(248,113,113,0.7)` (warm rose) | `noaelWeight === 1.0` |
 | Color | `●` (filled) | contributing | `#9CA3AF` (gray) | `noaelWeight === 0.7` |
 | Color | `○` (outline) | supporting | gray outline, no fill | `noaelWeight === 0.3` |
 
-Legend rendered as `flex items-center gap-2` inside `px-2 py-0.5` header. Each entry: `flex items-center gap-0.5 text-[8px] text-muted-foreground`, symbol span colored via inline `style={{ color }}` (fallback `#9CA3AF`).
+Legend rendered as `flex items-center gap-2` inside `px-2 py-0.5` header. Each entry: `flex items-center gap-0.5 text-[8px] text-muted-foreground`, symbol span colored via inline `style={{ color }}` (fallback `#9CA3AF`). Adverse entry uses `WebkitTextStroke: 1px #374151` to render the stroked appearance.
 
 **Dot rendering** (`buildFindingsQuadrantOption` in `findings-charts.ts`):
 
-*Size hierarchy* (higher overrides lower): default 5 → adverse 6 → coherent organ (3+ domains) 7 → clinical S2+ 7 → selected 10. Emphasis (hover): 8.
+*Size:* uniform r=5 for all dots; selected gets r=10. Emphasis (hover): 7.
 
 *Shape:* diamond for clinical S2+, circle for everything else.
 
+*Stroke* (severity channel): adverse → `#374151` w1.5 (dark border). Non-adverse → no stroke (except NOAEL/clinical/exclusion borders below).
+
 *Color — NOAEL weight encoding* (ECI contribution, highest priority first):
-- **Determining** (`noaelWeight=1.0`): warm rose — `rgba(248,113,113,0.7)` if below-lowest, `rgba(248,113,113,0.5)` otherwise
+- **Determining** (`noaelWeight=1.0`): `rgba(248,113,113,0.7)` (warm rose)
 - **Contributing** (`noaelWeight=0.7`): `#9CA3AF` (gray)
-- **Supporting** (`noaelWeight=0.3`): `transparent` (outline only)
-- **Low NOAEL** (no weight): `rgba(248,113,113,0.6)` if below-lowest, `rgba(248,113,113,0.4)` if at-lowest
+- **Supporting** (`noaelWeight=0.3`): `transparent` (outline only, `#9CA3AF` w1 border)
 - **Clinical** (no NOAEL override): `#6B7280`
 - **Default**: `#9CA3AF`
 
-*Opacity:* selected 1.0, contributing 0.8, clinical 0.75, coherent/adverse 0.65, default 0.5, out-of-scope 0.15.
+*Opacity:* selected 1.0, contributing 0.8, clinical 0.75, adverse 0.65, default 0.5, out-of-scope 0.15.
 
-*Border:* selected → `#1F2937` w2, clinical → `#6B7280` w1, early-death exclusion → `#9CA3AF` w1 dashed, supporting → `#9CA3AF` w1, contributing (non-clinical) → `#9CA3AF` w1, default → transparent.
+*Border* (non-adverse dots): selected → `#1F2937` w2, supporting → `#9CA3AF` w1, contributing (non-clinical) → `#9CA3AF` w1, clinical → `#6B7280` w1, early-death exclusion → `#9CA3AF` w1 dashed, default → transparent.
 
 **Tooltip** (on hover): endpoint label (bold 11px), domain (colored by `getDomainHexColor`) + organ system, monospace `|symbol|=effectSize` + `p=value`, severity + TR label. Conditional lines: clinical severity + rule ID + fold change, syndrome name (link icon), early-death exclusion note, NOAEL tier + dose, NOAEL contribution label.
 
