@@ -134,7 +134,6 @@ export function FindingsQuadrantScatter({
   }, [selectedPt?.endpoint_label, selectedPt?.x, selectedPt?.rawP, onSelectedPointChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Legend entries — only show visually distinct categories present in data
-  // At rest: all dots are gray. Differences are size + shape only.
   const legendEntries = useMemo(() => {
     const entries: { symbol: string; label: string; color?: string }[] = [];
     // Small dot = warning/normal (size 5)
@@ -146,8 +145,13 @@ export function FindingsQuadrantScatter({
     // Diamond = clinical S2+, darker gray
     if (points.some((p) => p.clinicalSeverity))
       entries.push({ symbol: "\u25C6", label: "clinical S2+", color: "#6B7280" });
-    // Warm rose dot = low NOAEL (below-lowest or at-lowest)
-    if (points.some((p) => p.noaelTier === "below-lowest" || p.noaelTier === "at-lowest"))
+    // NOAEL weight encoding: determining (rose filled), supporting (hollow outline)
+    if (points.some((p) => p.noaelWeight === 1.0))
+      entries.push({ symbol: "\u25CF", label: "NOAEL determining", color: "rgba(248,113,113,0.7)" });
+    if (points.some((p) => p.noaelWeight === 0.3))
+      entries.push({ symbol: "\u25CB", label: "NOAEL supporting" });
+    // Low NOAEL without weight (below-lowest or at-lowest, no ECI role)
+    if (points.some((p) => (p.noaelTier === "below-lowest" || p.noaelTier === "at-lowest") && p.noaelWeight == null))
       entries.push({ symbol: "\u25CF", label: "low NOAEL", color: "rgba(248,113,113,0.7)" });
     return entries;
   }, [points]);
