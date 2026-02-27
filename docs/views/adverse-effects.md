@@ -27,11 +27,7 @@ The view itself uses a flex column layout (`flex h-full flex-col overflow-hidden
 
 ```
 +-----------------------------------------------------------+
-|  StudyBanner (conditional — study context info)            |  border-b
-+-----------------------------------------------------------+
-|  MortalityBanner (conditional — early death summary)       |  border-b
-+-----------------------------------------------------------+
-|  [Findings]                        N adverse N warning N normal |  <-- FilterBar
+|  [Findings]  1TR death at 200mg/kg (excl.)  N adv N warn N norm |  <-- FilterBar
 +-----------------------------------------------------------+
 |  Section title · (count) · filters · ★ selected  | chips ℹ |  <-- ViewSection header
 |  Quadrant scatter (resizable)                              |
@@ -44,25 +40,16 @@ The view itself uses a flex column layout (`flex h-full flex-col overflow-hidden
 
 ---
 
-## Study Banner (conditional)
-
-`StudyBanner` component renders when `studyContext` is available. Shows study-level context: species, strain, study type, dose group count, tumor animal count if available.
-
-## Mortality Banner (conditional)
-
-`MortalityBanner` component renders when `mortalityData` is available. Shows early death summary information.
-
----
-
 ## Filter Bar
 
 Uses the shared `FilterBar` container component: `flex items-center gap-2 border-b bg-muted/30 px-4 py-2`.
 
-The FilterBar contains:
+The FilterBar contains (left to right):
 - "Findings" label: `text-xs font-semibold`
+- **Mortality toggle** (conditional — when `mortalityData.has_mortality && early_death_details.length > 0`): clickable button (`rounded border border-border/60 bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted/60`). Label: `"{N}TR death{s} at {mortality_loael_label}"`. When scheduled-only is active, appends `"(excl. from term.stats)"` in `text-muted-foreground/60`. Click toggles `setUseScheduledOnly(!isScheduledOnly)`.
 - Summary badges (right-aligned via `ml-auto`): `flex items-center gap-2 text-[10px] text-muted-foreground` — "{N} adverse", "{N} warning", "{N} normal"
 
-**Note:** The `FindingsFilterBar` component exists separately but is **not** used in the main FindingsView. Filtering is handled through the FindingsRail (left panel) which manages endpoint grouping, scoping, and exclusion. The center panel FilterBar only displays summary counts.
+**Note:** The `FindingsFilterBar` component exists separately but is **not** used in the main FindingsView. Filtering is handled through the FindingsRail (left panel) which manages endpoint grouping, scoping, and exclusion. The center panel FilterBar displays summary counts and the mortality exclusion toggle.
 
 **FindingsRail organ card indicators:** In organ grouping mode, organ group cards display up to two indicators:
 - **Organ confidence** — "Conf: High/Med/Low" with RAG-colored dashed underline (best integrated confidence across treatment-related endpoints).
@@ -355,10 +342,8 @@ Shown when `selectedGroupType === "syndrome"`. Displays cross-domain syndrome in
 | Column sizing | Session-persisted | `useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {})` |
 | Findings + analytics | Server + derived | `useFindingsAnalyticsLocal(studyId)` — primary data hook. Wraps `useFindings(studyId, 1, 10000, ALL_FILTERS)` internally, then applies scheduled-only filter, recovery pooling filter, stat method overrides, and derives all analytics (see pipeline below). Returns `{ analytics, data, isLoading, error }`. |
 | Finding context | Server | `useFindingContext(studyId, findingId)` hook — loaded on selection |
-| Mortality data | Server | `useStudyMortality(studyId)` — early death subject data |
-| Tumor summary | Server | `useTumorSummary(studyId)` — tumor animal count |
-| Study context | Server | `useStudyContext(studyId)` — study metadata for banner |
-| Scheduled-only mode | Shared | `useScheduledOnly()` — toggle in `MortalityBanner` excludes early-death treatment-group subjects from statistics. `useFindingsAnalyticsLocal` applies `applyScheduledFilter()` when active. |
+| Mortality data | Server | `useStudyMortality(studyId)` — early death subject data, feeds FilterBar mortality toggle |
+| Scheduled-only mode | Shared | `useScheduledOnly()` — toggle in FilterBar excludes early-death treatment-group subjects from statistics. `useFindingsAnalyticsLocal` applies `applyScheduledFilter()` when active. |
 | Recovery pooling | Session-persisted | `useSessionState("pcc.{studyId}.recoveryPooling", "pool")` — "pool" (include recovery arms in treatment-period stats, default) or "separate" (exclude). Toggle in `StudyDetailsContextPanel` settings pane. `useFindingsAnalyticsLocal` applies `applyRecoveryPoolingFilter()` when "separate". |
 | Scatter section height | Local | `useAutoFitSections(containerRef, "findings", ...)` — resizable scatter panel |
 | Active endpoint | Local (via event bus) | `_findingsRailCallback` — endpoint selection from rail |
