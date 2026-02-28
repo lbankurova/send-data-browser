@@ -519,17 +519,17 @@ Rather than a standalone section, add the significance summary as a footer line 
 
 #### Phase A — High value, no data model changes
 
-Reorder existing panes to match spec's cognitive flow. Add the ANCOVA punchline and significance summary. All data already available.
+**Status: Implemented** as of `8fccbed`. All items complete except A5 (deferred to Phase B).
 
-| Item | What | Effort |
-|---|---|---|
-| A1 | ANCOVA punchline line (§5.1.4): compare ANCOVA `pairwise[].p_value` to raw `pairwise[].p_value_adj`, state which doses changed significance | Low |
-| A2 | Significance summary footer on dose table (§5.1.5): iterate stats rows, name method | Low |
-| A3 | Confidence decomposition collapsed by default (§5.3): change `defaultOpen` prop | Trivial |
-| A4 | Directional flag using existing `bySex` data: "Opposite direction: ↓ males, ↑ females" | Low |
-| A5 | Sex comparison block (§4.3, partial): direction, effect size, p-value, severity from `SexEndpointSummary`. Skip onset dose and BW confounding until Phase B | Medium |
-| A6 | `DoseLabel` `align="right"` prop for right-side pipe | Low |
-| A7 | Bar chart sex coloring: M = blue, F = pink via `getSexColor()`, right-aligned labels | Low |
+| Item | What | Status | Notes |
+|---|---|---|---|
+| A1 | ANCOVA punchline line (§5.1.4): compare ANCOVA `pairwise[].p_value` to raw `pairwise[].p_value_adj`, state which doses changed significance | **Done** | Renders between ANCOVA header and slope info. Three sentence types: "Confirms effect at X", "Reveals effect at X (raw n.s.)", "X reduced to borderline/n.s." |
+| A2 | Significance summary footer on dose table (§5.1.5): iterate stats rows, name method | **Done** | Footer below dose table: "Significant at 200 mg/kg (Dunnett's)." or "No significant pairwise differences." |
+| A3 | Confidence decomposition collapsed by default (§5.3) | **Done** | Already satisfied: `showDecomp` initializes `false`. Full restructuring into own section deferred to Phase C. |
+| A4 | Directional flag using existing `bySex` data: "Opposite direction: ↓ males, ↑ females" | **Done** | In VerdictPane after per-sex NOAEL. Reads `EndpointSummary.bySex` directions. Amber-700 text. |
+| A5 | Sex comparison block (§4.3, partial) | **Deferred** | Moved to Phase B — requires sibling sex's detailed data for meaningful comparison beyond the directional flag (A4). |
+| A6 | `DoseLabel` `align="right"` prop for right-side pipe | **Done** | `align="left"` (default) = `border-l-2 pl-1.5`. `align="right"` = `border-r-2 pr-1.5 text-right`. |
+| A7 | Bar chart sex coloring: M = blue, F = pink via `getSexColor()`, right-aligned labels | **Done** | Bars: 2.5px thin, `rounded-full`, sex-colored (M=#3b82f6, F=#ec4899), neutral #d1d5db fallback. Labels: `DoseLabel align="right"` in `w-20` wrapper. |
 
 #### Phase B — Both-sex API + full Tier 1
 

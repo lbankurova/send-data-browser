@@ -1,0 +1,203 @@
+"""Cross-domain corroboration — presence-based syndrome term matching.
+
+This is presence-based corroboration only. Full syndrome scoring
+(confidence levels, directional gates, magnitude floors, compound
+required logic) remains in the frontend engine
+(cross-domain-syndromes.ts). Do not assume backend results match
+frontend syndrome detection — they serve different purposes.
+
+The backend answers a narrow question per finding per sex:
+"Does this finding have cross-domain support from other findings
+in the same sex, according to any syndrome definition?"
+
+Status values:
+- ``corroborated``:    ≥1 syndrome has ≥2 matched terms (from different
+                       domains) including this finding, in the same sex
+- ``uncorroborated``:  the finding matches syndrome term(s) but no other
+                       terms in the same syndrome are met in this sex
+- ``not_applicable``:  the finding doesn't match any syndrome term
+                       definition (e.g., food consumption, unusual lab
+                       analytes not in any syndrome)
+"""
+
+from __future__ import annotations
+
+import logging
+import re
+from collections import defaultdict
+
+from services.analysis.syndrome_definitions import SYNDROME_DEFINITIONS
+
+log = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Normalization helpers (ported from frontend normalizeLabel / containsWord)
+# ---------------------------------------------------------------------------
+
+_SEPARATOR_RE = re.compile(r"[_\-:,]")
+_WHITESPACE_RE = re.compile(r"\s+")
+
+
+def _normalize(label: str) -> str:
+    """Lowercase, replace separators with space, collapse whitespace."""
+    s = label.lower().strip()
+    s = _SEPARATOR_RE.sub(" ", s)
+    return _WHITESPACE_RE.sub(" ", s)
+
+
+def _contains_word(text: str, term: str) -> bool:
+    """Check if *term* appears as a whole word/phrase within *text* (both pre-normalized)."""
+    escaped = re.escape(term)
+    return bool(re.search(rf"(?:^|\s){escaped}(?:\s|$)", f" {text} "))
+
+
+# ---------------------------------------------------------------------------
+# Term matching (ported from frontend matchEndpoint in cross-domain-syndromes.ts)
+# ---------------------------------------------------------------------------
+
+def _match_finding(finding: dict, term: dict) -> bool:
+    """Check if a backend finding dict matches a single syndrome term definition.
+
+    Differences from the frontend ``matchEndpoint()``:
+    - Backend findings have structured fields (``test_code``, ``specimen``,
+      ``finding``, ``direction``) — no need to parse from ``endpoint_label``.
+    - Specimen matching uses prefix strategy (``startswith``) instead of
+      ``containsWord`` to respect SEND hierarchical specimen naming
+      ("HEART", "HEART WITH AORTA"). The backend's ``organ_map.py`` already
+      uses ``startswith()`` for the same reason.
+    - Finding matching stays word-boundary (``containsWord``) since findings
+      are free-text descriptions, not hierarchical.
+    """
+    # 1. Domain must match
+    f_domain = finding.get("domain", "").upper()
+    if f_domain != term["domain"]:
+        return False
+
+    # 2. Direction must match (if specified)
+    if term["direction"] != "any":
+        if finding.get("direction") != term["direction"]:
+            return False
+
+    # 3. Match by test code (LB, EG, VS domains — highest priority)
+    test_codes = term.get("testCodes")
+    if test_codes:
+        f_test_code = (finding.get("test_code") or "").upper()
+        if f_test_code and f_test_code in test_codes:
+            return True
+
+    # 4. Match by canonical label (exact after normalization)
+    canonical_labels = term.get("canonicalLabels")
+    if canonical_labels:
+        # Use endpoint_label if available (enriched), else test_name
+        label = finding.get("endpoint_label") or finding.get("test_name") or ""
+        normalized = _normalize(label)
+        if any(normalized == cl for cl in canonical_labels):
+            return True
+
+    # 5. Match by specimen + finding (MI/MA domain)
+    specimen_terms = term.get("specimenTerms")
+    if specimen_terms:
+        f_specimen = finding.get("specimen")
+        f_finding = finding.get("finding")
+        if f_specimen and f_finding:
+            norm_specimen = _normalize(f_specimen)
+            norm_finding = _normalize(f_finding)
+            # Specimen: prefix match (hierarchical SEND names)
+            spec_list = specimen_terms.get("specimen", [])
+            specimen_ok = (
+                len(spec_list) == 0
+                or any(norm_specimen.startswith(s) for s in spec_list)
+            )
+            # Finding: word-boundary match (free-text)
+            finding_ok = any(
+                _contains_word(norm_finding, f) for f in specimen_terms.get("finding", [])
+            )
+            if specimen_ok and finding_ok:
+                return True
+
+    # 6. Match by organ weight specimen (OM domain)
+    organ_weight_terms = term.get("organWeightTerms")
+    if organ_weight_terms:
+        f_specimen = finding.get("specimen") or finding.get("test_name") or ""
+        norm_specimen = _normalize(f_specimen)
+        spec_list = organ_weight_terms.get("specimen", [])
+        if len(spec_list) == 0 or any(norm_specimen.startswith(s) for s in spec_list):
+            return True
+
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Corroboration pass
+# ---------------------------------------------------------------------------
+
+def compute_corroboration(findings: list[dict]) -> list[dict]:
+    """Add ``corroboration_status`` to each finding based on cross-domain evidence.
+
+    Groups findings by sex, then for each finding:
+    1. Checks if any syndrome term matches the finding.
+    2. If matched, looks for cross-domain corroboration within the same sex
+       (at least one OTHER term in the SAME syndrome matched by a DIFFERENT
+       domain in the same sex).
+    3. Sets ``corroboration_status`` on each finding.
+
+    **No auto-downgrade**: ``severity`` is NOT modified. The frontend (and
+    eventually the user) decides what to do with the flag.
+    """
+    # Index findings by sex for fast lookup
+    by_sex: dict[str, list[dict]] = defaultdict(list)
+    for f in findings:
+        by_sex[f.get("sex", "")].append(f)
+
+    for f in findings:
+        sex = f.get("sex", "")
+        sex_findings = by_sex[sex]
+
+        # Track: does this finding match ANY term in ANY syndrome?
+        matched_any_term = False
+        # Track: is it corroborated by cross-domain evidence?
+        is_corroborated = False
+
+        for syndrome in SYNDROME_DEFINITIONS:
+            # Which terms does THIS finding match?
+            my_term_indices = []
+            for i, term in enumerate(syndrome["terms"]):
+                if _match_finding(f, term):
+                    my_term_indices.append(i)
+
+            if not my_term_indices:
+                continue
+
+            matched_any_term = True
+
+            # Collect domains matched by THIS finding's terms
+            my_domains = {syndrome["terms"][i]["domain"] for i in my_term_indices}
+
+            # Check: do OTHER findings in same sex match OTHER terms
+            # in this syndrome from a DIFFERENT domain?
+            other_domains_matched: set[str] = set()
+            for other_f in sex_findings:
+                if other_f is f:
+                    continue
+                for j, term in enumerate(syndrome["terms"]):
+                    if j in my_term_indices:
+                        continue  # skip terms already matched by this finding
+                    if term["domain"] in my_domains:
+                        continue  # must be a different domain
+                    if _match_finding(other_f, term):
+                        other_domains_matched.add(term["domain"])
+                        break  # one match per other_f is enough
+
+            if other_domains_matched:
+                is_corroborated = True
+                break  # one corroborating syndrome is enough
+
+        if is_corroborated:
+            f["corroboration_status"] = "corroborated"
+        elif matched_any_term:
+            f["corroboration_status"] = "uncorroborated"
+        else:
+            f["corroboration_status"] = "not_applicable"
+
+    return findings

@@ -88,6 +88,8 @@ export interface UnifiedFinding {
   ancova?: ANCOVAResult | null;
   /** Alternative metric stats for OM endpoints. */
   alternatives?: Record<string, AlternativeMetricStats> | null;
+  /** Cross-domain corroboration status — set by backend pipeline. */
+  corroboration_status?: "corroborated" | "uncorroborated" | "not_applicable";
 }
 
 export interface WilliamsStepDownResult {

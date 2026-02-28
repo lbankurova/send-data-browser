@@ -1,0 +1,1130 @@
+{
+  "_generated_from": "cross-domain-syndrome-data.ts — this file is now the source of truth, do not regenerate",
+  "syndromes": [
+    {
+      "id": "XS01",
+      "name": "Hepatocellular injury",
+      "requiredLogic": {
+        "type": "any"
+      },
+      "minDomains": 2,
+      "terms": [
+        {
+          "testCodes": [
+            "ALT",
+            "ALAT"
+          ],
+          "canonicalLabels": [
+            "alanine aminotransferase"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "ALT"
+        },
+        {
+          "testCodes": [
+            "AST",
+            "ASAT"
+          ],
+          "canonicalLabels": [
+            "aspartate aminotransferase"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "AST"
+        },
+        {
+          "testCodes": [
+            "SDH",
+            "GLDH",
+            "GDH"
+          ],
+          "canonicalLabels": [
+            "sorbitol dehydrogenase",
+            "glutamate dehydrogenase"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": [
+            "BILI",
+            "TBILI"
+          ],
+          "canonicalLabels": [
+            "bilirubin",
+            "total bilirubin"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "liver"
+            ]
+          },
+          "domain": "OM",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [
+              "liver",
+              "hepat"
+            ],
+            "finding": [
+              "necrosis",
+              "apoptosis",
+              "degeneration",
+              "single cell necrosis",
+              "hepatocellular necrosis"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [
+              "liver",
+              "hepat"
+            ],
+            "finding": [
+              "hypertrophy",
+              "hepatocellular hypertrophy",
+              "centrilobular hypertrophy"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XS02",
+      "name": "Hepatobiliary / Cholestatic",
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "ALP AND (GGT OR 5NT)"
+      },
+      "minDomains": 2,
+      "terms": [
+        {
+          "testCodes": [
+            "ALP",
+            "ALKP"
+          ],
+          "canonicalLabels": [
+            "alkaline phosphatase"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "ALP"
+        },
+        {
+          "testCodes": [
+            "GGT"
+          ],
+          "canonicalLabels": [
+            "gamma glutamyltransferase",
+            "gamma gt"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "GGT"
+        },
+        {
+          "testCodes": [
+            "5NT"
+          ],
+          "canonicalLabels": [
+            "5 nucleotidase",
+            "5' nucleotidase"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "5NT"
+        },
+        {
+          "testCodes": [
+            "BILI",
+            "TBILI"
+          ],
+          "canonicalLabels": [
+            "bilirubin",
+            "total bilirubin"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": [
+            "CHOL"
+          ],
+          "canonicalLabels": [
+            "cholesterol",
+            "total cholesterol"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "liver"
+            ]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "supporting",
+          "tag": "LIVER_WT"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [
+              "liver",
+              "hepat"
+            ],
+            "finding": [
+              "bile duct hyperplasia",
+              "cholangitis",
+              "bile duct proliferation",
+              "bile plugs",
+              "cholestasis",
+              "bile duct"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XS03",
+      "name": "Nephrotoxicity",
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "ANY((CREAT AND BUN), (CREAT AND KIDNEY_WT), (CREAT AND URINE_SG), (CREAT AND MI_KIDNEY))"
+      },
+      "minDomains": 2,
+      "terms": [
+        {
+          "testCodes": [
+            "CREAT",
+            "CREA"
+          ],
+          "canonicalLabels": [
+            "creatinine"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "CREAT"
+        },
+        {
+          "testCodes": [
+            "BUN",
+            "UREA"
+          ],
+          "canonicalLabels": [
+            "blood urea nitrogen",
+            "urea nitrogen",
+            "urea"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "BUN"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "kidney"
+            ]
+          },
+          "domain": "OM",
+          "direction": "any",
+          "role": "supporting",
+          "tag": "KIDNEY_WT"
+        },
+        {
+          "testCodes": [
+            "SPGRAV",
+            "SG",
+            "UOSMO"
+          ],
+          "canonicalLabels": [
+            "specific gravity",
+            "urine osmolality"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting",
+          "tag": "URINE_SG"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [
+              "kidney"
+            ],
+            "finding": [
+              "tubular degeneration",
+              "tubular necrosis",
+              "tubular basophilia",
+              "tubular dilatation",
+              "cast",
+              "casts",
+              "mineralization",
+              "regeneration",
+              "papillary necrosis"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting",
+          "tag": "MI_KIDNEY"
+        }
+      ]
+    },
+    {
+      "id": "XS04",
+      "name": "Myelosuppression",
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "ANY(NEUT, PLAT, (RBC AND HGB))"
+      },
+      "minDomains": 1,
+      "terms": [
+        {
+          "testCodes": [
+            "NEUT",
+            "ANC"
+          ],
+          "canonicalLabels": [
+            "neutrophils",
+            "neutrophil count",
+            "absolute neutrophil count"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "NEUT"
+        },
+        {
+          "testCodes": [
+            "PLAT",
+            "PLT"
+          ],
+          "canonicalLabels": [
+            "platelets",
+            "platelet count"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "PLAT"
+        },
+        {
+          "testCodes": [
+            "RBC"
+          ],
+          "canonicalLabels": [
+            "erythrocytes",
+            "erythrocyte count",
+            "red blood cells",
+            "red blood cell count"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "RBC"
+        },
+        {
+          "testCodes": [
+            "HGB",
+            "HB"
+          ],
+          "canonicalLabels": [
+            "hemoglobin"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "HGB"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [
+              "bone marrow"
+            ],
+            "finding": [
+              "hypocellularity",
+              "hypocellular",
+              "decreased cellularity",
+              "aplasia",
+              "hypoplasia",
+              "atrophy"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "testCodes": [
+            "RETIC",
+            "RET"
+          ],
+          "canonicalLabels": [
+            "reticulocytes",
+            "reticulocyte count"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting",
+          "tag": "RETIC"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [
+              "spleen"
+            ],
+            "finding": [
+              "atrophy",
+              "decreased extramedullary",
+              "hypoplasia",
+              "lymphoid depletion"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "spleen"
+            ]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "supporting",
+          "tag": "SPLEEN_WT"
+        }
+      ]
+    },
+    {
+      "id": "XS05",
+      "name": "Hemolytic anemia",
+      "requiredLogic": {
+        "type": "all"
+      },
+      "minDomains": 1,
+      "terms": [
+        {
+          "testCodes": [
+            "RBC"
+          ],
+          "canonicalLabels": [
+            "erythrocytes",
+            "erythrocyte count",
+            "red blood cells"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "RBC"
+        },
+        {
+          "testCodes": [
+            "RETIC",
+            "RET"
+          ],
+          "canonicalLabels": [
+            "reticulocytes",
+            "reticulocyte count"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "RETIC"
+        },
+        {
+          "testCodes": [
+            "BILI",
+            "TBILI"
+          ],
+          "canonicalLabels": [
+            "bilirubin",
+            "total bilirubin"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "spleen"
+            ]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "supporting",
+          "tag": "SPLEEN_WT"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [
+              "spleen"
+            ],
+            "finding": [
+              "extramedullary hematopoiesis",
+              "increased hematopoiesis",
+              "congestion"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [
+              "spleen"
+            ],
+            "finding": [
+              "pigmentation",
+              "hemosiderin",
+              "hemosiderosis"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "testCodes": [
+            "HAPTO",
+            "HPT"
+          ],
+          "canonicalLabels": [
+            "haptoglobin"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XS06",
+      "name": "Phospholipidosis",
+      "requiredLogic": {
+        "type": "any"
+      },
+      "minDomains": 2,
+      "terms": [
+        {
+          "testCodes": [
+            "PL",
+            "PLIPID",
+            "PHOSLPD"
+          ],
+          "canonicalLabels": [
+            "phospholipids"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "PHOS"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [],
+            "finding": [
+              "foamy macrophage",
+              "foamy macrophages",
+              "vacuolation",
+              "lamellar bodies",
+              "phospholipidosis"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "liver",
+              "lung",
+              "kidney",
+              "spleen"
+            ]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XS07",
+      "name": "Immunotoxicity",
+      "requiredLogic": {
+        "type": "any"
+      },
+      "minDomains": 2,
+      "terms": [
+        {
+          "testCodes": [
+            "WBC"
+          ],
+          "canonicalLabels": [
+            "white blood cells",
+            "white blood cell count",
+            "leukocytes"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "WBC"
+        },
+        {
+          "testCodes": [
+            "LYMPH",
+            "LYM"
+          ],
+          "canonicalLabels": [
+            "lymphocytes",
+            "lymphocyte count"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "LYMPH"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "thymus"
+            ]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "required",
+          "tag": "THYMUS_WT"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "spleen"
+            ]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "supporting",
+          "tag": "SPLEEN_WT"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [
+              "spleen",
+              "thymus",
+              "lymph node"
+            ],
+            "finding": [
+              "lymphoid depletion",
+              "atrophy",
+              "decreased cellularity",
+              "lymphocytolysis",
+              "necrosis",
+              "apoptosis"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XS08",
+      "name": "Stress response",
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "ADRENAL_WT AND (BW OR THYMUS_WT OR LYMPH)"
+      },
+      "minDomains": 2,
+      "terms": [
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "adrenal"
+            ]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "required",
+          "tag": "ADRENAL_WT"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "thymus"
+            ]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "required",
+          "tag": "THYMUS_WT"
+        },
+        {
+          "testCodes": [
+            "LYMPH",
+            "LYM"
+          ],
+          "canonicalLabels": [
+            "lymphocytes",
+            "lymphocyte count"
+          ],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "LYMPH"
+        },
+        {
+          "canonicalLabels": [
+            "body weight"
+          ],
+          "domain": "BW",
+          "direction": "down",
+          "role": "required",
+          "tag": "BW"
+        },
+        {
+          "testCodes": [
+            "CORT"
+          ],
+          "canonicalLabels": [
+            "corticosterone",
+            "cortisol"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XS09",
+      "name": "Target organ wasting",
+      "requiredLogic": {
+        "type": "any"
+      },
+      "minDomains": 2,
+      "terms": [
+        {
+          "canonicalLabels": [
+            "body weight"
+          ],
+          "domain": "BW",
+          "direction": "down",
+          "role": "required",
+          "tag": "BW"
+        },
+        {
+          "canonicalLabels": [
+            "food consumption",
+            "food intake"
+          ],
+          "domain": "BW",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": []
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "supporting",
+          "tag": "OM_WT"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [],
+            "finding": [
+              "atrophy",
+              "wasting",
+              "decreased size"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XS10",
+      "name": "Cardiovascular",
+      "requiredLogic": {
+        "type": "any"
+      },
+      "minDomains": 1,
+      "terms": [
+        {
+          "testCodes": [
+            "QTCBAG",
+            "QTCFAG",
+            "QTCVAG",
+            "QTCAG"
+          ],
+          "canonicalLabels": [
+            "qtcb interval",
+            "qtcf interval",
+            "qtcv interval",
+            "qtc interval"
+          ],
+          "domain": "EG",
+          "direction": "any",
+          "role": "required",
+          "tag": "QTC"
+        },
+        {
+          "testCodes": [
+            "PRAG"
+          ],
+          "canonicalLabels": [
+            "pr interval"
+          ],
+          "domain": "EG",
+          "direction": "any",
+          "role": "required",
+          "tag": "PR"
+        },
+        {
+          "testCodes": [
+            "RRAG"
+          ],
+          "canonicalLabels": [
+            "rr interval"
+          ],
+          "domain": "EG",
+          "direction": "any",
+          "role": "required",
+          "tag": "RR"
+        },
+        {
+          "testCodes": [
+            "HR"
+          ],
+          "canonicalLabels": [
+            "heart rate"
+          ],
+          "domain": "VS",
+          "direction": "any",
+          "role": "required",
+          "tag": "HR"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": [
+              "heart"
+            ]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": [
+              "heart"
+            ],
+            "finding": [
+              "cardiomyopathy",
+              "myocyte degeneration",
+              "necrosis",
+              "myocardial degeneration",
+              "fibrosis",
+              "vacuolation",
+              "myocardial necrosis",
+              "inflammation"
+            ]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "testCodes": [
+            "CTNI",
+            "CTNT",
+            "TNNI",
+            "TNNT"
+          ],
+          "canonicalLabels": [
+            "troponin i",
+            "troponin t",
+            "cardiac troponin"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        }
+      ]
+    }
+  ],
+  "directionalGates": {
+    "XS04": [
+      {
+        "term": "RETIC",
+        "expectedDirection": "down",
+        "action": "reject",
+        "overrideCondition": "MI_MARROW_HYPOCELLULARITY"
+      }
+    ],
+    "XS05": [
+      {
+        "term": "SPLEEN_WT",
+        "expectedDirection": "up",
+        "action": "weak_against",
+        "domain": "OM"
+      }
+    ],
+    "XS07": [
+      {
+        "term": "LYMPH",
+        "expectedDirection": "down",
+        "action": "strong_against"
+      }
+    ],
+    "XS08": [
+      {
+        "term": "LYMPH",
+        "expectedDirection": "down",
+        "action": "weak_against"
+      },
+      {
+        "term": "ADRENAL_WT",
+        "expectedDirection": "up",
+        "action": "weak_against",
+        "domain": "OM"
+      },
+      {
+        "term": "THYMUS_WT",
+        "expectedDirection": "down",
+        "action": "weak_against",
+        "domain": "OM"
+      }
+    ],
+    "XS09": [
+      {
+        "term": "OM_WT",
+        "expectedDirection": "down",
+        "action": "weak_against",
+        "domain": "OM"
+      }
+    ]
+  },
+  "endpointClassFloors": [
+    {
+      "class": "hematology_erythroid",
+      "floor": {
+        "minG": 0.8,
+        "minFcDelta": 0.1
+      },
+      "testCodes": [
+        "RBC",
+        "HGB",
+        "HB",
+        "HCT"
+      ]
+    },
+    {
+      "class": "hematology_leukocyte",
+      "floor": {
+        "minG": 0.8,
+        "minFcDelta": 0.15
+      },
+      "testCodes": [
+        "WBC",
+        "NEUT",
+        "ANC",
+        "LYMPH",
+        "LYM"
+      ]
+    },
+    {
+      "class": "hematology_leukocyte_rare",
+      "floor": {
+        "minG": 0.8,
+        "minFcDelta": 0.3
+      },
+      "testCodes": [
+        "MONO",
+        "EOS",
+        "BASO"
+      ]
+    },
+    {
+      "class": "hematology_indices",
+      "floor": {
+        "minG": 1,
+        "minFcDelta": 0.05
+      },
+      "testCodes": [
+        "MCV",
+        "MCH",
+        "MCHC",
+        "RDW"
+      ]
+    },
+    {
+      "class": "platelets",
+      "floor": {
+        "minG": 0.8,
+        "minFcDelta": 0.15
+      },
+      "testCodes": [
+        "PLAT",
+        "PLT"
+      ]
+    },
+    {
+      "class": "reticulocytes",
+      "floor": {
+        "minG": 0.8,
+        "minFcDelta": 0.25
+      },
+      "testCodes": [
+        "RETIC",
+        "RET",
+        "RETI"
+      ]
+    },
+    {
+      "class": "coagulation",
+      "floor": {
+        "minG": 0.8,
+        "minFcDelta": 0.15
+      },
+      "testCodes": [
+        "PT",
+        "APTT",
+        "INR",
+        "FIB",
+        "FIBRINO"
+      ]
+    },
+    {
+      "class": "liver_enzymes",
+      "floor": {
+        "minG": 0.5,
+        "minFcDelta": 0.5
+      },
+      "testCodes": [
+        "ALT",
+        "ALAT",
+        "AST",
+        "ASAT",
+        "ALP",
+        "ALKP",
+        "GGT",
+        "SDH",
+        "GLDH",
+        "GDH",
+        "5NT",
+        "LDH"
+      ]
+    },
+    {
+      "class": "renal_markers",
+      "floor": {
+        "minG": 0.5,
+        "minFcDelta": 0.2
+      },
+      "testCodes": [
+        "BUN",
+        "UREA",
+        "UREAN",
+        "CREAT",
+        "CREA"
+      ]
+    },
+    {
+      "class": "clinical_chemistry",
+      "floor": {
+        "minG": 0.5,
+        "minFcDelta": 0.25
+      },
+      "testCodes": [
+        "GLUC",
+        "CHOL",
+        "BILI",
+        "TBILI",
+        "TRIG",
+        "ALB",
+        "GLOBUL",
+        "PROT",
+        "ALBGLOB",
+        "TP"
+      ]
+    },
+    {
+      "class": "electrolytes",
+      "floor": {
+        "minG": 0.8,
+        "minFcDelta": 0.1
+      },
+      "testCodes": [
+        "SODIUM",
+        "NA",
+        "K",
+        "CA",
+        "PHOS",
+        "CL",
+        "MG"
+      ]
+    },
+    {
+      "class": "body_weight",
+      "floor": {
+        "minG": 0.5,
+        "minFcDelta": 0.05
+      },
+      "testCodes": [
+        "BW",
+        "BWGAIN"
+      ]
+    },
+    {
+      "class": "food_consumption",
+      "floor": {
+        "minG": 0.5,
+        "minFcDelta": 0.1
+      },
+      "testCodes": [
+        "FOOD",
+        "FC"
+      ]
+    }
+  ]
+}

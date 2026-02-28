@@ -128,6 +128,7 @@ Two files both detect "syndromes" but at different abstraction levels — do not
 - **Context panel pane ordering.** Priority: insights → stats/details → related items → annotation → navigation.
 - **Evidence tab naming.** Use "Evidence" (not "Overview") for cross-view consistency.
 - **Data label casing — two-tier strategy.** Organ system names get `titleCase()`. All other data-sourced labels display as raw values (may contain clinical abbreviations like ALT, AST).
+- **Sex ordering — alphabetical, always.** When both sexes are displayed, F precedes M in every axis: left-to-right, top-to-bottom, or any other sequential layout. This is a hard rule.
 - **Visual hierarchy: Position > Grouping > Typography > Color.** Color is always the last resort.
 - **One saturated color family per column at rest.** Everything else: neutral, outlined, muted, or interaction-only.
 - **Color budget: ≤10% saturated pixels at rest.** Only conclusions visually "shout."

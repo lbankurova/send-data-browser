@@ -20,6 +20,7 @@ from services.analysis.classification import (
     determine_treatment_related,
     compute_max_fold_change,
 )
+from services.analysis.corroboration import compute_corroboration
 from generator.organ_map import get_organ_system
 from services.analysis.phase_filter import IN_LIFE_DOMAINS
 
@@ -264,4 +265,7 @@ def process_findings(
         )
     if separate_map is not None:
         base_findings = attach_separate_stats(base_findings, separate_map)
-    return enrich_findings(base_findings)
+    enriched = enrich_findings(base_findings)
+    # Cross-domain corroboration (requires all enriched findings present)
+    enriched = compute_corroboration(enriched)
+    return enriched
