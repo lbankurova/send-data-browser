@@ -1,6 +1,6 @@
 # TOPIC Hub: Assessment Engine — Regulatory Alignment & Roadmap
 
-**Created:** 2026-02-28 | **Updated:** 2026-02-28 (Tiers 1+2+3A+3B shipped, Briefs 1/2/4/5/6 incorporated)
+**Created:** 2026-02-28 | **Updated:** 2026-02-28 (Tiers 1+2+3A+3B shipped, Phase 1+ Wistar Han HCD, Briefs 1/2/4/5/6 incorporated)
 **Source material:**
 - `docs/deep-research/reg-standards-for-auto-tox-finding-assessment.md` — Regulatory standards audit (7 domains)
 - `docs/deep-research/github-repos-overlay-tox-assessment.md` — Open-source landscape (27 repos, build vs. leverage)
@@ -25,7 +25,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 
 **Tier 3B shipped** (2026-02-28): 14 organ-specific non-tumor progression chains (ECETOC B-6 factor). YAML-driven chain definitions (`shared/progression-chains.yaml`, ~340 lines) with Python evaluation engine (`progression_chains.py`, ~280 lines). Each chain defines severity-graded stages, obligate precursors, species/sex/strain filters, human relevance annotations, and spontaneous rate notes. PointCross impact: 3 findings escalated to `tr_adverse` (2 adenoma + 1 carcinoma via obligate precursors), 17 total B-6 annotations.
 
-**Bottom line:** The system is ~90% through Phase 0 and ~85% through Phase 1. Research is complete for all six briefs. Tier 2C (Hall 2012 liver panel), Tier 3A (HCD Phase 1, SD rat static ranges), Tier 3B (B-6 progression chains), and Track 4A (per-finding GRADE confidence) are shipped. The heaviest remaining implementation work is: (1) HCD Phase 2 (SQLite from DTT IAD), and (2) onset-timing modifiers for BW/CL.
+**Bottom line:** The system is ~90% through Phase 0 and ~85% through Phase 1. Research is complete for all six briefs. Tier 2C (Hall 2012 liver panel), Tier 3A (HCD Phase 1, SD rat static ranges), Phase 1+ (Wistar Han NTP composite), Tier 3B (B-6 progression chains), and Track 4A (per-finding GRADE confidence) are shipped. The heaviest remaining implementation work is: (1) HCD Phase 2 (SQLite from DTT IAD), and (2) onset-timing modifiers for BW/CL.
 
 ---
 
@@ -45,7 +45,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 
 | Roadmap Item | Status | Current State | Gap |
 |---|---|---|---|
-| **ECETOC Step 1 (treatment-relatedness)** | 4/7 factors | A-1 dose-response (0-2pts) ✓, A-2 concordance via `corroboration_status` (0-1pt) ✓, A-6 statistics (0-1pt) ✓, A-7 clinical obs ✓. A-3 HCD reserved, A-4 temporal partial (food only), A-5 mechanism missing. | A-3 is the biggest gap — no HCD database. **Brief 4 completed:** phased approach — Option A (static SD/Wistar ranges from Envigo+Inotiv, 2 weeks) → Option B (SQLite from NTP DTT IAD 78 MB Excel, 6 weeks). Option C (sendigR) eliminated — doesn't support OM domain. A-5 requires MOA annotations. A-4: **Brief 5 decided** onset-timing modifier for BW/CL goes into DR quality, not A-4. |
+| **ECETOC Step 1 (treatment-relatedness)** | 5/7 factors | A-1 dose-response (0-2pts) ✓, A-2 concordance via `corroboration_status` (0-1pt) ✓, **A-3 HCD ✓** (SD + Wistar Han static ranges), A-6 statistics (0-1pt) ✓, A-7 clinical obs ✓. A-4 temporal partial (food only), A-5 mechanism missing. | A-3 Phase 1+ shipped (SD rat Envigo + Wistar Han NTP composite). Phase 2 (SQLite from NTP DTT IAD) not yet implemented. A-5 requires MOA annotations. A-4: **Brief 5 decided** onset-timing modifier for BW/CL goes into DR quality, not A-4. |
 | **ECETOC Step 2 (adversity)** | ~~7/7 factors~~ | B-2 adaptive: intrinsic adversity dict ✓ + 6 adaptive decision trees ✓ (liver, thyroid, adrenal, thymus/spleen, kidney, gastric), B-3 reversibility ✓, B-4 magnitude ✓, B-5 cross-domain ✓, **B-6 progression chains ✓** (14 organ-specific chains in YAML, `progression_chains.py` engine), B-7 secondary ✓. | None — B-6 shipped. `shared/progression-chains.yaml` (~340L), `progression_chains.py` (~280L). PointCross: 3 escalated, 17 annotated. Adaptive trees shipped — `adaptive_trees.py` (723L), `ConcurrentFindingIndex` (155L). |
 | **Cross-domain concordance** | DONE (mostly) | 10 syndromes (XS01-XS10), shared definitions, frontend full scoring with compound logic + directional gates + magnitude floors. Backend corroboration_status **now consumed** by NOAEL (via `assess_finding()` A-2 factor) and classification. | Backend corroboration still lacks compound logic/directional gates/magnitude floors (frontend-only). |
 | **Per-sex assessment** | DONE | All analyses per-sex. NOAEL provides M/F/Combined. Sex divergence detection and display. Separate narratives when divergent. | Missing: sex-dimorphism mechanism flags (α2u nephropathy, CYP differences). min(M,F) has no exceptions — always conservative. **Brief 1** documents α2u-globulin flag for male rat kidney — ready for implementation. |
@@ -57,7 +57,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 |---|---|---|---|
 | **NOAEL proposal engine** | ~~DONE~~ | Backend NOAEL **now consumes** `finding_class` via `_is_loael_driving()`. Treatment-related-non-adverse findings no longer constrain NOAEL. Corroboration penalty (-0.15 confidence) when ALL adverse findings at LOAEL are uncorroborated. Derivation trace includes `finding_class`, `corroboration_status`, `classification_method`. | No structured justification package (export/PDF). Shipped `f6c195d`. |
 | **GRADE confidence scoring** | **Track 4A DONE** | ECI 5-dimension endpoint confidence (frontend). **NEW:** Per-finding GRADE-style `_confidence` (backend, `confidence.py`): 5 dimensions (D1 statistical, D2 DR quality, D3 concordance, D4 HCD, D5 cross-sex) → HIGH/MODERATE/LOW. PointCross: 45 HIGH, 41 MODERATE, 310 LOW across 396 findings. | **Brief 5 decided:** temporal is NOT a standalone dimension. Remaining: onset-timing modifier for BW/CL, cross-study consistency (multi-study feature). |
-| **HCD integration** | **Phase 1 DONE** | SD rat static ranges (Envigo C11963, 10 organs × 2 sexes × 2 durations). A-3 factor active for OM findings. PointCross: 2 findings reclassified. | Phase 1+ (Wistar Han), Phase 2 (SQLite from DTT IAD) not yet implemented. |
+| **HCD integration** | **Phase 1+ DONE** | SD rat (Envigo C11963, 10 organs × 2 sexes × 2 durations) + Wistar Han (NTP TR-587/591/593 composite, 7 organs × 2 sexes, 90-day only). A-3 factor active for OM findings. PointCross: 2 findings reclassified (SD rat). | Phase 2 (SQLite from DTT IAD) not yet implemented. Wistar Han 28-day data not yet available. No brain/adrenal/ovaries/epididymides/pituitary for Wistar Han (not in NTP subchronic panel). |
 | **BMD module** | MISSING | No benchmark dose computation. | pybmds (R20, public domain) is pip-installable. Low complexity integration for optional BMD alongside NOAEL. |
 
 ### Phase 3 — Polish & Differentiate
@@ -120,7 +120,7 @@ Three gaps require external data sources, not just code changes:
 | `backend/services/analysis/adversity_dictionary.py` | ~55 | Intrinsic adversity lookup from shared JSON |
 | `backend/services/analysis/organ_thresholds.py` | ~154 | Lazy-loaded organ threshold config + species resolver |
 | `backend/services/analysis/hcd.py` | ~289 | HCD reference ranges (A-3): HcdRangeDB lazy-loaded singleton, assess_a3(), strain/duration TS extraction |
-| `shared/hcd-reference-ranges.json` | ~63 | SD rat organ weight reference ranges (Envigo C11963, 10 organs × 2 sexes × 2 durations) |
+| `shared/hcd-reference-ranges.json` | ~94 | SD rat (Envigo C11963, 10 organs × 2 sexes × 2 durations) + Wistar Han (NTP TR-587/591/593 composite, 7 organs × 2 sexes, 90-day) organ weight reference ranges |
 | `backend/services/analysis/concurrent_findings.py` | ~158 | ConcurrentFindingIndex for cross-finding queries (is_lb_marker_clean: any significant change = not clean) |
 | `backend/services/analysis/adaptive_trees.py` | ~740 | 6 adaptive decision trees (liver/Hall 2012 panel, thyroid, adrenal, thymus/spleen, kidney, gastric) |
 | `backend/services/analysis/corroboration.py` | ~230 | Presence-based cross-domain syndrome matching, quality gate |
@@ -291,7 +291,9 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 
 **PointCross impact:** 2 OM findings downgraded tr_adverse→equivocal (Spleen F 27% within_hcd, Thymus M 37% within_hcd). Distribution: 227/101/42/23/3 (was 227/103/40/23/3). 1062 tests pass.
 
-**Not yet implemented:** Wistar Han ranges (Inotiv PDF digitization), non-OM domains (LB/BW ranges for A-3).
+**Phase 1+ shipped** (2026-02-28): Wistar Han [Crl:WI(Han)] static ranges from NTP vehicle control data (TR-587 TBBPA, TR-591 TRIM VX, TR-593 2,3-Butanedione). Composite mean + pooled SD from 3 three-month studies (n=30/organ/sex, n=20 for spleen). 7 organs (heart, kidney, liver, lung, spleen, testes, thymus) × 2 sexes = 13 entries, 90-day only. Flagged: right-side only kidney/testis, route variation in liver (gavage + inhalation), 28-day not yet available.
+
+**Not yet implemented:** Non-OM domains (LB/BW ranges for A-3), HCD Phase 2 (SQLite from DTT IAD).
 
 #### 3A+. Historical Control Data Integration — Phase 2: SQLite from DTT IAD
 **What:** Download NTP DTT IAD Organ Weight (78 MB Excel) and Terminal Bodyweight (85.9 MB Excel) files. Build SQLite reference database with ETL: parse Excel → filter controls → join OM+BW by animal ID → compute ratios → index by strain/sex/duration/route/date.
