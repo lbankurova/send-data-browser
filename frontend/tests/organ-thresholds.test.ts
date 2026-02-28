@@ -234,19 +234,29 @@ describe("OM two-gate assessment (_assessment_detail)", () => {
     },
   );
 
-  // Two-gate logic consistency
+  // Two-gate logic consistency (HCD downgrade: within_hcd can push tr_adverse → equivocal)
   test.skipIf(!hasGenerated)(
-    "both gates pass → tr_adverse",
+    "both gates pass → tr_adverse (or equivocal if HCD downgrade)",
     () => {
       const violations: string[] = [];
       for (const f of omFindings) {
         const det = f._assessment_detail;
         if (!det) continue;
         if (det.stat_gate && det.mag_gate === true) {
-          if (f.finding_class !== "tr_adverse") {
-            violations.push(
-              `${f.specimen} ${f.sex}: both gates pass but class=${f.finding_class}`,
-            );
+          const hcdDowngrade = det.hcd_downgrade === true;
+          if (hcdDowngrade) {
+            // HCD downgrade: both gates pass but within HCD → equivocal is correct
+            if (f.finding_class !== "equivocal") {
+              violations.push(
+                `${f.specimen} ${f.sex}: HCD downgrade but class=${f.finding_class} (expected equivocal)`,
+              );
+            }
+          } else {
+            if (f.finding_class !== "tr_adverse") {
+              violations.push(
+                `${f.specimen} ${f.sex}: both gates pass but class=${f.finding_class}`,
+              );
+            }
           }
         }
       }
@@ -284,6 +294,40 @@ describe("OM two-gate assessment (_assessment_detail)", () => {
       const det = f._assessment_detail;
       if (!det) continue;
       expect(det.organ_threshold, `BRAIN ${f.sex}: threshold should be 0`).toBe(0);
+    }
+  });
+
+  // A-3 HCD integration
+  test.skipIf(!hasGenerated)("OM findings have _hcd_assessment annotation", () => {
+    const withHcd = omFindings.filter(f => f._hcd_assessment);
+    expect(withHcd.length, "All OM findings should have _hcd_assessment").toBe(omFindings.length);
+    for (const f of withHcd) {
+      const hcd = f._hcd_assessment;
+      expect(["within_hcd", "outside_hcd", "no_hcd"]).toContain(hcd.result);
+      expect(typeof hcd.score).toBe("number");
+      expect(typeof hcd.detail).toBe("string");
+    }
+  });
+
+  test.skipIf(!hasGenerated)("HCD downgrade: within_hcd + both gates → equivocal", () => {
+    for (const f of omFindings) {
+      const det = f._assessment_detail;
+      if (!det || !det.hcd_downgrade) continue;
+      expect(
+        f.finding_class,
+        `${f.specimen} ${f.sex}: HCD downgrade should result in equivocal`,
+      ).toBe("equivocal");
+    }
+  });
+
+  test.skipIf(!hasGenerated)("_assessment_detail includes hcd_result field", () => {
+    for (const f of omFindings) {
+      const det = f._assessment_detail;
+      if (!det) continue;
+      expect(
+        det.hcd_result,
+        `${f.specimen} ${f.sex}: _assessment_detail should have hcd_result`,
+      ).toBeDefined();
     }
   });
 });

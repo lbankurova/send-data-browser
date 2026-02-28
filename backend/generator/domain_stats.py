@@ -31,6 +31,7 @@ from services.analysis.findings_pipeline import (
     SCHEDULED_DOMAINS,
 )
 from services.analysis.organ_thresholds import get_species
+from services.analysis.hcd import get_strain, get_study_duration_days
 
 
 def _safe_float(v) -> float | None:
@@ -175,11 +176,16 @@ def compute_all_findings(
             sep_findings.extend(_compute_fw_findings(study, main_only_subs, last_dosing_day=last_dosing_day))
         separate_map = build_findings_map(sep_findings, "separate")
 
-    # Resolve species for organ-specific thresholds
+    # Resolve study metadata for organ-specific thresholds and HCD
     species = get_species(study)
+    strain = get_strain(study)
+    duration_days = get_study_duration_days(study)
 
     # Shared enrichment pipeline (classification, fold change, labels, etc.)
-    all_findings = process_findings(all_findings, scheduled_map, separate_map, n_excluded, species=species)
+    all_findings = process_findings(
+        all_findings, scheduled_map, separate_map, n_excluded,
+        species=species, strain=strain, duration_days=duration_days,
+    )
 
     # Generator-specific: attach scheduled extras (min_p_adj, max_effect_size, trend_p)
     if scheduled_map:

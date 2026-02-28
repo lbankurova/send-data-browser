@@ -102,6 +102,15 @@ export interface UnifiedFinding {
     ceiling?: number;
     baseline?: "ancova" | "absolute";
     trend_tiebreaker?: boolean;
+    hcd_result?: "within_hcd" | "outside_hcd" | "no_hcd";
+    hcd_downgrade?: boolean;
+    hcd_upgrade?: boolean;
+  };
+  /** Tier 3A: HCD reference range assessment (OM findings only). */
+  _hcd_assessment?: {
+    result: "within_hcd" | "outside_hcd" | "no_hcd";
+    score: number;
+    detail: string;
   };
   /** Tier 2: Adaptive tree evaluation result (context-dependent histopath findings). */
   _tree_result?: {

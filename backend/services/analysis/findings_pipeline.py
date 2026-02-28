@@ -248,6 +248,8 @@ def process_findings(
     separate_map: dict[tuple, dict] | None = None,
     n_excluded: int = 0,
     species: str | None = None,
+    strain: str | None = None,
+    duration_days: int | None = None,
 ) -> list[dict]:
     """Shared enrichment pipeline: merge pass variants, then classify.
 
@@ -264,6 +266,8 @@ def process_findings(
 
     Args:
         species: Study species (from TS domain) for organ-specific thresholds.
+        strain: Study strain (from TS domain) for HCD matching.
+        duration_days: Study dosing duration in days (from TS DOSDUR) for HCD matching.
     """
     if scheduled_map is not None:
         base_findings = attach_scheduled_stats(
@@ -275,11 +279,18 @@ def process_findings(
     # Cross-domain corroboration (requires all enriched findings present)
     enriched = compute_corroboration(enriched)
     # ECETOC per-finding adversity assessment (requires corroboration_status)
-    enriched = _assess_all_findings(enriched, species=species)
+    enriched = _assess_all_findings(
+        enriched, species=species, strain=strain, duration_days=duration_days,
+    )
     return enriched
 
 
-def _assess_all_findings(findings: list[dict], species: str | None = None) -> list[dict]:
+def _assess_all_findings(
+    findings: list[dict],
+    species: str | None = None,
+    strain: str | None = None,
+    duration_days: int | None = None,
+) -> list[dict]:
     """Run ECETOC per-finding adversity assessment on all findings.
 
     Must be called AFTER ``compute_corroboration()`` since the assessment
@@ -289,12 +300,15 @@ def _assess_all_findings(findings: list[dict], species: str | None = None) -> li
     Tier 2: builds ConcurrentFindingIndex for cross-finding lookups and
     uses assess_finding_with_context() for organ-specific thresholds and
     adaptive decision trees.
+    Tier 3A: passes strain + duration for A-3 HCD assessment.
     """
     from services.analysis.concurrent_findings import ConcurrentFindingIndex
     index = ConcurrentFindingIndex(findings)
     for f in findings:
         try:
-            f["finding_class"] = assess_finding_with_context(f, index, species=species)
+            f["finding_class"] = assess_finding_with_context(
+                f, index, species=species, strain=strain, duration_days=duration_days,
+            )
         except Exception as e:
             log.warning("assess_finding_with_context failed for %s: %s", finding_key(f), e)
             f["finding_class"] = "not_treatment_related"
