@@ -127,7 +127,14 @@ def evaluate_rules(
         # R04: Adverse severity
         if finding.get("severity") == "adverse":
             best_p = finding.get("min_p_adj", 0) or 0
-            results.append(_emit(RULES[3], {**ctx, "p_value": best_p}, finding))
+            fc = finding.get("finding_class")
+            r04_params = {}
+            if fc is not None:
+                r04_params["finding_class"] = fc
+                if fc != "tr_adverse":
+                    r04_params["finding_class_disagrees"] = True
+            results.append(_emit(RULES[3], {**ctx, "p_value": best_p}, finding,
+                                 params=r04_params))
 
         # R05-R07: Dose-response patterns
         pattern = finding.get("dose_response_pattern", "")

@@ -1,0 +1,29 @@
+{
+  "always_adverse": [
+    "necrosis",
+    "fibrosis",
+    "carcinoma",
+    "sarcoma",
+    "lymphoma",
+    "leukemia",
+    "perforation",
+    "aplasia",
+    "infarction",
+    "malignant"
+  ],
+  "likely_adverse": [
+    "atrophy",
+    "degeneration",
+    "ulcer",
+    "hemorrhage",
+    "demyelination",
+    "sclerosis"
+  ],
+  "context_dependent": [
+    "hypertrophy",
+    "hyperplasia",
+    "vacuolation",
+    "pigmentation",
+    "mineralization"
+  ]
+}
