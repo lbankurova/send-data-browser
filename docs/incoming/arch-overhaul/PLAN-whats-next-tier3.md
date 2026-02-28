@@ -11,11 +11,11 @@ Three implementation tracks are ready. All research is complete — no briefs ou
 
 | Track | Source | Effort | Impact | Dependencies |
 |---|---|---|---|---|
-| **3A. HCD Static Ranges** | Brief 4 | ~2 days | High — enables A-3 factor, primary false-positive filter | None |
+| ~~**3A. HCD Static Ranges**~~ | Brief 4 | ~~~2 days~~ | ✅ SHIPPED 2026-02-28 | None |
 | **3B. B-6 Progression Chains** | Brief 6 | ~3-4 days | High — completes B-6 factor (currently tumors-only) | None |
 | **2C. Full Hall 2012 Liver LB Panel** | Brief 1 + existing code | ~1 day | Medium — completes liver adaptive tree | None |
 
-**Recommended sequence:** 2C → 3A → 3B (easiest-first, each builds confidence in the next).
+**Recommended sequence:** ~~2C~~ ✅ → ~~3A~~ ✅ → **3B** (next).
 
 ---
 

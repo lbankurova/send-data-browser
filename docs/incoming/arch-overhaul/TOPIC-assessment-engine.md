@@ -23,7 +23,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 
 **Tier 2 shipped** (2026-02-28): Two-gate OM classification (statistical gate + organ-specific magnitude gate) replaces uniform Cohen's d thresholds. 13-organ threshold config (`shared/organ-weight-thresholds.json`) with species-specific adrenal thresholds. 6 adaptive decision trees (liver, thyroid, adrenal, thymus/spleen, kidney, gastric) evaluate context-dependent MI findings using `ConcurrentFindingIndex`. "Adaptive" never claimed from magnitude alone — requires biological evidence from concurrent findings. Species threaded through entire pipeline.
 
-**Bottom line:** The system is ~90% through Phase 0 and ~80% through Phase 1. Research is complete for all six briefs. The heaviest remaining implementation work is: (1) HCD integration via phased Option A→B approach (Brief 4), (2) B-6 progression chains (Brief 6, 14 chains ready for YAML), and (3) Full Hall 2012 liver LB panel verification (Tier 2C).
+**Bottom line:** The system is ~90% through Phase 0 and ~85% through Phase 1. Research is complete for all six briefs. Tier 2C (Hall 2012 liver panel) and Tier 3A (HCD Phase 1, SD rat static ranges) are shipped. The heaviest remaining implementation work is: (1) B-6 progression chains (Brief 6, 14 chains ready for YAML), (2) HCD Phase 2 (SQLite from DTT IAD), and (3) GRADE confidence scoring extensions.
 
 ---
 
@@ -55,7 +55,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 |---|---|---|---|
 | **NOAEL proposal engine** | ~~DONE~~ | Backend NOAEL **now consumes** `finding_class` via `_is_loael_driving()`. Treatment-related-non-adverse findings no longer constrain NOAEL. Corroboration penalty (-0.15 confidence) when ALL adverse findings at LOAEL are uncorroborated. Derivation trace includes `finding_class`, `corroboration_status`, `classification_method`. | No structured justification package (export/PDF). Shipped `f6c195d`. |
 | **GRADE confidence scoring** | PARTIAL | ECI 5-dimension (statistical, biological, dose-response, trend validity, trend concordance) with integrated=min(all). Frontend endpoint confidence (HIGH/MODERATE/LOW). | **Brief 5 decided:** temporal is NOT a standalone dimension. Merge on-dose adaptation into B-3 (3-tier reversibility). Add onset-timing modifier into DR quality for BW/CL. Missing: HCD position, consistency (cross-sex/cross-study). |
-| **HCD integration** | MISSING | Mock HCD for SD rat only. A-3 factor always returns "no_hcd". | **Brief 4 completed.** Key discovery: NTP DTT IAD Organ Weight dataset (78 MB Excel, 40+ tissues, 14+ strains, individual animal data). Phased approach: Option A (static JSON ranges from Envigo C11963 + Inotiv Wistar Han 700-study HCD) → Option B (SQLite from DTT IAD). Option C (sendigR) eliminated — doesn't support OM domain. |
+| **HCD integration** | **Phase 1 DONE** | SD rat static ranges (Envigo C11963, 10 organs × 2 sexes × 2 durations). A-3 factor active for OM findings. PointCross: 2 findings reclassified. | Phase 1+ (Wistar Han), Phase 2 (SQLite from DTT IAD) not yet implemented. |
 | **BMD module** | MISSING | No benchmark dose computation. | pybmds (R20, public domain) is pip-installable. Low complexity integration for optional BMD alongside NOAEL. |
 
 ### Phase 3 — Polish & Differentiate
@@ -113,13 +113,15 @@ Three gaps require external data sources, not just code changes:
 ### Backend Assessment Logic
 | File | Lines | Role |
 |---|---|---|
-| `backend/services/analysis/classification.py` | ~608 | 3-category severity, dose-response pattern, treatment-relatedness, **`assess_finding()` ECETOC per-finding assessment**, two-gate OM (`_assess_om_two_gate`), adaptive tree dispatch (`assess_finding_with_context`) |
+| `backend/services/analysis/classification.py` | ~668 | 3-category severity, dose-response pattern, treatment-relatedness (A-3 HCD), **`assess_finding()` ECETOC per-finding assessment**, two-gate OM with HCD modifier (`_assess_om_two_gate`), adaptive tree dispatch (`assess_finding_with_context`) |
 | `backend/services/analysis/adversity_dictionary.py` | ~55 | Intrinsic adversity lookup from shared JSON |
 | `backend/services/analysis/organ_thresholds.py` | ~154 | Lazy-loaded organ threshold config + species resolver |
+| `backend/services/analysis/hcd.py` | ~289 | HCD reference ranges (A-3): HcdRangeDB lazy-loaded singleton, assess_a3(), strain/duration TS extraction |
+| `shared/hcd-reference-ranges.json` | ~63 | SD rat organ weight reference ranges (Envigo C11963, 10 organs × 2 sexes × 2 durations) |
 | `backend/services/analysis/concurrent_findings.py` | ~158 | ConcurrentFindingIndex for cross-finding queries (is_lb_marker_clean: any significant change = not clean) |
 | `backend/services/analysis/adaptive_trees.py` | ~740 | 6 adaptive decision trees (liver/Hall 2012 panel, thyroid, adrenal, thymus/spleen, kidney, gastric) |
 | `backend/services/analysis/corroboration.py` | ~230 | Presence-based cross-domain syndrome matching, quality gate |
-| `backend/services/analysis/findings_pipeline.py` | ~301 | Shared enrichment: classification, fold change, corroboration, ConcurrentFindingIndex, assess_finding_with_context |
+| `backend/services/analysis/findings_pipeline.py` | ~315 | Shared enrichment: classification, fold change, corroboration, ConcurrentFindingIndex, assess_finding_with_context (strain + duration threading) |
 | `backend/services/analysis/findings_om.py` | ~400 | Organ weight domain: 3 metrics, normalization selection, Williams' |
 | `backend/services/analysis/normalization.py` | ~350 | Bailey 2004 organ categories, BW-effect tiers, metric selection |
 | `backend/services/analysis/ancova.py` | ~300 | ANCOVA: LS means, pairwise, slope homogeneity, effect decomposition |
@@ -200,8 +202,9 @@ Three gaps require external data sources, not just code changes:
 ### Priority Tier 2 — Organ-Specific Thresholds & Non-Liver Adaptive Trees ✅ SHIPPED
 
 > **Shipped:** 2026-02-28
-> **New files:** `shared/organ-weight-thresholds.json` (116L), `backend/services/analysis/organ_thresholds.py` (154L), `backend/services/analysis/concurrent_findings.py` (155L), `backend/services/analysis/adaptive_trees.py` (723L)
-> **Modified files:** `classification.py` (295→608L), `findings_pipeline.py` (267→301L), `insights.py` (523→535L), `domain_stats.py` (383→387L), `unified_findings.py` (240→244L), `analysis.ts` (328→361L)
+> **New files (Tier 2):** `shared/organ-weight-thresholds.json` (116L), `backend/services/analysis/organ_thresholds.py` (154L), `backend/services/analysis/concurrent_findings.py` (155L), `backend/services/analysis/adaptive_trees.py` (723L)
+> **New files (Tier 3A):** `shared/hcd-reference-ranges.json` (63L), `backend/services/analysis/hcd.py` (289L)
+> **Modified files:** `classification.py` (295→668L), `findings_pipeline.py` (267→315L), `insights.py` (523→535L), `domain_stats.py` (383→391L), `unified_findings.py` (240→248L), `analysis.ts` (328→368L)
 > **Test coverage:** 30 new assertions in `frontend/tests/organ-thresholds.test.ts`, updated `finding-class.test.ts`
 
 #### 2A. Organ-Specific Magnitude Thresholds ✅
@@ -268,22 +271,22 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 
 ### Priority Tier 3 — External Data Integration
 
-#### 3A. Historical Control Data Integration (ECETOC A-3) — Phase 1: Static Ranges
-**What:** Compile static HCD reference ranges for SD rat and Wistar Han into JSON config. Enable A-3 factor assessment for the two highest-priority strain/duration combinations.
+#### 3A. Historical Control Data Integration (ECETOC A-3) — Phase 1: Static Ranges ✅ SHIPPED
 
-**Data sources (Brief 4):**
-- **SD rat:** Envigo Study C11963 (Hsd:Sprague Dawley, n=20, 28-day + 13-week) — starter ranges for 10 organs already compiled in Brief 4
-- **Wistar Han:** Inotiv RccHan:WIST HCD (700+ studies, age-stratified 5th/95th percentiles, pre-computed organ-to-brain ratios) — freely downloadable PDF
+**Shipped:** Session 2026-02-28. SD rat (Envigo C11963) static ranges for 10 organs × 2 sexes × 2 durations.
 
-**JSON schema:** `strain`, `sex`, `study_duration_days`, `organ`, `weight_type` (absolute/relative_bw/relative_brain), `mean`, `sd`, `n`, `p5`, `p95`, `min`, `max`, `source`, `date_range`
+**Implementation:**
+- `shared/hcd-reference-ranges.json` (~80L) — strain-indexed with aliases, duration categories (28-day, 90-day)
+- `backend/services/analysis/hcd.py` (~200L) — `HcdRangeDB` lazy-loaded singleton, `assess_a3()` returns `{result, score, detail}`, plus `get_strain()` and `get_study_duration_days()` TS domain extractors with ISO 8601 duration parsing
+- `classification.py` — A-3 wired into `_score_treatment_relatedness()` (+0.5 outside_hcd, -0.5 within_hcd). OM two-gate: `_assess_om_two_gate()` applies HCD as post-gate modifier (within_hcd + both gates → equivocal downgrade; outside_hcd + stat only + small magnitude → equivocal upgrade). Strong adverse bypasses HCD.
+- `findings_pipeline.py` — `process_findings()` accepts `strain` + `duration_days`, threads to `_assess_all_findings()`
+- `domain_stats.py`, `unified_findings.py` — extract strain + duration via `get_strain()`, `get_study_duration_days()`
+- `analysis.ts` — `_hcd_assessment` and `_assessment_detail.hcd_result/hcd_downgrade/hcd_upgrade` types
+- BFIELD-76: `_hcd_assessment` documented. METH-35: Historical Control Data (A-3) documented.
 
-**A-3 check:** Group mean within [p5, p95] (or [mean-2SD, mean+2SD]) → `within_hcd`; outside → `outside_hcd`. Deterministic, no external dependency.
+**PointCross impact:** 2 OM findings downgraded tr_adverse→equivocal (Spleen F 27% within_hcd, Thymus M 37% within_hcd). Distribution: 227/101/42/23/3 (was 227/103/40/23/3). 1062 tests pass.
 
-**Why:** A-3 is the single most impactful missing factor. Primary false-positive filter in regulatory practice. Without it, the system flags every high-background finding (CPN in SD rats, MCL in F344) as potentially treatment-related.
-
-**Files affected:** New `shared/hcd-reference-ranges.json`, new `backend/services/analysis/hcd.py`. Modified: `classification.py` (A-3 in A-factor scoring).
-
-**Complexity:** Medium. ~200-300 lines code + ~300-line JSON config.
+**Not yet implemented:** Wistar Han ranges (Inotiv PDF digitization), non-OM domains (LB/BW ranges for A-3).
 
 #### 3A+. Historical Control Data Integration — Phase 2: SQLite from DTT IAD
 **What:** Download NTP DTT IAD Organ Weight (78 MB Excel) and Terminal Bodyweight (85.9 MB Excel) files. Build SQLite reference database with ETL: parse Excel → filter controls → join OM+BW by animal ID → compute ratios → index by strain/sex/duration/route/date.
@@ -430,7 +433,7 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 | 1 | Organ-specific HCD variability & magnitude thresholds | ✅ IMPLEMENTED | `shared/organ-weight-thresholds.json` (116L), `organ_thresholds.py` (154L), two-gate OM in `classification.py` | Tier 2A ✅ |
 | 2 | Non-liver adaptive response classification rules | ✅ IMPLEMENTED | 6 decision trees in `adaptive_trees.py` (723L), `ConcurrentFindingIndex` (155L) | Tier 2B ✅ |
 | 3 | Cross-domain concordance linkage map | NOT STARTED | Organ-by-organ endpoint linkage table beyond XS01-XS10 | Tier 4C |
-| 4 | NTP CEBS historical control data profiling | ✅ COMPLETE | Phased Option A→B, DTT IAD discovery, sendigR eliminated, SD rat starter ranges compiled | Tier 3A |
+| 4 | NTP CEBS historical control data profiling | ✅ COMPLETE | Phased Option A→B, DTT IAD discovery, sendigR eliminated, SD rat starter ranges compiled | Tier 3A Phase 1 ✅ |
 | 5 | GRADE temporal dimension design decision | ✅ COMPLETE | Decision: merge into B-3 + DR quality, not standalone | Tier 4A |
 | 6 | Non-tumor progression chains (ECETOC B-6) | ✅ COMPLETE | 14 organ-specific chains with severity triggers, species specificity, HCD rates, time dependency | Tier 3B |
 

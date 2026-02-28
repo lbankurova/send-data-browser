@@ -62,6 +62,7 @@ One-line lookup for all methods in `methods.md`. Scan this first; drill into the
 | METH-32 | Food Consumption Key Stats | Per-sex BW/FC/FE metrics at highest dose |
 | METH-33 | Two-Gate OM Classification | Organ-specific two-gate (statistical + magnitude) OM assessment |
 | METH-34 | Adaptive Decision Trees | Context-dependent finding assessment via 6 organ-specific decision trees; liver tree includes full Hall 2012 LB panel gate (9 markers, min 5 clean, ALT+AST critical) |
+| METH-35 | Historical Control Data (A-3) | Strain/sex/duration-specific organ weight reference ranges; treated-group mean vs [mean±2SD] → within_hcd (-0.5) or outside_hcd (+0.5) treatment-relatedness modifier |
 
 ## Classification Algorithms (CLASS)
 

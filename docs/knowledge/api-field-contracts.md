@@ -215,8 +215,9 @@ These fields are set by the shared enrichment pipeline (`findings_pipeline.py`) 
 
 | ID | Field | JSON type | Nullable | Source | Invariant |
 |----|-------|-----------|----------|--------|-----------|
-| BFIELD-74 | `_assessment_detail` | object | **Yes** | `classification.py:_assess_om_two_gate()` | OM findings only. Two-gate assessment: `{method: string, stat_gate: boolean, mag_gate: boolean|null, pct_change: number|null, organ_threshold: number, ceiling?: number, baseline?: "ancova"|"absolute", trend_tiebreaker?: boolean}`. Null/absent for non-OM findings. `stat_gate` = pairwise p < 0.05. `mag_gate` = |pct_change| >= organ_threshold. |
+| BFIELD-74 | `_assessment_detail` | object | **Yes** | `classification.py:_assess_om_two_gate()` | OM findings only. Two-gate assessment: `{method: string, stat_gate: boolean, mag_gate: boolean|null, pct_change: number|null, organ_threshold: number, ceiling?: number, baseline?: "ancova"|"absolute", trend_tiebreaker?: boolean, hcd_result?: string, hcd_downgrade?: boolean, hcd_upgrade?: boolean}`. Null/absent for non-OM findings. `stat_gate` = pairwise p < 0.05. `mag_gate` = |pct_change| >= organ_threshold. `hcd_result` = "within_hcd"\|"outside_hcd"\|"no_hcd". `hcd_downgrade` = true when both gates pass but HCD says within range → equivocal. `hcd_upgrade` = true when stat gate only + small magnitude but outside HCD → equivocal. |
 | BFIELD-75 | `_tree_result` | object | **Yes** | `adaptive_trees.py` (6 trees) | Context-dependent MI findings only. Adaptive tree evaluation: `{tree_id: string, node_path?: string[], ecetoc_factors?: string[], rationale: string, human_relevance?: string}`. `tree_id` is one of LIVER, THYROID, ADRENAL, THYMUS_SPLEEN, KIDNEY, GASTRIC. Null/absent when no tree applies (finding not context_dependent or no matching tree). Liver tree: `ecetoc_factors` contains per-marker panel breakdown (e.g. "3/7 clean; changed: ALT,AST; missing: TP"). "Clean" = no significant change in any direction (p >= 0.05 AND fold < max_fold). |
+| BFIELD-76 | `_hcd_assessment` | object | **Yes** | `hcd.py:assess_a3()` | OM findings only. HCD reference range comparison: `{result: "within_hcd"|"outside_hcd"|"no_hcd", score: number, detail: string}`. `score`: -0.5 (within), +0.5 (outside), 0.0 (no data). `detail`: human-readable comparison string. Null/absent for non-OM findings. Source: Envigo C11963 SD rat static ranges. |
 
 ---
 
@@ -246,6 +247,7 @@ These fields are propagated identically across multiple JSON outputs via `_propa
 | BFIELD-59 -- BFIELD-63 | food_consumption_summary.json | 5 |
 | BFIELD-64 -- BFIELD-73 | pk_integration.json | 10 |
 | BFIELD-74 -- BFIELD-75 | Per-finding assessment (Tier 2) | 2 |
-| BFIELD-76+ | Reserved for future fields | -- |
+| BFIELD-76 | HCD assessment (Tier 3A) | 1 |
+| BFIELD-77+ | Reserved for future fields | -- |
 
-Total: 75 fields documented across 12 JSON output categories.
+Total: 76 fields documented across 13 JSON output categories.

@@ -647,6 +647,8 @@ Returns `True` if **any** of:
 
 **Dictionary:** `shared/adversity-dictionary.json` — three tiers of intrinsic adversity terms (substring matching, priority: always > likely > context_dependent). Loaded by `services/analysis/adversity_dictionary.py`.
 
+**HCD reference ranges:** `shared/hcd-reference-ranges.json` — SD rat organ weight historical control data (Envigo C11963, 10 organs × 2 sexes × 2 durations). Loaded by `services/analysis/hcd.py`. Used for A-3 factor: treated-group mean compared against [mean±2SD] range. OM two-gate modifier: within_hcd + both gates → downgrade to equivocal; outside_hcd + stat only + small magnitude → upgrade to equivocal.
+
 Returns one of five categories:
 
 | finding_class | Meaning |
@@ -661,7 +663,7 @@ Returns one of five categories:
 
 **Step 0 — Intrinsic adversity override** (MI/MA/TF only): If finding text contains an `always_adverse` term (necrosis, carcinoma, etc.), any signal (A-score ≥ 1.0) → `tr_adverse`, no signal → `equivocal`.
 
-**Step 1 — Treatment-relatedness** (A-factors): A-1 dose-response pattern (0–2 pts), A-2 concordance via `corroboration_status` (0–1 pt), A-6 statistical significance (0–1 pt). Score ≥ 1.0 = treatment-related; < 1.0 → `not_treatment_related`.
+**Step 1 — Treatment-relatedness** (A-factors): A-1 dose-response pattern (0–2 pts), A-2 concordance via `corroboration_status` (0–1 pt), A-3 historical control data (±0.5 pts: within_hcd = −0.5, outside_hcd = +0.5, no_hcd = 0; OM findings only, via `hcd.py`), A-6 statistical significance (0–1 pt). Score ≥ 1.0 = treatment-related; < 1.0 → `not_treatment_related`.
 
 **Step 2 — Adversity** (B-factors, only if treatment-related):
 

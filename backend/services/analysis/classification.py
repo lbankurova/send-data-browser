@@ -4,6 +4,8 @@ treatment-relatedness, and ECETOC per-finding adversity assessment.
 Tier 2 additions: organ-specific two-gate OM classification, adaptive decision trees,
 and context-aware assessment using ConcurrentFindingIndex.
 
+Tier 3A: A-3 factor — historical control data (HCD) reference range check.
+
 Designed for later extraction to configurable scripts."""
 
 from __future__ import annotations
@@ -321,11 +323,12 @@ def determine_treatment_related(finding: dict) -> bool:
 _HISTOPATH_DOMAINS = {"MI", "MA", "TF"}
 
 
-def _score_treatment_relatedness(finding: dict) -> float:
-    """A-factor scoring for treatment-relatedness (0-4 scale).
+def _score_treatment_relatedness(finding: dict, a3_score: float = 0.0) -> float:
+    """A-factor scoring for treatment-relatedness (0-4 scale, may shift ±0.5 with A-3).
 
     A-1: Dose-response pattern (0-2 pts)
     A-2: Concordance via corroboration_status (0-1 pt)
+    A-3: Historical control data — within_hcd=-0.5, outside_hcd=+0.5, no_hcd=0
     A-6: Statistics (0-1 pt)
     """
     score = 0.0
@@ -344,6 +347,9 @@ def _score_treatment_relatedness(finding: dict) -> float:
     if corr == "corroborated":
         score += 1.0
 
+    # A-3: Historical control data (HCD)
+    score += a3_score
+
     # A-6: Statistical significance
     min_p = finding.get("min_p_adj")
     trend_p = finding.get("trend_p")
@@ -355,12 +361,12 @@ def _score_treatment_relatedness(finding: dict) -> float:
     return score
 
 
-def assess_finding(finding: dict) -> str:
+def assess_finding(finding: dict, a3_score: float = 0.0) -> str:
     """ECETOC-style per-finding adversity assessment.
 
     Steps:
       0. Intrinsic adversity override (MI/MA/TF only)
-      1. Treatment-relatedness via A-factor scoring
+      1. Treatment-relatedness via A-factor scoring (includes A-3 HCD)
       2. Adversity via B-factor logic (only if treatment-related)
 
     Returns one of: not_treatment_related, tr_non_adverse, tr_adaptive,
@@ -376,11 +382,11 @@ def assess_finding(finding: dict) -> str:
         intrinsic = lookup_intrinsic_adversity(finding_text)
         if intrinsic == "always_adverse":
             # Any statistical signal → adverse; no signal → equivocal
-            tr_score = _score_treatment_relatedness(finding)
+            tr_score = _score_treatment_relatedness(finding, a3_score)
             return "tr_adverse" if tr_score >= 1.0 else "equivocal"
 
     # -- Step 1: Treatment-relatedness (A-factors) --
-    tr_score = _score_treatment_relatedness(finding)
+    tr_score = _score_treatment_relatedness(finding, a3_score)
     if tr_score < 1.0:
         return "not_treatment_related"
 
@@ -452,11 +458,17 @@ def _compute_pct_change(finding: dict) -> float | None:
     return ((high_mean - ctrl_mean) / abs(ctrl_mean)) * 100
 
 
-def _assess_om_two_gate(finding: dict, species: str | None = None) -> str:
-    """Two-gate OM classification: statistical gate × magnitude gate.
+def _assess_om_two_gate(
+    finding: dict,
+    species: str | None = None,
+    a3_score: float = 0.0,
+) -> str:
+    """Two-gate OM classification: statistical gate × magnitude gate × A-3 HCD.
 
     Gate 1 (stats): min_p_adj < 0.05
     Gate 2 (magnitude): |pct_change| >= organ-specific adverse_floor_pct
+    A-3 modifier: within_hcd can downgrade tr_adverse→equivocal;
+                  outside_hcd can upgrade tr_non_adverse→equivocal.
 
     Returns finding_class and annotates finding with _assessment_detail.
     """
@@ -487,6 +499,7 @@ def _assess_om_two_gate(finding: dict, species: str | None = None) -> str:
     marginal_stats = min_p is not None and 0.05 <= min_p < 0.10
 
     # Annotate assessment detail
+    hcd_info = finding.get("_hcd_assessment", {})
     detail = {
         "method": method,
         "stat_gate": stat_gate,
@@ -496,6 +509,7 @@ def _assess_om_two_gate(finding: dict, species: str | None = None) -> str:
         "baseline": "ancova" if (finding.get("ancova") and
                                   isinstance(finding.get("ancova"), dict) and
                                   finding["ancova"].get("adjusted_means")) else "absolute",
+        "hcd_result": hcd_info.get("result", "no_hcd"),
     }
     finding["_assessment_detail"] = detail
 
@@ -513,7 +527,10 @@ def _assess_om_two_gate(finding: dict, species: str | None = None) -> str:
             return "equivocal"
         return "not_treatment_related"
 
-    # Strong adverse: always adverse if stats pass
+    within_hcd = a3_score < 0  # -0.5 = within HCD range
+    outside_hcd = a3_score > 0  # +0.5 = outside HCD range
+
+    # Strong adverse: always adverse if stats pass (HCD cannot override strong signal)
     if abs_pct >= strong and stat_gate:
         detail["mag_gate"] = True
         return "tr_adverse"
@@ -524,7 +541,10 @@ def _assess_om_two_gate(finding: dict, species: str | None = None) -> str:
     detail["mag_gate"] = mag_above_floor
 
     if stat_gate and mag_above_floor:
-        # Both gates pass → adverse
+        # Both gates pass → adverse, UNLESS within HCD (downgrade to equivocal)
+        if within_hcd:
+            detail["hcd_downgrade"] = True
+            return "equivocal"
         return "tr_adverse"
 
     if stat_gate and mag_above_ceiling and not mag_above_floor:
@@ -535,6 +555,10 @@ def _assess_om_two_gate(finding: dict, species: str | None = None) -> str:
         # Real but trivially small → non-adverse
         # Exception: very significant + above half ceiling → equivocal
         if min_p is not None and min_p < 0.001 and abs_pct > ceiling / 2:
+            return "equivocal"
+        # Exception: outside HCD → escalate to equivocal (value exceeds normal variation)
+        if outside_hcd:
+            detail["hcd_upgrade"] = True
             return "equivocal"
         return "tr_non_adverse"
 
@@ -559,10 +583,35 @@ def _assess_om_two_gate(finding: dict, species: str | None = None) -> str:
     return "not_treatment_related"
 
 
+def _compute_a3_for_om(
+    finding: dict,
+    strain: str | None,
+    duration_days: int | None,
+) -> dict:
+    """Compute A-3 (HCD) score for an OM finding.
+
+    Compares the highest-dose group mean against the HCD reference range
+    for the matching strain/sex/duration/organ.
+    """
+    from services.analysis.hcd import assess_a3
+
+    # Get highest-dose group mean (absolute organ weight)
+    gs = finding.get("group_stats", [])
+    treated_mean = None
+    if gs:
+        treated_mean = gs[-1].get("mean")
+
+    specimen = finding.get("specimen", "")
+    sex = finding.get("sex", "")
+    return assess_a3(treated_mean, specimen, sex, strain, duration_days)
+
+
 def assess_finding_with_context(
     finding: dict,
     index,
     species: str | None = None,
+    strain: str | None = None,
+    duration_days: int | None = None,
 ) -> str:
     """Context-aware ECETOC assessment using concurrent findings and organ thresholds.
 
@@ -571,16 +620,27 @@ def assess_finding_with_context(
     2. Adaptive decision trees for context-dependent histopath findings
     3. Base assess_finding() for everything else
 
+    A-3 (HCD) is computed for OM findings and annotated on the finding.
+
     Args:
         finding: The finding dict to assess.
         index: ConcurrentFindingIndex for cross-finding lookups.
         species: Study species string (from TS domain).
+        strain: Study strain string (from TS domain).
+        duration_days: Study dosing duration in days (from TS DOSDUR).
     """
     domain = finding.get("domain", "")
 
+    # Compute A-3 for OM findings (absolute organ weight means vs HCD)
+    a3_score = 0.0
+    if domain == "OM":
+        a3_result = _compute_a3_for_om(finding, strain, duration_days)
+        a3_score = a3_result["score"]
+        finding["_hcd_assessment"] = a3_result
+
     # OM domain → two-gate organ-specific classification
     if domain == "OM":
-        return _assess_om_two_gate(finding, species)
+        return _assess_om_two_gate(finding, species, a3_score)
 
     # MI/MA domain with context_dependent term → try adaptive trees
     if domain in _HISTOPATH_DOMAINS:
