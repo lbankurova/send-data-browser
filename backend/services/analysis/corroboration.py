@@ -10,11 +10,20 @@ The backend answers a narrow question per finding per sex:
 "Does this finding have cross-domain support from other findings
 in the same sex, according to any syndrome definition?"
 
+**Quality gate**: Only treatment-related findings may serve as
+corroborating evidence (via ``passes_corroboration_gate``). The finding
+BEING corroborated does not need to pass the gate — only the supporting
+evidence does. This prevents the system from boosting confidence with
+findings it has already discounted (e.g., a p=0.21, treatment_related=False
+finding should not corroborate a strong finding).
+
 Status values:
 - ``corroborated``:    ≥1 syndrome has ≥2 matched terms (from different
-                       domains) including this finding, in the same sex
+                       domains) including this finding, in the same sex,
+                       where the supporting finding passes the quality gate
 - ``uncorroborated``:  the finding matches syndrome term(s) but no other
                        terms in the same syndrome are met in this sex
+                       (or all matches fail the quality gate)
 - ``not_applicable``:  the finding doesn't match any syndrome term
                        definition (e.g., food consumption, unusual lab
                        analytes not in any syndrome)
@@ -50,6 +59,22 @@ def _contains_word(text: str, term: str) -> bool:
     """Check if *term* appears as a whole word/phrase within *text* (both pre-normalized)."""
     escaped = re.escape(term)
     return bool(re.search(rf"(?:^|\s){escaped}(?:\s|$)", f" {text} "))
+
+
+def passes_corroboration_gate(finding: dict) -> bool:
+    """Can this finding serve as corroborating evidence for another finding?
+
+    Only treatment-related findings may corroborate. The finding BEING
+    corroborated does not need this gate — only the supporting evidence does.
+
+    Currently treatment_related is the sole criterion. Under the current
+    classification rules this also guarantees severity >= "warning" (all
+    paths to treatment_related=True require statistical significance that
+    yields at least "warning"). Future iterations may add explicit severity
+    or statistical thresholds (e.g., minimum trend_p, minimum effect size)
+    based on deep research findings.
+    """
+    return finding.get("treatment_related", False) is True
 
 
 # ---------------------------------------------------------------------------
@@ -179,6 +204,8 @@ def compute_corroboration(findings: list[dict]) -> list[dict]:
             other_domains_matched: set[str] = set()
             for other_f in sex_findings:
                 if other_f is f:
+                    continue
+                if not passes_corroboration_gate(other_f):
                     continue
                 for j, term in enumerate(syndrome["terms"]):
                     if j in my_term_indices:
