@@ -356,6 +356,69 @@ describe("Adaptive decision trees (_tree_result)", () => {
     }
   });
 
+  // Hall 2012 LB panel verification
+  test.skipIf(!hasGenerated)("liver tree reports panel marker breakdown in ecetoc_factors", () => {
+    for (const f of miFindings) {
+      const tr = f._tree_result;
+      if (!tr || tr.tree_id !== "liver_hall_2012") continue;
+      // ecetoc_factors should contain panel summary (e.g. "3/7 clean; changed: ALT,AST")
+      const factors = tr.ecetoc_factors ?? [];
+      const hasPanelDetail = factors.some(
+        (fac: string) => /\d+\/\d+ clean/.test(fac),
+      );
+      expect(
+        hasPanelDetail,
+        `${f.sex}: liver tree ecetoc_factors should contain panel marker breakdown`,
+      ).toBe(true);
+    }
+  });
+
+  test.skipIf(!hasGenerated)("liver tree rationale lists changed markers", () => {
+    for (const f of miFindings) {
+      const tr = f._tree_result;
+      if (!tr || tr.tree_id !== "liver_hall_2012") continue;
+      // Rationale should contain "panel:" with marker detail
+      expect(
+        tr.rationale.toLowerCase(),
+        `${f.sex}: liver tree rationale should contain panel detail`,
+      ).toContain("panel:");
+    }
+  });
+
+  test.skipIf(!hasGenerated)("liver tree node_path includes panel counts", () => {
+    for (const f of miFindings) {
+      const tr = f._tree_result;
+      if (!tr || tr.tree_id !== "liver_hall_2012") continue;
+      const panelNode = (tr.node_path ?? []).find(
+        (n: string) => n.startsWith("N2:panel_available="),
+      );
+      expect(
+        panelNode,
+        `${f.sex}: liver tree should have panel count in node_path`,
+      ).toBeDefined();
+    }
+  });
+
+  test.skipIf(!hasGenerated)(
+    "liver tree with critical marker changed → tr_adverse",
+    () => {
+      for (const f of miFindings) {
+        const tr = f._tree_result;
+        if (!tr || tr.tree_id !== "liver_hall_2012") continue;
+        // If ALT or AST changed, finding_class must be tr_adverse
+        const changedNode = (tr.node_path ?? []).find(
+          (n: string) => n.startsWith("N2:ALT_changed") || n.startsWith("N2:AST_changed"),
+        );
+        if (changedNode) {
+          expect(
+            f.finding_class,
+            `${f.sex}: critical marker changed should → tr_adverse`,
+          ).toBe("tr_adverse");
+        }
+      }
+    },
+  );
+
   // Thyroid tree specific
   test.skipIf(!hasGenerated)("thyroid tree fires for THYROID HYPERTROPHY/HYPERPLASIA", () => {
     const thyroidFindings = miFindings.filter(
