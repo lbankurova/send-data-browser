@@ -264,22 +264,22 @@
           }
         ],
         "animal_ids": [
-          "PC201708-4113",
-          "PC201708-4003"
+          "PC201708-4003",
+          "PC201708-4113"
         ],
         "animal_details": [
-          {
-            "id": "PC201708-4113",
-            "sex": "F",
-            "arm": "recovery",
-            "death_day": 100,
-            "scheduled": false
-          },
           {
             "id": "PC201708-4003",
             "sex": "M",
             "arm": "terminal",
             "death_day": 90,
+            "scheduled": false
+          },
+          {
+            "id": "PC201708-4113",
+            "sex": "F",
+            "arm": "recovery",
+            "death_day": 100,
             "scheduled": false
           }
         ],
@@ -348,19 +348,19 @@
           }
         ],
         "animal_ids": [
-          "PC201708-4005",
-          "PC201708-4007"
+          "PC201708-4007",
+          "PC201708-4005"
         ],
         "animal_details": [
           {
-            "id": "PC201708-4005",
+            "id": "PC201708-4007",
             "sex": "M",
             "arm": "terminal",
             "death_day": null,
             "scheduled": true
           },
           {
-            "id": "PC201708-4007",
+            "id": "PC201708-4005",
             "sex": "M",
             "arm": "terminal",
             "death_day": null,

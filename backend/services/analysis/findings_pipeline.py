@@ -19,6 +19,7 @@ from services.analysis.classification import (
     classify_dose_response,
     determine_treatment_related,
     compute_max_fold_change,
+    assess_finding,
 )
 from services.analysis.corroboration import compute_corroboration
 from generator.organ_map import get_organ_system
@@ -93,6 +94,7 @@ def _with_defaults(f: dict) -> dict:
     f.setdefault("pattern_confidence", None)
     f.setdefault("onset_dose_level", None)
     f.setdefault("treatment_related", False)
+    f.setdefault("finding_class", "not_treatment_related")
     f.setdefault("max_fold_change", None)
     f.setdefault("max_incidence", None)
     f.setdefault("organ_system", "general")
@@ -268,4 +270,22 @@ def process_findings(
     enriched = enrich_findings(base_findings)
     # Cross-domain corroboration (requires all enriched findings present)
     enriched = compute_corroboration(enriched)
+    # ECETOC per-finding adversity assessment (requires corroboration_status)
+    enriched = _assess_all_findings(enriched)
     return enriched
+
+
+def _assess_all_findings(findings: list[dict]) -> list[dict]:
+    """Run ECETOC per-finding adversity assessment on all findings.
+
+    Must be called AFTER ``compute_corroboration()`` since the assessment
+    uses ``corroboration_status`` as an input (A-2 concordance factor and
+    B-2 moderate-magnitude escalation).
+    """
+    for f in findings:
+        try:
+            f["finding_class"] = assess_finding(f)
+        except Exception as e:
+            log.warning("assess_finding failed for %s: %s", finding_key(f), e)
+            f["finding_class"] = "not_treatment_related"
+    return findings

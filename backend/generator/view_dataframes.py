@@ -8,6 +8,19 @@ from collections import defaultdict
 from services.analysis.statistics import severity_trend
 
 
+def _is_loael_driving(finding: dict) -> bool:
+    """Return True when a finding should drive LOAEL determination.
+
+    Uses ``finding_class`` when available (ECETOC assessment), falling back
+    to ``severity == "adverse"`` for backward compatibility with data that
+    predates the finding_class field.
+    """
+    fc = finding.get("finding_class")
+    if fc is not None:
+        return fc == "tr_adverse"
+    return finding.get("severity") == "adverse"
+
+
 def _propagate_scheduled_fields(row: dict, finding: dict) -> None:
     """Copy scheduled-only (early-death excluded) stats from finding to a view row."""
     if "scheduled_group_stats" in finding:
@@ -322,10 +335,10 @@ def build_noael_summary(
             if sex_filter == "Combined" or f.get("sex") == sex_filter
         ]
 
-        # Find lowest dose with adverse effect
+        # Find lowest dose with adverse effect (using ECETOC finding_class)
         adverse_dose_levels = set()
         for f in sex_findings:
-            if f.get("severity") == "adverse":
+            if _is_loael_driving(f):
                 for pw in f.get("pairwise", []):
                     p = pw.get("p_value_adj", pw.get("p_value"))
                     if p is not None and p < 0.05:
@@ -344,7 +357,7 @@ def build_noael_summary(
         adverse_at_loael = []   # (IMP-10) for noael_derivation
         if loael_level is not None:
             for f in sex_findings:
-                if f.get("severity") == "adverse":
+                if _is_loael_driving(f):
                     for pw in f.get("pairwise", []):
                         if pw["dose_level"] == loael_level:
                             p = pw.get("p_value_adj", pw.get("p_value"))
@@ -356,6 +369,8 @@ def build_noael_summary(
                                     "specimen": f.get("specimen", f.get("organ_system", "")),
                                     "domain": f.get("domain", ""),
                                     "p_value": round(p, 5),
+                                    "finding_class": f.get("finding_class"),
+                                    "corroboration_status": f.get("corroboration_status"),
                                 })
 
         # Compute NOAEL confidence score
@@ -363,9 +378,16 @@ def build_noael_summary(
             sex_filter, sex_findings, findings, noael_level, n_adverse_at_loael,
         )
 
+        # Determine classification method used
+        has_finding_class = any(
+            f.get("finding_class") is not None for f in sex_findings
+        )
+        classification_method = "finding_class" if has_finding_class else "legacy_severity"
+
         # Build NOAEL derivation trace (IMP-10)
         noael_derivation = {
             "method": "highest_dose_no_adverse" if noael_level is not None else "not_established",
+            "classification_method": classification_method,
             "loael_dose_level": loael_level,
             "loael_label": dose_label_map.get(loael_level, "N/A") if loael_level is not None else None,
             "adverse_findings_at_loael": adverse_at_loael,
@@ -397,7 +419,7 @@ def build_noael_summary(
         if has_scheduled_data:
             sched_adverse_levels = set()
             for f in sex_findings:
-                if f.get("severity") == "adverse":
+                if _is_loael_driving(f):
                     for pw in f.get("scheduled_pairwise", f.get("pairwise", [])):
                         p = pw.get("p_value_adj", pw.get("p_value"))
                         if p is not None and p < 0.05:
@@ -451,6 +473,7 @@ def _compute_noael_confidence(
     - sex_inconsistency: M and F NOAEL differ for Combined (0.2)
     - pathology_disagreement: reserved for annotation data (0.0)
     - large_effect_non_significant: large effect size but not significant (0.2)
+    - all_uncorroborated: ALL adverse findings at LOAEL are uncorroborated (0.15)
     """
     score = 1.0
 
@@ -464,7 +487,7 @@ def _compute_noael_confidence(
         opp_findings = [f for f in all_findings if f.get("sex") == opposite]
         opp_adverse_levels = set()
         for f in opp_findings:
-            if f.get("severity") == "adverse":
+            if _is_loael_driving(f):
                 for pw in f.get("pairwise", []):
                     p = pw.get("p_value_adj", pw.get("p_value"))
                     if p is not None and p < 0.05:
@@ -483,6 +506,19 @@ def _compute_noael_confidence(
         if es is not None and abs(es) >= 1.0 and (p is None or p >= 0.05):
             score -= 0.2
             break
+
+    # Penalty: ALL adverse findings at LOAEL are uncorroborated
+    # Asymmetric: uncorroborated still drives LOAEL, just with lower confidence
+    if n_adverse_at_loael > 0:
+        loael_findings = [
+            f for f in sex_findings
+            if _is_loael_driving(f)
+        ]
+        if loael_findings and all(
+            f.get("corroboration_status") == "uncorroborated"
+            for f in loael_findings
+        ):
+            score -= 0.15
 
     return round(max(score, 0.0), 2)
 

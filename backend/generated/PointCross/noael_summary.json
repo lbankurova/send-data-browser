@@ -7,7 +7,7 @@
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
     "loael_label": "Group 2,2 mg/kg PCDRUG",
-    "n_adverse_at_loael": 11,
+    "n_adverse_at_loael": 10,
     "adverse_domains_at_loael": [
       "BW",
       "LB",
@@ -17,6 +17,7 @@
     "noael_confidence": 0.8,
     "noael_derivation": {
       "method": "highest_dose_no_adverse",
+      "classification_method": "finding_class",
       "loael_dose_level": 1,
       "loael_label": "Group 2,2 mg/kg PCDRUG",
       "adverse_findings_at_loael": [
@@ -24,70 +25,84 @@
           "finding": "Creatinine",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01273
-        },
-        {
-          "finding": "Large Unstained Cells",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.011
+          "p_value": 0.01255,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "Ery. Mean Corpuscular Hemoglobin",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00509
+          "p_value": 0.00505,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "not_applicable"
         },
         {
           "finding": "Ery. Mean Corpuscular Volume",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00707
+          "p_value": 0.00701,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "not_applicable"
         },
         {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00057
+          "p_value": 0.00052,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "uncorroborated"
         },
         {
           "finding": "Erythrocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00277
+          "p_value": 0.0027,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "Urea Nitrogen",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01759
+          "p_value": 0.01755,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00154
+          "p_value": 0.0016,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "uncorroborated"
         },
         {
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.00438
+          "p_value": 0.00438,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03832
+          "p_value": 0.03834,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "VACUOLIZATION",
           "specimen": "GLAND, ADRENAL",
           "domain": "MI",
-          "p_value": 0.00109
+          "p_value": 0.00109,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "not_applicable"
         }
       ],
-      "n_adverse_at_loael": 11,
+      "n_adverse_at_loael": 10,
       "confidence": 0.8,
       "confidence_penalties": []
     },
@@ -107,7 +122,7 @@
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
     "loael_label": "Group 2,2 mg/kg PCDRUG",
-    "n_adverse_at_loael": 5,
+    "n_adverse_at_loael": 3,
     "adverse_domains_at_loael": [
       "LB",
       "MI"
@@ -115,6 +130,7 @@
     "noael_confidence": 0.8,
     "noael_derivation": {
       "method": "highest_dose_no_adverse",
+      "classification_method": "finding_class",
       "loael_dose_level": 1,
       "loael_label": "Group 2,2 mg/kg PCDRUG",
       "adverse_findings_at_loael": [
@@ -122,34 +138,28 @@
           "finding": "Activated Partial Thromboplastin Time",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00716
-        },
-        {
-          "finding": "Glucose",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.00429
-        },
-        {
-          "finding": "Potassium",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.03961
+          "p_value": 0.00711,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "not_applicable"
         },
         {
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00713
+          "p_value": 0.00707,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "VACUOLIZATION",
           "specimen": "GLAND, ADRENAL",
           "domain": "MI",
-          "p_value": 0.00109
+          "p_value": 0.00109,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "not_applicable"
         }
       ],
-      "n_adverse_at_loael": 5,
+      "n_adverse_at_loael": 3,
       "confidence": 0.8,
       "confidence_penalties": []
     },
@@ -169,7 +179,7 @@
     "noael_dose_unit": "mg/kg",
     "loael_dose_level": 1,
     "loael_label": "Group 2,2 mg/kg PCDRUG",
-    "n_adverse_at_loael": 16,
+    "n_adverse_at_loael": 13,
     "adverse_domains_at_loael": [
       "BW",
       "LB",
@@ -179,6 +189,7 @@
     "noael_confidence": 0.8,
     "noael_derivation": {
       "method": "highest_dose_no_adverse",
+      "classification_method": "finding_class",
       "loael_dose_level": 1,
       "loael_label": "Group 2,2 mg/kg PCDRUG",
       "adverse_findings_at_loael": [
@@ -186,100 +197,108 @@
           "finding": "Activated Partial Thromboplastin Time",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00716
+          "p_value": 0.00711,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "not_applicable"
         },
         {
           "finding": "Creatinine",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01273
-        },
-        {
-          "finding": "Glucose",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.00429
-        },
-        {
-          "finding": "Potassium",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.03961
-        },
-        {
-          "finding": "Large Unstained Cells",
-          "specimen": null,
-          "domain": "LB",
-          "p_value": 0.011
+          "p_value": 0.01255,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "Ery. Mean Corpuscular Hemoglobin",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00509
+          "p_value": 0.00505,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "not_applicable"
         },
         {
           "finding": "Ery. Mean Corpuscular Volume",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00707
+          "p_value": 0.00701,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "not_applicable"
         },
         {
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00057
+          "p_value": 0.00052,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "uncorroborated"
         },
         {
           "finding": "Erythrocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00277
+          "p_value": 0.0027,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00713
+          "p_value": 0.00707,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "Urea Nitrogen",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01759
+          "p_value": 0.01755,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00154
+          "p_value": 0.0016,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "uncorroborated"
         },
         {
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.00438
+          "p_value": 0.00438,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03832
+          "p_value": 0.03834,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "corroborated"
         },
         {
           "finding": "VACUOLIZATION",
           "specimen": "GLAND, ADRENAL",
           "domain": "MI",
-          "p_value": 0.00109
+          "p_value": 0.00109,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "not_applicable"
         },
         {
           "finding": "VACUOLIZATION",
           "specimen": "GLAND, ADRENAL",
           "domain": "MI",
-          "p_value": 0.00109
+          "p_value": 0.00109,
+          "finding_class": "tr_adverse",
+          "corroboration_status": "not_applicable"
         }
       ],
-      "n_adverse_at_loael": 16,
+      "n_adverse_at_loael": 13,
       "confidence": 0.8,
       "confidence_penalties": []
     },

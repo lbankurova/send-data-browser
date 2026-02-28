@@ -1,7 +1,11 @@
 """Pure rule functions for classifying findings severity, dose-response patterns,
-and treatment-relatedness. Designed for later extraction to configurable scripts."""
+treatment-relatedness, and ECETOC per-finding adversity assessment.
+
+Designed for later extraction to configurable scripts."""
 
 import math
+
+from services.analysis.adversity_dictionary import lookup_intrinsic_adversity
 
 
 def classify_severity(finding: dict) -> str:
@@ -293,3 +297,109 @@ def determine_treatment_related(finding: dict) -> bool:
         return True
 
     return False
+
+
+# ---------------------------------------------------------------------------
+# ECETOC per-finding adversity assessment
+# ---------------------------------------------------------------------------
+# Returns one of five categories:
+#   not_treatment_related — no statistical evidence
+#   tr_non_adverse        — treatment-related, small magnitude, no adversity markers
+#   tr_adaptive           — treatment-related, context-dependent term (hypertrophy etc.)
+#   tr_adverse            — treatment-related adverse (intrinsic adversity OR large magnitude)
+#   equivocal             — mixed evidence, needs human review
+
+_HISTOPATH_DOMAINS = {"MI", "MA", "TF"}
+
+
+def _score_treatment_relatedness(finding: dict) -> float:
+    """A-factor scoring for treatment-relatedness (0-4 scale).
+
+    A-1: Dose-response pattern (0-2 pts)
+    A-2: Concordance via corroboration_status (0-1 pt)
+    A-6: Statistics (0-1 pt)
+    """
+    score = 0.0
+
+    # A-1: Dose-response pattern
+    pattern = finding.get("dose_response_pattern", "")
+    if pattern in ("monotonic_increase", "monotonic_decrease"):
+        score += 2.0
+    elif pattern.startswith("threshold"):
+        score += 1.5
+    elif pattern == "non_monotonic":
+        score += 0.5
+
+    # A-2: Concordance — corroboration from other domains
+    corr = finding.get("corroboration_status", "not_applicable")
+    if corr == "corroborated":
+        score += 1.0
+
+    # A-6: Statistical significance
+    min_p = finding.get("min_p_adj")
+    trend_p = finding.get("trend_p")
+    if min_p is not None and min_p < 0.05:
+        score += 1.0
+    elif trend_p is not None and trend_p < 0.05:
+        score += 0.5
+
+    return score
+
+
+def assess_finding(finding: dict) -> str:
+    """ECETOC-style per-finding adversity assessment.
+
+    Steps:
+      0. Intrinsic adversity override (MI/MA/TF only)
+      1. Treatment-relatedness via A-factor scoring
+      2. Adversity via B-factor logic (only if treatment-related)
+
+    Returns one of: not_treatment_related, tr_non_adverse, tr_adaptive,
+    tr_adverse, equivocal.
+    """
+    domain = finding.get("domain", "")
+    finding_text = finding.get("finding", "")
+    max_d = finding.get("max_effect_size")
+    abs_d = abs(max_d) if max_d is not None else 0.0
+
+    # -- Step 0: Intrinsic adversity override (histopath domains only) --
+    if domain in _HISTOPATH_DOMAINS and finding_text:
+        intrinsic = lookup_intrinsic_adversity(finding_text)
+        if intrinsic == "always_adverse":
+            # Any statistical signal → adverse; no signal → equivocal
+            tr_score = _score_treatment_relatedness(finding)
+            return "tr_adverse" if tr_score >= 1.0 else "equivocal"
+
+    # -- Step 1: Treatment-relatedness (A-factors) --
+    tr_score = _score_treatment_relatedness(finding)
+    if tr_score < 1.0:
+        return "not_treatment_related"
+
+    # -- Step 2: Adversity (B-factors, only reached if treatment-related) --
+
+    # B-0: Dictionary override for likely_adverse
+    if domain in _HISTOPATH_DOMAINS and finding_text:
+        intrinsic = lookup_intrinsic_adversity(finding_text)
+        if intrinsic == "likely_adverse":
+            return "tr_adverse"
+        if intrinsic == "context_dependent":
+            # Context-dependent: large magnitude escalates, otherwise adaptive
+            if abs_d >= 1.5:
+                return "tr_adverse"
+            return "tr_adaptive"
+
+    # B-1: Large magnitude → adverse
+    if abs_d >= 1.5:
+        return "tr_adverse"
+
+    # B-2: Moderate magnitude + corroborated → adverse
+    corr = finding.get("corroboration_status", "not_applicable")
+    if abs_d >= 0.8 and corr == "corroborated":
+        return "tr_adverse"
+
+    # B-3: Small effect → non-adverse
+    if abs_d < 0.5:
+        return "tr_non_adverse"
+
+    # B-4: Equivocal fallback (moderate effect, not corroborated)
+    return "equivocal"

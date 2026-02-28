@@ -90,6 +90,8 @@ export interface UnifiedFinding {
   alternatives?: Record<string, AlternativeMetricStats> | null;
   /** Cross-domain corroboration status — set by backend pipeline. */
   corroboration_status?: "corroborated" | "uncorroborated" | "not_applicable";
+  /** ECETOC per-finding adversity class — set by backend pipeline. */
+  finding_class?: "not_treatment_related" | "tr_non_adverse" | "tr_adaptive" | "tr_adverse" | "equivocal";
 }
 
 export interface WilliamsStepDownResult {
