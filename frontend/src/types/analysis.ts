@@ -120,6 +120,16 @@ export interface UnifiedFinding {
     rationale: string;
     human_relevance?: string;
   };
+  /** Tier 3B: B-6 progression chain evaluation result (MI/MA/TF findings). */
+  _b6_result?: {
+    chain_id: string;
+    stage: string;
+    matched_term: string;
+    fires: boolean;
+    rationale: string;
+    human_relevance?: { mechanism: string; relevance: string; note: string };
+    spontaneous_note?: string;
+  };
 }
 
 export interface WilliamsStepDownResult {

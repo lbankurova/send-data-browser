@@ -5,6 +5,7 @@ Tier 2 additions: organ-specific two-gate OM classification, adaptive decision t
 and context-aware assessment using ConcurrentFindingIndex.
 
 Tier 3A: A-3 factor — historical control data (HCD) reference range check.
+Tier 3B: B-6 factor — progression chain evaluation (14 organ-specific chains).
 
 Designed for later extraction to configurable scripts."""
 
@@ -606,6 +607,40 @@ def _compute_a3_for_om(
     return assess_a3(treated_mean, specimen, sex, strain, duration_days)
 
 
+def _evaluate_b6_for_finding(
+    finding: dict,
+    index,
+    classification: str,
+    species: str | None,
+    strain: str | None,
+) -> str:
+    """Evaluate B-6 progression chains and potentially escalate classification.
+
+    B-6 fires when a finding matches a documented progression chain AND meets
+    firing conditions (obligate precursor or severity >= trigger). When B-6 fires
+    on a finding not already tr_adverse, escalate to tr_adverse (the finding is a
+    precursor to organ-level damage or neoplasia).
+
+    Always annotates _b6_result on the finding, regardless of firing.
+    """
+    from services.analysis.progression_chains import evaluate_b6
+
+    b6_result = evaluate_b6(finding, index=index, species=species, strain=strain)
+    if b6_result is None:
+        return classification
+
+    # Annotate (always, even if B-6 doesn't fire)
+    finding["_b6_result"] = b6_result.to_dict()
+
+    # B-6 escalation: if fires AND not already tr_adverse, escalate
+    if b6_result.fires and classification != "tr_adverse":
+        # Only escalate treatment-related findings (A-score >= 1.0)
+        if classification != "not_treatment_related":
+            return "tr_adverse"
+
+    return classification
+
+
 def assess_finding_with_context(
     finding: dict,
     index,
@@ -619,6 +654,10 @@ def assess_finding_with_context(
     1. Two-gate OM classification for organ weight findings
     2. Adaptive decision trees for context-dependent histopath findings
     3. Base assess_finding() for everything else
+
+    After primary classification, evaluates B-6 progression chains for MI/MA/TF
+    findings. B-6 can escalate non-adverse findings to tr_adverse when they
+    match a documented progression chain.
 
     A-3 (HCD) is computed for OM findings and annotated on the finding.
 
@@ -642,27 +681,43 @@ def assess_finding_with_context(
     if domain == "OM":
         return _assess_om_two_gate(finding, species, a3_score)
 
-    # MI/MA domain with context_dependent term → try adaptive trees
+    # MI/MA/TF domain → primary classification then B-6 evaluation
     if domain in _HISTOPATH_DOMAINS:
-        finding_text = finding.get("finding", "")
-        if finding_text:
-            intrinsic = lookup_intrinsic_adversity(finding_text)
-            if intrinsic == "context_dependent":
-                from services.analysis.adaptive_trees import evaluate_adaptive_trees
-                tree_result = evaluate_adaptive_trees(finding, index, species)
-                if tree_result is not None:
-                    finding["_tree_result"] = tree_result.to_dict()
-                    return tree_result.classification
-                # No tree matched → equivocal (never claim adaptive from magnitude alone)
-                finding["_tree_result"] = {
-                    "tree_id": "none",
-                    "rationale": "No adaptive tree matched; context_dependent finding without biological context evidence",
-                }
-                # Fall through to base assess_finding but override tr_adaptive → equivocal
-                base = assess_finding(finding)
-                if base == "tr_adaptive":
-                    return "equivocal"
-                return base
+        classification = _classify_histopath(finding, index, species)
+        # B-6 progression chain evaluation (may escalate)
+        classification = _evaluate_b6_for_finding(
+            finding, index, classification, species, strain,
+        )
+        return classification
 
     # Everything else → base ECETOC assessment
+    return assess_finding(finding)
+
+
+def _classify_histopath(finding: dict, index, species: str | None) -> str:
+    """Primary classification for MI/MA/TF findings (before B-6).
+
+    context_dependent terms → adaptive trees.
+    Everything else → base assess_finding().
+    """
+    finding_text = finding.get("finding", "")
+    if finding_text:
+        intrinsic = lookup_intrinsic_adversity(finding_text)
+        if intrinsic == "context_dependent":
+            from services.analysis.adaptive_trees import evaluate_adaptive_trees
+            tree_result = evaluate_adaptive_trees(finding, index, species)
+            if tree_result is not None:
+                finding["_tree_result"] = tree_result.to_dict()
+                return tree_result.classification
+            # No tree matched → equivocal (never claim adaptive from magnitude alone)
+            finding["_tree_result"] = {
+                "tree_id": "none",
+                "rationale": "No adaptive tree matched; context_dependent finding without biological context evidence",
+            }
+            # Fall through to base assess_finding but override tr_adaptive → equivocal
+            base = assess_finding(finding)
+            if base == "tr_adaptive":
+                return "equivocal"
+            return base
+
     return assess_finding(finding)
