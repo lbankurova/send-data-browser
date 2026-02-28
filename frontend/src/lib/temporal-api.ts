@@ -105,6 +105,12 @@ export interface RecoveryComparisonResponse {
     p_value: number | null;
     effect_size: number | null;
     terminal_effect: number | null;
+    /** Study day of the terminal sacrifice (end of dosing). */
+    terminal_day: number | null;
+    /** Peak effect (max |g|) across all main-arm timepoints for this dose (annotation context). */
+    peak_effect: number | null;
+    /** Study day when peak effect occurred. */
+    peak_day: number | null;
   }[];
 }
 

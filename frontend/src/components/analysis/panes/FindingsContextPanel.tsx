@@ -898,11 +898,13 @@ function RecoveryVerdictLine({
   }
 
   if (finding.data_type === "continuous" && recoveryComp?.available) {
-    const rows = recoveryComp.rows.filter(
-      (r) =>
-        r.test_code.toUpperCase() === finding.test_code.toUpperCase() &&
-        r.sex === finding.sex,
-    );
+    const rows = recoveryComp.rows.filter((r) => {
+      // For OM findings, match by specimen since OMTESTCD is always "WEIGHT"
+      const codeMatch = finding.specimen
+        ? r.test_code.toUpperCase() === finding.specimen.toUpperCase()
+        : r.test_code.toUpperCase() === finding.test_code.toUpperCase();
+      return codeMatch && r.sex === finding.sex;
+    });
     if (rows.length === 0) return null;
 
     const hasComparable = rows.some((r) => r.terminal_effect != null && r.effect_size != null);
@@ -1463,7 +1465,7 @@ export function FindingsContextPanel() {
       {hasRecovery && selectedFinding && (
         <div ref={recoveryPaneRef}>
           <CollapsiblePane title="Recovery" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} sex={activeSex} />
+            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
           </CollapsiblePane>
         </div>
       )}

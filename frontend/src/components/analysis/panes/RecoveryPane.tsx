@@ -126,11 +126,15 @@ function formatVerdictDesc(
   v: ContinuousVerdictResult,
   terminalG: number | null,
   recoveryG: number | null,
+  terminalDay: number | null,
+  recoveryDay: number | null,
 ): string {
+  const tDay = terminalDay != null ? ` D${terminalDay}` : "";
+  const rDay = recoveryDay != null ? ` D${recoveryDay}` : "";
   if (v.verdict === "below-threshold") {
-    return terminalG != null ? `terminal |g|\u2009=\u2009${formatGAbs(terminalG)}` : "";
+    return terminalG != null ? `terminal |g|\u2009=\u2009${formatGAbs(terminalG)}${tDay}` : "";
   }
-  const arrow = `${formatGAbs(terminalG!)}g \u2192 ${formatGAbs(recoveryG!)}g`;
+  const arrow = `${formatGAbs(terminalG!)}g${tDay} \u2192 ${formatGAbs(recoveryG!)}g${rDay}`;
   switch (v.verdict) {
     case "reversed":
       return `effect resolved (${arrow})`;
@@ -173,10 +177,14 @@ function ContinuousRecoverySection({
     );
   }
 
-  // Get ALL rows for this test code (both sexes)
-  const allRows = recovery.rows.filter(
-    (r) => r.test_code.toUpperCase() === finding.test_code.toUpperCase(),
-  );
+  // Get ALL rows for this endpoint (both sexes).
+  // For OM findings, match by specimen (organ) since OMTESTCD is always "WEIGHT".
+  const allRows = recovery.rows.filter((r) => {
+    if (finding.specimen) {
+      return r.test_code.toUpperCase() === finding.specimen.toUpperCase();
+    }
+    return r.test_code.toUpperCase() === finding.test_code.toUpperCase();
+  });
 
   if (allRows.length === 0) {
     return (
@@ -231,7 +239,7 @@ function ContinuousRecoverySection({
                   : `Dose ${row.dose_level}`;
 
                 const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size);
-                const desc = formatVerdictDesc(v, row.terminal_effect, row.effect_size);
+                const desc = formatVerdictDesc(v, row.terminal_effect, row.effect_size, row.terminal_day, row.recovery_day);
                 const pSuffix = row.p_value != null && row.p_value < 0.05
                   ? ` \u00b7 p\u2009=\u2009${formatPCompact(row.p_value)}`
                   : "";
