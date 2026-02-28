@@ -95,6 +95,7 @@ def _text_contains_any(text: str, substrings: list[str]) -> bool:
 _LIVER_ADVERSE_INDICATORS = [
     "necrosis", "fibrosis", "degeneration", "apoptosis",
     "oval cell", "bile duct", "cholestasis", "cirrhosis",
+    "steatosis", "lipidosis", "vacuol",  # fatty change = hepatotoxicity
 ]
 
 
@@ -149,31 +150,45 @@ def _tree_liver(finding: dict, index, species: str | None) -> TreeResult | None:
 
     available = 0
     clean = 0
-    critical_status = {}
+    critical_status: dict[str, bool] = {}
+    marker_detail: dict[str, str] = {}  # marker → "clean" | "changed" | "missing"
 
     for marker in panel_markers:
         status = index.is_lb_marker_clean(marker, sex, max_fold=max_fold)
         if status is None:
-            # Marker not available
+            marker_detail[marker] = "missing"
             continue
         available += 1
         if status:
             clean += 1
+            marker_detail[marker] = "clean"
+        else:
+            marker_detail[marker] = "changed"
         if marker in critical:
             critical_status[marker] = status
 
+    # Build human-readable panel summary for annotations
+    clean_list = [m for m, s in marker_detail.items() if s == "clean"]
+    changed_list = [m for m, s in marker_detail.items() if s == "changed"]
+    missing_list = [m for m, s in marker_detail.items() if s == "missing"]
+    panel_summary = f"{clean}/{available} clean"
+    if changed_list:
+        panel_summary += f"; changed: {','.join(changed_list)}"
+    if missing_list:
+        panel_summary += f"; missing: {','.join(missing_list)}"
+
     path.append(f"N2:panel_available={available},clean={clean}")
 
-    # Check critical markers
+    # Check critical markers (ALT, AST) — any significant change = hepatotoxicity
     for crit in critical:
         if crit in critical_status and not critical_status[crit]:
-            path.append(f"N2:{crit}_elevated")
+            path.append(f"N2:{crit}_changed")
             return TreeResult(
                 classification="tr_adverse",
                 tree_id="liver_hall_2012",
                 node_path=path,
-                ecetoc_factors=["B-1: critical LB marker elevated"],
-                rationale=f"Hepatocyte hypertrophy with {crit} elevated — indicates hepatotoxicity",
+                ecetoc_factors=[f"B-1: critical LB marker {crit} changed ({panel_summary})"],
+                rationale=f"Hepatocyte hypertrophy with {crit} significantly changed — indicates hepatotoxicity (panel: {panel_summary})",
             )
 
     # Panel incomplete
@@ -183,7 +198,8 @@ def _tree_liver(finding: dict, index, species: str | None) -> TreeResult | None:
             classification="equivocal",
             tree_id="liver_hall_2012",
             node_path=path,
-            rationale=f"Only {available}/{len(panel_markers)} LB markers available; cannot confirm adaptive (need {min_clean})",
+            ecetoc_factors=[f"B-2: LB panel incomplete ({panel_summary})"],
+            rationale=f"Only {available}/{len(panel_markers)} LB markers available; cannot confirm adaptive (need {min_clean}). Panel: {panel_summary}",
         )
 
     # Check clean count
@@ -197,8 +213,8 @@ def _tree_liver(finding: dict, index, species: str | None) -> TreeResult | None:
                     classification="tr_adaptive",
                     tree_id="liver_hall_2012",
                     node_path=path,
-                    ecetoc_factors=["B-2: enzyme induction", "B-8: LB panel clean (Hall 2012)"],
-                    rationale=f"Hepatocyte hypertrophy with clean LB panel ({clean}/{available} clean, ALT+AST clean, severity ≤{max_sev}) — adaptive enzyme induction",
+                    ecetoc_factors=["B-2: enzyme induction", f"B-8: Hall 2012 panel clean ({panel_summary})"],
+                    rationale=f"Hepatocyte hypertrophy with clean LB panel ({panel_summary}, severity {sev_grade}/{max_sev}) — adaptive enzyme induction",
                 )
 
     # Insufficient clean markers
@@ -207,7 +223,8 @@ def _tree_liver(finding: dict, index, species: str | None) -> TreeResult | None:
         classification="equivocal",
         tree_id="liver_hall_2012",
         node_path=path,
-        rationale=f"Hepatocyte hypertrophy with {clean}/{available} clean LB markers (need {min_clean}); insufficient evidence for adaptive",
+        ecetoc_factors=[f"B-2: LB panel insufficient ({panel_summary})"],
+        rationale=f"Hepatocyte hypertrophy with {clean}/{available} clean LB markers (need {min_clean}); insufficient for adaptive. Panel: {panel_summary}",
     )
 
 

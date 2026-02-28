@@ -1,13 +1,15 @@
 # TOPIC Hub: Assessment Engine — Regulatory Alignment & Roadmap
 
-**Created:** 2026-02-28 | **Updated:** 2026-02-28 (Tiers 1+2 shipped, Briefs 1/2/5 incorporated)
+**Created:** 2026-02-28 | **Updated:** 2026-02-28 (Tiers 1+2 shipped, Briefs 1/2/4/5/6 incorporated)
 **Source material:**
 - `docs/deep-research/reg-standards-for-auto-tox-finding-assessment.md` — Regulatory standards audit (7 domains)
 - `docs/deep-research/github-repos-overlay-tox-assessment.md` — Open-source landscape (27 repos, build vs. leverage)
 - `docs/deep-research/send_browser_source_catalog.xlsx` — 7-sheet workbook (repos, sources, roadmap, action items, PT data)
 - `docs/deep-research/engine/brief 1/` — Organ-specific HCD variability & magnitude thresholds (13 organs, 12 sources, JSON config)
 - `docs/deep-research/engine/brief 2/` — Non-liver adaptive response classification rules (5 decision trees)
+- `docs/deep-research/engine/brief 4/` — NTP CEBS historical control data profiling (DTT IAD discovery, phased A→B approach)
 - `docs/deep-research/engine/brief 5/` — GRADE temporal dimension design decision (merge, not standalone)
+- `docs/deep-research/engine/brief 6/` — 14 non-tumor progression chains for ECETOC B-6 factor encoding
 
 **Related TOPIC hubs:** TOPIC-syndrome-engine, TOPIC-noael-determination, TOPIC-organ-measurements, TOPIC-data-pipeline
 
@@ -21,7 +23,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 
 **Tier 2 shipped** (2026-02-28): Two-gate OM classification (statistical gate + organ-specific magnitude gate) replaces uniform Cohen's d thresholds. 13-organ threshold config (`shared/organ-weight-thresholds.json`) with species-specific adrenal thresholds. 6 adaptive decision trees (liver, thyroid, adrenal, thymus/spleen, kidney, gastric) evaluate context-dependent MI findings using `ConcurrentFindingIndex`. "Adaptive" never claimed from magnitude alone — requires biological evidence from concurrent findings. Species threaded through entire pipeline.
 
-**Bottom line:** The system is ~90% through Phase 0 and ~80% through Phase 1. The heaviest remaining work is historical control data integration (Briefs 3–4 not yet researched) and the full Hall et al. 2012 liver LB panel verification (Tier 2C).
+**Bottom line:** The system is ~90% through Phase 0 and ~80% through Phase 1. Research is complete for all six briefs. The heaviest remaining implementation work is: (1) HCD integration via phased Option A→B approach (Brief 4), (2) B-6 progression chains (Brief 6, 14 chains ready for YAML), and (3) Full Hall 2012 liver LB panel verification (Tier 2C).
 
 ---
 
@@ -41,11 +43,11 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 
 | Roadmap Item | Status | Current State | Gap |
 |---|---|---|---|
-| **ECETOC Step 1 (treatment-relatedness)** | 4/7 factors | A-1 dose-response (0-2pts) ✓, A-2 concordance via `corroboration_status` (0-1pt) ✓, A-6 statistics (0-1pt) ✓, A-7 clinical obs ✓. A-3 HCD reserved, A-4 temporal partial (food only), A-5 mechanism missing. | A-3 is the biggest gap — no HCD database. A-5 requires MOA annotations. A-4: **Brief 5 decided** onset-timing modifier for BW/CL goes into DR quality, not A-4. |
-| **ECETOC Step 2 (adversity)** | 6/7 factors | B-2 adaptive: intrinsic adversity dict ✓ + 6 adaptive decision trees ✓ (liver, thyroid, adrenal, thymus/spleen, kidney, gastric), B-3 reversibility ✓, B-4 magnitude ✓, B-5 cross-domain ✓, B-7 secondary ✓. B-6 precursor partial (tumors only). | B-6 non-tumor progression chains not built (Brief 6 not yet researched). Adaptive trees shipped — `adaptive_trees.py` (723L), `ConcurrentFindingIndex` (155L). |
+| **ECETOC Step 1 (treatment-relatedness)** | 4/7 factors | A-1 dose-response (0-2pts) ✓, A-2 concordance via `corroboration_status` (0-1pt) ✓, A-6 statistics (0-1pt) ✓, A-7 clinical obs ✓. A-3 HCD reserved, A-4 temporal partial (food only), A-5 mechanism missing. | A-3 is the biggest gap — no HCD database. **Brief 4 completed:** phased approach — Option A (static SD/Wistar ranges from Envigo+Inotiv, 2 weeks) → Option B (SQLite from NTP DTT IAD 78 MB Excel, 6 weeks). Option C (sendigR) eliminated — doesn't support OM domain. A-5 requires MOA annotations. A-4: **Brief 5 decided** onset-timing modifier for BW/CL goes into DR quality, not A-4. |
+| **ECETOC Step 2 (adversity)** | 6/7 factors | B-2 adaptive: intrinsic adversity dict ✓ + 6 adaptive decision trees ✓ (liver, thyroid, adrenal, thymus/spleen, kidney, gastric), B-3 reversibility ✓, B-4 magnitude ✓, B-5 cross-domain ✓, B-7 secondary ✓. B-6 precursor partial (tumors only). | **Brief 6 completed:** 14 organ-specific progression chains ready for YAML encoding (liver neoplastic, kidney CPN, kidney α2u-globulin, thyroid, adrenal medulla, testis, lung, forestomach, urinary bladder, mammary gland, pancreas, nasal cavity, liver fibrosis, heart cardiomyopathy). Each has severity triggers, species/strain specificity, spontaneous rates, time dependency. Adaptive trees shipped — `adaptive_trees.py` (723L), `ConcurrentFindingIndex` (155L). |
 | **Cross-domain concordance** | DONE (mostly) | 10 syndromes (XS01-XS10), shared definitions, frontend full scoring with compound logic + directional gates + magnitude floors. Backend corroboration_status **now consumed** by NOAEL (via `assess_finding()` A-2 factor) and classification. | Backend corroboration still lacks compound logic/directional gates/magnitude floors (frontend-only). |
 | **Per-sex assessment** | DONE | All analyses per-sex. NOAEL provides M/F/Combined. Sex divergence detection and display. Separate narratives when divergent. | Missing: sex-dimorphism mechanism flags (α2u nephropathy, CYP differences). min(M,F) has no exceptions — always conservative. **Brief 1** documents α2u-globulin flag for male rat kidney — ready for implementation. |
-| **Liver hypertrophy decision tree** | PARTIAL | XS01 adaptive check: liver weight ↑ + hypertrophy + no necrosis + enzyme fold < 5.0 → adaptive. | **Brief 1** specifies full Hall et al. 2012 tree: requires ALT/AST/ALP/GGT/BILI/CHOL/BILEAC/TP/ALB panel (min 5 clean, both damage markers ALT+AST clean). Config in `organ-weight-thresholds.json`. |
+| **Liver hypertrophy decision tree** | ~~DONE~~ | Full Hall 2012 tree in `_tree_liver()`: 9-marker LB panel check (ALT/AST/ALP/GGT/BILI/CHOL/BILEAC/TP/ALB), min 5 clean, ALT+AST critical, any significant change = not clean (catches both ↑ and ↓), per-marker detail in annotations. Config in `organ-weight-thresholds.json`. | None — shipped. Frontend XS01 adaptive check remains as the simpler syndrome-level counterpart (different abstraction layer). |
 
 ### Phase 2 — Advanced Integration
 
@@ -53,7 +55,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 |---|---|---|---|
 | **NOAEL proposal engine** | ~~DONE~~ | Backend NOAEL **now consumes** `finding_class` via `_is_loael_driving()`. Treatment-related-non-adverse findings no longer constrain NOAEL. Corroboration penalty (-0.15 confidence) when ALL adverse findings at LOAEL are uncorroborated. Derivation trace includes `finding_class`, `corroboration_status`, `classification_method`. | No structured justification package (export/PDF). Shipped `f6c195d`. |
 | **GRADE confidence scoring** | PARTIAL | ECI 5-dimension (statistical, biological, dose-response, trend validity, trend concordance) with integrated=min(all). Frontend endpoint confidence (HIGH/MODERATE/LOW). | **Brief 5 decided:** temporal is NOT a standalone dimension. Merge on-dose adaptation into B-3 (3-tier reversibility). Add onset-timing modifier into DR quality for BW/CL. Missing: HCD position, consistency (cross-sex/cross-study). |
-| **HCD integration** | MISSING | Mock HCD for SD rat only. A-3 factor always returns "no_hcd". | sendigR (R01, MIT) provides matched HCD queries. NTP CEBS (R12, public domain) has thousands of studies with individual animal data. Integration path is clear. Briefs 3-4 not yet researched. |
+| **HCD integration** | MISSING | Mock HCD for SD rat only. A-3 factor always returns "no_hcd". | **Brief 4 completed.** Key discovery: NTP DTT IAD Organ Weight dataset (78 MB Excel, 40+ tissues, 14+ strains, individual animal data). Phased approach: Option A (static JSON ranges from Envigo C11963 + Inotiv Wistar Han 700-study HCD) → Option B (SQLite from DTT IAD). Option C (sendigR) eliminated — doesn't support OM domain. |
 | **BMD module** | MISSING | No benchmark dose computation. | pybmds (R20, public domain) is pip-installable. Low complexity integration for optional BMD alongside NOAEL. |
 
 ### Phase 3 — Polish & Differentiate
@@ -98,7 +100,7 @@ This is intentional — the frontend can upgrade/downgrade from the backend asse
 
 Three gaps require external data sources, not just code changes:
 
-1. **Historical control data (A-3):** sendigR + NTP CEBS provide the infrastructure. Without HCD, the system cannot distinguish treatment-related from spontaneous high-background findings (e.g., F344 rat MCL, pituitary adenoma, CPN). This is a data integration project.
+1. **Historical control data (A-3):** **Research complete (Brief 4).** NTP DTT IAD (78 MB Excel, 14+ strains, 40+ tissues) is the key resource. Phased approach: static JSON ranges first (Envigo SD + Inotiv Wistar Han 700-study HCD), then SQLite from DTT IAD. Without HCD, the system cannot distinguish treatment-related from spontaneous high-background findings (e.g., F344 rat MCL, pituitary adenoma, CPN). This is a data integration project.
 
 2. **Pharmacological class context (A-5):** Requires compound class metadata. Could be added as a TS domain annotation (TSPARMCD = "STYPE" or custom qualifier). Without it, the system cannot assess mechanism plausibility for known class effects (PPARα agonist → liver weight expected, immunosuppressant → lymphoid depletion expected).
 
@@ -114,8 +116,8 @@ Three gaps require external data sources, not just code changes:
 | `backend/services/analysis/classification.py` | ~608 | 3-category severity, dose-response pattern, treatment-relatedness, **`assess_finding()` ECETOC per-finding assessment**, two-gate OM (`_assess_om_two_gate`), adaptive tree dispatch (`assess_finding_with_context`) |
 | `backend/services/analysis/adversity_dictionary.py` | ~55 | Intrinsic adversity lookup from shared JSON |
 | `backend/services/analysis/organ_thresholds.py` | ~154 | Lazy-loaded organ threshold config + species resolver |
-| `backend/services/analysis/concurrent_findings.py` | ~155 | ConcurrentFindingIndex for cross-finding queries |
-| `backend/services/analysis/adaptive_trees.py` | ~723 | 6 adaptive decision trees (liver, thyroid, adrenal, thymus/spleen, kidney, gastric) |
+| `backend/services/analysis/concurrent_findings.py` | ~158 | ConcurrentFindingIndex for cross-finding queries (is_lb_marker_clean: any significant change = not clean) |
+| `backend/services/analysis/adaptive_trees.py` | ~740 | 6 adaptive decision trees (liver/Hall 2012 panel, thyroid, adrenal, thymus/spleen, kidney, gastric) |
 | `backend/services/analysis/corroboration.py` | ~230 | Presence-based cross-domain syndrome matching, quality gate |
 | `backend/services/analysis/findings_pipeline.py` | ~301 | Shared enrichment: classification, fold change, corroboration, ConcurrentFindingIndex, assess_finding_with_context |
 | `backend/services/analysis/findings_om.py` | ~400 | Organ weight domain: 3 metrics, normalization selection, Williams' |
@@ -245,31 +247,54 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 
 **Pipeline integration:** `assess_finding_with_context()` in `classification.py` wraps `assess_finding()` + adaptive tree evaluation. Called from `findings_pipeline.py` after `ConcurrentFindingIndex` construction.
 
-#### 2C. Full Liver Hypertrophy Decision Tree (Hall et al. 2012)
-**What:** Extend the liver tree to the full Hall framework with LB panel completeness verification.
+#### 2C. Full Liver Hypertrophy Decision Tree (Hall et al. 2012) ✅ SHIPPED
 
-**Config ready:** `organ-weight-thresholds.json` LIVER.adaptive_requires specifies: 9 LB markers (ALT, AST, ALP, GGT, BILI, CHOL, BILEAC, TP, ALB), min 5 present and clean, both damage markers (ALT+AST) clean, enzyme fold <5.0. EU Biocides requires complete panel.
+**What:** Full Hall 2012 LB panel verification in the liver adaptive tree.
 
-**Status:** Partial — liver tree implemented in `adaptive_trees.py` checks for concurrent necrosis/fibrosis/steatosis and enzyme fold. Full Hall panel verification (counting clean LB markers) not yet implemented.
+**Config:** `organ-weight-thresholds.json` LIVER.adaptive_requires: 9 LB markers (ALT, AST, ALP, GGT, BILI, CHOL, BILEAC, TP, ALB), min 5 present and clean, both damage markers (ALT+AST) clean, enzyme fold <5.0.
 
-**Files affected:** `adaptive_trees.py` (extend liver tree), `syndrome-ecetoc.ts` (frontend B-2 check).
+**Implementation:** `_tree_liver()` in `adaptive_trees.py` performs full panel check:
+- Counts available/clean/changed markers using `ConcurrentFindingIndex.is_lb_marker_clean()`
+- `is_lb_marker_clean()` flags ANY significant change (up or down) — catches both enzyme elevation (ALT↑) and synthetic failure (ALB↓, TP↓)
+- Critical markers (ALT, AST): if changed → `tr_adverse` (hepatotoxicity)
+- Panel incomplete (<5 available) → `equivocal` with annotation
+- ≥5 clean + all critical clean + severity ≤ 2 → `tr_adaptive` (enzyme induction)
+- Per-marker breakdown in `ecetoc_factors` and `rationale` (e.g., "3/7 clean; changed: ALT,AST,ALP,ALB; missing: BILEAC,TP")
+- Liver adverse indicators include steatosis/vacuolization/lipidosis (fatty change = hepatotoxicity)
 
-**Complexity:** Low-Medium. ~100-150 lines remaining.
+**PointCross results:** Both sexes → `tr_adverse` via ALT elevation. Female: 3/7 clean, 4 changed (ALT,AST,ALP,ALB). Male: 3/7 clean, 4 changed (ALT,AST,ALP,CHOL). 2 markers (BILEAC, TP) missing from study's LB panel.
+
+**Test coverage:** 4 dedicated Hall panel assertions in `organ-thresholds.test.ts` (panel detail in factors, rationale, node_path, critical marker → tr_adverse).
 
 ### Priority Tier 3 — External Data Integration
 
-#### 3A. Historical Control Data Integration (ECETOC A-3)
-**What:** Integrate NTP CEBS historical control data for SD rat (and potentially F344, Wistar Han) to provide A-3 factor assessment. Findings within historical control range → less likely treatment-related.
+#### 3A. Historical Control Data Integration (ECETOC A-3) — Phase 1: Static Ranges
+**What:** Compile static HCD reference ranges for SD rat and Wistar Han into JSON config. Enable A-3 factor assessment for the two highest-priority strain/duration combinations.
 
-**Approach options:**
-- **Option A (minimal):** Build a static HCD reference table from NTP CEBS downloads (CSV, public domain). Store as JSON. Compare findings against ranges at runtime.
-- **Option B (dynamic):** Integrate sendigR's xptcleaner (MIT, Python standalone) for terminology normalization + build SQLite HCD database from NTP data.
+**Data sources (Brief 4):**
+- **SD rat:** Envigo Study C11963 (Hsd:Sprague Dawley, n=20, 28-day + 13-week) — starter ranges for 10 organs already compiled in Brief 4
+- **Wistar Han:** Inotiv RccHan:WIST HCD (700+ studies, age-stratified 5th/95th percentiles, pre-computed organ-to-brain ratios) — freely downloadable PDF
 
-**Why:** A-3 is the single most impactful missing factor. It's the primary false-positive filter in regulatory practice. Without it, the system flags every high-background finding (CPN in SD rats, MCL in F344) as potentially treatment-related.
+**JSON schema:** `strain`, `sex`, `study_duration_days`, `organ`, `weight_type` (absolute/relative_bw/relative_brain), `mean`, `sd`, `n`, `p5`, `p95`, `min`, `max`, `source`, `date_range`
 
-**Files affected:** New `backend/services/analysis/hcd.py`. Modified: `syndrome-ecetoc.ts` (A-3 factor), `corroboration.py` or assessment module.
+**A-3 check:** Group mean within [p5, p95] (or [mean-2SD, mean+2SD]) → `within_hcd`; outside → `outside_hcd`. Deterministic, no external dependency.
 
-**Complexity:** Medium-High. ~500-800 lines.
+**Why:** A-3 is the single most impactful missing factor. Primary false-positive filter in regulatory practice. Without it, the system flags every high-background finding (CPN in SD rats, MCL in F344) as potentially treatment-related.
+
+**Files affected:** New `shared/hcd-reference-ranges.json`, new `backend/services/analysis/hcd.py`. Modified: `classification.py` (A-3 in A-factor scoring).
+
+**Complexity:** Medium. ~200-300 lines code + ~300-line JSON config.
+
+#### 3A+. Historical Control Data Integration — Phase 2: SQLite from DTT IAD
+**What:** Download NTP DTT IAD Organ Weight (78 MB Excel) and Terminal Bodyweight (85.9 MB Excel) files. Build SQLite reference database with ETL: parse Excel → filter controls → join OM+BW by animal ID → compute ratios → index by strain/sex/duration/route/date.
+
+**Enables:** Dynamic matching by route, vehicle, age, study date. Covers SD, Wistar Han, F344/N, B6C3F1/N, CD-1. Percentile ranking against matched HCD distribution (superior to simple range checks).
+
+**Files affected:** New `backend/services/analysis/hcd_database.py`, new ETL script, SQLite database file.
+
+**Complexity:** Medium-High. ~500-700 lines. Depends on 3A JSON schema (drop-in replacement).
+
+**Note:** Option C (sendigR) permanently eliminated — sendigR doesn't support OM domain, CEBS isn't in SEND format.
 
 #### 3B. PT-Level Concordance Data
 **What:** Integrate the Liu & Fan 2026 concordance data (LR+ by preferred term × species × modality) for clinical translatability scoring.
@@ -333,7 +358,7 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 | Statistical screening | Solved (ToxicR) | Built (Dunnett's, JT, Williams', ANCOVA) | No change needed — our suite is comprehensive |
 | Dose-response modeling/BMD | Solved (pybmds) | Not implemented | **Leverage** pybmds for optional BMD |
 | CDISC terminology harmonization | Solved (xptcleaner) | Partial (built-in specimen/test normalization) | Consider xptcleaner for cross-study harmonization |
-| Cross-study HCD analysis | Solved (sendigR) | Not implemented | **Leverage** NTP CEBS data + build static HCD tables |
+| Cross-study HCD analysis | Solved (sendigR) | Not implemented | **Build** static JSON ranges (Phase 1) then SQLite from DTT IAD (Phase 2). sendigR eliminated — no OM support. |
 | Adversity classification | Complete gap in OSS | **Partial** — ECETOC two-step at syndrome level | **Build** extension to all findings |
 | Biological plausibility scoring | Complete gap in OSS | **Partial** — dose-response quality + concordance | **Build** extension with HCD + MOA |
 | Cross-domain concordance engine | Complete gap in OSS | **Built** — 10 syndromes, dual engine | **Enhance** backend with compound logic |
@@ -388,7 +413,7 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 
 2. ~~**Should the NOAEL derivation consume ECETOC adversity directly?**~~ **RESOLVED:** Yes. `_is_loael_driving()` uses `finding_class` with legacy fallback. Runs in generator pipeline, persisted in `noael_summary.json` with `classification_method` trace.
 
-3. **How much HCD data to bootstrap?** Option A (minimal): curated reference ranges for top 20 organs × 2 strains (SD, Wistar) from published literature. Option B (moderate): NTP CEBS download for 4 strains with individual animal data. Option C (full): sendigR-style SQLite database with cross-study query capability. *Awaiting Briefs 3-4 research.*
+3. ~~**How much HCD data to bootstrap?**~~ **RESOLVED (Brief 4):** Phased approach. Phase 1 (Option A): static JSON ranges from Envigo C11963 (SD rat) + Inotiv RccHan:WIST (Wistar Han, 700+ studies). Phase 2 (Option B): SQLite from NTP DTT IAD Excel files (78 MB OM + 85.9 MB BW, 14+ strains, 40+ tissues). Option C (sendigR) eliminated — doesn't support OM domain, CEBS isn't in SEND format.
 
 4. ~~**Is the intrinsic adversity dictionary a compile-time or runtime resource?**~~ **RESOLVED:** Compile-time shared JSON (`shared/adversity-dictionary.json`). Lazy-loaded by `adversity_dictionary.py`. Same pattern as `shared/syndrome-definitions.json`.
 
@@ -405,9 +430,9 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 | 1 | Organ-specific HCD variability & magnitude thresholds | ✅ IMPLEMENTED | `shared/organ-weight-thresholds.json` (116L), `organ_thresholds.py` (154L), two-gate OM in `classification.py` | Tier 2A ✅ |
 | 2 | Non-liver adaptive response classification rules | ✅ IMPLEMENTED | 6 decision trees in `adaptive_trees.py` (723L), `ConcurrentFindingIndex` (155L) | Tier 2B ✅ |
 | 3 | Cross-domain concordance linkage map | NOT STARTED | Organ-by-organ endpoint linkage table beyond XS01-XS10 | Tier 4C |
-| 4 | NTP CEBS historical control data profiling | NOT STARTED | Data availability report + integration recommendation | Tier 3A |
+| 4 | NTP CEBS historical control data profiling | ✅ COMPLETE | Phased Option A→B, DTT IAD discovery, sendigR eliminated, SD rat starter ranges compiled | Tier 3A |
 | 5 | GRADE temporal dimension design decision | ✅ COMPLETE | Decision: merge into B-3 + DR quality, not standalone | Tier 4A |
-| 6 | Non-tumor progression chains (ECETOC B-6) | NOT STARTED | 10-15 lesion progression chains | Phase 1 B-6 factor |
+| 6 | Non-tumor progression chains (ECETOC B-6) | ✅ COMPLETE | 14 organ-specific chains with severity triggers, species specificity, HCD rates, time dependency | Tier 3B |
 
 **Full brief specifications:** `docs/deep-research/engine/deep-research-briefs-targeted.md`
 

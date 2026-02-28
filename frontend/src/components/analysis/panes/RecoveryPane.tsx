@@ -2,10 +2,14 @@
  * Recovery insights pane for FindingsContextPanel.
  * Shows recovery verdict, classification, finding nature,
  * and comparison stats for the selected finding.
+ *
+ * Both sexes are shown side-by-side (F before M) when data exists.
+ * Continuous domains use verdict-first rows; histopath uses incidence badges.
  */
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
+import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { verdictLabel } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
@@ -25,7 +29,7 @@ import { DoseLabel } from "@/components/ui/DoseLabel";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// ── Verdict badge colors ─────────────────────────────────
+// ── Histopath verdict badge ──────────────────────────────
 
 const VERDICT_COLORS: Partial<Record<RecoveryVerdict, string>> = {
   reversed: "text-emerald-700 bg-emerald-50",
@@ -55,26 +59,256 @@ function ConfidenceBadge({ confidence }: { confidence: "High" | "Moderate" | "Lo
   return <span className={`text-[10px] font-medium ${color}`}>{confidence} confidence</span>;
 }
 
-// ── Histopath recovery section ───────────────────────────
+// ── Continuous recovery verdict classification ───────────
+//
+// Uses terminal effect (end-of-dosing) as denominator, consistent
+// with regulatory convention for repeat-dose recovery assessment.
+// Peak effect surfaced as annotation when materially different.
 
-function HistopathRecoverySection({
+type ContinuousVerdictType =
+  | "reversed"
+  | "reversing"
+  | "partial"
+  | "persistent"
+  | "worsening"
+  | "below-threshold";
+
+interface ContinuousVerdictResult {
+  verdict: ContinuousVerdictType;
+  /** % of terminal effect that resolved. Negative = worsened. */
+  pctRecovered: number | null;
+}
+
+function classifyContinuousRecovery(
+  terminalG: number | null,
+  recoveryG: number | null,
+): ContinuousVerdictResult {
+  // If dosing-phase effect was too small, recovery assessment is not meaningful
+  if (terminalG == null || Math.abs(terminalG) < 0.5) {
+    return { verdict: "below-threshold", pctRecovered: null };
+  }
+  if (recoveryG == null) {
+    return { verdict: "below-threshold", pctRecovered: null };
+  }
+
+  const pct = (Math.abs(terminalG) - Math.abs(recoveryG)) / Math.abs(terminalG) * 100;
+
+  if (pct < 0) return { verdict: "worsening", pctRecovered: pct };
+  if (pct >= 80) return { verdict: "reversed", pctRecovered: pct };
+  if (pct >= 50) return { verdict: "reversing", pctRecovered: pct };
+  if (pct >= 20) return { verdict: "partial", pctRecovered: pct };
+  return { verdict: "persistent", pctRecovered: pct };
+}
+
+const CONT_VERDICT_LABEL: Record<ContinuousVerdictType, string> = {
+  reversed: "Reversed",
+  reversing: "Reversing",
+  partial: "Partial",
+  persistent: "Persistent",
+  worsening: "Worsening",
+  "below-threshold": "Not assessed",
+};
+
+const CONT_VERDICT_CLASS: Record<ContinuousVerdictType, string> = {
+  reversed: "text-emerald-700",
+  reversing: "text-emerald-600",
+  partial: "text-muted-foreground",
+  persistent: "text-amber-700",
+  worsening: "text-red-700",
+  "below-threshold": "text-muted-foreground/60",
+};
+
+function formatGAbs(g: number): string {
+  return Math.abs(g).toFixed(2);
+}
+
+function formatVerdictDesc(
+  v: ContinuousVerdictResult,
+  terminalG: number | null,
+  recoveryG: number | null,
+): string {
+  if (v.verdict === "below-threshold") {
+    return terminalG != null ? `terminal |g|\u2009=\u2009${formatGAbs(terminalG)}` : "";
+  }
+  const arrow = `${formatGAbs(terminalG!)}g \u2192 ${formatGAbs(recoveryG!)}g`;
+  switch (v.verdict) {
+    case "reversed":
+      return `effect resolved (${arrow})`;
+    case "reversing":
+    case "partial":
+      return `effect dropped ${Math.round(v.pctRecovered!)}% (${arrow})`;
+    case "persistent":
+      return `effect persists (${arrow})`;
+    case "worsening": {
+      const ratio = Math.abs(terminalG!) > 0.01
+        ? (Math.abs(recoveryG!) / Math.abs(terminalG!)).toFixed(1)
+        : null;
+      return ratio ? `effect grew ${ratio}\u00d7 (${arrow})` : `effect grew (${arrow})`;
+    }
+  }
+}
+
+function formatPCompact(p: number): string {
+  if (p < 0.001) return "<0.001";
+  return p.toFixed(3);
+}
+
+// ── Continuous recovery section ──────────────────────────
+
+function ContinuousRecoverySection({
+  finding,
+  doseGroups,
+}: {
+  finding: UnifiedFinding;
+  doseGroups?: DoseGroup[];
+}) {
+  const { studyId } = useParams<{ studyId: string }>();
+  const { data: recovery } = useRecoveryComparison(studyId);
+
+  if (!recovery || !recovery.available) {
+    return (
+      <div className="text-[10px] text-muted-foreground">
+        No recovery comparison data available.
+      </div>
+    );
+  }
+
+  // Get ALL rows for this test code (both sexes)
+  const allRows = recovery.rows.filter(
+    (r) => r.test_code.toUpperCase() === finding.test_code.toUpperCase(),
+  );
+
+  if (allRows.length === 0) {
+    return (
+      <div className="text-[10px] text-muted-foreground">
+        No recovery data for {finding.finding}.
+      </div>
+    );
+  }
+
+  // Group by sex (alphabetical: F before M)
+  const sexes = [...new Set(allRows.map(r => r.sex))].sort();
+  const showSexHeaders = sexes.length > 1;
+
+  return (
+    <div className="space-y-3">
+      {recovery.recovery_day != null && (
+        <div className="text-[10px] text-muted-foreground">
+          {recovery.recovery_day}d post-dosing
+        </div>
+      )}
+
+      {sexes.map(sex => {
+        const sexRows = allRows
+          .filter(r => r.sex === sex)
+          .sort((a, b) => a.dose_level - b.dose_level);
+
+        // Check for peak annotation: any row where |peak| > |terminal| * 1.5
+        const peakAnnotations = sexRows
+          .filter(r =>
+            r.peak_effect != null && r.terminal_effect != null &&
+            Math.abs(r.peak_effect) > Math.abs(r.terminal_effect) * 1.5 &&
+            Math.abs(r.terminal_effect) >= 0.5,
+          )
+          .map(r => ({
+            doseLevel: r.dose_level,
+            peakG: r.peak_effect!,
+            peakDay: r.peak_day,
+            terminalG: r.terminal_effect!,
+          }));
+
+        return (
+          <div key={sex}>
+            {showSexHeaders && (
+              <div className="text-[10px] font-semibold text-foreground mb-1">{sex}</div>
+            )}
+
+            <div className="space-y-0.5">
+              {sexRows.map(row => {
+                const dg = doseGroups?.find(g => g.dose_level === row.dose_level);
+                const doseStr = dg && dg.dose_value != null && dg.dose_value > 0
+                  ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
+                  : `Dose ${row.dose_level}`;
+
+                const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size);
+                const desc = formatVerdictDesc(v, row.terminal_effect, row.effect_size);
+                const pSuffix = row.p_value != null && row.p_value < 0.05
+                  ? ` \u00b7 p\u2009=\u2009${formatPCompact(row.p_value)}`
+                  : "";
+
+                return (
+                  <div key={row.dose_level} className="text-[10px] leading-relaxed">
+                    <span className="inline-flex items-baseline gap-1.5">
+                      <DoseLabel level={row.dose_level} label={doseStr} className="text-[10px]" />
+                      <span className={`font-medium ${CONT_VERDICT_CLASS[v.verdict]}`}>
+                        {CONT_VERDICT_LABEL[v.verdict]}
+                      </span>
+                      {v.verdict !== "below-threshold" && (
+                        <span className="text-muted-foreground">
+                          &mdash; {desc}{pSuffix}
+                        </span>
+                      )}
+                      {v.verdict === "below-threshold" && desc && (
+                        <span className="text-muted-foreground/60">
+                          ({desc})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Peak annotation when dosing-phase peak materially exceeded terminal */}
+            {peakAnnotations.length > 0 && (
+              <div className="mt-1.5 text-[9px] text-muted-foreground/70 leading-snug">
+                {peakAnnotations.map(pa => {
+                  const dg = doseGroups?.find(g => g.dose_level === pa.doseLevel);
+                  const doseStr = dg && dg.dose_value != null && dg.dose_value > 0
+                    ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
+                    : `Dose ${pa.doseLevel}`;
+                  const dayStr = pa.peakDay != null ? ` at Day ${pa.peakDay}` : "";
+                  return (
+                    <div key={pa.doseLevel}>
+                      {doseStr}: peak during dosing was larger (|g|{"\u2009"}={"\u2009"}{formatGAbs(pa.peakG)}{dayStr}),
+                      partially resolved before terminal (|g|{"\u2009"}={"\u2009"}{formatGAbs(pa.terminalG)}).
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Histopath recovery: both-sex wrapper ─────────────────
+
+function HistopathRecoveryAllSexes({
   finding,
   specimen,
-  sex,
 }: {
   finding: UnifiedFinding;
   specimen: string;
-  sex?: string;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
-  const specimens = useMemo(() => [specimen], [specimen]);
-  const recovery = useOrganRecovery(studyId, specimens, sex);
+  const specimensArr = useMemo(() => [specimen], [specimen]);
 
-  if (recovery.isLoading) {
+  // Always call both hooks (React rules — must be unconditional)
+  const recoveryF = useOrganRecovery(studyId, specimensArr, "F");
+  const recoveryM = useOrganRecovery(studyId, specimensArr, "M");
+
+  if (recoveryF.isLoading || recoveryM.isLoading) {
     return <Skeleton className="h-16 w-full" />;
   }
 
-  if (!recovery.hasRecovery) {
+  const sections: { sex: string; recovery: OrganRecoveryResult }[] = [];
+  if (recoveryF.hasRecovery) sections.push({ sex: "F", recovery: recoveryF });
+  if (recoveryM.hasRecovery) sections.push({ sex: "M", recovery: recoveryM });
+
+  if (sections.length === 0) {
     return (
       <div className="text-[10px] text-muted-foreground">
         No recovery arm data for this specimen.
@@ -82,6 +316,39 @@ function HistopathRecoverySection({
     );
   }
 
+  const showSexHeaders = sections.length > 1;
+
+  return (
+    <div className="space-y-3">
+      {sections.map(({ sex, recovery }) => (
+        <HistopathSexSection
+          key={sex}
+          sex={sex}
+          finding={finding}
+          specimen={specimen}
+          recovery={recovery}
+          showSexHeader={showSexHeaders}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Histopath recovery: per-sex rendering ────────────────
+
+function HistopathSexSection({
+  sex,
+  finding,
+  specimen,
+  recovery,
+  showSexHeader,
+}: {
+  sex: string;
+  finding: UnifiedFinding;
+  specimen: string;
+  recovery: OrganRecoveryResult;
+  showSexHeader: boolean;
+}) {
   const findingName = finding.finding;
   const label = `${specimen} \u2014 ${findingName}`;
   const assessment = recovery.assessmentByLabel.get(label);
@@ -89,7 +356,14 @@ function HistopathRecoverySection({
   const recoveryDays = recovery.recoveryDaysBySpecimen.get(specimen);
 
   if (!assessment || !verdict) {
-    return (
+    return showSexHeader ? (
+      <div>
+        <div className="text-[10px] font-semibold text-foreground mb-1">{sex}</div>
+        <div className="text-[10px] text-muted-foreground">
+          Finding not observed in recovery-arm subjects.
+        </div>
+      </div>
+    ) : (
       <div className="text-[10px] text-muted-foreground">
         Finding not observed in recovery-arm subjects.
       </div>
@@ -109,6 +383,10 @@ function HistopathRecoverySection({
 
   return (
     <div className="space-y-2">
+      {showSexHeader && (
+        <div className="text-[10px] font-semibold text-foreground">{sex}</div>
+      )}
+
       {/* Verdict */}
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-muted-foreground">Verdict:</span>
@@ -147,106 +425,6 @@ function HistopathRecoverySection({
 
       {/* Finding nature */}
       <FindingNatureSection nature={nature} />
-    </div>
-  );
-}
-
-// ── Continuous recovery section ──────────────────────────
-
-function ContinuousRecoverySection({
-  finding,
-  doseGroups,
-}: {
-  finding: UnifiedFinding;
-  doseGroups?: DoseGroup[];
-}) {
-  const { studyId } = useParams<{ studyId: string }>();
-  const { data: recovery } = useRecoveryComparison(studyId);
-
-  if (!recovery || !recovery.available) {
-    return (
-      <div className="text-[10px] text-muted-foreground">
-        No recovery comparison data available.
-      </div>
-    );
-  }
-
-  // Filter to this finding's test code and sex
-  const rows = recovery.rows.filter(
-    (r) =>
-      r.test_code.toUpperCase() === finding.test_code.toUpperCase() &&
-      r.sex === finding.sex,
-  );
-
-  if (rows.length === 0) {
-    return (
-      <div className="text-[10px] text-muted-foreground">
-        No recovery data for {finding.finding} ({finding.sex}).
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] text-muted-foreground">Recovery comparison:</span>
-        {recovery.recovery_day != null && (
-          <span className="text-[10px] text-muted-foreground">
-            ({recovery.recovery_day}d post-dosing)
-          </span>
-        )}
-      </div>
-
-      {/* Per-dose comparison table */}
-      <div className="space-y-0.5">
-        <div className="flex gap-2 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-          <span className="w-20">Group</span>
-          <span className="w-16 text-right">Recovery</span>
-          <span className="w-16 text-right">Terminal</span>
-          <span className="w-14 text-right">p-value</span>
-        </div>
-        {rows.map((r) => {
-          const dg = doseGroups?.find(g => g.dose_level === r.dose_level);
-          const doseLabel = dg && dg.dose_value != null && dg.dose_value > 0
-            ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
-            : r.dose_level === 0 ? "Control" : `Dose ${r.dose_level}`;
-          return (
-          <div key={`${r.dose_level}-${r.sex}`} className="flex gap-2 text-[10px]">
-            <span className="w-20 shrink-0">
-              <DoseLabel level={r.dose_level} label={doseLabel} className="text-[10px]" />
-            </span>
-            <span className="w-16 text-right font-mono">
-              {r.effect_size != null ? (r.effect_size > 0 ? "+" : "") + r.effect_size.toFixed(2) + "g" : "\u2014"}
-            </span>
-            <span className="w-16 text-right font-mono">
-              {r.terminal_effect != null ? (r.terminal_effect > 0 ? "+" : "") + r.terminal_effect.toFixed(2) + "g" : "\u2014"}
-            </span>
-            <span className={`w-14 text-right font-mono ${r.p_value != null && r.p_value < 0.05 ? "text-red-600" : "text-muted-foreground"}`}>
-              {r.p_value != null ? r.p_value.toFixed(3) : "\u2014"}
-            </span>
-          </div>
-          );
-        })}
-      </div>
-
-      {/* Interpretation */}
-      {rows.some((r) => r.terminal_effect != null && r.effect_size != null) && (() => {
-        const allReversing = rows.every(
-          (r) => r.terminal_effect != null && r.effect_size != null &&
-            Math.abs(r.effect_size) < Math.abs(r.terminal_effect) * 0.5,
-        );
-        const anyWorsening = rows.some(
-          (r) => r.terminal_effect != null && r.effect_size != null &&
-            Math.abs(r.effect_size) > Math.abs(r.terminal_effect) * 1.1,
-        );
-        return (
-          <div className="text-[10px] text-muted-foreground">
-            {allReversing && "Effect size reduced by >50% during recovery — trending toward reversal."}
-            {anyWorsening && "Effect size increased during recovery — persistent or worsening effect."}
-            {!allReversing && !anyWorsening && "Partial recovery observed — effect partially attenuated."}
-          </div>
-        );
-      })()}
     </div>
   );
 }
@@ -334,19 +512,17 @@ function buildClassificationContext(
 interface RecoveryPaneProps {
   finding: UnifiedFinding;
   doseGroups?: DoseGroup[];
-  /** Filter recovery data to a specific sex (M/F). When omitted, uses finding.sex. */
-  sex?: string;
 }
 
-export function RecoveryPane({ finding, doseGroups, sex }: RecoveryPaneProps) {
+export function RecoveryPane({ finding, doseGroups }: RecoveryPaneProps) {
   const isHistopath = finding.domain === "MI" || finding.domain === "MA";
   const specimen = finding.specimen;
 
   if (isHistopath && specimen) {
-    return <HistopathRecoverySection finding={finding} specimen={specimen} sex={sex} />;
+    return <HistopathRecoveryAllSexes finding={finding} specimen={specimen} />;
   }
 
-  // Continuous domains (LB, BW, etc.)
+  // Continuous domains (LB, BW, OM, etc.)
   if (finding.data_type === "continuous") {
     return <ContinuousRecoverySection finding={finding} doseGroups={doseGroups} />;
   }

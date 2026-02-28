@@ -109,9 +109,14 @@ class ConcurrentFindingIndex:
         return False
 
     def is_lb_marker_clean(self, test_code: str, sex: str, max_fold: float = 5.0) -> bool | None:
-        """Check if a LB marker is clean (not significantly elevated).
+        """Check if a LB marker is clean (no significant treatment-related change).
 
-        Returns True if clean, False if elevated, None if marker not available.
+        A marker is "not clean" if it shows ANY significant change (up or down)
+        or extreme fold change.  This matters for the Hall 2012 liver panel:
+        enzyme markers flag on elevation (ALT↑, AST↑), while synthetic function
+        markers flag on decrease (TP↓, ALB↓ = hepatic failure).
+
+        Returns True if clean, False if changed, None if marker not available.
         """
         tc_upper = test_code.strip().upper()
         found = False
@@ -123,13 +128,11 @@ class ConcurrentFindingIndex:
             for f in findings:
                 found = True
                 min_p = f.get("min_p_adj")
-                d = f.get("direction")
                 fc = f.get("max_fold_change")
-                # Elevated = significant + up direction + fold above threshold
+                # Not clean = any significant change (up OR down) or extreme fold
                 is_sig = min_p is not None and min_p < 0.05
-                is_up = d == "up"
                 fold_high = fc is not None and fc >= max_fold
-                if is_sig and is_up:
+                if is_sig:
                     return False
                 if fold_high:
                     return False
