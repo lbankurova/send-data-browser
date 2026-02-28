@@ -40,6 +40,7 @@ const EMPTY_RESULT: OrganRecoveryResult = {
 export function useOrganRecovery(
   studyId: string | undefined,
   specimens: string[],
+  sex?: string,
 ): OrganRecoveryResult {
   const queries = useQueries({
     queries: specimens.map((specimen) => ({
@@ -63,8 +64,8 @@ export function useOrganRecovery(
     if (specimens.length === 0) return EMPTY_RESULT;
     if (!allSettled) return { ...EMPTY_RESULT, isLoading: true };
 
-    // Build a cache key from the query data identities
-    const cacheKey = specimens.join("|") + ":" + queries.map((q) => q.dataUpdatedAt).join(",");
+    // Build a cache key from the query data identities (include sex filter)
+    const cacheKey = specimens.join("|") + ":" + (sex ?? "all") + ":" + queries.map((q) => q.dataUpdatedAt).join(",");
     if (cacheKey === lastRef.current.key) return lastRef.current.result;
 
     const bySpecimen = new Map<string, RecoveryAssessment[]>();
@@ -78,7 +79,8 @@ export function useOrganRecovery(
       const data = queries[i]?.data;
       if (!data?.subjects) continue;
 
-      const specimenHasRec = data.subjects.some((s) => s.is_recovery);
+      const subjects = sex ? data.subjects.filter((s) => s.sex === sex) : data.subjects;
+      const specimenHasRec = subjects.some((s) => s.is_recovery);
       if (!specimenHasRec) continue;
       hasRecovery = true;
 
@@ -86,7 +88,7 @@ export function useOrganRecovery(
         recoveryDaysBySpecimen.set(specimens[i], data.recovery_days);
       }
 
-      const assessments = deriveRecoveryAssessments(data.findings, data.subjects, undefined, data.recovery_days);
+      const assessments = deriveRecoveryAssessments(data.findings, subjects, undefined, data.recovery_days);
       bySpecimen.set(specimens[i], assessments);
 
       for (const a of assessments) {

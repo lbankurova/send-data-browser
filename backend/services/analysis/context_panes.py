@@ -42,7 +42,7 @@ def build_finding_context(finding: dict, all_findings: list[dict], correlations:
     effect_size = _build_effect_size(finding, all_findings)
     effect_size["insights"] = effect_size_insights(finding, all_findings)
 
-    return {
+    result = {
         "finding_id": finding_id,
         "treatment_summary": treatment_summary,
         "statistics": statistics,
@@ -50,6 +50,29 @@ def build_finding_context(finding: dict, all_findings: list[dict], correlations:
         "correlations": corr_pane,
         "effect_size": effect_size,
     }
+
+    # Sibling sex detection: same endpoint_label + day, different sex
+    sibling_finding = next(
+        (f for f in all_findings
+         if f.get("endpoint_label") == finding.get("endpoint_label")
+         and f.get("sex") != finding.get("sex")
+         and f.get("day") == finding.get("day")),
+        None
+    )
+    sibling_context = None
+    if sibling_finding:
+        sibling_context = {
+            "finding_id": sibling_finding.get("id", ""),
+            "sex": sibling_finding.get("sex"),
+            "treatment_summary": _build_treatment_summary(sibling_finding, all_findings),
+            "statistics": _build_statistics(sibling_finding, dose_groups),
+            "dose_response": _build_dose_response(sibling_finding, dose_groups),
+            "correlations": _build_correlations(sibling_finding.get("id", ""), sibling_finding, correlations),
+            "effect_size": _build_effect_size(sibling_finding, all_findings),
+        }
+    result["sibling"] = sibling_context
+
+    return result
 
 
 def _build_treatment_summary(finding: dict, all_findings: list[dict]) -> dict:

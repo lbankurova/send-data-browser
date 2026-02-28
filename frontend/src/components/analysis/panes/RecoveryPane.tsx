@@ -60,13 +60,15 @@ function ConfidenceBadge({ confidence }: { confidence: "High" | "Moderate" | "Lo
 function HistopathRecoverySection({
   finding,
   specimen,
+  sex,
 }: {
   finding: UnifiedFinding;
   specimen: string;
+  sex?: string;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
   const specimens = useMemo(() => [specimen], [specimen]);
-  const recovery = useOrganRecovery(studyId, specimens);
+  const recovery = useOrganRecovery(studyId, specimens, sex);
 
   if (recovery.isLoading) {
     return <Skeleton className="h-16 w-full" />;
@@ -332,14 +334,16 @@ function buildClassificationContext(
 interface RecoveryPaneProps {
   finding: UnifiedFinding;
   doseGroups?: DoseGroup[];
+  /** Filter recovery data to a specific sex (M/F). When omitted, uses finding.sex. */
+  sex?: string;
 }
 
-export function RecoveryPane({ finding, doseGroups }: RecoveryPaneProps) {
+export function RecoveryPane({ finding, doseGroups, sex }: RecoveryPaneProps) {
   const isHistopath = finding.domain === "MI" || finding.domain === "MA";
   const specimen = finding.specimen;
 
   if (isHistopath && specimen) {
-    return <HistopathRecoverySection finding={finding} specimen={specimen} />;
+    return <HistopathRecoverySection finding={finding} specimen={specimen} sex={sex} />;
   }
 
   // Continuous domains (LB, BW, etc.)
