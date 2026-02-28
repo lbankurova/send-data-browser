@@ -25,7 +25,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 
 **Tier 3B shipped** (2026-02-28): 14 organ-specific non-tumor progression chains (ECETOC B-6 factor). YAML-driven chain definitions (`shared/progression-chains.yaml`, ~340 lines) with Python evaluation engine (`progression_chains.py`, ~280 lines). Each chain defines severity-graded stages, obligate precursors, species/sex/strain filters, human relevance annotations, and spontaneous rate notes. PointCross impact: 3 findings escalated to `tr_adverse` (2 adenoma + 1 carcinoma via obligate precursors), 17 total B-6 annotations.
 
-**Bottom line:** The system is ~90% through Phase 0 and ~85% through Phase 1. Research is complete for all six briefs. Tier 2C (Hall 2012 liver panel), Tier 3A (HCD Phase 1, SD rat static ranges), and Tier 3B (B-6 progression chains) are shipped. The heaviest remaining implementation work is: (1) HCD Phase 2 (SQLite from DTT IAD), and (2) GRADE confidence scoring extensions.
+**Bottom line:** The system is ~90% through Phase 0 and ~85% through Phase 1. Research is complete for all six briefs. Tier 2C (Hall 2012 liver panel), Tier 3A (HCD Phase 1, SD rat static ranges), Tier 3B (B-6 progression chains), and Track 4A (per-finding GRADE confidence) are shipped. The heaviest remaining implementation work is: (1) HCD Phase 2 (SQLite from DTT IAD), and (2) onset-timing modifiers for BW/CL.
 
 ---
 
@@ -56,7 +56,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 | Roadmap Item | Status | Current State | Gap |
 |---|---|---|---|
 | **NOAEL proposal engine** | ~~DONE~~ | Backend NOAEL **now consumes** `finding_class` via `_is_loael_driving()`. Treatment-related-non-adverse findings no longer constrain NOAEL. Corroboration penalty (-0.15 confidence) when ALL adverse findings at LOAEL are uncorroborated. Derivation trace includes `finding_class`, `corroboration_status`, `classification_method`. | No structured justification package (export/PDF). Shipped `f6c195d`. |
-| **GRADE confidence scoring** | PARTIAL | ECI 5-dimension (statistical, biological, dose-response, trend validity, trend concordance) with integrated=min(all). Frontend endpoint confidence (HIGH/MODERATE/LOW). | **Brief 5 decided:** temporal is NOT a standalone dimension. Merge on-dose adaptation into B-3 (3-tier reversibility). Add onset-timing modifier into DR quality for BW/CL. Missing: HCD position, consistency (cross-sex/cross-study). |
+| **GRADE confidence scoring** | **Track 4A DONE** | ECI 5-dimension endpoint confidence (frontend). **NEW:** Per-finding GRADE-style `_confidence` (backend, `confidence.py`): 5 dimensions (D1 statistical, D2 DR quality, D3 concordance, D4 HCD, D5 cross-sex) → HIGH/MODERATE/LOW. PointCross: 45 HIGH, 41 MODERATE, 310 LOW across 396 findings. | **Brief 5 decided:** temporal is NOT a standalone dimension. Remaining: onset-timing modifier for BW/CL, cross-study consistency (multi-study feature). |
 | **HCD integration** | **Phase 1 DONE** | SD rat static ranges (Envigo C11963, 10 organs × 2 sexes × 2 durations). A-3 factor active for OM findings. PointCross: 2 findings reclassified. | Phase 1+ (Wistar Han), Phase 2 (SQLite from DTT IAD) not yet implemented. |
 | **BMD module** | MISSING | No benchmark dose computation. | pybmds (R20, public domain) is pip-installable. Low complexity integration for optional BMD alongside NOAEL. |
 
@@ -142,6 +142,7 @@ Three gaps require external data sources, not just code changes:
 | `shared/adversity-dictionary.json` | ~65 | 3-tier intrinsic adversity dictionary (21 terms) |
 | `shared/organ-weight-thresholds.json` | ~116 | 13-organ species-specific thresholds (variation ceiling, adverse floor, strong adverse) |
 | `shared/progression-chains.yaml` | ~340 | 14 organ-specific B-6 progression chain definitions (stages, severity triggers, obligate precursors, species/sex filters, human relevance) |
+| `backend/services/analysis/confidence.py` | ~180 | GRADE-style per-finding confidence scoring: 5 dimensions (D1-D5) → HIGH/MODERATE/LOW |
 
 ### Frontend Assessment Logic
 | File | Lines | Role |

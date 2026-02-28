@@ -559,6 +559,9 @@ After all domain findings are collected (Pass 1), pass variants are merged and f
 1. **Pass 2 merge** (`attach_scheduled_stats`): Early-death-excluded stats for terminal + LB domains
 2. **Pass 3 merge** (`attach_separate_stats`): Recovery-excluded stats for in-life domains
 3. **Enrichment** (`enrich_findings`): Per-finding classification with safe defaults and error handling
+4. **Corroboration** (`compute_corroboration`): Cross-domain syndrome presence matching
+5. **Adversity assessment** (`_assess_all_findings`): ECETOC per-finding adversity classification
+6. **Confidence scoring** (`compute_all_confidence`): GRADE-style evidence confidence (HIGH/MODERATE/LOW) from 5 dimensions
 
 Key merging uses `finding_key(f)` which includes `specimen` for terminal domains (MI/MA/OM/TF/DS) to avoid collisions between organs sharing the same test_code. Pass variant maps are built via `build_findings_map()` with collision detection.
 
@@ -1256,6 +1259,7 @@ activeFindings                         ← consumed by all downstream useMemo ch
 | `services/analysis/classification.py` | Finding classification (severity, pattern, treatment-related) | `classify_severity(finding)`, `classify_dose_response(group_stats, data_type)`, `determine_treatment_related(finding)` |
 | `services/analysis/send_knowledge.py` | Static SEND domain knowledge tables | `BIOMARKER_MAP`, `ORGAN_SYSTEM_MAP`, `THRESHOLDS`, `DOMAIN_EFFECT_THRESHOLDS` |
 | `services/analysis/findings_pipeline.py` | Shared enrichment pipeline (pass merging, classification, labels) | `finding_key(f)`, `build_findings_map(findings, label)`, `process_findings(base, scheduled_map, separate_map, n_excluded)`, `enrich_findings(findings)`, `attach_scheduled_stats()`, `attach_separate_stats()` |
+| `services/analysis/confidence.py` | GRADE-style per-finding evidence confidence scoring (5 dimensions → HIGH/MODERATE/LOW) | `compute_confidence(finding, sibling)`, `compute_all_confidence(findings)` |
 | `services/analysis/unified_findings.py` | On-demand adverse effects orchestrator with content-hash caching | `compute_adverse_effects(study)` |
 | `services/analysis/correlations.py` | Cross-finding Spearman correlations | `compute_correlations(findings, max_pairs=50)` |
 | `services/analysis/context_panes.py` | Per-finding context pane data for 5 panes | `build_finding_context(finding, all_findings, correlations, dose_groups)` |

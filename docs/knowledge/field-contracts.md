@@ -1302,3 +1302,8 @@ Classifies every computed field in `unified_findings.json` by authoritative sour
 | `separate_group_stats` | backend-raw | Recovery-excluded stats |
 | `separate_pairwise` | backend-raw | Recovery-excluded pairwise |
 | `separate_direction` | backend-raw | Direction from main-only pass |
+| `_confidence` | backend | `compute_confidence()` — GRADE-style evidence confidence scoring (HIGH/MODERATE/LOW) |
+| `_assessment_detail` | backend | OM two-gate assessment detail (stat_gate, mag_gate, pct_change, etc.) |
+| `_hcd_assessment` | backend | A-3 HCD reference range assessment (OM findings only) |
+| `_tree_result` | backend | Adaptive decision tree evaluation result (context-dependent histopath) |
+| `_b6_result` | backend | B-6 progression chain evaluation result (MI/MA/TF findings) |

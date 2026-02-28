@@ -24,11 +24,14 @@ Outputs: 8 JSON files + 1 HTML chart to `backend/generated/{study_id}/`.
 
 ### Shared Enrichment Pipeline (`findings_pipeline.py`, 301 lines)
 
-Three-step `process_findings()` shared by both generator (`domain_stats.py`) and live API (`unified_findings.py`):
+Six-step `process_findings()` shared by both generator (`domain_stats.py`) and live API (`unified_findings.py`):
 
 1. **Attach scheduled stats** — merge Pass 2 (scheduled-only, early-death-excluded) into terminal domain + LB findings
 2. **Attach separate stats** — merge Pass 3 (main-only, recovery-excluded) into in-life domain findings
 3. **Enrich** — per-finding classification (severity, dose-response pattern, treatment-related), fold change, max incidence, organ system mapping, endpoint labels
+4. **Corroboration** — cross-domain syndrome presence matching (`compute_corroboration`)
+5. **Adversity assessment** — ECETOC per-finding adversity classification (`_assess_all_findings`)
+6. **Confidence scoring** — GRADE-style evidence confidence via 5 dimensions → HIGH/MODERATE/LOW (`compute_all_confidence`)
 
 Safe defaults via `_with_defaults()` ensure structurally valid findings even if enrichment raises per-finding.
 
@@ -164,7 +167,8 @@ Additional pipeline test coverage in early-death-exclusion (41 tests), per-sex-p
 |------|-------|------|
 | `backend/generator/generate.py` | 320 | CLI entry, 6-phase orchestration |
 | `backend/generator/domain_stats.py` | 387 | Pass 1/2/3 domain finding collection |
-| `backend/services/analysis/findings_pipeline.py` | 301 | Shared enrichment (3-step `process_findings`) |
+| `backend/services/analysis/findings_pipeline.py` | 320 | Shared enrichment (6-step `process_findings`) |
+| `backend/services/analysis/confidence.py` | 180 | GRADE-style per-finding evidence confidence (5 dimensions) |
 | `backend/services/analysis/unified_findings.py` | 244 | On-demand adverse effects API pipeline |
 | `backend/services/analysis/dose_groups.py` | 255 | Dose group mapping, subject classification |
 | `backend/services/analysis/phase_filter.py` | 170 | Recovery/main phase detection, last dosing day |
