@@ -111,6 +111,20 @@ export interface RecoveryComparisonResponse {
     peak_effect: number | null;
     /** Study day when peak effect occurred. */
     peak_day: number | null;
+    /** Recovery-arm control group mean. */
+    control_mean?: number | null;
+    /** Recovery-arm control group sample size. */
+    control_n?: number | null;
+    /** Recovery-arm treated group sample size. */
+    treated_n?: number | null;
+    /** Main-arm treated group mean at terminal sacrifice. */
+    treated_mean_terminal?: number | null;
+    /** Main-arm control group mean at terminal sacrifice (for drift detection). */
+    control_mean_terminal?: number | null;
+    /** True when treated n < 2 — stats not computed. */
+    insufficient_n?: boolean;
+    /** True when no concurrent control exists at recovery. */
+    no_concurrent_control?: boolean;
   }[];
 }
 

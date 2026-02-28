@@ -11,6 +11,7 @@ import { useParams } from "react-router-dom";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
+import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import { verdictLabel } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
@@ -177,6 +178,49 @@ function formatPCompact(p: number): string {
   return p.toFixed(3);
 }
 
+// ── Hover tooltip builder (§6.4) ─────────────────────────
+
+type RecoveryRow = RecoveryComparisonResponse["rows"][number];
+
+function buildRowTooltip(
+  row: RecoveryRow,
+  doseStr: string,
+  v: ContinuousVerdictResult,
+  desc: string,
+): string {
+  const lines: string[] = [`${doseStr} \u00b7 ${row.sex} \u00b7 Recovery`];
+  lines.push("");
+
+  if (row.control_mean_terminal != null && row.control_mean != null) {
+    const tDay = row.terminal_day != null ? ` (D${row.terminal_day})` : "";
+    const rDay = ` (D${row.recovery_day})`;
+    lines.push(`Terminal${tDay}     Recovery${rDay}`);
+    lines.push(
+      `Treated:  ${row.treated_mean_terminal?.toFixed(2) ?? "\u2014"}     Treated:  ${row.mean?.toFixed(2) ?? "\u2014"}`,
+    );
+    lines.push(
+      `Control:  ${row.control_mean_terminal.toFixed(2)}     Control:  ${row.control_mean.toFixed(2)}`,
+    );
+    if (row.terminal_effect != null && row.effect_size != null) {
+      lines.push(
+        `g:        ${formatGAbs(row.terminal_effect)}     g:        ${formatGAbs(row.effect_size)}`,
+      );
+    }
+  } else if (row.terminal_effect != null && row.effect_size != null) {
+    const tDay = row.terminal_day != null ? `D${row.terminal_day}` : "terminal";
+    const rDay = `D${row.recovery_day}`;
+    lines.push(`g at ${tDay}: ${formatGAbs(row.terminal_effect)}`);
+    lines.push(`g at ${rDay}: ${formatGAbs(row.effect_size)}`);
+  }
+
+  if (v.verdict !== "below-threshold") {
+    lines.push("");
+    lines.push(`Recovery: ${desc}`);
+  }
+
+  return lines.join("\n");
+}
+
 // ── Continuous recovery section ──────────────────────────
 
 function ContinuousRecoverySection({
@@ -262,22 +306,80 @@ function ContinuousRecoverySection({
                   ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
                   : `Dose ${row.dose_level}`;
 
+                {/* §10.5: n=1 suppression */}
+                if (row.insufficient_n) {
+                  return (
+                    <div key={row.dose_level} className="text-[10px] leading-relaxed">
+                      <span className="inline-flex items-baseline gap-1.5">
+                        <DoseLabel level={row.dose_level} label={doseStr} className="text-[10px]" />
+                        <span className="text-muted-foreground/60">
+                          n={row.treated_n ?? 1} — insufficient for classification
+                        </span>
+                        {row.mean != null && (
+                          <span className="text-muted-foreground/40 font-mono">
+                            (value: {row.mean.toFixed(2)})
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                }
+
+                {/* §10.4: no concurrent control */}
+                if (row.no_concurrent_control) {
+                  return (
+                    <div key={row.dose_level} className="text-[10px] leading-relaxed">
+                      <span className="inline-flex items-baseline gap-1.5">
+                        <DoseLabel level={row.dose_level} label={doseStr} className="text-[10px]" />
+                        <span className="text-muted-foreground">
+                          mean: {row.mean?.toFixed(2) ?? "\u2014"}
+                        </span>
+                      </span>
+                      <div className="text-[9px] text-amber-700/70 mt-0.5 ml-5">
+                        No concurrent control at recovery — based on raw change
+                      </div>
+                    </div>
+                  );
+                }
+
                 const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size);
                 const desc = formatVerdictDesc(v, row.terminal_effect, row.effect_size, row.terminal_day, row.recovery_day);
-                const pSuffix = row.p_value != null && row.p_value < 0.1
-                  ? ` \u00b7 p\u2009=\u2009${formatPCompact(row.p_value)}`
-                  : "";
+                const pStr = row.p_value != null && row.p_value < 0.1
+                  ? formatPCompact(row.p_value)
+                  : null;
+
+                {/* §6.4: hover tooltip */}
+                const rowTooltip = buildRowTooltip(row, doseStr, v, desc);
+
+                {/* §12: element tooltips */}
+                const verdictTooltip = v.verdict === "below-threshold"
+                  ? "Terminal effect too small to meaningfully evaluate recovery."
+                  : `${CONT_VERDICT_LABEL[v.verdict]}: control-normalized effect ${desc} during recovery period`;
 
                 return (
-                  <div key={row.dose_level} className="text-[10px] leading-relaxed">
+                  <div key={row.dose_level} className="text-[10px] leading-relaxed" title={rowTooltip}>
                     <span className="inline-flex items-baseline gap-1.5">
                       <DoseLabel level={row.dose_level} label={doseStr} className="text-[10px]" />
-                      <span className={`font-medium ${CONT_VERDICT_CLASS[v.verdict]}`}>
+                      <span
+                        className={`font-medium ${CONT_VERDICT_CLASS[v.verdict]}`}
+                        title={verdictTooltip}
+                      >
                         {CONT_VERDICT_LABEL[v.verdict]}
                       </span>
                       {v.verdict !== "below-threshold" && (
-                        <span className="text-muted-foreground">
-                          &mdash; {desc}{pSuffix}
+                        <span
+                          className="text-muted-foreground"
+                          title="Change in effect size (Hedges' g, SD units from control) between terminal and recovery. Positive = resolving."
+                        >
+                          &mdash; {desc}
+                        </span>
+                      )}
+                      {v.verdict !== "below-threshold" && pStr && (
+                        <span
+                          className="text-muted-foreground"
+                          title="Statistical significance of recovery-vs-terminal comparison. Shown when p < 0.1."
+                        >
+                          &middot; p&#x2009;=&#x2009;{pStr}
                         </span>
                       )}
                       {v.verdict === "below-threshold" && desc && (
@@ -291,9 +393,31 @@ function ContinuousRecoverySection({
               })}
             </div>
 
+            {/* §4.3: Control drift warning */}
+            {(() => {
+              const withCtrl = sexRows.filter(
+                r => r.control_mean_terminal != null && r.control_mean != null && !r.insufficient_n && !r.no_concurrent_control,
+              );
+              if (withCtrl.length === 0) return null;
+              const row0 = withCtrl[0];
+              const ctrlTerminal = row0.control_mean_terminal!;
+              const ctrlRecovery = row0.control_mean!;
+              if (Math.abs(ctrlTerminal) < 0.001) return null;
+              const driftPct = Math.abs(ctrlRecovery - ctrlTerminal) / Math.abs(ctrlTerminal) * 100;
+              if (driftPct <= 15) return null;
+              return (
+                <div className="text-[9px] text-muted-foreground/70 mt-1">
+                  Control group shifted {Math.round(driftPct)}% between terminal and recovery ({ctrlTerminal.toFixed(2)} {"\u2192"} {ctrlRecovery.toFixed(2)}). Interpretation may be affected.
+                </div>
+              );
+            })()}
+
             {/* Peak annotation when dosing-phase peak materially exceeded terminal */}
             {peakAnnotations.length > 0 && (
-              <div className="mt-1.5 text-[9px] text-muted-foreground/70 leading-snug space-y-1">
+              <div
+                className="mt-1.5 text-[9px] text-muted-foreground/70 leading-snug space-y-1"
+                title="Largest effect during dosing phase. Shown when peak materially exceeded terminal value."
+              >
                 {peakAnnotations.map(pa => {
                   const dg = doseGroups?.find(g => g.dose_level === pa.doseLevel);
                   const doseStr = dg && dg.dose_value != null && dg.dose_value > 0
@@ -458,22 +582,41 @@ function HistopathSexSection({
       {/* Per-dose assessments */}
       {assessment.assessments.length > 0 && (
         <div className="space-y-0.5">
-          {assessment.assessments.map((da) => (
-            <div key={da.doseLevel} className="flex items-center gap-2 text-[10px]">
-              <span className="w-20 shrink-0">
-                <DoseLabel
-                  level={da.doseLevel}
-                  label={formatDoseShortLabel(da.doseGroupLabel)}
-                  tooltip={da.doseGroupLabel}
-                  className="text-[10px]"
-                />
-              </span>
-              <VerdictBadge verdict={da.verdict} />
-              <span className="font-mono text-muted-foreground">
-                {da.main.affected}/{da.main.examined} → {da.recovery.affected}/{da.recovery.examined}
-              </span>
-            </div>
-          ))}
+          {assessment.assessments.map((da) => {
+            {/* §9.2: severity grade shift annotation */}
+            const incDelta = da.recovery.affected / Math.max(da.recovery.examined, 1)
+              - da.main.affected / Math.max(da.main.examined, 1);
+            const incUnchanged = Math.abs(incDelta) < 0.01;
+            const incDecreased = incDelta < -0.01;
+            const sevDelta = da.recovery.avgSeverity - da.main.avgSeverity;
+            let sevShift: string | null = null;
+            if (da.main.avgSeverity > 0) {
+              if (incUnchanged && sevDelta < -0.5) sevShift = "Severity improving";
+              else if (incUnchanged && sevDelta > 0.5) sevShift = "Severity progressing";
+              else if (incDecreased && sevDelta < 0) sevShift = "Reducing (incidence + severity)";
+              else if (incDecreased && sevDelta > 0.5) sevShift = "Mixed — incidence decreased but severity increased";
+            }
+
+            return (
+              <div key={da.doseLevel} className="flex items-center gap-2 text-[10px]">
+                <span className="w-20 shrink-0">
+                  <DoseLabel
+                    level={da.doseLevel}
+                    label={formatDoseShortLabel(da.doseGroupLabel)}
+                    tooltip={da.doseGroupLabel}
+                    className="text-[10px]"
+                  />
+                </span>
+                <VerdictBadge verdict={da.verdict} />
+                <span className="font-mono text-muted-foreground">
+                  {da.main.affected}/{da.main.examined} → {da.recovery.affected}/{da.recovery.examined}
+                </span>
+                {sevShift && (
+                  <span className="text-[9px] text-muted-foreground">{sevShift}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -559,13 +702,13 @@ function ConcordanceNote({
     (verdict === "persistent" || verdict === "progressing")
   ) {
     message =
-      "Expected to resolve but persisting \u2014 may indicate ongoing toxicity or insufficient recovery duration";
+      "\u26a0 Expected to resolve but persisting \u2014 may indicate ongoing toxicity or insufficient recovery duration";
   } else if (
     (qualifier === "unlikely" || qualifier === "none") &&
     (verdict === "reversed" || verdict === "reversing")
   ) {
     message =
-      "Finding nature suggests persistence; recovery may reflect sampling variability";
+      "Finding nature suggests persistence; recovery may reflect sampling variability or secondary changes";
   }
 
   if (!message) return null;
