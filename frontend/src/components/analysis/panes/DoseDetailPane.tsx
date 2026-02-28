@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { cn } from "@/lib/utils";
 import { getPValueColor, formatPValue, getSexColor, getDoseGroupColor } from "@/lib/severity-colors";
-import type { FindingContext } from "@/types/analysis";
+import type { FindingContext, ANCOVAResult } from "@/types/analysis";
 import { DoseLabel } from "@/components/ui/DoseLabel";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -20,6 +20,10 @@ interface Props {
   siblingDoseResponse?: FindingContext["dose_response"];
   /** The sibling's sex code. */
   siblingSex?: string;
+  /** ANCOVA result for the primary sex — determines "ANCOVA-adjusted" label. */
+  ancova?: ANCOVAResult | null;
+  /** ANCOVA result for the sibling sex. */
+  siblingAncova?: ANCOVAResult | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -67,14 +71,20 @@ function ConclusionBullets({
   stats,
   dr,
   trendTestName,
+  ancova,
 }: {
   stats: FindingContext["statistics"];
   dr: FindingContext["dose_response"];
   trendTestName: string;
+  ancova?: ANCOVAResult | null;
 }) {
   const sigDoses = stats.rows
     .filter(r => r.dose_level > 0 && r.p_value_adj != null && r.p_value_adj < 0.05)
     .map(r => doseDisplayLabel(r, r.label));
+
+  // Determine if any significant dose has ANCOVA confirmation
+  const hasAncovaConfirmation = ancova?.pairwise.some(ap => ap.p_value < 0.05) ?? false;
+  const sigMethod = hasAncovaConfirmation ? "ANCOVA-adjusted" : undefined;
 
   const trendFmt = dr.trend_p != null
     ? (formatPValue(dr.trend_p).startsWith("<")
@@ -86,7 +96,7 @@ function ConclusionBullets({
     <div className="mt-1.5 space-y-0.5 text-[9px] pl-[64px]">
       <div className={sigDoses.length > 0 ? "text-foreground/80" : "text-muted-foreground"}>
         {sigDoses.length > 0
-          ? `Sig. at ${sigDoses.join(", ")}`
+          ? `Sig. at ${sigDoses.join(", ")}${sigMethod ? ` (${sigMethod})` : ""}`
           : "No sig. differences"}
       </div>
       <div>
@@ -100,7 +110,7 @@ function ConclusionBullets({
 
 // ─── Component ──────────────────────────────────────────────
 
-export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistics, siblingDoseResponse, siblingSex }: Props) {
+export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistics, siblingDoseResponse, siblingSex, ancova, siblingAncova }: Props) {
   const isContinuous = statistics.data_type === "continuous";
   const testLabel = isContinuous
     ? "Pairwise: Dunnett\u2019s test (adjusted)"
@@ -142,19 +152,19 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
             <tr className="border-b">
               <th className="py-1 text-left font-medium">Group</th>
               {hasSibling && <th className="py-1 text-left font-medium">Sex</th>}
-              <th className="py-1 text-right font-medium">n</th>
+              <th className="py-1 text-right font-medium" title="Number of animals in the group.">n</th>
               {isContinuous ? (
                 <>
-                  <th className="py-1 text-right font-medium">Mean</th>
-                  <th className="py-1 text-right font-medium">SD</th>
+                  <th className="py-1 text-right font-medium" title="Group mean, absolute value.">Mean</th>
+                  <th className="py-1 text-right font-medium" title="Standard deviation.">SD</th>
                 </>
               ) : (
                 <>
-                  <th className="py-1 text-right font-medium">Aff</th>
-                  <th className="py-1 text-right font-medium">Inc%</th>
+                  <th className="py-1 text-right font-medium" title="Number affected.">Aff</th>
+                  <th className="py-1 text-right font-medium" title="Incidence as percentage.">Inc%</th>
                 </>
               )}
-              <th className="py-1 text-right font-medium">
+              <th className="py-1 text-right font-medium" title="Adjusted p-value vs. control. Dunnett's (continuous) or Fisher's exact (incidence).">
                 p-adj
                 <div className="text-[9px] font-normal text-muted-foreground">
                   {isContinuous ? "Dunnett\u2019s" : "Fisher\u2019s exact"}
@@ -230,7 +240,8 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
         const sigDoses = statistics.rows
           .filter(r => r.dose_level > 0 && r.p_value_adj != null && r.p_value_adj < 0.05)
           .map(r => doseDisplayLabel(r, r.label));
-        const method = isContinuous ? "Dunnett\u2019s" : "Fisher\u2019s exact";
+        const hasAncovaConfirmation = ancova?.pairwise.some(ap => ap.p_value < 0.05) ?? false;
+        const method = hasAncovaConfirmation ? "ANCOVA-adjusted" : isContinuous ? "Dunnett\u2019s" : "Fisher\u2019s exact";
         return sigDoses.length > 0 ? (
           <div className="text-[10px] text-foreground/80">
             Significant at {sigDoses.join(", ")} ({method}).
@@ -258,12 +269,14 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
             const mStats = mSex === sex ? statistics : siblingStatistics!;
             const fDR = fSex === sex ? doseResponse : siblingDoseResponse;
             const mDR = mSex === sex ? doseResponse : siblingDoseResponse;
+            const fAncova = fSex === sex ? ancova : siblingAncova;
+            const mAncova = mSex === sex ? ancova : siblingAncova;
 
             return (
               <div className="flex gap-2">
                 {/* Females: dose label + bar + value + conclusions */}
                 <div className="flex-1 min-w-0">
-                  <div className="mb-0.5 text-center text-[9px] font-medium text-muted-foreground">Females</div>
+                  <div className="mb-0.5 text-center text-[9px] font-medium text-muted-foreground">F</div>
                   <div className="space-y-1">
                     {doseResponse.bars.map((refBar) => {
                       const bar = fBarMap.get(refBar.dose_level);
@@ -294,12 +307,12 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                       );
                     })}
                   </div>
-                  <ConclusionBullets stats={fStats} dr={fDR} trendTestName={trendTestName} />
+                  <ConclusionBullets stats={fStats} dr={fDR} trendTestName={trendTestName} ancova={fAncova} />
                 </div>
 
                 {/* Males: colored pipe + bar + value + conclusions */}
                 <div className="flex-1 min-w-0">
-                  <div className="mb-0.5 text-center text-[9px] font-medium text-muted-foreground">Males</div>
+                  <div className="mb-0.5 text-center text-[9px] font-medium text-muted-foreground">M</div>
                   <div className="space-y-1">
                     {doseResponse.bars.map((refBar) => {
                       const bar = mBarMap.get(refBar.dose_level);
@@ -326,7 +339,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                       );
                     })}
                   </div>
-                  <ConclusionBullets stats={mStats} dr={mDR} trendTestName={trendTestName} />
+                  <ConclusionBullets stats={mStats} dr={mDR} trendTestName={trendTestName} ancova={mAncova} />
                 </div>
               </div>
             );
