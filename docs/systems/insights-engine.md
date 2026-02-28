@@ -320,7 +320,7 @@ function assignSection(priority: number): UISection {
 | R01 | Treatment-related | endpoint | info | `treatment_related == true` | "{endpoint_label}: significant dose-dependent {direction} in {sex} ({pattern})." | Per endpoint x sex |
 | R02 | Significant pairwise | endpoint | info | `p_value_adj < 0.05` | "Significant pairwise difference at {dose_label} (p={p_value}, d={effect_size})." | Per endpoint x dose |
 | R03 | Significant trend | endpoint | info | `trend_p < 0.05` | "Significant dose-response trend (p={trend_p})." | Per endpoint |
-| R04 | Adverse severity | endpoint | warning | `severity == "adverse"` | "{endpoint_label} classified as adverse in {sex} (p={p_value})." | Per endpoint x sex |
+| R04 | Adverse severity | endpoint | warning | `severity == "adverse"` | "{endpoint_label} classified as adverse in {sex} (p={p_value})." | Per endpoint x sex. Params include `finding_class` and `finding_class_disagrees` (true when ECETOC ≠ legacy). |
 | R05 | Monotonic pattern | endpoint | info | `pattern in ("monotonic_increase", "monotonic_decrease")` | "{endpoint_label}: {pattern} across dose groups in {sex}." | Per endpoint x sex |
 | R06 | Threshold pattern | endpoint | info | `pattern == "threshold"` | "{endpoint_label}: threshold pattern in {sex}." | Per endpoint x sex |
 | R07 | Non-monotonic | endpoint | info | `pattern == "non_monotonic"` | "{endpoint_label}: inconsistent dose-response in {sex}." | Per endpoint x sex |
@@ -360,9 +360,12 @@ for finding in findings:
     if finding.get("trend_p") is not None and finding["trend_p"] < 0.05:
         emit(R03, ctx)
 
-    # R04: Adverse severity
+    # R04: Adverse severity (annotated with ECETOC finding_class)
     if finding.get("severity") == "adverse":
-        emit(R04, ctx)
+        params = {"finding_class": finding.get("finding_class")}
+        if finding.get("finding_class") != "tr_adverse":
+            params["finding_class_disagrees"] = True
+        emit(R04, ctx, params=params)
 
     # R05-R07: Pattern-based
     if pattern in ("monotonic_increase", "monotonic_decrease"):

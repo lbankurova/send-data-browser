@@ -1144,11 +1144,28 @@ Consequence finding heuristic: structural/compositional + >= 2 correlates → li
 
 ### CLASS-13 — Adversity Assessment (ECETOC B-Factors)
 
-**Purpose:** Determine whether a syndrome constitutes an "adverse" effect using the ECETOC decision framework B-factors.
+**Purpose:** Determine whether a finding or syndrome constitutes an "adverse" effect using the ECETOC decision framework B-factors.
 
-**Implementation:** `computeAdversity(syndrome, allEndpoints, recovery, certainty, tumorContext, foodConsumptionContext)` — frontend `syndrome-interpretation.ts:2165`.
+**Two implementations (different abstraction levels):**
 
-**Parameters:** B-factors evaluated:
+1. **Per-finding (backend):** `assess_finding(finding)` — backend `classification.py`. Runs on every finding after corroboration. Returns `finding_class`: one of `not_treatment_related`, `tr_non_adverse`, `tr_adaptive`, `tr_adverse`, `equivocal`. Uses A-factor scoring (dose-response, corroboration, statistics) for treatment-relatedness, then B-factor logic (intrinsic adversity dictionary, magnitude, corroboration) for adversity. Drives NOAEL determination.
+
+2. **Per-syndrome (frontend):** `computeAdversity(syndrome, allEndpoints, recovery, certainty, tumorContext, foodConsumptionContext)` — frontend `syndrome-interpretation.ts:2165`. Operates on detected syndromes (~20% of findings). Uses richer context (recovery, tumor progression, food consumption) unavailable at the per-finding level.
+
+**Per-finding A-factors (treatment-relatedness):**
+- A-1 (dose-response): monotonic → 2 pts, threshold → 1.5, non-monotonic → 0.5
+- A-2 (concordance): corroboration_status == "corroborated" → 1 pt
+- A-6 (statistics): min_p_adj < 0.05 → 1 pt, trend_p < 0.05 → 0.5 pt
+- Score ≥ 1.0 = treatment-related
+
+**Per-finding B-factors (adversity, only if treatment-related):**
+- Intrinsic adversity dictionary override: `always_adverse` terms → tr_adverse; `likely_adverse` → tr_adverse; `context_dependent` → tr_adaptive (unless |d| ≥ 1.5)
+- Large magnitude (|d| ≥ 1.5) → tr_adverse
+- Moderate magnitude (|d| ≥ 0.8) + corroborated → tr_adverse
+- Small effect (|d| < 0.5) → tr_non_adverse
+- Otherwise → equivocal
+
+**Per-syndrome B-factors:**
 - B-2 (adaptive): false (not determinable from current data model)
 - B-3 (reversible): from recovery status
 - B-4 (magnitudeLevel): from max |Cohen's d| — severe >= 2.0, marked >= 1.5, moderate >= 1.0, mild >= 0.5, minimal < 0.5
@@ -1156,7 +1173,9 @@ Consequence finding heuristic: structural/compositional + >= 2 correlates → li
 - B-6 (precursorToWorse): from tumor context
 - B-7 (secondaryToOther): from food consumption context
 
-Decision: adverse if precursor to tumors OR mechanism confirmed + cross-domain OR severe/marked magnitude. Non-adverse if reversible + minimal/mild + no progression. Equivocal otherwise.
+Decision (syndrome-level): adverse if precursor to tumors OR mechanism confirmed + cross-domain OR severe/marked magnitude. Non-adverse if reversible + minimal/mild + no progression. Equivocal otherwise.
+
+**Why two levels:** The per-finding assessment ensures every finding gets a class (even those not matching any syndrome). The per-syndrome assessment uses richer biological context. They may disagree; the R04 rule annotates `finding_class_disagrees` when legacy severity and ECETOC diverge.
 
 **Why this method:** ECETOC B-factors are the standard industry framework for adversity assessment. Automating this provides consistency and traceability.
 

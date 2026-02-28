@@ -641,6 +641,44 @@ Returns `True` if **any** of:
 | Adverse with monotonic dose-response | `severity == "adverse" AND dose_response_pattern in ("monotonic_increase", "monotonic_decrease")` |
 | Very significant pairwise alone | `min_p_adj < 0.01` |
 
+#### Per-Finding Adversity Assessment (finding_class)
+
+**File:** `services/analysis/classification.py::assess_finding(finding)`, called after `compute_corroboration()` in `findings_pipeline.py::process_findings()`.
+
+**Dictionary:** `shared/adversity-dictionary.json` — three tiers of intrinsic adversity terms (substring matching, priority: always > likely > context_dependent). Loaded by `services/analysis/adversity_dictionary.py`.
+
+Returns one of five categories:
+
+| finding_class | Meaning |
+|---------------|---------|
+| `not_treatment_related` | A-factor score < 1.0 — no statistical evidence of treatment effect |
+| `tr_non_adverse` | Treatment-related, small magnitude (|d| < 0.5), no adversity markers |
+| `tr_adaptive` | Treatment-related, context-dependent histopath term (e.g. hypertrophy) |
+| `tr_adverse` | Treatment-related adverse — intrinsic adversity OR large magnitude + corroboration |
+| `equivocal` | Mixed evidence, needs human review |
+
+**Three-step assessment:**
+
+**Step 0 — Intrinsic adversity override** (MI/MA/TF only): If finding text contains an `always_adverse` term (necrosis, carcinoma, etc.), any signal (A-score ≥ 1.0) → `tr_adverse`, no signal → `equivocal`.
+
+**Step 1 — Treatment-relatedness** (A-factors): A-1 dose-response pattern (0–2 pts), A-2 concordance via `corroboration_status` (0–1 pt), A-6 statistical significance (0–1 pt). Score ≥ 1.0 = treatment-related; < 1.0 → `not_treatment_related`.
+
+**Step 2 — Adversity** (B-factors, only if treatment-related):
+
+| Priority | Condition | Result |
+|----------|-----------|--------|
+| B-0 | `likely_adverse` dictionary match (atrophy, degeneration, etc.) | `tr_adverse` |
+| B-0 | `context_dependent` match + \|d\| ≥ 1.5 | `tr_adverse` |
+| B-0 | `context_dependent` match + \|d\| < 1.5 | `tr_adaptive` |
+| B-1 | \|d\| ≥ 1.5 | `tr_adverse` |
+| B-2 | \|d\| ≥ 0.8 + corroborated | `tr_adverse` |
+| B-3 | \|d\| < 0.5 | `tr_non_adverse` |
+| B-4 | None of the above | `equivocal` |
+
+**Key constraint:** `severity` and `treatment_related` fields are unchanged for backward compatibility. `finding_class` is purely additive. NOAEL determination uses `finding_class` when present, falling back to `severity == "adverse"` for legacy data.
+
+**Relationship to frontend syndrome engine:** The backend `assess_finding()` operates per-finding (FLOOR — every finding gets a class). The frontend `cross-domain-syndromes.ts` operates per-syndrome (CEILING — only ~20% of findings match syndromes). They may disagree by design; the backend classification is conservative and the frontend is more nuanced.
+
 #### Organ System Mapping
 
 **File:** `generator/organ_map.py::get_organ_system(specimen, test_code, domain)` using data from `services/analysis/send_knowledge.py`
