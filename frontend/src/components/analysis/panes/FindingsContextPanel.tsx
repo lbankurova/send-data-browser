@@ -31,7 +31,7 @@ import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/org
 import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
-import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
+import type { DoseGroup, FindingContext, UnifiedFinding } from "@/types/analysis";
 import { formatPValue, getDoseGroupColor, getSexColor } from "@/lib/severity-colors";
 import { getPatternLabel } from "@/lib/findings-rail-engine";
 import type { SexEndpointSummary, EndpointNoael } from "@/lib/derive-summaries";
@@ -1071,13 +1071,29 @@ export function FindingsContextPanel() {
     return findingsData?.findings.find(f => f.id === siblingContext.finding_id) ?? selectedFinding;
   }, [hasSibling, siblingContext, activeSex, selectedFinding, findingsData?.findings]);
 
+  // Sync dose-response bars with statistics rows (when scheduled-only swaps the stats source)
+  function syncBarsWithStats(
+    dr: FindingContext["dose_response"],
+    stats: FindingContext["statistics"] | undefined,
+  ): FindingContext["dose_response"] {
+    if (!isScheduledOnly || !hasEarlyDeaths || !stats) return dr;
+    const rowMap = new Map(stats.rows.map(r => [r.dose_level, r]));
+    const isContinuous = stats.data_type === "continuous";
+    const syncedBars = dr.bars.map(bar => {
+      const row = rowMap.get(bar.dose_level);
+      if (!row) return bar;
+      return { ...bar, value: isContinuous ? (row.mean ?? bar.value) : (row.incidence ?? bar.value) };
+    });
+    return { ...dr, bars: syncedBars };
+  }
+
   // Active dose-response for bars
   const activeDoseResponse = useMemo(() => {
-    if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
-      return context.dose_response;
-    }
-    return siblingContext.dose_response;
-  }, [hasSibling, siblingContext, activeSex, selectedFinding?.sex, context.dose_response]);
+    const dr = (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex)
+      ? context.dose_response
+      : siblingContext.dose_response;
+    return syncBarsWithStats(dr, sexAwareStatistics);
+  }, [hasSibling, siblingContext, activeSex, selectedFinding?.sex, context.dose_response, isScheduledOnly, hasEarlyDeaths, sexAwareStatistics]);
 
   const notEvaluated = toxAnnotations && selectedFinding
     ? toxAnnotations[selectedFinding.endpoint_label ?? selectedFinding.finding]?.treatmentRelated === "Not Evaluated"
@@ -1365,7 +1381,10 @@ export function FindingsContextPanel() {
           doseResponse={activeDoseResponse}
           sex={activeSex}
           siblingStatistics={hasSibling ? (activeSex === selectedFinding.sex ? siblingContext!.statistics : activeStatistics!) : undefined}
-          siblingDoseResponse={hasSibling ? (activeSex === selectedFinding.sex ? siblingContext!.dose_response : context.dose_response) : undefined}
+          siblingDoseResponse={hasSibling ? syncBarsWithStats(
+            activeSex === selectedFinding.sex ? siblingContext!.dose_response : context.dose_response,
+            activeSex === selectedFinding.sex ? siblingContext!.statistics : activeStatistics!,
+          ) : undefined}
           siblingSex={hasSibling ? (activeSex === selectedFinding.sex ? siblingContext!.sex : selectedFinding.sex) : undefined}
         />
       </CollapsiblePane>

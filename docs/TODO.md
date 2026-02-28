@@ -232,14 +232,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## TOPIC Hub Documentation (2 open)
+## TOPIC Hub Documentation (0 open — all 10 complete)
 
-> Subsystems that need retrospective TOPIC hub docs (`docs/incoming/arch-overhaul/TOPIC-*.md`). Existing hubs: data-pipeline, organ-measurements, syndrome-engine. CLAUDE.md rule 7 requires agents to consult hubs before touching covered subsystems.
+> Subsystems that need retrospective TOPIC hub docs (`docs/incoming/arch-overhaul/TOPIC-*.md`). All hubs created: data-pipeline, organ-measurements, syndrome-engine, histopathology, recovery-phase-detection, noael-determination, study-intelligence, dose-response-view, subject-profile, validation-engine. CLAUDE.md rule 7 requires agents to consult hubs before touching covered subsystems.
 
-### DOC-01: TOPIC hub — Validation Engine
-- **Subsystem:** `backend/validation/` package, `ValidationView.tsx`, `ValidationContextPanel.tsx`, 14 YAML rules, CDISC CORE integration
-- **Why:** Dual-engine architecture (custom + CORE) with precedence logic is a footgun. Rule cache invalidation subtle. Spec (`validation-unified-spec.md`) diverged from implementation on UI layout (three-tab → domain-rail). ~7,700 LOC across 29 files.
-- **Status:** Open
+### ~~DOC-01: TOPIC hub — Validation Engine~~
+- ~~**Subsystem:** `backend/validation/` package, `ValidationView.tsx`, `ValidationContextPanel.tsx`, 14 YAML rules, CDISC CORE integration~~
+- ~~**Why:** Dual-engine architecture (custom + CORE) with precedence logic is a footgun. Rule cache invalidation subtle. Spec (`validation-unified-spec.md`) diverged from implementation on UI layout (three-tab → domain-rail). ~7,700 LOC across 29 files.~~
+- **Status:** ~~Resolved~~ — `TOPIC-validation-engine.md` created
 - **Owner hint:** docs-agent
 
 ### ~~DOC-02: TOPIC hub — Recovery & Phase Detection~~
@@ -248,10 +248,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** ~~Resolved~~ — `TOPIC-recovery-phase-detection.md` created
 - **Owner hint:** docs-agent
 
-### DOC-03: TOPIC hub — Subject Profile & Cross-Animal Flags
-- **Subsystem:** `SubjectProfilePanel.tsx` (920L, design frozen), `cross_animal_flags.py` (852L), `subject-profile-logic.ts`, tissue battery, tumor linkage, recovery narratives
-- **Why:** Design frozen per CLAUDE.md hard rule — agents need clear boundary between "functional bug fix" and "visual change." Tissue battery integration and cross-animal flag display partially wired. `individual-animal-view-spec.md` has unclear compliance status.
-- **Status:** Open
+### ~~DOC-03: TOPIC hub — Subject Profile & Cross-Animal Flags~~
+- ~~**Subsystem:** `SubjectProfilePanel.tsx` (920L, design frozen), `cross_animal_flags.py` (852L), `subject-profile-logic.ts`, tissue battery, tumor linkage, recovery narratives~~
+- ~~**Why:** Design frozen per CLAUDE.md hard rule — agents need clear boundary between "functional bug fix" and "visual change." Tissue battery integration and cross-animal flag display partially wired. `individual-animal-view-spec.md` has unclear compliance status.~~
+- **Status:** ~~Resolved~~ — `TOPIC-subject-profile.md` created
 - **Owner hint:** docs-agent
 
 ### ~~DOC-04: TOPIC hub — NOAEL Determination~~
