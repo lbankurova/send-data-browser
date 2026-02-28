@@ -1,11 +1,20 @@
 """Pure rule functions for classifying findings severity, dose-response patterns,
 treatment-relatedness, and ECETOC per-finding adversity assessment.
 
+Tier 2 additions: organ-specific two-gate OM classification, adaptive decision trees,
+and context-aware assessment using ConcurrentFindingIndex.
+
 Designed for later extraction to configurable scripts."""
 
+from __future__ import annotations
+
+import logging
 import math
 
 from services.analysis.adversity_dictionary import lookup_intrinsic_adversity
+from services.analysis.organ_thresholds import get_organ_threshold, get_default_om_threshold
+
+log = logging.getLogger(__name__)
 
 
 def classify_severity(finding: dict) -> str:
@@ -403,3 +412,197 @@ def assess_finding(finding: dict) -> str:
 
     # B-4: Equivocal fallback (moderate effect, not corroborated)
     return "equivocal"
+
+
+# ---------------------------------------------------------------------------
+# Tier 2: Context-aware assessment (organ thresholds + adaptive trees)
+# ---------------------------------------------------------------------------
+
+def _compute_pct_change(finding: dict) -> float | None:
+    """Compute percentage change at highest dose vs control.
+
+    Baseline selection (critical — avoids BW contamination):
+    - ANCOVA-adjusted means when available (already BW-corrected)
+    - Absolute means otherwise (never ratio-to-BW when BW is confounded)
+
+    Returns signed percentage (positive = increase, negative = decrease).
+    Returns None if data insufficient or control mean near zero.
+    """
+    # Prefer ANCOVA-adjusted means
+    ancova = finding.get("ancova")
+    if ancova and isinstance(ancova, dict):
+        adj_means = ancova.get("adjusted_means")
+        if adj_means and isinstance(adj_means, dict):
+            # adjusted_means is {dose_label: value} — use first and last
+            values = list(adj_means.values())
+            if len(values) >= 2:
+                ctrl = values[0]
+                high = values[-1]
+                if ctrl is not None and high is not None and abs(ctrl) > 1e-10:
+                    return ((high - ctrl) / abs(ctrl)) * 100
+
+    # Fallback: absolute group means
+    gs = finding.get("group_stats", [])
+    if len(gs) < 2:
+        return None
+    ctrl_mean = gs[0].get("mean")
+    high_mean = gs[-1].get("mean")
+    if ctrl_mean is None or high_mean is None or abs(ctrl_mean) < 1e-10:
+        return None
+    return ((high_mean - ctrl_mean) / abs(ctrl_mean)) * 100
+
+
+def _assess_om_two_gate(finding: dict, species: str | None = None) -> str:
+    """Two-gate OM classification: statistical gate × magnitude gate.
+
+    Gate 1 (stats): min_p_adj < 0.05
+    Gate 2 (magnitude): |pct_change| >= organ-specific adverse_floor_pct
+
+    Returns finding_class and annotates finding with _assessment_detail.
+    """
+    specimen = finding.get("specimen", "")
+    min_p = finding.get("min_p_adj")
+    trend_p = finding.get("trend_p")
+
+    pct = _compute_pct_change(finding)
+    abs_pct = abs(pct) if pct is not None else None
+
+    # Get organ-specific thresholds
+    threshold = get_organ_threshold(specimen, species)
+    if threshold:
+        ceiling = threshold["variation_ceiling_pct"]
+        floor = threshold["adverse_floor_pct"]
+        strong = threshold["strong_adverse_pct"]
+        method = f"organ_specific:{threshold['config_key']}"
+    else:
+        # Fallback to default
+        ceiling = 5
+        floor = get_default_om_threshold()
+        strong = floor * 2
+        method = "default"
+
+    # Gate results
+    stat_gate = min_p is not None and min_p < 0.05
+    trend_sig = trend_p is not None and trend_p < 0.05
+    marginal_stats = min_p is not None and 0.05 <= min_p < 0.10
+
+    # Annotate assessment detail
+    detail = {
+        "method": method,
+        "stat_gate": stat_gate,
+        "pct_change": round(pct, 1) if pct is not None else None,
+        "organ_threshold": floor,
+        "ceiling": ceiling,
+        "baseline": "ancova" if (finding.get("ancova") and
+                                  isinstance(finding.get("ancova"), dict) and
+                                  finding["ancova"].get("adjusted_means")) else "absolute",
+    }
+    finding["_assessment_detail"] = detail
+
+    # pct_change unavailable → fall through to base assess_finding
+    if abs_pct is None:
+        detail["mag_gate"] = None
+        return assess_finding(finding)
+
+    # Brain special case: any_significant policy (floor = 0)
+    if floor == 0:
+        detail["mag_gate"] = stat_gate
+        if stat_gate:
+            return "tr_adverse"
+        if trend_sig:
+            return "equivocal"
+        return "not_treatment_related"
+
+    # Strong adverse: always adverse if stats pass
+    if abs_pct >= strong and stat_gate:
+        detail["mag_gate"] = True
+        return "tr_adverse"
+
+    # Two-gate classification
+    mag_above_floor = abs_pct >= floor
+    mag_above_ceiling = abs_pct >= ceiling
+    detail["mag_gate"] = mag_above_floor
+
+    if stat_gate and mag_above_floor:
+        # Both gates pass → adverse
+        return "tr_adverse"
+
+    if stat_gate and mag_above_ceiling and not mag_above_floor:
+        # Real, moderate → equivocal (needs corroboration/histopath)
+        return "equivocal"
+
+    if stat_gate and not mag_above_ceiling:
+        # Real but trivially small → non-adverse
+        # Exception: very significant + above half ceiling → equivocal
+        if min_p is not None and min_p < 0.001 and abs_pct > ceiling / 2:
+            return "equivocal"
+        return "tr_non_adverse"
+
+    if not stat_gate and mag_above_floor:
+        # Meaningful magnitude, insufficient stats → equivocal
+        # Trend tiebreaker
+        if trend_sig:
+            detail["trend_tiebreaker"] = True
+        return "equivocal"
+
+    if marginal_stats and mag_above_floor and trend_sig:
+        # Marginal stats + meaningful magnitude + significant trend → equivocal
+        return "equivocal"
+
+    if not stat_gate and not mag_above_floor:
+        # Neither gate passes
+        if trend_sig and mag_above_ceiling:
+            return "equivocal"
+        return "not_treatment_related"
+
+    # Fallback
+    return "not_treatment_related"
+
+
+def assess_finding_with_context(
+    finding: dict,
+    index,
+    species: str | None = None,
+) -> str:
+    """Context-aware ECETOC assessment using concurrent findings and organ thresholds.
+
+    Dispatches to:
+    1. Two-gate OM classification for organ weight findings
+    2. Adaptive decision trees for context-dependent histopath findings
+    3. Base assess_finding() for everything else
+
+    Args:
+        finding: The finding dict to assess.
+        index: ConcurrentFindingIndex for cross-finding lookups.
+        species: Study species string (from TS domain).
+    """
+    domain = finding.get("domain", "")
+
+    # OM domain → two-gate organ-specific classification
+    if domain == "OM":
+        return _assess_om_two_gate(finding, species)
+
+    # MI/MA domain with context_dependent term → try adaptive trees
+    if domain in _HISTOPATH_DOMAINS:
+        finding_text = finding.get("finding", "")
+        if finding_text:
+            intrinsic = lookup_intrinsic_adversity(finding_text)
+            if intrinsic == "context_dependent":
+                from services.analysis.adaptive_trees import evaluate_adaptive_trees
+                tree_result = evaluate_adaptive_trees(finding, index, species)
+                if tree_result is not None:
+                    finding["_tree_result"] = tree_result.to_dict()
+                    return tree_result.classification
+                # No tree matched → equivocal (never claim adaptive from magnitude alone)
+                finding["_tree_result"] = {
+                    "tree_id": "none",
+                    "rationale": "No adaptive tree matched; context_dependent finding without biological context evidence",
+                }
+                # Fall through to base assess_finding but override tr_adaptive → equivocal
+                base = assess_finding(finding)
+                if base == "tr_adaptive":
+                    return "equivocal"
+                return base
+
+    # Everything else → base ECETOC assessment
+    return assess_finding(finding)

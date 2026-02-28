@@ -92,6 +92,25 @@ export interface UnifiedFinding {
   corroboration_status?: "corroborated" | "uncorroborated" | "not_applicable";
   /** ECETOC per-finding adversity class — set by backend pipeline. */
   finding_class?: "not_treatment_related" | "tr_non_adverse" | "tr_adaptive" | "tr_adverse" | "equivocal";
+  /** Tier 2: OM two-gate assessment detail (organ weight findings only). */
+  _assessment_detail?: {
+    method: string;
+    stat_gate: boolean;
+    mag_gate: boolean | null;
+    pct_change: number | null;
+    organ_threshold: number;
+    ceiling?: number;
+    baseline?: "ancova" | "absolute";
+    trend_tiebreaker?: boolean;
+  };
+  /** Tier 2: Adaptive tree evaluation result (context-dependent histopath findings). */
+  _tree_result?: {
+    tree_id: string;
+    node_path?: string[];
+    ecetoc_factors?: string[];
+    rationale: string;
+    human_relevance?: string;
+  };
 }
 
 export interface WilliamsStepDownResult {

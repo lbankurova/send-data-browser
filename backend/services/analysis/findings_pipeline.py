@@ -19,7 +19,7 @@ from services.analysis.classification import (
     classify_dose_response,
     determine_treatment_related,
     compute_max_fold_change,
-    assess_finding,
+    assess_finding_with_context,
 )
 from services.analysis.corroboration import compute_corroboration
 from generator.organ_map import get_organ_system
@@ -247,6 +247,7 @@ def process_findings(
     scheduled_map: dict[tuple, dict] | None = None,
     separate_map: dict[tuple, dict] | None = None,
     n_excluded: int = 0,
+    species: str | None = None,
 ) -> list[dict]:
     """Shared enrichment pipeline: merge pass variants, then classify.
 
@@ -260,6 +261,9 @@ def process_findings(
     handles only the shared enrichment — caller-specific enrichment (e.g.
     ANOVA/Dunnett/JT in the generator, ID generation in the live API) happens
     before or after this call.
+
+    Args:
+        species: Study species (from TS domain) for organ-specific thresholds.
     """
     if scheduled_map is not None:
         base_findings = attach_scheduled_stats(
@@ -271,21 +275,27 @@ def process_findings(
     # Cross-domain corroboration (requires all enriched findings present)
     enriched = compute_corroboration(enriched)
     # ECETOC per-finding adversity assessment (requires corroboration_status)
-    enriched = _assess_all_findings(enriched)
+    enriched = _assess_all_findings(enriched, species=species)
     return enriched
 
 
-def _assess_all_findings(findings: list[dict]) -> list[dict]:
+def _assess_all_findings(findings: list[dict], species: str | None = None) -> list[dict]:
     """Run ECETOC per-finding adversity assessment on all findings.
 
     Must be called AFTER ``compute_corroboration()`` since the assessment
     uses ``corroboration_status`` as an input (A-2 concordance factor and
     B-2 moderate-magnitude escalation).
+
+    Tier 2: builds ConcurrentFindingIndex for cross-finding lookups and
+    uses assess_finding_with_context() for organ-specific thresholds and
+    adaptive decision trees.
     """
+    from services.analysis.concurrent_findings import ConcurrentFindingIndex
+    index = ConcurrentFindingIndex(findings)
     for f in findings:
         try:
-            f["finding_class"] = assess_finding(f)
+            f["finding_class"] = assess_finding_with_context(f, index, species=species)
         except Exception as e:
-            log.warning("assess_finding failed for %s: %s", finding_key(f), e)
+            log.warning("assess_finding_with_context failed for %s: %s", finding_key(f), e)
             f["finding_class"] = "not_treatment_related"
     return findings

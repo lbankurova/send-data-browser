@@ -301,7 +301,7 @@ describe("finding_class in unified_findings.json", () => {
   );
 
   test.skipIf(!hasGenerated)(
-    "context_dependent histopath terms should not be tr_adverse unless large magnitude",
+    "context_dependent histopath terms should not be tr_adverse unless large magnitude or tree decision",
     () => {
       const dict = JSON.parse(fs.readFileSync(DICT_PATH, "utf-8"));
       const ctxTerms: string[] = dict.context_dependent;
@@ -315,11 +315,19 @@ describe("finding_class in unified_findings.json", () => {
         if (!isCtx) continue;
 
         if (f.finding_class === "tr_adverse") {
-          // Must have large magnitude
+          // Valid paths to tr_adverse for context_dependent:
+          // 1. Large magnitude (|d| >= 1.5) — base assess_finding B-factor
+          // 2. Adaptive tree decision (tree routed to adverse based on biological evidence)
           const d = f.max_effect_size;
-          if (d === null || Math.abs(d) < 1.5) {
+          const hasLargeMagnitude = d !== null && Math.abs(d) >= 1.5;
+          const treeResult = (f as Record<string, unknown>)._tree_result as
+            | { tree_id: string }
+            | undefined;
+          const hasTreeDecision =
+            treeResult !== undefined && treeResult.tree_id !== "none";
+          if (!hasLargeMagnitude && !hasTreeDecision) {
             violations.push(
-              `${f.specimen} — ${f.finding} (${f.sex}): context_dependent classified as tr_adverse but |d|=${d}`,
+              `${f.specimen} — ${f.finding} (${f.sex}): context_dependent classified as tr_adverse but |d|=${d} and no tree decision`,
             );
           }
         }

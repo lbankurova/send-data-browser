@@ -7,6 +7,7 @@ Each function takes a finding dict (+ context) and returns a list of
 from services.analysis.send_knowledge import (
     BIOMARKER_MAP, ORGAN_SYSTEM_MAP, THRESHOLDS, DOMAIN_EFFECT_THRESHOLDS,
 )
+from services.analysis.organ_thresholds import get_organ_threshold, get_default_om_threshold
 
 
 # ---------------------------------------------------------------------------
@@ -361,15 +362,26 @@ def dose_response_insights(
                 "level": level,
             })
 
-    # C4: OM-specific threshold
+    # C4: OM-specific threshold (organ-specific when available)
     if domain == "OM":
         pct, dir_word2 = _get_pct_change_at_high_dose(finding)
         if pct is not None:
-            threshold = THRESHOLDS["OM_PCT_CHANGE"]
+            specimen = finding.get("specimen", "")
+            organ_cfg = get_organ_threshold(specimen)
+            if organ_cfg:
+                threshold = organ_cfg["adverse_floor_pct"]
+                # Brain special case: any_significant → use 0%
+                if threshold == 0:
+                    threshold_label = "any significant change"
+                else:
+                    threshold_label = f"{threshold}%"
+            else:
+                threshold = get_default_om_threshold()
+                threshold_label = f"{threshold}%"
             exceeds = "exceeds" if abs(pct) >= threshold else "does not exceed"
             level = "critical" if exceeds == "exceeds" else "info"
             insights.append({
-                "text": f"Organ weight {dir_word2} {abs(pct)}% — {exceeds} {threshold}% threshold",
+                "text": f"Organ weight {dir_word2} {abs(pct)}% — {exceeds} {threshold_label} threshold ({specimen})",
                 "level": level,
             })
 
