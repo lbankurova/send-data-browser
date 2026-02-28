@@ -31,7 +31,7 @@ import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/org
 import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
-import type { DoseGroup, FindingContext, UnifiedFinding } from "@/types/analysis";
+import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
 import { formatPValue, getDoseGroupColor, getSexColor } from "@/lib/severity-colors";
 import { getPatternLabel } from "@/lib/findings-rail-engine";
 import type { SexEndpointSummary, EndpointNoael } from "@/lib/derive-summaries";
@@ -990,6 +990,59 @@ export function FindingsContextPanel() {
     return ep?.endpointConfidence?.integrated.integrated ?? null;
   }, [selectedFinding, analytics]);
 
+  // ── Sex selector state (Phase B7) ──
+  // activeSex defaults to the selected finding's sex, resets when finding changes
+  const [activeSex, setActiveSex] = useState(selectedFinding?.sex ?? "M");
+  // Reset when the selected finding changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setActiveSex(selectedFinding?.sex ?? "M"); }, [selectedFindingId]);
+
+  const hasSibling = context?.sibling != null;
+  const siblingContext = context?.sibling;
+
+  // Determine the active sex's statistics for Tier 2 panes
+  const sexAwareStatistics = useMemo(() => {
+    if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
+      return activeStatistics;
+    }
+    // Active sex is the sibling's sex — use sibling statistics
+    if (isScheduledOnly && hasEarlyDeaths && siblingContext.statistics.scheduled_rows) {
+      return { ...siblingContext.statistics, rows: siblingContext.statistics.scheduled_rows };
+    }
+    return siblingContext.statistics;
+  }, [activeStatistics, hasSibling, siblingContext, activeSex, selectedFinding?.sex, isScheduledOnly, hasEarlyDeaths]);
+
+  // The active finding for ANCOVA: use the sibling finding from findingsData when toggled
+  const activeFinding = useMemo(() => {
+    if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
+      return selectedFinding;
+    }
+    // Look up the sibling UnifiedFinding from findingsData
+    return findingsData?.findings.find(f => f.id === siblingContext.finding_id) ?? selectedFinding;
+  }, [hasSibling, siblingContext, activeSex, selectedFinding, findingsData?.findings]);
+
+  // Active dose-response for bars
+  const activeDoseResponse = useMemo(() => {
+    if (!context) return undefined;
+    const dr = (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex)
+      ? context.dose_response
+      : siblingContext.dose_response;
+    // When scheduled-only mode swaps statistics rows, sync bar values to match
+    if (isScheduledOnly && hasEarlyDeaths && sexAwareStatistics) {
+      const rowMap = new Map(sexAwareStatistics.rows.map(r => [r.dose_level, r]));
+      const isContinuous = sexAwareStatistics.data_type === "continuous";
+      const syncedBars = dr.bars.map(bar => {
+        const row = rowMap.get(bar.dose_level);
+        if (!row) return bar;
+        return { ...bar, value: isContinuous ? (row.mean ?? bar.value) : (row.incidence ?? bar.value) };
+      });
+      return { ...dr, bars: syncedBars };
+    }
+    return dr;
+  }, [context, hasSibling, siblingContext, activeSex, selectedFinding?.sex, isScheduledOnly, hasEarlyDeaths, sexAwareStatistics]);
+
+  // ── Early returns (after all hooks) ──
+
   // Priority 1: Endpoint selected → endpoint-level panel
   // Priority 2: Group selected → group-level panel
   // Priority 3: Nothing → empty state
@@ -1040,42 +1093,11 @@ export function FindingsContextPanel() {
 
   if (!context) return null;
 
-  // ── Sex selector state (Phase B7) ──
-  // activeSex defaults to the selected finding's sex, resets when finding changes
-  const [activeSex, setActiveSex] = useState(selectedFinding?.sex ?? "M");
-  // Reset when the selected finding changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setActiveSex(selectedFinding?.sex ?? "M"); }, [selectedFindingId]);
-
-  const hasSibling = context.sibling != null;
-  const siblingContext = context.sibling;
-
-  // Determine the active sex's statistics for Tier 2 panes
-  const sexAwareStatistics = useMemo(() => {
-    if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
-      return activeStatistics;
-    }
-    // Active sex is the sibling's sex — use sibling statistics
-    if (isScheduledOnly && hasEarlyDeaths && siblingContext.statistics.scheduled_rows) {
-      return { ...siblingContext.statistics, rows: siblingContext.statistics.scheduled_rows };
-    }
-    return siblingContext.statistics;
-  }, [activeStatistics, hasSibling, siblingContext, activeSex, selectedFinding?.sex, isScheduledOnly, hasEarlyDeaths]);
-
-  // The active finding for ANCOVA: use the sibling finding from findingsData when toggled
-  const activeFinding = useMemo(() => {
-    if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
-      return selectedFinding;
-    }
-    // Look up the sibling UnifiedFinding from findingsData
-    return findingsData?.findings.find(f => f.id === siblingContext.finding_id) ?? selectedFinding;
-  }, [hasSibling, siblingContext, activeSex, selectedFinding, findingsData?.findings]);
-
-  // Sync dose-response bars with statistics rows (when scheduled-only swaps the stats source)
-  function syncBarsWithStats(
-    dr: FindingContext["dose_response"],
-    stats: FindingContext["statistics"] | undefined,
-  ): FindingContext["dose_response"] {
+  // Sync dose-response bars for sibling (reuses same logic inline)
+  const syncBarsWithStats = (
+    dr: typeof context.dose_response,
+    stats: typeof context.statistics | undefined,
+  ) => {
     if (!isScheduledOnly || !hasEarlyDeaths || !stats) return dr;
     const rowMap = new Map(stats.rows.map(r => [r.dose_level, r]));
     const isContinuous = stats.data_type === "continuous";
@@ -1085,15 +1107,7 @@ export function FindingsContextPanel() {
       return { ...bar, value: isContinuous ? (row.mean ?? bar.value) : (row.incidence ?? bar.value) };
     });
     return { ...dr, bars: syncedBars };
-  }
-
-  // Active dose-response for bars
-  const activeDoseResponse = useMemo(() => {
-    const dr = (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex)
-      ? context.dose_response
-      : siblingContext.dose_response;
-    return syncBarsWithStats(dr, sexAwareStatistics);
-  }, [hasSibling, siblingContext, activeSex, selectedFinding?.sex, context.dose_response, isScheduledOnly, hasEarlyDeaths, sexAwareStatistics]);
+  };
 
   const notEvaluated = toxAnnotations && selectedFinding
     ? toxAnnotations[selectedFinding.endpoint_label ?? selectedFinding.finding]?.treatmentRelated === "Not Evaluated"
@@ -1378,7 +1392,7 @@ export function FindingsContextPanel() {
       >
         <DoseDetailPane
           statistics={sexAwareStatistics!}
-          doseResponse={activeDoseResponse}
+          doseResponse={activeDoseResponse!}
           sex={activeSex}
           siblingStatistics={hasSibling ? (activeSex === selectedFinding.sex ? siblingContext!.statistics : activeStatistics!) : undefined}
           siblingDoseResponse={hasSibling ? syncBarsWithStats(

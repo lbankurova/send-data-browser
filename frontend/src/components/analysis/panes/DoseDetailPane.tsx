@@ -61,6 +61,43 @@ function StatRowCells({ row, isContinuous }: { row: StatRow; isContinuous: boole
   );
 }
 
+// ─── Per-sex conclusion bullets ──────────────────────────────
+
+function ConclusionBullets({
+  stats,
+  dr,
+  trendTestName,
+}: {
+  stats: FindingContext["statistics"];
+  dr: FindingContext["dose_response"];
+  trendTestName: string;
+}) {
+  const sigDoses = stats.rows
+    .filter(r => r.dose_level > 0 && r.p_value_adj != null && r.p_value_adj < 0.05)
+    .map(r => doseDisplayLabel(r, r.label));
+
+  const trendFmt = dr.trend_p != null
+    ? (formatPValue(dr.trend_p).startsWith("<")
+      ? `p${formatPValue(dr.trend_p)}`
+      : `p=${formatPValue(dr.trend_p)}`)
+    : "p=\u2014";
+
+  return (
+    <div className="mt-1.5 space-y-0.5 text-[9px] pl-[64px]">
+      <div className={sigDoses.length > 0 ? "text-foreground/80" : "text-muted-foreground"}>
+        {sigDoses.length > 0
+          ? `Sig. at ${sigDoses.join(", ")}`
+          : "No sig. differences"}
+      </div>
+      <div>
+        <span className="text-muted-foreground">Trend: </span>
+        <span className={cn("font-mono", getPValueColor(dr.trend_p))}>{trendFmt}</span>
+        <span className="text-muted-foreground"> ({trendTestName})</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ──────────────────────────────────────────────
 
 export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistics, siblingDoseResponse, siblingSex }: Props) {
@@ -100,7 +137,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
     <div className="space-y-3">
       {/* Group comparison table */}
       <div>
-        <table className="w-full text-[11px]">
+        <table className="w-full text-[10px]">
           <thead>
             <tr className="border-b">
               <th className="py-1 text-left font-medium">Group</th>
@@ -188,8 +225,8 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
       {/* Test name label */}
       <div className="text-[9px] text-muted-foreground italic">{testLabel}</div>
 
-      {/* Significance summary footer */}
-      {(() => {
+      {/* Significance summary footer (single-sex only) */}
+      {!hasSibling && (() => {
         const sigDoses = statistics.rows
           .filter(r => r.dose_level > 0 && r.p_value_adj != null && r.p_value_adj < 0.05)
           .map(r => doseDisplayLabel(r, r.label));
@@ -217,10 +254,14 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
             const mBars = mSex === sex ? doseResponse.bars : siblingDoseResponse.bars;
             const fBarMap = new Map(fBars.map(b => [b.dose_level, b]));
             const mBarMap = new Map(mBars.map(b => [b.dose_level, b]));
+            const fStats = fSex === sex ? statistics : siblingStatistics!;
+            const mStats = mSex === sex ? statistics : siblingStatistics!;
+            const fDR = fSex === sex ? doseResponse : siblingDoseResponse;
+            const mDR = mSex === sex ? doseResponse : siblingDoseResponse;
 
             return (
               <div className="flex gap-2">
-                {/* Females: dose label + bar + value */}
+                {/* Females: dose label + bar + value + conclusions */}
                 <div className="flex-1 min-w-0">
                   <div className="mb-0.5 text-center text-[9px] font-medium text-muted-foreground">Females</div>
                   <div className="space-y-1">
@@ -253,9 +294,10 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                       );
                     })}
                   </div>
+                  <ConclusionBullets stats={fStats} dr={fDR} trendTestName={trendTestName} />
                 </div>
 
-                {/* Males: colored pipe + bar + value */}
+                {/* Males: colored pipe + bar + value + conclusions */}
                 <div className="flex-1 min-w-0">
                   <div className="mb-0.5 text-center text-[9px] font-medium text-muted-foreground">Males</div>
                   <div className="space-y-1">
@@ -284,6 +326,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                       );
                     })}
                   </div>
+                  <ConclusionBullets stats={mStats} dr={mDR} trendTestName={trendTestName} />
                 </div>
               </div>
             );
@@ -331,18 +374,20 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
         )}
       </div>
 
-      {/* Trend footer */}
-      <div className="flex items-center gap-2 text-xs">
-        <span className="text-muted-foreground">Trend:</span>
-        <span className={cn("font-mono", getPValueColor(doseResponse.trend_p))}>
-          {doseResponse.trend_p != null
-            ? (formatPValue(doseResponse.trend_p).startsWith("<")
-              ? `p${formatPValue(doseResponse.trend_p)}`
-              : `p=${formatPValue(doseResponse.trend_p)}`)
-            : "p=\u2014"}
-        </span>
-        <span className="text-[9px] text-muted-foreground">&middot; {trendTestName}</span>
-      </div>
+      {/* Trend footer (single-sex only) */}
+      {!hasSibling && (
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-muted-foreground">Trend:</span>
+          <span className={cn("font-mono", getPValueColor(doseResponse.trend_p))}>
+            {doseResponse.trend_p != null
+              ? (formatPValue(doseResponse.trend_p).startsWith("<")
+                ? `p${formatPValue(doseResponse.trend_p)}`
+                : `p=${formatPValue(doseResponse.trend_p)}`)
+              : "p=\u2014"}
+          </span>
+          <span className="text-[9px] text-muted-foreground">&middot; {trendTestName}</span>
+        </div>
+      )}
     </div>
   );
 }
