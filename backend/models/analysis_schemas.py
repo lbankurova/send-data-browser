@@ -128,3 +128,4 @@ class FindingContext(BaseModel):
     dose_response: dict
     correlations: dict
     effect_size: dict
+    sibling: dict | None = None

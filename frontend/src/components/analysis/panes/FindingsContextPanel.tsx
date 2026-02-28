@@ -32,7 +32,9 @@ import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
 import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
-import { formatPValue, getDoseGroupColor } from "@/lib/severity-colors";
+import { formatPValue, getDoseGroupColor, getSexColor } from "@/lib/severity-colors";
+import { getPatternLabel } from "@/lib/findings-rail-engine";
+import type { SexEndpointSummary, EndpointNoael } from "@/lib/derive-summaries";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { verdictLabel } from "@/lib/recovery-assessment";
@@ -704,6 +706,109 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
   );
 }
 
+// ─── Sex Comparison Pane (Phase B5) ──────────────────────
+
+function SexComparisonPane({
+  finding,
+  analytics,
+}: {
+  finding: UnifiedFinding;
+  analytics: ReturnType<typeof useFindingsAnalyticsLocal>["analytics"];
+}) {
+  const endpointLabel = finding.endpoint_label ?? finding.finding;
+  const epSummary = analytics.endpoints.find(e => e.endpoint_label === endpointLabel);
+  const bySex = epSummary?.bySex;
+  const noaelBySex = epSummary?.noaelBySex;
+  if (!bySex || bySex.size < 2) return null;
+
+  // Order: M first, then F
+  const sexes = ["M", "F"].filter(s => bySex.has(s));
+  if (sexes.length < 2) return null;
+
+  const dirLabel = (s: SexEndpointSummary) =>
+    s.direction === "up" ? "\u2191 increase" : s.direction === "down" ? "\u2193 decrease" : "\u2014";
+
+  const patLabel = (s: SexEndpointSummary) =>
+    s.pattern ? getPatternLabel(s.pattern) : "\u2014";
+
+  const noaelLabel = (n: EndpointNoael | undefined) => {
+    if (!n) return "\u2014";
+    if (n.doseValue != null) return `${n.doseValue} ${n.doseUnit ?? "mg/kg"}`;
+    if (n.tier === "below-lowest") return "< lowest";
+    return "\u2014";
+  };
+
+  const m = bySex.get(sexes[0])!;
+  const f = bySex.get(sexes[1])!;
+
+  const rows: Array<{ label: string; values: [string, string] }> = [
+    { label: "Direction", values: [dirLabel(m), dirLabel(f)] },
+    {
+      label: "|g|",
+      values: [
+        m.maxEffectSize != null ? Math.abs(m.maxEffectSize).toFixed(2) : "\u2014",
+        f.maxEffectSize != null ? Math.abs(f.maxEffectSize).toFixed(2) : "\u2014",
+      ],
+    },
+    {
+      label: "Trend p",
+      values: [
+        m.minPValue != null ? formatPValue(m.minPValue) : "\u2014",
+        f.minPValue != null ? formatPValue(f.minPValue) : "\u2014",
+      ],
+    },
+    { label: "Pattern", values: [patLabel(m), patLabel(f)] },
+    { label: "Severity", values: [m.worstSeverity, f.worstSeverity] },
+  ];
+  if (noaelBySex) {
+    rows.push({
+      label: "NOAEL",
+      values: [noaelLabel(noaelBySex.get(sexes[0])), noaelLabel(noaelBySex.get(sexes[1]))],
+    });
+  }
+  // BW confound row: check if primary or sibling has ANCOVA
+  const primaryHasAncova = finding.ancova != null;
+  if (primaryHasAncova) {
+    const primarySex = finding.sex;
+    rows.push({
+      label: "BW confound",
+      values: [
+        primarySex === sexes[0] ? "ANCOVA" : "\u2014",
+        primarySex === sexes[1] ? "ANCOVA" : "\u2014",
+      ],
+    });
+  }
+
+  return (
+    <div className="mt-2">
+      <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+        Sex comparison
+      </div>
+      <table className="w-full text-[10px]">
+        <thead>
+          <tr className="border-b text-[9px] text-muted-foreground">
+            <th className="py-0.5 text-left font-medium" />
+            {sexes.map(s => (
+              <th key={s} className="py-0.5 text-right font-medium" style={{ color: getSexColor(s) }}>
+                {s === "M" ? "Males" : "Females"}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.label} className="border-b border-border/30">
+              <td className="py-0.5 text-muted-foreground">{r.label}</td>
+              <td className="py-0.5 text-right font-mono">{r.values[0]}</td>
+              <td className="py-0.5 text-right font-mono">{r.values[1]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ─── Recovery verdict colors (text-only, no badge bg) ────
 
 const RECOVERY_VERDICT_CLASS: Partial<Record<RecoveryVerdict, string>> = {
@@ -935,6 +1040,45 @@ export function FindingsContextPanel() {
 
   if (!context) return null;
 
+  // ── Sex selector state (Phase B7) ──
+  // activeSex defaults to the selected finding's sex, resets when finding changes
+  const [activeSex, setActiveSex] = useState(selectedFinding?.sex ?? "M");
+  // Reset when the selected finding changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setActiveSex(selectedFinding?.sex ?? "M"); }, [selectedFindingId]);
+
+  const hasSibling = context.sibling != null;
+  const siblingContext = context.sibling;
+
+  // Determine the active sex's statistics for Tier 2 panes
+  const sexAwareStatistics = useMemo(() => {
+    if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
+      return activeStatistics;
+    }
+    // Active sex is the sibling's sex — use sibling statistics
+    if (isScheduledOnly && hasEarlyDeaths && siblingContext.statistics.scheduled_rows) {
+      return { ...siblingContext.statistics, rows: siblingContext.statistics.scheduled_rows };
+    }
+    return siblingContext.statistics;
+  }, [activeStatistics, hasSibling, siblingContext, activeSex, selectedFinding?.sex, isScheduledOnly, hasEarlyDeaths]);
+
+  // The active finding for ANCOVA: use the sibling finding from findingsData when toggled
+  const activeFinding = useMemo(() => {
+    if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
+      return selectedFinding;
+    }
+    // Look up the sibling UnifiedFinding from findingsData
+    return findingsData?.findings.find(f => f.id === siblingContext.finding_id) ?? selectedFinding;
+  }, [hasSibling, siblingContext, activeSex, selectedFinding, findingsData?.findings]);
+
+  // Active dose-response for bars
+  const activeDoseResponse = useMemo(() => {
+    if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
+      return context.dose_response;
+    }
+    return siblingContext.dose_response;
+  }, [hasSibling, siblingContext, activeSex, selectedFinding?.sex, context.dose_response]);
+
   const notEvaluated = toxAnnotations && selectedFinding
     ? toxAnnotations[selectedFinding.endpoint_label ?? selectedFinding.finding]?.treatmentRelated === "Not Evaluated"
     : false;
@@ -974,14 +1118,42 @@ export function FindingsContextPanel() {
             }}
           />
         )}
+        {context.sibling && (
+          <SexComparisonPane
+            finding={selectedFinding}
+            analytics={analytics}
+          />
+        )}
       </div>
+
+      {/* Sex selector — only when sibling data exists */}
+      {hasSibling && (() => {
+        const sexes = [selectedFinding.sex, siblingContext!.sex];
+        return (
+          <div className="flex gap-1 border-b px-4 py-1.5">
+            {sexes.map(s => (
+              <button
+                key={s}
+                className={cn(
+                  "rounded px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  activeSex === s ? "text-white" : "text-muted-foreground bg-muted/30"
+                )}
+                style={activeSex === s ? { backgroundColor: getSexColor(s) } : undefined}
+                onClick={() => setActiveSex(s)}
+              >
+                {s === "M" ? "Males" : "Females"}
+              </button>
+            ))}
+          </div>
+        );
+      })()}
 
       <CollapsiblePane title="Evidence" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <EvidencePane
-          finding={selectedFinding}
+          finding={activeFinding!}
           analytics={analytics}
-          statistics={activeStatistics!}
-          effectSize={context.effect_size}
+          statistics={sexAwareStatistics!}
+          effectSize={activeSex === selectedFinding.sex ? context.effect_size : siblingContext?.effect_size ?? context.effect_size}
         />
         {/* Normalization annotation for OM domain endpoints */}
         {selectedFinding.domain === "OM" && (() => {
@@ -1143,15 +1315,15 @@ export function FindingsContextPanel() {
           );
         })()}
         {/* ANCOVA effect decomposition (OM domain, Phase 2) */}
-        {selectedFinding.domain === "OM" && selectedFinding.ancova && (
-          <ANCOVADecompositionPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
+        {activeFinding!.domain === "OM" && activeFinding!.ancova && (
+          <ANCOVADecompositionPane finding={activeFinding!} doseGroups={findingsData?.dose_groups} />
         )}
         {/* Decomposed confidence display (ECI — SPEC-ECI-AMD-002) */}
         {(() => {
-          const endpointLabel = selectedFinding.endpoint_label ?? selectedFinding.finding;
+          const endpointLabel = activeFinding!.endpoint_label ?? activeFinding!.finding;
           const ep = analytics.endpoints.find((e) => e.endpoint_label === endpointLabel);
           if (!ep?.endpointConfidence) return null;
-          return <DecomposedConfidencePane eci={ep.endpointConfidence} finding={selectedFinding} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} />;
+          return <DecomposedConfidencePane eci={ep.endpointConfidence} finding={activeFinding!} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} />;
         })()}
       </CollapsiblePane>
 
@@ -1186,12 +1358,15 @@ export function FindingsContextPanel() {
         defaultOpen
         expandAll={expandGen}
         collapseAll={collapseGen}
-        headerRight={activeStatistics!.unit ? <span className="text-[10px] text-muted-foreground">Unit: {activeStatistics!.unit}</span> : undefined}
+        headerRight={sexAwareStatistics!.unit ? <span className="text-[10px] text-muted-foreground">Unit: {sexAwareStatistics!.unit}</span> : undefined}
       >
         <DoseDetailPane
-          statistics={activeStatistics!}
-          doseResponse={context.dose_response}
-          sex={selectedFinding.sex}
+          statistics={sexAwareStatistics!}
+          doseResponse={activeDoseResponse}
+          sex={activeSex}
+          siblingStatistics={hasSibling ? (activeSex === selectedFinding.sex ? siblingContext!.statistics : activeStatistics!) : undefined}
+          siblingDoseResponse={hasSibling ? (activeSex === selectedFinding.sex ? siblingContext!.dose_response : context.dose_response) : undefined}
+          siblingSex={hasSibling ? (activeSex === selectedFinding.sex ? siblingContext!.sex : selectedFinding.sex) : undefined}
         />
       </CollapsiblePane>
 
@@ -1199,7 +1374,7 @@ export function FindingsContextPanel() {
       {hasRecovery && selectedFinding && (
         <div ref={recoveryPaneRef}>
           <CollapsiblePane title="Recovery" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
+            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} sex={activeSex} />
           </CollapsiblePane>
         </div>
       )}

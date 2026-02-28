@@ -315,6 +315,16 @@ export interface FindingContext {
     total_with_effects: number;
     insights: Insight[];
   };
+  /** Sibling sex context (same endpoint_label + day, different sex). Null when no sibling exists. */
+  sibling?: {
+    finding_id: string;
+    sex: string;
+    treatment_summary: FindingContext["treatment_summary"];
+    statistics: FindingContext["statistics"];
+    dose_response: FindingContext["dose_response"];
+    correlations: FindingContext["correlations"];
+    effect_size: FindingContext["effect_size"];
+  } | null;
 }
 
 export interface FindingsFilters {
