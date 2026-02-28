@@ -22,6 +22,21 @@ const hasGenerated = fs.existsSync(UNIFIED_PATH);
 
 // ─── Load data ──────────────────────────────────────────────
 
+interface ConfidenceDim {
+  dimension: string;
+  label: string;
+  score: number | null;
+  rationale: string;
+}
+
+interface Confidence {
+  dimensions: ConfidenceDim[];
+  grade_sum: number;
+  n_scored: number;
+  n_skipped: number;
+  grade: "HIGH" | "MODERATE" | "LOW";
+}
+
 interface Finding {
   id: string;
   domain: string;
@@ -40,6 +55,8 @@ interface Finding {
   dose_response_pattern: string | null;
   direction: string | null;
   data_type: string;
+  _confidence?: Confidence;
+  _hcd_assessment?: { result: string };
 }
 
 interface NoaelRow {
@@ -550,3 +567,113 @@ describe("B-6 progression chains in unified_findings.json", () => {
     },
   );
 });
+
+// ─── Track 4A: GRADE Confidence Scoring ─────────────────────
+
+describe.runIf(hasGenerated)(
+  "_confidence in unified_findings.json",
+  () => {
+    test("every finding has _confidence", () => {
+      const missing = findings.filter((f) => !f._confidence);
+      expect(missing.length).toBe(0);
+    });
+
+    test("_confidence structure is valid", () => {
+      const VALID_DIMS = new Set(["D1", "D2", "D3", "D4", "D5"]);
+      const VALID_GRADES = new Set(["HIGH", "MODERATE", "LOW"]);
+      const bad: string[] = [];
+      for (const f of findings) {
+        const c = f._confidence!;
+        if (!VALID_GRADES.has(c.grade)) {
+          bad.push(`${f.id}: invalid grade "${c.grade}"`);
+        }
+        if (c.dimensions.length !== 5) {
+          bad.push(`${f.id}: expected 5 dimensions, got ${c.dimensions.length}`);
+        }
+        for (const d of c.dimensions) {
+          if (!VALID_DIMS.has(d.dimension)) {
+            bad.push(`${f.id}: unknown dimension "${d.dimension}"`);
+          }
+          if (d.score !== null && ![-1, 0, 1].includes(d.score)) {
+            bad.push(`${f.id}/${d.dimension}: invalid score ${d.score}`);
+          }
+        }
+        if (c.n_scored + c.n_skipped !== 5) {
+          bad.push(`${f.id}: n_scored(${c.n_scored}) + n_skipped(${c.n_skipped}) != 5`);
+        }
+      }
+      expect(bad).toEqual([]);
+    });
+
+    test("grade distribution has meaningful spread", () => {
+      const grades = new Map<string, number>();
+      for (const f of findings) {
+        const g = f._confidence!.grade;
+        grades.set(g, (grades.get(g) ?? 0) + 1);
+      }
+      // Should have at least 2 different grades
+      expect(grades.size).toBeGreaterThanOrEqual(2);
+      // No single grade should have 100%
+      for (const [, count] of grades) {
+        expect(count).toBeLessThan(findings.length);
+      }
+    });
+
+    test("D4 scored only for OM findings with HCD", () => {
+      const wronglyScored: string[] = [];
+      for (const f of findings) {
+        const d4 = f._confidence!.dimensions.find((d) => d.dimension === "D4");
+        if (!d4) continue;
+        if (d4.score !== null) {
+          // Must have _hcd_assessment with non-"no_hcd" result
+          const hcd = f._hcd_assessment;
+          if (!hcd || hcd.result === "no_hcd") {
+            wronglyScored.push(`${f.id}: D4 scored=${d4.score} but no HCD`);
+          }
+        }
+      }
+      expect(wronglyScored).toEqual([]);
+    });
+
+    test("D5 skipped for sex-specific organs", () => {
+      const SEX_SPECIFIC = new Set([
+        "TESTES", "OVARIES", "UTERUS", "PROSTATE",
+        "EPIDIDYMIS", "SEMINAL VESICLE", "MAMMARY GLAND",
+      ]);
+      const wronglyScored: string[] = [];
+      for (const f of findings) {
+        if (!f.specimen) continue;
+        if (!SEX_SPECIFIC.has(f.specimen.toUpperCase())) continue;
+        const d5 = f._confidence!.dimensions.find((d) => d.dimension === "D5");
+        if (d5 && d5.score !== null) {
+          wronglyScored.push(`${f.id}: D5 scored for sex-specific organ ${f.specimen}`);
+        }
+      }
+      expect(wronglyScored).toEqual([]);
+    });
+
+    test("HIGH confidence + tr_adverse findings exist (≥2)", () => {
+      const highAdverse = findings.filter(
+        (f) =>
+          f._confidence!.grade === "HIGH" &&
+          f.finding_class === "tr_adverse",
+      );
+      expect(highAdverse.length).toBeGreaterThanOrEqual(2);
+    });
+
+    test("grade_sum correctly determines grade", () => {
+      const bad: string[] = [];
+      for (const f of findings) {
+        const c = f._confidence!;
+        const expected =
+          c.grade_sum >= 2 ? "HIGH" : c.grade_sum >= 0 ? "MODERATE" : "LOW";
+        if (c.grade !== expected) {
+          bad.push(
+            `${f.id}: grade_sum=${c.grade_sum}, grade="${c.grade}", expected="${expected}"`,
+          );
+        }
+      }
+      expect(bad).toEqual([]);
+    });
+  },
+);

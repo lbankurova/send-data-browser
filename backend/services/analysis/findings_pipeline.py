@@ -22,6 +22,7 @@ from services.analysis.classification import (
     assess_finding_with_context,
 )
 from services.analysis.corroboration import compute_corroboration
+from services.analysis.confidence import compute_all_confidence
 from generator.organ_map import get_organ_system
 from services.analysis.phase_filter import IN_LIFE_DOMAINS
 
@@ -282,6 +283,8 @@ def process_findings(
     enriched = _assess_all_findings(
         enriched, species=species, strain=strain, duration_days=duration_days,
     )
+    # GRADE-style confidence scoring (requires finding_class, _hcd_assessment, corroboration_status)
+    enriched = compute_all_confidence(enriched)
     return enriched
 
 

@@ -130,6 +130,24 @@ export interface UnifiedFinding {
     human_relevance?: { mechanism: string; relevance: string; note: string };
     spontaneous_note?: string;
   };
+  /** Track 4A: GRADE-style evidence confidence scoring. */
+  _confidence?: EvidenceConfidence;
+}
+
+export interface ConfidenceDimension {
+  dimension: string;
+  label: string;
+  /** +1 (upgrade), 0 (neutral), -1 (downgrade), null (skipped). */
+  score: number | null;
+  rationale: string;
+}
+
+export interface EvidenceConfidence {
+  dimensions: ConfidenceDimension[];
+  grade_sum: number;
+  n_scored: number;
+  n_skipped: number;
+  grade: "HIGH" | "MODERATE" | "LOW";
 }
 
 export interface WilliamsStepDownResult {
