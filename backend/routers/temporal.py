@@ -1121,14 +1121,15 @@ async def get_recovery_comparison(study_id: str):
                 # Recovery control: dose_level=0, same sex, terminal timepoint
                 rec_control = sex_group[sex_group["dose_level"] == 0]
                 # Use max day as terminal timepoint for recovery arm
-                if rec_control.empty:
-                    continue
-                rec_ctrl_day = rec_control[day_col].max()
-                rec_ctrl_terminal = rec_control[rec_control[day_col] == rec_ctrl_day]
-                ctrl_vals = rec_ctrl_terminal[value_col].dropna().values
+                has_concurrent_control = not rec_control.empty
+                ctrl_vals = np.array([])
+                if has_concurrent_control:
+                    rec_ctrl_day = rec_control[day_col].max()
+                    rec_ctrl_terminal = rec_control[rec_control[day_col] == rec_ctrl_day]
+                    ctrl_vals = rec_ctrl_terminal[value_col].dropna().values
 
-                if len(ctrl_vals) < 2:
-                    continue
+                    if len(ctrl_vals) < 2:
+                        has_concurrent_control = False
 
                 # Main-arm terminal effect (for comparison)
                 main_test = main_df[
@@ -1137,6 +1138,14 @@ async def get_recovery_comparison(study_id: str):
                 ]
                 main_ctrl = main_test[main_test["dose_level"] == 0]
                 main_ctrl_day = main_ctrl[day_col].max() if not main_ctrl.empty else None
+
+                # Main-arm control mean at terminal (for drift detection)
+                main_ctrl_mean = None
+                if main_ctrl_day is not None:
+                    mc_terminal_all = main_ctrl[main_ctrl[day_col] == main_ctrl_day]
+                    mc_vals_all = mc_terminal_all[value_col].dropna().values
+                    if len(mc_vals_all) >= 2:
+                        main_ctrl_mean = _safe_round(float(np.mean(mc_vals_all)), 4)
 
                 for dose_level, dose_group in sex_group.groupby("dose_level"):
                     if dose_level == 0:
@@ -1147,7 +1156,54 @@ async def get_recovery_comparison(study_id: str):
                     dose_terminal = dose_group[dose_group[day_col] == dose_day]
                     treat_vals = dose_terminal[value_col].dropna().values
 
+                    base_fields = {
+                        "endpoint_label": test_name,
+                        "test_code": str(test_code),
+                        "sex": str(sex_val),
+                        "recovery_day": recovery_day or int(dose_day),
+                        "dose_level": int(dose_level),
+                    }
+
+                    # §10.5: n<2 — emit flagged row instead of skipping
                     if len(treat_vals) < 2:
+                        rows.append({
+                            **base_fields,
+                            "mean": _safe_round(float(np.mean(treat_vals)), 4) if len(treat_vals) else None,
+                            "sd": None,
+                            "p_value": None,
+                            "effect_size": None,
+                            "terminal_effect": None,
+                            "terminal_day": None,
+                            "peak_effect": None,
+                            "peak_day": None,
+                            "insufficient_n": True,
+                            "treated_n": len(treat_vals),
+                            "control_mean": None,
+                            "control_n": None,
+                            "treated_mean_terminal": None,
+                            "control_mean_terminal": None,
+                        })
+                        continue
+
+                    # §10.4: No concurrent control — emit row with flag, raw values only
+                    if not has_concurrent_control:
+                        rows.append({
+                            **base_fields,
+                            "mean": _safe_round(float(np.mean(treat_vals)), 4),
+                            "sd": _safe_round(float(np.std(treat_vals, ddof=1)), 4),
+                            "p_value": None,
+                            "effect_size": None,
+                            "terminal_effect": None,
+                            "terminal_day": None,
+                            "peak_effect": None,
+                            "peak_day": None,
+                            "no_concurrent_control": True,
+                            "treated_n": len(treat_vals),
+                            "control_mean": None,
+                            "control_n": None,
+                            "treated_mean_terminal": None,
+                            "control_mean_terminal": None,
+                        })
                         continue
 
                     # Stats: recovery arm treated vs recovery arm control
@@ -1157,6 +1213,7 @@ async def get_recovery_comparison(study_id: str):
                     # Terminal effect: main arm treated vs main arm control
                     terminal_d = None
                     terminal_day_val = None
+                    main_treated_mean = None
                     if main_ctrl_day is not None:
                         main_treated = main_test[
                             (main_test["dose_level"] == dose_level) &
@@ -1169,6 +1226,8 @@ async def get_recovery_comparison(study_id: str):
                             mc_terminal = main_ctrl[main_ctrl[day_col] == main_ctrl_day]
                             mt_vals = mt_terminal[value_col].dropna().values
                             mc_vals = mc_terminal[value_col].dropna().values
+                            if len(mt_vals) >= 2:
+                                main_treated_mean = _safe_round(float(np.mean(mt_vals)), 4)
                             if len(mt_vals) >= 2 and len(mc_vals) >= 2:
                                 terminal_d = cohens_d(mt_vals, mc_vals)
                                 terminal_day_val = mt_day
@@ -1190,11 +1249,7 @@ async def get_recovery_comparison(study_id: str):
                                     peak_day_val = tp_day
 
                     rows.append({
-                        "endpoint_label": test_name,
-                        "test_code": str(test_code),
-                        "sex": str(sex_val),
-                        "recovery_day": recovery_day or int(dose_day),
-                        "dose_level": int(dose_level),
+                        **base_fields,
                         "mean": _safe_round(float(np.mean(treat_vals)), 4),
                         "sd": _safe_round(float(np.std(treat_vals, ddof=1)), 4),
                         "p_value": _safe_round(t_result["p_value"], 6),
@@ -1203,6 +1258,11 @@ async def get_recovery_comparison(study_id: str):
                         "terminal_day": int(terminal_day_val) if terminal_day_val is not None else None,
                         "peak_effect": _safe_round(peak_d, 4) if peak_d is not None else None,
                         "peak_day": int(peak_day_val) if peak_day_val is not None else None,
+                        "control_mean": _safe_round(float(np.mean(ctrl_vals)), 4),
+                        "control_n": len(ctrl_vals),
+                        "treated_n": len(treat_vals),
+                        "treated_mean_terminal": main_treated_mean,
+                        "control_mean_terminal": main_ctrl_mean,
                     })
 
     # Process LB domain
