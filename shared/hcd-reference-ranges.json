@@ -2,13 +2,18 @@
   "_meta": {
     "description": "Historical Control Data (HCD) reference ranges for organ weights",
     "purpose": "A-3 factor in ECETOC treatment-relatedness scoring: findings within HCD range are less likely treatment-related",
-    "phase": "Phase 1 — static ranges from published data",
+    "phase": "Phase 1+ — SD rat (Envigo) + Wistar Han (NTP composite)",
     "usage": "Compare treated-group organ weight mean against [mean-2SD, mean+2SD] for matching strain/sex/duration/organ",
     "sources": [
-      "Envigo Study C11963 (Hsd:Sprague Dawley SD rat, feed control groups, n=20/group)"
+      "Envigo Study C11963 (Hsd:Sprague Dawley SD rat, feed control groups, n=20/group)",
+      "NTP TR-587 TBBPA (Crl:WI(Han) rat, gavage vehicle controls, n=10/group, 3 months)",
+      "NTP TR-591 TRIM VX (Crl:WI(Han) rat, inhalation chamber controls, n=10/group, 3 months)",
+      "NTP TR-593 2,3-Butanedione (Crl:WI(Han) rat, inhalation chamber controls, n=10/group, 3 months)"
     ],
     "data_quality_flags": [
-      "KIDNEY M 90-day: SD=2.24 flagged as potentially anomalous vs mean=2.91 — cross-validate against NTP TR-595 before relying on this entry"
+      "KIDNEY M 90-day: SD=2.24 flagged as potentially anomalous vs mean=2.91 — cross-validate against NTP TR-595 before relying on this entry",
+      "Crl:WI(Han) KIDNEY/TESTES: NTP reports right-side only; SEND OM data may report bilateral total — direct comparison may overestimate effect",
+      "Crl:WI(Han) LIVER: composite includes gavage (TR-587) and inhalation (TR-591/593) routes — gavage first-pass effect may inflate liver weight"
     ]
   },
   "strains": {
@@ -57,6 +62,32 @@
         {"organ": "ADRENAL",  "sex": "M", "duration_category": "90-day", "mean": 0.06,  "sd": 0.01, "n": 20, "unit": "g", "weight_type": "absolute"},
         {"organ": "ADRENAL",  "sex": "F", "duration_category": "28-day", "mean": 0.07,  "sd": 0.01, "n": 20, "unit": "g", "weight_type": "absolute"},
         {"organ": "ADRENAL",  "sex": "F", "duration_category": "90-day", "mean": 0.06,  "sd": 0.01, "n": 20, "unit": "g", "weight_type": "absolute"}
+      ]
+    },
+    "Crl:WI(Han)": {
+      "aliases": ["WISTAR HAN", "WISTAR", "WIST", "RccHan:WIST", "Crl:WI(Han)", "WI(HAN)", "HANNOVER WISTAR", "HAN WISTAR"],
+      "species": "RAT",
+      "_note": "28-day data not yet available. Only 90-day from NTP 3-month subchronic studies. NTP organ weight panel does not include brain, adrenal, ovaries, epididymides, or pituitary.",
+      "entries": [
+        {"organ": "HEART",   "sex": "M", "duration_category": "90-day", "mean": 1.16,  "sd": 0.113, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)"},
+        {"organ": "HEART",   "sex": "F", "duration_category": "90-day", "mean": 0.767, "sd": 0.068, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)"},
+
+        {"organ": "KIDNEY",  "sex": "M", "duration_category": "90-day", "mean": 1.277, "sd": 0.063, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)", "_flag": "Right kidney only (NTP convention); SEND OM may report bilateral total"},
+        {"organ": "KIDNEY",  "sex": "F", "duration_category": "90-day", "mean": 0.84,  "sd": 0.075, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)", "_flag": "Right kidney only (NTP convention); SEND OM may report bilateral total"},
+
+        {"organ": "LIVER",   "sex": "M", "duration_category": "90-day", "mean": 13.463, "sd": 1.311, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)", "_flag": "Includes gavage (TR-587: 15.59g) and inhalation (TR-591/593: 12.3-12.5g) — route variation inflates SD"},
+        {"organ": "LIVER",   "sex": "F", "duration_category": "90-day", "mean": 7.733, "sd": 0.785, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)", "_flag": "Includes gavage (TR-587: 8.39g) and inhalation (TR-591/593: 7.4g) — route variation inflates SD"},
+
+        {"organ": "LUNG",    "sex": "M", "duration_category": "90-day", "mean": 2.44,  "sd": 0.378, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)"},
+        {"organ": "LUNG",    "sex": "F", "duration_category": "90-day", "mean": 1.567, "sd": 0.223, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)"},
+
+        {"organ": "SPLEEN",  "sex": "M", "duration_category": "90-day", "mean": 0.617, "sd": 0.081, "n": 20, "unit": "g", "weight_type": "absolute", "source": "NTP TR-591/593 vehicle controls (composite)", "_flag": "n=20 (2 studies only — TBBPA did not measure spleen)"},
+        {"organ": "SPLEEN",  "sex": "F", "duration_category": "90-day", "mean": 0.436, "sd": 0.072, "n": 20, "unit": "g", "weight_type": "absolute", "source": "NTP TR-591/593 vehicle controls (composite)", "_flag": "n=20 (2 studies only — TBBPA did not measure spleen)"},
+
+        {"organ": "TESTES",  "sex": "M", "duration_category": "90-day", "mean": 1.846, "sd": 0.179, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)", "_flag": "Right testis only (NTP convention); SEND OM may report bilateral total"},
+
+        {"organ": "THYMUS",  "sex": "M", "duration_category": "90-day", "mean": 0.478, "sd": 0.078, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)"},
+        {"organ": "THYMUS",  "sex": "F", "duration_category": "90-day", "mean": 0.406, "sd": 0.068, "n": 30, "unit": "g", "weight_type": "absolute", "source": "NTP TR-587/591/593 vehicle controls (composite)"}
       ]
     }
   }
