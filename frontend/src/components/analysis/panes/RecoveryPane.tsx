@@ -66,7 +66,9 @@ function ConfidenceBadge({ confidence }: { confidence: "High" | "Moderate" | "Lo
 // Peak effect surfaced as annotation when materially different.
 
 type ContinuousVerdictType =
+  | "resolved"
   | "reversed"
+  | "overcorrected"
   | "reversing"
   | "partial"
   | "persistent"
@@ -91,6 +93,16 @@ function classifyContinuousRecovery(
     return { verdict: "below-threshold", pctRecovered: null };
   }
 
+  // Resolved: recovery effect indistinguishable from control (§4.2)
+  if (Math.abs(recoveryG) < 0.5) {
+    return { verdict: "resolved", pctRecovered: 100 };
+  }
+
+  // Overcorrected: effect reversed direction past control (§4.3)
+  if (Math.sign(terminalG) !== Math.sign(recoveryG) && Math.abs(recoveryG) >= 0.5) {
+    return { verdict: "overcorrected", pctRecovered: null };
+  }
+
   const pct = (Math.abs(terminalG) - Math.abs(recoveryG)) / Math.abs(terminalG) * 100;
 
   if (pct < 0) return { verdict: "worsening", pctRecovered: pct };
@@ -101,7 +113,9 @@ function classifyContinuousRecovery(
 }
 
 const CONT_VERDICT_LABEL: Record<ContinuousVerdictType, string> = {
+  resolved: "Resolved",
   reversed: "Reversed",
+  overcorrected: "Overcorrected",
   reversing: "Reversing",
   partial: "Partial",
   persistent: "Persistent",
@@ -110,7 +124,9 @@ const CONT_VERDICT_LABEL: Record<ContinuousVerdictType, string> = {
 };
 
 const CONT_VERDICT_CLASS: Record<ContinuousVerdictType, string> = {
+  resolved: "text-emerald-700",
   reversed: "text-emerald-700",
+  overcorrected: "text-blue-700",
   reversing: "text-emerald-600",
   partial: "text-muted-foreground",
   persistent: "text-amber-700",
@@ -136,8 +152,12 @@ function formatVerdictDesc(
   }
   const arrow = `${formatGAbs(terminalG!)}g${tDay} \u2192 ${formatGAbs(recoveryG!)}g${rDay}`;
   switch (v.verdict) {
+    case "resolved":
+      return `effect indistinguishable from control (${arrow})`;
     case "reversed":
       return `effect resolved (${arrow})`;
+    case "overcorrected":
+      return `effect reversed direction, now opposite of terminal (${arrow})`;
     case "reversing":
     case "partial":
       return `effect dropped ${Math.round(v.pctRecovered!)}% (${arrow})`;
@@ -216,6 +236,7 @@ function ContinuousRecoverySection({
           .filter(r =>
             r.peak_effect != null && r.terminal_effect != null &&
             Math.abs(r.peak_effect) > Math.abs(r.terminal_effect) * 1.5 &&
+            Math.abs(r.peak_effect) > 1.0 &&
             Math.abs(r.terminal_effect) >= 0.5,
           )
           .map(r => ({
@@ -223,6 +244,9 @@ function ContinuousRecoverySection({
             peakG: r.peak_effect!,
             peakDay: r.peak_day,
             terminalG: r.terminal_effect!,
+            terminalDay: r.terminal_day,
+            recoveryG: r.effect_size,
+            recoveryDay: r.recovery_day,
           }));
 
         return (
@@ -240,7 +264,7 @@ function ContinuousRecoverySection({
 
                 const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size);
                 const desc = formatVerdictDesc(v, row.terminal_effect, row.effect_size, row.terminal_day, row.recovery_day);
-                const pSuffix = row.p_value != null && row.p_value < 0.05
+                const pSuffix = row.p_value != null && row.p_value < 0.1
                   ? ` \u00b7 p\u2009=\u2009${formatPCompact(row.p_value)}`
                   : "";
 
@@ -269,17 +293,42 @@ function ContinuousRecoverySection({
 
             {/* Peak annotation when dosing-phase peak materially exceeded terminal */}
             {peakAnnotations.length > 0 && (
-              <div className="mt-1.5 text-[9px] text-muted-foreground/70 leading-snug">
+              <div className="mt-1.5 text-[9px] text-muted-foreground/70 leading-snug space-y-1">
                 {peakAnnotations.map(pa => {
                   const dg = doseGroups?.find(g => g.dose_level === pa.doseLevel);
                   const doseStr = dg && dg.dose_value != null && dg.dose_value > 0
                     ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
                     : `Dose ${pa.doseLevel}`;
                   const dayStr = pa.peakDay != null ? ` at Day ${pa.peakDay}` : "";
+
+                  // Trajectory summary when all three data points exist (§5.4)
+                  const hasTrajectory =
+                    pa.recoveryG != null && pa.terminalDay != null && pa.recoveryDay != null;
+                  const dosingPct = hasTrajectory
+                    ? Math.round((Math.abs(pa.peakG) - Math.abs(pa.terminalG)) / Math.abs(pa.peakG) * 100)
+                    : null;
+                  const recoveryPct = hasTrajectory
+                    ? Math.round((Math.abs(pa.terminalG) - Math.abs(pa.recoveryG!)) / Math.abs(pa.terminalG) * 100)
+                    : null;
+
                   return (
                     <div key={pa.doseLevel}>
-                      {doseStr}: peak during dosing was larger (|g|{"\u2009"}={"\u2009"}{formatGAbs(pa.peakG)}{dayStr}),
-                      partially resolved before terminal (|g|{"\u2009"}={"\u2009"}{formatGAbs(pa.terminalG)}).
+                      <div>
+                        {doseStr}: peak during dosing was larger (|g|{"\u2009"}={"\u2009"}{formatGAbs(pa.peakG)}{dayStr}),
+                        partially resolved before terminal (|g|{"\u2009"}={"\u2009"}{formatGAbs(pa.terminalG)}).
+                      </div>
+                      {hasTrajectory && dosingPct != null && recoveryPct != null && (
+                        <div className="mt-0.5 font-mono">
+                          <span>Peak{pa.peakDay != null ? ` (D${pa.peakDay})` : ""}: {formatGAbs(pa.peakG)}g</span>
+                          <span> {"\u2192"} Terminal{pa.terminalDay != null ? ` (D${pa.terminalDay})` : ""}: {formatGAbs(pa.terminalG)}g</span>
+                          <span> {"\u2192"} Recovery (D{pa.recoveryDay}): {formatGAbs(pa.recoveryG!)}g</span>
+                          <div className="pl-4">
+                            <span>{"\u2570\u2500\u2500"} {dosingPct}% resolved during dosing {"\u2500\u256F"}</span>
+                            {"  "}
+                            <span>{"\u2570\u2500\u2500"} {recoveryPct >= 0 ? `${recoveryPct}% resolved` : `${Math.abs(recoveryPct)}% worsened`} {"\u2500\u256F"}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -433,6 +482,9 @@ function HistopathSexSection({
 
       {/* Finding nature */}
       <FindingNatureSection nature={nature} />
+
+      {/* Concordance check — flag discordance between nature and verdict */}
+      <ConcordanceNote nature={nature} verdict={verdict} />
     </div>
   );
 }
@@ -484,6 +536,43 @@ function FindingNatureSection({ nature }: { nature: FindingNatureInfo }) {
         <span className="font-medium text-foreground">Reversibility: </span>
         {reversibilityLabel(nature)}
       </div>
+    </div>
+  );
+}
+
+// ── Concordance check (spec §11.3) ───────────────────────
+
+function ConcordanceNote({
+  nature,
+  verdict,
+}: {
+  nature: FindingNatureInfo;
+  verdict: RecoveryVerdict;
+}) {
+  if (nature.nature === "unknown") return null;
+
+  const qualifier = nature.reversibilityQualifier;
+  let message: string | null = null;
+
+  if (
+    qualifier === "expected" &&
+    (verdict === "persistent" || verdict === "progressing")
+  ) {
+    message =
+      "Expected to resolve but persisting \u2014 may indicate ongoing toxicity or insufficient recovery duration";
+  } else if (
+    (qualifier === "unlikely" || qualifier === "none") &&
+    (verdict === "reversed" || verdict === "reversing")
+  ) {
+    message =
+      "Finding nature suggests persistence; recovery may reflect sampling variability";
+  }
+
+  if (!message) return null;
+
+  return (
+    <div className="text-[9px] text-muted-foreground/70 leading-snug">
+      {message}
     </div>
   );
 }
