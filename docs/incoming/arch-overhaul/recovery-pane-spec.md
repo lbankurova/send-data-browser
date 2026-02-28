@@ -260,40 +260,36 @@ For each dose group × sex × timepoint, the recovery API must provide:
 
 | Field | Description | Currently available? |
 |---|---|---|
-| treated_mean | Group mean for treated animals | Yes |
-| treated_sd | Group SD | Yes |
-| treated_n | Sample size | Yes |
-| control_mean | Concurrent control mean at same timepoint | Needs verification |
-| control_sd | Control SD | Needs verification |
-| control_n | Control sample size | Needs verification |
-| p_value | Statistical comparison (recovery vs terminal, or recovery vs control) | Partial |
+| treated_mean | Group mean for treated animals | Yes (`mean`) |
+| treated_sd | Group SD | Yes (`sd`) |
+| treated_n | Sample size | Yes (`treated_n`) |
+| control_mean | Concurrent control mean at same timepoint | Yes (`control_mean`) |
+| control_sd | Control SD | Not returned (not needed for current classification) |
+| control_n | Control sample size | Yes (`control_n`) |
+| p_value | Statistical comparison (recovery vs terminal, or recovery vs control) | Yes (`p_value`) |
 
-**Critical gap:** Verify that the recovery API returns control group values at the recovery timepoint, not just treated group values. If the API only returns treated means, the control-normalization approach requires extending the API.
+The recovery-comparison API (`/api/studies/{id}/recovery-comparison`) returns all fields above per dose × sex × endpoint row. Control stats and terminal-arm means (`control_mean_terminal`, `treated_mean_terminal`) are also included for drift detection and hover detail.
 
 ### 8.2 Peak Effect Data
 
 | Field | Description | Currently available? |
 |---|---|---|
-| peak_g | Largest |Hedges' g| during dosing phase | BW: derivable from timecourse. LB: only if interim bleeds. OM: N/A |
-| peak_timepoint | Study day of peak effect | Same as above |
-| terminal_g | Hedges' g at terminal sacrifice | Derivable from existing data |
+| peak_g | Largest |Hedges' g| during dosing phase | Yes (`peak_effect`) — computed server-side for BW and LB |
+| peak_timepoint | Study day of peak effect | Yes (`peak_day`) |
+| terminal_g | Hedges' g at terminal sacrifice | Yes (`terminal_effect`) |
 
-**For BW:** Weekly body weight data exists in the SEND BW domain. Peak effect can be computed by iterating timepoints and finding the maximum |g| vs concurrent control. This is a new computation but uses existing data.
-
-**For LB:** Only available if the study includes interim blood draws. Many studies only have terminal and recovery. When interim data exists, same logic as BW. When it doesn't, peak context is not shown.
-
-**For OM:** Organ weights are only measured at necropsy. Peak context is never applicable.
+Peak effect is computed server-side in the recovery-comparison endpoint by scanning all main-arm timepoints for each dose × sex × endpoint and finding the maximum |g| vs concurrent control. Applicable to BW (weekly data) and LB (interim bleeds). OM has terminal-only data, so peak = terminal.
 
 ### 8.3 Histopathology (MI/MA)
 
 | Field | Description | Currently available? |
 |---|---|---|
-| terminal_incidence | Affected / examined at terminal | Yes (useOrganRecovery) |
-| recovery_incidence | Affected / examined at recovery | Yes |
-| terminal_severity_dist | Distribution of severity grades at terminal | Needs verification |
-| recovery_severity_dist | Distribution of severity grades at recovery | Needs verification |
+| terminal_incidence | Affected / examined at terminal | Yes (`main.affected / main.examined`) |
+| recovery_incidence | Affected / examined at recovery | Yes (`recovery.affected / recovery.examined`) |
+| terminal_severity_dist | Distribution of severity grades at terminal | Yes — `main.avgSeverity`, `main.maxSeverity` per dose |
+| recovery_severity_dist | Distribution of severity grades at recovery | Yes — `recovery.avgSeverity`, `recovery.maxSeverity` per dose |
 
-The `useOrganRecovery` hook already supports a sex parameter. Call it for both sexes unconditionally (React hook rules), render whichever returns data.
+The `useOrganRecovery` hook supports a sex parameter and is called unconditionally for both F and M (React hook rules). Severity data powers §9.2 grade shift annotations.
 
 ---
 
@@ -426,39 +422,19 @@ When both recovery data and finding nature are available, flag discordance:
 
 ### 14.1 API Changes
 
-The recovery comparison API needs to return control group values at the recovery timepoint. Verify whether `useRecoveryComparison` currently includes control data. If not, extend the hook to fetch control group stats at both terminal and recovery timepoints for the same endpoint.
+**Done.** The recovery-comparison endpoint (`backend/routers/temporal.py`) returns control stats (`control_mean`, `control_n`, `control_mean_terminal`), treated stats (`treated_n`, `treated_mean_terminal`), and flags (`insufficient_n`, `no_concurrent_control`) on every row. The frontend type `RecoveryComparisonResponse` in `temporal-api.ts` mirrors these fields as optional properties.
 
 ### 14.2 Peak Effect Computation
 
-New utility function needed:
-
-```typescript
-function computePeakEffect(
-  timecourseData: TimePoint[],
-  controlData: TimePoint[],
-  domain: string
-): { peak_g: number; peak_day: number } | null
-```
-
-Only applicable for BW (weekly data) and LB (if interim bleeds exist). Returns null for OM and when timecourse data is unavailable.
+**Done — computed server-side.** The backend scans all main-arm timepoints per dose × sex × endpoint and returns `peak_effect` (max |g|) and `peak_day` on each row. No frontend utility needed.
 
 ### 14.3 Hook Architecture
 
-For histopath recovery per-sex:
-
-```typescript
-// Call both unconditionally (React hook rules)
-const femaleRecovery = useOrganRecovery(organ, specimen, 'F');
-const maleRecovery = useOrganRecovery(organ, specimen, 'M');
-
-// Render whichever has data
-const hasFemale = femaleRecovery.data?.length > 0;
-const hasMale = maleRecovery.data?.length > 0;
-```
+**Done.** `HistopathRecoveryAllSexes` calls `useOrganRecovery` unconditionally for both F and M, renders whichever has data. Both hooks share the React Query cache (5-min stale).
 
 ### 14.4 Backwards Compatibility
 
-The recovery section should gracefully degrade when control data at recovery timepoints is unavailable (edge case 10.4). The raw-mean fallback ensures the section always renders something, with a clear note about the limitation.
+**Done.** The recovery section handles three degraded states: (1) `insufficient_n` — shows raw value with "insufficient for classification"; (2) `no_concurrent_control` — shows raw mean with amber warning; (3) below-threshold terminal effect — shows "Not assessed" with terminal g value. All states render informative content rather than hiding the row.
 
 ---
 
