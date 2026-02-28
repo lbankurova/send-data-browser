@@ -60,6 +60,8 @@ One-line lookup for all methods in `methods.md`. Scan this first; drill into the
 | METH-30 | Magnitude Floor | Prevent biologically trivial findings from matching |
 | METH-31 | Certainty Upgrade Evidence | Corroborating evidence to lift tier caps |
 | METH-32 | Food Consumption Key Stats | Per-sex BW/FC/FE metrics at highest dose |
+| METH-33 | Two-Gate OM Classification | Organ-specific two-gate (statistical + magnitude) OM assessment |
+| METH-34 | Adaptive Decision Trees | Context-dependent finding assessment via 6 organ-specific decision trees |
 
 ## Classification Algorithms (CLASS)
 

@@ -1,6 +1,6 @@
 # Topic Hub: Data Pipeline & Findings Engine
 
-**Last updated:** 2026-02-26
+**Last updated:** 2026-02-28
 **Overall status:** Fully shipped. 6-phase generator (68s baseline), 12 domain modules, shared enrichment (`findings_pipeline.py`), 8 JSON view outputs, frontend transform chain. 20 pipeline test suites across backend and frontend.
 
 ---
@@ -22,7 +22,7 @@
 
 Outputs: 8 JSON files + 1 HTML chart to `backend/generated/{study_id}/`.
 
-### Shared Enrichment Pipeline (`findings_pipeline.py`, 267 lines)
+### Shared Enrichment Pipeline (`findings_pipeline.py`, 301 lines)
 
 Three-step `process_findings()` shared by both generator (`domain_stats.py`) and live API (`unified_findings.py`):
 
@@ -89,6 +89,7 @@ Additional pipeline test coverage in early-death-exclusion (41 tests), per-sex-p
 | `1fe2f44` | Eliminate frontend re-derivation of backend-computed fields |
 | `5e38b26` | Scheduled-only toggle propagates through entire analytics pipeline |
 | `58dd8a2` | Populate DAY values for MI, MA, OM, CL, TF, DS domain findings |
+| — | feat: Tier 2 organ-specific thresholds & adaptive trees — two-gate OM classification replaces Cohen's d, 6 adaptive decision trees, ConcurrentFindingIndex |
 
 ---
 
@@ -162,9 +163,9 @@ Additional pipeline test coverage in early-death-exclusion (41 tests), per-sex-p
 | File | Lines | Role |
 |------|-------|------|
 | `backend/generator/generate.py` | 320 | CLI entry, 6-phase orchestration |
-| `backend/generator/domain_stats.py` | 383 | Pass 1/2/3 domain finding collection |
-| `backend/services/analysis/findings_pipeline.py` | 267 | Shared enrichment (3-step `process_findings`) |
-| `backend/services/analysis/unified_findings.py` | 240 | On-demand adverse effects API pipeline |
+| `backend/generator/domain_stats.py` | 387 | Pass 1/2/3 domain finding collection |
+| `backend/services/analysis/findings_pipeline.py` | 301 | Shared enrichment (3-step `process_findings`) |
+| `backend/services/analysis/unified_findings.py` | 244 | On-demand adverse effects API pipeline |
 | `backend/services/analysis/dose_groups.py` | 255 | Dose group mapping, subject classification |
 | `backend/services/analysis/phase_filter.py` | 170 | Recovery/main phase detection, last dosing day |
 | `backend/generator/organ_map.py` | 57 | Specimen → organ system mapping |
@@ -194,13 +195,13 @@ All files at `backend/services/analysis/`.
 | File | Lines | Role |
 |------|-------|------|
 | `statistics.py` | 283 | Pairwise tests (Dunnett's, Fisher's, JT) |
-| `classification.py` | 295 | Severity, dose-response pattern, treatment-related |
+| `classification.py` | 608 | Severity, dose-response pattern, treatment-related, ECETOC assess_finding, two-gate OM, adaptive trees |
 | `normalization.py` | 241 | OM normalization decisions — *also in TOPIC-organ-measurements* |
 | `williams.py` | 439 | Williams' trend test — *also in TOPIC-organ-measurements* |
 | `ancova.py` | 283 | ANCOVA decomposition — *also in TOPIC-organ-measurements* |
 | `mortality.py` | 270 | Early death detection, mortality summary |
 | `correlations.py` | 141 | Cross-finding correlation computation |
-| `insights.py` | 523 | Signal scoring, insight rule evaluation |
+| `insights.py` | 535 | Signal scoring, insight rule evaluation |
 | `context_panes.py` | 299 | Per-finding context pane data assembly |
 
 All files at `backend/services/analysis/`.
@@ -223,7 +224,7 @@ All files at `backend/generator/`.
 
 | File | Lines | Role |
 |------|-------|------|
-| `src/types/analysis.ts` | 328 | TypeScript types for all analysis data |
+| `src/types/analysis.ts` | 361 | TypeScript types for all analysis data |
 | `src/hooks/useFindings.ts` | 17 | React Query hook for findings fetch |
 | `src/hooks/useFindingsAnalyticsLocal.ts` | 217 | Pipeline orchestration — *also in TOPIC-syndrome-engine* |
 

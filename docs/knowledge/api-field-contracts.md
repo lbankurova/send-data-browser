@@ -207,6 +207,19 @@ Single object. Cross-domain PC + PP + DM pharmacokinetic integration.
 
 ---
 
+## 12. Per-Finding Assessment Fields (Tier 2)
+
+These fields are set by the shared enrichment pipeline (`findings_pipeline.py`) and appear on findings in `unified_findings.json`, `dose_response_metrics.json`, and other per-finding outputs. They are produced by `classification.py:assess_finding_with_context()`.
+
+**Source:** `services/analysis/classification.py:_assess_om_two_gate()`, `services/analysis/adaptive_trees.py`
+
+| ID | Field | JSON type | Nullable | Source | Invariant |
+|----|-------|-----------|----------|--------|-----------|
+| BFIELD-74 | `_assessment_detail` | object | **Yes** | `classification.py:_assess_om_two_gate()` | OM findings only. Two-gate assessment: `{method: string, stat_gate: boolean, mag_gate: boolean|null, pct_change: number|null, organ_threshold: number, ceiling?: number, baseline?: "ancova"|"absolute", trend_tiebreaker?: boolean}`. Null/absent for non-OM findings. `stat_gate` = pairwise p < 0.05. `mag_gate` = |pct_change| >= organ_threshold. |
+| BFIELD-75 | `_tree_result` | object | **Yes** | `adaptive_trees.py` (6 trees) | Context-dependent MI findings only. Adaptive tree evaluation: `{tree_id: string, node_path?: string[], ecetoc_factors?: string[], rationale: string, human_relevance?: string}`. `tree_id` is one of LIVER, THYROID, ADRENAL, THYMUS_SPLEEN, KIDNEY, GASTRIC. Null/absent when no tree applies (finding not context_dependent or no matching tree). |
+
+---
+
 ## Cross-cutting fields
 
 These fields are propagated identically across multiple JSON outputs via `_propagate_scheduled_fields()`:
@@ -232,6 +245,7 @@ These fields are propagated identically across multiple JSON outputs via `_propa
 | BFIELD-53 -- BFIELD-58 | tumor_summary.json | 6 |
 | BFIELD-59 -- BFIELD-63 | food_consumption_summary.json | 5 |
 | BFIELD-64 -- BFIELD-73 | pk_integration.json | 10 |
-| BFIELD-74+ | Reserved for future fields | -- |
+| BFIELD-74 -- BFIELD-75 | Per-finding assessment (Tier 2) | 2 |
+| BFIELD-76+ | Reserved for future fields | -- |
 
-Total: 73 fields documented across 11 JSON output files.
+Total: 75 fields documented across 12 JSON output categories.

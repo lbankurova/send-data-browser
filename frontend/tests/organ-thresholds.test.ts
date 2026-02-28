@@ -1,0 +1,500 @@
+/**
+ * organ-thresholds.test.ts — Tier 2 autotests for organ-specific thresholds,
+ * two-gate OM classification, and adaptive decision trees.
+ *
+ * Validates:
+ * 1. organ-weight-thresholds.json schema and content
+ * 2. _assessment_detail on OM findings (two-gate logic)
+ * 3. _tree_result on MI findings (adaptive trees)
+ * 4. Two-gate classification consistency rules
+ * 5. Adaptive tree biological plausibility
+ */
+
+import { describe, test, expect } from "vitest";
+import * as fs from "fs";
+import * as path from "path";
+
+const ROOT = path.resolve(__dirname, "../..");
+const UNIFIED_PATH = path.join(ROOT, "backend/generated/PointCross/unified_findings.json");
+const THRESHOLD_PATH = path.join(ROOT, "shared/organ-weight-thresholds.json");
+
+// ─── Guards ─────────────────────────────────────────────────
+
+const hasGenerated = fs.existsSync(UNIFIED_PATH);
+const hasThresholds = fs.existsSync(THRESHOLD_PATH);
+
+// ─── Load data ──────────────────────────────────────────────
+
+interface AssessmentDetail {
+  method: string;
+  stat_gate: boolean;
+  mag_gate: boolean | null;
+  pct_change: number | null;
+  organ_threshold: number;
+  ceiling?: number;
+  baseline?: "ancova" | "absolute";
+  trend_tiebreaker?: boolean;
+}
+
+interface TreeResult {
+  tree_id: string;
+  node_path?: string[];
+  ecetoc_factors?: string[];
+  rationale: string;
+  human_relevance?: string;
+}
+
+interface Finding {
+  id: string;
+  domain: string;
+  test_code: string;
+  specimen: string | null;
+  finding: string;
+  sex: string;
+  severity: string;
+  treatment_related: boolean;
+  finding_class: string;
+  min_p_adj: number | null;
+  max_effect_size: number | null;
+  trend_p: number | null;
+  dose_response_pattern: string | null;
+  direction: string | null;
+  group_stats: Array<{ dose_level: number; mean?: number | null }>;
+  _assessment_detail?: AssessmentDetail;
+  _tree_result?: TreeResult;
+}
+
+const findings: Finding[] = hasGenerated
+  ? JSON.parse(fs.readFileSync(UNIFIED_PATH, "utf-8")).findings
+  : [];
+
+const thresholds = hasThresholds
+  ? JSON.parse(fs.readFileSync(THRESHOLD_PATH, "utf-8"))
+  : {};
+
+// ─── 1. organ-weight-thresholds.json schema ─────────────────
+
+describe("organ-weight-thresholds.json", () => {
+  const EXPECTED_ORGANS = [
+    "LIVER", "KIDNEY", "HEART", "BRAIN", "ADRENAL", "THYROID",
+    "SPLEEN", "THYMUS", "TESTES", "EPIDIDYMIDES", "OVARIES", "UTERUS", "LUNGS",
+  ];
+  const REQUIRED_FIELDS = ["variation_ceiling_pct", "adverse_floor_pct", "strong_adverse_pct"];
+
+  test.skipIf(!hasThresholds)("has all 13 expected organs", () => {
+    const organs = Object.keys(thresholds).filter(k => !k.startsWith("_"));
+    for (const organ of EXPECTED_ORGANS) {
+      expect(organs, `missing organ: ${organ}`).toContain(organ);
+    }
+  });
+
+  test.skipIf(!hasThresholds)("each organ has required threshold fields", () => {
+    const violations: string[] = [];
+    for (const organ of EXPECTED_ORGANS) {
+      const cfg = thresholds[organ];
+      if (!cfg) continue;
+      for (const field of REQUIRED_FIELDS) {
+        const val = cfg[field];
+        if (val === undefined || val === null) {
+          violations.push(`${organ}.${field} missing`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test.skipIf(!hasThresholds)("threshold ordering: ceiling < floor < strong", () => {
+    const violations: string[] = [];
+    for (const organ of EXPECTED_ORGANS) {
+      const cfg = thresholds[organ];
+      if (!cfg) continue;
+      // Resolve species-specific values (use rat as default)
+      const resolve = (v: number | Record<string, number>) =>
+        typeof v === "number" ? v : v.rat ?? v.other;
+      const ceiling = resolve(cfg.variation_ceiling_pct);
+      const floor = resolve(cfg.adverse_floor_pct);
+      const strong = resolve(cfg.strong_adverse_pct);
+      if (ceiling > floor) violations.push(`${organ}: ceiling(${ceiling}) > floor(${floor})`);
+      if (floor > strong) violations.push(`${organ}: floor(${floor}) > strong(${strong})`);
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test.skipIf(!hasThresholds)("ADRENAL has species-specific values", () => {
+    const adrenal = thresholds.ADRENAL;
+    expect(adrenal).toBeDefined();
+    expect(typeof adrenal.adverse_floor_pct).toBe("object");
+    expect(adrenal.adverse_floor_pct.rat).toBeDefined();
+    expect(adrenal.adverse_floor_pct.mouse).toBeDefined();
+    expect(adrenal.adverse_floor_pct.mouse).toBeGreaterThan(adrenal.adverse_floor_pct.rat);
+  });
+
+  test.skipIf(!hasThresholds)("BRAIN has zero ceiling (any_significant policy)", () => {
+    expect(thresholds.BRAIN.variation_ceiling_pct).toBe(0);
+    expect(thresholds.BRAIN.adverse_floor_pct).toBe(0);
+  });
+
+  test.skipIf(!hasThresholds)("LIVER has adaptive_requires block with LB panel", () => {
+    const liver = thresholds.LIVER;
+    expect(liver.adaptive_requires).toBeDefined();
+    expect(liver.adaptive_requires.lb_panel).toBeDefined();
+    expect(liver.adaptive_requires.lb_panel.length).toBeGreaterThanOrEqual(5);
+    expect(liver.adaptive_requires.critical_clean).toContain("ALT");
+    expect(liver.adaptive_requires.critical_clean).toContain("AST");
+  });
+
+  test.skipIf(!hasThresholds)("KIDNEY has special_flags for alpha2u and CPN", () => {
+    const kidney = thresholds.KIDNEY;
+    expect(kidney.special_flags).toBeDefined();
+    expect(kidney.special_flags).toContain("alpha2u_globulin_male_rat");
+  });
+});
+
+// ─── 2. _assessment_detail on OM findings ────────────────────
+
+describe("OM two-gate assessment (_assessment_detail)", () => {
+  const omFindings = findings.filter(f => f.domain === "OM");
+
+  test.skipIf(!hasGenerated)("every OM finding has _assessment_detail", () => {
+    const missing = omFindings.filter(f => !f._assessment_detail);
+    expect(
+      missing.length,
+      `${missing.length}/${omFindings.length} OM findings lack _assessment_detail`,
+    ).toBe(0);
+  });
+
+  test.skipIf(!hasGenerated)("_assessment_detail has required fields", () => {
+    const violations: string[] = [];
+    for (const f of omFindings) {
+      const det = f._assessment_detail;
+      if (!det) continue;
+      if (det.method === undefined) violations.push(`${f.specimen} ${f.sex}: missing method`);
+      if (det.stat_gate === undefined) violations.push(`${f.specimen} ${f.sex}: missing stat_gate`);
+      if (det.organ_threshold === undefined) violations.push(`${f.specimen} ${f.sex}: missing organ_threshold`);
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test.skipIf(!hasGenerated)("organ-specific organs use organ_specific method", () => {
+    const expectedSpecific = ["BRAIN", "HEART", "LIVER", "KIDNEY", "SPLEEN", "THYMUS", "TESTIS", "OVARY"];
+    const violations: string[] = [];
+    for (const f of omFindings) {
+      const det = f._assessment_detail;
+      if (!det) continue;
+      const isExpectedSpecific = expectedSpecific.some(
+        s => (f.specimen ?? "").toUpperCase().includes(s),
+      );
+      if (isExpectedSpecific && !det.method.startsWith("organ_specific:")) {
+        violations.push(`${f.specimen} ${f.sex}: expected organ_specific, got ${det.method}`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test.skipIf(!hasGenerated)(
+    "stat_gate=true iff min_p_adj < 0.05",
+    () => {
+      const violations: string[] = [];
+      for (const f of omFindings) {
+        const det = f._assessment_detail;
+        if (!det) continue;
+        const expectedGate = f.min_p_adj !== null && f.min_p_adj < 0.05;
+        if (det.stat_gate !== expectedGate) {
+          violations.push(
+            `${f.specimen} ${f.sex}: stat_gate=${det.stat_gate} but p=${f.min_p_adj}`,
+          );
+        }
+      }
+      expect(violations).toEqual([]);
+    },
+  );
+
+  test.skipIf(!hasGenerated)(
+    "pct_change matches group_stats control-vs-high",
+    () => {
+      const violations: string[] = [];
+      for (const f of omFindings) {
+        const det = f._assessment_detail;
+        if (!det || det.pct_change === null) continue;
+        if (det.baseline === "ancova") continue; // ANCOVA-adjusted, can't verify from group_stats
+        const gs = f.group_stats;
+        if (gs.length < 2) continue;
+        const ctrl = gs[0]?.mean;
+        const high = gs[gs.length - 1]?.mean;
+        if (ctrl == null || high == null || Math.abs(ctrl) < 1e-10) continue;
+        const expected = ((high - ctrl) / Math.abs(ctrl)) * 100;
+        const diff = Math.abs(det.pct_change - expected);
+        if (diff > 0.2) {
+          violations.push(
+            `${f.specimen} ${f.sex}: pct_change=${det.pct_change} but expected=${expected.toFixed(1)}`,
+          );
+        }
+      }
+      expect(violations).toEqual([]);
+    },
+  );
+
+  // Two-gate logic consistency
+  test.skipIf(!hasGenerated)(
+    "both gates pass → tr_adverse",
+    () => {
+      const violations: string[] = [];
+      for (const f of omFindings) {
+        const det = f._assessment_detail;
+        if (!det) continue;
+        if (det.stat_gate && det.mag_gate === true) {
+          if (f.finding_class !== "tr_adverse") {
+            violations.push(
+              `${f.specimen} ${f.sex}: both gates pass but class=${f.finding_class}`,
+            );
+          }
+        }
+      }
+      expect(violations).toEqual([]);
+    },
+  );
+
+  test.skipIf(!hasGenerated)(
+    "neither gate passes → not_treatment_related (absent trend significance)",
+    () => {
+      const violations: string[] = [];
+      for (const f of omFindings) {
+        const det = f._assessment_detail;
+        if (!det) continue;
+        if (!det.stat_gate && det.mag_gate === false) {
+          const trendSig = f.trend_p !== null && f.trend_p < 0.05;
+          const aboveCeiling = det.pct_change !== null && det.ceiling !== undefined &&
+            Math.abs(det.pct_change) >= det.ceiling;
+          if (!trendSig || !aboveCeiling) {
+            if (f.finding_class !== "not_treatment_related") {
+              violations.push(
+                `${f.specimen} ${f.sex}: neither gate, no trend, but class=${f.finding_class}`,
+              );
+            }
+          }
+        }
+      }
+      expect(violations).toEqual([]);
+    },
+  );
+
+  test.skipIf(!hasGenerated)("BRAIN uses any_significant policy (threshold=0)", () => {
+    const brainOm = omFindings.filter(f => (f.specimen ?? "").toUpperCase().includes("BRAIN"));
+    for (const f of brainOm) {
+      const det = f._assessment_detail;
+      if (!det) continue;
+      expect(det.organ_threshold, `BRAIN ${f.sex}: threshold should be 0`).toBe(0);
+    }
+  });
+});
+
+// ─── 3. Adaptive tree results (_tree_result) ─────────────────
+
+describe("Adaptive decision trees (_tree_result)", () => {
+  const VALID_TREE_IDS = new Set([
+    "liver_hall_2012", "thyroid", "adrenal", "thymus_spleen", "kidney", "gastric", "none",
+  ]);
+  const miFindings = findings.filter(f => f.domain === "MI" || f.domain === "MA");
+
+  test.skipIf(!hasGenerated)("tree_id values are from valid set", () => {
+    const violations: string[] = [];
+    for (const f of miFindings) {
+      const tr = f._tree_result;
+      if (!tr) continue;
+      if (!VALID_TREE_IDS.has(tr.tree_id)) {
+        violations.push(`${f.specimen} — ${f.finding}: invalid tree_id="${tr.tree_id}"`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test.skipIf(!hasGenerated)("tree results have rationale", () => {
+    const violations: string[] = [];
+    for (const f of miFindings) {
+      const tr = f._tree_result;
+      if (!tr || tr.tree_id === "none") continue;
+      if (!tr.rationale || tr.rationale.length === 0) {
+        violations.push(`${f.specimen} — ${f.finding} ${f.sex}: tree ${tr.tree_id} has no rationale`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test.skipIf(!hasGenerated)("tree results have node_path", () => {
+    const violations: string[] = [];
+    for (const f of miFindings) {
+      const tr = f._tree_result;
+      if (!tr || tr.tree_id === "none") continue;
+      if (!tr.node_path || tr.node_path.length === 0) {
+        violations.push(`${f.specimen} — ${f.finding} ${f.sex}: tree ${tr.tree_id} has no node_path`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  // Liver tree specific
+  test.skipIf(!hasGenerated)("liver tree fires for LIVER HYPERTROPHY", () => {
+    const liverHyp = miFindings.filter(
+      f => (f.specimen ?? "").toUpperCase().includes("LIVER") &&
+        (f.finding ?? "").toLowerCase().includes("hypertrophy") &&
+        f._tree_result?.tree_id === "liver_hall_2012",
+    );
+    expect(
+      liverHyp.length,
+      "Expected liver Hall 2012 tree to fire for LIVER HYPERTROPHY",
+    ).toBeGreaterThan(0);
+  });
+
+  test.skipIf(!hasGenerated)("liver tree node_path starts with entry:MI_LIVER_hypertrophy", () => {
+    for (const f of miFindings) {
+      const tr = f._tree_result;
+      if (!tr || tr.tree_id !== "liver_hall_2012") continue;
+      expect(
+        tr.node_path?.[0],
+        `${f.sex}: liver tree should start with entry:MI_LIVER_hypertrophy`,
+      ).toBe("entry:MI_LIVER_hypertrophy");
+    }
+  });
+
+  // Thyroid tree specific
+  test.skipIf(!hasGenerated)("thyroid tree fires for THYROID HYPERTROPHY/HYPERPLASIA", () => {
+    const thyroidFindings = miFindings.filter(
+      f => (f.specimen ?? "").toUpperCase().includes("THYROID") &&
+        f._tree_result?.tree_id === "thyroid",
+    );
+    expect(
+      thyroidFindings.length,
+      "Expected thyroid tree to fire for thyroid hypertrophy/hyperplasia",
+    ).toBeGreaterThan(0);
+  });
+
+  test.skipIf(!hasGenerated)("thyroid adaptive findings have human_relevance annotation", () => {
+    for (const f of miFindings) {
+      const tr = f._tree_result;
+      if (!tr || tr.tree_id !== "thyroid") continue;
+      if (f.finding_class === "tr_adaptive") {
+        expect(
+          tr.human_relevance,
+          `Thyroid ${f.finding} ${f.sex}: adaptive should have human_relevance`,
+        ).toBe("not_relevant_rodent_specific");
+      }
+    }
+  });
+});
+
+// ─── 4. Two-gate classification consistency ──────────────────
+
+describe("Two-gate classification rules", () => {
+  test.skipIf(!hasGenerated)(
+    "context_dependent MI findings without tree match are not tr_adaptive",
+    () => {
+      const dict = JSON.parse(fs.readFileSync(
+        path.join(ROOT, "shared/adversity-dictionary.json"), "utf-8",
+      ));
+      const ctxTerms: string[] = dict.context_dependent;
+      const violations: string[] = [];
+
+      for (const f of findings) {
+        if (!["MI", "MA", "TF"].includes(f.domain)) continue;
+        if (!f.finding) continue;
+        const lower = f.finding.toLowerCase();
+        const isCtx = ctxTerms.some(t => lower.includes(t));
+        if (!isCtx) continue;
+
+        // If finding_class is tr_adaptive, it must have come from a tree
+        if (f.finding_class === "tr_adaptive") {
+          const tr = f._tree_result;
+          if (!tr || tr.tree_id === "none") {
+            violations.push(
+              `${f.specimen} — ${f.finding} (${f.sex}): tr_adaptive without tree result`,
+            );
+          }
+        }
+      }
+      expect(violations).toEqual([]);
+    },
+  );
+
+  test.skipIf(!hasGenerated)(
+    "context_dependent with tree_id=none are not tr_adaptive",
+    () => {
+      const violations: string[] = [];
+      for (const f of findings) {
+        const tr = f._tree_result;
+        if (!tr) continue;
+        if (tr.tree_id === "none" && f.finding_class === "tr_adaptive") {
+          violations.push(
+            `${f.specimen} — ${f.finding} (${f.sex}): tr_adaptive but tree_id=none`,
+          );
+        }
+      }
+      expect(violations).toEqual([]);
+    },
+  );
+
+  test.skipIf(!hasGenerated)(
+    "OM findings never get _tree_result (wrong domain for trees)",
+    () => {
+      const omWithTree = findings.filter(
+        f => f.domain === "OM" && f._tree_result !== undefined,
+      );
+      expect(
+        omWithTree.length,
+        "OM findings should not have _tree_result",
+      ).toBe(0);
+    },
+  );
+
+  test.skipIf(!hasGenerated)(
+    "non-OM, non-MI/MA findings use base assess_finding (no tree or detail)",
+    () => {
+      const otherDomains = findings.filter(
+        f => !["OM", "MI", "MA", "TF"].includes(f.domain),
+      );
+      const withDetail = otherDomains.filter(f => f._assessment_detail);
+      const withTree = otherDomains.filter(
+        f => f._tree_result && f._tree_result.tree_id !== "none",
+      );
+      expect(withDetail.length, "Non-OM findings should not have _assessment_detail").toBe(0);
+      expect(withTree.length, "Non-histopath findings should not have active _tree_result").toBe(0);
+    },
+  );
+});
+
+// ─── 5. Distribution sanity checks ──────────────────────────
+
+describe("Tier 2 distribution sanity", () => {
+  test.skipIf(!hasGenerated)("all 5 finding_class categories are populated", () => {
+    const categories = new Set(findings.map(f => f.finding_class));
+    expect(categories.size, `Only ${categories.size} categories`).toBe(5);
+  });
+
+  test.skipIf(!hasGenerated)("tr_adaptive count > 0 (trees are firing)", () => {
+    const adaptiveCount = findings.filter(f => f.finding_class === "tr_adaptive").length;
+    expect(adaptiveCount, "Expected some adaptive findings from trees").toBeGreaterThan(0);
+  });
+
+  test.skipIf(!hasGenerated)("OM findings use at least 3 distinct organ thresholds", () => {
+    const methods = new Set(
+      findings
+        .filter(f => f.domain === "OM" && f._assessment_detail)
+        .map(f => f._assessment_detail!.method),
+    );
+    expect(
+      methods.size,
+      `Only ${methods.size} distinct methods: ${[...methods].join(", ")}`,
+    ).toBeGreaterThanOrEqual(3);
+  });
+
+  test.skipIf(!hasGenerated)("at least 2 distinct tree_ids fire (not counting none)", () => {
+    const treeIds = new Set(
+      findings
+        .filter(f => f._tree_result && f._tree_result.tree_id !== "none")
+        .map(f => f._tree_result!.tree_id),
+    );
+    expect(
+      treeIds.size,
+      `Only ${treeIds.size} tree(s) fired: ${[...treeIds].join(", ")}`,
+    ).toBeGreaterThanOrEqual(2);
+  });
+});

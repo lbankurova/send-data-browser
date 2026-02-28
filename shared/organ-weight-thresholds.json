@@ -1,0 +1,116 @@
+{
+  "_comment": "Organ-specific weight change thresholds for regulatory toxicology assessment. Sources: FDA reviewer practice, Hood (2006), Hall (2012), Capen (1997), ECETOC TRA.",
+  "_schema": {
+    "variation_ceiling_pct": "Below this % change, the finding is trivially small (noise ceiling)",
+    "adverse_floor_pct": "At or above this % change, the finding is biologically meaningful (adverse floor)",
+    "strong_adverse_pct": "At or above this, the finding is clearly adverse regardless of context",
+    "adaptive_requires": "Optional block: conditions required to claim 'adaptive' for this organ",
+    "special_flags": "Optional array: organ-specific caveats the engine should annotate",
+    "cross_organ_link": "Optional: mechanistic link to another organ's findings"
+  },
+
+  "LIVER": {
+    "variation_ceiling_pct": 5,
+    "adverse_floor_pct": 10,
+    "strong_adverse_pct": 25,
+    "notes": "Liver is the most studied organ for adaptive vs adverse distinction. Hall 2012 defined the LB panel gate.",
+    "adaptive_requires": {
+      "lb_panel": ["ALT", "AST", "ALP", "GGT", "BILI", "CHOL", "BILEAC", "TP", "ALB"],
+      "min_clean": 5,
+      "critical_clean": ["ALT", "AST"],
+      "max_fold_for_clean": 5.0,
+      "max_severity_for_adaptive": 2
+    }
+  },
+
+  "KIDNEY": {
+    "variation_ceiling_pct": 5,
+    "adverse_floor_pct": 10,
+    "strong_adverse_pct": 25,
+    "special_flags": [
+      "alpha2u_globulin_male_rat",
+      "CPN_F344_rat"
+    ],
+    "notes": "Kidney weight changes ≥10% are concerning. Male rat α2u-globulin nephropathy is not human-relevant."
+  },
+
+  "HEART": {
+    "variation_ceiling_pct": 3,
+    "adverse_floor_pct": 8,
+    "strong_adverse_pct": 15,
+    "notes": "Heart has low normal variation (CV ~5-8%). Even small changes are meaningful."
+  },
+
+  "BRAIN": {
+    "variation_ceiling_pct": 0,
+    "adverse_floor_pct": 0,
+    "strong_adverse_pct": 5,
+    "notes": "Brain weight is tightly regulated. Any statistically significant change is biologically meaningful. Uses any_significant policy."
+  },
+
+  "ADRENAL": {
+    "variation_ceiling_pct": {"rat": 5, "mouse": 8, "other": 5},
+    "adverse_floor_pct": {"rat": 15, "mouse": 25, "other": 15},
+    "strong_adverse_pct": {"rat": 30, "mouse": 40, "other": 30},
+    "notes": "Adrenal weight is highly variable, especially in mice. Species-specific thresholds prevent false positives.",
+    "cross_organ_link": "stress_axis"
+  },
+
+  "THYROID": {
+    "variation_ceiling_pct": 5,
+    "adverse_floor_pct": 15,
+    "strong_adverse_pct": 30,
+    "notes": "Thyroid weight changes often secondary to liver enzyme induction (liver-thyroid axis). Capen 1997.",
+    "cross_organ_link": "liver_thyroid_axis"
+  },
+
+  "SPLEEN": {
+    "variation_ceiling_pct": 8,
+    "adverse_floor_pct": 20,
+    "strong_adverse_pct": 40,
+    "notes": "Spleen weight is naturally variable. Large changes may indicate immune response or stress."
+  },
+
+  "THYMUS": {
+    "variation_ceiling_pct": 8,
+    "adverse_floor_pct": 20,
+    "strong_adverse_pct": 40,
+    "notes": "Thymus weight is age-sensitive and stress-responsive. Involution is normal in older animals.",
+    "cross_organ_link": "stress_axis"
+  },
+
+  "TESTES": {
+    "variation_ceiling_pct": 5,
+    "adverse_floor_pct": 10,
+    "strong_adverse_pct": 20,
+    "notes": "Testes weight is tightly regulated. Changes ≥10% are concerning for reproductive toxicity."
+  },
+
+  "EPIDIDYMIDES": {
+    "variation_ceiling_pct": 5,
+    "adverse_floor_pct": 10,
+    "strong_adverse_pct": 20,
+    "notes": "Epididymal weight changes often parallel testicular effects."
+  },
+
+  "OVARIES": {
+    "variation_ceiling_pct": 10,
+    "adverse_floor_pct": 20,
+    "strong_adverse_pct": 35,
+    "notes": "Ovarian weight is highly variable due to estrous cycle stage. Higher thresholds prevent false positives."
+  },
+
+  "UTERUS": {
+    "variation_ceiling_pct": 15,
+    "adverse_floor_pct": 25,
+    "strong_adverse_pct": 40,
+    "notes": "Uterine weight is the most variable organ weight due to estrous cycle. Very high thresholds required."
+  },
+
+  "LUNGS": {
+    "variation_ceiling_pct": 5,
+    "adverse_floor_pct": 15,
+    "strong_adverse_pct": 30,
+    "notes": "Lung weight changes may indicate edema, inflammation, or fibrosis. Residual blood can confound."
+  }
+}

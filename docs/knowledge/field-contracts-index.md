@@ -64,3 +64,5 @@ One-line lookup for all computed fields in `field-contracts.md`. Scan this first
 | FIELD-58 | `EndpointConfidenceResult.noaelContribution` | NOAEL contribution weight + label |
 | FIELD-59 | `WeightedNOAELResult` | Study-level weighted NOAEL from ECI |
 | FIELD-60 | `TrendConcordanceResult` | JT/Williams' trend concordance check |
+| FIELD-61 | `_assessment_detail` | OM two-gate assessment detail (stat gate, mag gate, pct_change, organ threshold) |
+| FIELD-62 | `_tree_result` | Adaptive tree evaluation result (tree_id, node_path, ecetoc_factors, rationale) |

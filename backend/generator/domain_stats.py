@@ -30,6 +30,7 @@ from services.analysis.findings_pipeline import (
     process_findings, finding_key, build_findings_map,
     SCHEDULED_DOMAINS,
 )
+from services.analysis.organ_thresholds import get_species
 
 
 def _safe_float(v) -> float | None:
@@ -174,8 +175,11 @@ def compute_all_findings(
             sep_findings.extend(_compute_fw_findings(study, main_only_subs, last_dosing_day=last_dosing_day))
         separate_map = build_findings_map(sep_findings, "separate")
 
+    # Resolve species for organ-specific thresholds
+    species = get_species(study)
+
     # Shared enrichment pipeline (classification, fold change, labels, etc.)
-    all_findings = process_findings(all_findings, scheduled_map, separate_map, n_excluded)
+    all_findings = process_findings(all_findings, scheduled_map, separate_map, n_excluded, species=species)
 
     # Generator-specific: attach scheduled extras (min_p_adj, max_effect_size, trend_p)
     if scheduled_map:

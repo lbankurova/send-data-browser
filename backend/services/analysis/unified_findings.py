@@ -24,6 +24,7 @@ from services.analysis.phase_filter import get_terminal_subjects
 from services.analysis.findings_pipeline import (
     process_findings, build_findings_map,
 )
+from services.analysis.organ_thresholds import get_species
 
 
 def _sanitize_floats(obj):
@@ -161,8 +162,11 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
         sep_findings.extend(compute_cl_findings(study, main_only_subs))
         separate_map = build_findings_map(sep_findings, "separate")
 
+    # Resolve species for organ-specific thresholds
+    species = get_species(study)
+
     # Shared enrichment pipeline (classification, fold change, labels, etc.)
-    all_findings = process_findings(all_findings, scheduled_map, separate_map, n_excluded)
+    all_findings = process_findings(all_findings, scheduled_map, separate_map, n_excluded, species=species)
 
     # API-specific: assign deterministic IDs
     for finding in all_findings:

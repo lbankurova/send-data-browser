@@ -1,6 +1,6 @@
 # Topic Hub: Dose-Response View
 
-**Last updated:** 2026-02-27
+**Last updated:** 2026-02-28
 **Overall status:** Fully shipped. 3-tab evidence view (2,843L), 6 ECharts builders (1,065L), endpoint picker (385L), time-course with recovery boundary + CL temporal charts, Hypotheses tab (6 intents, 3 live: Shape, Pareto, Causality), Bradford Hill causality worksheet with auto-populated + expert criteria, pairwise comparison table, stat method switching, organ weight normalization-aware labels. 3 annotation schemas (tox-finding, endpoint-bookmarks, causal-assessment).
 
 ---
@@ -114,7 +114,7 @@ Method selection from `useStatMethods` hook. Effect size method flows through to
 Dose-response metrics are pre-generated:
 
 - `build_dose_response_metrics()` in `view_dataframes.py` (587L) assembles `dose_response_metrics.json` (~1,342 rows) — endpoint × dose × sex grain with mean, SD, n, incidence, p-value, effect size, pattern
-- `classify_dose_response()` in `classification.py` (295L) — pattern classification (monotonic, threshold, non-monotonic, flat)
+- `classify_dose_response()` in `classification.py` (608L) — pattern classification (monotonic, threshold, non-monotonic, flat)
 - `statistics.py` (283L) — Dunnett's test, Fisher's exact, Cochran-Armitage, Jonckheere-Terpstra
 - `williams.py` (439L) — Williams' trend test implementation
 
@@ -296,7 +296,7 @@ Time-course endpoints in `temporal.py` (1,185L, shared):
 | File | Lines | Role |
 |------|-------|------|
 | `generator/view_dataframes.py` | 587 | `build_dose_response_metrics()` — pre-generates `dose_response_metrics.json` — *shared, also in TOPIC-data-pipeline* |
-| `services/analysis/classification.py` | 295 | `classify_dose_response()` — pattern classification — *shared, also in TOPIC-data-pipeline* |
+| `services/analysis/classification.py` | 608 | `classify_dose_response()` — pattern classification — *shared, also in TOPIC-data-pipeline* |
 | `services/analysis/statistics.py` | 283 | Dunnett, Fisher, Cochran-Armitage, JT trend — *shared, also in TOPIC-data-pipeline* |
 | `services/analysis/williams.py` | 439 | Williams' trend test — *shared, also in TOPIC-data-pipeline* |
 

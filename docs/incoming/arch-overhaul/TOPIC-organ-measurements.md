@@ -1,7 +1,7 @@
 # Topic Hub: Organ Weight Measurements & Normalization
 
-**Last updated:** 2026-02-26
-**Overall status:** Core engine complete (Phases 1-2). Phase 3 deferred. UI is functional but not the full spec vision.
+**Last updated:** 2026-02-28
+**Overall status:** Core engine complete (Phases 1-2). Phase 3 deferred. UI is functional but not the full spec vision. Tier 2 organ-specific thresholds shipped (two-gate OM classification in `classification.py`).
 
 ---
 
@@ -73,7 +73,7 @@ All core logic, backend pipeline, and functional UI are implemented and tested.
 ### Minor gaps
 | Item | Spec | Status |
 |------|------|--------|
-| Organ-calibrated magnitude floors (prostate >= 1.0, ovary/uterus >= 1.5) | AMD-001 §4.2 | Not in syndrome engine. Generic floors apply. |
+| ~~Organ-calibrated magnitude floors (prostate >= 1.0, ovary/uterus >= 1.5)~~ | AMD-001 §4.2 | **Shipped** — Tier 2 two-gate OM classification uses organ-specific thresholds from `shared/organ-weight-thresholds.json` (13 organs, species-specific for adrenal). Replaces uniform 15% OM_PCT_CHANGE. `_assess_om_two_gate()` in `classification.py` (608L). Frontend type `_assessment_detail` on `DoseResponseRow` in `analysis.ts` (361L). |
 | NST REQ-5 user override recomputes tests | NST §4 | Alternatives dict has pre-computed stats for all metrics; no UI to switch + show warning banner. Override form changes the *decision* but doesn't recompute on the fly. |
 | Pattern classifier metric awareness | NST REQ-1 | Dose-response pattern classifier may still use absolute values. Needs verification in generator classifier. |
 
