@@ -1,0 +1,562 @@
+# B-6 Progression Chain Definitions
+# Source: Brief 6 — Nontumor Progression Chains for ECETOC Assessment
+#
+# Each chain encodes a documented progression pathway from early/adaptive
+# findings through intermediate stages to late/adverse outcomes (neoplasia
+# or irreversible organ damage).
+#
+# B-6 fires when a finding matches a chain stage AND meets the firing
+# conditions (obligate_precursor OR severity >= trigger). Firing escalates
+# the finding toward tr_adverse.
+#
+# Term matching: case-insensitive substring match against finding text.
+# Severity grades: 1=minimal, 2=mild, 3=moderate, 4=marked, 5=severe.
+
+chains:
+
+  # -----------------------------------------------------------------------
+  # Chain 1: Liver Hepatocellular Neoplastic Progression
+  # -----------------------------------------------------------------------
+  - chain_id: LIVER_NEOPLASTIC
+    organ: LIVER
+    domains: [MI, MA, TF]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: neoplastic
+    time_dependency: chronic
+    human_relevance:
+      mechanism: CAR/PXR/PPARa
+      relevance: rodent_specific_for_nongenotoxic
+      note: "Human hepatocytes refractory to mitogen-driven proliferation from nuclear receptor agonists"
+    spontaneous_notes:
+      B6C3F1_M: "adenoma 60%, carcinoma 34%"
+      F344_M: "adenoma <5%, carcinoma <2%"
+    stages:
+      - stage: early
+        terms: [hypertrophy]
+        severity_trigger: 3
+        obligate_precursor: false
+        requires_concurrent: [necrosis, proliferation]
+      - stage: early
+        terms: [altered hepatocellular foci, eosinophilic foci, basophilic foci, clear cell foci, mixed cell foci]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: intermediate
+        terms: [adenoma]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [carcinoma, hepatoblastoma]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 2: Kidney CPN (Chronic Progressive Nephropathy)
+  # -----------------------------------------------------------------------
+  - chain_id: KIDNEY_CPN
+    organ: KIDNEY
+    domains: [MI]
+    species_filter: rat
+    strain_filter: null
+    sex_filter: null
+    chain_type: non_neoplastic
+    time_dependency: both
+    human_relevance:
+      mechanism: chronic_progressive_nephropathy
+      relevance: not_human_relevant
+      note: "CPN has no human counterpart; lacks vascular changes of hypertensive nephropathy"
+    spontaneous_notes:
+      F344_M: "CPN 67%, females 39%"
+      SD_M: "CPN 81%, females 44%"
+    stages:
+      - stage: early
+        terms: [basophilic tubules, basophilia, tubular regeneration, regeneration]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: early
+        terms: [tubular degeneration, degeneration]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: early
+        terms: [hyaline cast, cast]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [interstitial inflammation]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [interstitial fibrosis, glomerulosclerosis]
+        severity_trigger: 2
+        obligate_precursor: false
+      - stage: late
+        terms: [chronic progressive nephropathy, end-stage kidney]
+        severity_trigger: 1
+        obligate_precursor: false
+      - stage: late
+        terms: [atypical tubule hyperplasia, atypical hyperplasia]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [renal tubule adenoma, renal tubule carcinoma]
+        severity_trigger: 1
+        obligate_precursor: true
+
+  # -----------------------------------------------------------------------
+  # Chain 3: Kidney Alpha-2u-Globulin Nephropathy (Male Rat Only)
+  # -----------------------------------------------------------------------
+  - chain_id: KIDNEY_ALPHA2U
+    organ: KIDNEY
+    domains: [MI]
+    species_filter: rat
+    strain_filter: null
+    sex_filter: M
+    chain_type: neoplastic
+    time_dependency: both
+    human_relevance:
+      mechanism: alpha2u_globulin
+      relevance: not_human_relevant
+      note: "EPA 1991: alpha2u-globulin nephropathy not relevant to humans; protein unique to adult male rats"
+    spontaneous_notes:
+      note: "Low-grade hyaline droplets present in all male rat controls (grade 1)"
+    stages:
+      - stage: early
+        terms: [hyaline droplet]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: early
+        terms: [tubular cell necrosis]
+        severity_trigger: 2
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [granular cast]
+        severity_trigger: 2
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [papillary mineralization, linear mineralization]
+        severity_trigger: 2
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [regenerative hyperplasia, tubular hyperplasia]
+        severity_trigger: 2
+        obligate_precursor: false
+      - stage: late
+        terms: [atypical tubule hyperplasia, atypical hyperplasia]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [renal tubule adenoma, renal tubule carcinoma]
+        severity_trigger: 1
+        obligate_precursor: true
+
+  # -----------------------------------------------------------------------
+  # Chain 4: Thyroid Follicular Cell Progression
+  # -----------------------------------------------------------------------
+  - chain_id: THYROID_FOLLICULAR
+    organ: THYROID
+    organ_aliases: ["GLAND, THYROID"]
+    domains: [MI, TF]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: neoplastic
+    time_dependency: chronic
+    human_relevance:
+      mechanism: TSH_mediated
+      relevance: rodent_specific_for_nongenotoxic
+      note: "Rat T4 half-life 12-24h vs 5-9 days in humans; rats lack TBG. No chemicals verified as human thyroid carcinogens."
+    spontaneous_notes:
+      F344: "adenoma 1-4%"
+      Wistar: "adenoma 4.3%"
+      SD: "adenoma 1.4%"
+      B6C3F1: "adenoma <1%"
+    stages:
+      - stage: early
+        terms: [follicular hypertrophy, hypertrophy]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: early
+        terms: [follicular hyperplasia, diffuse hyperplasia, hyperplasia]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [focal hyperplasia, nodular hyperplasia]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [follicular adenoma, adenoma]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [follicular carcinoma, carcinoma]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 5: Adrenal Medulla Pheochromocytoma
+  # -----------------------------------------------------------------------
+  - chain_id: ADRENAL_PHEO
+    organ: ADRENAL
+    organ_aliases: ["GLAND, ADRENAL"]
+    domains: [MI, TF]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: neoplastic
+    time_dependency: chronic
+    human_relevance:
+      mechanism: medullary_hyperplasia
+      relevance: uncertain
+      note: "Extremely high spontaneous rate in F344 males confounds interpretation"
+    spontaneous_notes:
+      F344_M: "benign pheochromocytoma ~32%"
+      SD_M: "substantially lower"
+    stages:
+      - stage: early
+        terms: [medullary hyperplasia, diffuse hyperplasia]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [focal hyperplasia, focal medullary hyperplasia]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [pheochromocytoma]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 6: Testicular Leydig Cell Progression
+  # -----------------------------------------------------------------------
+  - chain_id: TESTIS_LEYDIG
+    organ: TESTIS
+    organ_aliases: ["TESTES"]
+    domains: [MI, TF]
+    species_filter: null
+    strain_filter: null
+    sex_filter: M
+    chain_type: neoplastic
+    time_dependency: chronic
+    human_relevance:
+      mechanism: LH_mediated
+      relevance: not_human_relevant_f344
+      note: "F344 Leydig cell tumors inappropriate for human risk assessment (Maronpot 2016); human Leydig cells terminally differentiated"
+    spontaneous_notes:
+      F344_M: "adenoma 81-100%"
+      SD_M: "adenoma 4.2%"
+      Wistar_M: "adenoma 13.7%"
+      B6C3F1_M: "adenoma <1%"
+    stages:
+      - stage: early
+        terms: [leydig cell hypertrophy]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: early
+        terms: [leydig cell hyperplasia, diffuse hyperplasia]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [focal hyperplasia, focal leydig]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [leydig cell adenoma]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [leydig cell carcinoma]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 7: Lung Alveolar/Bronchiolar Progression
+  # -----------------------------------------------------------------------
+  - chain_id: LUNG_ALVEOLAR
+    organ: LUNG
+    domains: [MI, TF]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: neoplastic
+    time_dependency: chronic
+    human_relevance:
+      mechanism: alveolar_bronchiolar
+      relevance: uncertain
+      note: "Cell of origin debated (Type II pneumocyte vs Club cell)"
+    spontaneous_notes:
+      B6C3F1_M: "adenoma 15-17%, carcinoma 8-14%"
+      B6C3F1_F: "combined 8-10%"
+      F344_M: "combined 3.6%"
+    stages:
+      - stage: early
+        terms: [alveolar hyperplasia, bronchiolar hyperplasia, type ii hyperplasia, club cell hyperplasia]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [alveolar adenoma, bronchiolar adenoma]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [alveolar carcinoma, bronchiolar carcinoma]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 8: Forestomach Squamous Progression
+  # -----------------------------------------------------------------------
+  - chain_id: FORESTOMACH_SQUAMOUS
+    organ: FORESTOMACH
+    organ_aliases: ["STOMACH"]
+    domains: [MI, TF]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: neoplastic
+    time_dependency: chronic
+    human_relevance:
+      mechanism: squamous_irritation
+      relevance: limited_human_relevance
+      note: "Rodent-specific organ (keratinized stratified squamous epithelium); humans lack forestomach. Some analogy to esophageal squamous epithelium."
+    spontaneous_notes:
+      B6C3F1: "papilloma up to 1.9%"
+      F344: "near 0%"
+    stages:
+      - stage: early
+        terms: [squamous hyperplasia, hyperkeratosis]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [atypical squamous hyperplasia, atypical hyperplasia]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [squamous papilloma, papilloma]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [squamous cell carcinoma]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 9: Urinary Bladder Urothelial Progression
+  # -----------------------------------------------------------------------
+  - chain_id: BLADDER_UROTHELIAL
+    organ: URINARY BLADDER
+    domains: [MI, TF]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: neoplastic
+    time_dependency: chronic
+    human_relevance:
+      mechanism: urothelial_irritation
+      relevance: rat_specific_for_calculus_pathway
+      note: "Calculus-mediated pathway rat-specific. Genotoxic bladder carcinogens cross-species relevant."
+    spontaneous_notes:
+      note: "Essentially 0% in NTP historical controls for both F344 and B6C3F1"
+    stages:
+      - stage: early
+        terms: [urothelial hyperplasia, simple hyperplasia, transitional cell hyperplasia]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [papillary hyperplasia, nodular hyperplasia]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [transitional cell papilloma, papilloma]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [transitional cell carcinoma, carcinoma]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 10: Mammary Gland Progression
+  # -----------------------------------------------------------------------
+  - chain_id: MAMMARY_GLAND
+    organ: MAMMARY
+    organ_aliases: ["GLAND, MAMMARY"]
+    domains: [MI, TF]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: neoplastic
+    time_dependency: chronic
+    human_relevance:
+      mechanism: hormonal_prolactin
+      relevance: uncertain
+      note: "Hormonal mechanism (estrogen-prolactin axis). Fibroadenoma is independent benign neoplasm, not obligate precursor."
+    spontaneous_notes:
+      SD_F: "fibroadenoma 35-71%, adenocarcinoma 10-25%"
+      F344_F: "fibroadenoma 41-48%"
+      B6C3F1: "very rare"
+    stages:
+      - stage: early
+        terms: [alveolar hyperplasia, lobular hyperplasia]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [hyperplasia with atypia, hyperplastic alveolar nodule, mammary intraepithelial neoplasia, atypical hyperplasia]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [adenoma]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [adenocarcinoma]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 11: Pancreas Exocrine Acinar Cell Progression
+  # -----------------------------------------------------------------------
+  - chain_id: PANCREAS_ACINAR
+    organ: PANCREAS
+    domains: [MI, TF]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: neoplastic
+    time_dependency: chronic
+    human_relevance:
+      mechanism: CCK_mediated
+      relevance: uncertain
+      note: "Strong male sex bias (testosterone-dependent). Corn oil gavage dramatically increases incidence in F344 males."
+    spontaneous_notes:
+      F344_M_untreated: "adenoma 0.5-0.9%, hyperplasia 2.6%"
+      F344_M_corn_oil: "adenoma 4-5%, hyperplasia 12.6%"
+    stages:
+      - stage: early
+        terms: [acinar cell alteration, basophilic foci, eosinophilic foci, acinar hypertrophy]
+        severity_trigger: 2
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [acinar cell hyperplasia, focal acinar hyperplasia]
+        severity_trigger: 2
+        obligate_precursor: false
+      - stage: late
+        terms: [acinar cell adenoma]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [acinar cell carcinoma]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 12: Nasal Cavity Respiratory Epithelium Progression
+  # -----------------------------------------------------------------------
+  - chain_id: NASAL_SQUAMOUS
+    organ: NASAL
+    organ_aliases: ["NASAL CAVITY", "NOSE"]
+    domains: [MI, TF]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: neoplastic
+    time_dependency: chronic
+    human_relevance:
+      mechanism: irritant_metaplasia
+      relevance: limited_human_relevance
+      note: "Both rodent species are obligate nasal breathers unlike humans; different nasal anatomy."
+    spontaneous_notes:
+      note: "Virtually always chemically induced; spontaneous incidence essentially 0%"
+    stages:
+      - stage: early
+        terms: [goblet cell hyperplasia]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: early
+        terms: [squamous metaplasia]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [atypical squamous metaplasia, atypical metaplasia]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [squamous cell papilloma]
+        severity_trigger: 1
+        obligate_precursor: true
+      - stage: late
+        terms: [squamous cell carcinoma]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 13: Liver Non-Neoplastic Fibrosis Progression
+  # (Complements neoplastic chain 1; parallel pathway)
+  # -----------------------------------------------------------------------
+  - chain_id: LIVER_FIBROSIS
+    organ: LIVER
+    domains: [MI]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: non_neoplastic
+    time_dependency: both
+    human_relevance:
+      mechanism: hepatotoxicity_fibrosis
+      relevance: human_relevant
+      note: "Liver fibrosis is relevant across species; bridging fibrosis represents irreversible threshold."
+    spontaneous_notes:
+      note: "Spontaneous hepatic fibrosis/cirrhosis rare in untreated rats and mice"
+    stages:
+      - stage: early
+        terms: [hepatocyte degeneration, necrosis]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [portal inflammation, lobular inflammation, biliary hyperplasia, oval cell hyperplasia]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [fibrosis]
+        severity_trigger: 2
+        obligate_precursor: false
+      - stage: late
+        terms: [bridging fibrosis, cirrhosis]
+        severity_trigger: 1
+        obligate_precursor: false
+
+  # -----------------------------------------------------------------------
+  # Chain 14: Heart Myocardial Fibrosis / Progressive Cardiomyopathy
+  # -----------------------------------------------------------------------
+  - chain_id: HEART_CARDIOMYOPATHY
+    organ: HEART
+    domains: [MI]
+    species_filter: null
+    strain_filter: null
+    sex_filter: null
+    chain_type: non_neoplastic
+    time_dependency: both
+    human_relevance:
+      mechanism: cardiomyopathy
+      relevance: human_relevant
+      note: "Myocardial fibrosis is relevant to humans. PCM is age-progressive and spontaneous in rats."
+    spontaneous_notes:
+      F344_M: "cardiomyopathy 33%"
+      F344_F: "cardiomyopathy 18%"
+      SD: "common in older males"
+    stages:
+      - stage: early
+        terms: [cardiomyocyte degeneration, cardiomyocyte necrosis, myocardial necrosis, myocyte necrosis]
+        severity_trigger: 2
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [inflammation, inflammatory infiltrate, mononuclear cell infiltrate]
+        severity_trigger: 3
+        obligate_precursor: false
+      - stage: intermediate
+        terms: [fibrosis, myocardial fibrosis]
+        severity_trigger: 2
+        obligate_precursor: false
+      - stage: late
+        terms: [cardiomyopathy, progressive cardiomyopathy]
+        severity_trigger: 1
+        obligate_precursor: false

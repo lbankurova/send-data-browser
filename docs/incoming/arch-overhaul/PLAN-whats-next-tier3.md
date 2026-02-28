@@ -1,7 +1,7 @@
 # What's Next: Tier 3 Implementation Plan
 
-**Date:** 2026-02-28 | **Status:** Proposal — awaiting approval
-**Depends on:** Tiers 1+2 shipped, Briefs 1/2/4/5/6 complete, Brief 3 not started
+**Date:** 2026-02-28 | **Status:** All Tier 3 tracks SHIPPED
+**Depends on:** Tiers 1+2+3A+3B shipped, Briefs 1/2/4/5/6 complete, Brief 3 not started
 
 ---
 
@@ -12,10 +12,10 @@ Three implementation tracks are ready. All research is complete — no briefs ou
 | Track | Source | Effort | Impact | Dependencies |
 |---|---|---|---|---|
 | ~~**3A. HCD Static Ranges**~~ | Brief 4 | ~~~2 days~~ | ✅ SHIPPED 2026-02-28 | None |
-| **3B. B-6 Progression Chains** | Brief 6 | ~3-4 days | High — completes B-6 factor (currently tumors-only) | None |
+| ~~**3B. B-6 Progression Chains**~~ | Brief 6 | ~~~3-4 days~~ | ✅ SHIPPED 2026-02-28 | None |
 | **2C. Full Hall 2012 Liver LB Panel** | Brief 1 + existing code | ~1 day | Medium — completes liver adaptive tree | None |
 
-**Recommended sequence:** ~~2C~~ ✅ → ~~3A~~ ✅ → **3B** (next).
+**Recommended sequence:** ~~2C~~ ✅ → ~~3A~~ ✅ → ~~3B~~ ✅. All Tier 3 tracks complete.
 
 ---
 
@@ -143,23 +143,24 @@ print('finding_class:', Counter(f.get('finding_class','missing') for f in d['fin
 
 ---
 
-## Track 3B: B-6 Progression Chain Encoding
+## Track 3B: B-6 Progression Chain Encoding ✅ SHIPPED
 
+**Status:** SHIPPED 2026-02-28
 **Source:** Brief 6 — 14 organ-specific progression chains
 
-### Design decisions
+### Design decisions (resolved)
 
 1. **YAML or Python?** YAML for the chain definitions (data-driven, editable by toxicologists), Python for the evaluation engine. Same pattern as `syndrome-definitions.json` + `corroboration.py`.
 
-2. **Where does B-6 fire?** In `assess_finding()` B-factor assessment, after the current B-6 tumor check. Currently B-6 only checks `isNeoplastic` (TF domain). Extend to check non-tumor progression chains.
+2. **Where does B-6 fire?** In `assess_finding()` B-factor assessment, via `_evaluate_b6_for_finding()` in `classification.py`. Dispatches to `progression_chains.py:evaluate_b6()`.
 
 3. **What does B-6 do to classification?** B-6 fires → the finding is a **precursor to adverse outcome** → escalate toward `tr_adverse` even if current severity is low. This is the opposite of B-2 (adaptive = de-escalate).
 
-4. **HCD dependency?** Several chains specify "exceeds HCD range" as a firing condition. Without HCD (Track 3A), use a fallback: fire B-6 based on severity triggers only, skip HCD-range checks. When Track 3A ships, HCD-range checks become available. Design the chain schema to support both modes.
+4. **HCD dependency?** Track 3A shipped first, so HCD-range checks are available. Chains fire from severity triggers + obligate precursors. HCD integration available for future enhancement.
 
-### What to build
+### What was built
 
-**1. Shared config: `shared/progression-chains.yaml`** (~400 lines)
+**1. Shared config: `shared/progression-chains.yaml`** (~340 lines)
 
 Each chain entry:
 ```yaml
@@ -226,7 +227,7 @@ Each chain entry:
 13. LIVER_FIBROSIS
 14. HEART_CARDIOMYOPATHY
 
-**2. Backend engine: `backend/services/analysis/progression_chains.py`** (~250 lines)
+**2. Backend engine: `backend/services/analysis/progression_chains.py`** (~280 lines)
 
 - `ProgressionChainDB`: lazy-loads YAML, indexes by `(organ_upper, domain)`
 - `evaluate_b6(finding, index, species, strain) → B6Result | None`:
@@ -266,23 +267,21 @@ _b6_result?: {
 ### Files affected
 | File | Change |
 |---|---|
-| `shared/progression-chains.yaml` | NEW ~400L |
-| `backend/services/analysis/progression_chains.py` | NEW ~250L |
-| `backend/services/analysis/classification.py` | +~40L (B-6 evaluation) |
-| `backend/services/analysis/findings_pipeline.py` | +~5L (pass strain to assessment) |
+| `shared/progression-chains.yaml` | NEW ~340L |
+| `backend/services/analysis/progression_chains.py` | NEW ~280L |
+| `backend/services/analysis/classification.py` | +~32L (B-6 evaluation, ~700L total) |
 | `frontend/src/types/analysis.ts` | +~10L (_b6_result type) |
-| `frontend/tests/finding-class.test.ts` | Add B-6 assertions |
+| `frontend/tests/finding-class.test.ts` | +3 B-6 assertions |
 
 ### Implementation notes
 - **Severity grades:** SEND MI/MA findings use text severity (MINIMAL, MILD, MODERATE, MARKED, SEVERE → 1-5). The backend already parses `avg_severity` as numeric. Chain triggers compare against this.
 - **Strain threading:** Need to extract strain from TS domain (TSPARMCD = "STRAIN") alongside species. Add to `get_species()` → `get_species_strain()`.
 - **Graceful degradation:** When HCD unavailable, fire B-6 from severity triggers only. When strain unknown, skip strain-specific chains (KIDNEY_ALPHA2U still fires for male rat regardless of strain).
 
-### Expected behavior changes
-- MI findings matching progression chains with sufficient severity → escalate to `tr_adverse`
-- Findings identified as obligate precursors (AHF, atypical hyperplasia, focal thyroid hyperplasia) → `tr_adverse` regardless of severity
-- Some equivocal MI findings may resolve → `tr_adverse` when they match a progression chain
-- Human relevance annotations appear on relevant findings (alpha2u, forestomach, rodent thyroid mechanism)
+### Actual behavior changes (PointCross)
+- 3 findings escalated to `tr_adverse` (2 adenoma + 1 carcinoma via obligate precursors)
+- 17 total B-6 annotations across MI/MA findings
+- Human relevance and spontaneous rate annotations attached to matching findings
 
 ---
 
@@ -290,7 +289,7 @@ _b6_result?: {
 
 | Track | Source | Status | Notes |
 |---|---|---|---|
-| 3A+ HCD Phase 2 (SQLite DTT IAD) | Brief 4 | Ready to implement after 3A ships | 78 MB Excel → SQLite ETL. Enables dynamic matching by route/vehicle/age/date. |
+| 3A+ HCD Phase 2 (SQLite DTT IAD) | Brief 4 | Ready to implement (3A shipped) | 78 MB Excel → SQLite ETL. Enables dynamic matching by route/vehicle/age/date. |
 | 4A GRADE Confidence Scoring | Brief 5 | Research complete | Expand ECI to include HCD dimension (depends on 3A), cross-sex consistency. Merge temporal into B-3 + DR quality. |
 | 4B BMD Optional Module | — | Research not needed | `pip install pybmds`. Low complexity. |
 | 4C Backend Compound Logic | Brief 3 (not started) | Blocked on Brief 3 | Port frontend compound logic to backend corroboration. |

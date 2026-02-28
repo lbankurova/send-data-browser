@@ -25,7 +25,7 @@
           "finding": "Creatinine",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01276,
+          "p_value": 0.01277,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -33,7 +33,7 @@
           "finding": "Ery. Mean Corpuscular Hemoglobin",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00516,
+          "p_value": 0.0051,
           "finding_class": "tr_adverse",
           "corroboration_status": "not_applicable"
         },
@@ -41,7 +41,7 @@
           "finding": "Ery. Mean Corpuscular Volume",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00724,
+          "p_value": 0.00707,
           "finding_class": "tr_adverse",
           "corroboration_status": "not_applicable"
         },
@@ -49,7 +49,7 @@
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00055,
+          "p_value": 0.00057,
           "finding_class": "tr_adverse",
           "corroboration_status": "uncorroborated"
         },
@@ -57,7 +57,7 @@
           "finding": "Erythrocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00269,
+          "p_value": 0.00279,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -65,7 +65,7 @@
           "finding": "Urea Nitrogen",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01754,
+          "p_value": 0.01752,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -81,7 +81,7 @@
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.00432,
+          "p_value": 0.00441,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -89,7 +89,7 @@
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03834,
+          "p_value": 0.03833,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -138,7 +138,7 @@
           "finding": "Activated Partial Thromboplastin Time",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00726,
+          "p_value": 0.00711,
           "finding_class": "tr_adverse",
           "corroboration_status": "not_applicable"
         },
@@ -146,7 +146,7 @@
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00716,
+          "p_value": 0.00719,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -197,7 +197,7 @@
           "finding": "Activated Partial Thromboplastin Time",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00726,
+          "p_value": 0.00711,
           "finding_class": "tr_adverse",
           "corroboration_status": "not_applicable"
         },
@@ -205,7 +205,7 @@
           "finding": "Creatinine",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01276,
+          "p_value": 0.01277,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -213,7 +213,7 @@
           "finding": "Ery. Mean Corpuscular Hemoglobin",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00516,
+          "p_value": 0.0051,
           "finding_class": "tr_adverse",
           "corroboration_status": "not_applicable"
         },
@@ -221,7 +221,7 @@
           "finding": "Ery. Mean Corpuscular Volume",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00724,
+          "p_value": 0.00707,
           "finding_class": "tr_adverse",
           "corroboration_status": "not_applicable"
         },
@@ -229,7 +229,7 @@
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00055,
+          "p_value": 0.00057,
           "finding_class": "tr_adverse",
           "corroboration_status": "uncorroborated"
         },
@@ -237,7 +237,7 @@
           "finding": "Erythrocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00269,
+          "p_value": 0.00279,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -245,7 +245,7 @@
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00716,
+          "p_value": 0.00719,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -253,7 +253,7 @@
           "finding": "Urea Nitrogen",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.01754,
+          "p_value": 0.01752,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -269,7 +269,7 @@
           "finding": "Body Weight",
           "specimen": null,
           "domain": "BW",
-          "p_value": 0.00432,
+          "p_value": 0.00441,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -277,7 +277,7 @@
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03834,
+          "p_value": 0.03833,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },

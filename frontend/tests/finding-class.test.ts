@@ -230,10 +230,15 @@ describe("finding_class in unified_findings.json", () => {
         const hasLargeEffect = f.max_effect_size !== null &&
           Math.abs(f.max_effect_size) >= 1.5;
         const hasCorroboration = f.corroboration_status === "corroborated";
+        // B-6 progression chain escalation is valid biological evidence
+        const b6 = (f as Record<string, unknown>)._b6_result as
+          | { fires: boolean }
+          | undefined;
+        const hasB6Escalation = b6?.fires === true;
         // tr_adverse requires A-score >= 1.0 (treatment-related) plus B-factor
-        // evidence. Valid paths: large effect, dictionary override, or
-        // moderate effect + corroboration. All involve some evidence.
-        if (!hasP && !hasTrend && !hasPattern && !hasLargeEffect && !hasCorroboration) {
+        // evidence. Valid paths: large effect, dictionary override,
+        // moderate effect + corroboration, or B-6 progression chain.
+        if (!hasP && !hasTrend && !hasPattern && !hasLargeEffect && !hasCorroboration && !hasB6Escalation) {
           violations.push(
             `${f.test_name ?? f.test_code} (${f.sex}): no evidence at all`,
           );
@@ -447,6 +452,101 @@ describe("R04 finding_class annotations", () => {
         disagreeCount,
         "Expected some findings where legacy severity and ECETOC disagree",
       ).toBeGreaterThan(0);
+    },
+  );
+});
+
+// ─── B-6 Progression Chain Tests ──────────────────────────────
+
+describe("B-6 progression chains in unified_findings.json", () => {
+  const miMaTfFindings = findings.filter((f) =>
+    ["MI", "MA", "TF"].includes(f.domain),
+  );
+
+  test.skipIf(!hasGenerated)(
+    "treatment-related MI/MA/TF findings matching chains have _b6_result",
+    () => {
+      // Not all findings match chains — only check that _b6_result is
+      // structurally valid when present
+      const withB6 = miMaTfFindings.filter(
+        (f) => (f as Record<string, unknown>)._b6_result !== undefined,
+      );
+      expect(
+        withB6.length,
+        "Expected at least some MI/MA/TF findings to match progression chains",
+      ).toBeGreaterThan(0);
+
+      for (const f of withB6) {
+        const b6 = (f as Record<string, unknown>)._b6_result as Record<
+          string,
+          unknown
+        >;
+        expect(b6.chain_id, `${f.finding}: missing chain_id`).toBeDefined();
+        expect(b6.stage, `${f.finding}: missing stage`).toBeDefined();
+        expect(b6.fires, `${f.finding}: missing fires`).toBeDefined();
+        expect(b6.rationale, `${f.finding}: missing rationale`).toBeDefined();
+        expect(
+          typeof b6.fires,
+          `${f.finding}: fires should be boolean`,
+        ).toBe("boolean");
+        expect(
+          ["early", "intermediate", "late"].includes(b6.stage as string),
+          `${f.finding}: invalid stage "${b6.stage}"`,
+        ).toBe(true);
+      }
+    },
+  );
+
+  test.skipIf(!hasGenerated)(
+    "B-6 fires only escalates treatment-related findings",
+    () => {
+      const violations: string[] = [];
+      for (const f of miMaTfFindings) {
+        const b6 = (f as Record<string, unknown>)._b6_result as
+          | { fires: boolean; chain_id: string }
+          | undefined;
+        if (!b6 || !b6.fires) continue;
+        // If B-6 fires and finding_class is tr_adverse, the finding must
+        // have been treatment-related (A-score >= 1.0 means it had signal)
+        if (f.finding_class === "tr_adverse" && !f.treatment_related) {
+          // A-score ≥ 1.0 from ECETOC engine doesn't always match legacy
+          // treatment_related, so we just check it's not a gross violation
+          const hasAnySignal =
+            (f.min_p_adj !== null && f.min_p_adj < 0.2) ||
+            (f.trend_p !== null && f.trend_p < 0.2) ||
+            (f.max_effect_size !== null && Math.abs(f.max_effect_size) >= 0.3);
+          if (!hasAnySignal) {
+            violations.push(
+              `${f.specimen} — ${f.finding} (${f.sex}): B-6 fired but no signal at all`,
+            );
+          }
+        }
+      }
+      expect(violations).toEqual([]);
+    },
+  );
+
+  test.skipIf(!hasGenerated)(
+    "_b6_result.chain_id references valid chain IDs",
+    () => {
+      const VALID_CHAIN_IDS = new Set([
+        "LIVER_NEOPLASTIC", "KIDNEY_CPN", "KIDNEY_ALPHA2U",
+        "THYROID_FOLLICULAR", "ADRENAL_PHEO", "TESTIS_LEYDIG",
+        "LUNG_ALVEOLAR", "FORESTOMACH_SQUAMOUS", "BLADDER_UROTHELIAL",
+        "MAMMARY_GLAND", "PANCREAS_ACINAR", "NASAL_SQUAMOUS",
+        "LIVER_FIBROSIS", "HEART_CARDIOMYOPATHY",
+      ]);
+      const invalid: string[] = [];
+      for (const f of miMaTfFindings) {
+        const b6 = (f as Record<string, unknown>)._b6_result as
+          | { chain_id: string }
+          | undefined;
+        if (!b6) continue;
+        if (!VALID_CHAIN_IDS.has(b6.chain_id)) {
+          invalid.push(`${f.finding}: unknown chain_id "${b6.chain_id}"`);
+        }
+      }
+      expect(invalid).toEqual([]);
     },
   );
 });

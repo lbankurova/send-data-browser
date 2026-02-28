@@ -1,6 +1,6 @@
 # TOPIC Hub: Assessment Engine — Regulatory Alignment & Roadmap
 
-**Created:** 2026-02-28 | **Updated:** 2026-02-28 (Tiers 1+2 shipped, Briefs 1/2/4/5/6 incorporated)
+**Created:** 2026-02-28 | **Updated:** 2026-02-28 (Tiers 1+2+3A+3B shipped, Briefs 1/2/4/5/6 incorporated)
 **Source material:**
 - `docs/deep-research/reg-standards-for-auto-tox-finding-assessment.md` — Regulatory standards audit (7 domains)
 - `docs/deep-research/github-repos-overlay-tox-assessment.md` — Open-source landscape (27 repos, build vs. leverage)
@@ -23,7 +23,9 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 
 **Tier 2 shipped** (2026-02-28): Two-gate OM classification (statistical gate + organ-specific magnitude gate) replaces uniform Cohen's d thresholds. 13-organ threshold config (`shared/organ-weight-thresholds.json`) with species-specific adrenal thresholds. 6 adaptive decision trees (liver, thyroid, adrenal, thymus/spleen, kidney, gastric) evaluate context-dependent MI findings using `ConcurrentFindingIndex`. "Adaptive" never claimed from magnitude alone — requires biological evidence from concurrent findings. Species threaded through entire pipeline.
 
-**Bottom line:** The system is ~90% through Phase 0 and ~85% through Phase 1. Research is complete for all six briefs. Tier 2C (Hall 2012 liver panel) and Tier 3A (HCD Phase 1, SD rat static ranges) are shipped. The heaviest remaining implementation work is: (1) B-6 progression chains (Brief 6, 14 chains ready for YAML), (2) HCD Phase 2 (SQLite from DTT IAD), and (3) GRADE confidence scoring extensions.
+**Tier 3B shipped** (2026-02-28): 14 organ-specific non-tumor progression chains (ECETOC B-6 factor). YAML-driven chain definitions (`shared/progression-chains.yaml`, ~340 lines) with Python evaluation engine (`progression_chains.py`, ~280 lines). Each chain defines severity-graded stages, obligate precursors, species/sex/strain filters, human relevance annotations, and spontaneous rate notes. PointCross impact: 3 findings escalated to `tr_adverse` (2 adenoma + 1 carcinoma via obligate precursors), 17 total B-6 annotations.
+
+**Bottom line:** The system is ~90% through Phase 0 and ~85% through Phase 1. Research is complete for all six briefs. Tier 2C (Hall 2012 liver panel), Tier 3A (HCD Phase 1, SD rat static ranges), and Tier 3B (B-6 progression chains) are shipped. The heaviest remaining implementation work is: (1) HCD Phase 2 (SQLite from DTT IAD), and (2) GRADE confidence scoring extensions.
 
 ---
 
@@ -44,7 +46,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 | Roadmap Item | Status | Current State | Gap |
 |---|---|---|---|
 | **ECETOC Step 1 (treatment-relatedness)** | 4/7 factors | A-1 dose-response (0-2pts) ✓, A-2 concordance via `corroboration_status` (0-1pt) ✓, A-6 statistics (0-1pt) ✓, A-7 clinical obs ✓. A-3 HCD reserved, A-4 temporal partial (food only), A-5 mechanism missing. | A-3 is the biggest gap — no HCD database. **Brief 4 completed:** phased approach — Option A (static SD/Wistar ranges from Envigo+Inotiv, 2 weeks) → Option B (SQLite from NTP DTT IAD 78 MB Excel, 6 weeks). Option C (sendigR) eliminated — doesn't support OM domain. A-5 requires MOA annotations. A-4: **Brief 5 decided** onset-timing modifier for BW/CL goes into DR quality, not A-4. |
-| **ECETOC Step 2 (adversity)** | 6/7 factors | B-2 adaptive: intrinsic adversity dict ✓ + 6 adaptive decision trees ✓ (liver, thyroid, adrenal, thymus/spleen, kidney, gastric), B-3 reversibility ✓, B-4 magnitude ✓, B-5 cross-domain ✓, B-7 secondary ✓. B-6 precursor partial (tumors only). | **Brief 6 completed:** 14 organ-specific progression chains ready for YAML encoding (liver neoplastic, kidney CPN, kidney α2u-globulin, thyroid, adrenal medulla, testis, lung, forestomach, urinary bladder, mammary gland, pancreas, nasal cavity, liver fibrosis, heart cardiomyopathy). Each has severity triggers, species/strain specificity, spontaneous rates, time dependency. Adaptive trees shipped — `adaptive_trees.py` (723L), `ConcurrentFindingIndex` (155L). |
+| **ECETOC Step 2 (adversity)** | ~~7/7 factors~~ | B-2 adaptive: intrinsic adversity dict ✓ + 6 adaptive decision trees ✓ (liver, thyroid, adrenal, thymus/spleen, kidney, gastric), B-3 reversibility ✓, B-4 magnitude ✓, B-5 cross-domain ✓, **B-6 progression chains ✓** (14 organ-specific chains in YAML, `progression_chains.py` engine), B-7 secondary ✓. | None — B-6 shipped. `shared/progression-chains.yaml` (~340L), `progression_chains.py` (~280L). PointCross: 3 escalated, 17 annotated. Adaptive trees shipped — `adaptive_trees.py` (723L), `ConcurrentFindingIndex` (155L). |
 | **Cross-domain concordance** | DONE (mostly) | 10 syndromes (XS01-XS10), shared definitions, frontend full scoring with compound logic + directional gates + magnitude floors. Backend corroboration_status **now consumed** by NOAEL (via `assess_finding()` A-2 factor) and classification. | Backend corroboration still lacks compound logic/directional gates/magnitude floors (frontend-only). |
 | **Per-sex assessment** | DONE | All analyses per-sex. NOAEL provides M/F/Combined. Sex divergence detection and display. Separate narratives when divergent. | Missing: sex-dimorphism mechanism flags (α2u nephropathy, CYP differences). min(M,F) has no exceptions — always conservative. **Brief 1** documents α2u-globulin flag for male rat kidney — ready for implementation. |
 | **Liver hypertrophy decision tree** | ~~DONE~~ | Full Hall 2012 tree in `_tree_liver()`: 9-marker LB panel check (ALT/AST/ALP/GGT/BILI/CHOL/BILEAC/TP/ALB), min 5 clean, ALT+AST critical, any significant change = not clean (catches both ↑ and ↓), per-marker detail in annotations. Config in `organ-weight-thresholds.json`. | None — shipped. Frontend XS01 adaptive check remains as the simpler syndrome-level counterpart (different abstraction layer). |
@@ -113,7 +115,8 @@ Three gaps require external data sources, not just code changes:
 ### Backend Assessment Logic
 | File | Lines | Role |
 |---|---|---|
-| `backend/services/analysis/classification.py` | ~668 | 3-category severity, dose-response pattern, treatment-relatedness (A-3 HCD), **`assess_finding()` ECETOC per-finding assessment**, two-gate OM with HCD modifier (`_assess_om_two_gate`), adaptive tree dispatch (`assess_finding_with_context`) |
+| `backend/services/analysis/classification.py` | ~700 | 3-category severity, dose-response pattern, treatment-relatedness (A-3 HCD), **`assess_finding()` ECETOC per-finding assessment**, two-gate OM with HCD modifier (`_assess_om_two_gate`), adaptive tree dispatch (`assess_finding_with_context`), B-6 progression chain dispatch (`_evaluate_b6_for_finding`) |
+| `backend/services/analysis/progression_chains.py` | ~280 | ProgressionChainDB (lazy-loaded YAML), `evaluate_b6()` — matches findings to 14 organ-specific progression chains, severity trigger / obligate precursor logic |
 | `backend/services/analysis/adversity_dictionary.py` | ~55 | Intrinsic adversity lookup from shared JSON |
 | `backend/services/analysis/organ_thresholds.py` | ~154 | Lazy-loaded organ threshold config + species resolver |
 | `backend/services/analysis/hcd.py` | ~289 | HCD reference ranges (A-3): HcdRangeDB lazy-loaded singleton, assess_a3(), strain/duration TS extraction |
@@ -138,6 +141,7 @@ Three gaps require external data sources, not just code changes:
 | `shared/syndrome-definitions.json` | ~600 | 10 syndrome definitions (XS01-XS10) consumed by Python + TypeScript |
 | `shared/adversity-dictionary.json` | ~65 | 3-tier intrinsic adversity dictionary (21 terms) |
 | `shared/organ-weight-thresholds.json` | ~116 | 13-organ species-specific thresholds (variation ceiling, adverse floor, strong adverse) |
+| `shared/progression-chains.yaml` | ~340 | 14 organ-specific B-6 progression chain definitions (stages, severity triggers, obligate precursors, species/sex filters, human relevance) |
 
 ### Frontend Assessment Logic
 | File | Lines | Role |
@@ -169,7 +173,7 @@ Three gaps require external data sources, not just code changes:
 |---|---|
 | `docs/knowledge/species-profiles.md` | 5 species, 8 strains, biomarker lists |
 | `docs/knowledge/vehicle-profiles.md` | 9 vehicles, 6 routes, confound matrix |
-| `docs/knowledge/methods-index.md` | 13 tests, 32 methods, 27 algorithms |
+| `docs/knowledge/methods-index.md` | 13 tests, 33 methods, 27 algorithms |
 | `docs/knowledge/field-contracts-index.md` | 60 computed field contracts |
 
 ---
@@ -299,7 +303,20 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 
 **Note:** Option C (sendigR) permanently eliminated — sendigR doesn't support OM domain, CEBS isn't in SEND format.
 
-#### 3B. PT-Level Concordance Data
+#### 3B. B-6 Progression Chains (ECETOC B-6) ✅ SHIPPED
+
+**Shipped:** Session 2026-02-28. 14 organ-specific non-tumor progression chains completing the B-6 adversity factor.
+
+**Implementation:**
+- `shared/progression-chains.yaml` (~340L) — 14 chain definitions: LIVER_NEOPLASTIC, KIDNEY_CPN, KIDNEY_ALPHA2U, THYROID_FOLLICULAR, ADRENAL_PHEO, TESTIS_LEYDIG, LUNG_ALVEOLAR, FORESTOMACH_SQUAMOUS, BLADDER_UROTHELIAL, MAMMARY_GLAND, PANCREAS_ACINAR, NASAL_SQUAMOUS, LIVER_FIBROSIS, HEART_CARDIOMYOPATHY. Each with severity-graded stages, obligate precursors, species/sex/strain filters, human relevance, spontaneous notes.
+- `backend/services/analysis/progression_chains.py` (~280L) — `ProgressionChainDB` lazy-loaded singleton, `evaluate_b6()` matches findings by organ+domain, substring term matching, severity trigger / obligate precursor logic.
+- `backend/services/analysis/classification.py` (~700L) — `_evaluate_b6_for_finding()` dispatches B-6 evaluation; fires → escalate to `tr_adverse`.
+- `frontend/src/types/analysis.ts` — `_b6_result` type on `DoseResponseRow`.
+- `frontend/tests/finding-class.test.ts` — 3 B-6 test assertions.
+
+**PointCross impact:** 3 findings escalated to `tr_adverse` (2 adenoma + 1 carcinoma via obligate precursors). 17 total B-6 annotations across MI/MA findings.
+
+#### 3C. PT-Level Concordance Data
 **What:** Integrate the Liu & Fan 2026 concordance data (LR+ by preferred term × species × modality) for clinical translatability scoring.
 
 **Current data availability:**
@@ -435,7 +452,7 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 | 3 | Cross-domain concordance linkage map | NOT STARTED | Organ-by-organ endpoint linkage table beyond XS01-XS10 | Tier 4C |
 | 4 | NTP CEBS historical control data profiling | ✅ COMPLETE | Phased Option A→B, DTT IAD discovery, sendigR eliminated, SD rat starter ranges compiled | Tier 3A Phase 1 ✅ |
 | 5 | GRADE temporal dimension design decision | ✅ COMPLETE | Decision: merge into B-3 + DR quality, not standalone | Tier 4A |
-| 6 | Non-tumor progression chains (ECETOC B-6) | ✅ COMPLETE | 14 organ-specific chains with severity triggers, species specificity, HCD rates, time dependency | Tier 3B |
+| 6 | Non-tumor progression chains (ECETOC B-6) | ✅ IMPLEMENTED | `shared/progression-chains.yaml` (~340L), `progression_chains.py` (~280L), `classification.py` B-6 dispatch | Tier 3B ✅ |
 
 **Full brief specifications:** `docs/deep-research/engine/deep-research-briefs-targeted.md`
 

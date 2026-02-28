@@ -677,6 +677,8 @@ Returns one of five categories:
 | B-3 | \|d\| < 0.5 | `tr_non_adverse` |
 | B-4 | None of the above | `equivocal` |
 
+**B-6 Progression Chain Evaluation** (MI/MA findings only): After the B-factor table above, `_evaluate_b6_for_finding()` checks MI/MA findings against 14 organ-specific progression chains defined in `shared/progression-chains.yaml` (~340 lines). Engine: `services/analysis/progression_chains.py::ProgressionChainDB` (lazy-loaded YAML, indexed by organ+domain). Each chain defines severity-graded stages with term matching (substring, lowercase). B-6 fires (escalates to `tr_adverse`) when: (a) the finding matches an obligate precursor stage (e.g., adenoma, altered hepatocellular foci), or (b) the finding matches a non-obligate stage AND severity grade ≥ the chain's severity trigger. Chains include species/sex/strain filters, human relevance annotations, and spontaneous rate notes. The `_b6_result` annotation is attached to the finding regardless of whether B-6 fires (for transparency). PointCross impact: 3 findings escalated to `tr_adverse` (2 adenoma + 1 carcinoma via obligate precursors), 17 total B-6 annotations.
+
 **Key constraint:** `severity` and `treatment_related` fields are unchanged for backward compatibility. `finding_class` is purely additive. NOAEL determination uses `finding_class` when present, falling back to `severity == "adverse"` for legacy data.
 
 **Relationship to frontend syndrome engine:** The backend `assess_finding()` operates per-finding (FLOOR — every finding gets a class). The frontend `cross-domain-syndromes.ts` operates per-syndrome (CEILING — only ~20% of findings match syndromes). They may disagree by design; the backend classification is conservative and the frontend is more nuanced.
