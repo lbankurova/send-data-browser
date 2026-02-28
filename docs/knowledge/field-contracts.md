@@ -1292,6 +1292,7 @@ Classifies every computed field in `unified_findings.json` by authoritative sour
 | `jt_p` | backend | Jonckheere-Terpstra trend |
 | `trend_p` | backend | Trend test p-value |
 | `trend_stat` | backend | Trend test statistic |
+| `corroboration_status` | backend | `compute_corroboration()` — cross-domain syndrome presence matching |
 | `group_stats` | backend-raw | Frontend reads for runtime method switching |
 | `pairwise` | backend-raw | Frontend reads for method switching |
 | `scheduled_group_stats` | backend-raw | Early-death-excluded stats |
