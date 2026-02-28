@@ -386,7 +386,9 @@ export function VerdictPane({
     const sig = sigPairs.reduce((a, b) => a.p_value <= b.p_value ? a : b);
     const row = bestStats?.rows?.find(r => r.dose_level === sig.group);
     const doseLabel = row?.dose_value != null ? `${row.dose_value} ${row.dose_unit ?? "mg/kg"}` : `group ${sig.group}`;
-    return `ANCOVA confirms direct effect at ${doseLabel} (${bestEffectSex}, p\u2009=\u2009${formatPValue(sig.p_value)}).`;
+    const pStr = formatPValue(sig.p_value);
+    const pFragment = pStr.startsWith("<") ? `p\u2009${pStr}` : `p\u2009=\u2009${pStr}`;
+    return `ANCOVA confirms direct effect at ${doseLabel} (${pFragment}).`;
   })();
 
   // Clinical verdict line
@@ -501,7 +503,7 @@ export function VerdictPane({
 
       {/* Line 6 -- ANCOVA punchline */}
       {ancovaLine && (
-        <div className="mt-1 text-[10px] text-foreground/80">{ancovaLine}</div>
+        <div className="mt-2 text-[10px] text-foreground/80">{ancovaLine}</div>
       )}
     </div>
   );

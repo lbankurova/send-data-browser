@@ -111,10 +111,13 @@ async def get_timecourse(
     # Read domain data
     df = _read_domain_df(study, domain_upper)
 
-    # BW domain: no BWTESTCD column — all rows are body weight
+    # BW domain: ensure BWTESTCD exists and unify TERMBW (terminal
+    # sacrifice weight) into the main BW series for a complete trajectory.
     if domain_upper == "BW":
         if "BWTESTCD" not in df.columns:
             df["BWTESTCD"] = _BW_DEFAULT_TESTCD
+        else:
+            df.loc[df["BWTESTCD"].str.upper() == "TERMBW", "BWTESTCD"] = _BW_DEFAULT_TESTCD
         if "BWTEST" not in df.columns:
             df["BWTEST"] = "Body Weight"
 
@@ -1070,12 +1073,22 @@ async def get_recovery_comparison(study_id: str):
         except Exception:
             return
 
-        # BW has no BWTESTCD column
+        # BW: ensure BWTESTCD exists and unify TERMBW (terminal sacrifice
+        # weight) into the main BW series so the full trajectory is used.
         if domain_key.upper() == "BW":
             if testcd_col not in df.columns:
                 df[testcd_col] = _BW_DEFAULT_TESTCD
+            else:
+                df.loc[df[testcd_col].str.upper() == "TERMBW", testcd_col] = _BW_DEFAULT_TESTCD
             if name_col not in df.columns:
                 df[name_col] = "Body Weight"
+
+        # For OM, differentiate by specimen (organ) since OMTESTCD is always "WEIGHT"
+        if domain_key.upper() == "OM" and "OMSPEC" in df.columns:
+            df[testcd_col] = df["OMSPEC"]
+            df[name_col] = df["OMSPEC"].apply(
+                lambda s: s.replace("GLAND, ", "").title() + " Weight"
+            )
 
         if testcd_col not in df.columns or value_col not in df.columns:
             return
@@ -1143,6 +1156,7 @@ async def get_recovery_comparison(study_id: str):
 
                     # Terminal effect: main arm treated vs main arm control
                     terminal_d = None
+                    terminal_day_val = None
                     if main_ctrl_day is not None:
                         main_treated = main_test[
                             (main_test["dose_level"] == dose_level) &
@@ -1157,6 +1171,23 @@ async def get_recovery_comparison(study_id: str):
                             mc_vals = mc_terminal[value_col].dropna().values
                             if len(mt_vals) >= 2 and len(mc_vals) >= 2:
                                 terminal_d = cohens_d(mt_vals, mc_vals)
+                                terminal_day_val = mt_day
+
+                    # Peak effect: scan all main-arm timepoints for this dose
+                    # to find the largest |g| vs control (annotation context).
+                    peak_d = None
+                    peak_day_val = None
+                    main_dose = main_test[main_test["dose_level"] == dose_level]
+                    if not main_dose.empty and not main_ctrl.empty:
+                        for tp_day, tp_group in main_dose.groupby(day_col):
+                            tp_vals = tp_group[value_col].dropna().values
+                            mc_at_day = main_ctrl[main_ctrl[day_col] == tp_day]
+                            mc_vals_day = mc_at_day[value_col].dropna().values if not mc_at_day.empty else np.array([])
+                            if len(tp_vals) >= 2 and len(mc_vals_day) >= 2:
+                                tp_d = cohens_d(tp_vals, mc_vals_day)
+                                if tp_d is not None and (peak_d is None or abs(tp_d) > abs(peak_d)):
+                                    peak_d = tp_d
+                                    peak_day_val = tp_day
 
                     rows.append({
                         "endpoint_label": test_name,
@@ -1169,6 +1200,9 @@ async def get_recovery_comparison(study_id: str):
                         "p_value": _safe_round(t_result["p_value"], 6),
                         "effect_size": _safe_round(d, 4),
                         "terminal_effect": _safe_round(terminal_d, 4),
+                        "terminal_day": int(terminal_day_val) if terminal_day_val is not None else None,
+                        "peak_effect": _safe_round(peak_d, 4) if peak_d is not None else None,
+                        "peak_day": int(peak_day_val) if peak_day_val is not None else None,
                     })
 
     # Process LB domain
