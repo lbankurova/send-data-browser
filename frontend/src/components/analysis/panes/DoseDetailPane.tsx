@@ -37,7 +37,12 @@ function doseDisplayLabel(row: { dose_value: number | null; dose_unit: string | 
 
 // ─── Single-sex stat row ──────────────────────────────────
 
-function StatRowCells({ row, isContinuous }: { row: StatRow; isContinuous: boolean }) {
+function StatRowCells({ row, isContinuous, controlSd }: { row: StatRow; isContinuous: boolean; controlSd?: number | null }) {
+  // Flag SD when it exceeds 2× the control group's SD (high within-group variance)
+  const sdOutlier = isContinuous && row.sd != null && controlSd != null && controlSd > 0
+    && row.dose_level > 0 && row.sd > controlSd * 2;
+  const sdRatio = sdOutlier && controlSd ? row.sd! / controlSd : null;
+
   return (
     <>
       <td className="py-0.5 text-right font-mono">{row.n}</td>
@@ -46,8 +51,14 @@ function StatRowCells({ row, isContinuous }: { row: StatRow; isContinuous: boole
           <td className="py-0.5 text-right font-mono">
             {row.mean != null ? row.mean.toFixed(2) : "\u2014"}
           </td>
-          <td className="py-0.5 text-right font-mono text-muted-foreground">
-            {row.sd != null ? row.sd.toFixed(2) : "\u2014"}
+          <td
+            className="py-0.5 font-mono text-muted-foreground"
+            title={sdRatio != null ? `SD is ${sdRatio.toFixed(1)}\u00d7 the control SD \u2014 high within-group variance (possible responder/non-responder split)` : undefined}
+          >
+            <span className="flex items-baseline justify-end">
+              <span>{row.sd != null ? row.sd.toFixed(2) : "\u2014"}</span>
+              <span className="w-3 pl-1 text-left text-[8px]">{sdOutlier ? "*" : ""}</span>
+            </span>
           </td>
         </>
       ) : (
@@ -143,6 +154,10 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
     }
   }
 
+  // Control group SD for outlier detection (per sex)
+  const controlSd = statistics.rows.find(r => r.dose_level === 0)?.sd ?? null;
+  const siblingControlSd = siblingStatistics?.rows.find(r => r.dose_level === 0)?.sd ?? null;
+
   return (
     <div className="space-y-3">
       {/* Group comparison table */}
@@ -156,7 +171,9 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
               {isContinuous ? (
                 <>
                   <th className="py-1 text-right font-medium" title="Group mean, absolute value.">Mean</th>
-                  <th className="py-1 text-right font-medium" title="Standard deviation.">SD</th>
+                  <th className="py-1 font-medium" title="Standard deviation.">
+                    <span className="flex items-baseline justify-end"><span>SD</span><span className="w-3" /></span>
+                  </th>
                 </>
               ) : (
                 <>
@@ -206,7 +223,11 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                         <td className="py-0.5 text-[9px] text-muted-foreground">
                           {p.sexLabel}
                         </td>
-                        <StatRowCells row={p.data} isContinuous={isContinuous} />
+                        <StatRowCells
+                          row={p.data}
+                          isContinuous={isContinuous}
+                          controlSd={p.sexLabel === (sex ?? "M") ? controlSd : siblingControlSd}
+                        />
                       </tr>
                     ))}
                   </Fragment>
@@ -224,7 +245,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                       className="text-[10px]"
                     />
                   </td>
-                  <StatRowCells row={row} isContinuous={isContinuous} />
+                  <StatRowCells row={row} isContinuous={isContinuous} controlSd={controlSd} />
                 </tr>
               ))
             )}

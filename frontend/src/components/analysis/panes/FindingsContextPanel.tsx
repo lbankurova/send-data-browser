@@ -32,7 +32,7 @@ import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
 import type { DoseGroup, FindingContext, UnifiedFinding } from "@/types/analysis";
-import { formatPValue, getDoseGroupColor, getSexColor } from "@/lib/severity-colors";
+import { formatPValue, getDoseGroupColor } from "@/lib/severity-colors";
 import { getPatternLabel } from "@/lib/findings-rail-engine";
 import type { SexEndpointSummary, EndpointNoael } from "@/lib/derive-summaries";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
@@ -1178,10 +1178,13 @@ export function FindingsContextPanel() {
       <div className="border-b px-4 py-3">
         <VerdictPane
           finding={selectedFinding}
+          siblingFinding={hasSibling && siblingContext ? findingsData?.findings.find(f => f.id === siblingContext.finding_id) : undefined}
           analytics={analytics}
           noael={noael}
           doseResponse={context.dose_response}
           statistics={activeStatistics!}
+          siblingStatistics={hasSibling && siblingContext ? siblingContext.statistics : undefined}
+          siblingDoseResponse={hasSibling && siblingContext ? siblingContext.dose_response : undefined}
           treatmentSummary={context.treatment_summary}
           endpointSexes={endpointSexes}
           notEvaluated={notEvaluated}
@@ -1229,30 +1232,28 @@ export function FindingsContextPanel() {
         />
       </CollapsiblePane>
 
-      {/* Sex selector — only when sibling data exists */}
-      {hasSibling && (() => {
-        const sexes = [selectedFinding.sex, siblingContext!.sex];
-        return (
-          <div className="flex gap-1 border-b px-4 py-1.5">
-            {sexes.map(s => (
-              <button
-                key={s}
-                className={cn(
-                  "rounded px-2 py-0.5 text-[10px] font-medium transition-colors",
-                  activeSex === s ? "text-white" : "text-muted-foreground bg-muted/30"
-                )}
-                style={activeSex === s ? { backgroundColor: getSexColor(s) } : undefined}
-                onClick={() => setActiveSex(s)}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        );
-      })()}
-
       <div ref={evidencePaneRef}>
-      <CollapsiblePane title="Evidence" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane
+        title={hasSibling ? "Evidence:" : "Evidence"}
+        defaultOpen
+        expandAll={expandGen}
+        collapseAll={collapseGen}
+        headerRight={hasSibling ? (
+          <>
+            {[selectedFinding.sex, siblingContext!.sex].map((s, i) => (
+              <span key={s}>
+                {i > 0 && <span className="mx-0.5 text-muted-foreground/30">|</span>}
+                <span
+                  className={cn("cursor-pointer", activeSex === s ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
+                  onClick={() => setActiveSex(s)}
+                >
+                  {s}
+                </span>
+              </span>
+            ))}
+          </>
+        ) : undefined}
+      >
         <EvidencePane
           finding={activeFinding!}
           analytics={analytics}
