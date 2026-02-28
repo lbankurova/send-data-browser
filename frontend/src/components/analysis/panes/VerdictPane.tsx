@@ -19,10 +19,16 @@ import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-trans
 
 interface Props {
   finding: UnifiedFinding;
+  /** Opposite-sex finding for the same endpoint (when both sexes exist). */
+  siblingFinding?: UnifiedFinding | null;
   analytics?: FindingsAnalytics;
   noael?: { dose_value: number | null; dose_unit: string | null } | null;
   doseResponse?: FindingContext["dose_response"];
   statistics?: FindingContext["statistics"];
+  /** Sibling sex statistics (for sourcing "Largest effect" from bestEffectSex). */
+  siblingStatistics?: FindingContext["statistics"] | null;
+  /** Sibling dose-response (for sourcing trend p from bestEffectSex). */
+  siblingDoseResponse?: FindingContext["dose_response"] | null;
   treatmentSummary: FindingContext["treatment_summary"];
   endpointSexes?: Map<string, string[]>;
   notEvaluated?: boolean;
@@ -35,10 +41,11 @@ interface Props {
 }
 
 interface Verdict {
-  icon: string;
   label: string;
   labelClass: string;
   severityWord: string;
+  /** Dashed underline color for the verdict line (red for adverse, amber for warning). */
+  underlineColor: string | null;
 }
 
 // ─── Verdict logic (moved from TreatmentRelatedSummaryPane) ─
@@ -82,41 +89,41 @@ function computeVerdict(
   if (tr && sev === "adverse") {
     const suffix = clinicalOverride ? ` (${clinicalOverride})` : "";
     return {
-      icon: "\u26D4",
       label: "Treatment-related",
       labelClass: "text-sm font-semibold text-foreground",
       severityWord: `Adverse${suffix}`,
+      underlineColor: "#DC2626",
     };
   }
   if (tr && sev === "warning") {
     return {
-      icon: "\u26A0",
       label: "Treatment-related",
       labelClass: "text-sm font-semibold text-foreground",
       severityWord: "Warning",
+      underlineColor: "#D97706",
     };
   }
   if (tr) {
     return {
-      icon: "\u26A0",
       label: "Treatment-related",
       labelClass: "text-sm font-medium text-foreground",
       severityWord: "Normal",
+      underlineColor: null,
     };
   }
   if (clinicalOverride && sev === "adverse") {
     return {
-      icon: "\u26D4",
       label: `Clinical: ${clinicalOverride}`,
       labelClass: "text-sm font-semibold text-foreground",
       severityWord: "Adverse",
+      underlineColor: "#DC2626",
     };
   }
   return {
-    icon: "\u2714",
     label: "Not treatment-related",
     labelClass: "text-sm font-medium text-muted-foreground",
     severityWord: "",
+    underlineColor: null,
   };
 }
 
@@ -229,10 +236,13 @@ function buildSexDirectionLine(
 
 export function VerdictPane({
   finding,
+  siblingFinding,
   analytics,
   noael,
   doseResponse,
   statistics,
+  siblingStatistics,
+  siblingDoseResponse,
   treatmentSummary,
   endpointSexes,
   notEvaluated,
@@ -241,7 +251,7 @@ export function VerdictPane({
   onSeeDecomposition,
 }: Props) {
   const verdict = notEvaluated
-    ? { icon: "\u2014", label: "Not evaluated", labelClass: "text-sm font-medium text-muted-foreground", severityWord: "" }
+    ? { label: "Not evaluated", labelClass: "text-sm font-medium text-muted-foreground", severityWord: "", underlineColor: null }
     : computeVerdict(treatmentSummary, analytics, finding);
 
   // patternSentence computed below after epSummary
@@ -305,14 +315,35 @@ export function VerdictPane({
   // Combined sex + direction + pattern line (replaces separate patternSentence + directionalFlag)
   const sexDirectionLine = notEvaluated ? null : buildSexDirectionLine(sexLabel, bySex, doseResponse);
 
-  // Key numbers
+  // NOAEL weight from ECI
+  const noaelWeight = endpointConfidence?.noaelContribution ?? null;
+
+  // "Largest effect" sex header
+  const bestEffectSex = (() => {
+    if (!bySex || bySex.size < 2) return finding.sex;
+    let best = finding.sex;
+    let bestVal = -1;
+    for (const [sex, s] of bySex.entries()) {
+      const e = Math.abs(s.maxEffectSize ?? 0);
+      if (e > bestVal) { bestVal = e; best = sex; }
+    }
+    return best;
+  })();
+
+  // Resolve data sources for "Largest effect" — always from bestEffectSex
+  const isSibling = bestEffectSex !== finding.sex;
+  const bestFinding = isSibling && siblingFinding ? siblingFinding : finding;
+  const bestStats = isSibling && siblingStatistics ? siblingStatistics : statistics;
+  const bestDR = isSibling && siblingDoseResponse ? siblingDoseResponse : doseResponse;
+
+  // Key numbers — all sourced from bestEffectSex
   const isContinuous = statistics?.data_type === "continuous";
-  const effectSize = finding.max_effect_size;
+  const effectSize = bestFinding.max_effect_size;
   const esMethod = analytics?.activeEffectSizeMethod ?? "hedges-g";
   const effectLabel = isContinuous ? getEffectSizeLabel(esMethod) : "Avg severity";
   const effectMag = effectSize != null ? getEffectMagnitudeLabel(effectSize) : null;
 
-  const trendP = doseResponse?.trend_p ?? statistics?.trend_p ?? null;
+  const trendP = bestDR?.trend_p ?? bestStats?.trend_p ?? null;
   const trendTestName = isContinuous ? "Jonckheere-Terpstra" : "Cochran-Armitage";
 
   // Fold-change or % change cell
@@ -331,9 +362,9 @@ export function VerdictPane({
     }
   }
 
-  if (!foldChangeDisplay && statistics?.rows && statistics.rows.length >= 2) {
-    const control = statistics.rows[0];
-    const highest = statistics.rows[statistics.rows.length - 1];
+  if (!foldChangeDisplay && bestStats?.rows && bestStats.rows.length >= 2) {
+    const control = bestStats.rows[0];
+    const highest = bestStats.rows[bestStats.rows.length - 1];
     if (control.mean != null && highest.mean != null && control.mean !== 0) {
       const pct = ((highest.mean - control.mean) / Math.abs(control.mean)) * 100;
       pctChange = `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`;
@@ -343,27 +374,19 @@ export function VerdictPane({
     }
   }
 
-  // NOAEL weight from ECI
-  const noaelWeight = endpointConfidence?.noaelContribution ?? null;
-
-  // ANCOVA punchline
+  // ANCOVA punchline — use the best-effect sex's ANCOVA when both sexes exist,
+  // and pick the most significant pairwise comparison (lowest p), not just the first.
   const ancovaLine = (() => {
-    if (!finding.ancova?.pairwise?.length) return null;
-    const sig = finding.ancova.pairwise.find(ap => ap.p_value < 0.05);
-    if (!sig) return null;
-    return `ANCOVA confirms direct effect at group ${sig.group} (p\u2009=\u2009${formatPValue(sig.p_value)}).`;
-  })();
-
-  // "Largest effect" sex header
-  const bestEffectSex = (() => {
-    if (!bySex || bySex.size < 2) return finding.sex;
-    let best = finding.sex;
-    let bestVal = -1;
-    for (const [sex, s] of bySex.entries()) {
-      const e = Math.abs(s.maxEffectSize ?? 0);
-      if (e > bestVal) { bestVal = e; best = sex; }
-    }
-    return best;
+    const bestAncova = bestEffectSex !== finding.sex && siblingFinding?.ancova
+      ? siblingFinding.ancova
+      : finding.ancova;
+    if (!bestAncova?.pairwise?.length) return null;
+    const sigPairs = bestAncova.pairwise.filter(ap => ap.p_value < 0.05);
+    if (sigPairs.length === 0) return null;
+    const sig = sigPairs.reduce((a, b) => a.p_value <= b.p_value ? a : b);
+    const row = bestStats?.rows?.find(r => r.dose_level === sig.group);
+    const doseLabel = row?.dose_value != null ? `${row.dose_value} ${row.dose_unit ?? "mg/kg"}` : `group ${sig.group}`;
+    return `ANCOVA confirms direct effect at ${doseLabel} (${bestEffectSex}, p\u2009=\u2009${formatPValue(sig.p_value)}).`;
   })();
 
   // Clinical verdict line
@@ -379,12 +402,25 @@ export function VerdictPane({
     <div>
       {/* Line 1 -- Verdict badge */}
       <div className="flex items-center gap-2">
-        <span className="text-[14px]">{verdict.icon}</span>
-        <span className={verdict.labelClass}>{verdict.label}</span>
+        <span
+          className={verdict.labelClass}
+          style={verdict.underlineColor ? {
+            textDecoration: "underline dashed",
+            textDecorationColor: verdict.underlineColor,
+            textUnderlineOffset: "4px",
+          } : undefined}
+        >{verdict.label}</span>
         {verdict.severityWord && (
           <>
-            <span className="text-muted-foreground">&middot;</span>
-            <span className="text-xs font-medium text-foreground">{verdict.severityWord}</span>
+            <span className="text-muted-foreground">|</span>
+            <span
+              className="text-xs font-medium text-foreground"
+              style={verdict.underlineColor ? {
+                textDecoration: "underline dashed",
+                textDecorationColor: verdict.underlineColor,
+                textUnderlineOffset: "4px",
+              } : undefined}
+            >{verdict.severityWord}</span>
           </>
         )}
       </div>
@@ -425,13 +461,13 @@ export function VerdictPane({
 
       {/* Line 5 -- Key numbers with "Largest effect" header */}
       {(effectSize != null || trendP != null || pctChange != null || foldChangeDisplay != null) && (
-        <>
-          <div className="mt-2 text-[10px] text-muted-foreground">
+        <div className="mt-3 pt-2 border-t border-border/40">
+          <div className="text-[10px] text-muted-foreground">
             Largest effect ({bestEffectSex}):
           </div>
-          <div className="flex gap-x-4 text-[10px]">
+          <div className="mt-1.5 flex gap-x-6 text-[10px]">
             {effectSize != null && (
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold font-mono">|{isContinuous ? getEffectSizeSymbol(esMethod) : "d"}| = {Math.abs(effectSize).toFixed(2)}</span>
                 <span className="text-[9px] text-muted-foreground">{effectLabel}</span>
                 {effectMag && <span className="text-[9px] text-muted-foreground">({effectMag})</span>}
@@ -439,7 +475,7 @@ export function VerdictPane({
             )}
 
             {trendP != null && (
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold font-mono">p {formatPValue(trendP) === "<0.0001" ? "< 0.0001" : `= ${formatPValue(trendP)}`}</span>
                 <span className="text-[9px] text-muted-foreground">{trendTestName}</span>
                 <span className="text-[9px] text-muted-foreground">trend</span>
@@ -447,20 +483,20 @@ export function VerdictPane({
             )}
 
             {foldChangeDisplay != null ? (
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold font-mono">{foldChangeDisplay}</span>
                 <span className="text-[9px] text-muted-foreground">vs control</span>
                 {foldChangeContext && <span className="text-[9px] text-muted-foreground">{foldChangeContext}</span>}
               </div>
             ) : pctChange != null ? (
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold font-mono">{pctChange}</span>
                 <span className="text-[9px] text-muted-foreground">vs control</span>
                 {pctDoseLabel && <span className="text-[9px] text-muted-foreground">{pctDoseLabel}</span>}
               </div>
             ) : null}
           </div>
-        </>
+        </div>
       )}
 
       {/* Line 6 -- ANCOVA punchline */}
