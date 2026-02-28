@@ -232,7 +232,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## TOPIC Hub Documentation (3 open)
+## TOPIC Hub Documentation (2 open)
 
 > Subsystems that need retrospective TOPIC hub docs (`docs/incoming/arch-overhaul/TOPIC-*.md`). Existing hubs: data-pipeline, organ-measurements, syndrome-engine. CLAUDE.md rule 7 requires agents to consult hubs before touching covered subsystems.
 
@@ -266,8 +266,8 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** ~~Resolved~~ — `TOPIC-study-intelligence.md` created
 - **Owner hint:** docs-agent
 
-### DOC-06: TOPIC hub — Dose-Response View
-- **Subsystem:** `DoseResponseView.tsx` (2,843L), `DoseResponseContextPanel.tsx`, endpoint picker removal, stat method coupling, timecourse
-- **Why:** Largest single view component. Endpoint picker was replaced by rail integration (major UX change, not documented). Stat method selection now coupled to normalization decisions for OM endpoints. Chart display metric auto-selected per normalization tier. ~2,800 LOC.
-- **Status:** Open
+### ~~DOC-06: TOPIC hub — Dose-Response View~~
+- ~~**Subsystem:** `DoseResponseView.tsx` (2,843L), `DoseResponseContextPanel.tsx`, endpoint picker removal, stat method coupling, timecourse~~
+- ~~**Why:** Largest single view component. Endpoint picker was replaced by rail integration (major UX change, not documented). Stat method selection now coupled to normalization decisions for OM endpoints. Chart display metric auto-selected per normalization tier. ~2,800 LOC.~~
+- **Status:** ~~Resolved~~ — `TOPIC-dose-response-view.md` created
 - **Owner hint:** docs-agent
