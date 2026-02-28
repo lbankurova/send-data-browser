@@ -4,6 +4,7 @@ import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { formatPValue, getEffectMagnitudeLabel } from "@/lib/severity-colors";
 import { getPatternLabel, classifyEndpointConfidence } from "@/lib/findings-rail-engine";
 import type { EndpointConfidence } from "@/lib/findings-rail-engine";
+import type { EndpointConfidenceResult } from "@/lib/endpoint-confidence";
 import {
   resolveCanonical,
   findClinicalMatchForEndpoint,
@@ -11,7 +12,7 @@ import {
   getRuleSourceShortLabel,
   describeThreshold,
 } from "@/lib/lab-clinical-catalog";
-import type { EndpointSummary } from "@/lib/derive-summaries";
+import type { EndpointSummary, SexEndpointSummary } from "@/lib/derive-summaries";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -27,6 +28,10 @@ interface Props {
   notEvaluated?: boolean;
   /** ECI integrated confidence — overrides the simple heuristic when available. */
   eciConfidence?: "high" | "moderate" | "low" | null;
+  /** Full ECI result — used for NOAEL weight display. */
+  endpointConfidence?: EndpointConfidenceResult | null;
+  /** Callback to scroll to confidence decomposition in Evidence pane. */
+  onSeeDecomposition?: () => void;
 }
 
 interface Verdict {
@@ -143,52 +148,81 @@ function buildConfidenceLabel(
 
 // ─── Pattern sentence ───────────────────────────────────────
 
-function buildPatternSentence(
-  doseResponse: FindingContext["dose_response"] | undefined,
-  statistics: FindingContext["statistics"] | undefined,
-): string | null {
-  if (!doseResponse?.pattern || doseResponse.pattern === "insufficient_data") return null;
+/** Format a single pattern + direction into a human label. */
+function formatPattern(pattern: string, direction: string | null): string {
+  const dirWord = direction === "up" ? "increase" : direction === "down" ? "decrease" : null;
 
-  const direction = doseResponse.direction === "up" ? "increase" : doseResponse.direction === "down" ? "decrease" : null;
-
-  if (doseResponse.pattern.startsWith("threshold")) {
-    let onsetDose: string | null = null;
-    // Prefer backend-computed onset (equivalence-band-based)
-    if (doseResponse.onset_dose_value != null) {
-      onsetDose = `${doseResponse.onset_dose_value} ${doseResponse.onset_dose_unit ?? "mg/kg"}`.trim();
-    }
-    // Fallback: first significant dose from statistics
-    else if (statistics?.rows) {
-      for (let i = 1; i < statistics.rows.length; i++) {
-        const p = statistics.rows[i].p_value_adj ?? statistics.rows[i].p_value;
-        if (p != null && p < 0.05) {
-          const row = statistics.rows[i];
-          onsetDose = row.dose_value != null ? `${row.dose_value} ${row.dose_unit ?? "mg/kg"}`.trim() : row.label;
-          break;
-        }
-      }
-    }
-    const dirStr = direction ? ` ${direction}` : "";
-    return onsetDose
-      ? `Threshold${dirStr}, onset at ${onsetDose}`
-      : `Threshold${dirStr}`;
+  if (pattern.startsWith("threshold")) {
+    return dirWord ? `Threshold ${dirWord}` : "Threshold";
   }
-
-  if (doseResponse.pattern === "monotonic_increase" || doseResponse.pattern === "monotonic_decrease") {
-    const dirStr = direction ? ` ${direction}` : "";
-    return `Monotonic${dirStr} across doses`;
+  if (pattern === "monotonic_increase" || pattern === "monotonic_decrease") {
+    return dirWord ? `Monotonic ${dirWord}` : "Monotonic";
   }
-
-  if (doseResponse.pattern === "non_monotonic") {
-    const dirStr = direction ? ` ${direction}` : "";
-    return `Non-monotonic${dirStr}`;
+  if (pattern === "non_monotonic") {
+    return dirWord ? `Non-monotonic ${dirWord}` : "Non-monotonic";
   }
-
-  if (doseResponse.pattern === "flat") {
+  if (pattern === "flat") {
     return "No dose-dependent pattern";
   }
+  return getPatternLabel(pattern);
+}
 
-  return getPatternLabel(doseResponse.pattern);
+/** Pattern type without direction word — used inside arrow-annotated lines where direction is already shown. */
+function patternTypeOnly(pattern: string): string {
+  if (pattern.startsWith("threshold")) return "threshold";
+  if (pattern === "monotonic_increase" || pattern === "monotonic_decrease") return "monotonic";
+  if (pattern === "non_monotonic") return "non-monotonic";
+  if (pattern === "flat") return "no pattern";
+  return getPatternLabel(pattern);
+}
+
+/** Build combined sex + direction + pattern description for the verdict section. */
+function buildSexDirectionLine(
+  sexLabel: string,
+  bySex: Map<string, SexEndpointSummary> | undefined,
+  doseResponse: FindingContext["dose_response"] | undefined,
+): string {
+  if (!bySex || bySex.size < 2) {
+    // Single sex — append pattern if available
+    if (!doseResponse?.pattern || doseResponse.pattern === "insufficient_data" || doseResponse.pattern === "flat") {
+      return sexLabel;
+    }
+    return `${sexLabel} \u00b7 ${formatPattern(doseResponse.pattern, doseResponse.direction ?? null)}`;
+  }
+
+  const entries = [...bySex.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const pats = entries.map(([sex, s]) => ({
+    sex,
+    direction: s.direction,
+    pattern: s.pattern,
+    fullLabel: formatPattern(s.pattern, s.direction),
+  }));
+
+  // Check for opposite directions
+  const ups = pats.filter(p => p.direction === "up");
+  const downs = pats.filter(p => p.direction === "down");
+  const hasOpposite = ups.length > 0 && downs.length > 0;
+
+  if (hasOpposite) {
+    // "Both sexes · Opposite direction: ↑ F (threshold), ↓ M (threshold)"
+    const parts = pats
+      .filter(p => p.direction === "up" || p.direction === "down")
+      .map(p => {
+        const arrow = p.direction === "up" ? "\u2191" : "\u2193";
+        return `${arrow} ${p.sex} (${patternTypeOnly(p.pattern)})`;
+      });
+    return `${sexLabel} \u00b7 Opposite direction: ${parts.join(", ")}`;
+  }
+
+  // Same direction — show pattern
+  const allSame = pats.every(p => p.pattern === pats[0].pattern && p.direction === pats[0].direction);
+  if (allSame && pats[0].pattern && pats[0].pattern !== "flat" && pats[0].pattern !== "insufficient_data") {
+    return `${sexLabel} \u00b7 ${pats[0].fullLabel}`;
+  }
+
+  // Different patterns, same direction
+  const patParts = pats.map(p => `${p.sex}: ${p.fullLabel}`);
+  return `${sexLabel} \u00b7 ${patParts.join(" \u00b7 ")}`;
 }
 
 // ─── Component ──────────────────────────────────────────────
@@ -203,12 +237,14 @@ export function VerdictPane({
   endpointSexes,
   notEvaluated,
   eciConfidence,
+  endpointConfidence,
+  onSeeDecomposition,
 }: Props) {
   const verdict = notEvaluated
     ? { icon: "\u2014", label: "Not evaluated", labelClass: "text-sm font-medium text-muted-foreground", severityWord: "" }
     : computeVerdict(treatmentSummary, analytics, finding);
 
-  const patternSentence = notEvaluated ? null : buildPatternSentence(doseResponse, statistics);
+  // patternSentence computed below after epSummary
   // Prefer ECI integrated confidence over the simple heuristic
   const confidence: EndpointConfidence | null = notEvaluated
     ? null
@@ -228,10 +264,10 @@ export function VerdictPane({
   if (aggSexes && aggSexes.length >= 2) {
     sexLabel = "Both sexes";
   } else if (aggSexes && aggSexes.length === 1) {
-    sexLabel = aggSexes[0] === "M" ? "Males only" : aggSexes[0] === "F" ? "Females only" : "Both sexes";
+    sexLabel = aggSexes[0] === "M" ? "M only" : aggSexes[0] === "F" ? "F only" : "Both sexes";
   } else {
     const sex = finding.sex;
-    sexLabel = sex === "M" ? "Males only" : sex === "F" ? "Females only" : "Both sexes";
+    sexLabel = sex === "M" ? "M only" : sex === "F" ? "F only" : "Both sexes";
   }
 
   // Per-sex NOAEL breakdown (from endpoint summary)
@@ -239,35 +275,35 @@ export function VerdictPane({
   const noaelBySex = epSummary?.noaelBySex;
   const hasSexNoaelDiff = noaelBySex && noaelBySex.size >= 2;
 
-  // NOAEL string
-  const noaelStr = noael
-    ? noael.dose_value != null
-      ? `NOAEL ${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}${hasSexNoaelDiff ? " (combined)" : ""}`
-      : (() => {
-          const lowestDose = statistics?.rows?.[1]; // index 0 = control
-          if (lowestDose?.dose_value != null) {
-            return `NOAEL < ${lowestDose.dose_value} ${noael.dose_unit ?? "mg/kg"} (all tested doses significant)`;
-          }
-          return "NOAEL below tested range";
-        })()
-    : null;
-
-  // Directional flag: opposite sex directions (e.g., ↓ males, ↑ females)
-  const bySex = epSummary?.bySex;
-  const directionalFlag = (() => {
-    if (!bySex || bySex.size < 2) return null;
-    const entries = [...bySex.entries()].filter(([, s]) => s.direction === "up" || s.direction === "down");
-    if (entries.length < 2) return null;
-    const dirs = new Set(entries.map(([, s]) => s.direction));
-    if (dirs.size < 2) return null; // same direction
-    // Opposite directions detected
-    const parts = entries.map(([sex, s]) => {
-      const arrow = s.direction === "up" ? "\u2191" : "\u2193";
-      const label = sex === "M" ? "males" : sex === "F" ? "females" : sex;
-      return `${arrow} ${label}`;
-    });
-    return `Opposite direction: ${parts.join(", ")}`;
+  // NOAEL string — when both sexes present, derive combined from min of per-sex values
+  // (the `noael` prop is computed from primary finding's stats and may not reflect the true combined)
+  const noaelStr = (() => {
+    if (!noael) return null;
+    if (hasSexNoaelDiff) {
+      const entries = [...noaelBySex!.entries()];
+      const belowLowest = entries.some(([, n]) => n.tier === "below-lowest");
+      if (belowLowest) return "NOAEL below tested range (combined \u2014 min of per-sex values)";
+      const withValues = entries.filter(([, n]) => n.doseValue != null);
+      if (withValues.length > 0) {
+        const min = withValues.reduce((best, cur) => (cur[1].doseValue! < best[1].doseValue! ? cur : best));
+        return `NOAEL ${min[1].doseValue} ${min[1].doseUnit ?? "mg/kg"} (combined \u2014 min of per-sex values)`;
+      }
+      return "NOAEL below tested range (combined \u2014 min of per-sex values)";
+    }
+    if (noael.dose_value != null) {
+      return `NOAEL ${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}`;
+    }
+    const lowestDose = statistics?.rows?.[1]; // index 0 = control
+    if (lowestDose?.dose_value != null) {
+      return `NOAEL < ${lowestDose.dose_value} ${noael.dose_unit ?? "mg/kg"} (all tested doses significant)`;
+    }
+    return "NOAEL below tested range";
   })();
+
+  const bySex = epSummary?.bySex;
+
+  // Combined sex + direction + pattern line (replaces separate patternSentence + directionalFlag)
+  const sexDirectionLine = notEvaluated ? null : buildSexDirectionLine(sexLabel, bySex, doseResponse);
 
   // Key numbers
   const isContinuous = statistics?.data_type === "continuous";
@@ -307,11 +343,28 @@ export function VerdictPane({
     }
   }
 
-  // Metadata items
-  const metaItems: string[] = [];
-  if (confidence) metaItems.push(`${confidence} confidence`);
-  metaItems.push(sexLabel);
-  if (noaelStr) metaItems.push(noaelStr);
+  // NOAEL weight from ECI
+  const noaelWeight = endpointConfidence?.noaelContribution ?? null;
+
+  // ANCOVA punchline
+  const ancovaLine = (() => {
+    if (!finding.ancova?.pairwise?.length) return null;
+    const sig = finding.ancova.pairwise.find(ap => ap.p_value < 0.05);
+    if (!sig) return null;
+    return `ANCOVA confirms direct effect at group ${sig.group} (p\u2009=\u2009${formatPValue(sig.p_value)}).`;
+  })();
+
+  // "Largest effect" sex header
+  const bestEffectSex = (() => {
+    if (!bySex || bySex.size < 2) return finding.sex;
+    let best = finding.sex;
+    let bestVal = -1;
+    for (const [sex, s] of bySex.entries()) {
+      const e = Math.abs(s.maxEffectSize ?? 0);
+      if (e > bestVal) { bestVal = e; best = sex; }
+    }
+    return best;
+  })();
 
   // Clinical verdict line
   const sexAnnotation = clinicalMatch?.sex
@@ -343,75 +396,76 @@ export function VerdictPane({
         </div>
       )}
 
-      {/* Line 3 -- Pattern sentence */}
-      {patternSentence && (
-        <div className="mt-1.5 text-xs text-foreground/80">{patternSentence}</div>
-      )}
-
-      {/* Line 4 -- Key metadata */}
-      {metaItems.length > 0 && (
-        <div className="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-muted-foreground">
-          {metaItems.map((item, i) => (
-            <span key={i}>
-              {i > 0 && <span className="mr-2">&middot;</span>}
-              {item}
+      {/* Line 3 -- Metadata: confidence · NOAEL weight · NOAEL */}
+      {(confidence || noaelWeight || noaelStr) && (
+        <div className="mt-1 flex flex-wrap items-baseline gap-x-2 text-[10px] text-muted-foreground">
+          {confidence && <span>{confidence} confidence</span>}
+          {confidence && noaelWeight && <span>&middot;</span>}
+          {noaelWeight && (
+            <span>
+              NOAEL weight: {noaelWeight.weight} ({noaelWeight.label})
+              {onSeeDecomposition && (
+                <button className="ml-1 text-primary hover:underline" onClick={onSeeDecomposition}>
+                  See decomposition
+                </button>
+              )}
             </span>
-          ))}
+          )}
+          {(confidence || noaelWeight) && noaelStr && <span>&middot;</span>}
+          {noaelStr && <span>{noaelStr}</span>}
         </div>
       )}
 
-      {/* Line 4b -- Per-sex NOAEL breakdown (when sexes differ) */}
-      {noaelBySex && noaelBySex.size >= 2 && (
-        <div className="mt-0.5 flex flex-wrap gap-x-3 text-[10px] text-muted-foreground">
-          {[...noaelBySex.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([sex, n]) => {
-            const doseStr = n.doseValue != null
-              ? `${n.doseValue} ${n.doseUnit ?? "mg/kg"}`
-              : n.tier === "below-lowest" ? "< lowest dose" : "n/a";
-            return <span key={sex}>{sex}: NOAEL {doseStr}</span>;
-          })}
+      {/* Line 4 -- Sex + direction + pattern */}
+      {sexDirectionLine && (
+        <div className="mt-0.5 text-[10px] font-medium text-foreground/80">
+          {sexDirectionLine}
         </div>
       )}
 
-      {/* Line 4c -- Directional flag (opposite sex directions) */}
-      {directionalFlag && (
-        <div className="mt-0.5 text-[10px] font-medium text-amber-700">
-          {directionalFlag}
-        </div>
-      )}
-
-      {/* Line 5 -- Key numbers */}
+      {/* Line 5 -- Key numbers with "Largest effect" header */}
       {(effectSize != null || trendP != null || pctChange != null || foldChangeDisplay != null) && (
-        <div className="mt-2 flex gap-x-4 text-[10px]">
-          {effectSize != null && (
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold font-mono">|{isContinuous ? getEffectSizeSymbol(esMethod) : "d"}| = {Math.abs(effectSize).toFixed(2)}</span>
-              <span className="text-[9px] text-muted-foreground">{effectLabel}</span>
-              {effectMag && <span className="text-[9px] text-muted-foreground">({effectMag})</span>}
-            </div>
-          )}
+        <>
+          <div className="mt-2 text-[10px] text-muted-foreground">
+            Largest effect ({bestEffectSex}):
+          </div>
+          <div className="flex gap-x-4 text-[10px]">
+            {effectSize != null && (
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold font-mono">|{isContinuous ? getEffectSizeSymbol(esMethod) : "d"}| = {Math.abs(effectSize).toFixed(2)}</span>
+                <span className="text-[9px] text-muted-foreground">{effectLabel}</span>
+                {effectMag && <span className="text-[9px] text-muted-foreground">({effectMag})</span>}
+              </div>
+            )}
 
-          {trendP != null && (
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold font-mono">p {formatPValue(trendP) === "<0.0001" ? "< 0.0001" : `= ${formatPValue(trendP)}`}</span>
-              <span className="text-[9px] text-muted-foreground">{trendTestName}</span>
-              <span className="text-[9px] text-muted-foreground">trend</span>
-            </div>
-          )}
+            {trendP != null && (
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold font-mono">p {formatPValue(trendP) === "<0.0001" ? "< 0.0001" : `= ${formatPValue(trendP)}`}</span>
+                <span className="text-[9px] text-muted-foreground">{trendTestName}</span>
+                <span className="text-[9px] text-muted-foreground">trend</span>
+              </div>
+            )}
 
-          {foldChangeDisplay != null ? (
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold font-mono">{foldChangeDisplay}</span>
-              <span className="text-[9px] text-muted-foreground">vs control</span>
-              {foldChangeContext && <span className="text-[9px] text-muted-foreground">{foldChangeContext}</span>}
-            </div>
-          ) : pctChange != null ? (
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold font-mono">{pctChange}</span>
-              <span className="text-[9px] text-muted-foreground">vs control</span>
-              {pctDoseLabel && <span className="text-[9px] text-muted-foreground">{pctDoseLabel}</span>}
-            </div>
-          ) : null}
-        </div>
+            {foldChangeDisplay != null ? (
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold font-mono">{foldChangeDisplay}</span>
+                <span className="text-[9px] text-muted-foreground">vs control</span>
+                {foldChangeContext && <span className="text-[9px] text-muted-foreground">{foldChangeContext}</span>}
+              </div>
+            ) : pctChange != null ? (
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold font-mono">{pctChange}</span>
+                <span className="text-[9px] text-muted-foreground">vs control</span>
+                {pctDoseLabel && <span className="text-[9px] text-muted-foreground">{pctDoseLabel}</span>}
+              </div>
+            ) : null}
+          </div>
+        </>
+      )}
+
+      {/* Line 6 -- ANCOVA punchline */}
+      {ancovaLine && (
+        <div className="mt-1 text-[10px] text-foreground/80">{ancovaLine}</div>
       )}
     </div>
   );
