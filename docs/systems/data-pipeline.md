@@ -650,7 +650,7 @@ Returns `True` if **any** of:
 
 **Dictionary:** `shared/adversity-dictionary.json` — three tiers of intrinsic adversity terms (substring matching, priority: always > likely > context_dependent). Loaded by `services/analysis/adversity_dictionary.py`.
 
-**HCD reference ranges:** `shared/hcd-reference-ranges.json` — SD rat organ weight historical control data (Envigo C11963, 10 organs × 2 sexes × 2 durations). Loaded by `services/analysis/hcd.py`. Used for A-3 factor: treated-group mean compared against [mean±2SD] range. OM two-gate modifier: within_hcd + both gates → downgrade to equivocal; outside_hcd + stat only + small magnitude → upgrade to equivocal.
+**HCD reference ranges:** `shared/hcd-reference-ranges.json` — organ weight historical control data for 2 rat strains: SD rat (Envigo C11963, 10 organs × 2 sexes × 2 durations) and Wistar Han (NTP TR-587/591/593 composite, 7 organs × 2 sexes, 90-day only). Loaded by `services/analysis/hcd.py` with strain alias resolution (8 aliases per strain). Used for A-3 factor: treated-group mean compared against [mean±2SD] range. OM two-gate modifier: within_hcd + both gates → downgrade to equivocal; outside_hcd + stat only + small magnitude → upgrade to equivocal.
 
 Returns one of five categories:
 
