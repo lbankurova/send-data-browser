@@ -94,17 +94,17 @@ function classifyContinuousRecovery(
     return { verdict: "below-threshold", pctRecovered: null };
   }
 
-  // Resolved: recovery effect indistinguishable from control (§4.2)
-  if (Math.abs(recoveryG) < 0.5) {
-    return { verdict: "resolved", pctRecovered: 100 };
-  }
-
   // Overcorrected: effect reversed direction past control (§4.3)
   if (Math.sign(terminalG) !== Math.sign(recoveryG) && Math.abs(recoveryG) >= 0.5) {
     return { verdict: "overcorrected", pctRecovered: null };
   }
 
   const pct = (Math.abs(terminalG) - Math.abs(recoveryG)) / Math.abs(terminalG) * 100;
+
+  // Resolved: recovery effect below trivial threshold (|g| < 0.5) AND ≥80% recovered
+  if (Math.abs(recoveryG) < 0.5) {
+    return { verdict: pct >= 80 ? "resolved" : "reversed", pctRecovered: pct };
+  }
 
   if (pct < 0) return { verdict: "worsening", pctRecovered: pct };
   if (pct >= 80) return { verdict: "reversed", pctRecovered: pct };
@@ -154,9 +154,9 @@ function formatVerdictDesc(
   const arrow = `${formatGAbs(terminalG!)}g${tDay} \u2192 ${formatGAbs(recoveryG!)}g${rDay}`;
   switch (v.verdict) {
     case "resolved":
-      return `effect indistinguishable from control (${arrow})`;
+      return `effect dropped ${Math.round(v.pctRecovered!)}% \u2014 below threshold (${arrow})`;
     case "reversed":
-      return `effect resolved (${arrow})`;
+      return `effect dropped ${Math.round(v.pctRecovered!)}% (${arrow})`;
     case "overcorrected":
       return `effect reversed direction, now opposite of terminal (${arrow})`;
     case "reversing":
@@ -344,7 +344,7 @@ function ContinuousRecoverySection({
 
                 const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size);
                 const desc = formatVerdictDesc(v, row.terminal_effect, row.effect_size, row.terminal_day, row.recovery_day);
-                const pStr = row.p_value != null && row.p_value < 0.1
+                const pStr = row.p_value != null
                   ? formatPCompact(row.p_value)
                   : null;
 
@@ -377,7 +377,7 @@ function ContinuousRecoverySection({
                       {v.verdict !== "below-threshold" && pStr && (
                         <span
                           className="text-muted-foreground"
-                          title="Statistical significance of recovery-vs-terminal comparison. Shown when p < 0.1."
+                          title="Statistical significance of treated vs control at recovery (Welch t-test)."
                         >
                           &middot; p&#x2009;=&#x2009;{pStr}
                         </span>
