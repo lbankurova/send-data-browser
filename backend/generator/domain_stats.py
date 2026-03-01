@@ -31,7 +31,7 @@ from services.analysis.findings_pipeline import (
     SCHEDULED_DOMAINS,
 )
 from services.analysis.organ_thresholds import get_species
-from services.analysis.hcd import get_strain, get_study_duration_days
+from services.analysis.hcd import get_strain, get_study_duration_days, get_route, get_vehicle
 
 
 def _safe_float(v) -> float | None:
@@ -180,11 +180,14 @@ def compute_all_findings(
     species = get_species(study)
     strain = get_strain(study)
     duration_days = get_study_duration_days(study)
+    route = get_route(study)
+    vehicle = get_vehicle(study)
 
     # Shared enrichment pipeline (classification, fold change, labels, etc.)
     all_findings = process_findings(
         all_findings, scheduled_map, separate_map, n_excluded,
         species=species, strain=strain, duration_days=duration_days,
+        route=route, vehicle=vehicle,
     )
 
     # Generator-specific: attach scheduled extras (min_p_adj, max_effect_size, trend_p)

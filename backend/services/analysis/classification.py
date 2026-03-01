@@ -588,6 +588,9 @@ def _compute_a3_for_om(
     finding: dict,
     strain: str | None,
     duration_days: int | None,
+    *,
+    route: str | None = None,
+    vehicle: str | None = None,
 ) -> dict:
     """Compute A-3 (HCD) score for an OM finding.
 
@@ -604,7 +607,8 @@ def _compute_a3_for_om(
 
     specimen = finding.get("specimen", "")
     sex = finding.get("sex", "")
-    return assess_a3(treated_mean, specimen, sex, strain, duration_days)
+    return assess_a3(treated_mean, specimen, sex, strain, duration_days,
+                     route=route, vehicle=vehicle)
 
 
 def _evaluate_b6_for_finding(
@@ -647,6 +651,9 @@ def assess_finding_with_context(
     species: str | None = None,
     strain: str | None = None,
     duration_days: int | None = None,
+    *,
+    route: str | None = None,
+    vehicle: str | None = None,
 ) -> str:
     """Context-aware ECETOC assessment using concurrent findings and organ thresholds.
 
@@ -667,13 +674,16 @@ def assess_finding_with_context(
         species: Study species string (from TS domain).
         strain: Study strain string (from TS domain).
         duration_days: Study dosing duration in days (from TS DOSDUR).
+        route: Route of administration (from TS domain).
+        vehicle: Treatment vehicle (from TS domain).
     """
     domain = finding.get("domain", "")
 
     # Compute A-3 for OM findings (absolute organ weight means vs HCD)
     a3_score = 0.0
     if domain == "OM":
-        a3_result = _compute_a3_for_om(finding, strain, duration_days)
+        a3_result = _compute_a3_for_om(finding, strain, duration_days,
+                                        route=route, vehicle=vehicle)
         a3_score = a3_result["score"]
         finding["_hcd_assessment"] = a3_result
 

@@ -13,5 +13,8 @@ SKIP_FOLDERS = {
 # Empty = serve all discovered studies; populate to restrict (e.g. {"PointCross"})
 ALLOWED_STUDIES: set[str] = set()
 
+HCD_DB_PATH = Path(__file__).parent / "data" / "hcd.db"
+ETL_DATA_DIR = Path(__file__).parent / "etl" / "data"
+
 DEFAULT_PAGE_SIZE = 50
 MAX_PAGE_SIZE = 10000

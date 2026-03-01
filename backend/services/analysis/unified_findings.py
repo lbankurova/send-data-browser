@@ -25,7 +25,7 @@ from services.analysis.findings_pipeline import (
     process_findings, build_findings_map,
 )
 from services.analysis.organ_thresholds import get_species
-from services.analysis.hcd import get_strain, get_study_duration_days
+from services.analysis.hcd import get_strain, get_study_duration_days, get_route, get_vehicle
 
 
 def _sanitize_floats(obj):
@@ -167,11 +167,14 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     species = get_species(study)
     strain = get_strain(study)
     duration_days = get_study_duration_days(study)
+    route = get_route(study)
+    vehicle = get_vehicle(study)
 
     # Shared enrichment pipeline (classification, fold change, labels, etc.)
     all_findings = process_findings(
         all_findings, scheduled_map, separate_map, n_excluded,
         species=species, strain=strain, duration_days=duration_days,
+        route=route, vehicle=vehicle,
     )
 
     # API-specific: assign deterministic IDs
