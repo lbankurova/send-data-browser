@@ -6,7 +6,7 @@
  * Both sexes are shown side-by-side (F before M) when data exists.
  * Continuous domains use verdict-first rows; histopath uses incidence badges.
  */
-import { useMemo } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
@@ -25,10 +25,20 @@ import type {
   RecoveryClassification,
   RecoveryContext,
 } from "@/lib/recovery-classification";
+import {
+  classifyContinuousRecovery,
+  CONT_VERDICT_LABEL,
+  formatGAbs,
+} from "@/lib/recovery-verdict";
+import type { ContinuousVerdictType, ContinuousVerdictResult } from "@/lib/recovery-verdict";
 import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
 import { DoseLabel } from "@/components/ui/DoseLabel";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useStatMethods } from "@/hooks/useStatMethods";
+import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { Info } from "lucide-react";
+import { RecoveryDumbbellChart } from "./RecoveryDumbbellChart";
 
 // ── Histopath verdict badge ──────────────────────────────
 
@@ -60,70 +70,6 @@ function ConfidenceBadge({ confidence }: { confidence: "High" | "Moderate" | "Lo
   return <span className={`text-[10px] font-medium ${color}`}>{confidence} confidence</span>;
 }
 
-// ── Continuous recovery verdict classification ───────────
-//
-// Uses terminal effect (end-of-dosing) as denominator, consistent
-// with regulatory convention for repeat-dose recovery assessment.
-// Peak effect surfaced as annotation when materially different.
-
-type ContinuousVerdictType =
-  | "resolved"
-  | "reversed"
-  | "overcorrected"
-  | "reversing"
-  | "partial"
-  | "persistent"
-  | "worsening"
-  | "below-threshold";
-
-interface ContinuousVerdictResult {
-  verdict: ContinuousVerdictType;
-  /** % of terminal effect that resolved. Negative = worsened. */
-  pctRecovered: number | null;
-}
-
-function classifyContinuousRecovery(
-  terminalG: number | null,
-  recoveryG: number | null,
-): ContinuousVerdictResult {
-  // If dosing-phase effect was too small, recovery assessment is not meaningful
-  if (terminalG == null || Math.abs(terminalG) < 0.5) {
-    return { verdict: "below-threshold", pctRecovered: null };
-  }
-  if (recoveryG == null) {
-    return { verdict: "below-threshold", pctRecovered: null };
-  }
-
-  // Overcorrected: effect reversed direction past control (§4.3)
-  if (Math.sign(terminalG) !== Math.sign(recoveryG) && Math.abs(recoveryG) >= 0.5) {
-    return { verdict: "overcorrected", pctRecovered: null };
-  }
-
-  const pct = (Math.abs(terminalG) - Math.abs(recoveryG)) / Math.abs(terminalG) * 100;
-
-  // Resolved: recovery effect below trivial threshold (|g| < 0.5) AND ≥80% recovered
-  if (Math.abs(recoveryG) < 0.5) {
-    return { verdict: pct >= 80 ? "resolved" : "reversed", pctRecovered: pct };
-  }
-
-  if (pct < 0) return { verdict: "worsening", pctRecovered: pct };
-  if (pct >= 80) return { verdict: "reversed", pctRecovered: pct };
-  if (pct >= 50) return { verdict: "reversing", pctRecovered: pct };
-  if (pct >= 20) return { verdict: "partial", pctRecovered: pct };
-  return { verdict: "persistent", pctRecovered: pct };
-}
-
-const CONT_VERDICT_LABEL: Record<ContinuousVerdictType, string> = {
-  resolved: "Resolved",
-  reversed: "Reversed",
-  overcorrected: "Overcorrected",
-  reversing: "Reversing",
-  partial: "Partial",
-  persistent: "Persistent",
-  worsening: "Worsening",
-  "below-threshold": "Not assessed",
-};
-
 const CONT_VERDICT_CLASS: Record<ContinuousVerdictType, string> = {
   resolved: "text-emerald-700",
   reversed: "text-emerald-700",
@@ -134,10 +80,6 @@ const CONT_VERDICT_CLASS: Record<ContinuousVerdictType, string> = {
   worsening: "text-red-700",
   "below-threshold": "text-muted-foreground/60",
 };
-
-function formatGAbs(g: number): string {
-  return Math.abs(g).toFixed(2);
-}
 
 function formatVerdictDesc(
   v: ContinuousVerdictResult,
@@ -232,6 +174,19 @@ function ContinuousRecoverySection({
 }) {
   const { studyId } = useParams<{ studyId: string }>();
   const { data: recovery } = useRecoveryComparison(studyId);
+  const { effectSize } = useStatMethods(studyId);
+  const [selectedDose, setSelectedDose] = useState<number | null>(null);
+  const textRowRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  const handleDoseClick = useCallback((doseLevel: number) => {
+    setSelectedDose(doseLevel);
+    const el = textRowRefs.current[doseLevel];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      // Clear highlight after 2s
+      setTimeout(() => setSelectedDose(null), 2000);
+    }
+  }, []);
 
   if (!recovery || !recovery.available) {
     return (
@@ -264,11 +219,25 @@ function ContinuousRecoverySection({
 
   return (
     <div className="space-y-3">
-      {recovery.recovery_day != null && (
-        <div className="text-[10px] text-muted-foreground">
-          {recovery.recovery_day}d post-dosing
-        </div>
-      )}
+      <div className="text-[10px] text-muted-foreground flex items-center justify-between">
+        <span>
+          {allRows[0]?.terminal_day != null && <>Day {allRows[0].terminal_day} (terminal) → </>}
+          {recovery.recovery_day != null && <>Day {recovery.recovery_day} (recovery)</>}
+          {" · "}Effect size: {getEffectSizeLabel(effectSize)} (|{getEffectSizeSymbol(effectSize)}|)
+        </span>
+        <span title={"Each row is one dose group. Filled dot = effect size at terminal sacrifice. Vertical bar = effect size at recovery. Arrow direction shows whether the effect shrank (recovering, arrow left toward zero) or grew (worsening, arrow right). Line weight encodes statistical significance: thicker = p<0.05, thinner = p\u22650.05. Amber triangles mark peak effects during dosing when they materially exceeded the terminal value."}>
+          <Info className="w-3 h-3 shrink-0 text-muted-foreground/40 cursor-help" />
+        </span>
+      </div>
+
+      {/* Dumbbell chart — spatial summary above text rows */}
+      <RecoveryDumbbellChart
+        rows={allRows}
+        doseGroups={doseGroups}
+        terminalDay={allRows[0]?.terminal_day}
+        recoveryDay={recovery.recovery_day}
+        onDoseClick={handleDoseClick}
+      />
 
       {sexes.map(sex => {
         const sexRows = allRows
@@ -306,12 +275,17 @@ function ContinuousRecoverySection({
                   ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
                   : `Dose ${row.dose_level}`;
 
+                const isHighlighted = selectedDose === row.dose_level;
+                const highlightCls = isHighlighted ? " bg-primary/5 rounded transition-colors" : "";
+
                 {/* §10.5: n=1 suppression */}
                 if (row.insufficient_n) {
                   return (
-                    <div key={row.dose_level} className="text-[10px] leading-relaxed">
+                    <div key={row.dose_level} ref={el => { textRowRefs.current[row.dose_level] = el; }} className={`text-[10px] leading-relaxed${highlightCls}`}>
                       <span className="inline-flex items-baseline gap-1.5">
-                        <DoseLabel level={row.dose_level} label={doseStr} className="text-[10px]" />
+                        <span className="w-[60px] shrink-0 inline-flex justify-end">
+                          <DoseLabel level={row.dose_level} label={doseStr} align="right" className="text-[10px]" />
+                        </span>
                         <span className="text-muted-foreground/60">
                           n={row.treated_n ?? 1} — insufficient for classification
                         </span>
@@ -328,9 +302,11 @@ function ContinuousRecoverySection({
                 {/* §10.4: no concurrent control */}
                 if (row.no_concurrent_control) {
                   return (
-                    <div key={row.dose_level} className="text-[10px] leading-relaxed">
+                    <div key={row.dose_level} ref={el => { textRowRefs.current[row.dose_level] = el; }} className={`text-[10px] leading-relaxed${highlightCls}`}>
                       <span className="inline-flex items-baseline gap-1.5">
-                        <DoseLabel level={row.dose_level} label={doseStr} className="text-[10px]" />
+                        <span className="w-[60px] shrink-0 inline-flex justify-end">
+                          <DoseLabel level={row.dose_level} label={doseStr} align="right" className="text-[10px]" />
+                        </span>
                         <span className="text-muted-foreground">
                           mean: {row.mean?.toFixed(2) ?? "\u2014"}
                         </span>
@@ -357,9 +333,11 @@ function ContinuousRecoverySection({
                   : `${CONT_VERDICT_LABEL[v.verdict]}: control-normalized effect ${desc} during recovery period`;
 
                 return (
-                  <div key={row.dose_level} className="text-[10px] leading-relaxed" title={rowTooltip}>
+                  <div key={row.dose_level} ref={el => { textRowRefs.current[row.dose_level] = el; }} className={`text-[10px] leading-relaxed${highlightCls}`} title={rowTooltip}>
                     <span className="inline-flex items-baseline gap-1.5">
-                      <DoseLabel level={row.dose_level} label={doseStr} className="text-[10px]" />
+                      <span className="w-[60px] shrink-0 inline-flex justify-end">
+                        <DoseLabel level={row.dose_level} label={doseStr} align="right" className="text-[10px]" />
+                      </span>
                       <span
                         className={`font-medium ${CONT_VERDICT_CLASS[v.verdict]}`}
                         title={verdictTooltip}
@@ -599,11 +577,12 @@ function HistopathSexSection({
 
             return (
               <div key={da.doseLevel} className="flex items-center gap-2 text-[10px]">
-                <span className="w-20 shrink-0">
+                <span className="w-[60px] shrink-0 inline-flex justify-end">
                   <DoseLabel
                     level={da.doseLevel}
                     label={formatDoseShortLabel(da.doseGroupLabel)}
                     tooltip={da.doseGroupLabel}
+                    align="right"
                     className="text-[10px]"
                   />
                 </span>

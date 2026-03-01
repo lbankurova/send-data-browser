@@ -1248,6 +1248,58 @@ async def get_recovery_comparison(study_id: str):
                                     peak_d = tp_d
                                     peak_day_val = tp_day
 
+                    # CI for recovery: mean_diff ± t_crit * SE_diff
+                    from scipy import stats as sp_stats
+                    treat_mean_rec = float(np.mean(treat_vals))
+                    ctrl_mean_rec = float(np.mean(ctrl_vals))
+                    treat_sd_rec = float(np.std(treat_vals, ddof=1))
+                    ctrl_sd_rec = float(np.std(ctrl_vals, ddof=1))
+                    n1, n2 = len(treat_vals), len(ctrl_vals)
+                    se_diff_rec = np.sqrt(treat_sd_rec**2 / n1 + ctrl_sd_rec**2 / n2)
+                    # Welch-Satterthwaite df
+                    num = (treat_sd_rec**2 / n1 + ctrl_sd_rec**2 / n2) ** 2
+                    denom = (treat_sd_rec**2 / n1) ** 2 / (n1 - 1) + (ctrl_sd_rec**2 / n2) ** 2 / (n2 - 1)
+                    df_rec = num / denom if denom > 0 else n1 + n2 - 2
+                    t_crit_rec = sp_stats.t.ppf(0.975, df_rec) if df_rec > 0 else 1.96
+                    mean_diff_rec = treat_mean_rec - ctrl_mean_rec
+                    ci_lower_rec = _safe_round(mean_diff_rec - t_crit_rec * se_diff_rec, 4)
+                    ci_upper_rec = _safe_round(mean_diff_rec + t_crit_rec * se_diff_rec, 4)
+
+                    # % diff: (treated - control) / control * 100
+                    pct_diff_rec = _safe_round(
+                        (treat_mean_rec - ctrl_mean_rec) / ctrl_mean_rec * 100, 2
+                    ) if abs(ctrl_mean_rec) > 1e-10 else None
+
+                    # CI + % diff for terminal (main arm)
+                    ci_lower_term = None
+                    ci_upper_term = None
+                    pct_diff_term = None
+                    if main_ctrl_day is not None and main_treated_mean is not None:
+                        main_treated_term = main_test[
+                            (main_test["dose_level"] == dose_level)
+                        ]
+                        if not main_treated_term.empty:
+                            mt_d = main_treated_term[day_col].max()
+                            mt_t = main_treated_term[main_treated_term[day_col] == mt_d]
+                            mc_t = main_ctrl[main_ctrl[day_col] == main_ctrl_day]
+                            mt_v = mt_t[value_col].dropna().values
+                            mc_v = mc_t[value_col].dropna().values
+                            if len(mt_v) >= 2 and len(mc_v) >= 2:
+                                mt_mean = float(np.mean(mt_v))
+                                mc_mean = float(np.mean(mc_v))
+                                mt_sd = float(np.std(mt_v, ddof=1))
+                                mc_sd = float(np.std(mc_v, ddof=1))
+                                se_t = np.sqrt(mt_sd**2 / len(mt_v) + mc_sd**2 / len(mc_v))
+                                num_t = (mt_sd**2 / len(mt_v) + mc_sd**2 / len(mc_v)) ** 2
+                                den_t = (mt_sd**2 / len(mt_v)) ** 2 / (len(mt_v) - 1) + (mc_sd**2 / len(mc_v)) ** 2 / (len(mc_v) - 1)
+                                df_t = num_t / den_t if den_t > 0 else len(mt_v) + len(mc_v) - 2
+                                t_crit_t = sp_stats.t.ppf(0.975, df_t) if df_t > 0 else 1.96
+                                md_t = mt_mean - mc_mean
+                                ci_lower_term = _safe_round(md_t - t_crit_t * se_t, 4)
+                                ci_upper_term = _safe_round(md_t + t_crit_t * se_t, 4)
+                                if abs(mc_mean) > 1e-10:
+                                    pct_diff_term = _safe_round((mt_mean - mc_mean) / mc_mean * 100, 2)
+
                     rows.append({
                         **base_fields,
                         "mean": _safe_round(float(np.mean(treat_vals)), 4),
@@ -1263,6 +1315,12 @@ async def get_recovery_comparison(study_id: str):
                         "treated_n": len(treat_vals),
                         "treated_mean_terminal": main_treated_mean,
                         "control_mean_terminal": main_ctrl_mean,
+                        "pct_diff_terminal": pct_diff_term,
+                        "pct_diff_recovery": pct_diff_rec,
+                        "ci_lower": ci_lower_rec,
+                        "ci_upper": ci_upper_rec,
+                        "ci_lower_terminal": ci_lower_term,
+                        "ci_upper_terminal": ci_upper_term,
                     })
 
     # Process LB domain
